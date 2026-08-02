@@ -19,31 +19,48 @@ Essentially, this mod is designed for DMs and players alike that wish to play D&
 
 ## Current Features
 - Fillable character sheets for each player on the server, accessible with a keypress.
-- Buttons from the character sheet to make easy dice rolls, which output rolls server-wide.
+- Buttons from the character sheet to make easy dice rolls, which output rolls server-wide, with colored chat feedback (hits, misses, damage, saves) instead of plain text.
 - Customizable roll expressions, allowing players to fine-tune how the buttons on their sheet work.
 - A dedicated tab for attack and damage rolls, not technically limited to the aforementioned, allowing you to make your own rolls for any need and any context.
-- A simple /roll (shorthand /r) command to make dice rolls, using standard dice notation
+- A simple /roll (shorthand /r) command to make dice rolls, using standard dice notation.
+- Fields that mirror the real player automatically (and are locked/amber-colored so you can tell them apart from what you fill in by hand): current/max/temp HP, hunger, XP level, and proficiency bonus (computed from level).
+- Passive AC computed from real Destreza + equipped armor, and max HP computed from class (hit die), level, and Constitution.
+- **PvP and monster combat resolve as real 5e attacks**: an attack roll vs. the target's actual AC, and on a hit, real damage from the configured weapon dice. Weapons you don't configure behave like normal Minecraft, this only kicks in for recognized gear.
+- **Custom weapons**, including reskinning any vanilla item (dagger, spear, dart, etc.) via an NBT tag, loadable in bulk from JSON and given out with `/dndweapons`.
+- **Other mods' weapons and armor work out of the box, with no per-item setup.** Armor was always automatic (AC reads Minecraft's real armor attribute, which any mod's armor already feeds into). Weapons now are too: any held item — from Tinkers' Construct or any other mod — that already deals real bonus damage in vanilla combat (the same attribute that makes its tooltip say "X Attack Damage") is auto-treated as a Strength/physical weapon with a die that averages that same damage, no JSON needed. A weapon you *do* configure by hand (JSON or the `.toml`) always overrides the automatic guess — use that for a modded item that should use Dexterity, deal a different damage type, or just feel different from the default guess.
+- **A Grimoire** (own window, opened from a button on the sheet) for known spells, with a spell-slot counter; spells resolve as attack-vs-AC or save-vs-DC, loadable in bulk from JSON via `/dndspells`, learned with `/dndspells learn`, and quick-cast from a "báculo" (staff) item via `/dndspells staff`.
+- **Monsters with real stat blocks** (AC, HP, abilities, attacks, spells) spawned as AI-less vanilla mobs via `/dndmonsters`, loadable in bulk from JSON. Players fighting them works exactly like PvP (attack-vs-AC, real HP loss, removed on defeat).
+- **A DM Wand** (`/dndmonsters dmtool`): right-click a spawned monster to open a menu of its attacks/spells and resolve them against the nearest player; shift+right-click a monster *or* an armor stand to delete it instantly (handy cleanup if you spawned too many).
+- **A death save system**: dropping to 0 HP freezes you at 1 HP (blind, weak, nearly immobile) instead of dying, opens a window to roll death saves (3 successes stabilizes, 3 failures is real death, a natural 20 wakes you up), and any nearby player can revive you instantly by interacting with you.
+- **Class presets**: pick a preset (Fighter, Wizard, etc.) from a sheet button to fill in class, hit die, and all six ability scores at once, optionally handing you a starting weapon. Loadable in bulk from JSON via `/dndpresets`.
+- **A creative-mode inventory tab** ("D&D Sheets") listing the DM Wand, every custom weapon, one báculo per loaded spell, and a summon card per loaded monster (works like a vanilla spawn egg) — no need to remember any command IDs.
+- **All content packs auto-load on server start**: drop your JSON files in `<world folder>/dndsheets/{weapons,spells,monsters,presets}/` and they're read automatically, no command required (the load commands still exist for hot-reloading without a restart).
+- Particle and sound feedback (crits, spell casts, totem-of-undying effects on stabilizing, etc.) alongside the chat text, all using vanilla Minecraft assets.
+
+## Content packs (JSON)
+Weapons, spells, monsters, presets, and traits are all defined the same way: drop a JSON file in the matching subfolder of `<world folder>/dndsheets/` and it loads automatically on server start (or immediately with the matching `/dnd... load <filename>` command). See `/test/dndsheets` in this repo for ready-to-copy sample packs covering every content type — copy that folder's contents straight into your world's `dndsheets/` folder to try them.
+
+Dice expressions accept the ability-score shorthand `$str`/`$dex`/`$con`/`$int`/`$wis`/`$cha`, plus `$prof` (proficiency bonus) and `$hprof` (half proficiency, rounded up) — e.g. a cleric's Cure Wounds might use `"1d8 + $wis"`. Known bug: an expression with more than one dice group (e.g. `1d20 + 1d4`) doesn't roll correctly — this applies to `dice`/`versatileDice`/`appliesEffect.dice` in content JSON just as much as to manual `/roll` input, so keep each field to a single dice group.
 
 ## Planned Features
-- A dedicated spells tab with spell slots.
-- DMing tools, allowing DMs to manage initiative from a GUI ingame.
-- The ability to store and manage multiple sheets per player.
 - Placeable blocks which project visible areas-of-effect, such as spheres and cones.
 - Measuring tools to tell distances easily and help players judge the movement they're using.
-- Localization to other languages.
+- Localization to languages other than English and Spanish.
 
 ## Known Bugs
 - Roll expressions don't work correctly when faced with multiple dice groups (i.e. 1d20 + 1d4). Multiple dice in one group (i.e. 4d4) do, however, work. In complex expressions, you can substitute multiple dice groups for now by using the "Extra Roll" section (thereby allowing up to two).
 
 ## Technical Details
-This mod needs to be on both the client and server. In multiplayer, character sheets are kept for each player on the server, associated by UUID and saved as JSON on the server end. This can be seen in a "charactersheets" folder in the server instance. This allows server owners (likely the DM) to see the sheets themselves. These files are loaded when a client joins, and are saved to in real time when players make changes to their sheets. 
+This mod needs to be on both the client and server. In multiplayer, character sheets are kept for each player on the server, associated by UUID and saved as JSON on the server end. This can be seen in a "charactersheets" folder in the server instance. This allows server owners (likely the DM) to see the sheets themselves. These files are loaded when a client joins, and are saved to in real time when players make changes to their sheets.
 
-While technically usable, this mod is not intended for singleplayer. You won't get much use out of it. This mod also does not have any functions which impact Minecraft's normal gameplay. It does not do anything on its own, in other words. So you're not suddenly gonna be making dice rolls when attacking mobs. It would be beyond the scope of the mod and wouldn't fit its intended purpose anyway. 
+Content packs (weapons, spells, monsters, presets) live similarly under a `dndsheets/` folder in the server instance, with one subfolder per content type.
+
+Unlike the original release of this mod, D&D Sheets now *does* touch normal gameplay once you configure it to: recognized weapons/spells turn PvP and monster fights into real 5e attack rolls, and dropping to 0 HP triggers the death save system instead of vanilla death. Anything you haven't configured (an un-tagged sword, an un-loaded spell) behaves exactly like normal Minecraft, so this is opt-in per weapon/monster/spell rather than a global rule change.
 
  
 
 ## I don't know how to play D&D, does this mod teach me? Can you make a version for Pathfinder? Can you update to 1.21.1? Will I always be a DM?
-Please note that while this mod makes playing D&D much easier, it does not contain any resources to play the game with. You will need to legally obtain those yourself. 
+Please note that while this mod makes playing D&D much easier, it does not contain any resources to play the game with. You will need to legally obtain those yourself.
 
 There are also no plans to expand to other tabletop systems or update to newer versions of Minecraft. But you're more than welcome to do so yourself! Feel free to make pull requests to the project GitHub if you'd like to take up the task.
 

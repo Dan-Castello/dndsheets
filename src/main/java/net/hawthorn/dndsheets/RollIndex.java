@@ -263,11 +263,25 @@ public class RollIndex {
         }
     }
 
+    //Público: usado por SheetCommand (/dndsheet setroll) para poder nombrar un check/save/skill por su
+    //nombre en vez de exigir que el DM se acuerde de su índice numérico.
+    public static List<String> basicNames(Category category) {
+        int count = switch (category) {
+            case CHECKS -> 7;
+            case SAVES -> 6;
+            case SKILLS -> 18;
+            case ATTACKS -> 0;
+        };
+        List<String> names = new ArrayList<>();
+        for (int i = 0; i < count; i++) names.add(new RollIndex(category, i).getBasicContext());
+        return names;
+    }
+
     /**
      * <p>This won't return anything if the category is of an advanced type.</p>
      * @return
      */
-    private String getBasicContext() {
+    public String getBasicContext() {
         String result = "";
         result = switch (category.getInt()) {
             case 0 -> switch (index) {

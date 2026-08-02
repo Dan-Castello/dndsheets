@@ -9,6 +9,8 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.event.TickEvent;
@@ -19,6 +21,7 @@ import net.minecraft.network.FriendlyByteBuf;
 
 import net.hawthorn.dndsheets.init.DndsheetsModSounds;
 import net.hawthorn.dndsheets.init.DndsheetsModMenus;
+import net.hawthorn.dndsheets.init.DndsheetsModCreativeTab;
 
 import java.util.function.Supplier;
 import java.util.function.Function;
@@ -40,6 +43,9 @@ public class DndsheetsMod {
 		DndsheetsModSounds.REGISTRY.register(bus);
 
 		DndsheetsModMenus.REGISTRY.register(bus);
+		DndsheetsModCreativeTab.REGISTRY.register(bus);
+
+		ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC, "dndsheets-common.toml");
 	}
 
 	private static final String PROTOCOL_VERSION = "1";

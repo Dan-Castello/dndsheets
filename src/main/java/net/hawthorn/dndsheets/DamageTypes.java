@@ -1,0 +1,44 @@
+package net.hawthorn.dndsheets;
+
+import com.google.gson.JsonObject;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+
+import java.util.Set;
+
+/**
+ * <p>Resistencias/vulnerabilidades/inmunidades por tipo de daño, guardadas en la hoja del jugador
+ * como {@code damageAffinities: {"fuego":"resistant", ...}} (ver {@code /dndsheet damagetype}). Solo
+ * protege/perjudica al jugador que la tiene — monstruos y armor stands no llevan esta capa.</p>
+ *
+ * <p>La Furia del bárbaro ({@link BarbarianRageManager}) se suma aquí en vez de escribirse como una
+ * entrada más de "damageAffinities": es temporal y no debería sobrevivir a un reinicio de servidor ni
+ * aparecer como algo que el DM "fijó a mano" con {@code /dndsheet damagetype}.</p>
+ */
+public class DamageTypes {
+	private static final Set<String> PHYSICAL_TYPES = Set.of("fisico", "cortante", "perforante", "contundente");
+
+	public static double multiplierFor(Entity target, JsonObject sheet, String damageType) {
+		double multiplier = sheetMultiplierFor(sheet, damageType);
+		if (target instanceof ServerPlayer player && BarbarianRageManager.isRaging(player) && PHYSICAL_TYPES.contains(damageType)) {
+			multiplier = Math.min(multiplier, 0.5); //Ya inmune/resistente por otra vía no empeora; normal/vulnerable sí baja a resistente.
+		}
+		return multiplier;
+	}
+
+	private static double sheetMultiplierFor(JsonObject sheet, String damageType) {
+		if (sheet == null || damageType == null || !sheet.has("damageAffinities")) return 1.0;
+		JsonObject affinities = sheet.getAsJsonObject("damageAffinities");
+		if (!affinities.has(damageType)) return 1.0;
+		return switch (affinities.get(damageType).getAsString()) {
+			case "resistant" -> 0.5;
+			case "vulnerable" -> 2.0;
+			case "immune" -> 0.0;
+			default -> 1.0;
+		};
+	}
+
+	public static int applyMultiplier(int amount, double multiplier) {
+		return (int) Math.floor(amount * multiplier);
+	}
+}

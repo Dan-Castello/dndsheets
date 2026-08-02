@@ -10,6 +10,7 @@ import net.hawthorn.dndsheets.client.gui.components.AdjustableImageButton;
 import net.hawthorn.dndsheets.client.gui.components.RollScrollWidget;
 import net.hawthorn.dndsheets.init.DndsheetsModKeyMappings;
 import net.hawthorn.dndsheets.network.AdvancedRollEditorOpenMessage;
+import net.hawthorn.dndsheets.network.PresetListRequestMessage;
 import net.hawthorn.dndsheets.network.RollEditorOpenMessage;
 import net.hawthorn.dndsheets.procedures.CharacterSheetSaveProcedure;
 import net.minecraft.client.gui.components.*;
@@ -43,9 +44,9 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	public static PanelStatus panelActive = PanelStatus.MAIN;
 	public static boolean editMode = false;
 
-	EditBox hitPoints;
-	EditBox hitPointsMax;
-	EditBox hitPointsTemp;
+	EditBox hitPoints;      // Sincronizado en vivo desde entity.getHealth() - ver containerTick()
+	EditBox hitPointsMax;   // Sincronizado en vivo desde entity.getMaxHealth()
+	EditBox hitPointsTemp;  // Sincronizado en vivo desde entity.getAbsorptionAmount() (corazones dorados = PG temporales de D&D)
 	EditBox armorClass;
 	EditBox speed;
 	EditBox initiative;
@@ -53,7 +54,11 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	EditBox characterRace;
 	EditBox characterClass;
 	EditBox background;
-	EditBox proficiency;
+	EditBox proficiency;    // Auto-calculado desde el nivel real (regla de competencia de 5e)
+	EditBox level;          // Sincronizado en vivo desde entity.experienceLevel (XP real de Minecraft)
+	EditBox hunger;         // Sincronizado en vivo desde entity.getFoodData().getFoodLevel()
+	Button grimoireButton;  // Abre el Grimorio (ver GrimoireScreen), sin tocar la hoja
+	Button presetsButton;   // Pide la lista de presets de clase al servidor (ver PresetScreen)
 
 	EditBox hitDice;
 	EditBox hitDiceTypes;
@@ -132,6 +137,14 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private final int ACHP_OFFSET_Y = 90;
 	private final int ACHP_SEPARATION = 45;
 
+	//NOTA: no hay hueco dibujado para estos dos en character_sheet.png todavía (ver LEEME.md).
+	//Se colocan en el margen inferior del panel para que no se solapen con nada mientras tanto.
+	private final int LEVEL_OFFSET_X = 125;
+	private final int LEVEL_OFFSET_Y = 190;
+
+	private final int HUNGER_OFFSET_X = 220;
+	private final int HUNGER_OFFSET_Y = 190;
+
 	/*
 		SKILLS PANEL OFFSETS
 	 */
@@ -143,6 +156,9 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private final int SKILL_LIST2_OFFSET_X = 255;
 	private final int SKILL_LIST2_OFFSET_Y = 15;
 
+	//Color del texto de los campos que se rellenan solos (PG, CA, nivel, hambre, competencia): ámbar, para
+	//distinguirlos de un vistazo de los campos en blanco normal que sí se pueden escribir a mano.
+	private static final int AUTO_FIELD_COLOR = 0xFFD37F;
 
 	public enum PanelStatus {
 		MAIN,
@@ -193,6 +209,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				proficiency.render(guiGraphics, mouseX, mouseY, partialTicks);
 				hitDice.render(guiGraphics, mouseX, mouseY, partialTicks);
 				hitDiceTypes.render(guiGraphics, mouseX, mouseY, partialTicks);
+				level.render(guiGraphics, mouseX, mouseY, partialTicks);
+				hunger.render(guiGraphics, mouseX, mouseY, partialTicks);
 				break;
 			case SKILLS:
 				break;
@@ -245,49 +263,30 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			CharacterSheetSaveProcedure.execute(guistate);
 			return true;
 		}
-		if (hitPoints.isFocused())
-			return hitPoints.keyPressed(key, b, c);
-		if (hitPointsTemp.isFocused())
-			return hitPointsTemp.keyPressed(key, b, c);
-		if (hitPointsMax.isFocused())
-			return hitPointsMax.keyPressed(key, b, c);
-		if (armorClass.isFocused())
-			return armorClass.keyPressed(key, b, c);
-		if (characterName.isFocused())
-			return characterName.keyPressed(key, b, c);
-		if (characterRace.isFocused())
-			return characterRace.keyPressed(key, b, c);
-		if (characterClass.isFocused())
-			return characterClass.keyPressed(key, b, c);
-		if (background.isFocused())
-			return background.keyPressed(key, b, c);
-		if (speed.isFocused())
-			return speed.keyPressed(key, b, c);
-		if (proficiency.isFocused())
-			return proficiency.keyPressed(key, b, c);
-		if (hitDice.isFocused())
-			return hitDice.keyPressed(key, b, c);
-		if (hitDiceTypes.isFocused())
-			return hitDiceTypes.keyPressed(key, b, c);
-
-		if (strength.isFocused())
-			return strength.keyPressed(key, b, c);
-		if (dexterity.isFocused())
-			return dexterity.keyPressed(key, b, c);
-		if (constitution.isFocused())
-			return constitution.keyPressed(key, b, c);
-		if (intelligence.isFocused())
-			return intelligence.keyPressed(key, b, c);
-		if (wisdom.isFocused())
-			return wisdom.keyPressed(key, b, c);
-		if (charisma.isFocused())
-			return charisma.keyPressed(key, b, c);
+		// Cualquier campo de texto enfocado se queda con la tecla entera, sin importar
+		// si EditBox.keyPressed() la reconoce o no. Antes, una tecla "no especial" (p.ej.
+		// una letra normal, que EditBox solo procesa en charTyped) devolvía false aquí y
+		// el evento caía en AbstractContainerScreen.keyPressed(), que cierra la hoja si la
+		// tecla coincide con el keybind de inventario (por defecto, E) - perdiendo lo escrito.
+		EditBox[] textFields = {
+			hitPoints, hitPointsTemp, hitPointsMax, armorClass,
+			characterName, characterRace, characterClass, background,
+			speed, proficiency, hitDice, hitDiceTypes, level, hunger,
+			strength, dexterity, constitution, intelligence, wisdom, charisma
+		};
+		for (EditBox box : textFields) {
+			if (box.isFocused()) {
+				box.keyPressed(key, b, c);
+				return true;
+			}
+		}
 
 		EditBox[] scrollBoxes = attackRolls.getEditBoxes();
         for (EditBox box : scrollBoxes) {
-            if (box.isFocused())
-                return box.keyPressed(key, b, c);
-
+            if (box.isFocused()) {
+                box.keyPressed(key, b, c);
+                return true;
+            }
         }
 
 		return super.keyPressed(key, b, c);
@@ -296,6 +295,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	@Override
 	public void containerTick() {
 		super.containerTick();
+		syncFromEntity();
+
 		hitPoints.tick();
 		hitPointsTemp.tick();
 		hitPointsMax.tick();
@@ -307,6 +308,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		proficiency.tick();
 		hitDice.tick();
 		hitDiceTypes.tick();
+		level.tick();
+		hunger.tick();
 
 		characterName.tick();
 		strength.tick();
@@ -323,6 +326,59 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		}
 	}
 
+	/**
+	 * <p>Sincroniza los campos derivados del estado real del jugador (vida, hambre, nivel)
+	 * en lugar de depender de lo que el jugador escriba manualmente. Esto convierte a estos
+	 * campos en un espejo de solo lectura del jugador de Minecraft, en vez de una hoja
+	 * independiente que hay que actualizar a mano.</p>
+	 */
+	private void syncFromEntity() {
+		if (entity == null) return;
+
+		int currentHp = (int) Math.ceil(entity.getHealth());
+		int maxHp = (int) Math.ceil(entity.getMaxHealth());
+		int tempHp = (int) Math.ceil(entity.getAbsorptionAmount()); // Corazones dorados = PG temporales
+
+		if (!hitPoints.getValue().equals(String.valueOf(currentHp)))
+			hitPoints.setValue(String.valueOf(currentHp));
+		if (!hitPointsMax.getValue().equals(String.valueOf(maxHp)))
+			hitPointsMax.setValue(String.valueOf(maxHp));
+		if (!hitPointsTemp.getValue().equals(String.valueOf(tempHp)))
+			hitPointsTemp.setValue(String.valueOf(tempHp));
+
+		if (entity.getFoodData() != null) {
+			int foodLevel = entity.getFoodData().getFoodLevel();
+			if (!hunger.getValue().equals(String.valueOf(foodLevel)))
+				hunger.setValue(String.valueOf(foodLevel));
+		}
+
+		// Nivel real de personaje: sigue el XP de Minecraft hasta que el DM lo fije a mano con
+		// /dndsheet setlevel (guarda "characterLevel" en la hoja) — ver SheetLoader.characterLevelOf.
+		int xpLevel = SheetLoader.characterLevelOf(SheetLoader.getClientSheet(), entity);
+		if (!level.getValue().equals(String.valueOf(xpLevel)))
+			level.setValue(String.valueOf(xpLevel));
+
+		// Regla de bono de competencia de D&D 5e, calculada a partir del nivel real
+		int calculatedProficiency = 2 + ((xpLevel - 1) / 4);
+		if (!proficiency.getValue().equals(String.valueOf(calculatedProficiency)))
+			proficiency.setValue(String.valueOf(calculatedProficiency));
+
+		// CA = 10 + mod. Destreza + armadura real equipada (entity.getArmorValue()),
+		// para que la armadura que lleve puesta el jugador sí afecte a la hoja.
+		int dexMod = abilityModifier(dexterity.getValue());
+		int calculatedAc = 10 + dexMod + (int) entity.getArmorValue();
+		if (!armorClass.getValue().equals(String.valueOf(calculatedAc)))
+			armorClass.setValue(String.valueOf(calculatedAc));
+	}
+
+	private static int abilityModifier(String score) {
+		try {
+			return Math.floorDiv(Integer.parseInt(score) - 10, 2);
+		} catch (NumberFormatException e) {
+			return 0;
+		}
+	}
+
 	@Override
 	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
 		//guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_character_sheet"), 15, 10, -12829636, false);
@@ -332,17 +388,20 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 		switch (panelActive) {
 			case MAIN:
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_armor_class_ac"), ACHP_OFFSET_X, ACHP_OFFSET_Y - 10, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hit_points"), ACHP_OFFSET_X + ACHP_SEPARATION, ACHP_OFFSET_Y - 10, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hit_points_max"), ACHP_OFFSET_X + ACHP_SEPARATION * 2, ACHP_OFFSET_Y - 10, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hit_points_temp"), ACHP_OFFSET_X + ACHP_SEPARATION * 3, ACHP_OFFSET_Y - 10, lightColor, false);
+				//Ámbar = se rellena solo (ver AUTO_FIELD_COLOR); color normal = se escribe a mano.
+				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_armor_class_ac"), ACHP_OFFSET_X, ACHP_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
+				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hit_points"), ACHP_OFFSET_X + ACHP_SEPARATION, ACHP_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
+				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hit_points_max"), ACHP_OFFSET_X + ACHP_SEPARATION * 2, ACHP_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
+				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hit_points_temp"), ACHP_OFFSET_X + ACHP_SEPARATION * 3, ACHP_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
 				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_speed"), ACHP_OFFSET_X + ACHP_SEPARATION * 4, ACHP_OFFSET_Y - 10, lightColor, false);
-				guiGraphics.drawString(this.font, "+", PROF_OFFSET_X - 8, PROF_OFFSET_Y + 5, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_proficiency_bonus"), PROF_OFFSET_X + 20, PROF_OFFSET_Y + 5, lightColor, false);
+				guiGraphics.drawString(this.font, "+", PROF_OFFSET_X - 8, PROF_OFFSET_Y + 5, AUTO_FIELD_COLOR, false);
+				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_proficiency_bonus"), PROF_OFFSET_X + 20, PROF_OFFSET_Y + 5, AUTO_FIELD_COLOR, false);
 				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_class"), CLASS_OFFSET_X, CLASS_OFFSET_Y - 10, lightColor, false);
 				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_race"), RACE_OFFSET_X, RACE_OFFSET_Y - 10, lightColor, false);
 				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_background"), BACKG_OFFSET_X, BACKG_OFFSET_Y - 10, lightColor, false);
 				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hitdice"), HITDICE_OFFSET_X, HITDICE_OFFSET_Y - 10, lightColor, false);
+				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_level"), LEVEL_OFFSET_X, LEVEL_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
+				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hunger"), HUNGER_OFFSET_X, HUNGER_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
 
 				guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_initiative"), INITIATIVE_OFFSET_X + 8, INITIATIVE_OFFSET_Y - 15, lightColor);
 				break;
@@ -455,18 +514,37 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		});
 
 		//Main Tab
+		//A diferencia de las pestañas Skills/Attacks (más abajo), a estos campos antes solo se les tocaba
+		//"active" y nunca "visible": cambiar de pestaña los dejaba deshabilitados pero seguían dibujándose
+		//encima de Skills/Attacks en su misma posición de pantalla — la UI superpuesta reportada en
+		//AUDIT_UX.md. EditBox.visible arranca en true y nunca se apagaba.
 		isActive = panelActive == PanelStatus.MAIN;
 		hitPoints.active = isActive;
+		hitPoints.visible = isActive;
 		hitPointsTemp.active = isActive;
+		hitPointsTemp.visible = isActive;
 		hitPointsMax.active = isActive;
+		hitPointsMax.visible = isActive;
 		armorClass.active = isActive;
+		armorClass.visible = isActive;
 		characterRace.active = isActive;
+		characterRace.visible = isActive;
 		characterClass.active = isActive;
+		characterClass.visible = isActive;
 		background.active = isActive;
+		background.visible = isActive;
 		speed.active = isActive;
+		speed.visible = isActive;
 		proficiency.active = isActive;
+		proficiency.visible = isActive;
 		hitDice.active = isActive;
+		hitDice.visible = isActive;
 		hitDiceTypes.active = isActive;
+		hitDiceTypes.visible = isActive;
+		grimoireButton.active = isActive;
+		grimoireButton.visible = isActive;
+		presetsButton.active = isActive;
+		presetsButton.visible = isActive;
 
 		isActive = panelActive == PanelStatus.MAIN && !editMode;
 		initiativeButton.active = isActive;
@@ -966,6 +1044,28 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		guistate.put("text:proficiency", proficiency);
 		this.addWidget(this.proficiency);
 
+		// --- Campos derivados del jugador real: nivel y hambre ---
+		// NOTA: las posiciones (X/Y) son un punto de partida; ajústalas contra tu textura
+		// de fondo (character_sheet.png) para que encajen visualmente con el resto del panel.
+		level = new EditBox(this.font, this.leftPos + LEVEL_OFFSET_X, this.topPos + LEVEL_OFFSET_Y, 20, 18, Component.translatable("gui.dndsheets.character_sheet.level"));
+		level.setMaxLength(2);
+		guistate.put("text:level", level);
+		this.addWidget(this.level);
+
+		hunger = new EditBox(this.font, this.leftPos + HUNGER_OFFSET_X, this.topPos + HUNGER_OFFSET_Y, 24, 18, Component.translatable("gui.dndsheets.character_sheet.hunger"));
+		hunger.setMaxLength(2);
+		guistate.put("text:hunger", hunger);
+		this.addWidget(this.hunger);
+
+		// Estos campos ahora reflejan el estado real del jugador (ver syncFromEntity()),
+		// así que se bloquean para que no se puedan editar a mano y queden desincronizados.
+		// El color ámbar los distingue de un vistazo de los campos que sí se pueden escribir a mano.
+		EditBox[] autoFields = {hitPoints, hitPointsMax, hitPointsTemp, proficiency, level, hunger, armorClass};
+		for (EditBox autoField : autoFields) {
+			autoField.setEditable(false);
+			autoField.setTextColorUneditable(AUTO_FIELD_COLOR);
+		}
+
 		characterRace = new EditBox(this.font, this.leftPos + RACE_OFFSET_X, this.topPos + RACE_OFFSET_Y, 100, 18, Component.translatable("gui.dndsheets.character_sheet.characterrace")) {
 			@Override
 			public void insertText(String text) {
@@ -1100,6 +1200,20 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		});
 		guistate.put("button:roll_init_edit", initiativeEditButton);
 		this.addRenderableWidget(initiativeEditButton);
+
+		//NOTA: sin hueco dibujado en la textura todavía. Puestos en el margen inferior (y=214), debajo de
+		//todo lo demás, para no pisar el círculo de Iniciativa (que ocupa la zona x=270-345, y=90-200).
+		grimoireButton = Button.builder(Component.translatable("gui.dndsheets.character_sheet.grimoire"), b -> this.minecraft.setScreen(new GrimoireScreen()))
+			.bounds(this.leftPos + 125, this.topPos + 214, 100, 20).build();
+		guistate.put("button:grimoire", grimoireButton);
+		this.addRenderableWidget(grimoireButton);
+
+		presetsButton = Button.builder(Component.translatable("gui.dndsheets.character_sheet.presets"), b -> {
+			CharacterSheetSaveProcedure.execute(guistate);
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage());
+		}).bounds(this.leftPos + 230, this.topPos + 214, 100, 20).build();
+		guistate.put("button:presets", presetsButton);
+		this.addRenderableWidget(presetsButton);
 	}
 
 	private void initSkillPanel() {

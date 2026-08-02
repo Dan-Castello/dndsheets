@@ -1,0 +1,29 @@
+[
+  {
+    "_note": "Campos obligatorios: id. Elegir el preset rellena clase/dado de golpe/características de la hoja y entrega el arma inicial (una vez) — nunca toca la pestaña de Ataques, que se auto-puebla sola desde el inventario.",
+    "id": "fighter",
+    "name": "Guerrero",
+    "hitDiceType": "1d10",
+    "abilities": { "str": 15, "dex": 13, "con": 14, "int": 8, "wis": 12, "cha": 10 },
+    "startingWeapon": "minecraft:iron_sword"
+  },
+  {
+    "_note": "spellSlotsMax (opcional, por defecto 0): configura espacios de conjuro Y los llena al máximo al aplicar el preset. traits (opcional): ids de templates/traits.json concedidos automáticamente. spells (opcional): ids de este mismo spells.json añadidos al Grimorio del jugador — sin esto, tener espacios de conjuro no le da al jugador nada que lanzar.",
+    "id": "wizard",
+    "name": "Mago",
+    "hitDiceType": "1d6",
+    "abilities": { "str": 8, "dex": 14, "con": 12, "int": 15, "wis": 13, "cha": 10 },
+    "startingWeapon": "dndsheets:dagger",
+    "spellSlotsMax": 2,
+    "spells": ["dndsheets:fire_bolt", "dndsheets:magic_missile"]
+  },
+  {
+    "_note": "traits: mismo campo, para una clase no-caster con rasgo pasivo en vez de hechizos.",
+    "id": "rogue",
+    "name": "Pícaro",
+    "hitDiceType": "1d8",
+    "abilities": { "str": 10, "dex": 15, "con": 13, "int": 12, "wis": 8, "cha": 14 },
+    "startingWeapon": "dndsheets:dagger",
+    "traits": ["picaro:ataque_furtivo"]
+  }
+]

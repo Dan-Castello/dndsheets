@@ -36,7 +36,7 @@ public class RollCommand {
 				String uuid = entity.getStringUUID();
 
 				JsonObject sheet = SheetLoader.getServerSheet(uuid);
-				RollAnnouncerProcedure.execute(world, x, y, z, sheet, arguments);
+				RollAnnouncerProcedure.execute(world, x, y, z, sheet, arguments, entity);
 				return 0;
 			})));
 				
@@ -55,7 +55,7 @@ public class RollCommand {
 				String uuid = entity.getStringUUID();
 
 				JsonObject sheet = SheetLoader.getServerSheet(uuid);
-				RollAnnouncerProcedure.execute(world, x, y, z, sheet, arguments);
+				RollAnnouncerProcedure.execute(world, x, y, z, sheet, arguments, entity);
 				return 0;
 			})));
 

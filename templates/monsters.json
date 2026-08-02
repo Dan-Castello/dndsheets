@@ -1,0 +1,47 @@
+[
+  {
+    "_note": "Campos obligatorios: id. baseEntity (por defecto minecraft:zombie) es el mob vanilla usado para spawnearlo (visual/hitbox/sonidos) — se invoca con NoAI:1, así que no persigue ni se mueve solo, pero actúa solo en su turno (TurnManager) si el modo turnos está activo.",
+    "id": "dndsheets:goblin",
+    "name": "Goblin",
+    "baseEntity": "minecraft:zombie",
+    "ac": 15,
+    "hp": 7,
+    "proficiencyBonus": 2,
+    "abilities": { "str": 8, "dex": 14, "con": 10, "int": 10, "wis": 8, "cha": 8 },
+    "attacks": [
+      { "name": "Cimitarra", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "_note": "Un ataque con appliesEffect deja al objetivo con daño por turno (mismo StatusEffect que TurnManager.tickEffects ya aplica al empezar cada uno de sus turnos) — turns cuenta turnos del modo turnos, no ticks reales.",
+    "id": "dndsheets:giant_spider",
+    "name": "Araña Gigante",
+    "baseEntity": "minecraft:spider",
+    "ac": 14,
+    "hp": 26,
+    "proficiencyBonus": 2,
+    "abilities": { "str": 14, "dex": 16, "con": 12, "int": 2, "wis": 11, "cha": 4 },
+    "attacks": [
+      {
+        "name": "Mordisco", "toHitAbility": "dex", "dice": "1d8", "damageAbility": "dex", "damageType": "perforante",
+        "appliesEffect": { "name": "veneno", "dice": "2d8", "turns": 3 }
+      }
+    ]
+  },
+  {
+    "_note": "abilities_special: hechizos/ataques especiales del monstruo (salvación en vez de tirada de ataque) — mismo campo que \"attacks\" del jugador, pero con saveDc fijo en vez de calculado. También puede llevar appliesEffect.",
+    "id": "dndsheets:fire_mage",
+    "name": "Mago de Fuego",
+    "baseEntity": "minecraft:skeleton",
+    "ac": 12,
+    "hp": 20,
+    "proficiencyBonus": 3,
+    "abilities": { "str": 8, "dex": 12, "con": 12, "int": 16, "wis": 12, "cha": 10 },
+    "attacks": [
+      { "name": "Bastón", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+    ],
+    "abilities_special": [
+      { "name": "Bola de Fuego", "saveAbility": "dex", "saveDc": 13, "dice": "8d6", "halfOnSave": true, "damageType": "fuego" }
+    ]
+  }
+]

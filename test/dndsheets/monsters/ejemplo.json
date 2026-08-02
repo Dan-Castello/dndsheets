@@ -1,0 +1,44 @@
+[
+  {
+    "id": "dndsheets:goblin", "name": "Goblin", "baseEntity": "minecraft:zombie",
+    "ac": 15, "hp": 7,
+    "abilities": { "str": 8, "dex": 14, "con": 10, "int": 10, "wis": 8, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Cimitarra", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:orc", "name": "Orco", "baseEntity": "minecraft:zombie",
+    "ac": 13, "hp": 15,
+    "abilities": { "str": 16, "dex": 12, "con": 16, "int": 7, "wis": 11, "cha": 10 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Hacha Grande", "toHitAbility": "str", "dice": "1d12", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:fire_mage", "name": "Mago de Fuego", "baseEntity": "minecraft:skeleton",
+    "ac": 12, "hp": 20,
+    "abilities": { "str": 8, "dex": 12, "con": 12, "int": 16, "wis": 12, "cha": 10 },
+    "proficiencyBonus": 3,
+    "attacks": [
+      { "name": "Bastón", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+    ],
+    "abilities_special": [
+      { "name": "Bola de Fuego", "saveAbility": "dex", "saveDc": 13, "dice": "8d6", "halfOnSave": true, "damageType": "fuego" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_spider", "name": "Araña Gigante", "baseEntity": "minecraft:spider",
+    "ac": 14, "hp": 26,
+    "abilities": { "str": 14, "dex": 16, "con": 12, "int": 2, "wis": 11, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      {
+        "name": "Mordisco", "toHitAbility": "dex", "dice": "1d8", "damageAbility": "dex", "damageType": "perforante",
+        "appliesEffect": { "name": "veneno", "dice": "2d8", "turns": 3 }
+      }
+    ]
+  }
+]

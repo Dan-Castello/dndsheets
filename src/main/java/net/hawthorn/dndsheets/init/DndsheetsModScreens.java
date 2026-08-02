@@ -9,7 +9,6 @@ import net.minecraftforge.api.distmarker.Dist;
 
 import net.minecraft.client.gui.screens.MenuScreens;
 
-import net.hawthorn.dndsheets.client.gui.TestGUIScreen;
 import net.hawthorn.dndsheets.client.gui.RollEditorScreen;
 import net.hawthorn.dndsheets.client.gui.AdvancedRollEditorScreen;
 import net.hawthorn.dndsheets.client.gui.CharacterSheetScreen;
@@ -22,7 +21,6 @@ public class DndsheetsModScreens {
 			MenuScreens.register(DndsheetsModMenus.ADVANCED_ROLL_EDITOR.get(), AdvancedRollEditorScreen::new);
 			MenuScreens.register(DndsheetsModMenus.CHARACTER_SHEET.get(), CharacterSheetScreen::new);
 			MenuScreens.register(DndsheetsModMenus.ROLL_EDITOR.get(), RollEditorScreen::new);
-			MenuScreens.register(DndsheetsModMenus.TEST_GUI.get(), TestGUIScreen::new);
 		});
 	}
 }

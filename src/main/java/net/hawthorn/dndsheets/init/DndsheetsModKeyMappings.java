@@ -1,6 +1,7 @@
 
 package net.hawthorn.dndsheets.init;
 
+import net.hawthorn.dndsheets.client.gui.DmPanelScreen;
 import net.hawthorn.dndsheets.network.CharacterSheetOpenMessage;
 import org.lwjgl.glfw.GLFW;
 
@@ -32,9 +33,26 @@ public class DndsheetsModKeyMappings {
 		}
 	};
 
+	//Solo abre el Panel de DM si el propio cliente ya sabe que es operador (nivel de permiso sincronizado
+	//por el servidor) — un jugador normal que pulse la tecla no ve nada. El servidor vuelve a comprobarlo
+	//en cada mensaje que el panel manda (defensa en profundidad, un cliente modificado no basta).
+	public static final KeyMapping DM_PANEL = new KeyMapping("key.dndsheets.dmpanel", GLFW.GLFW_KEY_P, "key.categories.dndsheets") {
+		private boolean isDownOld = false;
+
+		@Override
+		public void setDown(boolean isDown) {
+			super.setDown(isDown);
+			if (isDownOld != isDown && isDown && Minecraft.getInstance().player != null && Minecraft.getInstance().player.hasPermissions(2)) {
+				DmPanelScreen.open();
+			}
+			isDownOld = isDown;
+		}
+	};
+
 	@SubscribeEvent
 	public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
 		event.register(CHARACTER);
+		event.register(DM_PANEL);
 	}
 
 	@Mod.EventBusSubscriber({Dist.CLIENT})
@@ -43,6 +61,7 @@ public class DndsheetsModKeyMappings {
 		public static void onClientTick(TickEvent.ClientTickEvent event) {
 			if (Minecraft.getInstance().screen == null) {
 				CHARACTER.consumeClick();
+				DM_PANEL.consumeClick();
 			}
 		}
 	}

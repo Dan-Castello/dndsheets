@@ -1,0 +1,178 @@
+package net.hawthorn.dndsheets.client.gui;
+
+import net.hawthorn.dndsheets.DndsheetsMod;
+import net.hawthorn.dndsheets.network.PassivePerceptionRequestMessage;
+import net.hawthorn.dndsheets.network.SheetAdvantageMessage;
+import net.hawthorn.dndsheets.network.SheetDamageAffinityMessage;
+import net.hawthorn.dndsheets.network.SheetGoldMessage;
+import net.hawthorn.dndsheets.network.SheetSlotsMessage;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+/**
+ * <p>Ajustes de hoja de UN jugador desde el Panel de DM (equivalente en GUI a
+ * {@code /dndsheet gold|setslots|advantage|damagetype|passive}), abierto tras elegirlo en
+ * {@link PlayerPickerScreen} — el oro y los espacios de conjuro que muestra al abrir son los reales,
+ * pedidos al servidor (ver {@code network.SheetSummaryRequestMessage}). Ventaja y tipo de daño/afinidad
+ * se eligen con botones cíclicos, igual que en {@link AddMonsterAttackScreen}.</p>
+ */
+public class SheetAdjustScreen extends Screen {
+	private static final String[] ADVANTAGE_LABELS = {"normal", "ventaja", "desventaja"};
+	private static final String[] DAMAGE_TYPES = {
+		"fisico", "cortante", "perforante", "contundente", "fuego", "frio", "rayo",
+		"acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno"
+	};
+	private static final String[] AFFINITIES = {"normal", "resistant", "vulnerable", "immune"};
+
+	private static final int FIELD_WIDTH = 90;
+	private static final int WIDE_WIDTH = 190;
+	private static final int FIELD_HEIGHT = 20;
+	private static final int ROW_HEIGHT = 26;
+
+	private final String targetUuid;
+	private final String targetName;
+	private final int gold;
+	private final int slotsMax;
+	private final int slotsCurrent;
+	private final int hp;
+	private final int maxHp;
+	private final int ac;
+
+	private EditBox goldAmountBox;
+	private EditBox slotsMaxBox;
+	private EditBox slotsCurrentBox;
+	private int advantageIndex = 0;
+	private int damageTypeIndex = 0;
+	private int affinityIndex = 0;
+	private Button advantageButton;
+	private Button damageTypeButton;
+	private Button affinityButton;
+
+	private SheetAdjustScreen(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac) {
+		super(Component.literal("Ajustes de hoja"));
+		this.targetUuid = targetUuid;
+		this.targetName = targetName;
+		this.gold = gold;
+		this.slotsMax = slotsMax;
+		this.slotsCurrent = slotsCurrent;
+		this.hp = hp;
+		this.maxHp = maxHp;
+		this.ac = ac;
+	}
+
+	public static void open(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac) {
+		Minecraft.getInstance().setScreen(new SheetAdjustScreen(targetUuid, targetName, gold, slotsMax, slotsCurrent, hp, maxHp, ac));
+	}
+
+	@Override
+	protected void init() {
+		int centerX = this.width / 2;
+		int y = this.height / 2 - ROW_HEIGHT * 4;
+
+		//--- Oro ---
+		goldAmountBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Cantidad"));
+		goldAmountBox.setValue("0");
+		goldAmountBox.setMaxLength(10);
+		this.addWidget(goldAmountBox);
+		this.setInitialFocus(goldAmountBox);
+		this.addRenderableWidget(Button.builder(Component.literal("Añadir"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetGoldMessage(targetUuid, "add", parseIntOr(goldAmountBox.getValue(), 0)))
+		).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, 40, FIELD_HEIGHT).build());
+		this.addRenderableWidget(Button.builder(Component.literal("Fijar"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetGoldMessage(targetUuid, "set", parseIntOr(goldAmountBox.getValue(), 0)))
+		).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 48, y, 40, FIELD_HEIGHT).build());
+		y += ROW_HEIGHT;
+
+		//--- Espacios de conjuro ---
+		slotsMaxBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Máximo"));
+		slotsMaxBox.setValue(String.valueOf(slotsMax));
+		slotsMaxBox.setMaxLength(3);
+		this.addWidget(slotsMaxBox);
+
+		slotsCurrentBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Actual"));
+		slotsCurrentBox.setValue(String.valueOf(slotsCurrent));
+		slotsCurrentBox.setMaxLength(3);
+		this.addWidget(slotsCurrentBox);
+
+		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetSlotsMessage(targetUuid, parseIntOr(slotsMaxBox.getValue(), 0), parseIntOr(slotsCurrentBox.getValue(), 0)))
+		).bounds(centerX - WIDE_WIDTH / 2 + (FIELD_WIDTH + 4) * 2, y, WIDE_WIDTH - (FIELD_WIDTH + 4) * 2, FIELD_HEIGHT).build());
+		y += ROW_HEIGHT;
+
+		//--- Ventaja próximo ataque ---
+		advantageButton = this.addRenderableWidget(Button.builder(cycleLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex]), button -> {
+			advantageIndex = (advantageIndex + 1) % ADVANTAGE_LABELS.length;
+			advantageButton.setMessage(cycleLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex]));
+		}).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH - 60, FIELD_HEIGHT).build());
+		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetAdvantageMessage(targetUuid, ADVANTAGE_LABELS[advantageIndex]))
+		).bounds(centerX - WIDE_WIDTH / 2 + WIDE_WIDTH - 56, y, 56, FIELD_HEIGHT).build());
+		y += ROW_HEIGHT;
+
+		//--- Tipo de daño / afinidad ---
+		damageTypeButton = this.addRenderableWidget(Button.builder(cycleLabel("Tipo", DAMAGE_TYPES[damageTypeIndex]), button -> {
+			damageTypeIndex = (damageTypeIndex + 1) % DAMAGE_TYPES.length;
+			damageTypeButton.setMessage(cycleLabel("Tipo", DAMAGE_TYPES[damageTypeIndex]));
+		}).bounds(centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT).build());
+		affinityButton = this.addRenderableWidget(Button.builder(cycleLabel("Afinidad", AFFINITIES[affinityIndex]), button -> {
+			affinityIndex = (affinityIndex + 1) % AFFINITIES.length;
+			affinityButton.setMessage(cycleLabel("Afinidad", AFFINITIES[affinityIndex]));
+		}).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, FIELD_WIDTH, FIELD_HEIGHT).build());
+		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetDamageAffinityMessage(targetUuid, DAMAGE_TYPES[damageTypeIndex], AFFINITIES[affinityIndex]))
+		).bounds(centerX - WIDE_WIDTH / 2 + (FIELD_WIDTH + 4) * 2, y, WIDE_WIDTH - (FIELD_WIDTH + 4) * 2, FIELD_HEIGHT).build());
+		y += ROW_HEIGHT;
+
+		//--- Percepción pasiva ---
+		this.addRenderableWidget(Button.builder(Component.literal("Ver percepción pasiva (solo tú la ves)"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new PassivePerceptionRequestMessage(targetUuid))
+		).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT).build());
+		y += ROW_HEIGHT + 4;
+
+		this.addRenderableWidget(Button.builder(Component.literal("Cerrar"), button -> this.onClose())
+			.bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT).build());
+	}
+
+	private static Component cycleLabel(String prefix, String value) {
+		return Component.literal(prefix + ": " + value);
+	}
+
+	private static int parseIntOr(String value, int fallback) {
+		try {
+			return Integer.parseInt(value.trim());
+		} catch (NumberFormatException e) {
+			return fallback;
+		}
+	}
+
+	@Override
+	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+		this.renderBackground(guiGraphics);
+		guiGraphics.drawCenteredString(this.font, Component.literal("Ajustes de " + targetName + " (oro actual: " + gold + ")"),
+			this.width / 2, this.height / 2 - ROW_HEIGHT * 4 - 26, 0xFFFFFF);
+		//Solo lectura: PG/CA reales del jugador, para no tener que pedirle que abra su propia hoja en
+		//pleno combate — ver AUDIT_UX.md, DM #1.
+		guiGraphics.drawCenteredString(this.font, Component.literal("PG " + hp + "/" + maxHp + " · CA " + ac),
+			this.width / 2, this.height / 2 - ROW_HEIGHT * 4 - 16, 0xFFAA00);
+		super.render(guiGraphics, mouseX, mouseY, partialTicks);
+		goldAmountBox.render(guiGraphics, mouseX, mouseY, partialTicks);
+		slotsMaxBox.render(guiGraphics, mouseX, mouseY, partialTicks);
+		slotsCurrentBox.render(guiGraphics, mouseX, mouseY, partialTicks);
+	}
+
+	@Override
+	public void tick() {
+		goldAmountBox.tick();
+		slotsMaxBox.tick();
+		slotsCurrentBox.tick();
+	}
+
+	@Override
+	public boolean isPauseScreen() {
+		return false;
+	}
+}

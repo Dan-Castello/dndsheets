@@ -1,0 +1,60 @@
+[
+  {
+    "_note": "mode:\"attack\": tirada de ataque (1d20 + característica de lanzado + competencia) contra la CA real del objetivo, igual que un arma. Campos obligatorios: id, dice. level 0 = cantrip.",
+    "id": "dndsheets:fire_bolt",
+    "name": "Rayo de Fuego",
+    "level": 0,
+    "mode": "attack",
+    "castingAbility": "int",
+    "dice": "1d10",
+    "damageType": "fuego"
+  },
+  {
+    "_note": "mode:\"save\": el OBJETIVO tira su propia salvación (saveAbility) contra la CD del lanzador (8 + competencia + castingAbility). halfOnSave (por defecto true) decide si superar la salvación reduce el daño a la mitad o lo anula del todo.",
+    "id": "dndsheets:sacred_flame",
+    "name": "Llama Sagrada",
+    "level": 0,
+    "mode": "save",
+    "castingAbility": "wis",
+    "saveAbility": "dex",
+    "dice": "1d8",
+    "halfOnSave": false,
+    "damageType": "radiante"
+  },
+  {
+    "_note": "aoeRadius (opcional, en bloques): golpea a todo lo que esté a ese radio del punto de impacto, con oclusión de terreno real (una pared bloquea, ver AUDIT.md) — no hace falta mirar directamente a nadie. Sin este campo, el hechizo apunta solo a quien estés mirando.",
+    "id": "dndsheets:fireball",
+    "name": "Bola de Fuego",
+    "level": 3,
+    "mode": "save",
+    "castingAbility": "int",
+    "saveAbility": "dex",
+    "dice": "8d6",
+    "halfOnSave": true,
+    "damageType": "fuego",
+    "aoeRadius": 6
+  },
+  {
+    "_note": "concentration:true (por defecto false): lanzarlo reemplaza cualquier concentración previa; recibir daño real obliga a una salvación de Constitución (CD = máx(10, daño/2)) o se pierde el efecto.",
+    "id": "dndsheets:spirit_guardians",
+    "name": "Guardianes Espirituales",
+    "level": 3,
+    "mode": "save",
+    "castingAbility": "wis",
+    "saveAbility": "wis",
+    "dice": "3d8",
+    "halfOnSave": true,
+    "damageType": "radiante",
+    "aoeRadius": 3,
+    "concentration": true
+  },
+  {
+    "_note": "mode:\"heal\": sin tirada de ataque ni salvación. \"dice\" SÍ puede sumar la característica del lanzador con $wis/$str/etc (a diferencia del daño de ataque/salvación, que en 5e nunca suma característica). Sin objetivo a la vista, se cura al propio lanzador.",
+    "id": "dndsheets:cure_wounds",
+    "name": "Curar Heridas",
+    "level": 1,
+    "mode": "heal",
+    "castingAbility": "wis",
+    "dice": "1d8 + $wis"
+  }
+]

@@ -72,7 +72,7 @@ public class SheetRollButtonMessage {
 			return;
 		}
 		try {
-			RollAnnouncerProcedure.execute(world, x, y, z, uuid, category, index, subIndex);
+			RollAnnouncerProcedure.execute(world, x, y, z, uuid, category, index, subIndex, entity);
 		}
 		catch(Exception e) {
 			logger.log(org.apache.logging.log4j.Level.getLevel("severe"), e);

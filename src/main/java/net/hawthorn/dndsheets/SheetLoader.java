@@ -2,6 +2,9 @@ package net.hawthorn.dndsheets;
 
 import com.google.gson.*;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -63,16 +66,64 @@ public class SheetLoader {
 			makeNew("New Sheet", uuidString);
 		};
 
+		applyClassHitPoints((Player) entity, SheetLoader.getServerSheet(uuidString));
+
 		try {
 			Supplier<ServerPlayer> serverPlayer = () -> (ServerPlayer) entity;
 			byte[] data = SheetLoader.getServerSheet(uuidString).toString().getBytes();
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(serverPlayer), new SheetClientMessage(data));
 			System.out.println("are you winning son");
+			DeathSaveManager.resendStateOnJoin((ServerPlayer) entity, SheetLoader.getServerSheet(uuidString));
+			//Reconectarse durante un combate le da al jugador un entityId nuevo; sin esto quedaba bloqueado
+			//sin poder actuar por el resto del encuentro (ver TurnManager.reconcilePlayerEntity).
+			TurnManager.reconcilePlayerEntity((ServerPlayer) entity);
 		}
 		catch(Exception e) {
 			System.out.println(e.toString());
 		}
 
+	}
+
+	private static final UUID CLASS_HP_MODIFIER_ID = UUID.fromString("6f2f8f0a-3b1a-4c8e-9d2a-1a2b3c4d5e6f");
+
+	private static int sheetInt(JsonObject sheet, String key, int fallback) {
+		if (!sheet.has(key)) return fallback;
+		try {
+			return Integer.parseInt(sheet.get(key).getAsString());
+		} catch (NumberFormatException e) {
+			return fallback;
+		}
+	}
+
+	/**
+	 * <p>Sets the player's real Minecraft max health from their D&D class/level/constitution,
+	 * so hit points stop being a flat vanilla 20 no matter what class they picked (5e average-HP rule).</p>
+	 */
+	public static void applyClassHitPoints(Player entity, JsonObject sheet) {
+		if (entity == null || sheet == null) return;
+		AttributeInstance maxHealthAttr = entity.getAttribute(Attributes.MAX_HEALTH);
+		if (maxHealthAttr == null) return;
+
+		//characterLevelOf, no sheetInt(sheet, "level", ...): "level" es el XP real de Minecraft reflejado en
+		//la hoja, pero en cuanto el DM fija un nivel de personaje con /dndsheet setlevel (characterLevel),
+		//el PG máximo debe escalar con ESE nivel — si no, "desacoplar el nivel del XP" no desacoplaba nada
+		//para el PG máximo, justo la razón más obvia de tener un nivel de personaje en 5e.
+		int level = Math.max(1, characterLevelOf(sheet, entity));
+		int con = sheetInt(sheet, "constitution", 10);
+		int hitDie = Config.hitDieFor(sheet.has("characterClass") ? sheet.get("characterClass").getAsString() : "");
+		int conMod = Math.floorDiv(con - 10, 2);
+
+		int maxHp = hitDie + conMod;
+		for (int lvl = 2; lvl <= level; lvl++) {
+			maxHp += Math.max(1, (hitDie / 2 + 1) + conMod);
+		}
+		maxHp = Math.max(1, maxHp);
+
+		maxHealthAttr.removeModifier(CLASS_HP_MODIFIER_ID);
+		maxHealthAttr.addPermanentModifier(new AttributeModifier(CLASS_HP_MODIFIER_ID, "dndsheets class hit points", maxHp - maxHealthAttr.getBaseValue(), AttributeModifier.Operation.ADDITION));
+
+		if (entity.getHealth() > maxHealthAttr.getValue())
+			entity.setHealth((float) maxHealthAttr.getValue());
 	}
 
 	@SubscribeEvent
@@ -96,6 +147,35 @@ public class SheetLoader {
 			System.out.println("Server character sheet retrieval failed. Make sure the UUID is correct and that you're not calling this from the client.");
 			return null;
 		}
+	}
+
+	//Nombres por defecto que deja el propio mod cuando el jugador nunca escribió el suyo (ver
+	//validateSheet/makeNew y el placeholder del campo en la hoja) - no sirven para identificar a nadie
+	//en el chat, así que en ese caso se usa el nombre real de Minecraft en su lugar.
+	private static final Set<String> DEFAULT_CHARACTER_NAMES = Set.of("New Sheet", "John Doe", "Fulano de Tal");
+
+	public static String characterNameOf(JsonObject sheet, Entity fallbackEntity) {
+		if (sheet != null && sheet.has("characterName")) {
+			String name = sheet.get("characterName").getAsString();
+			if (!name.isBlank() && !DEFAULT_CHARACTER_NAMES.contains(name)) {
+				return name;
+			}
+		}
+		return fallbackEntity.getName().getString();
+	}
+
+	/**
+	 * <p>Nivel de personaje, desacoplado del XP real de Minecraft en cuanto el DM lo fija a mano con
+	 * {@code /dndsheet setlevel} (guarda "characterLevel" en la hoja). Hasta entonces, sigue reflejando el
+	 * XP real de Minecraft, exactamente como antes — así que esto no cambia nada para una hoja que nunca
+	 * usó el comando. Usado tanto por el servidor (rasgos/recursos que escalan por nivel) como por
+	 * {@code CharacterSheetScreen} en el cliente (para no seguir mostrando el XP si ya se fijó un nivel).</p>
+	 */
+	public static int characterLevelOf(JsonObject sheet, Player fallbackEntity) {
+		if (sheet != null && sheet.has("characterLevel")) {
+			return sheet.get("characterLevel").getAsInt();
+		}
+		return Math.max(1, fallbackEntity.experienceLevel); //Los PJ de D&D nunca son nivel 0, pero el XP de Minecraft empieza en 0.
 	}
 
 	//Save the given sheet into a JSON file, making a new one if it doesn't exist, and updates the "sheets" HashMap.
@@ -138,16 +218,20 @@ public class SheetLoader {
 			//we fucked up
 		}
 
-		try {
-			for (Path path : files) {
+		//Por archivo, no por el lote entero: una hoja corrupta en disco (JSON inválido, o válido pero no un
+		//objeto, p.ej. un crash a mitad de escritura) no debe tumbar la carga de TODAS las demás hojas —
+		//antes, una excepción de parseo (JsonSyntaxException/IllegalStateException, ninguna de las dos es
+		//IOException) se propagaba sin capturar y rompía el join de cualquier jugador desde ese momento.
+		for (Path path : files) {
+			try {
 				InputStream in = Files.newInputStream(path, StandardOpenOption.READ);
 				Scanner s = new Scanner(in).useDelimiter("\\A");
 				String result = s.hasNext() ? s.next() : "";
 				JsonObject json = JsonParser.parseString(result).getAsJsonObject();
 				sheets.put(path.getFileName().normalize().toString().replace(".json",""), json);
+			} catch (Exception e) {
+				System.out.println("Skipping corrupt character sheet file " + path + ": " + e);
 			}
-		} catch (IOException e) { 
-			//we fucked up
 		}
 	}
 
@@ -215,6 +299,16 @@ public class SheetLoader {
 			JsonArray attacks = new JsonArray();
 			sheet.add("attacks", attacks);
 		}
+		if (!sheet.has("spells")) {
+			JsonArray spells = new JsonArray();
+			sheet.add("spells", spells);
+		}
+		if (!sheet.has("traits")) {
+			JsonArray traits = new JsonArray();
+			sheet.add("traits", traits);
+		}
+		if (!sheet.has("spellSlotsCurrent")) sheet.addProperty("spellSlotsCurrent", 0);
+		if (!sheet.has("spellSlotsMax")) sheet.addProperty("spellSlotsMax", 0);
 	}
 
 	//Makes a new sheet, adds it to the "sheets" HashMap, and then calls Save() to make a file from it.

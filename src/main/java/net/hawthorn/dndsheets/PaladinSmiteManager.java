@@ -1,0 +1,71 @@
+package net.hawthorn.dndsheets;
+
+import com.google.gson.JsonObject;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+
+/**
+ * <p>Castigo Divino: clic derecho marca un flag de un solo uso (mismo patrón que Hechizo Gemelo del
+ * hechicero); el PRÓXIMO golpe de arma del paladín que conecte gasta un espacio de conjuro y suma {@value
+ * #DICE} de daño radiante — {@link CombatManager} lo tira aparte y suma el monto, igual que Ataque
+ * Furtivo/Marca del Cazador, para no meter dos grupos de dados en la misma expresión.</p>
+ *
+ * <p><b>Simplificación deliberada</b>: en 5e de verdad el dado escala con el nivel del espacio gastado
+ * (2d8 con uno de nivel 1, +1d8 por nivel de espacio por encima, +1d8 más contra no-muertos/inmundos) —
+ * aquí el pool de espacios es un contador plano sin niveles por ranura, así que el dado es fijo en
+ * {@value #DICE} sin importar qué espacio se gasta.</p>
+ */
+@Mod.EventBusSubscriber
+public class PaladinSmiteManager {
+	public static final String DICE = "2d8";
+
+	@SubscribeEvent
+	public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+		if (event.getEntity().level().isClientSide()) return;
+		CompoundTag tag = event.getItemStack().getTag();
+		if (tag == null || !tag.contains("dndsheets") || !tag.getCompound("dndsheets").getBoolean("divineSmite")) return;
+
+		event.setCanceled(true);
+		if (!(event.getEntity() instanceof ServerPlayer player)) return;
+
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		if (sheet == null) return;
+		sheet.addProperty("smitePending", true);
+		CombatFx.activate(player);
+		player.sendSystemMessage(Component.literal("Tu próximo golpe de arma que acierte gastará un espacio de conjuro para Castigo Divino.").withStyle(ChatFeedback.RESOURCE));
+	}
+
+	//Público: CombatManager lo consume justo después de confirmar un golpe (no antes: fallar el ataque no
+	//debería gastar el espacio). Devuelve null si no había flag pendiente O no quedaban espacios que gastar.
+	public static String consumeIfPending(JsonObject sheet) {
+		if (sheet == null || !sheet.has("smitePending") || !sheet.get("smitePending").getAsBoolean()) return null;
+		sheet.remove("smitePending");
+
+		int slotsCurrent = sheet.has("spellSlotsCurrent") ? sheet.get("spellSlotsCurrent").getAsInt() : 0;
+		if (slotsCurrent <= 0) return null;
+		sheet.addProperty("spellSlotsCurrent", slotsCurrent - 1);
+		return DICE;
+	}
+
+	public static ItemStack buildDivineSmiteStack() {
+		ItemStack stack = new ItemStack(Items.GLOWSTONE_DUST);
+		CompoundTag dndTag = new CompoundTag();
+		dndTag.putBoolean("divineSmite", true);
+		stack.getOrCreateTag().put("dndsheets", dndTag);
+		stack.setHoverName(Component.literal("Castigo Divino"));
+
+		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
+		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
+			Component.literal("Clic derecho: tu próximo golpe gasta un espacio y suma " + DICE + " radiante.").withStyle(ChatFormatting.GRAY))));
+		stack.getOrCreateTagElement("display").put("Lore", lore);
+
+		return stack;
+	}
+}

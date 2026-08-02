@@ -92,3 +92,13 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
 
+
+// Comprueba que los JSON de ejemplo en test/dndsheets/ siguen siendo compatibles con los parsers
+// reales del mod (ver JsonContentSelfTest). No usa el runtime de Forge, así que corre fuera del juego.
+tasks.register('testJsonContent', JavaExec) {
+    dependsOn compileTestJava
+    group = 'verification'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'net.hawthorn.dndsheets.JsonContentSelfTest'
+    workingDir = rootDir
+}

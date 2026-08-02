@@ -1,0 +1,102 @@
+package net.hawthorn.dndsheets;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * <p>Presets de clase cargados en caliente por {@code /dndpresets load}, en memoria (igual que
+ * {@link MonsterRegistry}/{@link SpellRegistry}). Elegir uno rellena los valores generales de la hoja
+ * (clase, dado de golpe, características) en vez de escribirlos a mano campo por campo, y concede los
+ * rasgos (pasivas/habilidades) que tenga configurados — ver {@link TraitRegistry}.</p>
+ */
+public class PresetRegistry {
+	public record ClassPreset(String id, String name, String hitDiceType, Map<String, Integer> abilities, String startingWeaponId, int spellSlotsMax, List<String> traits, List<String> spells) {
+		public int ability(String key) {
+			Integer score = abilities.get(key);
+			return score == null ? 10 : score;
+		}
+	}
+
+	private static final Map<String, ClassPreset> presets = new LinkedHashMap<>();
+
+	public static void register(ClassPreset preset) {
+		if (presets.containsKey(preset.id())) {
+			System.out.println("Aviso: el preset \"" + preset.id() + "\" ya estaba cargado, se pisa con la nueva definición.");
+		}
+		presets.put(preset.id(), preset);
+	}
+
+	public static ClassPreset get(String id) {
+		return presets.get(id);
+	}
+
+	public static Set<String> ids() {
+		return presets.keySet();
+	}
+
+	public static ClassPreset parse(JsonObject json) {
+		String id = json.get("id").getAsString();
+		String name = json.has("name") ? json.get("name").getAsString() : id;
+		String hitDiceType = json.has("hitDiceType") ? json.get("hitDiceType").getAsString() : "1d8";
+
+		Map<String, Integer> abilities = new LinkedHashMap<>();
+		JsonObject abilitiesJson = json.has("abilities") ? json.getAsJsonObject("abilities") : null;
+		for (String key : new String[]{"str", "dex", "con", "int", "wis", "cha"}) {
+			abilities.put(key, abilitiesJson != null && abilitiesJson.has(key) ? abilitiesJson.get(key).getAsInt() : 10);
+		}
+
+		String startingWeaponId = json.has("startingWeapon") ? json.get("startingWeapon").getAsString() : null;
+		int spellSlotsMax = json.has("spellSlotsMax") ? json.get("spellSlotsMax").getAsInt() : 0;
+
+		List<String> traits = new ArrayList<>();
+		if (json.has("traits")) {
+			for (JsonElement el : json.getAsJsonArray("traits")) traits.add(el.getAsString());
+		}
+
+		List<String> spells = new ArrayList<>();
+		if (json.has("spells")) {
+			for (JsonElement el : json.getAsJsonArray("spells")) spells.add(el.getAsString());
+		}
+
+		return new ClassPreset(id, name, hitDiceType, abilities, startingWeaponId, spellSlotsMax, traits, spells);
+	}
+
+	//Rellena los campos generales de la hoja. No toca "attacks" (ver PresetManager, que además entrega el arma inicial real).
+	public static void applyToSheet(JsonObject sheet, ClassPreset preset) {
+		revokePreviousTraits(sheet);
+		sheet.addProperty("appliedPresetId", preset.id());
+		sheet.addProperty("characterClass", preset.name());
+		sheet.addProperty("hitDiceTypes", preset.hitDiceType());
+		sheet.addProperty("strength", String.valueOf(preset.ability("str")));
+		sheet.addProperty("dexterity", String.valueOf(preset.ability("dex")));
+		sheet.addProperty("constitution", String.valueOf(preset.ability("con")));
+		sheet.addProperty("intelligence", String.valueOf(preset.ability("int")));
+		sheet.addProperty("wisdom", String.valueOf(preset.ability("wis")));
+		sheet.addProperty("charisma", String.valueOf(preset.ability("cha")));
+		if (preset.spellSlotsMax() > 0) {
+			sheet.addProperty("spellSlotsMax", preset.spellSlotsMax());
+			sheet.addProperty("spellSlotsCurrent", preset.spellSlotsMax());
+		}
+		for (String traitId : preset.traits()) TraitRegistry.grant(sheet, traitId);
+		//Rasgo icónico de un preset caster: sin esto el Grimorio se quedaba vacío pese a tener espacios de
+		//conjuro — el preset configuraba el CONTADOR de espacios pero nunca daba ningún hechizo que gastarlos.
+		for (String spellId : preset.spells()) SpellRegistry.learn(sheet, spellId);
+	}
+
+	//Antes de conceder los rasgos del preset NUEVO, quita los del preset anterior (si había uno registrado
+	//y su id sigue cargado): sin esto, cambiar de "monje" a "mago" dejaba Artes Marciales concedido para
+	//siempre, ya que TraitRegistry.grant solo sabe añadir. "appliedPresetId" es lo único que necesitamos
+	//guardar para saber cuál era — no hace falta trackear la lista completa de rasgos por separado.
+	private static void revokePreviousTraits(JsonObject sheet) {
+		if (!sheet.has("appliedPresetId")) return;
+		ClassPreset previous = get(sheet.get("appliedPresetId").getAsString());
+		if (previous == null) return;
+		for (String traitId : previous.traits()) TraitRegistry.revoke(sheet, traitId);
+	}
+}

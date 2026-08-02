@@ -2,13 +2,19 @@ package net.hawthorn.dndsheets.procedures;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import net.hawthorn.dndsheets.Config;
 import net.hawthorn.dndsheets.client.gui.CharacterSheetScreen;
 import net.hawthorn.dndsheets.client.gui.components.RollScrollWidget;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
 
 import net.hawthorn.dndsheets.SheetLoader;
 
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class CharacterSheetLoadProcedure {
 
@@ -103,6 +109,8 @@ public class CharacterSheetLoadProcedure {
 		}
 
 		if (guistate.get("scrolllist:attack_rolls") instanceof RollScrollWidget _tf && sheet.has("attacks")) {
+			autoPopulateWeapons(sheet);
+
 			JsonArray arr = sheet.getAsJsonArray("attacks");
 			for (int i = 0; i < arr.size(); i++) {
 				JsonObject rollForm = arr.get(i).getAsJsonObject();
@@ -110,5 +118,55 @@ public class CharacterSheetLoadProcedure {
 			}
 
 		}
+	}
+
+	/**
+	 * <p>Añade a la pestaña de Ataques cualquier arma (reconocida en el config) que el jugador
+	 * lleve en el inventario y todavía no tenga una entrada ahí, con el daño por defecto de
+	 * dndsheets-common.toml. No toca las entradas ya existentes, así que cualquier ajuste manual
+	 * (incluido el dado en sí) se conserva entre aperturas de la hoja.</p>
+	 */
+	private static void autoPopulateWeapons(JsonObject sheet) {
+		if (Minecraft.getInstance().player == null) return;
+		Inventory inventory = Minecraft.getInstance().player.getInventory();
+
+		JsonArray attacks = sheet.getAsJsonArray("attacks");
+		Set<String> knownItemIds = new LinkedHashSet<>();
+		for (int i = 0; i < attacks.size(); i++) {
+			JsonObject form = attacks.get(i).getAsJsonObject();
+			if (form.has("itemId")) knownItemIds.add(form.get("itemId").getAsString());
+		}
+
+		Set<String> seenThisScan = new LinkedHashSet<>();
+		for (ItemStack stack : inventory.items) {
+			addWeaponIfNew(attacks, stack, knownItemIds, seenThisScan);
+		}
+		addWeaponIfNew(attacks, inventory.offhand.get(0), knownItemIds, seenThisScan);
+	}
+
+	private static void addWeaponIfNew(JsonArray attacks, ItemStack stack, Set<String> knownItemIds, Set<String> seenThisScan) {
+		if (stack.isEmpty()) return;
+		String itemId = Config.weaponIdOf(stack); //Respeta la etiqueta NBT {dndsheets:{weapon:"..."}} si el ítem la lleva.
+		if (knownItemIds.contains(itemId) || seenThisScan.contains(itemId)) return;
+
+		Config.WeaponDefault weaponDefault = Config.weaponDefaultFor(itemId);
+		if (weaponDefault == null) return; //Not a recognized weapon, leave it out of the list.
+		seenThisScan.add(itemId);
+
+		JsonObject rollForm = new JsonObject();
+		rollForm.addProperty("name", stack.getHoverName().getString());
+		rollForm.addProperty("itemId", itemId);
+
+		JsonObject roll = new JsonObject();
+		roll.addProperty("context", "Daño");
+		roll.addProperty("expression", weaponDefault.dice() + " + $" + weaponDefault.ability());
+
+		JsonArray rollGroup = new JsonArray();
+		rollGroup.add(roll);
+		JsonArray rollSet = new JsonArray();
+		rollSet.add(rollGroup);
+		rollForm.add("rolls", rollSet);
+
+		attacks.add(rollForm);
 	}
 }

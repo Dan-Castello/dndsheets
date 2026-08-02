@@ -1,0 +1,6 @@
+[
+  { "id": "dndsheets:dagger", "dice": "1d4", "ability": "dex", "damageType": "cortante", "name": "Daga", "item": "minecraft:iron_sword" },
+  { "id": "dndsheets:rapier", "dice": "1d8", "ability": "dex", "damageType": "perforante", "name": "Estoque", "item": "minecraft:iron_sword" },
+  { "id": "dndsheets:greataxe", "dice": "1d12", "ability": "str", "damageType": "cortante", "name": "Hacha Grande", "item": "minecraft:diamond_axe", "hands": "two" },
+  { "id": "dndsheets:warhammer", "dice": "1d8", "ability": "str", "damageType": "contundente", "name": "Martillo de Guerra", "item": "minecraft:iron_axe", "hands": "versatile", "versatileDice": "1d10" }
+]
