@@ -5,6 +5,8 @@ import net.hawthorn.dndsheets.network.PassivePerceptionRequestMessage;
 import net.hawthorn.dndsheets.network.SheetAdvantageMessage;
 import net.hawthorn.dndsheets.network.SheetDamageAffinityMessage;
 import net.hawthorn.dndsheets.network.SheetGoldMessage;
+import net.hawthorn.dndsheets.network.SheetLevelMessage;
+import net.hawthorn.dndsheets.network.SheetPactMessage;
 import net.hawthorn.dndsheets.network.SheetSlotsMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -27,6 +29,7 @@ public class SheetAdjustScreen extends Screen {
 		"acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno"
 	};
 	private static final String[] AFFINITIES = {"normal", "resistant", "vulnerable", "immune"};
+	private static final String[] PACTS = {"cadena", "hoja", "vara"};
 
 	private static final int FIELD_WIDTH = 90;
 	private static final int WIDE_WIDTH = 190;
@@ -45,12 +48,15 @@ public class SheetAdjustScreen extends Screen {
 	private EditBox goldAmountBox;
 	private EditBox slotsMaxBox;
 	private EditBox slotsCurrentBox;
+	private EditBox levelBox;
 	private int advantageIndex = 0;
 	private int damageTypeIndex = 0;
 	private int affinityIndex = 0;
+	private int pactIndex = 0;
 	private Button advantageButton;
 	private Button damageTypeButton;
 	private Button affinityButton;
+	private Button pactButton;
 
 	private SheetAdjustScreen(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac) {
 		super(Component.literal("Ajustes de hoja"));
@@ -71,7 +77,7 @@ public class SheetAdjustScreen extends Screen {
 	@Override
 	protected void init() {
 		int centerX = this.width / 2;
-		int y = this.height / 2 - ROW_HEIGHT * 4;
+		int y = this.height / 2 - ROW_HEIGHT * 6;
 
 		//--- Oro ---
 		goldAmountBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Cantidad"));
@@ -127,6 +133,26 @@ public class SheetAdjustScreen extends Screen {
 		).bounds(centerX - WIDE_WIDTH / 2 + (FIELD_WIDTH + 4) * 2, y, WIDE_WIDTH - (FIELD_WIDTH + 4) * 2, FIELD_HEIGHT).build());
 		y += ROW_HEIGHT;
 
+		//--- Pacto del brujo (elección permanente, ver AUDIT_UX.md DM #3) ---
+		pactButton = this.addRenderableWidget(Button.builder(cycleLabel("Pacto", PACTS[pactIndex]), button -> {
+			pactIndex = (pactIndex + 1) % PACTS.length;
+			pactButton.setMessage(cycleLabel("Pacto", PACTS[pactIndex]));
+		}).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH - 60, FIELD_HEIGHT).build());
+		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetPactMessage(targetUuid, PACTS[pactIndex]))
+		).bounds(centerX - WIDE_WIDTH / 2 + WIDE_WIDTH - 56, y, 56, FIELD_HEIGHT).build());
+		y += ROW_HEIGHT;
+
+		//--- Nivel de personaje (elección permanente, ver AUDIT_UX.md DM #3) ---
+		levelBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Nivel"));
+		levelBox.setValue("1");
+		levelBox.setMaxLength(2);
+		this.addWidget(levelBox);
+		this.addRenderableWidget(Button.builder(Component.literal("Fijar nivel"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetLevelMessage(targetUuid, parseIntOr(levelBox.getValue(), 1)))
+		).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, WIDE_WIDTH - FIELD_WIDTH - 4, FIELD_HEIGHT).build());
+		y += ROW_HEIGHT;
+
 		//--- Percepción pasiva ---
 		this.addRenderableWidget(Button.builder(Component.literal("Ver percepción pasiva (solo tú la ves)"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new PassivePerceptionRequestMessage(targetUuid))
@@ -153,15 +179,16 @@ public class SheetAdjustScreen extends Screen {
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics);
 		guiGraphics.drawCenteredString(this.font, Component.literal("Ajustes de " + targetName + " (oro actual: " + gold + ")"),
-			this.width / 2, this.height / 2 - ROW_HEIGHT * 4 - 26, 0xFFFFFF);
+			this.width / 2, this.height / 2 - ROW_HEIGHT * 6 - 26, 0xFFFFFF);
 		//Solo lectura: PG/CA reales del jugador, para no tener que pedirle que abra su propia hoja en
 		//pleno combate — ver AUDIT_UX.md, DM #1.
 		guiGraphics.drawCenteredString(this.font, Component.literal("PG " + hp + "/" + maxHp + " · CA " + ac),
-			this.width / 2, this.height / 2 - ROW_HEIGHT * 4 - 16, 0xFFAA00);
+			this.width / 2, this.height / 2 - ROW_HEIGHT * 6 - 16, 0xFFAA00);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		goldAmountBox.render(guiGraphics, mouseX, mouseY, partialTicks);
 		slotsMaxBox.render(guiGraphics, mouseX, mouseY, partialTicks);
 		slotsCurrentBox.render(guiGraphics, mouseX, mouseY, partialTicks);
+		levelBox.render(guiGraphics, mouseX, mouseY, partialTicks);
 	}
 
 	@Override
@@ -169,6 +196,7 @@ public class SheetAdjustScreen extends Screen {
 		goldAmountBox.tick();
 		slotsMaxBox.tick();
 		slotsCurrentBox.tick();
+		levelBox.tick();
 	}
 
 	@Override

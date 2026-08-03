@@ -273,14 +273,17 @@ public class SheetCommand {
 	private static int setPact(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		String pacto = StringArgumentType.getString(ctx, "pacto").toLowerCase(java.util.Locale.ROOT);
 		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
-			if (sheet == null) continue;
-			sheet.addProperty("warlockPact", pacto);
-			sendSheetUpdate(target, sheet);
-		}
+		for (ServerPlayer target : targets) applyPact(target, pacto);
 		ctx.getSource().sendSuccess(() -> Component.literal("Pacto de " + pacto + " fijado para " + targets.size() + " jugador(es)."), true);
 		return targets.size();
+	}
+
+	//Público: también lo usa el Panel de DM (ver network.SheetPactMessage).
+	public static void applyPact(ServerPlayer target, String pacto) {
+		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
+		if (sheet == null) return;
+		sheet.addProperty("warlockPact", pacto);
+		sendSheetUpdate(target, sheet);
 	}
 
 	//Nivel de personaje, desacoplado del XP de Minecraft (ver SheetLoader.characterLevelOf, que ya leía
@@ -288,17 +291,20 @@ public class SheetCommand {
 	private static int setLevel(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		int nivel = IntegerArgumentType.getInteger(ctx, "nivel");
 		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
-			if (sheet == null) continue;
-			sheet.addProperty("characterLevel", nivel);
-			//Sin esto, el PG máximo (que depende del nivel) se quedaba con el valor viejo hasta la próxima
-			//reconexión — SheetLoader.applyClassHitPoints solo se llamaba antes en EntityJoinLevelEvent.
-			SheetLoader.applyClassHitPoints(target, sheet);
-			sendSheetUpdate(target, sheet);
-		}
+		for (ServerPlayer target : targets) applyLevel(target, nivel);
 		ctx.getSource().sendSuccess(() -> Component.literal("Nivel de personaje puesto a " + nivel + " para " + targets.size() + " jugador(es)."), true);
 		return targets.size();
+	}
+
+	//Público: también lo usa el Panel de DM (ver network.SheetLevelMessage).
+	public static void applyLevel(ServerPlayer target, int nivel) {
+		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
+		if (sheet == null) return;
+		sheet.addProperty("characterLevel", nivel);
+		//Sin esto, el PG máximo (que depende del nivel) se quedaba con el valor viejo hasta la próxima
+		//reconexión — SheetLoader.applyClassHitPoints solo se llamaba antes en EntityJoinLevelEvent.
+		SheetLoader.applyClassHitPoints(target, sheet);
+		sendSheetUpdate(target, sheet);
 	}
 
 	private static int giveInspirationItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

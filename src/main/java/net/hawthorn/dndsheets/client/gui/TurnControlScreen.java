@@ -30,7 +30,7 @@ public class TurnControlScreen extends Screen {
 
 	@Override
 	protected void init() {
-		int totalHeight = ACTIONS.length * (BUTTON_HEIGHT + SPACING);
+		int totalHeight = (ACTIONS.length + 1) * (BUTTON_HEIGHT + SPACING);
 		int startY = (this.height - totalHeight) / 2;
 
 		for (int i = 0; i < ACTIONS.length; i++) {
@@ -40,6 +40,12 @@ public class TurnControlScreen extends Screen {
 				this.onClose();
 			}).bounds((this.width - BUTTON_WIDTH) / 2, startY + i * (BUTTON_HEIGHT + SPACING), BUTTON_WIDTH, BUTTON_HEIGHT).build());
 		}
+
+		//Ver AUDIT_UX.md, DM #4: aplicar un efecto de estado (veneno, etc.) solo existía como
+		///dndturns effect tecleado a mano, sin GUI para elegir dado/duración.
+		this.addRenderableWidget(Button.builder(Component.literal("Aplicar efecto"), button ->
+			PlayerPickerScreen.open("Elige a quién aplicar el efecto", AddTurnEffectScreen::open)
+		).bounds((this.width - BUTTON_WIDTH) / 2, startY + ACTIONS.length * (BUTTON_HEIGHT + SPACING), BUTTON_WIDTH, BUTTON_HEIGHT).build());
 	}
 
 	@Override

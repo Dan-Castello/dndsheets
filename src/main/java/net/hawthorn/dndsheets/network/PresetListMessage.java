@@ -17,27 +17,31 @@ import java.util.function.Supplier;
 //aunque el cliente y el servidor sean procesos distintos (el registro en memoria solo vive en el servidor).
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class PresetListMessage {
+	String targetUuid;
 	List<String> ids;
 	List<String> names;
 
-	public PresetListMessage(List<String> ids, List<String> names) {
+	public PresetListMessage(String targetUuid, List<String> ids, List<String> names) {
+		this.targetUuid = targetUuid;
 		this.ids = ids;
 		this.names = names;
 	}
 
 	public PresetListMessage(FriendlyByteBuf buffer) {
+		this.targetUuid = buffer.readUtf();
 		this.ids = buffer.readList(FriendlyByteBuf::readUtf);
 		this.names = buffer.readList(FriendlyByteBuf::readUtf);
 	}
 
 	public static void buffer(PresetListMessage message, FriendlyByteBuf buffer) {
+		buffer.writeUtf(message.targetUuid);
 		buffer.writeCollection(message.ids, FriendlyByteBuf::writeUtf);
 		buffer.writeCollection(message.names, FriendlyByteBuf::writeUtf);
 	}
 
 	public static void handler(PresetListMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> PresetScreen.open(message.ids, message.names)));
+		context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> PresetScreen.open(message.targetUuid, message.ids, message.names)));
 		context.setPacketHandled(true);
 	}
 

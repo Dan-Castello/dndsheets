@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
+import net.hawthorn.dndsheets.network.PresetListRequestMessage;
 import net.hawthorn.dndsheets.network.SheetSummaryRequestMessage;
 import net.hawthorn.dndsheets.network.TraitListRequestMessage;
 import net.minecraft.client.Minecraft;
@@ -31,7 +32,7 @@ public class DmPanelScreen extends Screen {
 
 	@Override
 	protected void init() {
-		String[] labels = {"Modo turnos", "Invocar NPC genérico", "Conceder rasgo", "Ajustes de hoja"};
+		String[] labels = {"Modo turnos", "Invocar NPC genérico", "Conceder rasgo", "Ajustes de hoja", "Aplicar preset a jugador"};
 		Runnable[] actions = {
 			TurnControlScreen::open,
 			SpawnGenericScreen::open,
@@ -39,6 +40,8 @@ public class DmPanelScreen extends Screen {
 				uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new TraitListRequestMessage(uuid))),
 			() -> PlayerPickerScreen.open("Elige a quién ajustar la hoja",
 				uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetSummaryRequestMessage(uuid))),
+			() -> PlayerPickerScreen.open("Elige a quién aplicar el preset",
+				uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage(uuid))),
 		};
 
 		int totalHeight = labels.length * (BUTTON_HEIGHT + SPACING);

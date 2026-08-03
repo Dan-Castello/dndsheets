@@ -294,9 +294,17 @@ public class CombatManager {
 			//die(), no remove(): un remove() a secas nunca pasa por el camino de muerte vanilla (loot table,
 			//XP...), así que un monstruo "asesinado" así jamás soltaba nada. Nuestra salud real de Minecraft
 			//nunca baja (el HP de 5e se trackea aparte en MonsterRegistry), así que die() no puede inferir la
-			//muerte solo — hay que llamarlo a mano en cuanto NUESTRO HP llega a 0.
-			if (monsterEntity instanceof LivingEntity living) living.die(monsterEntity.damageSources().generic());
-			else monsterEntity.remove(Entity.RemovalReason.KILLED);
+			//muerte solo — hay que llamarlo a mano en cuanto NUESTRO HP llega a 0. setHealth(0) es
+			//imprescindible ANTES de die(): die() por sí solo no toca la salud real, e isDeadOrDying() (que
+			//vanilla usa para arrancar el conteo de tickDeath() que de verdad elimina la entidad) sigue
+			//devolviendo false con la salud llena — sin esto el mob se queda tirado en pose de muerte para
+			//siempre, nunca desaparece.
+			if (monsterEntity instanceof LivingEntity living) {
+				living.setHealth(0.0F);
+				living.die(monsterEntity.damageSources().generic());
+			} else {
+				monsterEntity.remove(Entity.RemovalReason.KILLED);
+			}
 			ChatFeedback.broadcast(attacker, ChatFeedback.defeated(attackerName, block.name()));
 		} else {
 			MonsterRegistry.setCurrentHp(monsterEntity, remainingHp);

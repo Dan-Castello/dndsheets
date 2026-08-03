@@ -25,8 +25,14 @@ partículas/sonido distintos a un crítico), #5 (`/dndsheet advantage` ahora rec
 reconocido en vez de caer en "normal" en silencio; `/dndsheet setslots` ya no expone el error en
 inglés de Brigadier, delega en el mismo clamp que ya usaba el Panel de DM).
 
-Lo demás (DM #2/#3/#4 — aplicar preset/pact/setlevel/efecto de turno a otro jugador desde GUI,
-catálogo de contenido navegable, scroll del Grimorio, lista de votantes de descanso) sigue
+Segunda pasada (2026-08-02): DM #2 (`DmPanelScreen` → "Aplicar preset a jugador" → `PlayerPickerScreen`
+→ `PresetScreen` reutilizando el mismo viaje ida-vuelta cliente/servidor que ya tenía conceder rasgo),
+DM #3 (pacto del brujo y nivel de personaje ahora son botón cíclico/campo + "Aplicar" en
+`SheetAdjustScreen`, en vez de solo `/dndsheet pact`/`setlevel` tecleados), DM #4 (`TurnControlScreen` →
+"Aplicar efecto" → `PlayerPickerScreen` → `AddTurnEffectScreen`, dado por botón cíclico igual que
+`AddMonsterAttackScreen`).
+
+Lo demás (catálogo de contenido navegable, scroll del Grimorio, lista de votantes de descanso) sigue
 pendiente: son pantallas nuevas de tamaño no trivial, no correcciones de una función — quedan para
 una pasada aparte si se quiere seguir.
 

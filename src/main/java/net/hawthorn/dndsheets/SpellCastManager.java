@@ -326,8 +326,15 @@ public class SpellCastManager {
 			//XP, sonido/partículas de muerte), así que un monstruo "asesinado" así jamás soltaba nada. Nuestra
 			//salud real de Minecraft nunca baja (el HP de 5e se trackea aparte en MonsterRegistry), así que
 			//die() no puede inferir la muerte solo — hay que llamarlo a mano en cuanto NUESTRO HP llega a 0.
-			if (target instanceof LivingEntity living) living.die(target.damageSources().generic());
-			else target.remove(Entity.RemovalReason.KILLED);
+			//setHealth(0) es imprescindible ANTES de die(): sin ella isDeadOrDying() sigue viendo salud llena
+			//y nunca arranca el tickDeath() que de verdad elimina la entidad — se queda tirado para siempre
+			//(ver CombatManager.resolveAttackOnMonster, mismo bug con el mismo arreglo).
+			if (target instanceof LivingEntity living) {
+				living.setHealth(0.0F);
+				living.die(target.damageSources().generic());
+			} else {
+				target.remove(Entity.RemovalReason.KILLED);
+			}
 		} else {
 			MonsterRegistry.setCurrentHp(target, remainingHp);
 		}
