@@ -25,6 +25,7 @@ public class MonsterActionScreen extends Screen {
 	private final int entityId;
 	private final List<String> actionNames;
 	private final List<String> customAttackNames;
+	private ButtonListWidget list;
 
 	private MonsterActionScreen(int entityId, List<String> actionNames, List<String> customAttackNames) {
 		super(Component.literal("Acciones del monstruo"));
@@ -42,7 +43,7 @@ public class MonsterActionScreen extends Screen {
 		//Lista con scroll: un monstruo con muchos ataques/hechizos (más los dos botones de editar, que
 		//viajan con la misma lista) empujaba filas fuera de pantalla con el cálculo viejo, sin forma de
 		//alcanzarlas (ver AUDIT_UX.md).
-		ButtonListWidget list = new ButtonListWidget((this.width - BUTTON_WIDTH) / 2, 30, BUTTON_WIDTH, this.height - 44, BUTTON_HEIGHT + SPACING);
+		list = new ButtonListWidget((this.width - BUTTON_WIDTH) / 2, 30, BUTTON_WIDTH, this.height - 44, BUTTON_HEIGHT + SPACING);
 
 		for (int i = 0; i < actionNames.size(); i++) {
 			int actionIndex = i;
@@ -72,5 +73,12 @@ public class MonsterActionScreen extends Screen {
 	@Override
 	public boolean isPauseScreen() {
 		return false;
+	}
+
+	//Ver PresetScreen.mouseScrolled: sin esto, el scroll solo funciona pasando el mouse por huecos sin
+	//botón, se detiene en cuanto queda sobre una fila.
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+		return list.mouseScrolled(mouseX, mouseY, delta) || super.mouseScrolled(mouseX, mouseY, delta);
 	}
 }

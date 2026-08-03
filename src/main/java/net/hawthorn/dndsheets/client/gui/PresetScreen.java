@@ -28,6 +28,7 @@ public class PresetScreen extends Screen {
 	private final String targetUuid;
 	private final List<String> ids;
 	private final List<String> names;
+	private ButtonListWidget list;
 
 	private PresetScreen(String targetUuid, List<String> ids, List<String> names) {
 		super(Component.literal("Presets de clase"));
@@ -44,7 +45,7 @@ public class PresetScreen extends Screen {
 	protected void init() {
 		//Lista con scroll: con muchos presets cargados, centrar a mano sin tope empujaba botones fuera de
 		//pantalla sin forma de alcanzarlos (ver AUDIT_UX.md).
-		ButtonListWidget list = new ButtonListWidget((this.width - BUTTON_WIDTH) / 2, 30, BUTTON_WIDTH, this.height - 44, BUTTON_HEIGHT + SPACING);
+		list = new ButtonListWidget((this.width - BUTTON_WIDTH) / 2, 30, BUTTON_WIDTH, this.height - 44, BUTTON_HEIGHT + SPACING);
 		for (int i = 0; i < names.size(); i++) {
 			String presetId = ids.get(i);
 			Button button = Button.builder(Component.literal(names.get(i)), b -> {
@@ -64,6 +65,14 @@ public class PresetScreen extends Screen {
 	@Override
 	public boolean isPauseScreen() {
 		return false;
+	}
+
+	//El botón bajo el cursor se queda con el scroll por defecto (Screen le entrega el evento a lo que
+	//esté justo debajo del mouse, y un botón de fila no hace nada con él) — de ahí que antes solo se
+	//pudiera desplazar pasando el mouse por huecos sin botón. Forzarlo siempre a la lista arregla eso.
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+		return list.mouseScrolled(mouseX, mouseY, delta) || super.mouseScrolled(mouseX, mouseY, delta);
 	}
 
 	@Override

@@ -24,6 +24,7 @@ public class ManageCustomAttacksScreen extends Screen {
 
 	private final int entityId;
 	private final List<String> customAttackNames;
+	private ButtonListWidget list;
 
 	private ManageCustomAttacksScreen(int entityId, List<String> customAttackNames) {
 		super(Component.literal("Ataques personalizados"));
@@ -39,7 +40,7 @@ public class ManageCustomAttacksScreen extends Screen {
 	protected void init() {
 		//Lista con scroll: con muchos ataques personalizados, centrar a mano sin tope empujaba botones
 		//fuera de pantalla sin forma de alcanzarlos (ver AUDIT_UX.md).
-		ButtonListWidget list = new ButtonListWidget((this.width - BUTTON_WIDTH) / 2, 30, BUTTON_WIDTH, this.height - 44, BUTTON_HEIGHT + SPACING);
+		list = new ButtonListWidget((this.width - BUTTON_WIDTH) / 2, 30, BUTTON_WIDTH, this.height - 44, BUTTON_HEIGHT + SPACING);
 
 		for (String name : customAttackNames) {
 			Button button = Button.builder(Component.literal("Quitar: " + name), b -> {
@@ -63,6 +64,13 @@ public class ManageCustomAttacksScreen extends Screen {
 	@Override
 	public boolean isPauseScreen() {
 		return false;
+	}
+
+	//Ver PresetScreen.mouseScrolled: sin esto, el scroll solo funciona pasando el mouse por huecos sin
+	//botón, se detiene en cuanto queda sobre una fila.
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+		return list.mouseScrolled(mouseX, mouseY, delta) || super.mouseScrolled(mouseX, mouseY, delta);
 	}
 
 	@Override

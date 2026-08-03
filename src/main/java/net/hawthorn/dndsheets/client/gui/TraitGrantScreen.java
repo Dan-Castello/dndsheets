@@ -25,6 +25,7 @@ public class TraitGrantScreen extends Screen {
 	private final String targetUuid;
 	private final List<String> ids;
 	private final List<String> names;
+	private ButtonListWidget list;
 
 	private TraitGrantScreen(String targetUuid, List<String> ids, List<String> names) {
 		super(Component.literal("Conceder rasgo"));
@@ -41,7 +42,7 @@ public class TraitGrantScreen extends Screen {
 	protected void init() {
 		//Lista con scroll: con muchos rasgos cargados, centrar a mano sin tope empujaba botones fuera de
 		//pantalla sin forma de alcanzarlos (ver AUDIT_UX.md).
-		ButtonListWidget list = new ButtonListWidget((this.width - BUTTON_WIDTH) / 2, 30, BUTTON_WIDTH, this.height - 44, BUTTON_HEIGHT + SPACING);
+		list = new ButtonListWidget((this.width - BUTTON_WIDTH) / 2, 30, BUTTON_WIDTH, this.height - 44, BUTTON_HEIGHT + SPACING);
 		for (int i = 0; i < names.size(); i++) {
 			String traitId = ids.get(i);
 			Button button = Button.builder(Component.literal(names.get(i)), b -> {
@@ -57,6 +58,13 @@ public class TraitGrantScreen extends Screen {
 	@Override
 	public boolean isPauseScreen() {
 		return false;
+	}
+
+	//Ver PresetScreen.mouseScrolled: sin esto, el scroll solo funciona pasando el mouse por huecos sin
+	//botón, se detiene en cuanto queda sobre una fila.
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+		return list.mouseScrolled(mouseX, mouseY, delta) || super.mouseScrolled(mouseX, mouseY, delta);
 	}
 
 	@Override

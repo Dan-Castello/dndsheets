@@ -66,16 +66,25 @@ public class ButtonListWidget extends AbstractScrollWidget {
 
 	@Override
 	protected void renderContents(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+		if (rows.isEmpty()) return;
 		int scroll = (int) this.scrollAmount();
+		//Rango de filas realmente visibles calculado directo (no recorriendo todas para comparar límites):
+		//antes se llamaba setX/setY en CADA botón de la lista en CADA frame, visible o no — con listas
+		//largas (muchos jugadores conectados, muchos monstruos/rasgos cargados) eso se notaba al desplazar.
+		//Ahora solo se posiciona/renderiza lo que cae dentro del rango, con un margen de una fila de cada
+		//lado para que no haga "pop" justo en el borde del recorte (scissor).
+		int first = Math.max(0, scroll / rowHeight - 1);
+		int last = Math.min(rows.size() - 1, (scroll + this.height) / rowHeight + 1);
+
 		for (int i = 0; i < rows.size(); i++) {
 			Button button = rows.get(i);
-			int rowY = this.getY() + i * rowHeight - scroll;
-			button.setX(this.getX());
-			button.setY(rowY);
-			boolean rowVisible = rowY + rowHeight >= this.getY() && rowY <= this.getY() + this.height;
+			boolean rowVisible = i >= first && i <= last;
 			button.visible = rowVisible;
 			button.active = rowVisible;
-			if (rowVisible) button.render(guiGraphics, mouseX, mouseY, partialTicks);
+			if (!rowVisible) continue;
+			button.setX(this.getX());
+			button.setY(this.getY() + i * rowHeight - scroll);
+			button.render(guiGraphics, mouseX, mouseY, partialTicks);
 		}
 	}
 

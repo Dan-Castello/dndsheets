@@ -37,14 +37,21 @@ public class CharacterSheetLoadProcedure {
 		if (guistate.get("text:characterclass") instanceof EditBox _tf && sheet.has("characterClass")) {
 			String charName = sheet.get("characterClass").getAsString();
 			_tf.setValue(charName);
+			//Sin esto, la sugerencia fantasma ("Guerrero 1"/"Fighter 1", puesta una sola vez al construir el
+			//campo en CharacterSheetScreen) se sigue dibujando pegada justo después del valor real elegido
+			//en el selector — antes lo limpiaba insertText()/moveCursorTo() al escribir a mano, pero esos
+			//overrides ya no existen porque el campo dejó de aceptar texto libre.
+			if (!charName.isEmpty()) _tf.setSuggestion(null);
 		}
 		if (guistate.get("text:characterrace") instanceof EditBox _tf && sheet.has("characterRace")) {
 			String charName = sheet.get("characterRace").getAsString();
 			_tf.setValue(charName);
+			if (!charName.isEmpty()) _tf.setSuggestion(null);
 		}
 		if (guistate.get("text:background") instanceof EditBox _tf && sheet.has("background")) {
 			String charName = sheet.get("background").getAsString();
 			_tf.setValue(charName);
+			if (!charName.isEmpty()) _tf.setSuggestion(null);
 		}
 		if (guistate.get("text:hitpoints") instanceof EditBox _tf && sheet.has("hitPoints")) {
 			String charName = sheet.get("hitPoints").getAsString();

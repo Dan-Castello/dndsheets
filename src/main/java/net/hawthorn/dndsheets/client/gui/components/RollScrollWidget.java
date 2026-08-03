@@ -190,8 +190,26 @@ public class RollScrollWidget extends AbstractScrollWidget {
 
     @Override
     protected void renderContents(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        if (list.isEmpty()) return;
+        //Rango de filas realmente visibles calculado directo, no recorriendo todas para comparar límites:
+        //antes CADA frame reposicionaba y comprobaba límites de las 3 pilas de botones + el EditBox de
+        //CADA fila, visible o no (varios EditBox.render() de sobra son bastante más caros que un botón
+        //simple) — con una pestaña de Ataques larga (muchas armas auto-pobladas + añadidas a mano) eso se
+        //notaba al desplazar. Un margen de una fila de cada lado evita "pop" en el borde del recorte.
+        int scroll = (int) this.scrollAmount();
+        int first = Math.max(0, scroll / separation - 1);
+        int last = Math.min(list.size() - 1, (scroll + this.getHeight()) / separation + 1);
+
         for (int i = 0; i < list.size(); i++) {
             ListItem item = list.get(i);
+            if (i < first || i > last) {
+                setInactive(item.deleteButton);
+                for (Button button : item.rollButtons) setInactive(button);
+                for (Button button : item.editButtons) setInactive(button);
+                setInactive(item.nameBox);
+                continue;
+            }
+
             boolean isActive;
 
             //Set delete button position
@@ -232,6 +250,11 @@ public class RollScrollWidget extends AbstractScrollWidget {
             item.nameBox.visible = isActive;
         }
 
+    }
+
+    private static void setInactive(AbstractWidget widget) {
+        widget.active = false;
+        widget.visible = false;
     }
 
 }

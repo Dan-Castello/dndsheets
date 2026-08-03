@@ -34,6 +34,7 @@ public class GrimoireScreen extends Screen {
 
 	private KnownSpell selected;
 	private Button castButton;
+	private ButtonListWidget list;
 
 	protected GrimoireScreen() {
 		super(Component.literal("Grimorio"));
@@ -50,7 +51,7 @@ public class GrimoireScreen extends Screen {
 		//pantalla sin forma de alcanzarlos (ver AUDIT_UX.md).
 		int listBottom = this.height - (BUTTON_HEIGHT + SPACING * 2);
 		int listHeight = Math.max(BUTTON_HEIGHT, listBottom - LIST_TOP);
-		ButtonListWidget list = new ButtonListWidget(left, LIST_TOP, WIDTH, listHeight, BUTTON_HEIGHT + SPACING);
+		list = new ButtonListWidget(left, LIST_TOP, WIDTH, listHeight, BUTTON_HEIGHT + SPACING);
 		for (KnownSpell spell : knownSpells) {
 			Button button = Button.builder(Component.literal(spell.label()), b -> {
 				selected = spell;
@@ -75,6 +76,13 @@ public class GrimoireScreen extends Screen {
 	@Override
 	public boolean isPauseScreen() {
 		return false;
+	}
+
+	//Ver PresetScreen.mouseScrolled: sin esto, el scroll solo funciona pasando el mouse por huecos sin
+	//botón, se detiene en cuanto queda sobre una fila.
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+		return list.mouseScrolled(mouseX, mouseY, delta) || super.mouseScrolled(mouseX, mouseY, delta);
 	}
 
 	@Override

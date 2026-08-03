@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets.client.gui;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.hawthorn.dndsheets.CharacterOptionsRegistry;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.RollIndex;
 import net.hawthorn.dndsheets.SheetLoader;
@@ -10,6 +11,7 @@ import net.hawthorn.dndsheets.client.gui.components.AdjustableImageButton;
 import net.hawthorn.dndsheets.client.gui.components.RollScrollWidget;
 import net.hawthorn.dndsheets.init.DndsheetsModKeyMappings;
 import net.hawthorn.dndsheets.network.AdvancedRollEditorOpenMessage;
+import net.hawthorn.dndsheets.network.CharacterOptionsRequestMessage;
 import net.hawthorn.dndsheets.network.PresetListRequestMessage;
 import net.hawthorn.dndsheets.network.RollEditorOpenMessage;
 import net.hawthorn.dndsheets.procedures.CharacterSheetSaveProcedure;
@@ -140,10 +142,20 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	//NOTA: no hay hueco dibujado para estos dos en character_sheet.png todavía (ver LEEME.md).
 	//Se colocan en el margen inferior del panel para que no se solapen con nada mientras tanto.
 	private final int LEVEL_OFFSET_X = 125;
-	private final int LEVEL_OFFSET_Y = 190;
+	private final int LEVEL_OFFSET_Y = 205;
 
 	private final int HUNGER_OFFSET_X = 220;
-	private final int HUNGER_OFFSET_Y = 190;
+	private final int HUNGER_OFFSET_Y = 205;
+
+	//Centrados en el ancho de 350 con un hueco de 10 entre los dos: 80*2 + 10 = 170, (350-170)/2 = 90.
+	//Antes eran botones de 100x20 pegados casi borde a borde (125 a 330 de 350) y a y=214, que ya se salía
+	//del fondo de 200 de alto — de ahí que se vieran "enormes y fuera del grid".
+	private final int GRIMOIRE_OFFSET_X = 90;
+	private final int GRIMOIRE_OFFSET_Y = 228;
+	private final int PRESETS_OFFSET_X = 180;
+	private final int PRESETS_OFFSET_Y = 228;
+	private final int BOTTOM_BUTTON_WIDTH = 80;
+	private final int BOTTOM_BUTTON_HEIGHT = 16;
 
 	/*
 		SKILLS PANEL OFFSETS
@@ -160,6 +172,17 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	//distinguirlos de un vistazo de los campos en blanco normal que sí se pueden escribir a mano.
 	private static final int AUTO_FIELD_COLOR = 0xFFD37F;
 
+	//Raza/Trasfondo/Clase eran texto libre: un jugador nuevo no tiene forma de adivinar qué escribir, y en
+	//el caso de Clase encima importa de verdad (Config.hitDieFor, WarlockPactMagicManager,
+	//WizardArcaneRecoveryManager y WeaponDefault.allowsClass comparan por subcadena contra characterClass;
+	//un typo o "Warlock" en vez de "Brujo" hacía fallar esa detección en silencio). Ahora se eligen con un
+	//GUI de lista pedido al servidor (ver CharacterOptionsRegistry/CharacterOptionListScreen), en vez de
+	//escribirse a mano o recorrerse a clicks uno por uno.
+	private void requestOptionPicker(String category) {
+		CharacterSheetSaveProcedure.execute(guistate); //Como al abrir Presets: no perder ediciones sin guardar de otros campos al navegar fuera.
+		DndsheetsMod.PACKET_HANDLER.sendToServer(new CharacterOptionsRequestMessage(category));
+	}
+
 	public enum PanelStatus {
 		MAIN,
 		SKILLS,
@@ -175,7 +198,10 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		this.z = container.z;
 		this.entity = container.entity;
 		this.imageWidth = 350;
-		this.imageHeight = 200;
+		//240, no 200: Nivel/Hambre y Grimorio/Presets viven en el margen inferior (sin hueco dibujado
+		//todavía en la textura, ver LEEME.md) y ya no cabían en 200 sin solaparse entre sí ni con
+		//Competencia — hacía falta una fila más de alto real, no solo mover números dentro del mismo hueco.
+		this.imageHeight = 240;
 	}
 
 	private static final ResourceLocation BG_MAIN = new ResourceLocation("dndsheets:textures/screens/character_sheet.png");
@@ -229,13 +255,13 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 		switch (panelActive) {
 			case MAIN:
-				guiGraphics.blit(BG_MAIN, this.leftPos - 24, this.topPos - 24, 0, 0, 398, 248, 398, 248);
+				guiGraphics.blit(BG_MAIN, this.leftPos - 24, this.topPos - 24, 0, 0, 398, 288, 398, 288);
 				break;
 			case SKILLS:
-				guiGraphics.blit(BG_SKILLS, this.leftPos - 24, this.topPos - 24, 0, 0, 398, 248, 398, 248);
+				guiGraphics.blit(BG_SKILLS, this.leftPos - 24, this.topPos - 24, 0, 0, 398, 288, 398, 288);
 				break;
 			case ATTACKS:
-				guiGraphics.blit(BG_ATTACKS, this.leftPos - 24, this.topPos - 24, 0, 0, 398, 248, 398, 248);
+				guiGraphics.blit(BG_ATTACKS, this.leftPos - 24, this.topPos - 24, 0, 0, 398, 288, 398, 288);
 				break;
 		}
 
@@ -252,6 +278,19 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 
 		RenderSystem.disableBlend();
+	}
+
+	//El botón/campo bajo el cursor se queda con el scroll por defecto (Screen le entrega el evento a lo
+	//que esté justo debajo del mouse), y una fila de la lista de Ataques no hace nada con él — de ahí que
+	//antes solo se pudiera desplazar pasando el mouse por huecos sin botón (ver PresetScreen.mouseScrolled,
+	//mismo arreglo). Solo aplica en la pestaña de Ataques y solo si el cursor está sobre la lista, para no
+	//robarle el scroll a nada de las otras pestañas.
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+		if (panelActive == PanelStatus.ATTACKS && attackRolls.isMouseOver(mouseX, mouseY)) {
+			return attackRolls.mouseScrolled(mouseX, mouseY, delta);
+		}
+		return super.mouseScrolled(mouseX, mouseY, delta);
 	}
 
 	@Override
@@ -1068,73 +1107,40 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 		characterRace = new EditBox(this.font, this.leftPos + RACE_OFFSET_X, this.topPos + RACE_OFFSET_Y, 100, 18, Component.translatable("gui.dndsheets.character_sheet.characterrace")) {
 			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.characterrace").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.characterrace").getString());
-				else
-					setSuggestion(null);
+			public boolean mouseClicked(double mx, double my, int button) {
+				if (!this.isMouseOver(mx, my)) return false;
+				requestOptionPicker(CharacterOptionsRegistry.RACE);
+				return true;
 			}
 		};
+		characterRace.setEditable(false);
 		characterRace.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.characterrace").getString());
-		characterRace.setMaxLength(50);
 		guistate.put("text:characterrace", characterRace);
 		this.addWidget(this.characterRace);
 
 		background = new EditBox(this.font, this.leftPos + BACKG_OFFSET_X, this.topPos + BACKG_OFFSET_Y, 100, 18, Component.translatable("gui.dndsheets.character_sheet.background")) {
 			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.background").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.background").getString());
-				else
-					setSuggestion(null);
+			public boolean mouseClicked(double mx, double my, int button) {
+				if (!this.isMouseOver(mx, my)) return false;
+				requestOptionPicker(CharacterOptionsRegistry.BACKGROUND);
+				return true;
 			}
 		};
+		background.setEditable(false);
 		background.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.background").getString());
-		background.setMaxLength(50);
 		guistate.put("text:background", background);
 		this.addWidget(this.background);
 
 		characterClass = new EditBox(this.font, this.leftPos + CLASS_OFFSET_X, this.topPos + CLASS_OFFSET_Y, 210, 18, Component.translatable("gui.dndsheets.character_sheet.characterclass")) {
 			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.characterclass").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.characterclass").getString());
-				else
-					setSuggestion(null);
+			public boolean mouseClicked(double mx, double my, int button) {
+				if (!this.isMouseOver(mx, my)) return false;
+				requestOptionPicker(CharacterOptionsRegistry.CLASS);
+				return true;
 			}
 		};
+		characterClass.setEditable(false);
 		characterClass.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.characterclass").getString());
-		characterClass.setMaxLength(100);
 		guistate.put("text:characterclass", characterClass);
 		this.addWidget(this.characterClass);
 
@@ -1201,17 +1207,17 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		guistate.put("button:roll_init_edit", initiativeEditButton);
 		this.addRenderableWidget(initiativeEditButton);
 
-		//NOTA: sin hueco dibujado en la textura todavía. Puestos en el margen inferior (y=214), debajo de
-		//todo lo demás, para no pisar el círculo de Iniciativa (que ocupa la zona x=270-345, y=90-200).
+		//NOTA: sin hueco dibujado en la textura todavía. Puestos en el margen inferior, debajo de Nivel/
+		//Hambre, para no pisar el círculo de Iniciativa (que ocupa la zona x=270-345, y=90-200).
 		grimoireButton = Button.builder(Component.translatable("gui.dndsheets.character_sheet.grimoire"), b -> this.minecraft.setScreen(new GrimoireScreen()))
-			.bounds(this.leftPos + 125, this.topPos + 214, 100, 20).build();
+			.bounds(this.leftPos + GRIMOIRE_OFFSET_X, this.topPos + GRIMOIRE_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT).build();
 		guistate.put("button:grimoire", grimoireButton);
 		this.addRenderableWidget(grimoireButton);
 
 		presetsButton = Button.builder(Component.translatable("gui.dndsheets.character_sheet.presets"), b -> {
 			CharacterSheetSaveProcedure.execute(guistate);
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage());
-		}).bounds(this.leftPos + 230, this.topPos + 214, 100, 20).build();
+		}).bounds(this.leftPos + PRESETS_OFFSET_X, this.topPos + PRESETS_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT).build();
 		guistate.put("button:presets", presetsButton);
 		this.addRenderableWidget(presetsButton);
 	}

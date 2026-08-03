@@ -26,6 +26,7 @@ public class PlayerPickerScreen extends Screen {
 
 	private final String prompt;
 	private final Consumer<String> onPick;
+	private ButtonListWidget list;
 
 	private PlayerPickerScreen(String prompt, Consumer<String> onPick) {
 		super(Component.literal("Elegir jugador"));
@@ -43,7 +44,7 @@ public class PlayerPickerScreen extends Screen {
 
 		//Lista con scroll en vez de centrada a mano sin tope: con muchos jugadores conectados, el cálculo
 		//viejo empujaba botones fuera de pantalla sin forma de alcanzarlos (ver AUDIT_UX.md).
-		ButtonListWidget list = new ButtonListWidget((this.width - BUTTON_WIDTH) / 2, 30, BUTTON_WIDTH, this.height - 44, BUTTON_HEIGHT + SPACING);
+		list = new ButtonListWidget((this.width - BUTTON_WIDTH) / 2, 30, BUTTON_WIDTH, this.height - 44, BUTTON_HEIGHT + SPACING);
 		for (PlayerInfo info : players) {
 			String uuid = info.getProfile().getId().toString();
 			Button button = Button.builder(Component.literal(info.getProfile().getName()), b -> onPick.accept(uuid))
@@ -57,6 +58,13 @@ public class PlayerPickerScreen extends Screen {
 	@Override
 	public boolean isPauseScreen() {
 		return false;
+	}
+
+	//Ver PresetScreen.mouseScrolled: sin esto, el scroll solo funciona pasando el mouse por huecos sin
+	//botón, se detiene en cuanto queda sobre una fila.
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+		return list.mouseScrolled(mouseX, mouseY, delta) || super.mouseScrolled(mouseX, mouseY, delta);
 	}
 
 	@Override
