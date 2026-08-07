@@ -4,16 +4,12 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.client.gui.RestVoteScreen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
 //Servidor -> cliente (todos): alguien propuso un descanso, que voten.
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class RestVoteOpenMessage {
 	final String proposerName;
 	final String typeLabel;
@@ -37,10 +33,5 @@ public class RestVoteOpenMessage {
 		NetworkEvent.Context context = contextSupplier.get();
 		context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> RestVoteScreen.open(message.proposerName, message.typeLabel)));
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(RestVoteOpenMessage.class, RestVoteOpenMessage::buffer, RestVoteOpenMessage::new, RestVoteOpenMessage::handler);
 	}
 }

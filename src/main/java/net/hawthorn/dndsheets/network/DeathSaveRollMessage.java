@@ -4,15 +4,11 @@ import net.hawthorn.dndsheets.DeathSaveManager;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
 //Cliente -> servidor: el jugador caído pulsó "Tirar salvación de muerte".
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class DeathSaveRollMessage {
 	public DeathSaveRollMessage() {}
 
@@ -29,10 +25,5 @@ public class DeathSaveRollMessage {
 			}
 		});
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(DeathSaveRollMessage.class, DeathSaveRollMessage::buffer, DeathSaveRollMessage::new, DeathSaveRollMessage::handler);
 	}
 }

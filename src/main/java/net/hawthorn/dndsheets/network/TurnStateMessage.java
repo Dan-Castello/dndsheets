@@ -4,10 +4,7 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.client.TurnHudState;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -15,7 +12,6 @@ import java.util.function.Supplier;
 //Servidor -> todos los clientes: estado actual de TurnManager, para el HUD del modo turnos (ver
 //client.TurnHudState / client.TurnHudOverlay). TurnManager lo manda de nuevo cada vez que algo visible
 //cambia; ningún cliente tiene que pedirlo.
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class TurnStateMessage {
 	boolean active;
 	int round;
@@ -63,10 +59,5 @@ public class TurnStateMessage {
 			TurnHudState.update(message.active, message.round, message.currentName, message.currentEntityId,
 				message.actionUsed, message.originX, message.originY, message.originZ)));
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(TurnStateMessage.class, TurnStateMessage::buffer, TurnStateMessage::new, TurnStateMessage::handler);
 	}
 }

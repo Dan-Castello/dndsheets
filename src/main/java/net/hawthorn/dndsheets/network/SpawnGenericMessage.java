@@ -8,16 +8,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
 //Cliente (el DM) -> servidor: formulario de SpawnGenericScreen (equivalente en GUI a
 ///dndmonsters spawn generic), invoca al DM en su propia posición.
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class SpawnGenericMessage {
 	String name, baseEntity;
 	int ac, hp;
@@ -55,10 +51,5 @@ public class SpawnGenericMessage {
 			if (spawned != null) CombatFx.monsterSpawn(spawned);
 		});
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(SpawnGenericMessage.class, SpawnGenericMessage::buffer, SpawnGenericMessage::new, SpawnGenericMessage::handler);
 	}
 }

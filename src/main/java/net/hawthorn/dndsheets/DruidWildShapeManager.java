@@ -1,7 +1,6 @@
 package net.hawthorn.dndsheets;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -88,25 +87,14 @@ public class DruidWildShapeManager {
 
 	private static void tryUse(PlayerInteractEvent event, ItemStack stack) {
 		if (event.getEntity().level().isClientSide()) return;
-		CompoundTag tag = stack.getTag();
-		if (tag == null || !tag.contains("dndsheets") || !tag.getCompound("dndsheets").getBoolean("wildShape")) return;
+		if (!AbilityItem.hasFlag(stack, "wildShape")) return;
 
 		event.setCanceled(true);
 		if (event.getEntity() instanceof ServerPlayer player) activate(player);
 	}
 
 	public static ItemStack buildWildShapeStack() {
-		ItemStack stack = new ItemStack(Items.RABBIT_FOOT);
-		CompoundTag dndTag = new CompoundTag();
-		dndTag.putBoolean("wildShape", true);
-		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.literal("Forma Salvaje"));
-
-		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
-		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.literal("Clic derecho: golpes a mano desnuda pegan como un animal " + DURATION_ROUNDS + " asaltos.").withStyle(ChatFormatting.GRAY))));
-		stack.getOrCreateTagElement("display").put("Lore", lore);
-
-		return stack;
+		return AbilityItem.build(Items.RABBIT_FOOT, "wildShape", Component.literal("Forma Salvaje"),
+			Component.literal("Clic derecho: golpes a mano desnuda pegan como un animal " + DURATION_ROUNDS + " asaltos.").withStyle(ChatFormatting.GRAY));
 	}
 }

@@ -6,9 +6,9 @@ import com.google.gson.JsonObject;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 
-import java.util.LinkedHashMap;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -28,21 +28,27 @@ public class SpellRegistry {
 		boolean concentration, int aoeRadius
 	) {}
 
-	private static final Map<String, Spell> spells = new LinkedHashMap<>();
+	private static final NamedRegistry<Spell> REGISTRY = new NamedRegistry<>("hechizo", Spell::id);
 
 	public static void register(Spell spell) {
-		if (spells.containsKey(spell.id())) {
-			System.out.println("Aviso: el hechizo \"" + spell.id() + "\" ya estaba cargado, se pisa con la nueva definición.");
-		}
-		spells.put(spell.id(), spell);
+		REGISTRY.register(spell);
 	}
 
 	public static Spell get(String id) {
-		return spells.get(id);
+		return REGISTRY.get(id);
 	}
 
 	public static Set<String> ids() {
-		return spells.keySet();
+		return REGISTRY.ids();
+	}
+
+	//Público: usado por SpellCommand (/dndspells load) y por DndPaths para precargar solo todos los .json
+	//de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de comandos —
+	//ver AUDIT_TECHNICAL.md M-ARQ-1.
+	private static final JsonRegistryLoader<Spell> LOADER = new JsonRegistryLoader<>("hechizo", SpellRegistry::parse, SpellRegistry::register);
+
+	public static int loadFile(Path file) throws IOException {
+		return LOADER.loadFile(file);
 	}
 
 	//Añade un hechizo a la lista de conocidos de la hoja si no lo tenía ya — mismo formato {id,name,level}

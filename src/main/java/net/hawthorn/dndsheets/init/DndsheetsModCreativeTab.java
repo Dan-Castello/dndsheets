@@ -17,7 +17,6 @@ import net.hawthorn.dndsheets.SpellRegistry;
 import net.hawthorn.dndsheets.TurnItemManager;
 import net.hawthorn.dndsheets.command.MonsterCommand;
 import net.hawthorn.dndsheets.command.SpellCommand;
-import net.hawthorn.dndsheets.command.WeaponCommand;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -62,7 +61,7 @@ public class DndsheetsModCreativeTab {
 			safeAccept(output, ShieldManager.buildShieldStack());
 			safeAccept(output, CounterspellManager.buildCounterspellStack());
 			for (String weaponId : Config.customWeaponIds()) {
-				safeAccept(output, WeaponCommand.buildWeaponStack(weaponId, 1));
+				safeAccept(output, Config.buildWeaponStack(weaponId, 1));
 			}
 			for (String spellId : SpellRegistry.ids()) {
 				SpellRegistry.Spell spell = SpellRegistry.get(spellId);

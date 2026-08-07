@@ -3,7 +3,6 @@ package net.hawthorn.dndsheets;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -13,8 +12,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 
 /**
@@ -29,16 +26,12 @@ import net.minecraftforge.network.PacketDistributor;
  * niveles por ranura (mismo motivo que el dado fijo de Castigo Divino) — así que cualquier Contrahechizo
  * listo con un espacio disponible anula cualquier hechizo, sin tirada de por medio.</p>
  */
-@Mod.EventBusSubscriber
 public class CounterspellManager {
 	private static final double RANGE = 30.0;
 
-	@SubscribeEvent
-	public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-		if (event.getEntity().level().isClientSide()) return;
-		CompoundTag tag = event.getItemStack().getTag();
-		if (tag == null || !tag.contains("dndsheets") || !tag.getCompound("dndsheets").getBoolean("counterspellSpell")) return;
-
+	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta — ver
+	//AUDIT_TECHNICAL.md M-EVT-1.
+	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
@@ -86,17 +79,7 @@ public class CounterspellManager {
 	}
 
 	public static ItemStack buildCounterspellStack() {
-		ItemStack stack = new ItemStack(Items.ECHO_SHARD);
-		CompoundTag dndTag = new CompoundTag();
-		dndTag.putBoolean("counterspellSpell", true);
-		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.literal("Contrahechizo"));
-
-		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
-		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.literal("Clic derecho: listo para anular el próximo hechizo que veas lanzar cerca.").withStyle(ChatFormatting.GRAY))));
-		stack.getOrCreateTagElement("display").put("Lore", lore);
-
-		return stack;
+		return AbilityItem.build(Items.ECHO_SHARD, "counterspellSpell", Component.literal("Contrahechizo"),
+			Component.literal("Clic derecho: listo para anular el próximo hechizo que veas lanzar cerca.").withStyle(ChatFormatting.GRAY));
 	}
 }

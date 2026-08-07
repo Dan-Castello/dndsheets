@@ -4,17 +4,13 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.client.gui.SheetAdjustScreen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
 //Servidor -> cliente: valores actuales de la hoja del objetivo elegido en PlayerPickerScreen, para abrir
 //SheetAdjustScreen con datos reales (oro y espacios de conjuro solo viven en la hoja del servidor).
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class SheetSummaryMessage {
 	String targetUuid, targetName;
 	int gold, slotsMax, slotsCurrent, hp, maxHp, ac;
@@ -57,10 +53,5 @@ public class SheetSummaryMessage {
 		context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
 			SheetAdjustScreen.open(message.targetUuid, message.targetName, message.gold, message.slotsMax, message.slotsCurrent, message.hp, message.maxHp, message.ac)));
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(SheetSummaryMessage.class, SheetSummaryMessage::buffer, SheetSummaryMessage::new, SheetSummaryMessage::handler);
 	}
 }

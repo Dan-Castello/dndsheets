@@ -5,16 +5,12 @@ import net.hawthorn.dndsheets.MonsterRegistry;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
 //Cliente (el DM) -> servidor: añadió un ataque personalizado a un monstruo ya invocado desde
 //AddMonsterAttackScreen (equivalente en GUI a /dndmonsters attack add).
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class AddCustomAttackMessage {
 	int entityId;
 	String name, toHitAbility, dice, damageAbility, damageType;
@@ -59,10 +55,5 @@ public class AddCustomAttackMessage {
 				message.name, message.toHitAbility, message.dice, message.damageAbility, message.damageType, null, null, 0));
 		});
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(AddCustomAttackMessage.class, AddCustomAttackMessage::buffer, AddCustomAttackMessage::new, AddCustomAttackMessage::handler);
 	}
 }

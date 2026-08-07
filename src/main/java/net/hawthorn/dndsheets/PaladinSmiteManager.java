@@ -2,7 +2,6 @@ package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -29,8 +28,7 @@ public class PaladinSmiteManager {
 	@SubscribeEvent
 	public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
 		if (event.getEntity().level().isClientSide()) return;
-		CompoundTag tag = event.getItemStack().getTag();
-		if (tag == null || !tag.contains("dndsheets") || !tag.getCompound("dndsheets").getBoolean("divineSmite")) return;
+		if (!AbilityItem.hasFlag(event.getItemStack(), "divineSmite")) return;
 
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -55,17 +53,7 @@ public class PaladinSmiteManager {
 	}
 
 	public static ItemStack buildDivineSmiteStack() {
-		ItemStack stack = new ItemStack(Items.GLOWSTONE_DUST);
-		CompoundTag dndTag = new CompoundTag();
-		dndTag.putBoolean("divineSmite", true);
-		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.literal("Castigo Divino"));
-
-		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
-		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.literal("Clic derecho: tu próximo golpe gasta un espacio y suma " + DICE + " radiante.").withStyle(ChatFormatting.GRAY))));
-		stack.getOrCreateTagElement("display").put("Lore", lore);
-
-		return stack;
+		return AbilityItem.build(Items.GLOWSTONE_DUST, "divineSmite", Component.literal("Castigo Divino"),
+			Component.literal("Clic derecho: tu próximo golpe gasta un espacio y suma " + DICE + " radiante.").withStyle(ChatFormatting.GRAY));
 	}
 }

@@ -7,7 +7,7 @@ import net.hawthorn.dndsheets.DiceManager;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.RollIndex;
 import net.hawthorn.dndsheets.SheetLoader;
-import net.hawthorn.dndsheets.network.SheetClientMessage;
+import net.hawthorn.dndsheets.init.DndsheetsModSounds;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.LevelAccessor;
@@ -16,14 +16,12 @@ import net.minecraft.commands.arguments.MessageArgument;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.BlockPos;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.context.CommandContext;
 
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,7 +48,7 @@ public class RollAnnouncerProcedure {
 
 		world.getServer().getPlayerList().broadcastSystemMessage(message, false);
 		if (world instanceof Level level && !level.isClientSide()) {
-			level.playSound(null, BlockPos.containing(x, y, z), ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("dndsheets:dice")), SoundSource.NEUTRAL, 1, 1);
+			level.playSound(null, BlockPos.containing(x, y, z), DndsheetsModSounds.DICE.get(), SoundSource.NEUTRAL, 1, 1);
 		}
 	}
 
@@ -95,8 +93,13 @@ public class RollAnnouncerProcedure {
 			resultRolls.add(outcome.formatted());
 		}
 
+		//Antes reenviaba la hoja completa por cada tirada de ataque desde la pestaña de Ataques — ahora solo
+		//los dos campos que consumeAdvantage/consumeAttackBonus acaban de tocar. Ver AUDIT_TECHNICAL.md M-NET-1.
 		if (hasAttackRoll && roller instanceof ServerPlayer serverPlayer) {
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> serverPlayer), new SheetClientMessage(sheet.toString().getBytes()));
+			JsonObject patch = new JsonObject();
+			patch.addProperty("nextAttackAdvantage", "normal");
+			patch.add("bardicInspiration", JsonNull.INSTANCE);
+			DndsheetsMod.sendSheetFieldUpdate(serverPlayer, patch);
 		}
 
 		Component message;
@@ -109,7 +112,7 @@ public class RollAnnouncerProcedure {
 
 		world.getServer().getPlayerList().broadcastSystemMessage(message, false);
 		if (world instanceof Level level && !level.isClientSide()) {
-			level.playSound(null, BlockPos.containing(x, y, z), ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("dndsheets:dice")), SoundSource.NEUTRAL, 1, 1);
+			level.playSound(null, BlockPos.containing(x, y, z), DndsheetsModSounds.DICE.get(), SoundSource.NEUTRAL, 1, 1);
 		}
 	}
 }

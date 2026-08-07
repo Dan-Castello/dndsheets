@@ -1,15 +1,12 @@
 package net.hawthorn.dndsheets;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
 import java.util.Set;
 import java.util.UUID;
@@ -33,7 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * descanso largo (2 a nivel 1-2, más en niveles altos). Aquí no hay límite de usos — activar de nuevo con
  * la Furia ya puesta no hace nada raro, solo no reinicia el contador.</p>
  */
-@Mod.EventBusSubscriber
 public class BarbarianRageManager {
 	private static final int DURATION_ROUNDS = 10; //1 minuto de 5e = 10 asaltos.
 	private static final int DURATION_TICKS = 20 * 60; //1 minuto real fuera de modo turnos.
@@ -67,44 +63,17 @@ public class BarbarianRageManager {
 		player.sendSystemMessage(Component.literal("¡Entras en furia! Resistencia a daño físico y +" + DAMAGE_BONUS + " de daño cuerpo a cuerpo con Fuerza.").withStyle(ChatFeedback.RESOURCE));
 	}
 
-	//--- Tótem de Furia: mismo patrón que los ítems de turno (TurnItemManager) ---
+	//--- Tótem de Furia: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos de
+	//interacción por separado — ver AUDIT_TECHNICAL.md M-EVT-1. Mismo patrón que los ítems de turno
+	//(TurnItemManager). ---
 
-	@SubscribeEvent
-	public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-		tryUse(event, event.getItemStack());
-	}
-
-	@SubscribeEvent
-	public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-		tryUse(event, event.getItemStack());
-	}
-
-	@SubscribeEvent
-	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-		tryUse(event, event.getItemStack());
-	}
-
-	private static void tryUse(PlayerInteractEvent event, ItemStack stack) {
-		if (event.getEntity().level().isClientSide()) return;
-		CompoundTag tag = stack.getTag();
-		if (tag == null || !tag.contains("dndsheets") || !tag.getCompound("dndsheets").getBoolean("rage")) return;
-
+	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (event.getEntity() instanceof ServerPlayer player) activate(player);
 	}
 
 	public static ItemStack buildRageItemStack() {
-		ItemStack stack = new ItemStack(Items.RED_DYE);
-		CompoundTag dndTag = new CompoundTag();
-		dndTag.putBoolean("rage", true);
-		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.literal("Tótem de Furia"));
-
-		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
-		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.literal("Clic derecho: entra en furia " + DURATION_ROUNDS + " asaltos.").withStyle(ChatFormatting.GRAY))));
-		stack.getOrCreateTagElement("display").put("Lore", lore);
-
-		return stack;
+		return AbilityItem.build(Items.RED_DYE, "rage", Component.literal("Tótem de Furia"),
+			Component.literal("Clic derecho: entra en furia " + DURATION_ROUNDS + " asaltos.").withStyle(ChatFormatting.GRAY));
 	}
 }

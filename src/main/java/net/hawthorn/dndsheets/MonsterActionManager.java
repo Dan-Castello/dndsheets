@@ -99,6 +99,7 @@ public class MonsterActionManager {
 	 * (0..N-1 ataques, luego 0..M-1 hechizos) para el monstruo {@code entityId}.</p>
 	 */
 	public static void resolveAction(ServerPlayer dm, int entityId, int actionIndex) {
+		if (actionIndex < 0) return;
 		Entity monsterEntity = dm.level().getEntity(entityId);
 		if (monsterEntity == null) return;
 

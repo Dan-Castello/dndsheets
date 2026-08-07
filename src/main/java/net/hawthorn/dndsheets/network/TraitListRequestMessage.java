@@ -4,9 +4,6 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.TraitRegistry;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
 
@@ -16,7 +13,6 @@ import java.util.function.Supplier;
 
 //Cliente (el DM) -> servidor: eligió a quién conceder un rasgo en PlayerPickerScreen, pide la lista de
 //rasgos cargados (el registro solo vive en memoria del servidor) para abrir TraitGrantScreen.
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class TraitListRequestMessage {
 	String targetUuid;
 
@@ -48,10 +44,5 @@ public class TraitListRequestMessage {
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), new TraitListMessage(message.targetUuid, ids, names));
 		});
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(TraitListRequestMessage.class, TraitListRequestMessage::buffer, TraitListRequestMessage::new, TraitListRequestMessage::handler);
 	}
 }

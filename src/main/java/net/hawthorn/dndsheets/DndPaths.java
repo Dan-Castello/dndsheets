@@ -1,11 +1,5 @@
 package net.hawthorn.dndsheets;
 
-import net.hawthorn.dndsheets.command.CharacterOptionsCommand;
-import net.hawthorn.dndsheets.command.MonsterCommand;
-import net.hawthorn.dndsheets.command.PresetCommand;
-import net.hawthorn.dndsheets.command.SpellCommand;
-import net.hawthorn.dndsheets.command.TraitCommand;
-import net.hawthorn.dndsheets.command.WeaponCommand;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -51,16 +45,16 @@ public class DndPaths {
 		createIfMissing(BACKGROUNDS_DIR);
 		createIfMissing(CLASSES_DIR);
 
-		autoLoadAll(WEAPONS_DIR, WeaponCommand::loadFile, "armas");
-		autoLoadAll(SPELLS_DIR, SpellCommand::loadFile, "hechizos");
-		autoLoadAll(MONSTERS_DIR, MonsterCommand::loadFile, "monstruos");
-		autoLoadAll(TRAITS_DIR, TraitCommand::loadFile, "rasgos");
-		autoLoadAll(PRESETS_DIR, PresetCommand::loadFile, "presets");
+		autoLoadAll(WEAPONS_DIR, Config::loadFile, "armas");
+		autoLoadAll(SPELLS_DIR, SpellRegistry::loadFile, "hechizos");
+		autoLoadAll(MONSTERS_DIR, MonsterRegistry::loadFile, "monstruos");
+		autoLoadAll(TRAITS_DIR, TraitRegistry::loadFile, "rasgos");
+		autoLoadAll(PRESETS_DIR, PresetRegistry::loadFile, "presets");
 		//Categorías del selector de Raza/Trasfondo/Clase (ver CharacterOptionsRegistry): reemplazan la
 		//lista por defecto entera si hay un .json en la carpeta, no la extienden.
-		autoLoadAll(RACES_DIR, file -> CharacterOptionsCommand.loadFile(CharacterOptionsRegistry.RACE, file), "razas");
-		autoLoadAll(BACKGROUNDS_DIR, file -> CharacterOptionsCommand.loadFile(CharacterOptionsRegistry.BACKGROUND, file), "trasfondos");
-		autoLoadAll(CLASSES_DIR, file -> CharacterOptionsCommand.loadFile(CharacterOptionsRegistry.CLASS, file), "clases");
+		autoLoadAll(RACES_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.RACE, file), "razas");
+		autoLoadAll(BACKGROUNDS_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.BACKGROUND, file), "trasfondos");
+		autoLoadAll(CLASSES_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.CLASS, file), "clases");
 	}
 
 	//Público: cada comando *Command lo usa para que el argumento "archivo" de su "load" se autocomplete

@@ -4,15 +4,11 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.MonsterActionManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
 //Cliente (el DM) -> servidor: eligió una acción del menú para un monstruo concreto.
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class MonsterActionChooseMessage {
 	int entityId;
 	int actionIndex;
@@ -42,10 +38,5 @@ public class MonsterActionChooseMessage {
 			if (dm != null && dm.hasPermissions(2)) MonsterActionManager.resolveAction(dm, message.entityId, message.actionIndex);
 		});
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(MonsterActionChooseMessage.class, MonsterActionChooseMessage::buffer, MonsterActionChooseMessage::new, MonsterActionChooseMessage::handler);
 	}
 }

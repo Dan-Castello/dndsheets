@@ -1,7 +1,5 @@
 package net.hawthorn.dndsheets.command;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonParser;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.hawthorn.dndsheets.CharacterOptionsRegistry;
@@ -17,7 +15,6 @@ import net.minecraftforge.fml.common.Mod;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -73,23 +70,13 @@ public class CharacterOptionsCommand {
 		}
 
 		try {
-			int count = loadFile(category, file);
+			int count = CharacterOptionsRegistry.loadFile(category, file);
 			ctx.getSource().sendSuccess(() -> Component.literal("Cargadas " + count + " opciones de " + category + " desde " + fileName + ".json"), true);
 			return count;
 		} catch (IOException | RuntimeException e) {
 			ctx.getSource().sendFailure(Component.literal("No pude leer " + fileName + ".json: " + e.getMessage()));
 			return 0;
 		}
-	}
-
-	//Público: también lo usa DndPaths para precargar solo todos los .json de la carpeta al arrancar el servidor.
-	public static int loadFile(String category, Path file) throws IOException {
-		String json = Files.readString(file);
-		JsonArray array = JsonParser.parseString(json).getAsJsonArray();
-		List<String> values = new ArrayList<>();
-		for (var element : array) values.add(element.getAsString());
-		CharacterOptionsRegistry.replace(category, values);
-		return values.size();
 	}
 
 	private static int list(CommandContext<CommandSourceStack> ctx) {

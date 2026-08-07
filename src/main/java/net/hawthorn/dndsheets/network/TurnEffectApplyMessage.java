@@ -4,9 +4,6 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.TurnManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.UUID;
@@ -15,7 +12,6 @@ import java.util.function.Supplier;
 //Cliente (el DM) -> servidor: formulario de AddTurnEffectScreen para el jugador elegido antes en
 //PlayerPickerScreen (equivalente en GUI a /dndturns effect — ver AUDIT_UX.md, DM #4: antes de esto solo
 //existía como comando tecleado a mano, sin GUI para duración).
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class TurnEffectApplyMessage {
 	String targetUuid, name, dice;
 	int turns;
@@ -51,10 +47,5 @@ public class TurnEffectApplyMessage {
 			TurnManager.applyEffect(target, message.name, message.dice, Math.max(1, Math.min(20, message.turns)));
 		});
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(TurnEffectApplyMessage.class, TurnEffectApplyMessage::buffer, TurnEffectApplyMessage::new, TurnEffectApplyMessage::handler);
 	}
 }

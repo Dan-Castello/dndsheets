@@ -23,6 +23,14 @@ import java.util.regex.Pattern;
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class DiceManager {
 
+	//Motor de TODAS las tiradas del mod: estos Pattern/Logger se compilaban/re-obtenían en cada tirada
+	//(cada golpe, cada tirada de habilidad), así que se cachean una sola vez como campos estáticos.
+	private static final Logger LOGGER = LogManager.getLogger(DndsheetsMod.MODID);
+	private static final Pattern BRACKETED_DIE_PATTERN = Pattern.compile("\\[(\\d+)]");
+	private static final Pattern ABSURD_DICE_COUNT_PATTERN = Pattern.compile("(\\d+)d\\d");
+	private static final Pattern DICE_NOTATION_PATTERN = Pattern.compile("\\d*d\\d+");
+	private static final Pattern BRACKETED_VALUE_PATTERN = Pattern.compile("\\[[^\\]]*]");
+
 	public DiceManager() {
 	}
 
@@ -93,22 +101,21 @@ public class DiceManager {
 	//El primer corchete siempre corresponde al d20 en una tirada de ataque ("1d20 + ..."), así que basta
 	//con leerlo para saber si salió natural 20/1, sin recorrer el árbol interno de DiceResult.
 	private static int firstDieValue(DiceResult result) {
-		Matcher m = Pattern.compile("\\[(\\d+)]").matcher(new DiceResultPrettyPrinter().prettyPrint(result));
+		Matcher m = BRACKETED_DIE_PATTERN.matcher(new DiceResultPrettyPrinter().prettyPrint(result));
 		return m.find() ? Integer.parseInt(m.group(1)) : -1;
 	}
 
 	//Suma todos los dados tirados (todos los corchetes), para poder doblar solo la parte de dados de una
 	//tirada de daño en un crítico sin doblar también el modificador plano.
 	private static int sumDiceValues(DiceResult result) {
-		Matcher m = Pattern.compile("\\[(\\d+)]").matcher(new DiceResultPrettyPrinter().prettyPrint(result));
+		Matcher m = BRACKETED_DIE_PATTERN.matcher(new DiceResultPrettyPrinter().prettyPrint(result));
 		int sum = 0;
 		while (m.find()) sum += Integer.parseInt(m.group(1));
 		return sum;
 	}
 
 	public static RollOutcome roll(JsonObject sheet, String expression) {
-		Logger logger = LogManager.getLogger(DndsheetsMod.MODID);
-		logger.log(org.apache.logging.log4j.Level.getLevel("info"), "Initial parse: " + expression);
+		LOGGER.log(org.apache.logging.log4j.Level.getLevel("info"), "Initial parse: " + expression);
 		expression = expression.toLowerCase();
 		try {
 			int score, modifier;
@@ -149,9 +156,9 @@ public class DiceManager {
 				modifier = Integer.parseInt(sheet.get("proficiencyBonus").getAsString()) / 2;
 				expression = expression.replace("$hprof", String.valueOf(modifier));
 			}
-			logger.log(org.apache.logging.log4j.Level.getLevel("info"), "Final roll: " + expression);
+			LOGGER.log(org.apache.logging.log4j.Level.getLevel("info"), "Final roll: " + expression);
 			if (hasAbsurdDiceCount(expression)) {
-				logger.log(org.apache.logging.log4j.Level.getLevel("info"), "Roll rejected, dice count too large: " + expression);
+				LOGGER.log(org.apache.logging.log4j.Level.getLevel("info"), "Roll rejected, dice count too large: " + expression);
 				return new RollOutcome(null, null);
 			}
 			DiceExpression ex = DiceExpression.parse(expression);
@@ -163,7 +170,7 @@ public class DiceManager {
 			//tire OutOfMemoryError, que es un Error, no una Exception — un catch (Exception e) no lo
 			//atrapaba, y eso tumbaba el hilo del servidor entero. hasAbsurdDiceCount ya corta el caso común
 			//antes de llegar aquí; este catch es el respaldo para cualquier otro fallo raro de la librería.
-			logger.log(org.apache.logging.log4j.Level.getLevel("info"), "Some roll turned up an error, so it will be ignored.");
+			LOGGER.log(org.apache.logging.log4j.Level.getLevel("info"), "Some roll turned up an error, so it will be ignored.");
 			return new RollOutcome(null, null);
 		}
 
@@ -175,7 +182,7 @@ public class DiceManager {
 	private static final long MAX_DICE_COUNT = 10_000;
 
 	private static boolean hasAbsurdDiceCount(String expression) {
-		Matcher m = Pattern.compile("(\\d+)d\\d").matcher(expression);
+		Matcher m = ABSURD_DICE_COUNT_PATTERN.matcher(expression);
 		while (m.find()) {
 			try {
 				if (Long.parseLong(m.group(1)) > MAX_DICE_COUNT) return true;
@@ -191,8 +198,8 @@ public class DiceManager {
 	//(p.ej. "1d10 + 3"); si algún día se admiten paréntesis que reordenen los términos, revisar esto.
 	private static String prettyPrintWithNotation(DiceResult result, String substitutedExpression) {
 		String pretty = new DiceResultPrettyPrinter().prettyPrint(result);
-		Matcher diceMatcher = Pattern.compile("\\d*d\\d+").matcher(substitutedExpression);
-		Matcher bracketMatcher = Pattern.compile("\\[[^\\]]*]").matcher(pretty);
+		Matcher diceMatcher = DICE_NOTATION_PATTERN.matcher(substitutedExpression);
+		Matcher bracketMatcher = BRACKETED_VALUE_PATTERN.matcher(pretty);
 
 		StringBuilder out = new StringBuilder();
 		int lastEnd = 0;

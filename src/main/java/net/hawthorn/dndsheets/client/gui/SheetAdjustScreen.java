@@ -12,8 +12,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+
+import java.util.Map;
 
 /**
  * <p>Ajustes de hoja de UN jugador desde el Panel de DM (equivalente en GUI a
@@ -30,6 +33,35 @@ public class SheetAdjustScreen extends Screen {
 	};
 	private static final String[] AFFINITIES = {"normal", "resistant", "vulnerable", "immune"};
 	private static final String[] PACTS = {"cadena", "hoja", "vara"};
+
+	//Los valores de arriba son los identificadores reales guardados en la hoja/comparados en el resto del
+	//código (DamageTypes.multiplierFor, CombatManager, SheetCommand...) — no se pueden cambiar sin romper
+	//esos otros sitios. Esto solo traduce lo que el botón cíclico MUESTRA, ver AUDIT_TECHNICAL.md m9.
+	private static final Map<String, String> DISPLAY_KEYS = Map.ofEntries(
+		Map.entry("normal", "gui.dndsheets.sheet_adjust.normal"),
+		Map.entry("ventaja", "gui.dndsheets.sheet_adjust.advantage"),
+		Map.entry("desventaja", "gui.dndsheets.sheet_adjust.disadvantage"),
+		Map.entry("resistant", "gui.dndsheets.sheet_adjust.resistant"),
+		Map.entry("vulnerable", "gui.dndsheets.sheet_adjust.vulnerable"),
+		Map.entry("immune", "gui.dndsheets.sheet_adjust.immune"),
+		Map.entry("cadena", "gui.dndsheets.sheet_adjust.pact_chain"),
+		Map.entry("hoja", "gui.dndsheets.sheet_adjust.pact_blade"),
+		Map.entry("vara", "gui.dndsheets.sheet_adjust.pact_tome"),
+		Map.entry("fisico", "gui.dndsheets.sheet_adjust.damage_physical"),
+		Map.entry("cortante", "gui.dndsheets.sheet_adjust.damage_slashing"),
+		Map.entry("perforante", "gui.dndsheets.sheet_adjust.damage_piercing"),
+		Map.entry("contundente", "gui.dndsheets.sheet_adjust.damage_bludgeoning"),
+		Map.entry("fuego", "gui.dndsheets.sheet_adjust.damage_fire"),
+		Map.entry("frio", "gui.dndsheets.sheet_adjust.damage_cold"),
+		Map.entry("rayo", "gui.dndsheets.sheet_adjust.damage_lightning"),
+		Map.entry("acido", "gui.dndsheets.sheet_adjust.damage_acid"),
+		Map.entry("veneno", "gui.dndsheets.sheet_adjust.damage_poison"),
+		Map.entry("psiquico", "gui.dndsheets.sheet_adjust.damage_psychic"),
+		Map.entry("radiante", "gui.dndsheets.sheet_adjust.damage_radiant"),
+		Map.entry("necrotico", "gui.dndsheets.sheet_adjust.damage_necrotic"),
+		Map.entry("fuerza", "gui.dndsheets.sheet_adjust.damage_force"),
+		Map.entry("trueno", "gui.dndsheets.sheet_adjust.damage_thunder")
+	);
 
 	private static final int FIELD_WIDTH = 90;
 	private static final int WIDE_WIDTH = 190;
@@ -85,12 +117,17 @@ public class SheetAdjustScreen extends Screen {
 		goldAmountBox.setMaxLength(10);
 		this.addWidget(goldAmountBox);
 		this.setInitialFocus(goldAmountBox);
-		this.addRenderableWidget(Button.builder(Component.literal("Añadir"), button ->
+		Button addGoldButton = Button.builder(Component.literal("Añadir"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetGoldMessage(targetUuid, "add", parseIntOr(goldAmountBox.getValue(), 0)))
-		).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, 40, FIELD_HEIGHT).build());
-		this.addRenderableWidget(Button.builder(Component.literal("Fijar"), button ->
+		).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, 40, FIELD_HEIGHT).build();
+		addGoldButton.setTooltip(Tooltip.create(Component.literal("Suma esta cantidad al oro actual del jugador.")));
+		this.addRenderableWidget(addGoldButton);
+
+		Button setGoldButton = Button.builder(Component.literal("Fijar"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetGoldMessage(targetUuid, "set", parseIntOr(goldAmountBox.getValue(), 0)))
-		).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 48, y, 40, FIELD_HEIGHT).build());
+		).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 48, y, 40, FIELD_HEIGHT).build();
+		setGoldButton.setTooltip(Tooltip.create(Component.literal("Reemplaza el oro actual del jugador por esta cantidad.")));
+		this.addRenderableWidget(setGoldButton);
 		y += ROW_HEIGHT;
 
 		//--- Espacios de conjuro ---
@@ -114,6 +151,7 @@ public class SheetAdjustScreen extends Screen {
 			advantageIndex = (advantageIndex + 1) % ADVANTAGE_LABELS.length;
 			advantageButton.setMessage(cycleLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex]));
 		}).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH - 60, FIELD_HEIGHT).build());
+		advantageButton.setTooltip(Tooltip.create(Component.literal("Se aplica solo a la próxima tirada de ataque del jugador, luego vuelve a Normal.")));
 		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetAdvantageMessage(targetUuid, ADVANTAGE_LABELS[advantageIndex]))
 		).bounds(centerX - WIDE_WIDTH / 2 + WIDE_WIDTH - 56, y, 56, FIELD_HEIGHT).build());
@@ -128,6 +166,7 @@ public class SheetAdjustScreen extends Screen {
 			affinityIndex = (affinityIndex + 1) % AFFINITIES.length;
 			affinityButton.setMessage(cycleLabel("Afinidad", AFFINITIES[affinityIndex]));
 		}).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, FIELD_WIDTH, FIELD_HEIGHT).build());
+		affinityButton.setTooltip(Tooltip.create(Component.literal("Normal = daño normal, Resistente = mitad, Vulnerable = doble, Inmune = ninguno.")));
 		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetDamageAffinityMessage(targetUuid, DAMAGE_TYPES[damageTypeIndex], AFFINITIES[affinityIndex]))
 		).bounds(centerX - WIDE_WIDTH / 2 + (FIELD_WIDTH + 4) * 2, y, WIDE_WIDTH - (FIELD_WIDTH + 4) * 2, FIELD_HEIGHT).build());
@@ -138,6 +177,7 @@ public class SheetAdjustScreen extends Screen {
 			pactIndex = (pactIndex + 1) % PACTS.length;
 			pactButton.setMessage(cycleLabel("Pacto", PACTS[pactIndex]));
 		}).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH - 60, FIELD_HEIGHT).build());
+		pactButton.setTooltip(Tooltip.create(Component.literal("Elección permanente: Pacto de la Hoja usa Carisma para atacar/dañar con armas.")));
 		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetPactMessage(targetUuid, PACTS[pactIndex]))
 		).bounds(centerX - WIDE_WIDTH / 2 + WIDE_WIDTH - 56, y, 56, FIELD_HEIGHT).build());
@@ -147,10 +187,13 @@ public class SheetAdjustScreen extends Screen {
 		levelBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Nivel"));
 		levelBox.setValue("1");
 		levelBox.setMaxLength(2);
+		levelBox.setTooltip(Tooltip.create(Component.literal("Desacopla el nivel de personaje del XP real de Minecraft.")));
 		this.addWidget(levelBox);
-		this.addRenderableWidget(Button.builder(Component.literal("Fijar nivel"), button ->
+		Button setLevelButton = Button.builder(Component.literal("Fijar nivel"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetLevelMessage(targetUuid, parseIntOr(levelBox.getValue(), 1)))
-		).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, WIDE_WIDTH - FIELD_WIDTH - 4, FIELD_HEIGHT).build());
+		).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, WIDE_WIDTH - FIELD_WIDTH - 4, FIELD_HEIGHT).build();
+		setLevelButton.setTooltip(Tooltip.create(Component.literal("Elección permanente: fija el nivel de personaje, no solo lo estima del XP.")));
+		this.addRenderableWidget(setLevelButton);
 		y += ROW_HEIGHT;
 
 		//--- Percepción pasiva ---
@@ -164,7 +207,12 @@ public class SheetAdjustScreen extends Screen {
 	}
 
 	private static Component cycleLabel(String prefix, String value) {
-		return Component.literal(prefix + ": " + value);
+		return Component.literal(prefix + ": " + displayLabel(value));
+	}
+
+	private static String displayLabel(String internalValue) {
+		String key = DISPLAY_KEYS.get(internalValue);
+		return key != null ? Component.translatable(key).getString() : internalValue;
 	}
 
 	private static int parseIntOr(String value, int fallback) {

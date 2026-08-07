@@ -9,17 +9,13 @@ import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.procedures.RollAnnouncerProcedure;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.function.Supplier;
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class SheetRollButtonMessage {
 	int category, index, subIndex, x, y, z;
 
@@ -78,10 +74,5 @@ public class SheetRollButtonMessage {
 			logger.log(org.apache.logging.log4j.Level.getLevel("severe"), e);
 		}
 
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(SheetRollButtonMessage.class, SheetRollButtonMessage::buffer, SheetRollButtonMessage::new, SheetRollButtonMessage::handler);
 	}
 }

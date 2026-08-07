@@ -4,11 +4,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -35,21 +35,27 @@ public class TraitRegistry {
 	public record Trait(String id, String name, String unarmedAbility, List<LevelDice> unarmedDiceByLevel, List<LevelDice> sneakAttackDiceByLevel) {}
 	public record UnarmedProfile(String dice, String ability) {}
 
-	private static final Map<String, Trait> traits = new LinkedHashMap<>();
+	private static final NamedRegistry<Trait> REGISTRY = new NamedRegistry<>("rasgo", Trait::id);
 
 	public static void register(Trait trait) {
-		if (traits.containsKey(trait.id())) {
-			System.out.println("Aviso: el rasgo \"" + trait.id() + "\" ya estaba cargado, se pisa con la nueva definición.");
-		}
-		traits.put(trait.id(), trait);
+		REGISTRY.register(trait);
 	}
 
 	public static Trait get(String id) {
-		return traits.get(id);
+		return REGISTRY.get(id);
 	}
 
 	public static Set<String> ids() {
-		return traits.keySet();
+		return REGISTRY.ids();
+	}
+
+	//Público: usado por TraitCommand (/dndtraits load) y por DndPaths para precargar solo todos los .json
+	//de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de comandos —
+	//ver AUDIT_TECHNICAL.md M-ARQ-1.
+	private static final JsonRegistryLoader<Trait> LOADER = new JsonRegistryLoader<>("rasgo", TraitRegistry::parse, TraitRegistry::register);
+
+	public static int loadFile(Path file) throws IOException {
+		return LOADER.loadFile(file);
 	}
 
 	public static Trait parse(JsonObject json) {
@@ -107,7 +113,7 @@ public class TraitRegistry {
 		if (sheet == null || !sheet.has("traits")) return null;
 
 		for (JsonElement el : sheet.getAsJsonArray("traits")) {
-			Trait trait = traits.get(el.getAsString());
+			Trait trait = REGISTRY.get(el.getAsString());
 			if (trait == null || trait.unarmedDiceByLevel().isEmpty()) continue;
 
 			for (LevelDice tier : trait.unarmedDiceByLevel()) {
@@ -124,7 +130,7 @@ public class TraitRegistry {
 		if (sheet == null || !sheet.has("traits")) return null;
 
 		for (JsonElement el : sheet.getAsJsonArray("traits")) {
-			Trait trait = traits.get(el.getAsString());
+			Trait trait = REGISTRY.get(el.getAsString());
 			if (trait == null || trait.sneakAttackDiceByLevel().isEmpty()) continue;
 
 			for (LevelDice tier : trait.sneakAttackDiceByLevel()) {

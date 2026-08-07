@@ -4,9 +4,6 @@ import net.hawthorn.dndsheets.CharacterOptionsRegistry;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
 
@@ -16,7 +13,6 @@ import java.util.function.Supplier;
 //opciones de esa categoría (ver CharacterOptionsRegistry, solo vive en memoria del servidor). Sin
 //permiso especial: cualquier jugador puede elegir su propia raza/trasfondo/clase, a diferencia de los
 //mensajes del Panel de DM.
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class CharacterOptionsRequestMessage {
 	String category;
 
@@ -41,10 +37,5 @@ public class CharacterOptionsRequestMessage {
 				new CharacterOptionsListMessage(message.category, CharacterOptionsRegistry.get(message.category)));
 		});
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(CharacterOptionsRequestMessage.class, CharacterOptionsRequestMessage::buffer, CharacterOptionsRequestMessage::new, CharacterOptionsRequestMessage::handler);
 	}
 }

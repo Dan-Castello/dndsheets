@@ -1,8 +1,8 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -19,13 +19,11 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.hawthorn.dndsheets.command.TurnCommand;
 import net.minecraftforge.event.entity.ProjectileImpactEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.Map;
@@ -107,7 +105,7 @@ public class CombatManager {
 
 	//Sin nadie llevando la partida en vivo, nadie va a escribir /dndturns start (ni sumar a mano a quien
 	//llega tarde): el primer golpe de un jugador a un monstruo arranca el combate si no había uno activo,
-	//mismo punto de entrada que ya usa el Panel de DM (TurnCommand.startAt). Si el jugador no gana la
+	//mismo punto de entrada que ya usa el Panel de DM (TurnManager.startAt). Si el jugador no gana la
 	//iniciativa contra el propio monstruo, este golpe queda bloqueado igual que cualquier otro fuera de
 	//turno (el tryAct de justo abajo) — no hay "golpe gratis" por haber sido quien disparó el encuentro.
 	//Si el combate YA estaba activo pero este jugador nunca entró al orden (llegó después de que
@@ -115,7 +113,7 @@ public class CombatManager {
 	private static void autoStartCombatIfNeeded(Entity target, Player attacker) {
 		if (!(target.level() instanceof ServerLevel level)) return;
 		if (!TurnManager.isActive()) {
-			TurnCommand.startAt(level, target.position(), TurnCommand.DEFAULT_RADIUS);
+			TurnManager.startAt(level, target.position(), TurnManager.DEFAULT_RADIUS);
 			return;
 		}
 		if (attacker instanceof ServerPlayer serverPlayer) TurnManager.addLatePlayerIfMissing(level, serverPlayer);
@@ -216,7 +214,7 @@ public class CombatManager {
 		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(attackerSheet, expression, advantage);
 		if (attackRoll.outcome().result() == null) return;
 		CombatFx.diceTick(attacker);
-		sendSheetUpdate(attacker, attackerSheet);
+		sendSheetUpdate(attacker);
 
 		String attackerName = SheetLoader.characterNameOf(attackerSheet, attacker);
 		String victimName = SheetLoader.characterNameOf(victimSheet, victim);
@@ -269,7 +267,7 @@ public class CombatManager {
 		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(attackerSheet, expression, advantage);
 		if (attackRoll.outcome().result() == null) return;
 		CombatFx.diceTick(attacker);
-		sendSheetUpdate(attacker, attackerSheet);
+		sendSheetUpdate(attacker);
 
 		String attackerName = SheetLoader.characterNameOf(attackerSheet, attacker);
 		if (inspiration > 0) ChatFeedback.broadcast(attacker, Component.translatable("chat.dndsheets.combat.bardic_inspiration", attackerName, inspiration).withStyle(ChatFormatting.LIGHT_PURPLE));
@@ -528,8 +526,14 @@ public class CombatManager {
 		ChatFeedback.broadcast(player, ChatFeedback.damageOnly(roll.characterName(), roll.weaponName(), roll.formatted()));
 	}
 
-	private static void sendSheetUpdate(Player player, JsonObject sheet) {
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) player), new SheetClientMessage(sheet.toString().getBytes()));
+	//Llamado justo después de consumeAdvantage/BardInspirationManager.consumeAttackBonus en cada tirada de
+	//ataque: en vez de reenviar la hoja completa, manda solo los dos campos que esos dos métodos acaban de
+	//tocar — antes esto pasaba en CADA golpe de CADA combate. Ver AUDIT_TECHNICAL.md M-NET-1.
+	private static void sendSheetUpdate(Player player) {
+		JsonObject patch = new JsonObject();
+		patch.addProperty("nextAttackAdvantage", "normal");
+		patch.add("bardicInspiration", JsonNull.INSTANCE);
+		DndsheetsMod.sendSheetFieldUpdate((ServerPlayer) player, patch);
 	}
 
 	//Suma el bono configurado (dndsheets-common.toml) por cada nivel de cada encantamiento real que lleve el arma.

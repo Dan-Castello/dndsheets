@@ -1,16 +1,28 @@
 package net.hawthorn.dndsheets;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -211,6 +223,109 @@ public class Config {
 	//creativa: las de weaponDamageByItem ya son ítems reales de Minecraft, no hace falta repetirlas ahí.
 	public static java.util.Set<String> customWeaponIds() {
 		return jsonWeaponGiveInfo.keySet();
+	}
+
+	//Público: usado por WeaponCommand (/dndweapons load) y por DndPaths para precargar solo todos los
+	//.json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de
+	//comandos — ver AUDIT_TECHNICAL.md M-ARQ-1. No usa JsonRegistryLoader como los demás *Registry: valida
+	//varios campos obligatorios a la vez y llama a registerWeapon con parámetros posicionales en vez de un
+	//par parse()/register() sobre un registro propio.
+	public static int loadFile(Path file) throws IOException {
+		String json = Files.readString(file);
+		JsonArray weapons = JsonParser.parseString(json).getAsJsonArray();
+		int count = 0;
+		int index = 0;
+		for (JsonElement element : weapons) {
+			index++;
+			try {
+				JsonObject weapon = element.getAsJsonObject();
+				if (!weapon.has("id") || !weapon.has("dice") || !weapon.has("ability")) {
+					DndsheetsMod.LOGGER.warn("Saltando arma #{} en {}: falta \"id\", \"dice\" o \"ability\".", index, file.getFileName());
+					continue;
+				}
+
+				String id = weapon.get("id").getAsString();
+				String dice = weapon.get("dice").getAsString();
+				String ability = weapon.get("ability").getAsString();
+				String name = weapon.has("name") ? weapon.get("name").getAsString() : id;
+				String baseItem = weapon.has("item") ? weapon.get("item").getAsString() : "minecraft:stick";
+				String damageType = weapon.has("damageType") ? weapon.get("damageType").getAsString() : "fisico";
+				String hands = weapon.has("hands") ? weapon.get("hands").getAsString() : "one";
+				String versatileDice = weapon.has("versatileDice") ? weapon.get("versatileDice").getAsString() : null;
+
+				//Opcional: qué clases pueden usarla (subcadenas comparadas contra "Clase y Nivel" de la hoja,
+				//mismo patrón que hitDieFor) — sin este campo (el caso por defecto) cualquier clase
+				//puede usar el arma, igual que antes.
+				List<String> classes = new java.util.ArrayList<>();
+				if (weapon.has("classes")) {
+					for (JsonElement el : weapon.getAsJsonArray("classes")) classes.add(el.getAsString());
+				}
+
+				Integer customModelData = weapon.has("customModelData") ? weapon.get("customModelData").getAsInt() : null;
+
+				registerWeapon(id, dice, ability, damageType, hands, versatileDice, classes, name, baseItem, customModelData);
+				count++;
+			} catch (RuntimeException e) {
+				DndsheetsMod.LOGGER.warn("Saltando arma #{} en {}: {}", index, file.getFileName(), e.toString());
+			}
+		}
+		return count;
+	}
+
+	//Si el id es directamente un ítem real de Minecraft (p.ej. "minecraft:bow"), se entrega tal cual, sin
+	//etiqueta NBT. Si es un id personalizado (p.ej. "dndsheets:dagger"), se etiqueta sobre el ítem base
+	//configurado (por /dndweapons load) para que el resto del sistema lo reconozca como esa arma.
+	//Público: también lo usan WeaponCommand (/dndweapons give), la pestaña creativa
+	//(DndsheetsModCreativeTab) y PresetManager (arma inicial de un preset).
+	public static ItemStack buildWeaponStack(String weaponId, int count) {
+		ResourceLocation directLoc = ResourceLocation.tryParse(weaponId);
+		Item directItem = directLoc != null ? ForgeRegistries.ITEMS.getValue(directLoc) : null;
+		if (directItem != null && directItem != Items.AIR) {
+			return new ItemStack(directItem, count);
+		}
+
+		WeaponGiveInfo giveInfo = giveInfoFor(weaponId);
+		Item baseItem = Items.STICK;
+		if (giveInfo != null) {
+			ResourceLocation baseLoc = ResourceLocation.tryParse(giveInfo.baseItemId());
+			Item resolved = baseLoc != null ? ForgeRegistries.ITEMS.getValue(baseLoc) : null;
+			if (resolved != null) baseItem = resolved;
+		}
+
+		ItemStack stack = new ItemStack(baseItem, count);
+		CompoundTag dndTag = new CompoundTag();
+		dndTag.putString("weapon", weaponId);
+		stack.getOrCreateTag().put("dndsheets", dndTag);
+		if (giveInfo != null) {
+			stack.setHoverName(Component.literal(giveInfo.displayName()));
+			//Reskin por resource pack: un modelo custom en assets/minecraft/models/item/<baseItem>.json puede
+			//mapear este número a un modelo/textura distinta, sin que el arma tenga que compartir la del
+			//ítem base que la representa (p.ej. una "Daga" que ya no se ve como una espada de hierro).
+			if (giveInfo.customModelData() != null) stack.getOrCreateTag().putInt("CustomModelData", giveInfo.customModelData());
+		}
+		addHandsLore(stack, weaponDefaultFor(weaponId));
+		return stack;
+	}
+
+	//Para "identificar armas de una y dos manos ya que algunas tienen bonificaciones" (feedback de
+	//playtesting): una línea de lore visible en el tooltip del ítem, no solo un dato en el JSON que solo
+	//lee el código. Las armas de "hands":"one" (el caso por defecto, casi todas) no llevan lore extra —
+	//no hay nada especial que señalar.
+	private static void addHandsLore(ItemStack stack, WeaponDefault weaponDefault) {
+		if (weaponDefault == null) return;
+
+		String text = switch (weaponDefault.hands()) {
+			case "two" -> "A dos manos";
+			case "versatile" -> weaponDefault.isVersatile()
+				? "Versátil (" + weaponDefault.dice() + " a una mano, " + weaponDefault.versatileDice() + " a dos)"
+				: null;
+			default -> null;
+		};
+		if (text == null) return;
+
+		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
+		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(Component.literal(text).withStyle(ChatFormatting.GRAY))));
+		stack.getOrCreateTagElement("display").put("Lore", lore);
 	}
 
 	/**

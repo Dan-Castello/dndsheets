@@ -207,6 +207,47 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private static final ResourceLocation BG_MAIN = new ResourceLocation("dndsheets:textures/screens/character_sheet.png");
 	private static final ResourceLocation BG_SKILLS = new ResourceLocation("dndsheets:textures/screens/character_sheet_2.png");
 	private static final ResourceLocation BG_ATTACKS = new ResourceLocation("dndsheets:textures/screens/character_sheet_3.png");
+	private static final ResourceLocation ICON_STR = new ResourceLocation("dndsheets:textures/screens/str.png");
+	private static final ResourceLocation ICON_DEX = new ResourceLocation("dndsheets:textures/screens/dex.png");
+	private static final ResourceLocation ICON_CON = new ResourceLocation("dndsheets:textures/screens/cons.png");
+	private static final ResourceLocation ICON_INT = new ResourceLocation("dndsheets:textures/screens/int.png");
+	private static final ResourceLocation ICON_WIS = new ResourceLocation("dndsheets:textures/screens/wis.png");
+	private static final ResourceLocation ICON_CHA = new ResourceLocation("dndsheets:textures/screens/cha.png");
+
+	//renderLabels corre cada frame: estos Component (texto estático, nunca cambia) se cachean una sola
+	//vez en vez de construirse de nuevo en cada uno.
+	private static final Component LABEL_NAME = Component.translatable("gui.dndsheets.character_sheet.label_name");
+	private static final Component LABEL_ARMOR_CLASS_AC = Component.translatable("gui.dndsheets.character_sheet.label_armor_class_ac");
+	private static final Component LABEL_HIT_POINTS = Component.translatable("gui.dndsheets.character_sheet.label_hit_points");
+	private static final Component LABEL_HIT_POINTS_MAX = Component.translatable("gui.dndsheets.character_sheet.label_hit_points_max");
+	private static final Component LABEL_HIT_POINTS_TEMP = Component.translatable("gui.dndsheets.character_sheet.label_hit_points_temp");
+	private static final Component LABEL_SPEED = Component.translatable("gui.dndsheets.character_sheet.label_speed");
+	private static final Component LABEL_PROFICIENCY_BONUS = Component.translatable("gui.dndsheets.character_sheet.label_proficiency_bonus");
+	private static final Component LABEL_CLASS = Component.translatable("gui.dndsheets.character_sheet.label_class");
+	private static final Component LABEL_RACE = Component.translatable("gui.dndsheets.character_sheet.label_race");
+	private static final Component LABEL_BACKGROUND = Component.translatable("gui.dndsheets.character_sheet.label_background");
+	private static final Component LABEL_HITDICE = Component.translatable("gui.dndsheets.character_sheet.label_hitdice");
+	private static final Component LABEL_LEVEL = Component.translatable("gui.dndsheets.character_sheet.label_level");
+	private static final Component LABEL_HUNGER = Component.translatable("gui.dndsheets.character_sheet.label_hunger");
+	private static final Component LABEL_INITIATIVE = Component.translatable("gui.dndsheets.character_sheet.label_initiative");
+	private static final Component LABEL_SKILL_ATHLETICS = Component.translatable("gui.dndsheets.character_sheet.label_skill_athletics");
+	private static final Component LABEL_SKILL_ACROBATICS = Component.translatable("gui.dndsheets.character_sheet.label_skill_acrobatics");
+	private static final Component LABEL_SKILL_SLEIGHTOFHAND = Component.translatable("gui.dndsheets.character_sheet.label_skill_sleightofhand");
+	private static final Component LABEL_SKILL_STEALTH = Component.translatable("gui.dndsheets.character_sheet.label_skill_stealth");
+	private static final Component LABEL_SKILL_ARCANA = Component.translatable("gui.dndsheets.character_sheet.label_skill_arcana");
+	private static final Component LABEL_SKILL_HISTORY = Component.translatable("gui.dndsheets.character_sheet.label_skill_history");
+	private static final Component LABEL_SKILL_INVESTIGATION = Component.translatable("gui.dndsheets.character_sheet.label_skill_investigation");
+	private static final Component LABEL_SKILL_NATURE = Component.translatable("gui.dndsheets.character_sheet.label_skill_nature");
+	private static final Component LABEL_SKILL_RELIGION = Component.translatable("gui.dndsheets.character_sheet.label_skill_religion");
+	private static final Component LABEL_SKILL_ANIMALHANDLING = Component.translatable("gui.dndsheets.character_sheet.label_skill_animalhandling");
+	private static final Component LABEL_SKILL_INSIGHT = Component.translatable("gui.dndsheets.character_sheet.label_skill_insight");
+	private static final Component LABEL_SKILL_MEDICINE = Component.translatable("gui.dndsheets.character_sheet.label_skill_medicine");
+	private static final Component LABEL_SKILL_PERCEPTION = Component.translatable("gui.dndsheets.character_sheet.label_skill_perception");
+	private static final Component LABEL_SKILL_SURVIVAL = Component.translatable("gui.dndsheets.character_sheet.label_skill_survival");
+	private static final Component LABEL_SKILL_DECEPTION = Component.translatable("gui.dndsheets.character_sheet.label_skill_deception");
+	private static final Component LABEL_SKILL_INTIMIDATION = Component.translatable("gui.dndsheets.character_sheet.label_skill_intimidation");
+	private static final Component LABEL_SKILL_PERFORMANCE = Component.translatable("gui.dndsheets.character_sheet.label_skill_performance");
+	private static final Component LABEL_SKILL_PERSUASION = Component.translatable("gui.dndsheets.character_sheet.label_skill_persuasion");
 
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
@@ -265,12 +306,12 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				break;
 		}
 
-		guiGraphics.blit(new ResourceLocation("dndsheets:textures/screens/str.png"), this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y, 0, 0, 16, 16, 16, 16);
-		guiGraphics.blit(new ResourceLocation("dndsheets:textures/screens/dex.png"), this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y + ABILITY_SEPARATION, 0, 0, 16, 16, 16, 16);
-		guiGraphics.blit(new ResourceLocation("dndsheets:textures/screens/cons.png"), this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y + ABILITY_SEPARATION*2, 0, 0, 16, 16, 16, 16);
-		guiGraphics.blit(new ResourceLocation("dndsheets:textures/screens/int.png"), this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y + ABILITY_SEPARATION*3, 0, 0, 16, 16, 16, 16);
-		guiGraphics.blit(new ResourceLocation("dndsheets:textures/screens/wis.png"), this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y + ABILITY_SEPARATION*4, 0, 0, 16, 16, 16, 16);
-		guiGraphics.blit(new ResourceLocation("dndsheets:textures/screens/cha.png"), this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y + ABILITY_SEPARATION*5, 0, 0, 16, 16, 16, 16);
+		guiGraphics.blit(ICON_STR, this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y, 0, 0, 16, 16, 16, 16);
+		guiGraphics.blit(ICON_DEX, this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y + ABILITY_SEPARATION, 0, 0, 16, 16, 16, 16);
+		guiGraphics.blit(ICON_CON, this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y + ABILITY_SEPARATION*2, 0, 0, 16, 16, 16, 16);
+		guiGraphics.blit(ICON_INT, this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y + ABILITY_SEPARATION*3, 0, 0, 16, 16, 16, 16);
+		guiGraphics.blit(ICON_WIS, this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y + ABILITY_SEPARATION*4, 0, 0, 16, 16, 16, 16);
+		guiGraphics.blit(ICON_CHA, this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y + ABILITY_SEPARATION*5, 0, 0, 16, 16, 16, 16);
 
 		//guiGraphics.blit(new ResourceLocation("dndsheets:textures/screens/dsaves_success.png"), this.leftPos + DEATHSAVES_OFFSET_X, this.topPos + DEATHSAVES_OFFSET_Y, 0, 0, 16, 16, 16, 16);
 		//guiGraphics.blit(new ResourceLocation("dndsheets:textures/screens/dsaves_fail.png"), this.leftPos + DEATHSAVES_OFFSET_X, this.topPos + DEATHSAVES_OFFSET_Y + 20, 0, 0, 16, 16, 16, 16);
@@ -423,55 +464,55 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		//guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_character_sheet"), 15, 10, -12829636, false);
 		final int lightColor = 0xFFFFFF;
 		final int darkColor = 0x1F1F1F;
-		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_name"), NAME_OFFSET_X, NAME_OFFSET_Y - 10, lightColor, false);
+		guiGraphics.drawString(this.font, LABEL_NAME, NAME_OFFSET_X, NAME_OFFSET_Y - 10, lightColor, false);
 
 		switch (panelActive) {
 			case MAIN:
 				//Ámbar = se rellena solo (ver AUTO_FIELD_COLOR); color normal = se escribe a mano.
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_armor_class_ac"), ACHP_OFFSET_X, ACHP_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hit_points"), ACHP_OFFSET_X + ACHP_SEPARATION, ACHP_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hit_points_max"), ACHP_OFFSET_X + ACHP_SEPARATION * 2, ACHP_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hit_points_temp"), ACHP_OFFSET_X + ACHP_SEPARATION * 3, ACHP_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_speed"), ACHP_OFFSET_X + ACHP_SEPARATION * 4, ACHP_OFFSET_Y - 10, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_ARMOR_CLASS_AC, ACHP_OFFSET_X, ACHP_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
+				guiGraphics.drawString(this.font, LABEL_HIT_POINTS, ACHP_OFFSET_X + ACHP_SEPARATION, ACHP_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
+				guiGraphics.drawString(this.font, LABEL_HIT_POINTS_MAX, ACHP_OFFSET_X + ACHP_SEPARATION * 2, ACHP_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
+				guiGraphics.drawString(this.font, LABEL_HIT_POINTS_TEMP, ACHP_OFFSET_X + ACHP_SEPARATION * 3, ACHP_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
+				guiGraphics.drawString(this.font, LABEL_SPEED, ACHP_OFFSET_X + ACHP_SEPARATION * 4, ACHP_OFFSET_Y - 10, lightColor, false);
 				guiGraphics.drawString(this.font, "+", PROF_OFFSET_X - 8, PROF_OFFSET_Y + 5, AUTO_FIELD_COLOR, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_proficiency_bonus"), PROF_OFFSET_X + 20, PROF_OFFSET_Y + 5, AUTO_FIELD_COLOR, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_class"), CLASS_OFFSET_X, CLASS_OFFSET_Y - 10, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_race"), RACE_OFFSET_X, RACE_OFFSET_Y - 10, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_background"), BACKG_OFFSET_X, BACKG_OFFSET_Y - 10, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hitdice"), HITDICE_OFFSET_X, HITDICE_OFFSET_Y - 10, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_level"), LEVEL_OFFSET_X, LEVEL_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_hunger"), HUNGER_OFFSET_X, HUNGER_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
+				guiGraphics.drawString(this.font, LABEL_PROFICIENCY_BONUS, PROF_OFFSET_X + 20, PROF_OFFSET_Y + 5, AUTO_FIELD_COLOR, false);
+				guiGraphics.drawString(this.font, LABEL_CLASS, CLASS_OFFSET_X, CLASS_OFFSET_Y - 10, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_RACE, RACE_OFFSET_X, RACE_OFFSET_Y - 10, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_BACKGROUND, BACKG_OFFSET_X, BACKG_OFFSET_Y - 10, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_HITDICE, HITDICE_OFFSET_X, HITDICE_OFFSET_Y - 10, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_LEVEL, LEVEL_OFFSET_X, LEVEL_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
+				guiGraphics.drawString(this.font, LABEL_HUNGER, HUNGER_OFFSET_X, HUNGER_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
 
-				guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_initiative"), INITIATIVE_OFFSET_X + 8, INITIATIVE_OFFSET_Y - 15, lightColor);
+				guiGraphics.drawCenteredString(this.font, LABEL_INITIATIVE, INITIATIVE_OFFSET_X + 8, INITIATIVE_OFFSET_Y - 15, lightColor);
 				break;
 			case SKILLS:
 				//STRENGTH
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_athletics"), SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_ATHLETICS, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y, lightColor, false);
 
 				//DEXTERITY
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_acrobatics"), SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION, darkColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_sleightofhand"), SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*2, darkColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_stealth"), SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*3, darkColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_ACROBATICS, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION, darkColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_SLEIGHTOFHAND, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*2, darkColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_STEALTH, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*3, darkColor, false);
 
 				//INTELLIGENCE
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_arcana"), SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*4, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_history"), SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*5, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_investigation"), SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*6, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_nature"), SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*7, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_religion"), SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*8, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_ARCANA, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*4, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_HISTORY, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*5, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_INVESTIGATION, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*6, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_NATURE, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*7, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_RELIGION, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*8, lightColor, false);
 
 				//WISDOM
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_animalhandling"), SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_insight"), SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_medicine"), SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*2, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_perception"), SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*3, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_survival"), SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*4, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_ANIMALHANDLING, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_INSIGHT, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_MEDICINE, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*2, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_PERCEPTION, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*3, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_SURVIVAL, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*4, lightColor, false);
 
 				//CHARISMA
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_deception"), SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*5, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_intimidation"), SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*6, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_performance"), SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*7, lightColor, false);
-				guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_skill_persuasion"), SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*8, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_DECEPTION, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*5, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_INTIMIDATION, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*6, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_PERFORMANCE, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*7, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_PERSUASION, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*8, lightColor, false);
 				break;
 		}
 
@@ -733,183 +774,69 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		scrollList.addListItem(nameBox, rollButtons, editButtons, deleteButton);
 	}
 
-	private void initSidePanel() {
-
-		characterName = new EditBox(this.font, this.leftPos + NAME_OFFSET_X, this.topPos + NAME_OFFSET_Y, 85, 18, Component.translatable("gui.dndsheets.character_sheet.charactername")) {
+	//Cada campo de texto de la hoja repetía esta misma lógica de "placeholder que reaparece cuando el
+	//campo queda vacío" como subclase anónima de EditBox, cambiando solo la clave de traducción — ver
+	//AUDIT_TECHNICAL.md A-DUP-4. x/y son offsets sin aplicar leftPos/topPos todavía, igual que las
+	//constantes OFFSET_X/OFFSET_Y de la clase.
+	private EditBox placeholderEditBox(int x, int y, int width, int height, String translationKey, int maxLength) {
+		String placeholder = Component.translatable(translationKey).getString();
+		EditBox box = new EditBox(this.font, this.leftPos + x, this.topPos + y, width, height, Component.translatable(translationKey)) {
 			@Override
 			public void insertText(String text) {
 				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.charactername").getString());
-				else
-					setSuggestion(null);
+				setSuggestion(getValue().isEmpty() ? placeholder : null);
 			}
 
 			@Override
 			public void moveCursorTo(int pos) {
 				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.charactername").getString());
-				else
-					setSuggestion(null);
+				setSuggestion(getValue().isEmpty() ? placeholder : null);
 			}
 		};
-		characterName.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.charactername").getString());
-		characterName.setMaxLength(50);
+		box.setSuggestion(placeholder);
+		box.setMaxLength(maxLength);
+		return box;
+	}
+
+	private void initSidePanel() {
+		initCharacterNameBox();
+		initAbilityScoreBoxes();
+		initAbilityRollButtons();
+	}
+
+	private void initCharacterNameBox() {
+		characterName = placeholderEditBox(NAME_OFFSET_X, NAME_OFFSET_Y, 85, 18, "gui.dndsheets.character_sheet.charactername", 50);
 		guistate.put("text:charactername", characterName);
 		this.addWidget(this.characterName);
+	}
 
-		/*
-			ABILITY SCORES
-		 */
-		strength = new EditBox(this.font, this.leftPos + ABILITY_OFFSET_X, this.topPos + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, Component.translatable("gui.dndsheets.character_sheet.strength")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.strength").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.strength").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		strength.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.strength").getString());
-		strength.setMaxLength(2);
+	private void initAbilityScoreBoxes() {
+		strength = placeholderEditBox(ABILITY_OFFSET_X, ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, "gui.dndsheets.character_sheet.strength", 2);
 		guistate.put("text:strength", strength);
 		this.addWidget(this.strength);
 
-		dexterity = new EditBox(this.font, this.leftPos + ABILITY_OFFSET_X, this.topPos + ABILITY_SEPARATION + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, Component.translatable("gui.dndsheets.character_sheet.dexterity")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.dexterity").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.dexterity").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		dexterity.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.dexterity").getString());
-		dexterity.setMaxLength(2);
+		dexterity = placeholderEditBox(ABILITY_OFFSET_X, ABILITY_SEPARATION + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, "gui.dndsheets.character_sheet.dexterity", 2);
 		guistate.put("text:dexterity", dexterity);
 		this.addWidget(this.dexterity);
 
-		constitution = new EditBox(this.font, this.leftPos + ABILITY_OFFSET_X, this.topPos + ABILITY_SEPARATION*2 + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, Component.translatable("gui.dndsheets.character_sheet.constitution")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.constitution").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.constitution").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		constitution.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.constitution").getString());
-		constitution.setMaxLength(2);
+		constitution = placeholderEditBox(ABILITY_OFFSET_X, ABILITY_SEPARATION*2 + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, "gui.dndsheets.character_sheet.constitution", 2);
 		guistate.put("text:constitution", constitution);
 		this.addWidget(this.constitution);
 
-		intelligence = new EditBox(this.font, this.leftPos + ABILITY_OFFSET_X, this.topPos + ABILITY_SEPARATION*3 + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, Component.translatable("gui.dndsheets.character_sheet.intelligence")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.intelligence").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.intelligence").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		intelligence.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.intelligence").getString());
-		intelligence.setMaxLength(2);
+		intelligence = placeholderEditBox(ABILITY_OFFSET_X, ABILITY_SEPARATION*3 + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, "gui.dndsheets.character_sheet.intelligence", 2);
 		guistate.put("text:intelligence", intelligence);
 		this.addWidget(this.intelligence);
 
-		wisdom = new EditBox(this.font, this.leftPos + ABILITY_OFFSET_X, this.topPos + ABILITY_SEPARATION*4 + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, Component.translatable("gui.dndsheets.character_sheet.wisdom")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.wisdom").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.wisdom").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		wisdom.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.wisdom").getString());
-		wisdom.setMaxLength(2);
+		wisdom = placeholderEditBox(ABILITY_OFFSET_X, ABILITY_SEPARATION*4 + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, "gui.dndsheets.character_sheet.wisdom", 2);
 		guistate.put("text:wisdom", wisdom);
 		this.addWidget(this.wisdom);
 
-		charisma = new EditBox(this.font, this.leftPos + ABILITY_OFFSET_X, this.topPos + ABILITY_SEPARATION*5 + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, Component.translatable("gui.dndsheets.character_sheet.charisma")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.charisma").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.charisma").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		charisma.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.charisma").getString());
-		charisma.setMaxLength(2);
+		charisma = placeholderEditBox(ABILITY_OFFSET_X, ABILITY_SEPARATION*5 + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, "gui.dndsheets.character_sheet.charisma", 2);
 		guistate.put("text:charisma", charisma);
 		this.addWidget(this.charisma);
+	}
 
-		/*
-			MAIN ROLL BUTTONS
-		 */
-
+	private void initAbilityRollButtons() {
 		int checkBtnOffset = -42;
 		int saveBtnOffset = -24;
 
@@ -927,159 +854,42 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		makeRollButton("button:roll_int_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*3, 1, 3, true, saveButtons, saveEditButtons);
 		//WIS
 		makeRollButton("button:roll_wis", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*4, 0, 4, false, checkButtons, checkEditButtons);
-		makeRollButton("button:roll_wis_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*4, 1, 4, true, saveButtons, saveEditButtons);;
+		makeRollButton("button:roll_wis_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*4, 1, 4, true, saveButtons, saveEditButtons);
 		//CHA
 		makeRollButton("button:roll_cha", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*5, 0, 5, false, checkButtons, checkEditButtons);
 		makeRollButton("button:roll_cha_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*5, 1, 5, true, saveButtons, saveEditButtons);
-
 	}
 
 	private void initMainPanel() {
-		/*
-			TEXT FIELDS
-		 */
+		initVitalsBoxes();
+		initOptionPickerFields();
+		initHitDiceFields();
+		initInitiativeButtons();
+		initBottomButtons();
+	}
 
-		hitPoints = new EditBox(this.font, this.leftPos + ACHP_OFFSET_X + ACHP_SEPARATION, this.topPos + ACHP_OFFSET_Y, 32, 18, Component.translatable("gui.dndsheets.character_sheet.hitpoints")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitpoints").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitpoints").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		hitPoints.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitpoints").getString());
-		hitPoints.setMaxLength(4);
+	private void initVitalsBoxes() {
+		hitPoints = placeholderEditBox(ACHP_OFFSET_X + ACHP_SEPARATION, ACHP_OFFSET_Y, 32, 18, "gui.dndsheets.character_sheet.hitpoints", 4);
 		guistate.put("text:hitpoints", hitPoints);
 		this.addWidget(this.hitPoints);
 
-		hitPointsTemp = new EditBox(this.font, this.leftPos + ACHP_OFFSET_X + ACHP_SEPARATION*3, this.topPos + ACHP_OFFSET_Y, 32, 18, Component.translatable("gui.dndsheets.character_sheet.hitpoints_temp")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitpoints_temp").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitpoints_temp").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		hitPointsTemp.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitpoints_temp").getString());
-		hitPointsTemp.setMaxLength(4);
+		hitPointsTemp = placeholderEditBox(ACHP_OFFSET_X + ACHP_SEPARATION*3, ACHP_OFFSET_Y, 32, 18, "gui.dndsheets.character_sheet.hitpoints_temp", 4);
 		guistate.put("text:hitpoints_temp", hitPointsTemp);
 		this.addWidget(this.hitPointsTemp);
 
-		hitPointsMax = new EditBox(this.font, this.leftPos + ACHP_OFFSET_X + ACHP_SEPARATION*2, this.topPos + ACHP_OFFSET_Y, 32, 18, Component.translatable("gui.dndsheets.character_sheet.hitpoints_max")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitpoints_max").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitpoints_max").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		hitPointsMax.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitpoints_max").getString());
-		hitPointsMax.setMaxLength(4);
+		hitPointsMax = placeholderEditBox(ACHP_OFFSET_X + ACHP_SEPARATION*2, ACHP_OFFSET_Y, 32, 18, "gui.dndsheets.character_sheet.hitpoints_max", 4);
 		guistate.put("text:hitpoints_max", hitPointsMax);
 		this.addWidget(this.hitPointsMax);
 
-		armorClass = new EditBox(this.font, this.leftPos + ACHP_OFFSET_X, this.topPos + ACHP_OFFSET_Y, 32, 18, Component.translatable("gui.dndsheets.character_sheet.armorclass")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.armorclass").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.armorclass").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		armorClass.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.armorclass").getString());
-		armorClass.setMaxLength(2);
+		armorClass = placeholderEditBox(ACHP_OFFSET_X, ACHP_OFFSET_Y, 32, 18, "gui.dndsheets.character_sheet.armorclass", 2);
 		guistate.put("text:armorclass", armorClass);
 		this.addWidget(this.armorClass);
 
-		speed = new EditBox(this.font, this.leftPos + ACHP_OFFSET_X + ACHP_SEPARATION*4, this.topPos + ACHP_OFFSET_Y, 32, 18, Component.translatable("gui.dndsheets.character_sheet.speed")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.speed").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.speed").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		speed.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.speed").getString());
-		speed.setMaxLength(2);
+		speed = placeholderEditBox(ACHP_OFFSET_X + ACHP_SEPARATION*4, ACHP_OFFSET_Y, 32, 18, "gui.dndsheets.character_sheet.speed", 2);
 		guistate.put("text:speed", speed);
 		this.addWidget(this.speed);
 
-		proficiency = new EditBox(this.font, this.leftPos + PROF_OFFSET_X, this.topPos + PROF_OFFSET_Y, 14, 18, Component.translatable("gui.dndsheets.character_sheet.proficiency")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.proficiency").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.proficiency").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		proficiency.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.proficiency").getString());
-		proficiency.setMaxLength(1);
+		proficiency = placeholderEditBox(PROF_OFFSET_X, PROF_OFFSET_Y, 14, 18, "gui.dndsheets.character_sheet.proficiency", 1);
 		guistate.put("text:proficiency", proficiency);
 		this.addWidget(this.proficiency);
 
@@ -1104,7 +914,9 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			autoField.setEditable(false);
 			autoField.setTextColorUneditable(AUTO_FIELD_COLOR);
 		}
+	}
 
+	private void initOptionPickerFields() {
 		characterRace = new EditBox(this.font, this.leftPos + RACE_OFFSET_X, this.topPos + RACE_OFFSET_Y, 100, 18, Component.translatable("gui.dndsheets.character_sheet.characterrace")) {
 			@Override
 			public boolean mouseClicked(double mx, double my, int button) {
@@ -1143,55 +955,19 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		characterClass.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.characterclass").getString());
 		guistate.put("text:characterclass", characterClass);
 		this.addWidget(this.characterClass);
+	}
 
-		hitDiceTypes = new EditBox(this.font, this.leftPos + HITDICE_OFFSET_X + 30, this.topPos + HITDICE_OFFSET_Y, 100, 18, Component.translatable("gui.dndsheets.character_sheet.hitdice_types")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitdice_types").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitdice_types").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		hitDiceTypes.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitdice_types").getString());
-		hitDiceTypes.setMaxLength(50);
+	private void initHitDiceFields() {
+		hitDiceTypes = placeholderEditBox(HITDICE_OFFSET_X + 30, HITDICE_OFFSET_Y, 100, 18, "gui.dndsheets.character_sheet.hitdice_types", 50);
 		guistate.put("text:hitdice_types", hitDiceTypes);
 		this.addWidget(this.hitDiceTypes);
 
-		hitDice = new EditBox(this.font, this.leftPos + HITDICE_OFFSET_X, this.topPos + HITDICE_OFFSET_Y, 20, 18, Component.translatable("gui.dndsheets.character_sheet.hitdice")) {
-			@Override
-			public void insertText(String text) {
-				super.insertText(text);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitdice").getString());
-				else
-					setSuggestion(null);
-			}
-
-			@Override
-			public void moveCursorTo(int pos) {
-				super.moveCursorTo(pos);
-				if (getValue().isEmpty())
-					setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitdice").getString());
-				else
-					setSuggestion(null);
-			}
-		};
-		hitDice.setSuggestion(Component.translatable("gui.dndsheets.character_sheet.hitdice").getString());
-		hitDice.setMaxLength(2);
+		hitDice = placeholderEditBox(HITDICE_OFFSET_X, HITDICE_OFFSET_Y, 20, 18, "gui.dndsheets.character_sheet.hitdice", 2);
 		guistate.put("text:hitdice", hitDice);
 		this.addWidget(this.hitDice);
+	}
 
+	private void initInitiativeButtons() {
 		initiativeButton = new ImageButton(this.leftPos + INITIATIVE_OFFSET_X, this.topPos + INITIATIVE_OFFSET_Y, 16, 16, 0, 0, 16, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_d20.png"), 16, 32, e -> {
 			sendRoll(0, 6, 0);
 		});
@@ -1206,7 +982,9 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		});
 		guistate.put("button:roll_init_edit", initiativeEditButton);
 		this.addRenderableWidget(initiativeEditButton);
+	}
 
+	private void initBottomButtons() {
 		//NOTA: sin hueco dibujado en la textura todavía. Puestos en el margen inferior, debajo de Nivel/
 		//Hambre, para no pisar el círculo de Iniciativa (que ocupa la zona x=270-345, y=90-200).
 		grimoireButton = Button.builder(Component.translatable("gui.dndsheets.character_sheet.grimoire"), b -> this.minecraft.setScreen(new GrimoireScreen()))

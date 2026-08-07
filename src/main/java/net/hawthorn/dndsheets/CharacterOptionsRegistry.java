@@ -1,5 +1,12 @@
 package net.hawthorn.dndsheets;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,5 +59,18 @@ public class CharacterOptionsRegistry {
 	//Público: también lo usa CharacterOptionsCommand al cargar un archivo de la categoría.
 	public static void replace(String category, List<String> values) {
 		OPTIONS.put(category, values);
+	}
+
+	//Público: usado por CharacterOptionsCommand (/dndoptions load) y por DndPaths para precargar solo
+	//todos los .json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa
+	//de comandos — ver AUDIT_TECHNICAL.md M-ARQ-1. REEMPLAZA la lista completa de la categoría, no la
+	//extiende (ver comentario de clase).
+	public static int loadFile(String category, Path file) throws IOException {
+		String json = Files.readString(file);
+		JsonArray array = JsonParser.parseString(json).getAsJsonArray();
+		List<String> values = new ArrayList<>();
+		for (var element : array) values.add(element.getAsString());
+		replace(category, values);
+		return values.size();
 	}
 }

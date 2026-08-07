@@ -2,7 +2,6 @@ package net.hawthorn.dndsheets.client.gui;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.ibm.icu.impl.Pair;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.RollIndex;
@@ -13,6 +12,7 @@ import net.hawthorn.dndsheets.world.inventory.AdvancedRollEditorMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -20,6 +20,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -55,6 +56,14 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 
 	private static final ResourceLocation texture = new ResourceLocation("dndsheets:textures/screens/advanced_roll_editor.png");
 
+	//renderLabels corre cada frame: estos Component (texto estático, nunca cambia) se cachean una sola
+	//vez en vez de construirse de nuevo en cada uno.
+	private static final Component LABEL_ROLL_EDITOR_1 = Component.translatable("gui.dndsheets.roll_editor.label_roll_editor_1");
+	private static final Component LABEL_ROLL_EDITOR_2 = Component.translatable("gui.dndsheets.roll_editor.label_roll_editor_2");
+	private static final Component LABEL_ROLL_CONTEXT = Component.translatable("gui.dndsheets.roll_editor.label_roll_context");
+	private static final Component LABEL_ROLL_EXPRESSION = Component.translatable("gui.dndsheets.roll_editor.label_roll_expression");
+	private static final Component LABEL_INSERT_MODIFIERS = Component.translatable("gui.dndsheets.roll_editor.label_insert_modifiers");
+
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics);
@@ -78,9 +87,9 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 	@Override
 	public boolean keyPressed(int key, int b, int c) {
 		if (key == 256) {
-			List<Pair<String, String>> data = new ArrayList<>();
-			data.add(Pair.of(rollContext1.getValue(), rollExpression1.getValue()));
-			data.add(Pair.of(rollContext2.getValue(), rollExpression2.getValue()));
+			List<AbstractMap.SimpleEntry<String, String>> data = new ArrayList<>();
+			data.add(new AbstractMap.SimpleEntry<>(rollContext1.getValue(), rollExpression1.getValue()));
+			data.add(new AbstractMap.SimpleEntry<>(rollContext2.getValue(), rollExpression2.getValue()));
 			CharacterSheetSaveProcedure.execute(data, workingCategory, workingIndex, workingSubIndex);
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new CharacterSheetOpenMessage(0,0));
 			return true;
@@ -108,14 +117,14 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 	@Override
 	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
 		final int txtColor = 0xFFFFFF;
-		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.roll_editor.label_roll_editor_1"), FIRSTROLL_X, 26, txtColor, false);
-		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.roll_editor.label_roll_editor_2"), SECONDROLL_X, 26, txtColor, false);
-		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.roll_editor.label_roll_context"), FIRSTROLL_X, CONTEXT_Y - 10, txtColor, false);
-		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.roll_editor.label_roll_expression"), FIRSTROLL_X, EXPRESSION_Y - 10, txtColor, false);
-		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.roll_editor.label_insert_modifiers"), FIRSTROLL_X, BUTTONS_Y - 10, txtColor, false);
-		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.roll_editor.label_roll_context"), SECONDROLL_X, CONTEXT_Y - 10, txtColor, false);
-		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.roll_editor.label_roll_expression"), SECONDROLL_X, EXPRESSION_Y - 10, txtColor, false);
-		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.roll_editor.label_insert_modifiers"), SECONDROLL_X, BUTTONS_Y - 10, txtColor, false);
+		guiGraphics.drawString(this.font, LABEL_ROLL_EDITOR_1, FIRSTROLL_X, 26, txtColor, false);
+		guiGraphics.drawString(this.font, LABEL_ROLL_EDITOR_2, SECONDROLL_X, 26, txtColor, false);
+		guiGraphics.drawString(this.font, LABEL_ROLL_CONTEXT, FIRSTROLL_X, CONTEXT_Y - 10, txtColor, false);
+		guiGraphics.drawString(this.font, LABEL_ROLL_EXPRESSION, FIRSTROLL_X, EXPRESSION_Y - 10, txtColor, false);
+		guiGraphics.drawString(this.font, LABEL_INSERT_MODIFIERS, FIRSTROLL_X, BUTTONS_Y - 10, txtColor, false);
+		guiGraphics.drawString(this.font, LABEL_ROLL_CONTEXT, SECONDROLL_X, CONTEXT_Y - 10, txtColor, false);
+		guiGraphics.drawString(this.font, LABEL_ROLL_EXPRESSION, SECONDROLL_X, EXPRESSION_Y - 10, txtColor, false);
+		guiGraphics.drawString(this.font, LABEL_INSERT_MODIFIERS, SECONDROLL_X, BUTTONS_Y - 10, txtColor, false);
 	}
 
 	@Override
@@ -140,6 +149,7 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 				editBox.setValue(editBox.getValue() + subStringToAdd);
 			}
 		}).bounds(this.leftPos + x, this.topPos + y, sizeX, sizeY).build();
+		btn.setTooltip(Tooltip.create(Component.literal("Añade \"" + subStringToAdd.trim() + "\" a la expresión de la tirada.")));
 		guistate.put(guistateKey, btn);
 		this.addRenderableWidget(btn);
 		buttonList.add(btn);
@@ -249,7 +259,7 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 		String stringCategory = category.toString();
 
 		if (!category.isAdvanced()) {
-			System.out.println("You're using Advanced Roll Editor on something that isn't advanced, buddy.");
+			DndsheetsMod.LOGGER.warn("Advanced Roll Editor abierto sobre una categoría que no es avanzada.");
 			this.minecraft.player.closeContainer();
 
 		}
@@ -271,7 +281,7 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 			}
 		}
 		catch(Exception e){
-			System.out.println("Couldn't pull values for the advanced roll, so the fields will be blank.");
+			DndsheetsMod.LOGGER.warn("No se pudieron leer los valores de la tirada avanzada, los campos quedarán vacíos.", e);
 		}
 
 

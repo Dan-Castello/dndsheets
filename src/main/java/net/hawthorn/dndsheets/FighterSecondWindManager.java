@@ -2,7 +2,6 @@ package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -66,25 +65,14 @@ public class FighterSecondWindManager {
 
 	private static void tryUse(PlayerInteractEvent event, ItemStack stack) {
 		if (event.getEntity().level().isClientSide()) return;
-		CompoundTag tag = stack.getTag();
-		if (tag == null || !tag.contains("dndsheets") || !tag.getCompound("dndsheets").getBoolean("secondWind")) return;
+		if (!AbilityItem.hasFlag(stack, "secondWind")) return;
 
 		event.setCanceled(true);
 		if (event.getEntity() instanceof ServerPlayer player) use(player);
 	}
 
 	public static ItemStack buildSecondWindStack() {
-		ItemStack stack = new ItemStack(Items.GOLDEN_APPLE);
-		CompoundTag dndTag = new CompoundTag();
-		dndTag.putBoolean("secondWind", true);
-		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.literal("Segundo Aliento"));
-
-		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
-		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.literal("Clic derecho: cura 1d10 + nivel. Una vez por descanso.").withStyle(ChatFormatting.GRAY))));
-		stack.getOrCreateTagElement("display").put("Lore", lore);
-
-		return stack;
+		return AbilityItem.build(Items.GOLDEN_APPLE, "secondWind", Component.literal("Segundo Aliento"),
+			Component.literal("Clic derecho: cura 1d10 + nivel. Una vez por descanso.").withStyle(ChatFormatting.GRAY));
 	}
 }

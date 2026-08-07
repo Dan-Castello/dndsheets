@@ -1,9 +1,6 @@
 package net.hawthorn.dndsheets.command;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -65,37 +62,13 @@ public class TraitCommand {
 		}
 
 		try {
-			int count = loadFile(file);
+			int count = TraitRegistry.loadFile(file);
 			ctx.getSource().sendSuccess(() -> Component.literal("Cargados " + count + " rasgos desde " + fileName + ".json"), true);
 			return count;
 		} catch (IOException | RuntimeException e) {
 			ctx.getSource().sendFailure(Component.literal("No pude leer " + fileName + ".json: " + e.getMessage()));
 			return 0;
 		}
-	}
-
-	//Público: también lo usa DndPaths para precargar solo todos los .json de la carpeta al arrancar el servidor.
-	public static int loadFile(Path file) throws IOException {
-		String json = Files.readString(file);
-		JsonArray traits = JsonParser.parseString(json).getAsJsonArray();
-		int count = 0;
-		//Por elemento, no por archivo entero: un rasgo malformado a mitad de la lista no debe descartar en
-		//silencio a todos los que venían después.
-		int index = 0;
-		for (JsonElement element : traits) {
-			index++;
-			try {
-				if (!element.getAsJsonObject().has("id")) {
-					System.out.println("Saltando rasgo #" + index + " en " + file.getFileName() + ": falta el campo \"id\".");
-					continue;
-				}
-				TraitRegistry.register(TraitRegistry.parse(element.getAsJsonObject()));
-				count++;
-			} catch (RuntimeException e) {
-				System.out.println("Saltando rasgo #" + index + " en " + file.getFileName() + ": " + e);
-			}
-		}
-		return count;
 	}
 
 	private static int list(CommandContext<CommandSourceStack> ctx) {

@@ -6,8 +6,6 @@ import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.network.DeathSaveRollMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -15,12 +13,12 @@ import net.minecraft.network.chat.Component;
  * servidor la cierra cuando el jugador se estabiliza (3 éxitos, un 20 natural, o alguien lo reanima)
  * o muere de verdad (3 fallos). Ver {@link net.hawthorn.dndsheets.DeathSaveManager}.</p>
  */
-public class DeathSaveScreen extends Screen {
+public class DeathSaveScreen extends ModalDialogScreen {
 	private static final int WIDTH = 240;
 	private static final int HEIGHT = 90;
 
 	protected DeathSaveScreen() {
-		super(Component.literal("Salvación de Muerte"));
+		super(Component.literal("Salvación de Muerte"), WIDTH, HEIGHT);
 	}
 
 	public static void open() {
@@ -35,11 +33,9 @@ public class DeathSaveScreen extends Screen {
 
 	@Override
 	protected void init() {
-		int left = (this.width - WIDTH) / 2;
-		int top = (this.height - HEIGHT) / 2;
-		this.addRenderableWidget(Button.builder(Component.literal("Tirar salvación de muerte"), button ->
+		addModalButton(20, 60, WIDTH - 40, 20, Component.literal("Tirar salvación de muerte"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new DeathSaveRollMessage())
-		).bounds(left + 20, top + 60, WIDTH - 40, 20).build());
+		);
 	}
 
 	@Override
@@ -56,8 +52,8 @@ public class DeathSaveScreen extends Screen {
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics);
 
-		int left = (this.width - WIDTH) / 2;
-		int top = (this.height - HEIGHT) / 2;
+		int left = dialogLeft();
+		int top = dialogTop();
 		guiGraphics.fill(left, top, left + WIDTH, top + HEIGHT, 0xCC000000);
 
 		guiGraphics.drawCenteredString(this.font, Component.literal("¡Estás caído!"), this.width / 2, top + 8, 0xFFFFFF);

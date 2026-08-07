@@ -5,20 +5,18 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import net.hawthorn.dndsheets.Config;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class SheetServerMessage {
 	//Únicos campos que la propia hoja del jugador (CharacterSheetSaveProcedure/RollIndex) escribe alguna
 	//vez. Todo lo demás (oro, espacios de conjuro, afinidades de daño, ventaja, nivel de personaje, pacto
@@ -66,7 +64,15 @@ public class SheetServerMessage {
 
 	public static void handle(Player entity, byte[] data) {
 		String uuid = entity.getStringUUID();
-		JsonObject incoming = JsonParser.parseString(new String(data)).getAsJsonObject();
+		JsonObject incoming;
+		try {
+			incoming = JsonParser.parseString(new String(data)).getAsJsonObject();
+		} catch (JsonSyntaxException | IllegalStateException e) {
+			//Payload de un cliente (cualquiera, no solo op) que no es JSON válido o no es un objeto: se
+			//descarta el mensaje en vez de tumbar el hilo principal del servidor con una excepción sin capturar.
+			DndsheetsMod.LOGGER.warn("Descartado SheetServerMessage con JSON inválido de {}: {}", uuid, e.toString());
+			return;
+		}
 
 		JsonObject sheet = SheetLoader.getServerSheet(uuid);
 		if (sheet == null) return; //No debería pasar: SheetLoader.clientJoinedServer ya le da una hoja a todo jugador conectado.
@@ -112,14 +118,34 @@ public class SheetServerMessage {
 		}
 		for (JsonElement el : incomingArr) {
 			if (!el.isJsonObject() || !el.getAsJsonObject().has("itemId")) continue; //Sin itemId no es un arma auto-poblada real: se descarta.
-			String itemId = el.getAsJsonObject().get("itemId").getAsString();
-			if (knownItemIds.add(itemId)) merged.add(el);
+			JsonObject clientForm = el.getAsJsonObject();
+			String itemId = clientForm.get("itemId").getAsString();
+			if (!knownItemIds.add(itemId)) continue;
+
+			//La expresión de tirada NUNCA viene del cliente: se reconstruye aquí desde la config del
+			//servidor, igual que autoPopulateWeapons. Un itemId que la config no reconoce como arma no
+			//tiene una expresión de confianza que ofrecerle, así que se descarta entero.
+			Config.WeaponDefault weaponDefault = Config.weaponDefaultFor(itemId);
+			if (weaponDefault == null) continue;
+			merged.add(trustedAttackEntry(clientForm, itemId, weaponDefault));
 		}
 		return merged;
 	}
 
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(SheetServerMessage.class, SheetServerMessage::buffer, SheetServerMessage::new, SheetServerMessage::handler);
+	private static JsonObject trustedAttackEntry(JsonObject clientForm, String itemId, Config.WeaponDefault weaponDefault) {
+		JsonObject rollForm = new JsonObject();
+		rollForm.addProperty("name", clientForm.has("name") ? clientForm.get("name").getAsString() : itemId);
+		rollForm.addProperty("itemId", itemId);
+
+		JsonObject roll = new JsonObject();
+		roll.addProperty("context", "Daño");
+		roll.addProperty("expression", weaponDefault.dice() + " + $" + weaponDefault.ability());
+
+		JsonArray rollGroup = new JsonArray();
+		rollGroup.add(roll);
+		JsonArray rollSet = new JsonArray();
+		rollSet.add(rollGroup);
+		rollForm.add("rolls", rollSet);
+		return rollForm;
 	}
 }

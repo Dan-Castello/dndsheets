@@ -16,7 +16,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -48,21 +51,29 @@ public class MonsterRegistry {
 		}
 	}
 
-	private static final Map<String, MonsterStatBlock> monsters = new LinkedHashMap<>();
+	private static final NamedRegistry<MonsterStatBlock> REGISTRY = new NamedRegistry<>("monstruo", MonsterStatBlock::id);
 
 	public static void register(MonsterStatBlock block) {
-		if (monsters.containsKey(block.id())) {
-			System.out.println("Aviso: el monstruo \"" + block.id() + "\" ya estaba cargado, se pisa con la nueva definición.");
-		}
-		monsters.put(block.id(), block);
+		REGISTRY.register(block);
 	}
 
 	public static MonsterStatBlock get(String id) {
-		return monsters.get(id);
+		return REGISTRY.get(id);
 	}
 
 	public static Set<String> ids() {
-		return monsters.keySet();
+		return REGISTRY.ids();
+	}
+
+	//Público: usado por MonsterCommand (/dndmonsters load) y por DndPaths para precargar solo todos los
+	//.json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de
+	//comandos — ver AUDIT_TECHNICAL.md M-ARQ-1. Antes, un monstruo malformado a mitad del archivo abortaba
+	//el resto (visible solo como un WARN de carga, invisible para el DM en el chat) — JsonRegistryLoader
+	//ya salta por elemento, no por archivo.
+	private static final JsonRegistryLoader<MonsterStatBlock> LOADER = new JsonRegistryLoader<>("monstruo", MonsterRegistry::parse, MonsterRegistry::register);
+
+	public static int loadFile(Path file) throws IOException {
+		return LOADER.loadFile(file);
 	}
 
 	public static MonsterStatBlock parse(JsonObject json) {
@@ -174,16 +185,31 @@ public class MonsterRegistry {
 	//deliberada: sin "appliesEffect" (veneno, etc.) en los personalizados, solo ataque+daño — si hace
 	//falta un efecto, se edita/carga el monstruo entero por JSON como hasta ahora.
 
-	public static List<MonsterAttack> customAttacksOf(Entity entity) {
-		CompoundTag data = entity.getPersistentData();
-		if (!data.contains("dndsheets")) return List.of();
-		CompoundTag tag = data.getCompound("dndsheets");
-		if (!tag.contains("customAttacks")) return List.of();
+	//Se llama en cada acción de un monstruo (turno automático, ataque de oportunidad, o el DM abriendo su
+	//menú), así que el JSON parseado se cachea por entityId en vez de reparsearse cada vez — invalidado
+	//solo en los dos sitios que de verdad cambian el NBT (saveCustomAttacks/clearCustomAttacks).
+	private static final Map<Integer, List<MonsterAttack>> customAttacksCache = new HashMap<>();
 
-		List<MonsterAttack> result = new ArrayList<>();
-		for (JsonElement el : JsonParser.parseString(tag.getString("customAttacks")).getAsJsonArray()) {
-			result.add(parseAttack(el.getAsJsonObject()));
+	public static List<MonsterAttack> customAttacksOf(Entity entity) {
+		List<MonsterAttack> cached = customAttacksCache.get(entity.getId());
+		if (cached != null) return cached;
+
+		CompoundTag data = entity.getPersistentData();
+		List<MonsterAttack> result;
+		if (!data.contains("dndsheets")) {
+			result = List.of();
+		} else {
+			CompoundTag tag = data.getCompound("dndsheets");
+			if (!tag.contains("customAttacks")) {
+				result = List.of();
+			} else {
+				result = new ArrayList<>();
+				for (JsonElement el : JsonParser.parseString(tag.getString("customAttacks")).getAsJsonArray()) {
+					result.add(parseAttack(el.getAsJsonObject()));
+				}
+			}
 		}
+		customAttacksCache.put(entity.getId(), result);
 		return result;
 	}
 
@@ -203,8 +229,8 @@ public class MonsterRegistry {
 
 	public static void clearCustomAttacks(Entity entity) {
 		CompoundTag data = entity.getPersistentData();
-		if (!data.contains("dndsheets")) return;
-		data.getCompound("dndsheets").remove("customAttacks");
+		if (data.contains("dndsheets")) data.getCompound("dndsheets").remove("customAttacks");
+		customAttacksCache.remove(entity.getId());
 	}
 
 	private static void saveCustomAttacks(Entity entity, List<MonsterAttack> attacks) {
@@ -215,6 +241,8 @@ public class MonsterRegistry {
 		CompoundTag tag = data.getCompound("dndsheets"); //Vacío si no existía; solo pasa si el objetivo no era un monstruo tageado.
 		tag.putString("customAttacks", array.toString());
 		data.put("dndsheets", tag);
+
+		customAttacksCache.put(entity.getId(), List.copyOf(attacks)); //Refresca el caché con lo que ya tenemos en memoria, en vez de invalidar y reparsear el JSON que se acaba de escribir.
 	}
 
 	//--- Vara de DM: cualquier ítem etiquetado {dndsheets:{dmtool:true}} (mismo patrón que las armas personalizadas) ---
@@ -256,7 +284,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		for (String key : new String[]{"str", "dex", "con", "int", "wis", "cha"}) abilities.put(key, 10);
 
-		register(new MonsterStatBlock(id, name, baseEntityId, ac, hp, abilities, 2, new ArrayList<>(), new ArrayList<>()));
+		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>()));
 		return spawnAt(level, x, y, z, id);
 	}
 

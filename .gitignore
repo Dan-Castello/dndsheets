@@ -13,6 +13,16 @@ runServer/world/
 runClient/usercache.json
 runServer/usercache.json
 
+# Artefactos de desarrollo local que no pertenecen al repo (ver AUDIT_TECHNICAL.md QW-7/QW-8):
+# bin/ es un residuo de otro mod (MCreator, mod-id distinto) commiteado por error; crash/ y logs/
+# son diagnóstico de una sesión local; patch/ es una copia de trabajo; lib/ debe resolverse por
+# Gradle (ver dependencies en build.gradle), no versionarse como jar suelto.
+/bin/
+/crash/
+/logs/
+/patch/
+/lib/
+
 
 # Ignore Gradle GUI config
 gradle-app.setting

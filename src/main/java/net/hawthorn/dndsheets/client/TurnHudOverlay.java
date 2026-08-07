@@ -25,6 +25,9 @@ import java.util.regex.Pattern;
 public class TurnHudOverlay {
 	private static final int DEFAULT_SPEED_FEET = 30;
 	private static final double FEET_PER_BLOCK = 5.0;
+	//speedBlocksFromClientSheet corre cada frame mientras es el turno del jugador local: el Pattern se
+	//cachea en vez de recompilarse en cada frame.
+	private static final Pattern SPEED_FEET_PATTERN = Pattern.compile("\\d+");
 
 	@SubscribeEvent
 	public static void registerOverlays(RegisterGuiOverlaysEvent event) {
@@ -73,7 +76,7 @@ public class TurnHudOverlay {
 		JsonObject sheet = SheetLoader.getClientSheet();
 		int feet = DEFAULT_SPEED_FEET;
 		if (sheet != null && sheet.has("speed")) {
-			Matcher matcher = Pattern.compile("\\d+").matcher(sheet.get("speed").getAsString());
+			Matcher matcher = SPEED_FEET_PATTERN.matcher(sheet.get("speed").getAsString());
 			if (matcher.find()) {
 				try { feet = Integer.parseInt(matcher.group()); } catch (NumberFormatException ignored) {}
 			}

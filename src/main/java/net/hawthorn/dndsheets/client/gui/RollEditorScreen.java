@@ -158,7 +158,7 @@ public class RollEditorScreen extends AbstractContainerScreen<RollEditorMenu> {
 			case 0: stringCategory = "checks"; break;
 			case 1: stringCategory = "saves"; break;
 			case 2: stringCategory = "skills"; break;
-			default: System.out.println("Bad idea."); this.minecraft.player.closeContainer(); break;
+			default: DndsheetsMod.LOGGER.warn("RollEditorScreen abierto con una categoría desconocida ({}).", workingCategory); this.minecraft.player.closeContainer(); break;
 		}
 		if (sheet.has(stringCategory)) {
 			if (sheet.get(stringCategory) != null) {

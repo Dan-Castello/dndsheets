@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets.procedures;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.Config;
+import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.client.gui.CharacterSheetScreen;
 import net.hawthorn.dndsheets.client.gui.components.RollScrollWidget;
 import net.minecraft.client.Minecraft;
@@ -18,14 +19,14 @@ import java.util.Set;
 
 public class CharacterSheetLoadProcedure {
 
-	public static void execute(HashMap guistate, CharacterSheetScreen screen) {
+	public static void execute(HashMap<String, Object> guistate, CharacterSheetScreen screen) {
 		if (guistate == null)
  {
-			System.out.println("well fuck");
+			DndsheetsMod.LOGGER.warn("CharacterSheetLoadProcedure.execute llamado sin guistate.");
 			return;
 		}
 		if (SheetLoader.getClientSheet() == null ) {
-			System.out.println("The client doesn't have a sheet for some reason. The GUI will appear fucked up.");
+			DndsheetsMod.LOGGER.warn("El cliente no tiene una hoja cargada; la GUI puede verse incorrecta.");
 			return;
 		}
 		JsonObject sheet = SheetLoader.getClientSheet();

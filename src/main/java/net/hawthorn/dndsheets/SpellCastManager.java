@@ -1,7 +1,7 @@
 package net.hawthorn.dndsheets;
 
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,7 +15,9 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +30,7 @@ import java.util.UUID;
  * (mismo raycast que usa Minecraft para las flechas) y resuelve el hechizo con la misma mecánica de
  * ataque-vs-CA o salvación-vs-CD que ya usan las armas y los monstruos, gastando un espacio de conjuro.</p>
  */
+@Mod.EventBusSubscriber
 public class SpellCastManager {
 	private static final double RANGE = 30.0;
 	private static final Map<String, String> ABILITY_SHEET_KEY = Map.of(
@@ -40,6 +43,14 @@ public class SpellCastManager {
 	//En vez de perseguir el evento exacto que se repite, se ignora una segunda petición del mismo
 	//jugador dentro del mismo tick del servidor.
 	private static final Map<UUID, Long> lastCastTick = new HashMap<>();
+
+	//A diferencia de furia/segundo aliento/etc., esta entrada no tiene su propio temporizador de
+	//expiración (solo sirve para deduplicar dentro del mismo tick), así que sin esto se queda para
+	//siempre en el mapa si el jugador no vuelve a conectarse.
+	@SubscribeEvent
+	public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+		lastCastTick.remove(event.getEntity().getUUID());
+	}
 
 	public static void handleCastRequest(ServerPlayer caster, String spellId) {
 		long now = caster.level().getGameTime();
@@ -100,7 +111,7 @@ public class SpellCastManager {
 		String counterer = CounterspellManager.findCounterer(caster.level(), caster.position(), caster);
 		if (counterer != null) {
 			casterSheet.addProperty("spellSlotsCurrent", slotsCurrent - 1);
-			sendSheetUpdate(caster, casterSheet);
+			sendSlotsUpdate(caster, slotsCurrent - 1);
 			ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.counterspelled", casterName, spell.name(), counterer).withStyle(ChatFormatting.DARK_PURPLE));
 			return;
 		}
@@ -110,7 +121,7 @@ public class SpellCastManager {
 
 		CombatFx.spellCast(caster);
 		casterSheet.addProperty("spellSlotsCurrent", slotsCurrent - 1);
-		sendSheetUpdate(caster, casterSheet);
+		sendSlotsUpdate(caster, slotsCurrent - 1);
 
 		if (spell.concentration()) ConcentrationManager.startConcentrating(caster, spell.name());
 
@@ -252,7 +263,7 @@ public class SpellCastManager {
 		int inspiration = BardInspirationManager.consumeAttackBonus(casterSheet);
 		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(new JsonObject(), "1d20 + " + (abilityMod + proficiency + inspiration), advantage);
 		if (attackRoll.outcome().result() == null) return;
-		if (casterSheet != null) sendSheetUpdate(caster, casterSheet);
+		if (casterSheet != null) sendAdvantageAndInspirationUpdate(caster);
 		if (inspiration > 0) ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.combat.bardic_inspiration", casterName, inspiration).withStyle(ChatFormatting.LIGHT_PURPLE));
 
 		int targetAc = armorClassOfEntity(target);
@@ -366,7 +377,20 @@ public class SpellCastManager {
 		}
 	}
 
-	private static void sendSheetUpdate(ServerPlayer player, JsonObject sheet) {
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes()));
+	//Antes reenviaban la hoja completa en cada hechizo lanzado — ahora solo el campo que de verdad cambió.
+	//Ver AUDIT_TECHNICAL.md M-NET-1.
+	private static void sendSlotsUpdate(ServerPlayer player, int slotsCurrent) {
+		JsonObject patch = new JsonObject();
+		patch.addProperty("spellSlotsCurrent", slotsCurrent);
+		DndsheetsMod.sendSheetFieldUpdate(player, patch);
+	}
+
+	//Llamado justo después de CombatManager.consumeAdvantage/BardInspirationManager.consumeAttackBonus:
+	//manda solo los dos campos que esos dos métodos acaban de tocar, mismo patrón que CombatManager.
+	private static void sendAdvantageAndInspirationUpdate(ServerPlayer player) {
+		JsonObject patch = new JsonObject();
+		patch.addProperty("nextAttackAdvantage", "normal");
+		patch.add("bardicInspiration", JsonNull.INSTANCE);
+		DndsheetsMod.sendSheetFieldUpdate(player, patch);
 	}
 }

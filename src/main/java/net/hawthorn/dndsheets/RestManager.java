@@ -1,12 +1,11 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
-import net.hawthorn.dndsheets.network.RestChoiceOpenMessage;
 import net.hawthorn.dndsheets.network.RestVoteCloseMessage;
 import net.hawthorn.dndsheets.network.RestVoteOpenMessage;
+import net.hawthorn.dndsheets.network.ScreenActionMessage;
 import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -38,6 +37,7 @@ public class RestManager {
 	}
 
 	private static RestType pendingType = null;
+	private static String pendingProposerName = null;
 	private static final Set<java.util.UUID> pendingVoters = new HashSet<>();
 	private static final Set<java.util.UUID> accepted = new HashSet<>();
 
@@ -47,30 +47,11 @@ public class RestManager {
 	private static int proposalToken = 0;
 	private static final int VOTE_TIMEOUT_TICKS = 3600; //3 minutos reales, mismo patrón de queueServerWork que ya usa BarbarianRageManager.
 
-	//Se engancha a los tres eventos de "clic derecho" de Minecraft (ítem al aire, bloque, entidad),
-	//igual que QuickSpellManager: cuál de los tres dispara depende de qué haya delante del jugador, y el
-	//kit debe funcionar igual en los tres casos (ítem/bloque en particular, ya que un ítem de bloque como
-	//el reloj mirando a una pared dispararía RightClickBlock, no RightClickItem).
-	@SubscribeEvent
-	public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-		tryOpenRestChoice(event, event.getItemStack());
-	}
-
-	@SubscribeEvent
-	public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-		tryOpenRestChoice(event, event.getItemStack());
-	}
-
-	@SubscribeEvent
-	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-		tryOpenRestChoice(event, event.getItemStack());
-	}
-
-	private static void tryOpenRestChoice(PlayerInteractEvent event, ItemStack stack) {
-		if (event.getEntity().level().isClientSide()) return;
-		CompoundTag tag = stack.getTag();
-		if (tag == null || !tag.contains("dndsheets") || !tag.getCompound("dndsheets").getBoolean("restKit")) return;
-
+	//Se activa desde AbilityItemDispatcher (clic derecho con ítem/bloque/entidad, funciona igual en los
+	//tres casos porque un ítem de bloque como el reloj mirando a una pared dispara RightClickBlock, no
+	//RightClickItem) en vez de suscribirse a los 3 eventos de interacción por separado — ver
+	//AUDIT_TECHNICAL.md M-EVT-1.
+	static void tryOpenRestChoice(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
 		//Un descanso corto/largo resetea PG/espacios de golpe — en mitad de un combate por turnos eso es un
@@ -81,26 +62,15 @@ public class RestManager {
 			player.sendSystemMessage(Component.translatable("chat.dndsheets.rest.blocked_in_combat").withStyle(ChatFormatting.RED));
 			return;
 		}
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new RestChoiceOpenMessage());
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new ScreenActionMessage(ScreenActionMessage.Action.REST_CHOICE_OPEN));
 	}
 
 	//Reloj en vez de un ítem de bloque (como la fogata): un ítem de bloque dispara RightClickBlock en vez
 	//de RightClickItem en cuanto miras a algo colocable, lo que complicaba detectar el clic de forma fiable.
 	public static ItemStack buildRestKitStack() {
-		ItemStack stack = new ItemStack(Items.CLOCK);
-		CompoundTag dndTag = new CompoundTag();
-		dndTag.putBoolean("restKit", true);
-		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.translatable("chat.dndsheets.rest.item_name"));
-
-		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
-		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.translatable("chat.dndsheets.rest.lore_use").withStyle(ChatFormatting.GRAY))));
-		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.translatable("chat.dndsheets.rest.lore_requires_all").withStyle(ChatFormatting.DARK_GRAY))));
-		stack.getOrCreateTagElement("display").put("Lore", lore);
-
-		return stack;
+		return AbilityItem.build(Items.CLOCK, "restKit", Component.translatable("chat.dndsheets.rest.item_name"),
+			Component.translatable("chat.dndsheets.rest.lore_use").withStyle(ChatFormatting.GRAY),
+			Component.translatable("chat.dndsheets.rest.lore_requires_all").withStyle(ChatFormatting.DARK_GRAY));
 	}
 
 	/**
@@ -128,6 +98,7 @@ public class RestManager {
 		String proposerName = SheetLoader.characterNameOf(proposerSheet, proposer);
 
 		pendingType = type;
+		pendingProposerName = proposerName;
 		pendingVoters.clear();
 		accepted.clear();
 		int token = ++proposalToken;
@@ -167,6 +138,17 @@ public class RestManager {
 		accepted.remove(uuid);
 		if (pendingVoters.isEmpty()) { clear(player.getServer()); return; } //Nadie queda a quien pedirle el descanso.
 		if (accepted.containsAll(pendingVoters)) resolveRest(player.getServer());
+	}
+
+	//Simétrico a onPlayerLogout: sin esto, alguien que se conecta mientras hay una votación pendiente
+	//nunca era preguntado, pero resolveRest le aplicaba el descanso igual en cuanto el resto aceptaba
+	//(itera TODOS los jugadores conectados, no solo pendingVoters) — se le suma a la votación, como a
+	//cualquier otro, y se le manda el mismo prompt que ya recibieron los demás.
+	@SubscribeEvent
+	public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+		if (pendingType == null || !(event.getEntity() instanceof ServerPlayer player)) return;
+		pendingVoters.add(player.getUUID());
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new RestVoteOpenMessage(pendingProposerName, pendingType.label));
 	}
 
 	/**
@@ -237,6 +219,7 @@ public class RestManager {
 			}
 		}
 		pendingType = null;
+		pendingProposerName = null;
 		pendingVoters.clear();
 		accepted.clear();
 	}

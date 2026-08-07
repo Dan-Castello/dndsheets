@@ -3,6 +3,8 @@ package net.hawthorn.dndsheets;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,21 +25,27 @@ public class PresetRegistry {
 		}
 	}
 
-	private static final Map<String, ClassPreset> presets = new LinkedHashMap<>();
+	private static final NamedRegistry<ClassPreset> REGISTRY = new NamedRegistry<>("preset", ClassPreset::id);
 
 	public static void register(ClassPreset preset) {
-		if (presets.containsKey(preset.id())) {
-			System.out.println("Aviso: el preset \"" + preset.id() + "\" ya estaba cargado, se pisa con la nueva definición.");
-		}
-		presets.put(preset.id(), preset);
+		REGISTRY.register(preset);
 	}
 
 	public static ClassPreset get(String id) {
-		return presets.get(id);
+		return REGISTRY.get(id);
 	}
 
 	public static Set<String> ids() {
-		return presets.keySet();
+		return REGISTRY.ids();
+	}
+
+	//Público: usado por PresetCommand (/dndpresets load) y por DndPaths para precargar solo todos los
+	//.json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de
+	//comandos — ver AUDIT_TECHNICAL.md M-ARQ-1.
+	private static final JsonRegistryLoader<ClassPreset> LOADER = new JsonRegistryLoader<>("preset", PresetRegistry::parse, PresetRegistry::register);
+
+	public static int loadFile(Path file) throws IOException {
+		return LOADER.loadFile(file);
 	}
 
 	public static ClassPreset parse(JsonObject json) {

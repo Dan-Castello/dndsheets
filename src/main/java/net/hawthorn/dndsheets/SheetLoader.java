@@ -35,7 +35,13 @@ public class SheetLoader {
 
 	public static final Path GAME_DIR = FMLPaths.GAMEDIR.get();
 	public static final Path SHEETS_DIR = GAME_DIR.resolve("charactersheets");
-	public static HashMap<String, JsonObject> sheets = new HashMap<String, JsonObject>(); //A list of all loaded character sheets.
+
+	//Sin esto no había forma programática de saber si una hoja en disco es de una versión anterior del
+	//mod — ver AUDIT_TECHNICAL.md M-SEC-1. Subir este número solo tiene sentido el día que un campo
+	//existente cambie de forma de verdad (no cuando se añade uno nuevo: eso ya lo cubre validateSheet
+	//solo, sin necesidad de versión).
+	public static final int CURRENT_SCHEMA_VERSION = 1;
+	private static HashMap<String, JsonObject> sheets = new HashMap<String, JsonObject>(); //A list of all loaded character sheets. Privado: sin consumo externo confirmado (ver AUDIT_TECHNICAL.md M-API-1), solo se lee/escribe a través de getServerSheet/saveServer, que ya validan/loguean.
 	private static JsonObject current = null; //Currently active character sheet. Important for populating GUIs when they're opened and knowing which to save to.
 
 	@SubscribeEvent
@@ -72,14 +78,13 @@ public class SheetLoader {
 			Supplier<ServerPlayer> serverPlayer = () -> (ServerPlayer) entity;
 			byte[] data = SheetLoader.getServerSheet(uuidString).toString().getBytes();
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(serverPlayer), new SheetClientMessage(data));
-			System.out.println("are you winning son");
 			DeathSaveManager.resendStateOnJoin((ServerPlayer) entity, SheetLoader.getServerSheet(uuidString));
 			//Reconectarse durante un combate le da al jugador un entityId nuevo; sin esto quedaba bloqueado
 			//sin poder actuar por el resto del encuentro (ver TurnManager.reconcilePlayerEntity).
 			TurnManager.reconcilePlayerEntity((ServerPlayer) entity);
 		}
 		catch(Exception e) {
-			System.out.println(e.toString());
+			DndsheetsMod.LOGGER.error("Fallo al enviar la hoja al jugador que se conectó.", e);
 		}
 
 	}
@@ -134,7 +139,7 @@ public class SheetLoader {
 
 	public static JsonObject getClientSheet() {
 		if (current == null) {
-			System.out.println("Client sheet returned null. Are you sure you're not calling this from the server side?");
+			DndsheetsMod.LOGGER.warn("Client sheet returned null. Are you sure you're not calling this from the server side?");
 		}
 		return current;
 	}
@@ -144,7 +149,7 @@ public class SheetLoader {
 			return sheets.get(uuid);
 		}
 		else {
-			System.out.println("Server character sheet retrieval failed. Make sure the UUID is correct and that you're not calling this from the client.");
+			DndsheetsMod.LOGGER.warn("Server character sheet retrieval failed. Make sure the UUID is correct and that you're not calling this from the client.");
 			return null;
 		}
 	}
@@ -193,8 +198,10 @@ public class SheetLoader {
 			try (OutputStream out = Files.newOutputStream(file, StandardOpenOption.CREATE)) {
 				out.write(prettyJson.getBytes());
 			}
-		} catch (IOException e) { 
-			//we fucked up
+		} catch (IOException e) {
+			//El mapa en memoria ya se actualizó arriba, así que sin este log el jugador ve su hoja "guardada"
+			//mientras el archivo real en disco puede no reflejarlo, sin ningún aviso.
+			DndsheetsMod.LOGGER.error("No se pudo guardar la hoja de " + uuid + " en disco.", e);
 		}
 	}
 
@@ -214,8 +221,8 @@ public class SheetLoader {
 					files.add(path);
 			    });
 			} 
-		} catch (IOException e) { 
-			//we fucked up
+		} catch (IOException e) {
+			DndsheetsMod.LOGGER.error("No se pudo listar el directorio de hojas de personaje.", e);
 		}
 
 		//Por archivo, no por el lote entero: una hoja corrupta en disco (JSON inválido, o válido pero no un
@@ -228,9 +235,10 @@ public class SheetLoader {
 				Scanner s = new Scanner(in).useDelimiter("\\A");
 				String result = s.hasNext() ? s.next() : "";
 				JsonObject json = JsonParser.parseString(result).getAsJsonObject();
+				migrateIfNeeded(json);
 				sheets.put(path.getFileName().normalize().toString().replace(".json",""), json);
 			} catch (Exception e) {
-				System.out.println("Skipping corrupt character sheet file " + path + ": " + e);
+				DndsheetsMod.LOGGER.warn("Skipping corrupt character sheet file " + path + ": " + e);
 			}
 		}
 	}
@@ -309,64 +317,28 @@ public class SheetLoader {
 		}
 		if (!sheet.has("spellSlotsCurrent")) sheet.addProperty("spellSlotsCurrent", 0);
 		if (!sheet.has("spellSlotsMax")) sheet.addProperty("spellSlotsMax", 0);
+
+		migrateIfNeeded(sheet);
+	}
+
+	//ponytail: sin migraciones reales que aplicar todavía (ningún campo ha cambiado de forma entre
+	//versiones) — este método solo estampa la versión actual en hojas antiguas que no la tenían. Cuando
+	//haga falta una migración de verdad, añadir un caso más aquí por versión, antes de subir
+	//CURRENT_SCHEMA_VERSION.
+	private static void migrateIfNeeded(JsonObject sheet) {
+		int version = sheet.has("schemaVersion") ? sheet.get("schemaVersion").getAsInt() : 0;
+		if (version < CURRENT_SCHEMA_VERSION) {
+			sheet.addProperty("schemaVersion", CURRENT_SCHEMA_VERSION);
+		}
 	}
 
 	//Makes a new sheet, adds it to the "sheets" HashMap, and then calls Save() to make a file from it.
+	//Delega en validateSheet para los valores por defecto en vez de reconstruirlos a mano: antes cualquier
+	//cambio a una expresión de tirada por defecto había que hacerlo en los dos sitios a la vez.
 	public static void makeNew(String characterName, String uuid) {
 		JsonObject newSheet = new JsonObject();
 		newSheet.addProperty("characterName", characterName);
-		newSheet.addProperty("strength", "10");
-		newSheet.addProperty("dexterity", "10");
-		newSheet.addProperty("constitution", "10");
-		newSheet.addProperty("intelligence", "10");
-		newSheet.addProperty("wisdom", "10");
-		newSheet.addProperty("charisma", "10");
-		newSheet.addProperty("proficiencyBonus", "2");
-
-		JsonArray checks = new JsonArray();
-		checks.add("1d20 + $str");
-		checks.add("1d20 + $dex");
-		checks.add("1d20 + $con");
-		checks.add("1d20 + $int");
-		checks.add("1d20 + $wis");
-		checks.add("1d20 + $cha");
-		checks.add("1d20 + $dex"); //Initiative
-
-		JsonArray saves = new JsonArray();
-		saves.add("1d20 + $str");
-		saves.add("1d20 + $dex");
-		saves.add("1d20 + $con");
-		saves.add("1d20 + $int");
-		saves.add("1d20 + $wis");
-		saves.add("1d20 + $cha");
-
-		JsonArray skills = new JsonArray();
-		skills.add("1d20 + $str");
-		skills.add("1d20 + $dex");
-		skills.add("1d20 + $dex");
-		skills.add("1d20 + $dex");
-		skills.add("1d20 + $int");
-		skills.add("1d20 + $int");
-		skills.add("1d20 + $int");
-		skills.add("1d20 + $int");
-		skills.add("1d20 + $int");
-		skills.add("1d20 + $wis");
-		skills.add("1d20 + $wis");
-		skills.add("1d20 + $wis");
-		skills.add("1d20 + $wis");
-		skills.add("1d20 + $wis");
-		skills.add("1d20 + $cha");
-		skills.add("1d20 + $cha");
-		skills.add("1d20 + $cha");
-		skills.add("1d20 + $cha");
-
-		JsonArray attacks = new JsonArray();
-
-		newSheet.add("checks", checks);
-		newSheet.add("saves", saves);
-		newSheet.add("skills", skills);
-		newSheet.add("attacks", attacks);
-
+		validateSheet(newSheet);
 		saveServer(newSheet, uuid);
 	}
 
@@ -374,6 +346,18 @@ public class SheetLoader {
 	public static void setClient(JsonObject sheet) {
 		current = sheet;
 		//lol it's really that simple
+	}
+
+	//Aplica un parche parcial (ver network.SheetFieldUpdateMessage) sobre la hoja cacheada del cliente, en
+	//vez de reemplazarla entera como setClient — JsonNull en un valor significa "borrar esta clave", igual
+	//que el servidor la borró con JsonObject.remove(...). Ver AUDIT_TECHNICAL.md M-NET-1.
+	public static void applyClientDelta(JsonObject patch) {
+		if (current == null) return;
+		for (String key : patch.keySet()) {
+			JsonElement value = patch.get(key);
+			if (value.isJsonNull()) current.remove(key);
+			else current.add(key, value);
+		}
 	}
 
 

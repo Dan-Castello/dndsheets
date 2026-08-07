@@ -3,7 +3,6 @@ package net.hawthorn.dndsheets.procedures;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.ibm.icu.impl.Pair;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.RollIndex;
 import net.hawthorn.dndsheets.SheetLoader;
@@ -11,6 +10,7 @@ import net.hawthorn.dndsheets.client.gui.components.RollScrollWidget;
 import net.hawthorn.dndsheets.network.SheetServerMessage;
 import net.minecraft.client.gui.components.EditBox;
 
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 
@@ -21,10 +21,10 @@ public class CharacterSheetSaveProcedure {
 	 * @param guistate
 	 * <p>This is the standard save function meant for the CharacterSheetScreen to run.</p>
 	 */
-	public static void execute(HashMap guistate) {
+	public static void execute(HashMap<String, Object> guistate) {
 		if (guistate == null) return;
 		if (SheetLoader.getClientSheet() == null ) {
-			System.out.println("The client doesn't have a sheet for some reason. Won't be any good saving it like this.");
+			DndsheetsMod.LOGGER.warn("El cliente no tiene una hoja cargada; no hay nada que guardar.");
 			return;
 		}
 		JsonObject sheet = SheetLoader.getClientSheet();
@@ -109,12 +109,12 @@ public class CharacterSheetSaveProcedure {
 	 */
 	public static void execute(String expression, int category, int index) {
 		if (SheetLoader.getClientSheet() == null) {
-			System.out.println("The client doesn't have a sheet for some reason. Won't be any good saving it like this.");
+			DndsheetsMod.LOGGER.warn("El cliente no tiene una hoja cargada; no hay nada que guardar.");
 			return;
 		}
 
 		if (RollIndex.Category.fromInt(category).isAdvanced()) {
-			System.out.println("Tried to make an advanced roll from the character sheet without a sub index to pick from. Not allowed, buddy boy.");
+			DndsheetsMod.LOGGER.warn("Se intentó guardar una tirada avanzada sin subíndice; operación no permitida.");
 			return;
 		}
 
@@ -134,14 +134,14 @@ public class CharacterSheetSaveProcedure {
 	 * @param subIndex The sub index, which draws the roll group from the set.
 	 * <p>This is used to save a dice roll expression to its respective category and entry in the JSON file.</p>
 	 */
-	public static void execute(List<Pair<String, String>> info, int category, int index, int subIndex) {
+	public static void execute(List<AbstractMap.SimpleEntry<String, String>> info, int category, int index, int subIndex) {
 		if (SheetLoader.getClientSheet() == null ) {
-			System.out.println("The client doesn't have a sheet for some reason. Won't be any good saving it like this.");
+			DndsheetsMod.LOGGER.warn("El cliente no tiene una hoja cargada; no hay nada que guardar.");
 			return;
 		}
 
 		if (!RollIndex.Category.fromInt(category).isAdvanced()) {
-			System.out.println("Tried to make a basic roll from the character sheet with the wrong method.");
+			DndsheetsMod.LOGGER.warn("Se intentó guardar una tirada básica con el método de tiradas avanzadas.");
 			return;
 		}
 

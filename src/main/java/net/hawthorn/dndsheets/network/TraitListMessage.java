@@ -4,10 +4,7 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.client.gui.TraitGrantScreen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.List;
@@ -15,7 +12,6 @@ import java.util.function.Supplier;
 
 //Servidor -> cliente: la lista de rasgos cargados (ids + nombres) para el objetivo que se eligió en
 //PlayerPickerScreen, abre TraitGrantScreen con datos reales.
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class TraitListMessage {
 	String targetUuid;
 	List<String> ids;
@@ -43,10 +39,5 @@ public class TraitListMessage {
 		NetworkEvent.Context context = contextSupplier.get();
 		context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> TraitGrantScreen.open(message.targetUuid, message.ids, message.names)));
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(TraitListMessage.class, TraitListMessage::buffer, TraitListMessage::new, TraitListMessage::handler);
 	}
 }

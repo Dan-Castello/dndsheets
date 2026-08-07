@@ -2,10 +2,7 @@
 package net.hawthorn.dndsheets.network;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.network.NetworkEvent;
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
@@ -15,7 +12,6 @@ import net.hawthorn.dndsheets.procedures.CharacterSheetOpenProcedure;
 
 import java.util.function.Supplier;
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class CharacterSheetOpenMessage {
 	int type, pressedms;
 
@@ -54,10 +50,5 @@ public class CharacterSheetOpenMessage {
 
 			CharacterSheetOpenProcedure.execute(world, x, y, z, entity);
 		}
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(CharacterSheetOpenMessage.class, CharacterSheetOpenMessage::buffer, CharacterSheetOpenMessage::new, CharacterSheetOpenMessage::handler);
 	}
 }

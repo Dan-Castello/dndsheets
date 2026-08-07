@@ -4,15 +4,11 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.RestManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
 //Cliente -> servidor: aceptó o rechazó la votación de descanso pendiente.
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class RestVoteResponseMessage {
 	final boolean accept;
 
@@ -35,10 +31,5 @@ public class RestVoteResponseMessage {
 			if (voter != null) RestManager.registerVote(voter, message.accept);
 		});
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(RestVoteResponseMessage.class, RestVoteResponseMessage::buffer, RestVoteResponseMessage::new, RestVoteResponseMessage::handler);
 	}
 }

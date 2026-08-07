@@ -6,10 +6,7 @@ import net.hawthorn.dndsheets.client.gui.CharacterSheetScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.List;
@@ -17,7 +14,6 @@ import java.util.function.Supplier;
 
 //Servidor -> cliente: la lista de opciones cargadas para la categoría pedida (ver
 //CharacterOptionsRegistry, solo vive en memoria del servidor), abre el selector con datos reales.
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class CharacterOptionsListMessage {
 	String category;
 	List<String> options;
@@ -47,10 +43,5 @@ public class CharacterOptionsListMessage {
 			CharacterOptionListScreen.open(returnTo, message.category, message.options);
 		}));
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(CharacterOptionsListMessage.class, CharacterOptionsListMessage::buffer, CharacterOptionsListMessage::new, CharacterOptionsListMessage::handler);
 	}
 }

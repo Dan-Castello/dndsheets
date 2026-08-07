@@ -1,7 +1,6 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
-import net.hawthorn.dndsheets.command.WeaponCommand;
 import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -38,7 +37,7 @@ public class PresetManager {
 		//recurso de clase) antes de entregar lo nuevo — sin esto, cambiar de preset varias veces acumulaba
 		//un arma y un ítem de recurso por cada cambio en vez de reemplazarlos. Solo se toca lo que lleva la
 		//etiqueta NBT que puso este mismo mod (weaponId exacto, o el flag booleano del recurso de clase):
-		//un arma inicial que resuelva a un ítem vanilla puro (sin etiqueta, ver WeaponCommand.buildWeaponStack)
+		//un arma inicial que resuelva a un ítem vanilla puro (sin etiqueta, ver Config.buildWeaponStack)
 		//no se puede distinguir de forma segura de una que el jugador ya tuviera por su cuenta, así que esa
 		//no se toca — mejor dejar un extra ocasional que borrar algo que no era del preset.
 		if (!samePresetAlreadyApplied && previousPresetId != null) {
@@ -54,7 +53,7 @@ public class PresetManager {
 
 		if (!samePresetAlreadyApplied) {
 			if (preset.startingWeaponId() != null) {
-				ItemStack weapon = WeaponCommand.buildWeaponStack(preset.startingWeaponId(), 1);
+				ItemStack weapon = Config.buildWeaponStack(preset.startingWeaponId(), 1);
 				player.getInventory().add(weapon);
 			}
 

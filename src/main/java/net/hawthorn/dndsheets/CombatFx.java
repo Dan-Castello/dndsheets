@@ -8,15 +8,14 @@ import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.hawthorn.dndsheets.init.DndsheetsModSounds;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.registries.ForgeRegistries;
 
 /**
  * <p>Efectos nativos de Minecraft (partículas, sonidos, texto en pantalla) para acompañar al
@@ -25,7 +24,6 @@ import net.minecraftforge.registries.ForgeRegistries;
  * de acción vanilla para los momentos importantes que merecen algo más que una línea de chat.</p>
  */
 public class CombatFx {
-	private static final SoundEvent DICE_SOUND = ForgeRegistries.SOUND_EVENTS.getValue(new ResourceLocation("dndsheets:dice"));
 
 	//Chispazo al conectar un golpe (armas, hechizos de ataque, monstruos). Un crítico (natural 20) se ve y
 	//suena distinto del roce normal — antes de esto un 20 natural que triplicaba el daño se sentía
@@ -71,7 +69,7 @@ public class CombatFx {
 
 	//El mismo sonido de dado que ya usan las demás tiradas, para la tirada de salvación de muerte (no pasa por DiceManager).
 	public static void diceTick(Entity source) {
-		sound(source, DICE_SOUND, 1.0f, 1.0f);
+		sound(source, DndsheetsModSounds.DICE.get(), 1.0f, 1.0f);
 	}
 
 	//Al caer a 0 PG: humo alrededor, sonido de dolor grave, y un título en pantalla solo para ese jugador.

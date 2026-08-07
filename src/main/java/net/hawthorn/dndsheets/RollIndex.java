@@ -3,12 +3,11 @@ package net.hawthorn.dndsheets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.ibm.icu.impl.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class RollIndex {
@@ -157,7 +156,7 @@ public class RollIndex {
         }
     }
 
-    public void saveInSheet(JsonObject sheet, List<Pair<String, String>> data) {
+    public void saveInSheet(JsonObject sheet, List<AbstractMap.SimpleEntry<String, String>> data) {
         saveInSheet(sheet, data, "");
     }
 
@@ -201,7 +200,7 @@ public class RollIndex {
         }
     }
 
-    public void saveInSheet(JsonObject sheet, List<Pair<String, String>> data, String formName) {
+    public void saveInSheet(JsonObject sheet, List<AbstractMap.SimpleEntry<String, String>> data, String formName) {
         if (!category.isAdvanced()) return;
 
         try {
@@ -230,8 +229,8 @@ public class RollIndex {
                 rollGroup = new JsonArray();
                 data.forEach((pair) -> {
                     JsonObject obj = new JsonObject();
-                    obj.addProperty("context", pair.first);
-                    obj.addProperty("expression", pair.second);
+                    obj.addProperty("context", pair.getKey());
+                    obj.addProperty("expression", pair.getValue());
                     rollGroup.add(obj);
                 });
                 rollSet.add(rollGroup);
@@ -240,8 +239,8 @@ public class RollIndex {
                 rollGroup = new JsonArray();
                 data.forEach((pair) -> {
                     JsonObject obj = new JsonObject();
-                    obj.addProperty("context", pair.first);
-                    obj.addProperty("expression", pair.second);
+                    obj.addProperty("context", pair.getKey());
+                    obj.addProperty("expression", pair.getValue());
                     rollGroup.add(obj);
                 });
                 rollSet.set(subIndex, rollGroup);

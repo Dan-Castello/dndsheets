@@ -1,7 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -33,8 +33,7 @@ public class SorcererMetamagicManager {
 
 	private static void tryUse(PlayerInteractEvent event, ItemStack stack) {
 		if (event.getEntity().level().isClientSide()) return;
-		CompoundTag tag = stack.getTag();
-		if (tag == null || !tag.contains("dndsheets") || !tag.getCompound("dndsheets").getBoolean("twinnedSpell")) return;
+		if (!AbilityItem.hasFlag(stack, "twinnedSpell")) return;
 
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -55,17 +54,7 @@ public class SorcererMetamagicManager {
 	}
 
 	public static ItemStack buildTwinnedSpellStack() {
-		ItemStack stack = new ItemStack(Items.AMETHYST_SHARD);
-		CompoundTag dndTag = new CompoundTag();
-		dndTag.putBoolean("twinnedSpell", true);
-		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.literal("Metamagia: Hechizo Gemelo"));
-
-		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
-		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.literal("Clic derecho: tu próximo hechizo alcanza a un segundo objetivo cercano.").withStyle(net.minecraft.ChatFormatting.GRAY))));
-		stack.getOrCreateTagElement("display").put("Lore", lore);
-
-		return stack;
+		return AbilityItem.build(Items.AMETHYST_SHARD, "twinnedSpell", Component.literal("Metamagia: Hechizo Gemelo"),
+			Component.literal("Clic derecho: tu próximo hechizo alcanza a un segundo objetivo cercano.").withStyle(ChatFormatting.GRAY));
 	}
 }

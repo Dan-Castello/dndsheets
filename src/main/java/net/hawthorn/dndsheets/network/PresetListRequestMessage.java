@@ -4,9 +4,6 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.PresetManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
 
@@ -18,7 +15,6 @@ import java.util.function.Supplier;
 //"Presets" de su propia hoja, targetUuid vacío) o bien, si es un DM, para aplicársela a OTRO jugador
 //elegido antes en PlayerPickerScreen (ver AUDIT_UX.md, DM #2: antes de esto aplicar un preset a otro
 //jugador solo existía como /dndpresets apply tecleado a mano).
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class PresetListRequestMessage {
 	String targetUuid;
 
@@ -54,10 +50,5 @@ public class PresetListRequestMessage {
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new PresetListMessage(message.targetUuid, ids, names));
 		});
 		context.setPacketHandled(true);
-	}
-
-	@SubscribeEvent
-	public static void registerMessage(FMLCommonSetupEvent event) {
-		DndsheetsMod.addNetworkMessage(PresetListRequestMessage.class, PresetListRequestMessage::buffer, PresetListRequestMessage::new, PresetListRequestMessage::handler);
 	}
 }

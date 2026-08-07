@@ -1,6 +1,6 @@
 plugins {
     id 'eclipse'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'net.minecraftforge.gradle' version '6.0.54'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
 }
@@ -46,13 +46,6 @@ minecraft {
     }
 }
 
-repositories {
-    flatDir {
-        name = "locallib"
-        dir "../~lib"
-    }
-}
-
 configurations {
     shade
     implementation.extendsFrom shade
@@ -62,11 +55,7 @@ dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.2.0'
     // https://mvnrepository.com/artifact/io.github.tfriedrichs/dicebot
     minecraftLibrary 'io.github.tfriedrichs:dicebot:1.0.0'
-    //minecraftLibrary 'org.antlr:antlr4-runtime:4.7.2'
     shade 'io.github.tfriedrichs:dicebot:1.0.0'
-    //shade 'org.antlr:antlr4-runtime:4.7.2'
-
-
 }
 
 jar {
@@ -78,7 +67,6 @@ shadowJar {
     archiveClassifier = ''
     configurations = [project.configurations.shade]
     relocate 'io.github.tfriedrichs:dicebot', "${project.group}.relocated.dicebot"
-    //relocate 'org.antlr:antlr4-runtime', "${project.group}.relocated.antlr4-runtime"
     finalizedBy 'reobfShadowJar'
 }
 
@@ -102,3 +90,5 @@ tasks.register('testJsonContent', JavaExec) {
     mainClass = 'net.hawthorn.dndsheets.JsonContentSelfTest'
     workingDir = rootDir
 }
+
+check.dependsOn testJsonContent

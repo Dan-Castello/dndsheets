@@ -1,7 +1,6 @@
 package net.hawthorn.dndsheets;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -9,8 +8,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
 import java.util.Map;
 import java.util.UUID;
@@ -28,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * enganchado a {@link ConcentrationManager} — dura su tiempo fijo pase lo que pase, más simple y
  * consistente con cómo esta pasada ya simplificó Forma Salvaje/Furia.</p>
  */
-@Mod.EventBusSubscriber
 public class RangerHunterMarkManager {
 	public static final String DICE = "1d6";
 	private static final int DURATION_ROUNDS = 100; //10 minutos de 5e = 100 asaltos.
@@ -59,11 +55,9 @@ public class RangerHunterMarkManager {
 		}
 	}
 
-	@SubscribeEvent
-	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-		if (event.getEntity().level().isClientSide()) return;
-		CompoundTag tag = event.getItemStack().getTag();
-		if (tag == null || !tag.contains("dndsheets") || !tag.getCompound("dndsheets").getBoolean("hunterMark")) return;
+	//Se activa desde AbilityItemDispatcher en vez de suscribirse a EntityInteract por su cuenta — ver
+	//AUDIT_TECHNICAL.md M-EVT-1.
+	static void tryUse(PlayerInteractEvent.EntityInteract event) {
 		if (!(event.getEntity() instanceof ServerPlayer ranger)) return;
 
 		event.setCanceled(true);
@@ -71,17 +65,7 @@ public class RangerHunterMarkManager {
 	}
 
 	public static ItemStack buildHunterMarkStack() {
-		ItemStack stack = new ItemStack(Items.SPYGLASS);
-		CompoundTag dndTag = new CompoundTag();
-		dndTag.putBoolean("hunterMark", true);
-		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.literal("Marca del Cazador"));
-
-		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
-		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.literal("Clic derecho en un objetivo: +1d6 de daño al golpearlo con armas.").withStyle(ChatFormatting.GRAY))));
-		stack.getOrCreateTagElement("display").put("Lore", lore);
-
-		return stack;
+		return AbilityItem.build(Items.SPYGLASS, "hunterMark", Component.literal("Marca del Cazador"),
+			Component.literal("Clic derecho en un objetivo: +1d6 de daño al golpearlo con armas.").withStyle(ChatFormatting.GRAY));
 	}
 }

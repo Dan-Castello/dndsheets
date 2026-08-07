@@ -13,6 +13,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -53,7 +54,7 @@ import java.util.Set;
  */
 @Mod.EventBusSubscriber
 public class TurnManager {
-	//isMonster se fija al armar la iniciativa (TurnCommand.startAt), no se reinfiere después: si el
+	//isMonster se fija al armar la iniciativa (startAt), no se reinfiere después: si el
 	//combatiente se borra del mundo a mitad de encuentro (DM, Vara de DM...) ya no habría forma de
 	//preguntarle a MonsterRegistry qué era. Ver allEnemiesDefeated, que depende de este flag. playerUuid es
 	//null para monstruos; para jugadores sobrevive a un entityId que cambia al reconectarse — ver
@@ -132,6 +133,9 @@ public class TurnManager {
 	private static final Map<Integer, Pinned> lastGoodPos = new HashMap<>();
 	private static final int DEFAULT_SPEED_FEET = 30;
 	private static final double FEET_PER_BLOCK = 5.0;
+	//speedBlocksFor corre 20 veces/seg mientras dura el turno de un jugador: el Pattern se cachea en
+	//vez de recompilarse en cada tick.
+	private static final java.util.regex.Pattern SPEED_FEET_PATTERN = java.util.regex.Pattern.compile("\\d+");
 
 	//Rasgos con duración en asaltos (Furia del bárbaro, etc.) en vez de ticks reales — ver
 	//BarbarianRageManager para el caso de uso. Un asalto = una vuelta completa del orden de turnos.
@@ -155,6 +159,11 @@ public class TurnManager {
 	//la reacción del monstruo — ver checkOpportunityAttacks.
 	private static final double MELEE_REACH = 3.0;
 	private static final Set<Integer> withinReach = new HashSet<>();
+
+	//checkOpportunityAttacks recorría todos los combatientes y calculaba distancias en CADA tick del
+	//jugador con el turno, incluso parado quieto — se guarda la última posición ya comprobada para saltar
+	//el recorrido si no cambió desde el tick anterior.
+	private static final Map<Integer, Vec3> lastOpportunityCheckPos = new HashMap<>();
 
 	//Público: usado por Escudo/Contrahechizo (fuera de turno) y por el ataque de oportunidad de abajo
 	//(dentro del tick de quien se mueve). Mismo "una vez y se acabó" que tryAct, pero sin exigir que sea
@@ -233,6 +242,54 @@ public class TurnManager {
 		turnToken++; //Invalida cualquier auto-avance ya encolado por la acción que se acaba de deshacer.
 		broadcast(level, Component.translatable("chat.dndsheets.turn.undo", current().name()).withStyle(ChatFormatting.YELLOW));
 		broadcastTurnState(level);
+	}
+
+	public static final double DEFAULT_RADIUS = 30.0;
+
+	//Tira iniciativa (1d20 + Destreza/mod) para todos los jugadores y monstruos invocados dentro de un
+	//radio, ordena de mayor a menor y arranca el modo turnos. Público: lo usan tanto TurnCommand
+	//(/dndturns start) como el Panel de DM (network.TurnControlMessage) y CombatManager.autoStartCombatIfNeeded
+	//(el primer golpe de un jugador a un monstruo arranca el combate solo si no había uno activo) — vivía
+	//antes en TurnCommand, invirtiendo la dependencia (lógica de dominio llamando a la capa de comandos),
+	//ver AUDIT_TECHNICAL.md M-ARQ-1.
+	public static int startAt(ServerLevel level, Vec3 pos, double radius) {
+		AABB box = new AABB(pos.x - radius, pos.y - radius, pos.z - radius, pos.x + radius, pos.y + radius, pos.z + radius);
+
+		record Rolled(int entityId, String name, int score, boolean isMonster, String playerUuid) {}
+		List<Rolled> rolled = new ArrayList<>();
+		for (Entity entity : level.getEntities((Entity) null, box, e -> e instanceof Player || MonsterRegistry.monsterIdOf(e) != null)) {
+			String playerUuid = entity instanceof Player player ? player.getStringUUID() : null;
+			rolled.add(new Rolled(entity.getId(), nameOf(entity), rollInitiative(entity), MonsterRegistry.monsterIdOf(entity) != null, playerUuid));
+		}
+		rolled.sort((a, b) -> b.score() - a.score());
+
+		List<Combatant> combatants = new ArrayList<>();
+		for (Rolled r : rolled) combatants.add(new Combatant(r.entityId(), r.name() + " (" + r.score() + ")", r.isMonster(), r.playerUuid()));
+
+		if (combatants.isEmpty()) return 0;
+
+		start(level, combatants);
+		return combatants.size();
+	}
+
+	private static int rollInitiative(Entity entity) {
+		if (entity instanceof Player player) {
+			JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+			DiceManager.RollOutcome outcome = DiceManager.roll(sheet != null ? sheet : new JsonObject(), "1d20 + $dex");
+			return outcome.result() != null ? outcome.result().getValue() : 10;
+		}
+		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(entity);
+		int mod = block != null ? block.abilityModifier("dex") : 0;
+		DiceManager.RollOutcome outcome = DiceManager.roll(new JsonObject(), "1d20 + " + mod);
+		return outcome.result() != null ? outcome.result().getValue() : 10;
+	}
+
+	private static String nameOf(Entity entity) {
+		if (entity instanceof Player player) {
+			return SheetLoader.characterNameOf(SheetLoader.getServerSheet(player.getStringUUID()), player);
+		}
+		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(entity);
+		return block != null ? block.name() : entity.getName().getString();
 	}
 
 	public static void start(ServerLevel level, List<Combatant> rolledOrder) {
@@ -466,6 +523,10 @@ public class TurnManager {
 		if (entity instanceof ServerPlayer serverPlayer) {
 			CombatFx.actionBar(serverPlayer, Component.translatable("chat.dndsheets.turn.your_turn").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
 			seedReachState(level, serverPlayer);
+			//Sin esto, si el jugador termina un turno anterior y empieza este SIN moverse de esa posición,
+			//el primer tick del turno nuevo vería la misma posición "ya comprobada" del turno anterior y se
+			//saltaría el chequeo de oportunidad que en realidad hace falta reevaluar desde cero.
+			lastOpportunityCheckPos.remove(combatant.entityId());
 			Pinned pinned = new Pinned(level.dimension(), serverPlayer.position());
 			moveOrigin.put(combatant.entityId(), pinned);
 			lastGoodPos.put(combatant.entityId(), pinned);
@@ -516,7 +577,7 @@ public class TurnManager {
 	private static double speedBlocksFor(JsonObject sheet) {
 		int feet = DEFAULT_SPEED_FEET;
 		if (sheet != null && sheet.has("speed")) {
-			java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\d+").matcher(sheet.get("speed").getAsString());
+			java.util.regex.Matcher matcher = SPEED_FEET_PATTERN.matcher(sheet.get("speed").getAsString());
 			if (matcher.find()) {
 				try { feet = Integer.parseInt(matcher.group()); } catch (NumberFormatException ignored) {}
 			}
@@ -657,7 +718,11 @@ public class TurnManager {
 
 		Combatant currentCombatant = current();
 		if (currentCombatant != null && currentCombatant.entityId() == player.getId() && player.level() instanceof ServerLevel level) {
-			checkOpportunityAttacks(level, player);
+			Vec3 pos = player.position();
+			if (!pos.equals(lastOpportunityCheckPos.get(player.getId()))) {
+				lastOpportunityCheckPos.put(player.getId(), pos);
+				checkOpportunityAttacks(level, player);
+			}
 			enforceMovementBudget(player);
 		}
 	}

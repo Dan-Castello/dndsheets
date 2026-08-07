@@ -1,8 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
-import net.hawthorn.dndsheets.network.DeathSaveCloseMessage;
-import net.hawthorn.dndsheets.network.DeathSaveOpenMessage;
+import net.hawthorn.dndsheets.network.ScreenActionMessage;
 import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -52,7 +51,7 @@ public class DeathSaveManager {
 				sheet.addProperty("deathSaveFailures", 0);
 				sendSheetUpdate(player, sheet);
 			}
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new DeathSaveCloseMessage());
+			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new ScreenActionMessage(ScreenActionMessage.Action.DEATH_SAVE_CLOSE));
 			return;
 		}
 
@@ -163,7 +162,7 @@ public class DeathSaveManager {
 		player.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, INFINITE_DURATION, 9, false, false));
 
 		sendSheetUpdate(player, sheet);
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new DeathSaveOpenMessage());
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new ScreenActionMessage(ScreenActionMessage.Action.DEATH_SAVE_OPEN));
 		CombatFx.downed(player);
 		ChatFeedback.broadcast(player, ChatFeedback.downed(characterName(sheet, player)));
 	}
@@ -179,14 +178,14 @@ public class DeathSaveManager {
 		if (player.getHealth() < 1.0f) player.setHealth(1.0f);
 
 		sendSheetUpdate(player, sheet);
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new DeathSaveCloseMessage());
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new ScreenActionMessage(ScreenActionMessage.Action.DEATH_SAVE_CLOSE));
 		CombatFx.saved(player, titleText);
 	}
 
 	//Reenvía el estado a quien acaba de unirse por si estaba caído desde antes de desconectarse.
 	public static void resendStateOnJoin(ServerPlayer player, JsonObject sheet) {
 		if (isDowned(sheet)) {
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new DeathSaveOpenMessage());
+			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new ScreenActionMessage(ScreenActionMessage.Action.DEATH_SAVE_OPEN));
 		}
 	}
 

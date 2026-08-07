@@ -2,7 +2,6 @@ package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,11 +43,18 @@ public class BardInspirationManager {
 	private static final Map<UUID, Integer> latestGrantToken = new ConcurrentHashMap<>();
 	private static int nextToken = 0;
 
+	//A diferencia de furia/segundo aliento/etc., este token no tiene su propio temporizador de expiración
+	//independiente del jugador (solo el efecto NBT expira solo; el token en sí se queda para siempre en
+	//el mapa si el jugador no vuelve a conectarse).
+	@SubscribeEvent
+	public static void onPlayerLogout(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+		latestGrantToken.remove(event.getEntity().getUUID());
+	}
+
 	@SubscribeEvent
 	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
 		if (event.getEntity().level().isClientSide()) return;
-		CompoundTag tag = event.getItemStack().getTag();
-		if (tag == null || !tag.contains("dndsheets") || !tag.getCompound("dndsheets").getBoolean("bardicInspiration")) return;
+		if (!AbilityItem.hasFlag(event.getItemStack(), "bardicInspiration")) return;
 		if (!(event.getEntity() instanceof ServerPlayer bard) || !(event.getTarget() instanceof ServerPlayer target)) return;
 
 		event.setCanceled(true);
@@ -101,17 +107,7 @@ public class BardInspirationManager {
 	}
 
 	public static ItemStack buildInspirationStack() {
-		ItemStack stack = new ItemStack(Items.GOAT_HORN);
-		CompoundTag dndTag = new CompoundTag();
-		dndTag.putBoolean("bardicInspiration", true);
-		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.literal("Cuerno de Inspiración"));
-
-		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
-		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.literal("Clic derecho en OTRO jugador: le da un dado de inspiración.").withStyle(ChatFormatting.GRAY))));
-		stack.getOrCreateTagElement("display").put("Lore", lore);
-
-		return stack;
+		return AbilityItem.build(Items.GOAT_HORN, "bardicInspiration", Component.literal("Cuerno de Inspiración"),
+			Component.literal("Clic derecho en OTRO jugador: le da un dado de inspiración.").withStyle(ChatFormatting.GRAY));
 	}
 }
