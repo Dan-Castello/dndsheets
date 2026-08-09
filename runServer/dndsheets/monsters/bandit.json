@@ -1,0 +1,14 @@
+[
+  {
+    "id": "dndsheets:bandit",
+    "name": "Bandido",
+    "baseEntity": "easy_npc:humanoid",
+    "ac": 12,
+    "hp": 11,
+    "proficiencyBonus": 2,
+    "abilities": { "str": 11, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 10 },
+    "attacks": [
+      { "name": "Cimitarra", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  }
+]

@@ -51,10 +51,9 @@ public class BardInspirationManager {
 		latestGrantToken.remove(event.getEntity().getUUID());
 	}
 
-	@SubscribeEvent
-	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-		if (event.getEntity().level().isClientSide()) return;
-		if (!AbilityItem.hasFlag(event.getItemStack(), "bardicInspiration")) return;
+	//Se activa desde AbilityItemDispatcher en vez de suscribirse a EntityInteract por su cuenta — ver
+	//AUDIT_TECHNICAL.md M-EVT-1.
+	static void tryUse(PlayerInteractEvent.EntityInteract event) {
 		if (!(event.getEntity() instanceof ServerPlayer bard) || !(event.getTarget() instanceof ServerPlayer target)) return;
 
 		event.setCanceled(true);

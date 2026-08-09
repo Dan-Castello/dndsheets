@@ -43,5 +43,18 @@
     "abilities_special": [
       { "name": "Bola de Fuego", "saveAbility": "dex", "saveDc": 13, "dice": "8d6", "halfOnSave": true, "damageType": "fuego" }
     ]
+  },
+  {
+    "_note": "baseEntity acepta CUALQUIER EntityType registrado, incluido uno de otro mod: si tienes el mod Easy NPC (easy_npc, sin modificar) instalado, 'easy_npc:humanoid' funciona igual que 'minecraft:zombie' arriba — se invoca con NoAI:1 y se le aplican las reglas de dndsheets sin ningún código extra, solo cambia el modelo/skin base.",
+    "id": "dndsheets:bandit",
+    "name": "Bandido",
+    "baseEntity": "easy_npc:humanoid",
+    "ac": 12,
+    "hp": 11,
+    "proficiencyBonus": 2,
+    "abilities": { "str": 11, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 10 },
+    "attacks": [
+      { "name": "Cimitarra", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
   }
 ]

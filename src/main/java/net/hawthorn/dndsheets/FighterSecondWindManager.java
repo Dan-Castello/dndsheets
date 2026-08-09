@@ -7,8 +7,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
 import java.util.Set;
 import java.util.UUID;
@@ -20,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * verdad). Sin duración que contar en asaltos ni en ticks — a diferencia de la Furia, esto es un simple
  * "usado/no usado" que un descanso resetea, así que no necesita nada de {@link TurnManager}.</p>
  */
-@Mod.EventBusSubscriber
 public class FighterSecondWindManager {
 	private static final Set<UUID> used = ConcurrentHashMap.newKeySet();
 
@@ -46,27 +43,11 @@ public class FighterSecondWindManager {
 		used.remove(player.getUUID());
 	}
 
-	//--- Ítem de Segundo Aliento: mismo patrón que el Tótem de Furia (BarbarianRageManager) ---
+	//--- Ítem de Segundo Aliento: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3
+	//eventos de interacción por separado — ver AUDIT_TECHNICAL.md M-EVT-1. Mismo patrón que el Tótem de
+	//Furia (BarbarianRageManager). ---
 
-	@SubscribeEvent
-	public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-		tryUse(event, event.getItemStack());
-	}
-
-	@SubscribeEvent
-	public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-		tryUse(event, event.getItemStack());
-	}
-
-	@SubscribeEvent
-	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-		tryUse(event, event.getItemStack());
-	}
-
-	private static void tryUse(PlayerInteractEvent event, ItemStack stack) {
-		if (event.getEntity().level().isClientSide()) return;
-		if (!AbilityItem.hasFlag(stack, "secondWind")) return;
-
+	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (event.getEntity() instanceof ServerPlayer player) use(player);
 	}

@@ -33,8 +33,7 @@ public class SheetGoldMessage {
 
 	public static void handler(SheetGoldMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DndsheetsMod.withDmTarget(context, message.targetUuid,
+		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid,
 			target -> SheetCommand.applyGold(target, message.mode, message.amount)));
-		context.setPacketHandled(true);
 	}
 }

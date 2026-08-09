@@ -27,6 +27,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -35,6 +36,7 @@ import net.minecraftforge.network.PacketDistributor;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Supplier;
 
 /**
  * <p>Utilidades de administración de hoja que no tenían dueño natural en ningún otro comando.
@@ -228,40 +230,31 @@ public class SheetCommand {
 		return targets.size();
 	}
 
-	private static int giveSmiteItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+	//Un solo lugar donde entregar UN ítem "botón" a cada jugador de "jugadores" — antes cada
+	//give*Item repetía este mismo cuerpo de 5 líneas, variando solo el builder del ítem y el mensaje.
+	private static int giveItemToTargets(CommandContext<CommandSourceStack> ctx, Supplier<ItemStack> stackSupplier, String givenLabel) throws CommandSyntaxException {
 		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
 		for (ServerPlayer target : targets) {
-			target.getInventory().add(PaladinSmiteManager.buildDivineSmiteStack());
+			target.getInventory().add(stackSupplier.get());
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Castigo Divino entregado a " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.literal(givenLabel + " a " + targets.size() + " jugador(es)."), true);
 		return targets.size();
+	}
+
+	private static int giveSmiteItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		return giveItemToTargets(ctx, PaladinSmiteManager::buildDivineSmiteStack, "Castigo Divino entregado");
 	}
 
 	private static int giveHunterMarkItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			target.getInventory().add(RangerHunterMarkManager.buildHunterMarkStack());
-		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Marca del Cazador entregada a " + targets.size() + " jugador(es)."), true);
-		return targets.size();
+		return giveItemToTargets(ctx, RangerHunterMarkManager::buildHunterMarkStack, "Marca del Cazador entregada");
 	}
 
 	private static int giveShieldItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			target.getInventory().add(ShieldManager.buildShieldStack());
-		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Escudo entregado a " + targets.size() + " jugador(es)."), true);
-		return targets.size();
+		return giveItemToTargets(ctx, ShieldManager::buildShieldStack, "Escudo entregado");
 	}
 
 	private static int giveCounterspellItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			target.getInventory().add(CounterspellManager.buildCounterspellStack());
-		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Contrahechizo entregado a " + targets.size() + " jugador(es)."), true);
-		return targets.size();
+		return giveItemToTargets(ctx, CounterspellManager::buildCounterspellStack, "Contrahechizo entregado");
 	}
 
 	//Pacto del brujo (Cadena/Hoja/Vara): elección permanente de subclase, al estilo de un preset — se
@@ -308,48 +301,23 @@ public class SheetCommand {
 	}
 
 	private static int giveInspirationItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			target.getInventory().add(BardInspirationManager.buildInspirationStack());
-		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Cuerno de Inspiración entregado a " + targets.size() + " jugador(es)."), true);
-		return targets.size();
+		return giveItemToTargets(ctx, BardInspirationManager::buildInspirationStack, "Cuerno de Inspiración entregado");
 	}
 
 	private static int giveWildShapeItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			target.getInventory().add(DruidWildShapeManager.buildWildShapeStack());
-		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Forma Salvaje entregada a " + targets.size() + " jugador(es)."), true);
-		return targets.size();
+		return giveItemToTargets(ctx, DruidWildShapeManager::buildWildShapeStack, "Forma Salvaje entregada");
 	}
 
 	private static int giveMetamagicItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			target.getInventory().add(SorcererMetamagicManager.buildTwinnedSpellStack());
-		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Metamagia: Hechizo Gemelo entregada a " + targets.size() + " jugador(es)."), true);
-		return targets.size();
+		return giveItemToTargets(ctx, SorcererMetamagicManager::buildTwinnedSpellStack, "Metamagia: Hechizo Gemelo entregada");
 	}
 
 	private static int giveRageItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			target.getInventory().add(BarbarianRageManager.buildRageItemStack());
-		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Tótem de Furia entregado a " + targets.size() + " jugador(es)."), true);
-		return targets.size();
+		return giveItemToTargets(ctx, BarbarianRageManager::buildRageItemStack, "Tótem de Furia entregado");
 	}
 
 	private static int giveSecondWindItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			target.getInventory().add(FighterSecondWindManager.buildSecondWindStack());
-		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Segundo Aliento entregado a " + targets.size() + " jugador(es)."), true);
-		return targets.size();
+		return giveItemToTargets(ctx, FighterSecondWindManager::buildSecondWindStack, "Segundo Aliento entregado");
 	}
 
 	private static int giveTurnItems(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
@@ -363,12 +331,7 @@ public class SheetCommand {
 	}
 
 	private static int giveRestKit(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			target.getInventory().add(RestManager.buildRestKitStack());
-		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Kit de Descanso entregado a " + targets.size() + " jugador(es)."), true);
-		return targets.size();
+		return giveItemToTargets(ctx, RestManager::buildRestKitStack, "Kit de Descanso entregado");
 	}
 
 	//Fija ventaja/desventaja para la SIGUIENTE tirada de ataque (arma o hechizo) de cada jugador; se

@@ -33,6 +33,9 @@ import java.util.Map;
  * editarla (o traducirla, o ampliarla a mano) en bloque sin tocar el código ni recompilar.</p>
  */
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
+//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
+//expone a que cambien de firma sin aviso.
 public class Config {
 	public static final ForgeConfigSpec SPEC;
 	private static final ForgeConfigSpec.ConfigValue<List<? extends String>> HIT_DICE_ENTRIES;

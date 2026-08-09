@@ -13,6 +13,23 @@ runServer/world/
 runClient/usercache.json
 runServer/usercache.json
 
+# Estado de servidor de pruebas regenerable y configs de mods de terceros ajenos a dndsheets (ver
+# AUDIT_REPORT_2026.md F20) — no aplican a lo ya trackeado, solo evitan volver a agregarlo si se borra.
+runServer/ops.json
+runServer/whitelist.json
+runServer/banned-ips.json
+runServer/banned-players.json
+runServer/servers.dat
+runServer/servers.dat_old
+runServer/usernamecache.json
+runServer/options.txt
+runServer/eula.txt
+runServer/imgui.ini
+runServer/config/CoroUtil/
+runServer/config/watut-*
+runServer/config/fml.toml
+runServer/config/forge-client.toml
+
 # Artefactos de desarrollo local que no pertenecen al repo (ver AUDIT_TECHNICAL.md QW-7/QW-8):
 # bin/ es un residuo de otro mod (MCreator, mod-id distinto) commiteado por error; crash/ y logs/
 # son diagnóstico de una sesión local; patch/ es una copia de trabajo; lib/ debe resolverse por

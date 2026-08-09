@@ -21,6 +21,9 @@ import java.util.regex.Pattern;
 
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
+//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
+//expone a que cambien de firma sin aviso.
 public class DiceManager {
 
 	//Motor de TODAS las tiradas del mod: estos Pattern/Logger se compilaban/re-obtenían en cada tirada

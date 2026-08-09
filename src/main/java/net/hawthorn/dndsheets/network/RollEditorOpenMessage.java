@@ -5,7 +5,7 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.procedures.RollEditorOpenProcedure;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -23,10 +23,7 @@ public class RollEditorOpenMessage {
 
 	public static void handler(RollEditorOpenMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
-			pressAction(context.getSender());
-		});
-		context.setPacketHandled(true);
+		NetworkUtil.handleOnServer(context, () -> pressAction(context.getSender()));
 	}
 
 	public static void pressAction(Player entity) {

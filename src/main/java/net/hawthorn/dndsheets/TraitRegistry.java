@@ -30,6 +30,9 @@ import java.util.Set;
  * <p>Añadir un tipo de efecto nuevo es el mismo patrón: un campo más aquí, una rama más donde se consuma
  * — no hace falta un motor de reglas genérico para esto.</p>
  */
+//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
+//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
+//expone a que cambien de firma sin aviso.
 public class TraitRegistry {
 	public record LevelDice(int level, String dice) {}
 	public record Trait(String id, String name, String unarmedAbility, List<LevelDice> unarmedDiceByLevel, List<LevelDice> sneakAttackDiceByLevel) {}

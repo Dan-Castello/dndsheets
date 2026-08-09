@@ -3,10 +3,8 @@ package net.hawthorn.dndsheets.network;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.TurnManager;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
-import java.util.UUID;
 import java.util.function.Supplier;
 
 //Cliente (el DM) -> servidor: formulario de AddTurnEffectScreen para el jugador elegido antes en
@@ -39,13 +37,8 @@ public class TurnEffectApplyMessage {
 
 	public static void handler(TurnEffectApplyMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
-			ServerPlayer dm = context.getSender();
-			if (dm == null || !dm.hasPermissions(2)) return;
-			ServerPlayer target = dm.getServer().getPlayerList().getPlayer(UUID.fromString(message.targetUuid));
-			if (target == null) return;
-			TurnManager.applyEffect(target, message.name, message.dice, Math.max(1, Math.min(20, message.turns)));
-		});
-		context.setPacketHandled(true);
+		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid, target ->
+			TurnManager.applyEffect(target, message.name, message.dice, Math.max(1, Math.min(20, message.turns)))
+		));
 	}
 }

@@ -43,8 +43,11 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private final Level world;
 	private final int x, y, z;
 	private final Player entity;
-	public static PanelStatus panelActive = PanelStatus.MAIN;
-	public static boolean editMode = false;
+	//private: verificado que ningún otro archivo del mod lee/escribe estos dos campos (solo se usan dentro
+	//de esta clase) — no había motivo para que fueran public static y quedaran mutables desde cualquier
+	//mod externo en el classpath.
+	private static PanelStatus panelActive = PanelStatus.MAIN;
+	private static boolean editMode = false;
 
 	EditBox hitPoints;      // Sincronizado en vivo desde entity.getHealth() - ver containerTick()
 	EditBox hitPointsMax;   // Sincronizado en vivo desde entity.getMaxHealth()

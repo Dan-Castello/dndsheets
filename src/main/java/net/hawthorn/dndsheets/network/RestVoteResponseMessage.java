@@ -26,10 +26,9 @@ public class RestVoteResponseMessage {
 
 	public static void handler(RestVoteResponseMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer voter = context.getSender();
 			if (voter != null) RestManager.registerVote(voter, message.accept);
 		});
-		context.setPacketHandled(true);
 	}
 }

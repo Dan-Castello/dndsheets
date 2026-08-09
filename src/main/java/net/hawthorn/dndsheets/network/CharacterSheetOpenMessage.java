@@ -2,7 +2,7 @@
 package net.hawthorn.dndsheets.network;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkEvent;
 
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
@@ -32,10 +32,7 @@ public class CharacterSheetOpenMessage {
 
 	public static void handler(CharacterSheetOpenMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
-			pressAction(context.getSender(), message.type, message.pressedms);
-		});
-		context.setPacketHandled(true);
+		NetworkUtil.handleOnServer(context, () -> pressAction(context.getSender(), message.type, message.pressedms));
 	}
 
 	public static void pressAction(Player entity, int type, int pressedms) {

@@ -21,6 +21,9 @@ import java.util.Set;
  * mode:"save"} = el objetivo tira su propia salvación contra la CD del lanzador (8 + competencia +
  * car. de lanzamiento), igual que un hechizo de monstruo.</p>
  */
+//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
+//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
+//expone a que cambien de firma sin aviso.
 public class SpellRegistry {
 	public record Spell(
 		String id, String name, int level, String mode,

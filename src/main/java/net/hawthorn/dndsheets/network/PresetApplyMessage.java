@@ -26,10 +26,9 @@ public class PresetApplyMessage {
 
 	public static void handler(PresetApplyMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer player = context.getSender();
 			if (player != null) PresetManager.applyPreset(player, message.presetId);
 		});
-		context.setPacketHandled(true);
 	}
 }

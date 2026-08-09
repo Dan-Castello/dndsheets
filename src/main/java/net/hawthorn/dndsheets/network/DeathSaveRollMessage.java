@@ -18,12 +18,11 @@ public class DeathSaveRollMessage {
 
 	public static void handler(DeathSaveRollMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer player = context.getSender();
 			if (player != null) {
 				DeathSaveManager.handleRollRequest(player);
 			}
 		});
-		context.setPacketHandled(true);
 	}
 }

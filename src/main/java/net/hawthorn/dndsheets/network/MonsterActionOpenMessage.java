@@ -3,8 +3,6 @@ package net.hawthorn.dndsheets.network;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.client.gui.MonsterActionScreen;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.List;
@@ -36,7 +34,6 @@ public class MonsterActionOpenMessage {
 
 	public static void handler(MonsterActionOpenMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> MonsterActionScreen.open(message.entityId, message.actionNames, message.customAttackNames)));
-		context.setPacketHandled(true);
+		NetworkUtil.handleOnClient(context, () -> MonsterActionScreen.open(message.entityId, message.actionNames, message.customAttackNames));
 	}
 }

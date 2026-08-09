@@ -29,8 +29,7 @@ public class TraitGrantMessage {
 
 	public static void handler(TraitGrantMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DndsheetsMod.withDmTarget(context, message.targetUuid,
+		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid,
 			target -> TraitCommand.grantToPlayer(target, message.traitId)));
-		context.setPacketHandled(true);
 	}
 }

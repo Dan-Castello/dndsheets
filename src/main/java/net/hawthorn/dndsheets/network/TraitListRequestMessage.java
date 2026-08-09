@@ -30,7 +30,7 @@ public class TraitListRequestMessage {
 
 	public static void handler(TraitListRequestMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer dm = context.getSender();
 			if (dm == null || !dm.hasPermissions(2)) return;
 
@@ -43,6 +43,5 @@ public class TraitListRequestMessage {
 
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), new TraitListMessage(message.targetUuid, ids, names));
 		});
-		context.setPacketHandled(true);
 	}
 }

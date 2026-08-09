@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.network.TurnStateMessage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -12,7 +11,6 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.TickEvent;
@@ -37,7 +35,7 @@ import java.util.Set;
  * <p>Quien tiene el turno tampoco se mueve con libertad total de Minecraft: solo puede alejarse de
  * donde empezó su turno hasta su "speed" de hoja (5 pies = 1 bloque, 30 pies por defecto si el campo
  * está vacío o no es un número); pasado eso se le devuelve a la última posición válida — ver
- * {@link #enforceMovementBudget}.</p>
+ * {@link MovementAnchorTracker#enforceMovementBudget}.</p>
  *
  * <p>El turno pasa solo: en cuanto {@link #tryAct} le acepta una acción a quien tiene el turno, un tick
  * después se avanza al siguiente combatiente sin que nadie escriba {@code /dndturns next} — ver
@@ -74,11 +72,6 @@ public class TurnManager {
 	//con el ítem "Deshacer Turno") podía disparar el auto-avance viejo Y el nuevo, dando una acción extra
 	//gratis, y un /dndturns next manual justo antes del auto-avance podía hacer avanzar la ronda dos veces.
 	private static int turnToken = 0;
-
-	//Posición Y dimensión (portal del Nether/End de por medio, un cambio de nivel real) — sin la dimensión,
-	//comparar contra una posición grabada en OTRO nivel producía teletransportes corruptos (coordenadas de
-	//Overworld comparadas/aplicadas dentro del Nether, escala 8:1). Ver freeze/onPlayerTick/enforceMovementBudget.
-	private record Pinned(ResourceKey<Level> dimension, Vec3 pos) {}
 
 	//Ids de combatientes confirmados muertos/borrados de verdad (ver markDefeated). allEnemiesDefeated NO
 	//puede fiarse de level.getEntity(id)==null para inferir "muerto": un monstruo simplemente en un chunk
@@ -122,20 +115,10 @@ public class TurnManager {
 	}
 
 	private static final Map<Integer, List<StatusEffect>> effects = new HashMap<>();
-	//Posición donde debe quedarse quien no tiene el turno; sin entrada = libre para moverse (le toca a él).
-	private static final Map<Integer, Pinned> anchors = new HashMap<>();
-	private static final double ANCHOR_TOLERANCE = 0.05;
 
-	//Presupuesto de movimiento de quien SÍ tiene el turno: dónde estaba al empezarlo (origin) y la última
-	//posición vista dentro de su alcance (lastGoodPos, a donde se le devuelve si se pasa). Sin esto,
-	//quien tiene el turno se movía con total libertad — ver enforceMovementBudget.
-	private static final Map<Integer, Pinned> moveOrigin = new HashMap<>();
-	private static final Map<Integer, Pinned> lastGoodPos = new HashMap<>();
-	private static final int DEFAULT_SPEED_FEET = 30;
-	private static final double FEET_PER_BLOCK = 5.0;
-	//speedBlocksFor corre 20 veces/seg mientras dura el turno de un jugador: el Pattern se cachea en
-	//vez de recompilarse en cada tick.
-	private static final java.util.regex.Pattern SPEED_FEET_PATTERN = java.util.regex.Pattern.compile("\\d+");
+	//Anclaje de posición y presupuesto de movimiento del modo turnos — ver MovementAnchorTracker
+	//(AUDIT_REPORT_2026.md F3).
+	private static final MovementAnchorTracker movementAnchors = new MovementAnchorTracker();
 
 	//Rasgos con duración en asaltos (Furia del bárbaro, etc.) en vez de ticks reales — ver
 	//BarbarianRageManager para el caso de uso. Un asalto = una vuelta completa del orden de turnos.
@@ -154,16 +137,8 @@ public class TurnManager {
 	//ya que /dndturns start mete a todos los jugadores conectados en el radio.
 	private static final Set<Integer> reactionUsed = new HashSet<>();
 
-	//Ataque de oportunidad: alcance cuerpo a cuerpo aproximado (mismo rango que ya usa Minecraft para
-	//golpear). Quién tenía a un monstruo dentro de este alcance en el tick anterior y ahora no, dispara
-	//la reacción del monstruo — ver checkOpportunityAttacks.
-	private static final double MELEE_REACH = 3.0;
-	private static final Set<Integer> withinReach = new HashSet<>();
-
-	//checkOpportunityAttacks recorría todos los combatientes y calculaba distancias en CADA tick del
-	//jugador con el turno, incluso parado quieto — se guarda la última posición ya comprobada para saltar
-	//el recorrido si no cambió desde el tick anterior.
-	private static final Map<Integer, Vec3> lastOpportunityCheckPos = new HashMap<>();
+	//Ataques de oportunidad del modo turnos — ver OpportunityAttackTracker (AUDIT_REPORT_2026.md F3).
+	private static final OpportunityAttackTracker opportunityAttacks = new OpportunityAttackTracker();
 
 	//Público: usado por Escudo/Contrahechizo (fuera de turno) y por el ataque de oportunidad de abajo
 	//(dentro del tick de quien se mueve). Mismo "una vez y se acabó" que tryAct, pero sin exigir que sea
@@ -309,10 +284,8 @@ public class TurnManager {
 		effects.clear();
 		actedThisTurn.clear();
 		reactionUsed.clear();
-		withinReach.clear();
-		anchors.clear();
-		moveOrigin.clear();
-		lastGoodPos.clear();
+		opportunityAttacks.clear();
+		movementAnchors.clear();
 		confirmedDefeated.clear();
 		order.addAll(rolledOrder);
 		currentIndex = 0;
@@ -357,10 +330,8 @@ public class TurnManager {
 		effects.clear();
 		actedThisTurn.clear();
 		reactionUsed.clear();
-		withinReach.clear();
-		anchors.clear();
-		moveOrigin.clear();
-		lastGoodPos.clear();
+		opportunityAttacks.clear();
+		movementAnchors.clear();
 		confirmedDefeated.clear();
 		active = false;
 		currentIndex = -1;
@@ -421,13 +392,11 @@ public class TurnManager {
 			int oldId = old.entityId();
 			int newId = player.getId();
 			order.set(i, new Combatant(newId, old.name(), old.isMonster(), old.playerUuid()));
-			if (anchors.containsKey(oldId)) anchors.put(newId, anchors.remove(oldId));
-			if (moveOrigin.containsKey(oldId)) moveOrigin.put(newId, moveOrigin.remove(oldId));
-			if (lastGoodPos.containsKey(oldId)) lastGoodPos.put(newId, lastGoodPos.remove(oldId));
+			movementAnchors.rekey(oldId, newId);
 			if (effects.containsKey(oldId)) effects.put(newId, effects.remove(oldId));
 			if (actedThisTurn.remove(oldId)) actedThisTurn.add(newId);
 			if (reactionUsed.remove(oldId)) reactionUsed.add(newId);
-			if (withinReach.remove(oldId)) withinReach.add(newId);
+			opportunityAttacks.rekey(oldId, newId);
 			return; //Un solo puesto por UUID en el orden, no hace falta seguir buscando.
 		}
 	}
@@ -471,7 +440,7 @@ public class TurnManager {
 
 	private static void freeze(ServerLevel level, Combatant combatant) {
 		Entity entity = level.getEntity(combatant.entityId());
-		if (entity != null) anchors.put(combatant.entityId(), new Pinned(level.dimension(), entity.position()));
+		if (entity != null) movementAnchors.pin(level, combatant.entityId(), entity.position());
 		clearGlow(level, combatant);
 	}
 
@@ -500,7 +469,7 @@ public class TurnManager {
 		if (combatant == null) return;
 		actedThisTurn.remove(combatant.entityId()); //Turno nuevo, acción nueva disponible.
 		reactionUsed.remove(combatant.entityId()); //Turno nuevo, reacción nueva disponible (regla real de 5e).
-		anchors.remove(combatant.entityId()); //A quien le toca ahora, se le suelta el ancla.
+		movementAnchors.release(combatant.entityId()); //A quien le toca ahora, se le suelta el ancla.
 
 		Entity entity = level.getEntity(combatant.entityId());
 		if (entity == null || !entity.isAlive()) {
@@ -522,14 +491,8 @@ public class TurnManager {
 
 		if (entity instanceof ServerPlayer serverPlayer) {
 			CombatFx.actionBar(serverPlayer, Component.translatable("chat.dndsheets.turn.your_turn").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
-			seedReachState(level, serverPlayer);
-			//Sin esto, si el jugador termina un turno anterior y empieza este SIN moverse de esa posición,
-			//el primer tick del turno nuevo vería la misma posición "ya comprobada" del turno anterior y se
-			//saltaría el chequeo de oportunidad que en realidad hace falta reevaluar desde cero.
-			lastOpportunityCheckPos.remove(combatant.entityId());
-			Pinned pinned = new Pinned(level.dimension(), serverPlayer.position());
-			moveOrigin.put(combatant.entityId(), pinned);
-			lastGoodPos.put(combatant.entityId(), pinned);
+			opportunityAttacks.seedReachState(level, serverPlayer, order);
+			movementAnchors.beginMovementBudget(level, combatant.entityId(), serverPlayer.position());
 			broadcastTurnState(level);
 		} else if (MonsterRegistry.statBlockOf(entity) != null) {
 			//Sin DM en directo, un monstruo no puede esperar a que alguien le clique con la Vara de DM:
@@ -566,83 +529,9 @@ public class TurnManager {
 		String name = combatant != null ? combatant.name() : "";
 		int entityId = combatant != null ? combatant.entityId() : -1;
 		boolean actioned = combatant != null && actedThisTurn.contains(combatant.entityId());
-		Vec3 origin = combatant != null ? moveOrigin.getOrDefault(combatant.entityId(), new Pinned(level.dimension(), Vec3.ZERO)).pos() : Vec3.ZERO;
+		Vec3 origin = combatant != null ? movementAnchors.originOf(combatant.entityId()) : Vec3.ZERO;
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.ALL.noArg(),
 			new TurnStateMessage(active, round, name, entityId, actioned, origin.x, origin.y, origin.z));
-	}
-
-	//Cuántos bloques puede moverse este turno: la "speed" de la hoja (texto libre, p.ej. "30 ft") convertida
-	//a bloques a 5 pies por bloque (misma conversión de rejilla que usa el resto de VTTs de mesa). Sin campo
-	//o sin número reconocible, cae a la velocidad estándar de 5e (30 pies = 6 bloques).
-	private static double speedBlocksFor(JsonObject sheet) {
-		int feet = DEFAULT_SPEED_FEET;
-		if (sheet != null && sheet.has("speed")) {
-			java.util.regex.Matcher matcher = SPEED_FEET_PATTERN.matcher(sheet.get("speed").getAsString());
-			if (matcher.find()) {
-				try { feet = Integer.parseInt(matcher.group()); } catch (NumberFormatException ignored) {}
-			}
-		}
-		return feet / FEET_PER_BLOCK;
-	}
-
-	//Bloqueo de movimiento de quien SÍ tiene el turno: en cuanto se aleja más de su velocidad (en línea recta
-	//desde dónde empezó el turno) desde `moveOrigin`, se le devuelve a la última posición vista dentro de
-	//alcance. ponytail: distancia en línea recta desde el origen, no ruta acumulada ni solo horizontal —
-	//suficiente para cortar el "vuelo libre" de Minecraft, no un tracker de casillas real.
-	private static void enforceMovementBudget(ServerPlayer player) {
-		Pinned origin = moveOrigin.get(player.getId());
-		if (origin == null) return;
-		if (player.level().dimension() != origin.dimension()) {
-			//Cruzó a otro nivel (portal) con el turno activo: las coordenadas grabadas ya no significan
-			//nada acá — se suelta el presupuesto en vez de comparar/teletransportar entre dimensiones.
-			moveOrigin.remove(player.getId());
-			lastGoodPos.remove(player.getId());
-			return;
-		}
-		Vec3 pos = player.position();
-		if (pos.distanceTo(origin.pos()) <= speedBlocksFor(SheetLoader.getServerSheet(player.getStringUUID()))) {
-			lastGoodPos.put(player.getId(), new Pinned(origin.dimension(), pos));
-			return;
-		}
-		Vec3 fallback = lastGoodPos.getOrDefault(player.getId(), origin).pos();
-		player.teleportTo(fallback.x, fallback.y, fallback.z);
-		player.setDeltaMovement(Vec3.ZERO);
-		CombatFx.actionBar(player, Component.translatable("chat.dndsheets.turn.no_movement_left").withStyle(ChatFormatting.RED));
-	}
-
-	//Ataque de oportunidad: al empezar el turno de un jugador, se anota qué monstruos lo tienen ya al
-	//alcance (adyacentes desde el principio, sin "salir" de nada) para no dispararles una reacción falsa
-	//en el primer tick de su turno.
-	private static void seedReachState(ServerLevel level, ServerPlayer mover) {
-		withinReach.clear();
-		for (Combatant combatant : order) {
-			if (combatant.entityId() == mover.getId()) continue;
-			Entity entity = level.getEntity(combatant.entityId());
-			if (entity != null && MonsterRegistry.statBlockOf(entity) != null && entity.position().distanceTo(mover.position()) <= MELEE_REACH) {
-				withinReach.add(combatant.entityId());
-			}
-		}
-	}
-
-	//Llamado cada tick mientras el jugador que se mueve libremente (tiene el turno) sigue en pie: cualquier
-	//monstruo del orden de turnos que estuviera a alcance cuerpo a cuerpo el tick anterior y ya no lo esté
-	//ahora (se alejó sin desengancharse) gasta su reacción en un ataque de oportunidad con su primer ataque
-	//real disponible — ver MonsterActionManager.resolveOpportunityAttack. Simplificación deliberada: solo
-	//monstruos, no PvP entre jugadores (los demás jugadores están anclados y no pueden moverse de todos
-	//modos mientras no sea su turno).
-	private static void checkOpportunityAttacks(ServerLevel level, ServerPlayer mover) {
-		for (Combatant combatant : order) {
-			if (combatant.entityId() == mover.getId()) continue;
-			Entity entity = level.getEntity(combatant.entityId());
-			if (entity == null || !entity.isAlive() || MonsterRegistry.statBlockOf(entity) == null) continue;
-
-			boolean nowInReach = entity.position().distanceTo(mover.position()) <= MELEE_REACH;
-			if (nowInReach) {
-				withinReach.add(combatant.entityId());
-			} else if (withinReach.remove(combatant.entityId()) && tryReact(entity)) {
-				MonsterActionManager.resolveOpportunityAttack(entity, mover);
-			}
-		}
 	}
 
 	private static void tickEffects(ServerLevel level, Entity entity, Combatant combatant) {
@@ -689,41 +578,12 @@ public class TurnManager {
 		if (event.phase != TickEvent.Phase.END || !active) return;
 		if (!(event.player instanceof ServerPlayer player)) return;
 
-		Pinned anchor = anchors.get(player.getId());
-		if (anchor != null) {
-			if (player.level().dimension() != anchor.dimension()) {
-				//Cambió de dimensión estando anclado (empujado a un portal, p.ej.): se suelta el ancla en
-				//vez de comparar/teletransportar entre niveles distintos.
-				anchors.remove(player.getId());
-			} else {
-				//Solo se corrige el plano horizontal (X/Z); la Y se deja completamente libre. Antes se
-				//comparaba/reponía la posición en 3D: si el turno terminaba con el jugador en el aire (p.ej.
-				//saltando para forzar un crítico de Minecraft), quedaba anclado exactamente en esa altura para
-				//siempre, con la gravedad peleando cada tick contra el teletransporte de vuelta — congelado en
-				//el aire. Dejando Y sin tocar, la gravedad aterriza solo y el anclaje horizontal sigue
-				//impidiendo caminar lejos.
-				double dx = player.getX() - anchor.pos().x;
-				double dz = player.getZ() - anchor.pos().z;
-				if (dx * dx + dz * dz <= ANCHOR_TOLERANCE * ANCHOR_TOLERANCE) {
-					return;
-				} else {
-					player.teleportTo(anchor.pos().x, player.getY(), anchor.pos().z);
-					Vec3 delta = player.getDeltaMovement();
-					player.setDeltaMovement(0, delta.y, 0);
-					CombatFx.actionBar(player, Component.translatable("chat.dndsheets.turn.cant_move").withStyle(ChatFormatting.RED));
-					return;
-				}
-			}
-		}
+		if (movementAnchors.isAnchorHandledThisTick(player)) return;
 
 		Combatant currentCombatant = current();
 		if (currentCombatant != null && currentCombatant.entityId() == player.getId() && player.level() instanceof ServerLevel level) {
-			Vec3 pos = player.position();
-			if (!pos.equals(lastOpportunityCheckPos.get(player.getId()))) {
-				lastOpportunityCheckPos.put(player.getId(), pos);
-				checkOpportunityAttacks(level, player);
-			}
-			enforceMovementBudget(player);
+			opportunityAttacks.checkOpportunityAttacks(level, player, order);
+			movementAnchors.enforceMovementBudget(player);
 		}
 	}
 }

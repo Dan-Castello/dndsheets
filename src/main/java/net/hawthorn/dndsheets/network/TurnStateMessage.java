@@ -3,8 +3,6 @@ package net.hawthorn.dndsheets.network;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.client.TurnHudState;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -55,9 +53,8 @@ public class TurnStateMessage {
 
 	public static void handler(TurnStateMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () ->
+		NetworkUtil.handleOnClient(context, () ->
 			TurnHudState.update(message.active, message.round, message.currentName, message.currentEntityId,
-				message.actionUsed, message.originX, message.originY, message.originZ)));
-		context.setPacketHandled(true);
+				message.actionUsed, message.originX, message.originY, message.originZ));
 	}
 }

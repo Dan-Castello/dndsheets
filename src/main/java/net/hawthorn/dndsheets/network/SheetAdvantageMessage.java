@@ -29,8 +29,7 @@ public class SheetAdvantageMessage {
 
 	public static void handler(SheetAdvantageMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DndsheetsMod.withDmTarget(context, message.targetUuid,
+		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid,
 			target -> SheetCommand.applyAdvantage(target, message.label)));
-		context.setPacketHandled(true);
 	}
 }

@@ -7,8 +7,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
 /**
  * <p>Castigo Divino: clic derecho marca un flag de un solo uso (mismo patrón que Hechizo Gemelo del
@@ -21,15 +19,12 @@ import net.minecraftforge.fml.common.Mod;
  * aquí el pool de espacios es un contador plano sin niveles por ranura, así que el dado es fijo en
  * {@value #DICE} sin importar qué espacio se gasta.</p>
  */
-@Mod.EventBusSubscriber
 public class PaladinSmiteManager {
 	public static final String DICE = "2d8";
 
-	@SubscribeEvent
-	public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-		if (event.getEntity().level().isClientSide()) return;
-		if (!AbilityItem.hasFlag(event.getItemStack(), "divineSmite")) return;
-
+	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta — ver
+	//AUDIT_TECHNICAL.md M-EVT-1.
+	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
 

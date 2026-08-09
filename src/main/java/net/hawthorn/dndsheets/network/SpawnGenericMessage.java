@@ -41,7 +41,7 @@ public class SpawnGenericMessage {
 
 	public static void handler(SpawnGenericMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer dm = context.getSender();
 			if (dm == null || !dm.hasPermissions(2)) return;
 
@@ -50,6 +50,5 @@ public class SpawnGenericMessage {
 			Entity spawned = MonsterRegistry.spawnGeneric(level, pos.x, pos.y, pos.z, message.name, message.baseEntity, message.ac, message.hp);
 			if (spawned != null) CombatFx.monsterSpawn(spawned);
 		});
-		context.setPacketHandled(true);
 	}
 }

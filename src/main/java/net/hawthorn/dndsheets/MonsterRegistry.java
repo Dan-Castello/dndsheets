@@ -32,6 +32,9 @@ import java.util.Set;
  * son mobs vanilla reales con {@code NoAI:1} y una etiqueta NBT persistente {@code {dndsheets:{monster:"id",
  * currentHp:N}}} que los liga a su bloque de estadísticas y trackea su vida real de D&amp;D.</p>
  */
+//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
+//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
+//expone a que cambien de firma sin aviso.
 public class MonsterRegistry {
 	public record MonsterAttack(String name, String toHitAbility, String dice, String damageAbility, String damageType, String effectName, String effectDice, int effectTurns) {
 		public boolean appliesEffect() { return effectName != null; }

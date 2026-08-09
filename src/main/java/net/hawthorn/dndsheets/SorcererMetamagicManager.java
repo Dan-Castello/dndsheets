@@ -7,8 +7,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
 /**
  * <p>Metamagia: Hechizo Gemelo. Clic derecho en el ítem marca la SIGUIENTE tirada de hechizo del hechicero
@@ -23,18 +21,11 @@ import net.minecraftforge.fml.common.Mod;
  * flag para esos casos en {@code handleCastRequest}, ver el comentario ahí). Sin límite de usos por
  * descanso, igual que Furia/Segundo Aliento.</p>
  */
-@Mod.EventBusSubscriber
 public class SorcererMetamagicManager {
 
-	@SubscribeEvent
-	public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-		tryUse(event, event.getItemStack());
-	}
-
-	private static void tryUse(PlayerInteractEvent event, ItemStack stack) {
-		if (event.getEntity().level().isClientSide()) return;
-		if (!AbilityItem.hasFlag(stack, "twinnedSpell")) return;
-
+	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta — ver
+	//AUDIT_TECHNICAL.md M-EVT-1.
+	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
 

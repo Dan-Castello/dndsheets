@@ -30,13 +30,12 @@ public class MonsterActionChooseMessage {
 
 	public static void handler(MonsterActionChooseMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer dm = context.getSender();
 			//Mismo candado que ya usa MonsterActionManager.onInteractWithMonster: el cliente puede mandar
 			//este mensaje sin haber abierto el menú real (sin Vara de DM, sin estar cerca), así que el
 			//permiso se revisa siempre en el servidor, no solo en si la GUI llegó a abrirse.
 			if (dm != null && dm.hasPermissions(2)) MonsterActionManager.resolveAction(dm, message.entityId, message.actionIndex);
 		});
-		context.setPacketHandled(true);
 	}
 }

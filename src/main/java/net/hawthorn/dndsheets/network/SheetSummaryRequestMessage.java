@@ -30,7 +30,7 @@ public class SheetSummaryRequestMessage {
 
 	public static void handler(SheetSummaryRequestMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DndsheetsMod.withDmTarget(context, message.targetUuid, target -> {
+		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid, target -> {
 			ServerPlayer dm = context.getSender();
 			JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 			if (sheet == null) return;
@@ -49,6 +49,5 @@ public class SheetSummaryRequestMessage {
 
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), new SheetSummaryMessage(message.targetUuid, name, gold, slotsMax, slotsCurrent, hp, maxHp, ac));
 		}));
-		context.setPacketHandled(true);
 	}
 }

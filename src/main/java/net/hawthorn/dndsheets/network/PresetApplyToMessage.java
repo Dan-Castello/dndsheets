@@ -29,8 +29,7 @@ public class PresetApplyToMessage {
 
 	public static void handler(PresetApplyToMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DndsheetsMod.withDmTarget(context, message.targetUuid,
+		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid,
 			target -> PresetManager.applyPreset(target, message.presetId)));
-		context.setPacketHandled(true);
 	}
 }

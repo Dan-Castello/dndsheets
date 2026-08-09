@@ -44,7 +44,7 @@ public class AddCustomAttackMessage {
 
 	public static void handler(AddCustomAttackMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer dm = context.getSender();
 			if (dm == null || !dm.hasPermissions(2)) return;
 
@@ -54,6 +54,5 @@ public class AddCustomAttackMessage {
 			MonsterRegistry.addCustomAttack(target, new MonsterRegistry.MonsterAttack(
 				message.name, message.toHitAbility, message.dice, message.damageAbility, message.damageType, null, null, 0));
 		});
-		context.setPacketHandled(true);
 	}
 }

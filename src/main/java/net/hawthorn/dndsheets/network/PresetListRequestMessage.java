@@ -36,19 +36,24 @@ public class PresetListRequestMessage {
 
 	public static void handler(PresetListRequestMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer player = context.getSender();
 			if (player == null) return;
 
 			if (!message.targetUuid.isEmpty()) {
 				if (!player.hasPermissions(2)) return;
-				if (player.getServer().getPlayerList().getPlayer(UUID.fromString(message.targetUuid)) == null) return;
+				try {
+					if (player.getServer().getPlayerList().getPlayer(UUID.fromString(message.targetUuid)) == null) return;
+				} catch (IllegalArgumentException e) {
+					//UUID malformado de un operador con cliente roto/modificado: se descarta el mensaje en
+					//vez de tumbar el hilo del servidor con una excepción sin capturar.
+					return;
+				}
 			}
 
 			List<String> ids = PresetManager.presetIds();
 			List<String> names = PresetManager.presetNames(ids);
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new PresetListMessage(message.targetUuid, ids, names));
 		});
-		context.setPacketHandled(true);
 	}
 }

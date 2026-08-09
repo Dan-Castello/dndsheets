@@ -4,8 +4,6 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.client.gui.DeathSaveScreen;
 import net.hawthorn.dndsheets.client.gui.RestChoiceScreen;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -31,13 +29,12 @@ public class ScreenActionMessage {
 
 	public static void handler(ScreenActionMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+		NetworkUtil.handleOnClient(context, () -> {
 			switch (message.action) {
 				case DEATH_SAVE_OPEN -> DeathSaveScreen.open();
 				case DEATH_SAVE_CLOSE -> DeathSaveScreen.close();
 				case REST_CHOICE_OPEN -> RestChoiceScreen.open();
 			}
-		}));
-		context.setPacketHandled(true);
+		});
 	}
 }

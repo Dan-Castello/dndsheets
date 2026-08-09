@@ -28,7 +28,7 @@ public class TurnControlMessage {
 
 	public static void handler(TurnControlMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer dm = context.getSender();
 			if (dm == null || !dm.hasPermissions(2)) return;
 			ServerLevel level = dm.serverLevel();
@@ -40,6 +40,5 @@ public class TurnControlMessage {
 				case "end" -> TurnManager.end(level);
 			}
 		});
-		context.setPacketHandled(true);
 	}
 }

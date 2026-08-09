@@ -5,8 +5,6 @@ import net.hawthorn.dndsheets.client.gui.CharacterOptionListScreen;
 import net.hawthorn.dndsheets.client.gui.CharacterSheetScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.List;
@@ -35,13 +33,12 @@ public class CharacterOptionsListMessage {
 
 	public static void handler(CharacterOptionsListMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> {
+		NetworkUtil.handleOnClient(context, () -> {
 			//Todavía no navegamos a ningún lado: la pantalla activa en este instante es la hoja que pidió
 			//la lista, así que es el momento de capturarla para volver a ELLA (no cerrar todo) al elegir
 			//o cancelar (ver CharacterOptionListScreen).
 			CharacterSheetScreen returnTo = Minecraft.getInstance().screen instanceof CharacterSheetScreen sheet ? sheet : null;
 			CharacterOptionListScreen.open(returnTo, message.category, message.options);
-		}));
-		context.setPacketHandled(true);
+		});
 	}
 }

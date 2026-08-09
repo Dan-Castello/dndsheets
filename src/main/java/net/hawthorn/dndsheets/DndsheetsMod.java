@@ -120,7 +120,15 @@ public class DndsheetsMod {
 	public static void withDmTarget(NetworkEvent.Context context, String targetUuid, Consumer<ServerPlayer> action) {
 		ServerPlayer dm = context.getSender();
 		if (dm == null || !dm.hasPermissions(2)) return;
-		ServerPlayer target = dm.getServer().getPlayerList().getPlayer(UUID.fromString(targetUuid));
+		UUID uuid;
+		try {
+			uuid = UUID.fromString(targetUuid);
+		} catch (IllegalArgumentException e) {
+			//Un operador con un cliente roto/modificado puede mandar un UUID malformado; se descarta el
+			//mensaje en vez de tumbar el hilo del servidor con una excepción sin capturar.
+			return;
+		}
+		ServerPlayer target = dm.getServer().getPlayerList().getPlayer(uuid);
 		if (target != null) action.accept(target);
 	}
 

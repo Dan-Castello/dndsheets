@@ -6,7 +6,6 @@
   "gui.dndsheets.character_sheet.button_d12": "D12",
   "gui.dndsheets.character_sheet.button_d10": "D10",
 
-  "gui.dndsheets.character_sheet.label_character_sheet": "Character Sheet",
   "gui.dndsheets.character_sheet.label_level": "Level",
   "gui.dndsheets.character_sheet.label_hit_points": "HP",
   "gui.dndsheets.character_sheet.label_initiative": "Initiative",

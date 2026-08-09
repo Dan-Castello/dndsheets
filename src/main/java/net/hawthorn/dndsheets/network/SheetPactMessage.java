@@ -29,8 +29,7 @@ public class SheetPactMessage {
 
 	public static void handler(SheetPactMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DndsheetsMod.withDmTarget(context, message.targetUuid,
+		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid,
 			target -> SheetCommand.applyPact(target, message.pacto)));
-		context.setPacketHandled(true);
 	}
 }

@@ -164,7 +164,7 @@ public class MonsterActionManager {
 	}
 
 	//Ataque de oportunidad: TurnManager lo dispara cuando quien tiene el turno sale del alcance cuerpo a
-	//cuerpo de un monstruo sin haber usado ya su reacción esta ronda (ver TurnManager.checkOpportunityAttacks).
+	//cuerpo de un monstruo sin haber usado ya su reacción esta ronda (ver OpportunityAttackTracker.checkOpportunityAttacks).
 	//Usa el primer ataque real disponible (de especie o personalizado), sin pasar por resolveAction: esto es
 	//una reacción del monstruo, no su acción del turno, así que no toca TurnManager.tryAct.
 	public static void resolveOpportunityAttack(Entity monsterEntity, Player mover) {

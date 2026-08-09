@@ -32,8 +32,7 @@ public class SheetDamageAffinityMessage {
 
 	public static void handler(SheetDamageAffinityMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DndsheetsMod.withDmTarget(context, message.targetUuid,
+		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid,
 			target -> SheetCommand.applyDamageAffinity(target, message.damageType, message.affinity)));
-		context.setPacketHandled(true);
 	}
 }

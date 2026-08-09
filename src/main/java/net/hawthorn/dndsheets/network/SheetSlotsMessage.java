@@ -33,8 +33,7 @@ public class SheetSlotsMessage {
 
 	public static void handler(SheetSlotsMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DndsheetsMod.withDmTarget(context, message.targetUuid,
+		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid,
 			target -> SheetCommand.applySlots(target, message.max, message.current)));
-		context.setPacketHandled(true);
 	}
 }

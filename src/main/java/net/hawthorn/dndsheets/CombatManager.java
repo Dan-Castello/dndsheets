@@ -329,7 +329,10 @@ public class CombatManager {
 		if (!sheet.has(key)) return 0;
 		try {
 			return Math.floorDiv(Integer.parseInt(sheet.get(key).getAsString()) - 10, 2);
-		} catch (NumberFormatException e) {
+		} catch (RuntimeException e) {
+			//RuntimeException, no solo NumberFormatException: sheet.get(key) puede ser un JsonObject/JsonArray
+			//si una hoja vieja quedó corrupta antes de que SheetServerMessage empezara a validar tipos, y
+			//.getAsString() sobre eso lanza UnsupportedOperationException, no NumberFormatException.
 			return 0;
 		}
 	}

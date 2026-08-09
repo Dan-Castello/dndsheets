@@ -7,8 +7,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
 import java.util.Set;
 import java.util.UUID;
@@ -29,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * "puedo pelear sin arma" sin la transformación completa. Documentado aquí para que quede claro que es un
  * punto de partida, no la mecánica completa.</p>
  */
-@Mod.EventBusSubscriber
 public class DruidWildShapeManager {
 	private static final String DICE = "1d6"; //Zarpazo/mordisco genérico; 5e varía según la bestia elegida.
 	private static final String ABILITY = "str";
@@ -68,27 +65,11 @@ public class DruidWildShapeManager {
 		player.sendSystemMessage(Component.literal("¡Adoptas Forma Salvaje! Tus golpes a mano desnuda son zarpazos reales.").withStyle(ChatFeedback.RESOURCE));
 	}
 
-	//--- Ítem de Forma Salvaje: mismo patrón que el Tótem de Furia (BarbarianRageManager) ---
+	//--- Ítem de Forma Salvaje: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos
+	//de interacción por separado — ver AUDIT_TECHNICAL.md M-EVT-1. Mismo patrón que el Tótem de Furia
+	//(BarbarianRageManager). ---
 
-	@SubscribeEvent
-	public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-		tryUse(event, event.getItemStack());
-	}
-
-	@SubscribeEvent
-	public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-		tryUse(event, event.getItemStack());
-	}
-
-	@SubscribeEvent
-	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-		tryUse(event, event.getItemStack());
-	}
-
-	private static void tryUse(PlayerInteractEvent event, ItemStack stack) {
-		if (event.getEntity().level().isClientSide()) return;
-		if (!AbilityItem.hasFlag(stack, "wildShape")) return;
-
+	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (event.getEntity() instanceof ServerPlayer player) activate(player);
 	}

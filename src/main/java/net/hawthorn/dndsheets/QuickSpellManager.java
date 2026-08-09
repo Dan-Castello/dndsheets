@@ -1,10 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
 /**
  * <p>Un báculo (o cualquier ítem) etiquetado {@code {dndsheets:{quickSpell:"id"}}} (ver
@@ -14,29 +11,13 @@ import net.minecraftforge.fml.common.Mod;
  * Minecraft (ítem al aire, bloque, entidad) porque cuál de los tres dispara depende de qué haya delante
  * del jugador, y el báculo debe funcionar igual en los tres casos.</p>
  */
-@Mod.EventBusSubscriber
 public class QuickSpellManager {
 
-	@SubscribeEvent
-	public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-		tryQuickCast(event, event.getItemStack());
-	}
-
-	@SubscribeEvent
-	public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-		tryQuickCast(event, event.getItemStack());
-	}
-
-	@SubscribeEvent
-	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-		tryQuickCast(event, event.getItemStack());
-	}
-
-	private static void tryQuickCast(PlayerInteractEvent event, ItemStack heldItem) {
-		if (event.getEntity().level().isClientSide()) return;
-		String spellId = SpellRegistry.quickSpellIdOf(heldItem);
-		if (spellId == null) return;
-
+	//Se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos de interacción por
+	//separado — ver AUDIT_TECHNICAL.md M-EVT-1. A diferencia de los demás ítems de un solo flag booleano,
+	//el dispatcher detecta este por SpellRegistry.quickSpellIdOf (equivalente a dndTag.contains("quickSpell"))
+	//y ya trae el id extraído.
+	static void tryUse(PlayerInteractEvent event, String spellId) {
 		event.setCanceled(true);
 		if (event.getEntity() instanceof ServerPlayer player) {
 			SpellCastManager.handleCastRequest(player, spellId);

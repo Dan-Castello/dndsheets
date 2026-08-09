@@ -9,7 +9,7 @@ import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.procedures.RollAnnouncerProcedure;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,10 +48,8 @@ public class SheetRollButtonMessage {
 
 	public static void handler(SheetRollButtonMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
-			handle(context.getSender(), message.category, message.index, message.subIndex, message.x, message.y, message.z);
-		});
-		context.setPacketHandled(true);
+		NetworkUtil.handleOnServer(context, () ->
+			handle(context.getSender(), message.category, message.index, message.subIndex, message.x, message.y, message.z));
 	}
 
 	public static void handle(Player entity, int category, int index, int subIndex, int x, int y, int z) {

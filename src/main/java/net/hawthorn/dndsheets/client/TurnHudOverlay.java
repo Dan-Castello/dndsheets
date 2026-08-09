@@ -70,7 +70,7 @@ public class TurnHudOverlay {
 		}
 	}
 
-	//Misma conversión que TurnManager.speedBlocksFor en el servidor, pero leída de la hoja ya sincronizada
+	//Misma conversión que MovementAnchorTracker.speedBlocksFor en el servidor, pero leída de la hoja ya sincronizada
 	//al cliente (SheetLoader.getClientSheet()) — el HUD no necesita pedirle nada nuevo al servidor.
 	private static double speedBlocksFromClientSheet() {
 		JsonObject sheet = SheetLoader.getClientSheet();

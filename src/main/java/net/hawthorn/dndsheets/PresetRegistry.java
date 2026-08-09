@@ -17,6 +17,9 @@ import java.util.Set;
  * (clase, dado de golpe, características) en vez de escribirlos a mano campo por campo, y concede los
  * rasgos (pasivas/habilidades) que tenga configurados — ver {@link TraitRegistry}.</p>
  */
+//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
+//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
+//expone a que cambien de firma sin aviso.
 public class PresetRegistry {
 	public record ClassPreset(String id, String name, String hitDiceType, Map<String, Integer> abilities, String startingWeaponId, int spellSlotsMax, List<String> traits, List<String> spells) {
 		public int ability(String key) {

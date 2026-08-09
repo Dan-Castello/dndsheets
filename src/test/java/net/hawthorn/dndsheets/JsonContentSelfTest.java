@@ -33,6 +33,7 @@ public class JsonContentSelfTest {
 		checkMonsters();
 		checkTraits(); //Antes de checkPresets(): el preset de monje concede este rasgo por id.
 		checkPresets();
+		checkDice();
 
 		System.out.println("JsonContentSelfTest: OK, los 5 JSON de ejemplo parsean con los registros reales.");
 	}
@@ -141,6 +142,37 @@ public class JsonContentSelfTest {
 		JsonObject rogueSheet = new JsonObject();
 		PresetRegistry.applyToSheet(rogueSheet, PresetRegistry.get("rogue"));
 		assertTrue(TraitRegistry.sneakAttackDiceFor(rogueSheet, 1) != null, "aplicar el preset de pícaro debería conceder Ataque Furtivo");
+	}
+
+	//No cubierto hasta ahora pese a no depender del runtime de Forge (mismo perfil que los *Registry de
+	//arriba) — ver AUDIT_REPORT_2026.md F26. "1d1" tira siempre 1: da un total determinista sin depender
+	//de aleatoriedad para poder comprobar la sustitución de $str/$prof/$hprof con un assert exacto.
+	private static void checkDice() {
+		JsonObject sheet = new JsonObject();
+		sheet.addProperty("strength", "16"); //modificador +3
+		sheet.addProperty("proficiencyBonus", "4");
+
+		DiceManager.RollOutcome flat = DiceManager.roll(sheet, "1d1 + 5");
+		assertTrue(flat.result() != null && flat.result().getValue() == 6, "1d1 + 5 debería dar total 6");
+
+		DiceManager.RollOutcome withStr = DiceManager.roll(sheet, "1d1 + $str");
+		assertTrue(withStr.result() != null && withStr.result().getValue() == 4, "1d1 + $str (Fue 16) debería dar total 4");
+
+		DiceManager.RollOutcome withProf = DiceManager.roll(sheet, "1d1 + $prof");
+		assertTrue(withProf.result() != null && withProf.result().getValue() == 5, "1d1 + $prof (comp. 4) debería dar total 5");
+
+		DiceManager.RollOutcome withHalfProf = DiceManager.roll(sheet, "1d1 + $hprof");
+		assertTrue(withHalfProf.result() != null && withHalfProf.result().getValue() == 3, "1d1 + $hprof (comp. 4 / 2) debería dar total 3");
+
+		//Techo defensivo de hasAbsurdDiceCount: un conteo de dados absurdo se rechaza (result null) en vez
+		//de intentar tirarlo y agotar memoria.
+		DiceManager.RollOutcome absurd = DiceManager.roll(sheet, "999999d6");
+		assertTrue(absurd.result() == null, "999999d6 debería rechazarse por conteo de dados absurdo");
+
+		//Sintaxis inválida: no debe propagar una excepción (catch (Throwable) en DiceManager.roll), solo
+		//devolver un resultado vacío.
+		DiceManager.RollOutcome invalid = DiceManager.roll(sheet, "esto no es una expresión de dados $$$");
+		assertTrue(invalid.result() == null, "una expresión inválida debería devolver result() == null, no lanzar");
 	}
 
 	private static void require(JsonObject obj, String... fields) {

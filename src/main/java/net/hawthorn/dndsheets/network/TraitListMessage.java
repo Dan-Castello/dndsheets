@@ -3,8 +3,6 @@ package net.hawthorn.dndsheets.network;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.client.gui.TraitGrantScreen;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.List;
@@ -37,7 +35,6 @@ public class TraitListMessage {
 
 	public static void handler(TraitListMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> TraitGrantScreen.open(message.targetUuid, message.ids, message.names)));
-		context.setPacketHandled(true);
+		NetworkUtil.handleOnClient(context, () -> TraitGrantScreen.open(message.targetUuid, message.ids, message.names));
 	}
 }

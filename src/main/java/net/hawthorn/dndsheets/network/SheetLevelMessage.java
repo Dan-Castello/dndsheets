@@ -30,8 +30,7 @@ public class SheetLevelMessage {
 
 	public static void handler(SheetLevelMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DndsheetsMod.withDmTarget(context, message.targetUuid,
+		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid,
 			target -> SheetCommand.applyLevel(target, Math.max(1, Math.min(20, message.nivel)))));
-		context.setPacketHandled(true);
 	}
 }

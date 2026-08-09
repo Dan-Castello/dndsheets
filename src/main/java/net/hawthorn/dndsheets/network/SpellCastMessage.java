@@ -26,10 +26,9 @@ public class SpellCastMessage {
 
 	public static void handler(SpellCastMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer player = context.getSender();
 			if (player != null) SpellCastManager.handleCastRequest(player, message.spellId);
 		});
-		context.setPacketHandled(true);
 	}
 }

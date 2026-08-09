@@ -26,10 +26,9 @@ public class RestProposeMessage {
 
 	public static void handler(RestProposeMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer proposer = context.getSender();
 			if (proposer != null) RestManager.propose(proposer, message.longRest ? RestManager.RestType.LONG : RestManager.RestType.SHORT);
 		});
-		context.setPacketHandled(true);
 	}
 }

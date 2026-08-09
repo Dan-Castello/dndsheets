@@ -7,12 +7,15 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 //Despachador único para los ítems "botón" de un solo flag NBT que se activan con clic derecho (Kit de
-//Descanso, Tótem de Furia, Contrahechizo, Escudo, Marca del Cazador, ítems de turno): antes cada manager
-//se suscribía por separado a los mismos 3 eventos de interacción y releía el NBT de forma independiente
-//(hasta 18 handlers por clic derecho) — ver AUDIT_TECHNICAL.md M-EVT-1. Aquí se lee una sola vez y se
-//delega al manager correspondiente. Cada rama de evento solo comprueba los flags de los managers que
-//originalmente escuchaban ESE evento (p.ej. Marca del Cazador solo actuaba en EntityInteract, porque
-//necesita el objetivo del clic) para no cambiarle el comportamiento a nadie.
+//Descanso, Tótem de Furia, Contrahechizo, Escudo, Marca del Cazador, Segundo Aliento, Castigo Divino,
+//Hechizo Gemelo, Forma Salvaje, Inspiración Bárdica, báculos de hechizo rápido, ítems de turno): antes
+//cada manager se suscribía por separado a los mismos 3 eventos de interacción y releía el NBT de forma
+//independiente (hasta 18+ handlers por clic derecho) — ver AUDIT_TECHNICAL.md M-EVT-1. Aquí se lee una
+//sola vez y se delega al manager correspondiente. Cada rama de evento solo comprueba los flags de los
+//managers que originalmente escuchaban ESE evento (p.ej. Marca del Cazador solo actuaba en EntityInteract,
+//porque necesita el objetivo del clic) para no cambiarle el comportamiento a nadie. "quickSpell" es la
+//excepción: no es un flag booleano sino un id de hechizo (String), así que se detecta con
+//dndTag.contains(...) en vez de dndTag.getBoolean(...).
 @Mod.EventBusSubscriber
 public class AbilityItemDispatcher {
 
@@ -28,6 +31,11 @@ public class AbilityItemDispatcher {
 		else if (dndTag.getBoolean("shieldSpell")) ShieldManager.tryUse(event);
 		else if (dndTag.getBoolean("turnNext")) TurnItemManager.tryUse(event, true);
 		else if (dndTag.getBoolean("turnUndo")) TurnItemManager.tryUse(event, false);
+		else if (dndTag.getBoolean("secondWind")) FighterSecondWindManager.tryUse(event);
+		else if (dndTag.getBoolean("divineSmite")) PaladinSmiteManager.tryUse(event);
+		else if (dndTag.getBoolean("twinnedSpell")) SorcererMetamagicManager.tryUse(event);
+		else if (dndTag.getBoolean("wildShape")) DruidWildShapeManager.tryUse(event);
+		else if (dndTag.contains("quickSpell")) QuickSpellManager.tryUse(event, dndTag.getString("quickSpell"));
 	}
 
 	@SubscribeEvent
@@ -40,6 +48,9 @@ public class AbilityItemDispatcher {
 		else if (dndTag.getBoolean("rage")) BarbarianRageManager.tryUse(event);
 		else if (dndTag.getBoolean("turnNext")) TurnItemManager.tryUse(event, true);
 		else if (dndTag.getBoolean("turnUndo")) TurnItemManager.tryUse(event, false);
+		else if (dndTag.getBoolean("secondWind")) FighterSecondWindManager.tryUse(event);
+		else if (dndTag.getBoolean("wildShape")) DruidWildShapeManager.tryUse(event);
+		else if (dndTag.contains("quickSpell")) QuickSpellManager.tryUse(event, dndTag.getString("quickSpell"));
 	}
 
 	@SubscribeEvent
@@ -53,6 +64,10 @@ public class AbilityItemDispatcher {
 		else if (dndTag.getBoolean("hunterMark")) RangerHunterMarkManager.tryUse(event);
 		else if (dndTag.getBoolean("turnNext")) TurnItemManager.tryUse(event, true);
 		else if (dndTag.getBoolean("turnUndo")) TurnItemManager.tryUse(event, false);
+		else if (dndTag.getBoolean("secondWind")) FighterSecondWindManager.tryUse(event);
+		else if (dndTag.getBoolean("wildShape")) DruidWildShapeManager.tryUse(event);
+		else if (dndTag.getBoolean("bardicInspiration")) BardInspirationManager.tryUse(event);
+		else if (dndTag.contains("quickSpell")) QuickSpellManager.tryUse(event, dndTag.getString("quickSpell"));
 	}
 
 	private static CompoundTag dndTagOf(ItemStack stack) {

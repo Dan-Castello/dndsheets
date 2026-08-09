@@ -30,12 +30,11 @@ public class CharacterOptionsRequestMessage {
 
 	public static void handler(CharacterOptionsRequestMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer player = context.getSender();
 			if (player == null || !CharacterOptionsRegistry.isValidCategory(message.category)) return;
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
 				new CharacterOptionsListMessage(message.category, CharacterOptionsRegistry.get(message.category)));
 		});
-		context.setPacketHandled(true);
 	}
 }

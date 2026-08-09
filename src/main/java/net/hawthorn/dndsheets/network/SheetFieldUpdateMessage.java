@@ -4,8 +4,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -33,8 +31,7 @@ public class SheetFieldUpdateMessage {
 
 	public static void handler(SheetFieldUpdateMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> handle(message.data)));
-		context.setPacketHandled(true);
+		NetworkUtil.handleOnClient(context, () -> handle(message.data));
 	}
 
 	public static void handle(byte[] data) {

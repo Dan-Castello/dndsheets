@@ -6,8 +6,6 @@ import com.google.gson.JsonParser;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -29,10 +27,7 @@ public class SheetClientMessage {
 
 	public static void handler(SheetClientMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
-			DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> handle(message.data));
-		});
-		context.setPacketHandled(true);
+		NetworkUtil.handleOnClient(context, () -> handle(message.data));
 	}
 
 	public static void handle(byte[] data) {

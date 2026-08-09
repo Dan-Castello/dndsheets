@@ -14,6 +14,7 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.hawthorn.dndsheets.network.SheetClientMessage;
+import net.hawthorn.dndsheets.api.event.SheetValidateEvent;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -31,6 +32,9 @@ import net.minecraft.world.entity.player.Player;
 
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
+//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
+//expone a que cambien de firma sin aviso.
 public class SheetLoader {
 
 	public static final Path GAME_DIR = FMLPaths.GAMEDIR.get();
@@ -67,7 +71,14 @@ public class SheetLoader {
 
 		UUID uuid = entity.getUUID();
 		String uuidString = uuid.toString();
-		load();
+		//Antes se llamaba load() aquí sin condición, y este evento no es solo "el jugador entró al servidor
+		//por primera vez": EntityJoinLevelEvent también dispara en cada respawn y cada cambio de dimensión
+		//(portal Nether/End) de CUALQUIER jugador. Eso reparseaba TODAS las hojas del servidor desde disco
+		//cada vez — I/O síncrona bloqueante en el hilo del servidor, repetida sin necesidad. sheets solo
+		//está vacío antes de la primera carga real (útil para mundo integrado/LAN, donde
+		//FMLDedicatedServerSetupEvent.serverLoad nunca dispara); en cualquier evento posterior las hojas ya
+		//están en memoria (makeNew/saveServer las mantiene actualizadas ahí) y no hace falta releerlas.
+		if (sheets.isEmpty()) load();
 		if (SheetLoader.getServerSheet(uuidString) == null) {
 			makeNew("New Sheet", uuidString);
 		};
@@ -95,7 +106,10 @@ public class SheetLoader {
 		if (!sheet.has(key)) return fallback;
 		try {
 			return Integer.parseInt(sheet.get(key).getAsString());
-		} catch (NumberFormatException e) {
+		} catch (RuntimeException e) {
+			//RuntimeException, no solo NumberFormatException: sheet.get(key) puede ser un JsonObject/JsonArray
+			//si una hoja vieja quedó corrupta antes de que SheetServerMessage empezara a validar tipos, y
+			//.getAsString() sobre eso lanza UnsupportedOperationException, no NumberFormatException.
 			return fallback;
 		}
 	}
@@ -319,6 +333,7 @@ public class SheetLoader {
 		if (!sheet.has("spellSlotsMax")) sheet.addProperty("spellSlotsMax", 0);
 
 		migrateIfNeeded(sheet);
+		MinecraftForge.EVENT_BUS.post(new SheetValidateEvent(sheet));
 	}
 
 	//ponytail: sin migraciones reales que aplicar todavía (ningún campo ha cambiado de forma entre

@@ -27,7 +27,7 @@ public class ClearCustomAttacksMessage {
 
 	public static void handler(ClearCustomAttacksMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer dm = context.getSender();
 			if (dm == null || !dm.hasPermissions(2)) return;
 
@@ -35,6 +35,5 @@ public class ClearCustomAttacksMessage {
 			if (target == null) return;
 			MonsterRegistry.clearCustomAttacks(target);
 		});
-		context.setPacketHandled(true);
 	}
 }

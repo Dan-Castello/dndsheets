@@ -3,8 +3,6 @@ package net.hawthorn.dndsheets.network;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.client.gui.RestVoteScreen;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -21,7 +19,6 @@ public class RestVoteCloseMessage {
 
 	public static void handler(RestVoteCloseMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> RestVoteScreen::close));
-		context.setPacketHandled(true);
+		NetworkUtil.handleOnClient(context, RestVoteScreen::close);
 	}
 }

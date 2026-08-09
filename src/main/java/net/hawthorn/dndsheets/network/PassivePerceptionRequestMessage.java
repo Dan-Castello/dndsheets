@@ -8,7 +8,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
-import java.util.UUID;
 import java.util.function.Supplier;
 
 //Cliente (el DM) -> servidor: botón "Percepción pasiva" en SheetAdjustScreen (equivalente en GUI a
@@ -31,16 +30,11 @@ public class PassivePerceptionRequestMessage {
 
 	public static void handler(PassivePerceptionRequestMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		context.enqueueWork(() -> {
+		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid, target -> {
 			ServerPlayer dm = context.getSender();
-			if (dm == null || !dm.hasPermissions(2)) return;
-			ServerPlayer target = dm.getServer().getPlayerList().getPlayer(UUID.fromString(message.targetUuid));
-			if (target == null) return;
-
 			int passive = SheetCommand.passivePerceptionOf(target);
 			String name = SheetLoader.characterNameOf(SheetLoader.getServerSheet(target.getStringUUID()), target);
 			dm.sendSystemMessage(Component.literal("Percepción pasiva de " + name + ": " + passive));
-		});
-		context.setPacketHandled(true);
+		}));
 	}
 }
