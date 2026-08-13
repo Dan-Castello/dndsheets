@@ -25,6 +25,23 @@
   "gui.dndsheets.character_sheet.presets": "Presets",
   "itemGroup.dndsheets.dnd_tab": "D&D Sheets",
 
+  "gui.dndsheets.guide.button": "Guide",
+  "gui.dndsheets.guide.title": "D&D Sheets Guide",
+  "gui.dndsheets.guide.page.sheet": "Press H to open your character sheet. Use the Main, Skills and Attacks tabs at the top to switch pages.",
+  "gui.dndsheets.guide.page.rolling": "Click the dice buttons on your sheet to roll, or type /roll (or /r) followed by dice notation, e.g. /roll 1d20+5.",
+  "gui.dndsheets.guide.page.private_rolls": "Shift+click a dice button (or use /rollprivate, /rp) for a private roll: only you and any online DM see the result, for things like Stealth or Investigation.",
+  "gui.dndsheets.guide.page.turns": "In turn mode you get one action and your movement speed on your turn. Your turn ends automatically once you act.",
+  "gui.dndsheets.guide.page.rest": "Right-click a Rest Kit to propose a short or long rest. The rest only happens once everyone accepts.",
+  "gui.dndsheets.guide.page.death_saves": "At 0 HP you roll death saves. 3 successes stabilizes you, 3 failures means death, and a natural 20 wakes you up. A nearby player can also revive you.",
+  "gui.dndsheets.guide.page.spells": "Open your Grimoire from the sheet to see known spells and slots. Look at a target and cast to use a spell. Shift+click an area-spell staff to preview the blast radius without casting it.",
+  "gui.dndsheets.guide.page.distance": "Type /dnddistance followed by a target's name to check the distance to them in feet.",
+  "gui.dndsheets.guide.page.dm_panel": "Press P (requires operator permission) to open the DM Panel: start turn mode, spawn a generic NPC, grant a trait, adjust a sheet, or apply a class preset.",
+  "gui.dndsheets.guide.page.dm_wand": "Right-click a monster with the DM Wand to resolve its attacks and spells, or manage its custom attacks.",
+  "gui.dndsheets.guide.page.dm_notes": "/dndnotes give <players> hands out a DM Notebook: a renamed Book and Quill. It's private like any book, and Minecraft saves its contents on its own.",
+  "gui.dndsheets.guide.page.dm_turns": "Run combat with /dndturns: start, next, cancel, end, and effect to apply a status effect to a player.",
+  "gui.dndsheets.guide.page.dm_content_packs": "Custom weapons, spells, monsters and presets are JSON files placed in <world>/dndsheets/{weapons,spells,monsters,presets}/.",
+  "gui.dndsheets.guide.page.dm_commands": "Quick reference: /dndsheet, /dndweapons, /dndspells, /dndmonsters, /dndpresets, /dndtraits, /dndoptions, /roll, /dndturns.",
+
   "gui.dndsheets.character_sheet.strength": "10",
   "gui.dndsheets.character_sheet.dexterity": "10",
   "gui.dndsheets.character_sheet.constitution": "10",
@@ -154,6 +171,7 @@
   "chat.dndsheets.death.failures": " Failures ",
   "chat.dndsheets.death.natural_twenty": " rolls a natural 20 on their death save: they come to!",
   "chat.dndsheets.death.revives": " revives ",
+  "chat.dndsheets.death.gives_up": " stops fighting and dies.",
 
   "chat.dndsheets.title.downed": "YOU'VE FALLEN!",
   "chat.dndsheets.title.downed_subtitle": "You need death saves",
@@ -173,6 +191,10 @@
   "chat.dndsheets.monster.opportunity_attack": "%s makes an opportunity attack against %s.",
   "chat.dndsheets.monster.effect_applied": "%s is affected by %s (%s turns).",
 
+  "chat.dndsheets.notebook.item_name": "DM Notebook",
+  "chat.dndsheets.notebook.item_lore": "A regular writable book, renamed. Only you can read it unless you show it — write whatever you want.",
+  "chat.dndsheets.notebook.given": "Gave a DM Notebook to %s player(s).",
+
   "chat.dndsheets.rest.item_name": "Rest Kit",
   "chat.dndsheets.rest.lore_use": "Right-click: propose a short or long rest.",
   "chat.dndsheets.rest.lore_requires_all": "Only applies if ALL players accept.",
@@ -183,7 +205,10 @@
   "chat.dndsheets.rest.rejected": "%s rejected the rest. Cancelled.",
   "chat.dndsheets.rest.completed": "%s rest complete.",
 
+  "chat.dndsheets.distance.report": "Distance to %s: %s ft.",
+
   "chat.dndsheets.turn.already_acted": "You already used your action this turn.",
+  "chat.dndsheets.turn.blocked_elsewhere": "There's already an active combat somewhere else on the map — end it before starting another one.",
   "chat.dndsheets.turn.not_your_turn": "It's not your turn — it's %s's turn.",
   "chat.dndsheets.turn.other_combatant": "another combatant",
   "chat.dndsheets.turn.undo": "%s undoes their action: they can choose again.",
@@ -192,6 +217,7 @@
   "chat.dndsheets.turn.ended": "Turn mode ended.",
   "chat.dndsheets.turn.joins_combat": "%s joins the fight.",
   "chat.dndsheets.turn.all_enemies_defeated": "All enemies have fallen!",
+  "chat.dndsheets.turn.all_players_defeated": "Everyone has fallen... Turn mode ends.",
   "chat.dndsheets.turn.round_header": "Round %s — turn of ",
   "chat.dndsheets.turn.your_turn": "It's your turn!",
   "chat.dndsheets.turn.no_movement_left": "No movement left this turn.",
@@ -200,5 +226,8 @@
   "chat.dndsheets.turn.cant_move": "It's not your turn — you can't move.",
 
   "chat.dndsheets.concentration.kept": "%s maintains concentration on %s (DC %s: %s).",
-  "chat.dndsheets.concentration.lost": "%s loses concentration on %s (DC %s: %s)."
+  "chat.dndsheets.concentration.lost": "%s loses concentration on %s (DC %s: %s).",
+
+  "chat.dndsheets.welcome.sheet_key": "Press H to open your character sheet.",
+  "chat.dndsheets.welcome.dm_key": "You're an operator — press P to open the DM Panel."
 }

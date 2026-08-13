@@ -74,7 +74,20 @@ public class CombatManager {
 			return;
 		}
 
-		if (MonsterRegistry.monsterIdOf(target) != null) {
+		if (TurnManager.isMonster(target)) {
+			if (MonsterRegistry.monsterIdOf(target) == null) {
+				//Jefe/enemigo de otro mod, sin bloque de estadísticas propio (ver TurnManager.isMonster): no
+				//hay tirada de ataque/daño 5e que resolver, pero el golpe igual engancha el modo turnos
+				//(arranca el combate solo, cuenta como tu acción, bloquea golpear fuera de turno) — el daño
+				//real lo sigue resolviendo Minecraft tal cual.
+				autoStartCombatIfNeeded(target, player);
+				if (!TurnManager.tryAct(player)) {
+					event.setCanceled(true);
+					TurnManager.notifyCantAct(player);
+				}
+				return;
+			}
+
 			//El arma se identifica ANTES de tocar el turno (arma sin configurar no debería gastar nada), pero
 			//a diferencia de antes ya NO se sale sin más si es null: un puñetazo sin rasgo de golpe desnudo
 			//(sin Artes Marciales ni Forma Salvaje) sigue siendo LA acción del jugador este turno — antes
@@ -110,7 +123,10 @@ public class CombatManager {
 	//turno (el tryAct de justo abajo) — no hay "golpe gratis" por haber sido quien disparó el encuentro.
 	//Si el combate YA estaba activo pero este jugador nunca entró al orden (llegó después de que
 	//arrancara), se suma ahora mismo — sin esto se quedaba sin poder actuar nunca en ese encuentro.
-	private static void autoStartCombatIfNeeded(Entity target, Player attacker) {
+	//Público: también lo usa SpellCastManager, para que atacar con un hechizo arranque el combate solo
+	//igual que ya hace un golpe con arma — antes un hechizo de ataque/salvación se resolvía "gratis", sin
+	//turno ni congelamiento para nadie, porque nada lo llamaba desde ese lado.
+	public static void autoStartCombatIfNeeded(Entity target, Player attacker) {
 		if (!(target.level() instanceof ServerLevel level)) return;
 		if (!TurnManager.isActive()) {
 			TurnManager.startAt(level, target.position(), TurnManager.DEFAULT_RADIUS);
@@ -141,7 +157,18 @@ public class CombatManager {
 			return;
 		}
 
-		if (MonsterRegistry.monsterIdOf(target) != null) {
+		if (TurnManager.isMonster(target)) {
+			if (MonsterRegistry.monsterIdOf(target) == null) {
+				//Mismo criterio de compatibilidad que onAttackEntity: sin bloque de estadísticas propio, el
+				//disparo sigue enganchando el modo turnos, pero el daño real lo resuelve Minecraft tal cual.
+				autoStartCombatIfNeeded(target, player);
+				if (!TurnManager.tryAct(player)) {
+					event.setCanceled(true);
+					TurnManager.notifyCantAct(player);
+				}
+				return;
+			}
+
 			//Mismo orden que onAttackEntity: identificar el arma antes de cancelar el evento/gastar el turno.
 			IdentifiedWeapon weapon = identifyRangedWeapon(player, projectile);
 			if (weapon == null) return; //Proyectil no reconocido: Minecraft se comporta como siempre.

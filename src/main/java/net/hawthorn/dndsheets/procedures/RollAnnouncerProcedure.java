@@ -27,10 +27,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class RollAnnouncerProcedure {
 	public static void execute(LevelAccessor world, double x, double y, double z, JsonObject sheet, CommandContext<CommandSourceStack> arguments, Entity roller) {
+		execute(world, x, y, z, sheet, arguments, roller, false);
+	}
+
+	public static void execute(LevelAccessor world, double x, double y, double z, JsonObject sheet, CommandContext<CommandSourceStack> arguments, Entity roller, boolean isPrivate) {
 		if (world.isClientSide() || world.getServer() == null) return;
 
 		Component message;
@@ -46,13 +52,14 @@ public class RollAnnouncerProcedure {
 			message = ChatFeedback.rollFailed("expresión inválida.");
 		}
 
-		world.getServer().getPlayerList().broadcastSystemMessage(message, false);
-		if (world instanceof Level level && !level.isClientSide()) {
-			level.playSound(null, BlockPos.containing(x, y, z), DndsheetsModSounds.DICE.get(), SoundSource.NEUTRAL, 1, 1);
-		}
+		announce(world, x, y, z, roller, message, isPrivate);
 	}
 
 	public static void execute(LevelAccessor world, double x, double y, double z, String uuid, int category, int index, int subIndex, Entity roller) {
+		execute(world, x, y, z, uuid, category, index, subIndex, roller, false);
+	}
+
+	public static void execute(LevelAccessor world, double x, double y, double z, String uuid, int category, int index, int subIndex, Entity roller, boolean isPrivate) {
 		Logger logger = LogManager.getLogger(DndsheetsMod.MODID);
 		logger.log(org.apache.logging.log4j.Level.getLevel("info"), "Attempting to make a roll announcement.");
 		if (world.isClientSide() || world.getServer() == null) return;
@@ -110,9 +117,31 @@ public class RollAnnouncerProcedure {
 			message = ChatFeedback.multiRoll(characterName, contexts, resultRolls);
 		}
 
-		world.getServer().getPlayerList().broadcastSystemMessage(message, false);
+		announce(world, x, y, z, roller, message, isPrivate);
+	}
+
+	//Punto único de entrega, para las dos formas de tirada (sheet y /roll): pública a todo el servidor
+	//como siempre, o privada (ver sendPrivately) — el sonido de dado se oye igual en ambos casos, es
+	//ambiente, no delata el resultado.
+	private static void announce(LevelAccessor world, double x, double y, double z, Entity roller, Component message, boolean isPrivate) {
+		if (isPrivate) sendPrivately(world, roller, message);
+		else world.getServer().getPlayerList().broadcastSystemMessage(message, false);
+
 		if (world instanceof Level level && !level.isClientSide()) {
 			level.playSound(null, BlockPos.containing(x, y, z), DndsheetsModSounds.DICE.get(), SoundSource.NEUTRAL, 1, 1);
 		}
+	}
+
+	//Tirada privada (Sigilo, Investigación...): solo le llega a quien tiró y a quien esté conectado como
+	//operador (mismo criterio hasPermissions(2) que ya usa el resto del mod para "es un DM") — sin canal
+	//de susurro nativo que reusar en este mod, así que es sendSystemMessage directo a cada destinatario,
+	//sin duplicar si el propio roller ya es op.
+	private static void sendPrivately(LevelAccessor world, Entity roller, Component message) {
+		Set<ServerPlayer> recipients = new HashSet<>();
+		if (roller instanceof ServerPlayer serverRoller) recipients.add(serverRoller);
+		for (ServerPlayer player : world.getServer().getPlayerList().getPlayers()) {
+			if (player.hasPermissions(2)) recipients.add(player);
+		}
+		for (ServerPlayer player : recipients) player.sendSystemMessage(message);
 	}
 }

@@ -25,6 +25,23 @@
   "gui.dndsheets.character_sheet.presets": "Presets",
   "itemGroup.dndsheets.dnd_tab": "D&D Sheets",
 
+  "gui.dndsheets.guide.button": "Guía",
+  "gui.dndsheets.guide.title": "Guía de D&D Sheets",
+  "gui.dndsheets.guide.page.sheet": "Pulsa H para abrir tu hoja de personaje. Usa las pestañas Main, Skills y Attacks arriba para cambiar de página.",
+  "gui.dndsheets.guide.page.rolling": "Pulsa los botones de dados de tu hoja para tirar, o escribe /roll (o /r) seguido de la notación de dados, p. ej. /roll 1d20+5.",
+  "gui.dndsheets.guide.page.private_rolls": "Mayús+clic en un botón de dado (o /rollprivate, /rp) para una tirada privada: solo la ves tú y cualquier DM conectado, para cosas como Sigilo o Investigación.",
+  "gui.dndsheets.guide.page.turns": "En modo turnos tienes una acción y tu velocidad de movimiento en tu turno. Tu turno termina automáticamente en cuanto actúas.",
+  "gui.dndsheets.guide.page.rest": "Haz clic derecho en un Kit de Descanso para proponer un descanso corto o largo. El descanso solo ocurre si todos aceptan.",
+  "gui.dndsheets.guide.page.death_saves": "A 0 PG tiras salvaciones de muerte. 3 éxitos te estabiliza, 3 fallos es la muerte, y un 20 natural te despierta. Un jugador cerca también puede reanimarte.",
+  "gui.dndsheets.guide.page.spells": "Abre tu Grimorio desde la hoja para ver hechizos conocidos y espacios. Mira a un objetivo y lanza para usar un hechizo. Agachado + clic con un báculo de hechizo de área previsualiza el radio sin lanzarlo.",
+  "gui.dndsheets.guide.page.distance": "Escribe /dnddistance seguido del nombre de un objetivo para ver la distancia en pies hasta él.",
+  "gui.dndsheets.guide.page.dm_panel": "Pulsa P (requiere permiso de operador) para abrir el Panel de DM: iniciar modo turnos, invocar un NPC genérico, conceder un rasgo, ajustar una hoja o aplicar un preset de clase.",
+  "gui.dndsheets.guide.page.dm_wand": "Haz clic derecho sobre un monstruo con la Vara de DM para resolver sus ataques y hechizos, o gestionar sus ataques personalizados.",
+  "gui.dndsheets.guide.page.dm_notes": "/dndnotes give <jugadores> entrega un Cuaderno del DM: un Libro y Pluma renombrado. Es privado como cualquier libro, y Minecraft guarda su contenido solo.",
+  "gui.dndsheets.guide.page.dm_turns": "Controla el combate con /dndturns: start, next, cancel, end, y effect para aplicar un efecto de estado a un jugador.",
+  "gui.dndsheets.guide.page.dm_content_packs": "Armas, hechizos, monstruos y presets personalizados son archivos JSON en <mundo>/dndsheets/{weapons,spells,monsters,presets}/.",
+  "gui.dndsheets.guide.page.dm_commands": "Referencia rápida: /dndsheet, /dndweapons, /dndspells, /dndmonsters, /dndpresets, /dndtraits, /dndoptions, /roll, /dndturns.",
+
   "gui.dndsheets.character_sheet.strength": "10",
   "gui.dndsheets.character_sheet.dexterity": "10",
   "gui.dndsheets.character_sheet.constitution": "10",
@@ -154,6 +171,7 @@
   "chat.dndsheets.death.failures": " Fallos ",
   "chat.dndsheets.death.natural_twenty": " saca un 20 natural en su salvación de muerte: ¡vuelve en sí!",
   "chat.dndsheets.death.revives": " reanima a ",
+  "chat.dndsheets.death.gives_up": " deja de luchar y muere.",
 
   "chat.dndsheets.title.downed": "¡HAS CAÍDO!",
   "chat.dndsheets.title.downed_subtitle": "Necesitas salvaciones de muerte",
@@ -173,6 +191,10 @@
   "chat.dndsheets.monster.opportunity_attack": "%s hace un ataque de oportunidad contra %s.",
   "chat.dndsheets.monster.effect_applied": "%s queda afectado por %s (%s turnos).",
 
+  "chat.dndsheets.notebook.item_name": "Cuaderno del DM",
+  "chat.dndsheets.notebook.item_lore": "Un libro y pluma normal, renombrado. Solo tú puedes leerlo salvo que lo enseñes — escribe lo que quieras.",
+  "chat.dndsheets.notebook.given": "Entregado un Cuaderno del DM a %s jugador(es).",
+
   "chat.dndsheets.rest.item_name": "Kit de Descanso",
   "chat.dndsheets.rest.lore_use": "Clic derecho: proponer un descanso corto o largo.",
   "chat.dndsheets.rest.lore_requires_all": "Se aplica solo si TODOS los jugadores aceptan.",
@@ -183,7 +205,10 @@
   "chat.dndsheets.rest.rejected": "%s ha rechazado el descanso. Cancelado.",
   "chat.dndsheets.rest.completed": "Descanso %s completado.",
 
+  "chat.dndsheets.distance.report": "Distancia a %s: %s pies.",
+
   "chat.dndsheets.turn.already_acted": "Ya usaste tu acción este turno.",
+  "chat.dndsheets.turn.blocked_elsewhere": "Ya hay un combate activo en otra parte del mapa — termínalo antes de arrancar otro.",
   "chat.dndsheets.turn.not_your_turn": "No es tu turno — le toca a %s.",
   "chat.dndsheets.turn.other_combatant": "otro combatiente",
   "chat.dndsheets.turn.undo": "%s deshace su acción: puede elegir de nuevo.",
@@ -192,6 +217,7 @@
   "chat.dndsheets.turn.ended": "Modo turnos terminado.",
   "chat.dndsheets.turn.joins_combat": "%s se suma al combate.",
   "chat.dndsheets.turn.all_enemies_defeated": "¡Todos los enemigos han caído!",
+  "chat.dndsheets.turn.all_players_defeated": "Todos han caído... el modo turnos termina.",
   "chat.dndsheets.turn.round_header": "Ronda %s — turno de ",
   "chat.dndsheets.turn.your_turn": "¡Es tu turno!",
   "chat.dndsheets.turn.no_movement_left": "Sin movimiento restante este turno.",
@@ -200,5 +226,8 @@
   "chat.dndsheets.turn.cant_move": "No es tu turno — no puedes moverte.",
 
   "chat.dndsheets.concentration.kept": "%s mantiene la concentración en %s (CD %s: %s).",
-  "chat.dndsheets.concentration.lost": "%s pierde la concentración en %s (CD %s: %s)."
+  "chat.dndsheets.concentration.lost": "%s pierde la concentración en %s (CD %s: %s).",
+
+  "chat.dndsheets.welcome.sheet_key": "Pulsa H para abrir tu hoja de personaje.",
+  "chat.dndsheets.welcome.dm_key": "Eres operador — pulsa P para abrir el Panel de DM."
 }

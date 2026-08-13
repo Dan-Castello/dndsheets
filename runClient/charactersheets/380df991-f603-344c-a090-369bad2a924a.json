@@ -69,16 +69,37 @@
           }
         ]
       ]
+    },
+    {
+      "name": "Arco",
+      "itemId": "minecraft:bow",
+      "rolls": [
+        [
+          {
+            "context": "Daño",
+            "expression": "1d8 + $dex"
+          }
+        ]
+      ]
     }
   ],
-  "characterClass": "",
-  "characterRace": "",
-  "background": "",
-  "hitPoints": "",
-  "hitPointsMax": "",
-  "hitPointsTemp": "",
-  "armorClass": "15",
+  "characterClass": "Hechicero",
+  "characterRace": "Semielfo",
+  "background": "Héroe del pueblo",
+  "hitPoints": "6",
+  "hitPointsMax": "6",
+  "hitPointsTemp": "0",
+  "armorClass": "10",
   "speed": "",
   "hitDiceTypes": "",
-  "hitDice": ""
+  "hitDice": "",
+  "schemaVersion": 1,
+  "level": "1",
+  "nextAttackAdvantage": "normal",
+  "counterspellReady": true,
+  "twinnedSpellPending": true,
+  "spells": [],
+  "traits": [],
+  "spellSlotsCurrent": 2,
+  "spellSlotsMax": 5
 }

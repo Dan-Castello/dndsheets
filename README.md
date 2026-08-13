@@ -33,22 +33,20 @@ Essentially, this mod is designed for DMs and players alike that wish to play D&
 - **A DM Wand** (`/dndmonsters dmtool`): right-click a spawned monster to open a menu of its attacks/spells and resolve them against the nearest player; shift+right-click a monster *or* an armor stand to delete it instantly (handy cleanup if you spawned too many).
 - **A death save system**: dropping to 0 HP freezes you at 1 HP (blind, weak, nearly immobile) instead of dying, opens a window to roll death saves (3 successes stabilizes, 3 failures is real death, a natural 20 wakes you up), and any nearby player can revive you instantly by interacting with you.
 - **Class presets**: pick a preset (Fighter, Wizard, etc.) from a sheet button to fill in class, hit die, and all six ability scores at once, optionally handing you a starting weapon. Loadable in bulk from JSON via `/dndpresets`.
-- **A creative-mode inventory tab** ("D&D Sheets") listing the DM Wand, every custom weapon, one báculo per loaded spell, and a summon card per loaded monster (works like a vanilla spawn egg) — no need to remember any command IDs.
+- **A creative-mode inventory tab** ("D&D Sheets") listing the DM Wand, the DM Notebook, every custom weapon, one báculo per loaded spell, and a summon card per loaded monster (works like a vanilla spawn egg) — no need to remember any command IDs.
 - **All content packs auto-load on server start**: drop your JSON files in `<world folder>/dndsheets/{weapons,spells,monsters,presets}/` and they're read automatically, no command required (the load commands still exist for hot-reloading without a restart).
 - Particle and sound feedback (crits, spell casts, totem-of-undying effects on stabilizing, etc.) alongside the chat text, all using vanilla Minecraft assets.
+- **`/dnddistance <target>`**: distance to any entity in feet (5 ft/block, rounded to the nearest 5, same grid the rest of the sheet uses).
+- **AoE preview**: shift+click an area-spell báculo to see the blast radius (particle ring) at the point you're aiming, without actually casting — a normal click still casts for real.
+- **A DM Notebook** (`/dndnotes give <players>`, operator-only): a renamed Book and Quill for private DM notes — private and persistent for free, since it's just a normal book.
 
 ## Content packs (JSON)
 Weapons, spells, monsters, presets, and traits are all defined the same way: drop a JSON file in the matching subfolder of `<world folder>/dndsheets/` and it loads automatically on server start (or immediately with the matching `/dnd... load <filename>` command). See `/test/dndsheets` in this repo for ready-to-copy sample packs covering every content type — copy that folder's contents straight into your world's `dndsheets/` folder to try them.
 
-Dice expressions accept the ability-score shorthand `$str`/`$dex`/`$con`/`$int`/`$wis`/`$cha`, plus `$prof` (proficiency bonus) and `$hprof` (half proficiency, rounded up) — e.g. a cleric's Cure Wounds might use `"1d8 + $wis"`. Known bug: an expression with more than one dice group (e.g. `1d20 + 1d4`) doesn't roll correctly — this applies to `dice`/`versatileDice`/`appliesEffect.dice` in content JSON just as much as to manual `/roll` input, so keep each field to a single dice group.
+Dice expressions accept the ability-score shorthand `$str`/`$dex`/`$con`/`$int`/`$wis`/`$cha`, plus `$prof` (proficiency bonus) and `$hprof` (half proficiency, rounded up) — e.g. a cleric's Cure Wounds might use `"1d8 + $wis"`. Expressions with more than one dice group (e.g. `1d20 + 1d4`) are fully supported.
 
 ## Planned Features
-- Placeable blocks which project visible areas-of-effect, such as spheres and cones.
-- Measuring tools to tell distances easily and help players judge the movement they're using.
 - Localization to languages other than English and Spanish.
-
-## Known Bugs
-- Roll expressions don't work correctly when faced with multiple dice groups (i.e. 1d20 + 1d4). Multiple dice in one group (i.e. 4d4) do, however, work. In complex expressions, you can substitute multiple dice groups for now by using the "Extra Roll" section (thereby allowing up to two).
 
 ## Technical Details
 This mod needs to be on both the client and server. In multiplayer, character sheets are kept for each player on the server, associated by UUID and saved as JSON on the server end. This can be seen in a "charactersheets" folder in the server instance. This allows server owners (likely the DM) to see the sheets themselves. These files are loaded when a client joins, and are saved to in real time when players make changes to their sheets.

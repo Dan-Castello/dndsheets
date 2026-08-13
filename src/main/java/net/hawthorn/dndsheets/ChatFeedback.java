@@ -3,6 +3,8 @@ package net.hawthorn.dndsheets;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 
@@ -31,10 +33,18 @@ public class ChatFeedback {
 	//a propósito: solo lo usan los managers de recurso de clase, todos en este mismo paquete.
 	static final ChatFormatting RESOURCE = ChatFormatting.YELLOW;
 
+	//Antes era server-wide (broadcastSystemMessage): con una mesa grande, cada tirada/ataque/hechizo de UN
+	//combate lo veía todo el servidor, ahogando el chat de cualquiera que no estuviera metido en esa pelea
+	//(ni hablar de dos grupos jugando escenas separadas a la vez). Se acota a quien esté cerca de verdad —
+	//mismo radio que ya usa el modo turnos para decidir quién participa (TurnManager.DEFAULT_RADIUS),
+	//consistente con "quién podría llegar a estar en este encuentro".
 	public static void broadcast(Entity source, Component message) {
 		Level level = source.level();
-		if (level.isClientSide() || level.getServer() == null) return;
-		level.getServer().getPlayerList().broadcastSystemMessage(message, false);
+		if (level.isClientSide() || !(level instanceof ServerLevel serverLevel)) return;
+		double radiusSq = TurnManager.DEFAULT_RADIUS * TurnManager.DEFAULT_RADIUS;
+		for (ServerPlayer player : serverLevel.players()) {
+			if (player.distanceToSqr(source) <= radiusSq) player.sendSystemMessage(message);
+		}
 	}
 
 	private static MutableComponent tag(String labelKey, ChatFormatting color) {
@@ -194,5 +204,12 @@ public class ChatFeedback {
 			.append(dim(Component.translatable("chat.dndsheets.death.revives")))
 			.append(name(targetName))
 			.append(dim("."));
+	}
+
+	//[Muerte] Fulano deja de luchar y muere.
+	public static MutableComponent givesUp(String characterName) {
+		return tag("chat.dndsheets.tag.death", DANGER)
+			.append(name(characterName))
+			.append(Component.translatable("chat.dndsheets.death.gives_up").withStyle(DANGER));
 	}
 }

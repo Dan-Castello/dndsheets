@@ -16,6 +16,7 @@ import net.hawthorn.dndsheets.SorcererMetamagicManager;
 import net.hawthorn.dndsheets.SpellRegistry;
 import net.hawthorn.dndsheets.TurnItemManager;
 import net.hawthorn.dndsheets.command.MonsterCommand;
+import net.hawthorn.dndsheets.command.NotesCommand;
 import net.hawthorn.dndsheets.command.SpellCommand;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -48,6 +49,7 @@ public class DndsheetsModCreativeTab {
 		.icon(() -> new ItemStack(Items.BLAZE_ROD))
 		.displayItems((params, output) -> {
 			safeAccept(output, MonsterCommand.buildDmToolStack());
+			safeAccept(output, NotesCommand.buildNotebookStack());
 			safeAccept(output, RestManager.buildRestKitStack());
 			safeAccept(output, TurnItemManager.buildNextTurnStack());
 			safeAccept(output, TurnItemManager.buildUndoTurnStack());

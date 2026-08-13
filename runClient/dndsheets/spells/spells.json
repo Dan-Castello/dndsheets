@@ -21,7 +21,7 @@
 
   { "id": "dndsheets:melfs_acid_arrow", "name": "Flecha Ácida de Melf", "level": 2, "mode": "attack", "castingAbility": "int", "dice": "4d4", "damageType": "ácido" },
   { "id": "dndsheets:shatter", "name": "Destrozar", "level": 2, "mode": "save", "castingAbility": "int", "saveAbility": "con", "dice": "3d8", "halfOnSave": true, "damageType": "trueno", "aoeRadius": 3 },
-  { "id": "dndsheets:moonbeam", "name": "Rayo de Luna", "level": 2, "mode": "save", "castingAbility": "wis", "saveAbility": "con", "dice": "2d10", "halfOnSave": true, "damageType": "radiante", "aoeRadius": 1.5, "concentration": true, "appliesEffect": {"name": "rayo de luna", "dice": "2d10", "turns": 3} },
+  { "id": "dndsheets:moonbeam", "name": "Rayo de Luna", "level": 2, "mode": "save", "castingAbility": "wis", "saveAbility": "con", "dice": "2d10", "halfOnSave": true, "damageType": "radiante", "aoeRadius": 1.5, "concentration": true },
 
   { "id": "dndsheets:lightning_bolt", "name": "Rayo Relámpago", "level": 3, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "8d6", "halfOnSave": true, "damageType": "rayo" },
   { "id": "dndsheets:call_lightning", "name": "Llamar al Rayo", "level": 3, "mode": "save", "castingAbility": "wis", "saveAbility": "dex", "dice": "3d10", "halfOnSave": true, "damageType": "rayo", "concentration": true },

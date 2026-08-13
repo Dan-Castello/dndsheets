@@ -1,0 +1,21 @@
+#Dado de golpe por clase, usado para calcular la vida máxima real a partir de clase + nivel + constitución.
+#Formato: una entrada por línea como "nombre:dado" (p.ej. "guerrero:10").
+#La coincidencia es por subcadena e insensible a mayúsculas contra el campo 'Clase y Nivel' de la hoja.
+#Añade aquí los nombres de clase que uses en tu mesa (en cualquier idioma) sin tocar el código.
+hitDice = ["barbarian:12", "bárbaro:12", "barbaro:12", "fighter:10", "guerrero:10", "paladin:10", "paladín:10", "ranger:10", "explorador:10", "bard:8", "bardo:8", "cleric:8", "clérigo:8", "clerigo:8", "druid:8", "druida:8", "monk:8", "monje:8", "rogue:8", "pícaro:8", "picaro:8", "warlock:8", "brujo:8", "sorcerer:6", "hechicero:6", "wizard:6", "mago:6"]
+#Daño por defecto de cada arma, usado para precargar la pestaña de Ataques con las armas
+#que el jugador lleve en el inventario, y para la tirada automática al golpear un armor stand.
+#Formato: una entrada por línea como "id_de_item;dado;característica" (p.ej. "minecraft:iron_sword;1d6;str").
+#La característica es str o dex. Cada jugador puede sobrescribir su propia tirada editando la entrada en su hoja.
+#
+#También admite armas personalizadas (dagas, lanzas, dardos...) sobre CUALQUIER ítem base:
+#dale al ítem una etiqueta NBT {dndsheets:{weapon:"tu_id"}} (por /give, loot table con
+#set_nbt, etc.) y usa ese mismo "tu_id" como clave aquí, p.ej. "dndsheets:dagger;1d4;dex".
+#Esa etiqueta manda sobre el id del ítem base, así puedes repartirlas como loot.
+weaponDamage = ["minecraft:wooden_sword;1d6;str", "minecraft:wooden_axe;1d8;str", "minecraft:stone_sword;1d6;str", "minecraft:stone_axe;1d8;str", "minecraft:iron_sword;1d6;str", "minecraft:iron_axe;1d8;str", "minecraft:golden_sword;1d6;str", "minecraft:golden_axe;1d8;str", "minecraft:diamond_sword;1d6;str", "minecraft:diamond_axe;1d8;str", "minecraft:netherite_sword;1d6;str", "minecraft:netherite_axe;1d8;str", "minecraft:bow;1d8;dex", "minecraft:crossbow;1d8;dex", "minecraft:trident;1d8;str", "dndsheets:dagger;1d4;dex", "dndsheets:spear;1d6;str", "dndsheets:dart;1d4;dex"]
+#Bono de daño por nivel de encantamiento del arma, sumado como número plano a la tirada
+#(equivalente al +1/+2/+3 de un arma mágica en 5e), no como dados extra.
+#Formato: una entrada por línea como "id_de_encantamiento;bono_por_nivel" (p.ej. "minecraft:sharpness;1").
+#Un Sharpness III con bono 1 suma +3. Añade aquí cualquier otro encantamiento que quieras que cuente.
+enchantmentDamageBonus = ["minecraft:sharpness;1", "minecraft:smite;1", "minecraft:bane_of_arthropods;1", "minecraft:power;1", "minecraft:impaling;1"]
+

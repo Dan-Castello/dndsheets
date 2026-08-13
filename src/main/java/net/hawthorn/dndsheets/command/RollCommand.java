@@ -59,5 +59,40 @@ public class RollCommand {
 				return 0;
 			})));
 
+		//Mismo par que /roll y /r, pero privado: solo le llega a quien tira y a los operadores conectados
+		//(ver RollAnnouncerProcedure.sendPrivately) — comando aparte en vez de un argumento final, porque
+		//"expression" usa MessageArgument.message() (captura todo el resto del texto), así que no hay
+		//forma limpia de distinguir un flag final de la propia expresión de dados.
+		event.getDispatcher().register(Commands.literal("rollprivate")
+			.then(Commands.argument("expression", MessageArgument.message()).executes(arguments -> {
+				Level world = arguments.getSource().getUnsidedLevel();
+				double x = arguments.getSource().getPosition().x();
+				double y = arguments.getSource().getPosition().y();
+				double z = arguments.getSource().getPosition().z();
+				Entity entity = arguments.getSource().getEntity();
+				if (entity == null && world instanceof ServerLevel _servLevel)
+					entity = FakePlayerFactory.getMinecraft(_servLevel);
+				String uuid = entity.getStringUUID();
+
+				JsonObject sheet = SheetLoader.getServerSheet(uuid);
+				RollAnnouncerProcedure.execute(world, x, y, z, sheet, arguments, entity, true);
+				return 0;
+			})));
+
+		event.getDispatcher().register(Commands.literal("rp")
+			.then(Commands.argument("expression", MessageArgument.message()).executes(arguments -> {
+				Level world = arguments.getSource().getUnsidedLevel();
+				double x = arguments.getSource().getPosition().x();
+				double y = arguments.getSource().getPosition().y();
+				double z = arguments.getSource().getPosition().z();
+				Entity entity = arguments.getSource().getEntity();
+				if (entity == null && world instanceof ServerLevel _servLevel)
+					entity = FakePlayerFactory.getMinecraft(_servLevel);
+				String uuid = entity.getStringUUID();
+
+				JsonObject sheet = SheetLoader.getServerSheet(uuid);
+				RollAnnouncerProcedure.execute(world, x, y, z, sheet, arguments, entity, true);
+				return 0;
+			})));
 	}
 }

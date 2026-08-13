@@ -5,6 +5,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -45,6 +46,16 @@ public class DndPaths {
 		createIfMissing(BACKGROUNDS_DIR);
 		createIfMissing(CLASSES_DIR);
 
+		//Contenido por defecto: para que un jugador nuevo no tenga que escribir armas/hechizos/monstruos/
+		//presets/rasgos desde cero antes de poder jugar (ver test/dndsheets/*.json, el mismo pack
+		//empaquetado dentro del mod). Razas/trasfondos/clases no lo necesitan: CharacterOptionsRegistry ya
+		//trae una lista por defecto en código, sin JSON de por medio.
+		seedDefaultsIfEmpty(WEAPONS_DIR, "weapons.json");
+		seedDefaultsIfEmpty(SPELLS_DIR, "spells.json");
+		seedDefaultsIfEmpty(MONSTERS_DIR, "monsters.json");
+		seedDefaultsIfEmpty(TRAITS_DIR, "traits.json");
+		seedDefaultsIfEmpty(PRESETS_DIR, "presets.json");
+
 		autoLoadAll(WEAPONS_DIR, Config::loadFile, "armas");
 		autoLoadAll(SPELLS_DIR, SpellRegistry::loadFile, "hechizos");
 		autoLoadAll(MONSTERS_DIR, MonsterRegistry::loadFile, "monstruos");
@@ -74,6 +85,20 @@ public class DndPaths {
 			Files.createDirectories(dir);
 		} catch (IOException e) {
 			//No pasa nada grave: los comandos /dnd* fallan con un mensaje claro si de verdad no existe al leer.
+		}
+	}
+
+	//Copia el .json empaquetado en el jar (src/main/resources/dndsheets/defaults/) a la carpeta real SOLO
+	//si está vacía todavía — así nunca pisa contenido que el DM ya haya puesto a mano, y solo pasa una vez
+	//por instancia (la próxima vez que arranque el servidor, la carpeta ya no está vacía).
+	private static void seedDefaultsIfEmpty(Path dir, String resourceFileName) {
+		if (!jsonFileNames(dir).isEmpty()) return;
+		try (InputStream in = DndPaths.class.getResourceAsStream("/dndsheets/defaults/" + resourceFileName)) {
+			if (in == null) return;
+			Files.copy(in, dir.resolve(resourceFileName));
+			DndsheetsMod.LOGGER.info("dndsheets: sembrado {} con el contenido por defecto del mod.", dir.resolve(resourceFileName));
+		} catch (IOException e) {
+			DndsheetsMod.LOGGER.warn("dndsheets: no pude sembrar {} con el contenido por defecto: {}", resourceFileName, e.getMessage());
 		}
 	}
 

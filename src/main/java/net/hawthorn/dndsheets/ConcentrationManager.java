@@ -13,23 +13,49 @@ import java.util.UUID;
  * <p>Concentración de 5e: lanzar un hechizo de concentración reemplaza cualquier concentración previa;
  * recibir daño real obliga a una salvación de Constitución (CD = máx(10, daño/2)) o se pierde. Solo
  * jugadores concentran — los monstruos del DM se resuelven acción por acción, sin este seguimiento.</p>
+ *
+ * <p>Si el hechizo dejó un efecto de estado corriendo (ver SpellRegistry.Spell#appliesEffect,
+ * SpellCastManager), perder la concentración lo revierte de verdad (TurnManager.removeEffect) — antes
+ * esto solo tiraba el dado y mandaba un mensaje, sin deshacer nada.</p>
  */
 public class ConcentrationManager {
-	private static final Map<UUID, String> concentratingOn = new HashMap<>();
+	//targetEntityId/effectName quedan en -1/null hasta que el hechizo de verdad aplica un efecto (ver
+	//attachEffect) — muchos hechizos de concentración no dejan nada que revertir (curación, daño puro), y
+	//eso sigue siendo válido: solo se llama a TurnManager.removeEffect si hay algo que quitar.
+	private record Concentrating(String spellName, int targetEntityId, String effectName) {}
+
+	private static final Map<UUID, Concentrating> concentratingOn = new HashMap<>();
 
 	public static void startConcentrating(ServerPlayer caster, String spellName) {
-		concentratingOn.put(caster.getUUID(), spellName);
+		stopConcentrating(caster); //Un hechizo de concentración nuevo reemplaza cualquiera anterior — corta el efecto viejo antes de anotar el nuevo, en vez de dejarlo huérfano para siempre.
+		concentratingOn.put(caster.getUUID(), new Concentrating(spellName, -1, null));
+	}
+
+	//Llamado justo después de que el hechizo de concentración recién lanzado de verdad aplicó un efecto de
+	//estado a un objetivo (ver SpellCastManager) — le suma el objetivo/efecto al registro que
+	//startConcentrating ya creó, para que onDamageTaken/stopConcentrating sepan qué revertir si se pierde
+	//la concentración más tarde. No-op si el lanzador no está concentrándose en nada.
+	//ponytail: un solo objetivo por concentración — un hechizo de área (Guardianes Espirituales) que
+	//afecta a varios solo recuerda el último; revertir en todos requeriría una lista, no hecho porque
+	//ningún hechizo de ejemplo actual lo necesita.
+	public static void attachEffect(ServerPlayer caster, int targetEntityId, String effectName) {
+		Concentrating current = concentratingOn.get(caster.getUUID());
+		if (current == null) return;
+		concentratingOn.put(caster.getUUID(), new Concentrating(current.spellName(), targetEntityId, effectName));
 	}
 
 	public static void stopConcentrating(ServerPlayer caster) {
-		concentratingOn.remove(caster.getUUID());
+		Concentrating previous = concentratingOn.remove(caster.getUUID());
+		if (previous != null && previous.effectName() != null) {
+			TurnManager.removeEffect(previous.targetEntityId(), previous.effectName());
+		}
 	}
 
 	//Llamado desde cada punto del mod donde un jugador recibe daño real (ver SpellCastManager.applyDamage,
 	//CombatManager.onLivingHurt, MonsterActionManager.resolveAttack/resolveSpell).
 	public static void onDamageTaken(ServerPlayer player, int damage) {
-		String spellName = concentratingOn.get(player.getUUID());
-		if (spellName == null || damage <= 0) return;
+		Concentrating current = concentratingOn.get(player.getUUID());
+		if (current == null || damage <= 0) return;
 
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		int dc = Math.max(10, damage / 2);
@@ -38,10 +64,10 @@ public class ConcentrationManager {
 
 		String name = SheetLoader.characterNameOf(sheet, player);
 		if (kept) {
-			player.sendSystemMessage(Component.translatable("chat.dndsheets.concentration.kept", name, spellName, dc, saveRoll.formatted()).withStyle(ChatFormatting.GRAY));
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.concentration.kept", name, current.spellName(), dc, saveRoll.formatted()).withStyle(ChatFormatting.GRAY));
 		} else {
-			concentratingOn.remove(player.getUUID());
-			ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.concentration.lost", name, spellName, dc, saveRoll.formatted()).withStyle(ChatFormatting.RED));
+			stopConcentrating(player); //Ahora sí revierte el efecto activo (ver arriba), no solo borra el registro.
+			ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.concentration.lost", name, current.spellName(), dc, saveRoll.formatted()).withStyle(ChatFormatting.RED));
 		}
 	}
 }

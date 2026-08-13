@@ -17,7 +17,9 @@ import java.util.Set;
 //campo de TurnManager directamente.
 class OpportunityAttackTracker {
 	//Alcance cuerpo a cuerpo aproximado (mismo rango que ya usa Minecraft para golpear).
-	private static final double MELEE_REACH = 3.0;
+	//Package-private a propósito: MonsterActionManager reusa este mismo valor para decidir cuándo un
+	//monstruo propio ya está lo bastante cerca para atacar sin acercarse más (ver autoAct/moveTowardIfNeeded).
+	static final double MELEE_REACH = 3.0;
 	private final Set<Integer> withinReach = new HashSet<>();
 
 	//Se guarda la última posición ya comprobada para saltar el recorrido de todos los combatientes si no

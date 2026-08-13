@@ -11,6 +11,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -96,9 +97,11 @@ public class MonsterActionManager {
 
 	/**
 	 * <p>Llamado al recibir un {@code MonsterActionChooseMessage}: el DM eligió la acción {@code actionIndex}
-	 * (0..N-1 ataques, luego 0..M-1 hechizos) para el monstruo {@code entityId}.</p>
+	 * (0..N-1 ataques, luego 0..M-1 hechizos) para el monstruo {@code entityId}, y a quién apuntarla
+	 * ({@code targetUuid}, elegido en {@link net.hawthorn.dndsheets.client.gui.MonsterActionScreen} vía
+	 * {@link net.hawthorn.dndsheets.client.gui.PlayerPickerScreen}).</p>
 	 */
-	public static void resolveAction(ServerPlayer dm, int entityId, int actionIndex) {
+	public static void resolveAction(ServerPlayer dm, int entityId, int actionIndex, String targetUuid) {
 		if (actionIndex < 0) return;
 		Entity monsterEntity = dm.level().getEntity(entityId);
 		if (monsterEntity == null) return;
@@ -106,7 +109,7 @@ public class MonsterActionManager {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monsterEntity);
 		if (block == null) return;
 
-		Player target = monsterEntity.level().getNearestPlayer(monsterEntity, 30);
+		Player target = resolveTarget(dm, monsterEntity, targetUuid);
 		if (target == null) return;
 
 		//En modo turnos, un monstruo también gasta su única acción del turno: si el DM insiste en hacerlo
@@ -131,6 +134,24 @@ public class MonsterActionManager {
 		resolveSpell(block, monsterEntity, block.spells().get(spellIndex), target);
 	}
 
+	//Antes esto SIEMPRE resolvía contra level.getNearestPlayer, sin dejarle al DM elegir a quién de verdad
+	//quería apuntar (ni revisar línea de visión) — un DM no podía hacer que el ogro se ensañara con el
+	//pícaro que lo insultó en vez de con el tanque más cercano. Cae al más cercano solo si el UUID llega
+	//vacío/inválido o ese jugador ya no está conectado (elegido en el picker, pero se desconectó antes de
+	//que el mensaje llegara) — mejor un objetivo razonable que ninguno.
+	private static Player resolveTarget(ServerPlayer dm, Entity monsterEntity, String targetUuid) {
+		if (targetUuid != null && !targetUuid.isEmpty()) {
+			try {
+				ServerPlayer target = dm.getServer().getPlayerList().getPlayer(java.util.UUID.fromString(targetUuid));
+				if (target != null) return target;
+			} catch (IllegalArgumentException ignored) {
+				//UUID malformado: nunca debería pasar viniendo del picker, pero cualquier cliente puede
+				//mandar cualquier string — cae al más cercano en vez de tumbar la resolución.
+			}
+		}
+		return monsterEntity.level().getNearestPlayer(monsterEntity, 30);
+	}
+
 	//Turno automático del monstruo: TurnManager.beginTurn lo llama en cuanto le toca a un monstruo, sin
 	//esperar a la Vara de DM — es la pieza que hace que "sin DM" sea real (ver AUDIT.md sección 0). Ataca
 	//al jugador más cercano con su primer ataque disponible (de especie, luego personalizado); si no tiene
@@ -152,6 +173,8 @@ public class MonsterActionManager {
 		Player target = level.getNearestPlayer(monsterEntity, 30);
 		if (target == null) return; //Nadie cerca: pasa el turno sin hacer nada, ya quedó consumido arriba.
 
+		moveTowardIfNeeded(monsterEntity, target);
+
 		List<MonsterRegistry.MonsterAttack> attacks = new ArrayList<>(block.attacks());
 		attacks.addAll(MonsterRegistry.customAttacksOf(monsterEntity));
 		if (!attacks.isEmpty()) {
@@ -161,6 +184,30 @@ public class MonsterActionManager {
 		if (!block.spells().isEmpty()) {
 			resolveSpell(block, monsterEntity, block.spells().get(0), target);
 		}
+	}
+
+	//Antes el monstruo atacaba desde donde estuviera parado, sin importar la distancia real al objetivo
+	//(NoAI fijo desde que se invoca, ver MonsterRegistry.spawnAt) — nunca podía perseguir a nadie que se
+	//alejara, ni flanquear, ni siquiera acercarse a golpear: le pegaba a cualquiera hasta 30 bloques como
+	//si tuviera alcance infinito. Se acerca en línea recta hasta el alcance de melé (mismo valor que ya
+	//usa OpportunityAttackTracker) antes de resolver su acción, con el mismo presupuesto de movimiento por
+	//turno que ya usan los mobs de compatibilidad (ver MovementAnchorTracker.speedBlocksForMob).
+	//ponytail: línea recta en el plano horizontal, sin pathfinding real (no esquiva obstáculos, no rodea
+	//paredes) — sigue siendo NoAI de verdad, esto es solo simular "se acercó", no IA de movimiento real.
+	private static void moveTowardIfNeeded(Entity monster, Entity target) {
+		Vec3 from = monster.position();
+		Vec3 to = target.position();
+		double dx = to.x - from.x;
+		double dz = to.z - from.z;
+		double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
+		if (horizontalDistance <= OpportunityAttackTracker.MELEE_REACH) return;
+
+		double travel = Math.min(MovementAnchorTracker.speedBlocksForMob(monster), horizontalDistance - OpportunityAttackTracker.MELEE_REACH);
+		if (travel <= 0) return;
+
+		double scale = travel / horizontalDistance;
+		monster.teleportTo(from.x + dx * scale, from.y, from.z + dz * scale);
+		MonsterRegistry.faceTarget(monster, target);
 	}
 
 	//Ataque de oportunidad: TurnManager lo dispara cuando quien tiene el turno sale del alcance cuerpo a

@@ -6,6 +6,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
@@ -124,28 +128,62 @@ class MovementAnchorTracker {
 		return feet / FEET_PER_BLOCK;
 	}
 
+	//Conversión aproximada de la velocidad vanilla de un mob (atributo MOVEMENT_SPEED, una unidad interna
+	//sin equivalencia exacta en bloques/turno por cómo funciona de verdad la física de movimiento de
+	//Minecraft: fricción, terreno, salto...) a un presupuesto de bloques por turno: se escala contra la
+	//velocidad base de un zombie (referencia común de "mob normal") como si esa velocidad representara los
+	//30 pies/6 bloques estándar de 5e, con un rango razonable para no dar presupuestos absurdos a mobs muy
+	//rápidos/lentos. ponytail: heurística, no una simulación real de física — si algún mob de un mod queda
+	//claramente corto o largo de más, ajustar ZOMBIE_BASELINE_SPEED o el rango del clamp.
+	private static final double ZOMBIE_BASELINE_SPEED = 0.23;
+	private static final double MIN_MOB_SPEED_BLOCKS = 2.0;
+	private static final double MAX_MOB_SPEED_BLOCKS = 12.0;
+
+	static double speedBlocksForMob(Entity entity) {
+		if (!(entity instanceof LivingEntity living)) return 6.0;
+		AttributeInstance speedAttr = living.getAttribute(Attributes.MOVEMENT_SPEED);
+		double raw = speedAttr != null ? speedAttr.getValue() : ZOMBIE_BASELINE_SPEED;
+		double blocks = 6.0 * (raw / ZOMBIE_BASELINE_SPEED);
+		return Math.max(MIN_MOB_SPEED_BLOCKS, Math.min(MAX_MOB_SPEED_BLOCKS, blocks));
+	}
+
 	//Bloqueo de movimiento de quien SÍ tiene el turno: en cuanto se aleja más de su velocidad (en línea
 	//recta desde dónde empezó el turno) desde moveOrigin, se le devuelve a la última posición vista dentro
 	//de alcance. ponytail: distancia en línea recta desde el origen, no ruta acumulada ni solo horizontal —
 	//suficiente para cortar el "vuelo libre" de Minecraft, no un tracker de casillas real.
 	void enforceMovementBudget(ServerPlayer player) {
-		Pinned origin = moveOrigin.get(player.getId());
-		if (origin == null) return;
-		if (player.level().dimension() != origin.dimension()) {
+		if (enforceBudget(player, speedBlocksFor(SheetLoader.getServerSheet(player.getStringUUID())))) {
+			CombatFx.actionBar(player, Component.translatable("chat.dndsheets.turn.no_movement_left").withStyle(ChatFormatting.RED));
+		}
+	}
+
+	//Mismo mecanismo que arriba, para un mob de compatibilidad (ver TurnManager.isMonster): sin HUD que
+	//avisar, así que el llamador (TurnManager.onMobTick) es quien decide qué hacer con el resultado —
+	//gastar su turno, en su caso, ya que un mob no tiene "seguir intentando" tras quedarse sin movimiento.
+	//@return true si se agotó su presupuesto de movimiento (y se le devolvió a su última posición válida).
+	boolean enforceMobMovementBudget(Entity entity, double speedBlocks) {
+		return enforceBudget(entity, speedBlocks);
+	}
+
+	private boolean enforceBudget(Entity entity, double speedBlocks) {
+		int id = entity.getId();
+		Pinned origin = moveOrigin.get(id);
+		if (origin == null) return false;
+		if (entity.level().dimension() != origin.dimension()) {
 			//Cruzó a otro nivel (portal) con el turno activo: las coordenadas grabadas ya no significan
 			//nada acá — se suelta el presupuesto en vez de comparar/teletransportar entre dimensiones.
-			moveOrigin.remove(player.getId());
-			lastGoodPos.remove(player.getId());
-			return;
+			moveOrigin.remove(id);
+			lastGoodPos.remove(id);
+			return false;
 		}
-		Vec3 pos = player.position();
-		if (pos.distanceTo(origin.pos()) <= speedBlocksFor(SheetLoader.getServerSheet(player.getStringUUID()))) {
-			lastGoodPos.put(player.getId(), new Pinned(origin.dimension(), pos));
-			return;
+		Vec3 pos = entity.position();
+		if (pos.distanceTo(origin.pos()) <= speedBlocks) {
+			lastGoodPos.put(id, new Pinned(origin.dimension(), pos));
+			return false;
 		}
-		Vec3 fallback = lastGoodPos.getOrDefault(player.getId(), origin).pos();
-		player.teleportTo(fallback.x, fallback.y, fallback.z);
-		player.setDeltaMovement(Vec3.ZERO);
-		CombatFx.actionBar(player, Component.translatable("chat.dndsheets.turn.no_movement_left").withStyle(ChatFormatting.RED));
+		Vec3 fallback = lastGoodPos.getOrDefault(id, origin).pos();
+		entity.teleportTo(fallback.x, fallback.y, fallback.z);
+		entity.setDeltaMovement(Vec3.ZERO);
+		return true;
 	}
 }

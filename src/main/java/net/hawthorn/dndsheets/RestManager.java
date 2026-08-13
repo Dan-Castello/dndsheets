@@ -11,6 +11,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -40,6 +41,10 @@ public class RestManager {
 	private static String pendingProposerName = null;
 	private static final Set<java.util.UUID> pendingVoters = new HashSet<>();
 	private static final Set<java.util.UUID> accepted = new HashSet<>();
+	//Dónde se usó el Kit de Descanso: la votación (y el descanso en sí) se acota a quien esté cerca de
+	//verdad en ese momento — antes se le preguntaba, y se le aplicaba el descanso, a CUALQUIERA conectado
+	//al servidor, sin importar si estaba a un bloque o en otro continente del mapa.
+	private static Vec3 pendingOrigin = null;
 
 	//Sube en cada propuesta nueva; el timeout y el listener de desconexión lo capturan al programarse y
 	//solo actúan si sigue siendo la MISMA propuesta cuando les toca correr — sin esto, cancelar/resolver
@@ -99,31 +104,47 @@ public class RestManager {
 
 		pendingType = type;
 		pendingProposerName = proposerName;
+		pendingOrigin = proposer.position();
 		pendingVoters.clear();
 		accepted.clear();
 		int token = ++proposalToken;
 
-		List<ServerPlayer> online = server.getPlayerList().getPlayers();
-		for (ServerPlayer player : online) pendingVoters.add(player.getUUID());
+		List<ServerPlayer> nearby = nearbyPlayers(server, pendingOrigin);
+		for (ServerPlayer player : nearby) pendingVoters.add(player.getUUID());
 
-		for (ServerPlayer player : online) {
+		for (ServerPlayer player : nearby) {
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new RestVoteOpenMessage(proposerName, type.label));
 		}
-		server.getPlayerList().broadcastSystemMessage(
-			Component.translatable("chat.dndsheets.rest.proposed", proposerName, type.label).withStyle(ChatFormatting.AQUA), false
-		);
+		notifyVoters(server, Component.translatable("chat.dndsheets.rest.proposed", proposerName, type.label).withStyle(ChatFormatting.AQUA));
 
 		//Sin esto, un jugador que nunca responde (sin desconectarse, solo ignora el prompt) bloqueaba
 		//los descansos de todo el servidor para siempre — no solo el caso de desconexión, ver onPlayerLogout.
 		DndsheetsMod.queueServerWork(VOTE_TIMEOUT_TICKS, () -> {
 			if (pendingType == null || token != proposalToken) return;
-			server.getPlayerList().broadcastSystemMessage(
-				Component.translatable("chat.dndsheets.rest.timed_out").withStyle(ChatFormatting.RED), false
-			);
+			notifyVoters(server, Component.translatable("chat.dndsheets.rest.timed_out").withStyle(ChatFormatting.RED));
 			clear(server);
 		});
 
 		registerVote(proposer, true); //El proponente ya vota que sí, por proponerlo.
+	}
+
+	//Mismo radio que ya usa el modo turnos para "quién participa" (TurnManager.DEFAULT_RADIUS) —
+	//consistente con el resto del mod para decidir a quién le concierne una acción puntual como esta.
+	private static List<ServerPlayer> nearbyPlayers(MinecraftServer server, Vec3 origin) {
+		double radiusSq = TurnManager.DEFAULT_RADIUS * TurnManager.DEFAULT_RADIUS;
+		return server.getPlayerList().getPlayers().stream()
+			.filter(p -> p.position().distanceToSqr(origin) <= radiusSq)
+			.toList();
+	}
+
+	//Manda un mensaje solo a quien de verdad forma parte de ESTA votación (pendingVoters), no a todo el
+	//servidor — reusado por propose/registerVote/resolveRest para las 4 líneas de chat del ciclo de vida
+	//de una propuesta (propuesta, rechazo, expiración, descanso completo).
+	private static void notifyVoters(MinecraftServer server, Component message) {
+		for (UUID uuid : pendingVoters) {
+			ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+			if (player != null) player.sendSystemMessage(message);
+		}
 	}
 
 	//Sin esto, un jugador que se desconecta (crash, cierre) antes de votar dejaba pendingVoters con un
@@ -141,12 +162,14 @@ public class RestManager {
 	}
 
 	//Simétrico a onPlayerLogout: sin esto, alguien que se conecta mientras hay una votación pendiente
-	//nunca era preguntado, pero resolveRest le aplicaba el descanso igual en cuanto el resto aceptaba
-	//(itera TODOS los jugadores conectados, no solo pendingVoters) — se le suma a la votación, como a
-	//cualquier otro, y se le manda el mismo prompt que ya recibieron los demás.
+	//nunca era preguntado, pero resolveRest le aplicaba el descanso igual en cuanto el resto aceptaba —
+	//se le suma a la votación, como a cualquier otro, y se le manda el mismo prompt que ya recibieron los
+	//demás. Solo si está cerca de dónde se propuso: alguien que se conecta lejos de esa zona no debería
+	//verse arrastrado a una votación de un grupo con el que ni siquiera está jugando.
 	@SubscribeEvent
 	public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
 		if (pendingType == null || !(event.getEntity() instanceof ServerPlayer player)) return;
+		if (pendingOrigin != null && player.position().distanceToSqr(pendingOrigin) > TurnManager.DEFAULT_RADIUS * TurnManager.DEFAULT_RADIUS) return;
 		pendingVoters.add(player.getUUID());
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new RestVoteOpenMessage(pendingProposerName, pendingType.label));
 	}
@@ -162,7 +185,7 @@ public class RestManager {
 			JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 			String name = SheetLoader.characterNameOf(sheet, player);
 			if (server != null) {
-				server.getPlayerList().broadcastSystemMessage(Component.translatable("chat.dndsheets.rest.rejected", name).withStyle(ChatFormatting.RED), false);
+				notifyVoters(server, Component.translatable("chat.dndsheets.rest.rejected", name).withStyle(ChatFormatting.RED));
 			}
 			clear(server);
 			return;
@@ -177,12 +200,14 @@ public class RestManager {
 	private static void resolveRest(MinecraftServer server) {
 		if (server == null) return;
 		RestType type = pendingType;
-		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-			applyRest(player, type);
+		//Solo a quien de verdad votó (pendingVoters), no a todo el servidor: antes esto le reseteaba PG/
+		//espacios de conjuro a CUALQUIERA conectado en cuanto el grupo que sí estaba descansando terminaba
+		//de aceptar, así estuviera a medio mapa de distancia sin haber sido ni siquiera preguntado.
+		for (UUID uuid : pendingVoters) {
+			ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+			if (player != null) applyRest(player, type);
 		}
-		server.getPlayerList().broadcastSystemMessage(
-			Component.translatable("chat.dndsheets.rest.completed", type.label).withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD), false
-		);
+		notifyVoters(server, Component.translatable("chat.dndsheets.rest.completed", type.label).withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
 		clear(server);
 	}
 
@@ -220,6 +245,7 @@ public class RestManager {
 		}
 		pendingType = null;
 		pendingProposerName = null;
+		pendingOrigin = null;
 		pendingVoters.clear();
 		accepted.clear();
 	}

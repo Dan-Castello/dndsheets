@@ -10,6 +10,9 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
  * esté mirando (ver {@link SpellCastManager}). Se engancha a los tres eventos de "clic derecho" de
  * Minecraft (ítem al aire, bloque, entidad) porque cuál de los tres dispara depende de qué haya delante
  * del jugador, y el báculo debe funcionar igual en los tres casos.</p>
+ *
+ * <p>Agachado + clic con un báculo de área: en vez de lanzar, previsualiza dónde caería el radio
+ * ({@link SpellCastManager#previewAoe}) — de pie, el clic sigue lanzando de verdad como siempre.</p>
  */
 public class QuickSpellManager {
 
@@ -20,7 +23,11 @@ public class QuickSpellManager {
 	static void tryUse(PlayerInteractEvent event, String spellId) {
 		event.setCanceled(true);
 		if (event.getEntity() instanceof ServerPlayer player) {
-			SpellCastManager.handleCastRequest(player, spellId);
+			if (player.isShiftKeyDown()) {
+				SpellCastManager.previewAoe(player, spellId);
+			} else {
+				SpellCastManager.handleCastRequest(player, spellId);
+			}
 		}
 	}
 }

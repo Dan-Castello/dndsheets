@@ -52,6 +52,21 @@ public class SpellCastManager {
 		lastCastTick.remove(event.getEntity().getUUID());
 	}
 
+	private static boolean isAoe(SpellRegistry.Spell spell) {
+		return "save".equals(spell.mode()) && spell.aoeRadius() > 0;
+	}
+
+	//Agachado + clic con un báculo de área (Bola de Fuego y similares): muestra dónde caería el radio real
+	//SIN lanzar el hechizo (no gasta espacio de conjuro ni acción de turno) — mismo anillo de partículas que
+	//aoeRing() ya dibuja al impactar de verdad, solo que aquí es un vistazo antes de comprometerse al clic
+	//normal. Ver CombatFx.aoeRing para por qué es un anillo en el punto de impacto y no una previsualización
+	//de apuntado en 3D.
+	public static void previewAoe(ServerPlayer caster, String spellId) {
+		SpellRegistry.Spell spell = SpellRegistry.get(spellId);
+		if (spell == null || !isAoe(spell)) return;
+		CombatFx.aoeRing(caster.level(), findImpactPoint(caster), spell.aoeRadius());
+	}
+
 	public static void handleCastRequest(ServerPlayer caster, String spellId) {
 		long now = caster.level().getGameTime();
 		Long last = lastCastTick.put(caster.getUUID(), now);
@@ -71,12 +86,13 @@ public class SpellCastManager {
 
 		//Bola de Fuego y similares (mode:"save" + aoeRadius>0): no hace falta estar mirando directamente a
 		//una entidad, el punto de impacto puede ser terreno vacío y golpea a todo lo que esté en el radio.
-		boolean isAoe = "save".equals(spell.mode()) && spell.aoeRadius() > 0;
+		boolean isAoe = isAoe(spell);
 		Entity target = null;
 		List<Entity> aoeTargets = null;
+		Vec3 impactPoint = null;
 
 		if (isAoe) {
-			Vec3 impactPoint = findImpactPoint(caster);
+			impactPoint = findImpactPoint(caster);
 			aoeTargets = findAoeTargets(caster, impactPoint, spell.aoeRadius());
 			if (aoeTargets.isEmpty()) {
 				caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_aoe_targets").withStyle(ChatFormatting.GRAY));
@@ -94,6 +110,14 @@ public class SpellCastManager {
 					return;
 				}
 			}
+		}
+
+		//Antes lanzar un hechizo de ataque/salvación contra un monstruo NUNCA arrancaba el modo turnos solo
+		//(a diferencia de un golpe con arma, ver CombatManager.autoStartCombatIfNeeded) — tryAct de abajo
+		//deja pasar cualquier cosa mientras no haya combate activo, así que el hechizo se resolvía "gratis",
+		//sin turno ni congelamiento para nadie. Curar no cuenta: sanar a alguien no es una agresión.
+		if (!"heal".equals(spell.mode())) {
+			CombatManager.autoStartCombatIfNeeded(isAoe ? aoeTargets.get(0) : target, caster);
 		}
 
 		//El turno se comprueba al final, ya con todo validado (hay objetivo, hay espacios): así, si se
@@ -126,6 +150,10 @@ public class SpellCastManager {
 		if (spell.concentration()) ConcentrationManager.startConcentrating(caster, spell.name());
 
 		if (isAoe) {
+			//Antes no había ninguna representación visual del radio: te enterabas de a quién golpeó leyendo
+			//el chat, después del hecho — un anillo de partículas en el radio real usado deja ver el alcance
+			//de la explosión, no solo el punto de impacto (ver CombatFx.aoeRing).
+			CombatFx.aoeRing(caster.level(), impactPoint, spell.aoeRadius());
 			//Gemelar un hechizo que ya reparte daño a todo un radio no tendría sentido (5e tampoco lo deja);
 			//se ignora el flag pendiente en vez de consumirlo, para no gastarlo en un lanzado que no aplica.
 			for (Entity aoeTarget : aoeTargets) castSaveSpell(caster, casterName, spell, aoeTarget, proficiency, abilityMod);
@@ -170,7 +198,7 @@ public class SpellCastManager {
 		Entity best = null;
 		double bestDistSq = Double.MAX_VALUE;
 		for (Entity candidate : caster.level().getEntities((Entity) null, box,
-				e -> e != caster && e != excluding && e.isAlive() && (e instanceof Player || MonsterRegistry.monsterIdOf(e) != null))) {
+				e -> e != caster && e != excluding && e.isAlive() && (e instanceof Player || TurnManager.isMonster(e)))) {
 			double distSq = candidate.position().distanceToSqr(caster.position());
 			if (distSq < bestDistSq) {
 				bestDistSq = distSq;
@@ -202,7 +230,14 @@ public class SpellCastManager {
 			return;
 		}
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(target);
-		if (block == null) return;
+		if (block == null) {
+			//Mob de compatibilidad (Enemy de otro mod o vanilla, sin bloque de estadísticas propio, ver
+			//TurnManager.isMonster): a diferencia de un monstruo propio (PG trackeado aparte en NBT), su PG
+			//real ES su salud vanilla de Minecraft — antes esto no hacía nada (block==null, sin más), así
+			//que curar un mob de compatibilidad no tenía ningún efecto.
+			if (target instanceof LivingEntity living) living.heal(amount);
+			return;
+		}
 		int newHp = Math.min(block.maxHp(), MonsterRegistry.currentHpOf(target) + amount);
 		MonsterRegistry.setCurrentHp(target, newHp);
 	}
@@ -225,7 +260,7 @@ public class SpellCastManager {
 	private static List<Entity> findAoeTargets(ServerPlayer caster, Vec3 center, double radius) {
 		AABB box = new AABB(center, center).inflate(radius);
 		List<Entity> candidates = caster.level().getEntities((Entity) null, box,
-			entity -> entity != caster && entity.isAlive() && (entity instanceof Player || MonsterRegistry.monsterIdOf(entity) != null)
+			entity -> entity != caster && entity.isAlive() && (entity instanceof Player || TurnManager.isMonster(entity))
 				&& entity.position().distanceTo(center) <= radius);
 
 		List<Entity> visible = new ArrayList<>();
@@ -252,12 +287,12 @@ public class SpellCastManager {
 		AABB searchBox = caster.getBoundingBox().expandTowards(viewVec.scale(RANGE)).inflate(1.0);
 
 		EntityHitResult hit = ProjectileUtil.getEntityHitResult(caster.level(), caster, eyePos, endPos, searchBox,
-			entity -> entity != caster && entity.isAlive() && (entity instanceof Player || MonsterRegistry.monsterIdOf(entity) != null));
+			entity -> entity != caster && entity.isAlive() && (entity instanceof Player || TurnManager.isMonster(entity)));
 		return hit != null ? hit.getEntity() : null;
 	}
 
 	private static void castAttackSpell(ServerPlayer caster, String casterName, SpellRegistry.Spell spell, Entity target, int proficiency, int abilityMod) {
-		if (MonsterRegistry.monsterIdOf(target) != null) MonsterRegistry.faceTarget(target, caster);
+		if (TurnManager.isMonster(target)) MonsterRegistry.faceTarget(target, caster);
 		JsonObject casterSheet = SheetLoader.getServerSheet(caster.getStringUUID());
 		DiceManager.Advantage advantage = casterSheet != null ? CombatManager.consumeAdvantage(casterSheet) : DiceManager.Advantage.NORMAL;
 		int inspiration = BardInspirationManager.consumeAttackBonus(casterSheet);
@@ -280,10 +315,11 @@ public class SpellCastManager {
 		applyDamage(target, damageRoll.amount(), spell.damageType());
 		CombatFx.hit(target, attackRoll.criticalHit());
 		ChatFeedback.broadcast(caster, ChatFeedback.attackResult(casterName, targetName, spell.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()));
+		applySpellEffect(caster, spell, target);
 	}
 
 	private static void castSaveSpell(ServerPlayer caster, String casterName, SpellRegistry.Spell spell, Entity target, int proficiency, int abilityMod) {
-		if (MonsterRegistry.monsterIdOf(target) != null) MonsterRegistry.faceTarget(target, caster);
+		if (TurnManager.isMonster(target)) MonsterRegistry.faceTarget(target, caster);
 		int saveDc = 8 + proficiency + abilityMod;
 		String targetName = nameOf(target);
 
@@ -301,7 +337,21 @@ public class SpellCastManager {
 		ChatFeedback.broadcast(caster, ChatFeedback.saveResult(casterName, targetName, spell.name(), saveRoll.formatted(), saveDc, saved, outcomeLabel,
 			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null));
 
-		if (finalDamage > 0) applyDamage(target, finalDamage, spell.damageType());
+		if (finalDamage > 0) {
+			applyDamage(target, finalDamage, spell.damageType());
+			applySpellEffect(caster, spell, target);
+		}
+	}
+
+	//Mismo patrón que MonsterActionManager.applyEffectFromHit: si el hechizo trae appliesEffect (ver
+	//SpellRegistry.Spell) y de verdad conectó (llamado solo cuando ya hubo daño > 0), engancha el efecto
+	//de estado al objetivo. Si además era un hechizo de concentración, le suma el objetivo/efecto al
+	//registro de ConcentrationManager para que se revierta solo si el lanzador pierde la concentración.
+	private static void applySpellEffect(ServerPlayer caster, SpellRegistry.Spell spell, Entity target) {
+		if (!spell.appliesEffect()) return;
+		TurnManager.applyEffect(target, spell.effectName(), spell.effectDice(), spell.effectTurns());
+		ChatFeedback.broadcast(target, Component.translatable("chat.dndsheets.monster.effect_applied", nameOf(target), spell.effectName(), spell.effectTurns()).withStyle(ChatFormatting.DARK_PURPLE));
+		if (spell.concentration()) ConcentrationManager.attachEffect(caster, target.getId(), spell.effectName());
 	}
 
 	private static DiceManager.RollOutcome rollTargetSave(Entity target, String saveAbility) {
@@ -329,7 +379,15 @@ public class SpellCastManager {
 			return;
 		}
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(target);
-		if (block == null) return;
+		if (block == null) {
+			//Mob de compatibilidad (Enemy de otro mod o vanilla, ver TurnManager.isMonster): a diferencia de
+			//un monstruo propio (PG trackeado aparte en NBT, salud vanilla nunca se mueve, por eso el
+			//die()/setHealth(0) a mano de abajo), su PG real ES su salud vanilla — hurt() ya dispara solo el
+			//camino de muerte vanilla real (loot, XP, sonido) si lo mata, sin nada manual. Antes esto no
+			//hacía nada (block==null, sin más): el mensaje de impacto se mostraba pero el mob no recibía daño.
+			if (target instanceof LivingEntity living) living.hurt(target.damageSources().generic(), amount);
+			return;
+		}
 		int remainingHp = MonsterRegistry.currentHpOf(target) - amount;
 		if (remainingHp <= 0) {
 			TurnManager.markDefeated(target.getId());

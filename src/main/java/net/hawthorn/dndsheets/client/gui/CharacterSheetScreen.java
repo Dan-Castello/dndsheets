@@ -64,6 +64,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	EditBox hunger;         // Sincronizado en vivo desde entity.getFoodData().getFoodLevel()
 	Button grimoireButton;  // Abre el Grimorio (ver GrimoireScreen), sin tocar la hoja
 	Button presetsButton;   // Pide la lista de presets de clase al servidor (ver PresetScreen)
+	Button guideButton;     // Abre la guía del mod (ver GuideBook), páginas de DM incluidas si el cliente es op
 
 	EditBox hitDice;
 	EditBox hitDiceTypes;
@@ -157,6 +158,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private final int GRIMOIRE_OFFSET_Y = 228;
 	private final int PRESETS_OFFSET_X = 180;
 	private final int PRESETS_OFFSET_Y = 228;
+	private final int GUIDE_OFFSET_X = 270;
+	private final int GUIDE_OFFSET_Y = 228;
 	private final int BOTTOM_BUTTON_WIDTH = 80;
 	private final int BOTTOM_BUTTON_HEIGHT = 16;
 
@@ -535,9 +538,12 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		CharacterSheetSaveProcedure.execute(guistate);
 		Logger logger = LogManager.getLogger(DndsheetsMod.MODID);
 		logger.log(org.apache.logging.log4j.Level.getLevel("info"), "cat: " + category + " | index: " + index + " | subindex: " + subIndex);
-		DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetRollButtonMessage(category, index, subIndex, x, y, z));
-		SheetRollButtonMessage.handle(entity, category, index, subIndex, x, y, z);
-		
+		//Shift+clic en el dado = tirada privada (Sigilo, Investigación...): solo le llega a quien tira y a
+		//los operadores conectados, en vez de a todo el mundo cerca — ver RollAnnouncerProcedure.sendPrivately.
+		boolean isPrivate = hasShiftDown();
+		DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetRollButtonMessage(category, index, subIndex, x, y, z, isPrivate));
+		SheetRollButtonMessage.handle(entity, category, index, subIndex, x, y, z, isPrivate);
+
 	}
 
 	/**
@@ -1001,6 +1007,12 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		}).bounds(this.leftPos + PRESETS_OFFSET_X, this.topPos + PRESETS_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT).build();
 		guistate.put("button:presets", presetsButton);
 		this.addRenderableWidget(presetsButton);
+
+		boolean isDm = this.minecraft.player != null && this.minecraft.player.hasPermissions(2);
+		guideButton = Button.builder(Component.translatable("gui.dndsheets.guide.button"), b -> GuideBook.open(isDm))
+			.bounds(this.leftPos + GUIDE_OFFSET_X, this.topPos + GUIDE_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT).build();
+		guistate.put("button:guide", guideButton);
+		this.addRenderableWidget(guideButton);
 	}
 
 	private void initSkillPanel() {

@@ -164,6 +164,7 @@ public class DiceManager {
 				LOGGER.log(org.apache.logging.log4j.Level.getLevel("info"), "Roll rejected, dice count too large: " + expression);
 				return new RollOutcome(null, null);
 			}
+			expression = wrapDiceTermsInParens(expression);
 			DiceExpression ex = DiceExpression.parse(expression);
 			DiceResult result = ex.roll();
 			return new RollOutcome(result, prettyPrintWithNotation(result, expression));
@@ -194,6 +195,19 @@ public class DiceManager {
 			}
 		}
 		return false;
+	}
+
+	//Workaround de un bug de precedencia en la librería de dados de terceros (io.github.tfriedrichs:dicebot,
+	//ver build.gradle): su gramática solo deja que un grupo de dados con conteo explícito ("1d4") aparezca
+	//como el PRIMER término de toda la expresión — cualquiera que venga después de un +/-/*// no consigue
+	//parsear (la gramática le da menos precedencia que a la suma/resta) y la tirada entera falla en
+	//silencio, cae al catch de abajo con un resultado nulo (ver README, sección "Known Bugs": "1d20 + 1d4"
+	//no tiraba bien). Encerrar cada grupo de dados entre paréntesis lo esquiva sin tocar la librería: dentro
+	//de un paréntesis la precedencia se reinicia, así que "1d8 + 1d4" se manda como "1d8 + (1d4)" y parsea
+	//normal. No reordena nada — DICE_NOTATION_PATTERN sigue encontrando los grupos en el mismo orden en el
+	//texto, así que prettyPrintWithNotation (más abajo) no se ve afectado.
+	private static String wrapDiceTermsInParens(String expression) {
+		return DICE_NOTATION_PATTERN.matcher(expression).replaceAll("($0)");
 	}
 
 	//ponytail: asume que las tiradas de dado aparecen en el mismo orden, de izquierda a derecha, en el

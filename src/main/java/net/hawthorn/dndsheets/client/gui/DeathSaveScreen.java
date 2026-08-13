@@ -3,7 +3,9 @@ package net.hawthorn.dndsheets.client.gui;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
+import net.hawthorn.dndsheets.network.DeathSaveGiveUpMessage;
 import net.hawthorn.dndsheets.network.DeathSaveRollMessage;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -15,7 +17,7 @@ import net.minecraft.network.chat.Component;
  */
 public class DeathSaveScreen extends ModalDialogScreen {
 	private static final int WIDTH = 240;
-	private static final int HEIGHT = 90;
+	private static final int HEIGHT = 115;
 
 	protected DeathSaveScreen() {
 		super(Component.literal("Salvación de Muerte"), WIDTH, HEIGHT);
@@ -35,6 +37,12 @@ public class DeathSaveScreen extends ModalDialogScreen {
 	protected void init() {
 		addModalButton(20, 60, WIDTH - 40, 20, Component.literal("Tirar salvación de muerte"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new DeathSaveRollMessage())
+		);
+		//Dejarse morir: para quien no quiere seguir tirando (personaje que ya cumplió su arco, sesión que
+		//se tiene que cortar, etc.) — mata de verdad al instante, mismo camino que 3 fallos de salvación
+		//(ver DeathSaveManager.handleGiveUpRequest). Sin confirmación extra: un solo clic, igual que tirar.
+		addModalButton(20, 85, WIDTH - 40, 20, Component.literal("Dejarse morir").withStyle(ChatFormatting.DARK_RED), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new DeathSaveGiveUpMessage())
 		);
 	}
 

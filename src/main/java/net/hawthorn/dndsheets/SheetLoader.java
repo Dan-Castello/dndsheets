@@ -13,11 +13,13 @@ import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.hawthorn.dndsheets.api.event.SheetValidateEvent;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import java.io.IOException;
@@ -27,6 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import net.minecraftforge.fml.event.lifecycle.FMLDedicatedServerSetupEvent;
+import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
@@ -66,8 +70,11 @@ public class SheetLoader {
 		//This needs to do two things:
 		//1. When a player joins, it should check for their sheet and then give them a packet with it.
 		//2. If the player doesn't have one on the server, it'll make one with their UUID first and THEN give the packet.
-		Entity entity = event.getEntity();
-		if (!(entity instanceof Player)) return;
+		//En singleplayer/LAN este evento también dispara del lado del ClientLevel del propio cliente (el
+		//jugador ahí es un LocalPlayer, no un ServerPlayer) — sin este filtro, castear más abajo lanzaba
+		//ClassCastException cada vez que alguien se unía a un mundo integrado.
+		if (event.getLevel().isClientSide()) return;
+		if (!(event.getEntity() instanceof ServerPlayer entity)) return;
 
 		UUID uuid = entity.getUUID();
 		String uuidString = uuid.toString();
@@ -83,21 +90,32 @@ public class SheetLoader {
 			makeNew("New Sheet", uuidString);
 		};
 
-		applyClassHitPoints((Player) entity, SheetLoader.getServerSheet(uuidString));
+		applyClassHitPoints(entity, SheetLoader.getServerSheet(uuidString));
 
 		try {
-			Supplier<ServerPlayer> serverPlayer = () -> (ServerPlayer) entity;
 			byte[] data = SheetLoader.getServerSheet(uuidString).toString().getBytes();
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(serverPlayer), new SheetClientMessage(data));
-			DeathSaveManager.resendStateOnJoin((ServerPlayer) entity, SheetLoader.getServerSheet(uuidString));
+			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> entity), new SheetClientMessage(data));
+			DeathSaveManager.resendStateOnJoin(entity, SheetLoader.getServerSheet(uuidString));
 			//Reconectarse durante un combate le da al jugador un entityId nuevo; sin esto quedaba bloqueado
 			//sin poder actuar por el resto del encuentro (ver TurnManager.reconcilePlayerEntity).
-			TurnManager.reconcilePlayerEntity((ServerPlayer) entity);
+			TurnManager.reconcilePlayerEntity(entity);
 		}
 		catch(Exception e) {
 			DndsheetsMod.LOGGER.error("Fallo al enviar la hoja al jugador que se conectó.", e);
 		}
 
+	}
+
+	//Sin esto no había ninguna forma de enterarse de la tecla H (u P para operadores) salvo que alguien te
+	//lo dijera aparte — se manda una sola vez por login real (no en cada respawn/cambio de dimensión, que
+	//también dispara EntityJoinLevelEvent, por eso esto vive en PlayerLoggedInEvent y no ahí).
+	@SubscribeEvent
+	public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
+		if (!(event.getEntity() instanceof ServerPlayer player)) return;
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.welcome.sheet_key").withStyle(ChatFormatting.GRAY));
+		if (player.hasPermissions(2)) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.welcome.dm_key").withStyle(ChatFormatting.GRAY));
+		}
 	}
 
 	private static final UUID CLASS_HP_MODIFIER_ID = UUID.fromString("6f2f8f0a-3b1a-4c8e-9d2a-1a2b3c4d5e6f");
@@ -149,6 +167,47 @@ public class SheetLoader {
 	public static void serverLoad(FMLDedicatedServerSetupEvent event) {
 		//This sets up the SheetLoader on the server side via loading all the sheets saved there.
 		load();
+	}
+
+	//Guardado periódico + al apagar el servidor: saveServer (el ÚNICO punto de todo el mod que escribe una
+	//hoja a disco) antes solo se llamaba al crear una hoja nueva o cuando el propio jugador reabría su
+	//pantalla de hoja de personaje (ver network.SheetServerMessage) — cualquier otro cambio (gastar un
+	//espacio de conjuro, un descanso, /dndsheet setslots, aplicar un preset, recursos de clase...) solo
+	//tocaba la copia en memoria y se perdía en silencio en cuanto el servidor se reiniciaba, no solo los
+	//espacios de conjuro. Guardar TODAS las hojas periódicamente y al apagar cierra el hueco de raíz, sin
+	//tener que acordarse de llamar a saveServer en cada uno de los ~10 sitios que cambian una hoja.
+	private static final int AUTOSAVE_INTERVAL_TICKS = 20 * 60 * 5; //5 minutos.
+
+	//Instancia, no static: ServerStartingEvent/ServerStoppingEvent son eventos del bus FORGE, no del bus
+	//MOD al que apunta la anotación @Mod.EventBusSubscriber de esta clase (de ahí que serverLoad/init/
+	//clientLoad de arriba sí puedan ser static — son eventos de ciclo de vida del MOD). Se enganchan igual
+	//que clientJoinedServer, vía el mismo MinecraftForge.EVENT_BUS.register(new SheetLoader()) que init()
+	//ya hace más abajo — sin esto, Forge rechaza el método entero al cargar el mod (IllegalArgumentException,
+	//"takes an argument that is not a subtype of ... IModBusEvent").
+	@SubscribeEvent
+	public void onServerStarting(ServerStartingEvent event) {
+		scheduleAutosave();
+	}
+
+	private static void scheduleAutosave() {
+		DndsheetsMod.queueServerWork(AUTOSAVE_INTERVAL_TICKS, () -> {
+			saveAll();
+			scheduleAutosave();
+		});
+	}
+
+	//Último respaldo: si el reinicio es limpio (/stop, reinicio de la instancia), esto se dispara ANTES de
+	//que el proceso muera, así que ningún cambio hecho en los últimos minutos (menos que el intervalo de
+	//arriba) se pierde por mala suerte de temporización.
+	@SubscribeEvent
+	public void onServerStopping(ServerStoppingEvent event) {
+		saveAll();
+	}
+
+	private static void saveAll() {
+		for (Map.Entry<String, JsonObject> entry : sheets.entrySet()) {
+			saveServer(entry.getValue(), entry.getKey());
+		}
 	}
 
 	public static JsonObject getClientSheet() {

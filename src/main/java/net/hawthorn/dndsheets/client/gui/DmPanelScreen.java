@@ -44,7 +44,7 @@ public class DmPanelScreen extends Screen {
 				uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage(uuid))),
 		};
 
-		int totalHeight = labels.length * (BUTTON_HEIGHT + SPACING);
+		int totalHeight = (labels.length + 1) * (BUTTON_HEIGHT + SPACING);
 		int startY = (this.height - totalHeight) / 2;
 
 		for (int i = 0; i < labels.length; i++) {
@@ -52,6 +52,9 @@ public class DmPanelScreen extends Screen {
 			this.addRenderableWidget(Button.builder(Component.literal(labels[i]), button -> action.run())
 				.bounds((this.width - BUTTON_WIDTH) / 2, startY + i * (BUTTON_HEIGHT + SPACING), BUTTON_WIDTH, BUTTON_HEIGHT).build());
 		}
+
+		this.addRenderableWidget(Button.builder(Component.translatable("gui.dndsheets.guide.button"), button -> GuideBook.open(true))
+			.bounds((this.width - BUTTON_WIDTH) / 2, startY + labels.length * (BUTTON_HEIGHT + SPACING), BUTTON_WIDTH, BUTTON_HEIGHT).build());
 	}
 
 	@Override

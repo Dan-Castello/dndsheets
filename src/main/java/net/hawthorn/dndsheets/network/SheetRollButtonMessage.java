@@ -9,7 +9,7 @@ import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.procedures.RollAnnouncerProcedure;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,14 +18,16 @@ import java.util.function.Supplier;
 
 public class SheetRollButtonMessage {
 	int category, index, subIndex, x, y, z;
+	boolean isPrivate;
 
-	public SheetRollButtonMessage(int category, int index, int subIndex, int x, int y, int z) {
+	public SheetRollButtonMessage(int category, int index, int subIndex, int x, int y, int z, boolean isPrivate) {
 		this.category = category;
 		this.index = index;
 		this.subIndex = subIndex;
 		this.x = x;
 		this.y = y;
 		this.z = z;
+		this.isPrivate = isPrivate;
 	}
 
 	public SheetRollButtonMessage(FriendlyByteBuf buffer) {
@@ -35,6 +37,7 @@ public class SheetRollButtonMessage {
 		this.x = buffer.readInt();
 		this.y = buffer.readInt();
 		this.z = buffer.readInt();
+		this.isPrivate = buffer.readBoolean();
 	}
 
 	public static void buffer(SheetRollButtonMessage message, FriendlyByteBuf buffer) {
@@ -44,15 +47,16 @@ public class SheetRollButtonMessage {
 		buffer.writeInt(message.x);
 		buffer.writeInt(message.y);
 		buffer.writeInt(message.z);
+		buffer.writeBoolean(message.isPrivate);
 	}
 
 	public static void handler(SheetRollButtonMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
 		NetworkUtil.handleOnServer(context, () ->
-			handle(context.getSender(), message.category, message.index, message.subIndex, message.x, message.y, message.z));
+			handle(context.getSender(), message.category, message.index, message.subIndex, message.x, message.y, message.z, message.isPrivate));
 	}
 
-	public static void handle(Player entity, int category, int index, int subIndex, int x, int y, int z) {
+	public static void handle(Player entity, int category, int index, int subIndex, int x, int y, int z, boolean isPrivate) {
 		Level world = entity.level();
 		String uuid = entity.getStringUUID();
 		// security measure to prevent arbitrary chunk generation
@@ -66,7 +70,7 @@ public class SheetRollButtonMessage {
 			return;
 		}
 		try {
-			RollAnnouncerProcedure.execute(world, x, y, z, uuid, category, index, subIndex, entity);
+			RollAnnouncerProcedure.execute(world, x, y, z, uuid, category, index, subIndex, entity, isPrivate);
 		}
 		catch(Exception e) {
 			logger.log(org.apache.logging.log4j.Level.getLevel("severe"), e);

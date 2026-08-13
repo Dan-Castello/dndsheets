@@ -76,6 +76,7 @@ public class DndsheetsMod {
 		addNetworkMessage(CharacterOptionsRequestMessage.class, CharacterOptionsRequestMessage::buffer, CharacterOptionsRequestMessage::new, CharacterOptionsRequestMessage::handler);
 		addNetworkMessage(CharacterSheetOpenMessage.class, CharacterSheetOpenMessage::buffer, CharacterSheetOpenMessage::new, CharacterSheetOpenMessage::handler);
 		addNetworkMessage(ClearCustomAttacksMessage.class, ClearCustomAttacksMessage::buffer, ClearCustomAttacksMessage::new, ClearCustomAttacksMessage::handler);
+		addNetworkMessage(DeathSaveGiveUpMessage.class, DeathSaveGiveUpMessage::buffer, DeathSaveGiveUpMessage::new, DeathSaveGiveUpMessage::handler);
 		addNetworkMessage(DeathSaveRollMessage.class, DeathSaveRollMessage::buffer, DeathSaveRollMessage::new, DeathSaveRollMessage::handler);
 		addNetworkMessage(MonsterActionChooseMessage.class, MonsterActionChooseMessage::buffer, MonsterActionChooseMessage::new, MonsterActionChooseMessage::handler);
 		addNetworkMessage(MonsterActionOpenMessage.class, MonsterActionOpenMessage::buffer, MonsterActionOpenMessage::new, MonsterActionOpenMessage::handler);

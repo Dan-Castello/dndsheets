@@ -1,0 +1,134 @@
+[
+  {
+    "id": "dndsheets:goblin", "name": "Goblin", "baseEntity": "minecraft:zombie",
+    "ac": 15, "hp": 7,
+    "abilities": { "str": 8, "dex": 14, "con": 10, "int": 10, "wis": 8, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Cimitarra", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:orc", "name": "Orco", "baseEntity": "minecraft:zombie",
+    "ac": 13, "hp": 15,
+    "abilities": { "str": 16, "dex": 12, "con": 16, "int": 7, "wis": 11, "cha": 10 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Hacha Grande", "toHitAbility": "str", "dice": "1d12", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:fire_mage", "name": "Mago de Fuego", "baseEntity": "minecraft:skeleton",
+    "ac": 12, "hp": 20,
+    "abilities": { "str": 8, "dex": 12, "con": 12, "int": 16, "wis": 12, "cha": 10 },
+    "proficiencyBonus": 3,
+    "attacks": [
+      { "name": "Bastón", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+    ],
+    "abilities_special": [
+      { "name": "Bola de Fuego", "saveAbility": "dex", "saveDc": 13, "dice": "8d6", "halfOnSave": true, "damageType": "fuego" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_spider", "name": "Araña Gigante", "baseEntity": "minecraft:spider",
+    "ac": 14, "hp": 26,
+    "abilities": { "str": 14, "dex": 16, "con": 12, "int": 2, "wis": 11, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      {
+        "name": "Mordisco", "toHitAbility": "dex", "dice": "1d8", "damageAbility": "dex", "damageType": "perforante",
+        "appliesEffect": { "name": "veneno", "dice": "2d8", "turns": 3 }
+      }
+    ]
+  },
+  {
+    "id": "dndsheets:kobold", "name": "Kobold", "baseEntity": "minecraft:zombie",
+    "ac": 12, "hp": 5,
+    "abilities": { "str": 7, "dex": 15, "con": 9, "int": 8, "wis": 7, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Daga", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:ogre", "name": "Ogro", "baseEntity": "minecraft:zombie",
+    "ac": 11, "hp": 59,
+    "abilities": { "str": 19, "dex": 8, "con": 16, "int": 5, "wis": 7, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Garrote Grande", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:troll", "name": "Trol", "baseEntity": "minecraft:zombie",
+    "ac": 15, "hp": 84,
+    "abilities": { "str": 18, "dex": 13, "con": 20, "int": 7, "wis": 9, "cha": 7 },
+    "proficiencyBonus": 3,
+    "attacks": [
+      { "name": "Garra", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "cortante" },
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:zombie", "name": "Zombi", "baseEntity": "minecraft:zombie",
+    "ac": 8, "hp": 22,
+    "abilities": { "str": 13, "dex": 6, "con": 16, "int": 3, "wis": 6, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Golpe", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:skeleton", "name": "Esqueleto", "baseEntity": "minecraft:skeleton",
+    "ac": 13, "hp": 13,
+    "abilities": { "str": 10, "dex": 14, "con": 15, "int": 6, "wis": 8, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Espada Corta", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:bandit", "name": "Bandido", "baseEntity": "minecraft:zombie",
+    "ac": 12, "hp": 11,
+    "abilities": { "str": 11, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 10 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Cimitarra", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:owlbear", "name": "Osobúho", "baseEntity": "minecraft:zombie",
+    "ac": 13, "hp": 59,
+    "abilities": { "str": 20, "dex": 12, "con": 17, "int": 3, "wis": 12, "cha": 7 },
+    "proficiencyBonus": 3,
+    "attacks": [
+      { "name": "Garra", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "cortante" },
+      { "name": "Pico", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:wight", "name": "Espectro", "baseEntity": "minecraft:zombie",
+    "ac": 14, "hp": 45,
+    "abilities": { "str": 15, "dex": 14, "con": 16, "int": 10, "wis": 13, "cha": 15 },
+    "proficiencyBonus": 3,
+    "attacks": [
+      { "name": "Espada Larga", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "cortante" }
+    ],
+    "abilities_special": [
+      { "name": "Toque que Consume Vida", "saveAbility": "con", "saveDc": 13, "dice": "3d6", "halfOnSave": false, "damageType": "necrótico" }
+    ]
+  },
+  {
+    "id": "dndsheets:young_red_dragon", "name": "Dragón Rojo Joven", "baseEntity": "minecraft:zombie",
+    "ac": 18, "hp": 178,
+    "abilities": { "str": 23, "dex": 10, "con": 21, "int": 14, "wis": 11, "cha": 19 },
+    "proficiencyBonus": 4,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garra", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ],
+    "abilities_special": [
+      { "name": "Aliento de Fuego", "saveAbility": "dex", "saveDc": 17, "dice": "16d6", "halfOnSave": true, "damageType": "fuego" }
+    ]
+  }
+]

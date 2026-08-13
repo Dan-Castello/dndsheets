@@ -47,10 +47,14 @@ public class MonsterActionScreen extends Screen {
 
 		for (int i = 0; i < actionNames.size(); i++) {
 			int actionIndex = i;
-			Button button = Button.builder(Component.literal(actionNames.get(i)), b -> {
-				DndsheetsMod.PACKET_HANDLER.sendToServer(new MonsterActionChooseMessage(entityId, actionIndex));
-				this.onClose();
-			}).bounds(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT).build();
+			//Elegir la acción abre el selector de jugador (mismo componente que ya usa el Panel de DM para
+			//"a quién") antes de mandar el mensaje — antes esto siempre resolvía contra el jugador más
+			//cercano al monstruo, sin dejar elegir a quién de verdad apuntar.
+			Button button = Button.builder(Component.literal(actionNames.get(i)), b ->
+				PlayerPickerScreen.open("Elige a quién apuntar", uuid ->
+					DndsheetsMod.PACKET_HANDLER.sendToServer(new MonsterActionChooseMessage(entityId, actionIndex, uuid))
+				)
+			).bounds(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT).build();
 			this.addWidget(button);
 			list.addRow(button);
 		}

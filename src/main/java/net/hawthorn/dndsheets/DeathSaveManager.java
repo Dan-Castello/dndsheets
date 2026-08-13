@@ -138,17 +138,43 @@ public class DeathSaveManager {
 		if (successes >= 3) {
 			stabilize(player, sheet, "¡Estabilizado!");
 		} else if (failures >= 3) {
-			allowRealDeath.add(player.getUUID());
-			sendSheetUpdate(player, sheet);
-			player.hurt(player.damageSources().generic(), Float.MAX_VALUE);
-			//player.hurt() ya disparó (y limpió) la marca si de verdad murió. Si algo interceptó la muerte
-			//antes de LivingDeathEvent (un tótem de inmortalidad, absorción total...), la marca se habría
-			//quedado pegada para siempre y la PRÓXIMA muerte real de este jugador, por cualquier causa no
-			//relacionada, se habría saltado el sistema de salvaciones en silencio. No-op si ya se limpió.
-			allowRealDeath.remove(player.getUUID());
+			killForReal(player, sheet);
 		} else {
 			sendSheetUpdate(player, sheet);
 		}
+	}
+
+	/**
+	 * <p>Llamado al recibir un {@code DeathSaveGiveUpMessage} del cliente caído: se rinde y muere de
+	 * verdad ahora mismo, sin más tiradas — mismo camino de muerte real que 3 fallos de salvación (ver
+	 * killForReal). Sin gating de turno: rendirse no es una acción de 5e, así que no tiene sentido
+	 * obligar a esperar el propio turno para hacerlo.</p>
+	 */
+	public static void handleGiveUpRequest(ServerPlayer player) {
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		if (sheet == null || !isDowned(sheet)) return;
+
+		ChatFeedback.broadcast(player, ChatFeedback.givesUp(characterName(sheet, player)));
+		killForReal(player, sheet);
+	}
+
+	//Muerte real de verdad (3 fallos de salvación, o rendirse a mano): allowRealDeath es la marca que le
+	//dice a onLivingDeath/onLivingHurtWhileDowned que ESTA muerte no se cancele como cualquier otro daño
+	//mientras está caído.
+	private static void killForReal(ServerPlayer player, JsonObject sheet) {
+		allowRealDeath.add(player.getUUID());
+		sendSheetUpdate(player, sheet);
+		player.hurt(player.damageSources().generic(), Float.MAX_VALUE);
+		//player.hurt() ya disparó (y limpió) la marca si de verdad murió. Si algo interceptó la muerte
+		//antes de LivingDeathEvent (un tótem de inmortalidad, absorción total...), la marca se habría
+		//quedado pegada para siempre y la PRÓXIMA muerte real de este jugador, por cualquier causa no
+		//relacionada, se habría saltado el sistema de salvaciones en silencio. No-op si ya se limpió.
+		allowRealDeath.remove(player.getUUID());
+
+		//Si esta era la última persona con vida en un encuentro activo, termina el modo turnos ya mismo —
+		//sin esto, cualquier mob de compatibilidad quedaba congelado (NoAI) para siempre, sin nadie con
+		//permisos para correr /dndturns end en una partida sin DM en directo.
+		if (player.level() instanceof net.minecraft.server.level.ServerLevel level) TurnManager.onPlayerRealDeath(level, player);
 	}
 
 	private static void goDown(ServerPlayer player, JsonObject sheet) {

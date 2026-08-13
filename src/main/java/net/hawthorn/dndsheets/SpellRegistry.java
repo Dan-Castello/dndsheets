@@ -28,8 +28,15 @@ public class SpellRegistry {
 	public record Spell(
 		String id, String name, int level, String mode,
 		String castingAbility, String saveAbility, String dice, boolean halfOnSave, String damageType,
-		boolean concentration, int aoeRadius
-	) {}
+		boolean concentration, int aoeRadius,
+		String effectName, String effectDice, int effectTurns
+	) {
+		//Mismo patrón que MonsterRegistry.MonsterAttack/MonsterSpell: un hechizo de concentración
+		//(Guardianes Espirituales, Rayo de Luna...) puede dejar un efecto de estado corriendo mientras dura
+		//la concentración (ver ConcentrationManager/TurnManager.applyEffect), que se revierte solo si se
+		//pierde la concentración — antes eso no existía, "perder concentración" solo tiraba el dado.
+		public boolean appliesEffect() { return effectName != null; }
+	}
 
 	private static final NamedRegistry<Spell> REGISTRY = new NamedRegistry<>("hechizo", Spell::id);
 
@@ -90,7 +97,15 @@ public class SpellRegistry {
 		//sin límite superior — un vector de lag real, no solo un valor raro.
 		int aoeRadius = json.has("aoeRadius") ? Math.max(0, Math.min(json.get("aoeRadius").getAsInt(), 40)) : 0;
 
-		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius);
+		//Mismo formato anidado que MonsterRegistry.parse/parseAttack usan para sus propios monstruos:
+		//"appliesEffect": {"name": "...", "dice": "...", "turns": N}.
+		JsonObject effect = json.has("appliesEffect") ? json.getAsJsonObject("appliesEffect") : null;
+		String effectName = effect != null ? effect.get("name").getAsString() : null;
+		String effectDice = effect != null ? effect.get("dice").getAsString() : null;
+		int effectTurns = effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0;
+
+		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius,
+			effectName, effectDice, effectTurns);
 	}
 
 	//--- Báculo de lanzado rápido: cualquier ítem etiquetado {dndsheets:{quickSpell:"id"}} (mismo patrón que las armas personalizadas) ---

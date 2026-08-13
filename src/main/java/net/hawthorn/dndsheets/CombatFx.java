@@ -16,6 +16,7 @@ import net.minecraft.sounds.SoundSource;
 import net.hawthorn.dndsheets.init.DndsheetsModSounds;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * <p>Efectos nativos de Minecraft (partículas, sonidos, texto en pantalla) para acompañar al
@@ -100,6 +101,23 @@ public class CombatFx {
 	public static void activate(Entity entity) {
 		particles(entity, ParticleTypes.END_ROD, 12, 0.4);
 		sound(entity, SoundEvents.EXPERIENCE_ORB_PICKUP, 0.8f, 1.2f);
+	}
+
+	//Anillo de partículas en el radio real de un hechizo de área (Bola de Fuego, Guardianes Espirituales...)
+	//además del estallido en cada objetivo que ya hace spellImpact — para que se vea el ALCANCE de la
+	//explosión, no solo a quién golpeó (antes solo se sabía leyendo el chat, después del hecho). También
+	//lo usa SpellCastManager.previewAoe (agachado + clic con el báculo) para enseñar el radio ANTES de
+	//comprometerse al lanzado normal, sin rehacer el clic único en un flujo de apuntar-y-confirmar.
+	//ponytail: un anillo horizontal en el punto de impacto, no una esfera 3D.
+	public static void aoeRing(Level world, Vec3 center, double radius) {
+		if (!(world instanceof ServerLevel level) || radius <= 0) return;
+		int samples = Math.max(12, (int) (radius * 6));
+		for (int i = 0; i < samples; i++) {
+			double angle = 2 * Math.PI * i / samples;
+			double x = center.x + radius * Math.cos(angle);
+			double z = center.z + radius * Math.sin(angle);
+			level.sendParticles(ParticleTypes.END_ROD, x, center.y + 0.1, z, 1, 0, 0, 0, 0);
+		}
 	}
 
 	public static void actionBar(ServerPlayer player, Component message) {
