@@ -4,12 +4,9 @@ import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.CharacterOptionsRegistry;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
-import net.hawthorn.dndsheets.client.gui.components.ButtonListWidget;
 import net.hawthorn.dndsheets.network.SheetServerMessage;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
@@ -33,15 +30,10 @@ import java.util.List;
  * SheetLoader.getClientSheet()} (ya actualizada aquí) sin perder el resto de campos gracias al guardado
  * completo que {@code CharacterSheetScreen.requestOptionPicker} hace antes de abrir este selector.</p>
  */
-public class CharacterOptionListScreen extends Screen {
-	private static final int BUTTON_WIDTH = 200;
-	private static final int BUTTON_HEIGHT = 20;
-	private static final int SPACING = 4;
-
+public class CharacterOptionListScreen extends ListPickerScreen {
 	private final CharacterSheetScreen returnTo;
 	private final String category;
 	private final List<String> options;
-	private ButtonListWidget list;
 
 	private CharacterOptionListScreen(CharacterSheetScreen returnTo, String category, List<String> options) {
 		super(Component.literal(titleFor(category)));
@@ -71,54 +63,41 @@ public class CharacterOptionListScreen extends Screen {
 		};
 	}
 
+	//Deja hueco fijo bajo la lista para el botón "Cancelar", que no se desplaza con el resto de opciones.
+	@Override
+	protected int listHeight() {
+		return super.listHeight() - BUTTON_HEIGHT - SPACING;
+	}
+
 	@Override
 	protected void init() {
-		list = new ButtonListWidget((this.width - BUTTON_WIDTH) / 2, 30, BUTTON_WIDTH, this.height - 44 - BUTTON_HEIGHT - SPACING, BUTTON_HEIGHT + SPACING);
+		super.init();
+		this.addRenderableWidget(Button.builder(Component.literal("Cancelar"), b -> this.onClose())
+			.bounds((this.width - buttonWidth()) / 2, this.height - BUTTON_HEIGHT - 8, buttonWidth(), BUTTON_HEIGHT).build());
+	}
+
+	@Override
+	protected void buildRows() {
 		for (String option : options) {
-			Button button = Button.builder(Component.literal(option), b -> {
+			addRow(Component.literal(option), b -> {
 				JsonObject sheet = SheetLoader.getClientSheet();
 				if (sheet != null) {
 					sheet.addProperty(sheetFieldFor(category), option);
 					DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetServerMessage(sheet.toString().getBytes()));
 				}
 				this.onClose();
-			}).bounds(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT).build();
-			this.addWidget(button);
-			list.addRow(button);
+			});
 		}
-		this.addRenderableWidget(list);
+	}
 
-		this.addRenderableWidget(Button.builder(Component.literal("Cancelar"), b -> this.onClose())
-			.bounds((this.width - BUTTON_WIDTH) / 2, this.height - BUTTON_HEIGHT - 8, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+	@Override
+	protected Component emptyMessage() {
+		return options.isEmpty() ? Component.literal("No hay opciones cargadas (pide al DM /dndoptions load).") : null;
 	}
 
 	@Override
 	public void onClose() {
 		if (returnTo != null) Minecraft.getInstance().setScreen(returnTo);
 		else super.onClose();
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
-	}
-
-	//Ver PresetScreen.mouseScrolled: sin esto, el scroll solo funciona pasando el mouse por huecos sin
-	//botón, se detiene en cuanto queda sobre una fila.
-	@Override
-	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-		return list.mouseScrolled(mouseX, mouseY, delta) || super.mouseScrolled(mouseX, mouseY, delta);
-	}
-
-	@Override
-	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-		this.renderBackground(guiGraphics);
-		guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 16, 0xFFFFFF);
-
-		if (options.isEmpty()) {
-			guiGraphics.drawCenteredString(this.font, Component.literal("No hay opciones cargadas (pide al DM /dndoptions load)."), this.width / 2, this.height / 2, 0x888888);
-		}
-
-		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 	}
 }

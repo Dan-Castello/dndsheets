@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -22,6 +23,14 @@ public abstract class ModalDialogScreen extends Screen {
 
 	protected int dialogTop() {
 		return (this.height - dialogHeight) / 2;
+	}
+
+	//Primera línea de render() en cada subclase, en vez de un renderBackground() suelto: dibuja el fondo
+	//borroso vanilla MÁS un panel con borde detrás de la caja del diálogo (ver GuiStyle), para que no sea
+	//solo texto y botones flotando encima del mundo. Antes solo DeathSaveScreen dibujaba un panel propio.
+	protected final void renderPanel(GuiGraphics guiGraphics) {
+		this.renderBackground(guiGraphics);
+		GuiStyle.panel(guiGraphics, dialogLeft(), dialogTop(), dialogLeft() + dialogWidth, dialogTop() + dialogHeight);
 	}
 
 	//x/y relativos a la esquina superior izquierda del diálogo, igual que las coordenadas que ya usaba

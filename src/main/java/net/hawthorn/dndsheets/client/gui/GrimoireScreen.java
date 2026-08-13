@@ -4,11 +4,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
-import net.hawthorn.dndsheets.client.gui.components.ButtonListWidget;
 import net.hawthorn.dndsheets.network.SpellCastMessage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -24,44 +22,40 @@ import java.util.List;
  * que en un servidor dedicado de verdad (cliente y servidor son procesos distintos) el cliente nunca
  * tendría su propia copia y todo se vería como "desconocido".</p>
  */
-public class GrimoireScreen extends Screen {
-	private static final int WIDTH = 220;
-	private static final int BUTTON_HEIGHT = 20;
-	private static final int SPACING = 4;
-	private static final int LIST_TOP = 40;
+public class GrimoireScreen extends ListPickerScreen {
+	private static final int SUBTITLE_Y = 30;
 
 	private record KnownSpell(String id, String label) {}
 
 	private KnownSpell selected;
 	private Button castButton;
-	private ButtonListWidget list;
 
 	protected GrimoireScreen() {
 		super(Component.literal("Grimorio"));
 	}
 
 	@Override
-	protected void init() {
-		List<KnownSpell> knownSpells = knownSpells();
-		int left = (this.width - WIDTH) / 2;
+	protected int buttonWidth() {
+		return 220;
+	}
 
-		//Botón de lanzar fijo cerca del final de la pantalla, y la lista de hechizos con scroll ocupando
-		//el resto: antes la lista entera (más el botón de lanzar) se centraba a mano sin ningún tope, así
-		//que un grimorio con muchos hechizos aprendidos empujaba botones —incluido el de lanzar— fuera de
-		//pantalla sin forma de alcanzarlos (ver AUDIT_UX.md).
-		int listBottom = this.height - (BUTTON_HEIGHT + SPACING * 2);
-		int listHeight = Math.max(BUTTON_HEIGHT, listBottom - LIST_TOP);
-		list = new ButtonListWidget(left, LIST_TOP, WIDTH, listHeight, BUTTON_HEIGHT + SPACING);
-		for (KnownSpell spell : knownSpells) {
-			Button button = Button.builder(Component.literal(spell.label()), b -> {
-				selected = spell;
-				castButton.active = true;
-				castButton.setMessage(Component.literal("Lanzar: " + spell.label()));
-			}).bounds(0, 0, WIDTH, BUTTON_HEIGHT).build();
-			this.addWidget(button);
-			list.addRow(button);
-		}
-		this.addRenderableWidget(list);
+	@Override
+	protected int listTop() {
+		return SUBTITLE_Y + 14;
+	}
+
+	//Deja hueco fijo bajo la lista para el botón de lanzar, que no se desplaza con los hechizos.
+	@Override
+	protected int listHeight() {
+		return super.listHeight() - BUTTON_HEIGHT - SPACING;
+	}
+
+	@Override
+	protected void init() {
+		super.init();
+
+		int left = (this.width - buttonWidth()) / 2;
+		int castY = listTop() + listHeight() + SPACING;
 
 		//Lanzar ya no pasa por un solo clic sobre el hechizo: un jugador que clica para leer qué hay en la
 		//lista no quiere gastar un espacio de conjuro real por curiosidad (ver AUDIT_UX.md, Jugador #2).
@@ -69,38 +63,34 @@ public class GrimoireScreen extends Screen {
 		castButton = this.addRenderableWidget(Button.builder(Component.literal("Elige un hechizo para lanzarlo"), button -> {
 			if (selected == null) return;
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new SpellCastMessage(selected.id()));
-		}).bounds(left, LIST_TOP + listHeight + SPACING, WIDTH, BUTTON_HEIGHT).build());
+		}).bounds(left, castY, buttonWidth(), BUTTON_HEIGHT).build());
 		castButton.active = false;
 	}
 
 	@Override
-	public boolean isPauseScreen() {
-		return false;
+	protected void buildRows() {
+		for (KnownSpell spell : knownSpells()) {
+			addRow(Component.literal(spell.label()), b -> {
+				selected = spell;
+				castButton.active = true;
+				castButton.setMessage(Component.literal("Lanzar: " + spell.label()));
+			});
+		}
 	}
 
-	//Ver PresetScreen.mouseScrolled: sin esto, el scroll solo funciona pasando el mouse por huecos sin
-	//botón, se detiene en cuanto queda sobre una fila.
 	@Override
-	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-		return list.mouseScrolled(mouseX, mouseY, delta) || super.mouseScrolled(mouseX, mouseY, delta);
+	protected Component emptyMessage() {
+		return knownSpells().isEmpty() ? Component.literal("No conoces ningún hechizo. Pide al DM /dndspells learn.") : null;
 	}
 
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-		this.renderBackground(guiGraphics);
+		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 
 		JsonObject sheet = SheetLoader.getClientSheet();
 		int current = sheet != null && sheet.has("spellSlotsCurrent") ? sheet.get("spellSlotsCurrent").getAsInt() : 0;
 		int max = sheet != null && sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
-
-		guiGraphics.drawCenteredString(this.font, Component.literal("Grimorio"), this.width / 2, 12, 0xFFFFFF);
-		guiGraphics.drawCenteredString(this.font, Component.literal("Espacios de conjuro: " + current + "/" + max), this.width / 2, 26, 0xAAAAAA);
-
-		if (knownSpells().isEmpty()) {
-			guiGraphics.drawCenteredString(this.font, Component.literal("No conoces ningún hechizo. Pide al DM /dndspells learn."), this.width / 2, this.height / 2, 0x888888);
-		}
-
-		super.render(guiGraphics, mouseX, mouseY, partialTicks);
+		guiGraphics.drawCenteredString(this.font, Component.literal("Espacios de conjuro: " + current + "/" + max), this.width / 2, SUBTITLE_Y, GuiStyle.SUBTITLE_COLOR);
 	}
 
 	private static List<KnownSpell> knownSpells() {

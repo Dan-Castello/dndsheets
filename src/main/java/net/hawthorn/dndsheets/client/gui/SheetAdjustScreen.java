@@ -81,6 +81,8 @@ public class SheetAdjustScreen extends Screen {
 	private EditBox slotsMaxBox;
 	private EditBox slotsCurrentBox;
 	private EditBox levelBox;
+	private int y0;
+	private int formBottom;
 	private int advantageIndex = 0;
 	private int damageTypeIndex = 0;
 	private int affinityIndex = 0;
@@ -109,7 +111,8 @@ public class SheetAdjustScreen extends Screen {
 	@Override
 	protected void init() {
 		int centerX = this.width / 2;
-		int y = this.height / 2 - ROW_HEIGHT * 6;
+		y0 = this.height / 2 - ROW_HEIGHT * 6;
+		int y = y0;
 
 		//--- Oro ---
 		goldAmountBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Cantidad"));
@@ -204,6 +207,8 @@ public class SheetAdjustScreen extends Screen {
 
 		this.addRenderableWidget(Button.builder(Component.literal("Cerrar"), button -> this.onClose())
 			.bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT).build());
+
+		formBottom = y + FIELD_HEIGHT + 10;
 	}
 
 	private static Component cycleLabel(String prefix, String value) {
@@ -226,12 +231,14 @@ public class SheetAdjustScreen extends Screen {
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics);
+		int centerX = this.width / 2;
+		GuiStyle.panel(guiGraphics, centerX - WIDE_WIDTH / 2 - 14, y0 - 40, centerX + WIDE_WIDTH / 2 + 14, formBottom);
 		guiGraphics.drawCenteredString(this.font, Component.literal("Ajustes de " + targetName + " (oro actual: " + gold + ")"),
-			this.width / 2, this.height / 2 - ROW_HEIGHT * 6 - 26, 0xFFFFFF);
+			centerX, y0 - 26, GuiStyle.TITLE_COLOR);
 		//Solo lectura: PG/CA reales del jugador, para no tener que pedirle que abra su propia hoja en
 		//pleno combate — ver AUDIT_UX.md, DM #1.
 		guiGraphics.drawCenteredString(this.font, Component.literal("PG " + hp + "/" + maxHp + " · CA " + ac),
-			this.width / 2, this.height / 2 - ROW_HEIGHT * 6 - 16, 0xFFAA00);
+			centerX, y0 - 16, 0xFFAA00);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		goldAmountBox.render(guiGraphics, mouseX, mouseY, partialTicks);
 		slotsMaxBox.render(guiGraphics, mouseX, mouseY, partialTicks);

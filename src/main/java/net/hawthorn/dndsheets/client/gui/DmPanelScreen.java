@@ -5,8 +5,6 @@ import net.hawthorn.dndsheets.network.PresetListRequestMessage;
 import net.hawthorn.dndsheets.network.SheetSummaryRequestMessage;
 import net.hawthorn.dndsheets.network.TraitListRequestMessage;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -17,11 +15,7 @@ import net.minecraft.network.chat.Component;
  * menú (clic derecho con la Vara de DM, ver {@link MonsterActionScreen}), porque ese ya necesita el
  * monstruo señalado y no tiene sentido pedirlo aparte aquí.</p>
  */
-public class DmPanelScreen extends Screen {
-	private static final int BUTTON_WIDTH = 200;
-	private static final int BUTTON_HEIGHT = 20;
-	private static final int SPACING = 4;
-
+public class DmPanelScreen extends ListPickerScreen {
 	private DmPanelScreen() {
 		super(Component.literal("Panel de DM"));
 	}
@@ -31,34 +25,15 @@ public class DmPanelScreen extends Screen {
 	}
 
 	@Override
-	protected void init() {
-		String[] labels = {"Modo turnos", "Invocar NPC genérico", "Conceder rasgo", "Ajustes de hoja", "Aplicar preset a jugador"};
-		Runnable[] actions = {
-			TurnControlScreen::open,
-			SpawnGenericScreen::open,
-			() -> PlayerPickerScreen.open("Elige a quién conceder el rasgo",
-				uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new TraitListRequestMessage(uuid))),
-			() -> PlayerPickerScreen.open("Elige a quién ajustar la hoja",
-				uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetSummaryRequestMessage(uuid))),
-			() -> PlayerPickerScreen.open("Elige a quién aplicar el preset",
-				uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage(uuid))),
-		};
-
-		int totalHeight = (labels.length + 1) * (BUTTON_HEIGHT + SPACING);
-		int startY = (this.height - totalHeight) / 2;
-
-		for (int i = 0; i < labels.length; i++) {
-			Runnable action = actions[i];
-			this.addRenderableWidget(Button.builder(Component.literal(labels[i]), button -> action.run())
-				.bounds((this.width - BUTTON_WIDTH) / 2, startY + i * (BUTTON_HEIGHT + SPACING), BUTTON_WIDTH, BUTTON_HEIGHT).build());
-		}
-
-		this.addRenderableWidget(Button.builder(Component.translatable("gui.dndsheets.guide.button"), button -> GuideBook.open(true))
-			.bounds((this.width - BUTTON_WIDTH) / 2, startY + labels.length * (BUTTON_HEIGHT + SPACING), BUTTON_WIDTH, BUTTON_HEIGHT).build());
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
+	protected void buildRows() {
+		addRow(Component.literal("Modo turnos"), b -> TurnControlScreen.open());
+		addRow(Component.literal("Invocar NPC genérico"), b -> SpawnGenericScreen.open());
+		addRow(Component.literal("Conceder rasgo"), b -> PlayerPickerScreen.open("Elige a quién conceder el rasgo",
+			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new TraitListRequestMessage(uuid))));
+		addRow(Component.literal("Ajustes de hoja"), b -> PlayerPickerScreen.open("Elige a quién ajustar la hoja",
+			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetSummaryRequestMessage(uuid))));
+		addRow(Component.literal("Aplicar preset a jugador"), b -> PlayerPickerScreen.open("Elige a quién aplicar el preset",
+			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage(uuid))));
+		addRow(Component.translatable("gui.dndsheets.guide.button"), b -> GuideBook.open(true));
 	}
 }

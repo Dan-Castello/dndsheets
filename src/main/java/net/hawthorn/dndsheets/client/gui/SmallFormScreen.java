@@ -25,6 +25,7 @@ public abstract class SmallFormScreen extends Screen {
 	protected int centerX;
 	protected int formTop;
 	private int cursorY;
+	private int formBottom;
 
 	protected SmallFormScreen(Component title, int titleRows) {
 		super(title);
@@ -53,6 +54,8 @@ public abstract class SmallFormScreen extends Screen {
 
 		this.addRenderableWidget(Button.builder(Component.literal("Cancelar"), button -> this.onClose())
 			.bounds(centerX + 2, y, FIELD_WIDTH / 2 - 2, FIELD_HEIGHT).build());
+
+		formBottom = y + FIELD_HEIGHT + 10;
 	}
 
 	private int nextRowY() {
@@ -112,7 +115,8 @@ public abstract class SmallFormScreen extends Screen {
 	@Override
 	public final void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics);
-		guiGraphics.drawCenteredString(this.font, title, this.width / 2, formTop - 16, 0xFFFFFF);
+		GuiStyle.panel(guiGraphics, centerX - FIELD_WIDTH / 2 - 14, formTop - 24, centerX + FIELD_WIDTH / 2 + 14, formBottom);
+		guiGraphics.drawCenteredString(this.font, title, this.width / 2, formTop - 16, GuiStyle.TITLE_COLOR);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		for (EditBox box : editBoxes) box.render(guiGraphics, mouseX, mouseY, partialTicks);
 	}

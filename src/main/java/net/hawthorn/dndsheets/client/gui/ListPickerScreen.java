@@ -1,0 +1,103 @@
+package net.hawthorn.dndsheets.client.gui;
+
+import net.hawthorn.dndsheets.client.gui.components.ButtonListWidget;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+/**
+ * <p>Base compartida para pantallas de "lista vertical de botones": título centrado + panel con
+ * borde detrás de una {@link ButtonListWidget} con scroll automático si no caben todos los botones.
+ * Cubre tanto los selectores del Panel de DM (jugador, preset, rasgo, opción de personaje, ataque a
+ * quitar, acción de monstruo) como los menús de botón fijo (Panel de DM, Modo turnos) — un menú fijo
+ * no es más que una lista que nunca necesita desplazarse. Antes cada una repetía las mismas
+ * constantes de layout, el reenvío de {@code mouseScrolled} a la lista y {@code isPauseScreen() ->
+ * false}; ver GUI_REFERENCE.md.</p>
+ *
+ * <p>{@code init()} e {@code render()} no son {@code final}: una pantalla con contenido extra (un
+ * subtítulo, un botón fijo bajo la lista) puede sobrescribirlos, llamar a {@code super} primero y
+ * añadir lo suyo encima — más simple que intentar prever cada variante con parámetros.</p>
+ */
+public abstract class ListPickerScreen extends Screen {
+	protected static final int BUTTON_HEIGHT = 20;
+	protected static final int SPACING = 4;
+	private static final int LIST_TOP = 30;
+	private static final int PANEL_PADDING = 10;
+
+	private ButtonListWidget list;
+
+	protected ListPickerScreen(Component title) {
+		super(title);
+	}
+
+	/** Ancho de los botones de la lista y del panel. Sobrescribir para una lista más ancha (p. ej. Grimorio). */
+	protected int buttonWidth() {
+		return 200;
+	}
+
+	/** Y donde empieza la lista, bajo el título. Sobrescribir para dejar hueco a un subtítulo. */
+	protected int listTop() {
+		return LIST_TOP;
+	}
+
+	/** Alto disponible para la lista. Sobrescribir para dejar hueco a un botón fijo debajo. */
+	protected int listHeight() {
+		return this.height - listTop() - 14;
+	}
+
+	/** Añade las filas de la lista, en orden, con {@link #addRow}. Llamado desde {@code init()}. */
+	protected abstract void buildRows();
+
+	/** Texto a mostrar centrado en pantalla si la lista queda vacía. Null = no mostrar nada. */
+	protected Component emptyMessage() {
+		return null;
+	}
+
+	protected final Button addRow(Component label, Button.OnPress onPress) {
+		Button button = Button.builder(label, onPress).bounds(0, 0, buttonWidth(), BUTTON_HEIGHT).build();
+		this.addWidget(button);
+		list.addRow(button);
+		return button;
+	}
+
+	@Override
+	protected void init() {
+		list = new ButtonListWidget((this.width - buttonWidth()) / 2, listTop(), buttonWidth(), listHeight(), BUTTON_HEIGHT + SPACING);
+		buildRows();
+		this.addRenderableWidget(list);
+	}
+
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+		return list.mouseScrolled(mouseX, mouseY, delta) || super.mouseScrolled(mouseX, mouseY, delta);
+	}
+
+	@Override
+	public boolean isPauseScreen() {
+		return false;
+	}
+
+	@Override
+	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+		this.renderBackground(guiGraphics);
+
+		int left = (this.width - buttonWidth()) / 2 - PANEL_PADDING;
+		int right = this.width - left;
+		//El título siempre se dibuja en y=16 (más abajo), así que el borde superior del panel es fijo en
+		//vez de depender de listTop() — una pantalla con subtítulo (Grimorio) mueve listTop() hacia abajo
+		//sin dejar el título sobresaliendo por encima del panel.
+		int top = 16 - PANEL_PADDING;
+		int bottom = listTop() + listHeight() + PANEL_PADDING;
+		GuiStyle.panel(guiGraphics, left, top, right, bottom);
+
+		guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 16, GuiStyle.TITLE_COLOR);
+
+		Component empty = emptyMessage();
+		if (empty != null) {
+			guiGraphics.drawCenteredString(this.font, empty, this.width / 2, this.height / 2, GuiStyle.MUTED_COLOR);
+		}
+
+		super.render(guiGraphics, mouseX, mouseY, partialTicks);
+	}
+}

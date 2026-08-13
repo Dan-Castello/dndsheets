@@ -37,7 +37,7 @@ public class RestChoiceScreen extends ModalDialogScreen {
 
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-		this.renderBackground(guiGraphics);
+		this.renderPanel(guiGraphics);
 		guiGraphics.drawCenteredString(this.font, Component.literal("¿Qué tipo de descanso propones?"), this.width / 2, dialogTop() + 8, 0xFFFFFF);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 	}

@@ -14,10 +14,28 @@ El mod usa la API de GUI **vanilla de Minecraft/Forge** (`net.minecraft.client.g
 
 Documentados una sola vez aquí; las pantallas que los usan solo indican qué instancia crean (posición/tamaño), no repiten su comportamiento.
 
+- `GuiStyle` (`client/gui/GuiStyle.java`) — colores y panel de fondo compartidos por toda pantalla plana sin textura propia.
+- `ListPickerScreen` (`client/gui/ListPickerScreen.java`) — base para pantallas de lista/menú vertical de botones.
 - `ModalDialogScreen` (`client/gui/ModalDialogScreen.java`) — base para diálogos centrados de tamaño fijo. Usada por `RestChoiceScreen`, `RestVoteScreen`, `DeathSaveScreen`.
+- `SmallFormScreen` (`client/gui/SmallFormScreen.java`) — base para formularios cortos de una columna. Usada por `SpawnGenericScreen`, `AddTurnEffectScreen`, `AddMonsterAttackScreen`.
 - `AdjustableImageButton` (`client/gui/components/AdjustableImageButton.java`)
 - `ButtonListWidget` (`client/gui/components/ButtonListWidget.java`)
 - `RollScrollWidget` (`client/gui/components/RollScrollWidget.java`)
+
+### GuiStyle
+
+- **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/GuiStyle.java`
+- **Propósito:** único sitio que define el aspecto de las pantallas "planas" (sin textura de fondo): un panel `0xCC101010` con borde de 1px `0xFF3E3E3E` (método estático `panel(guiGraphics, left, top, right, bottom)`), más las constantes de color `TITLE_COLOR` (`0xFFFFFF`), `SUBTITLE_COLOR` (`0xAAAAAA`) y `MUTED_COLOR` (`0x888888`, texto de estado vacío). Antes cada pantalla flotaba con sus botones sueltos sobre el fondo borroso vanilla sin ningún panel — la única excepción ad hoc era el relleno manual que tenía `DeathSaveScreen`.
+- **Consumido por:** `ListPickerScreen`, `ModalDialogScreen.renderPanel()`, `SmallFormScreen`, `SheetAdjustScreen` — es decir, todas las pantallas sin textura del mod.
+
+### ListPickerScreen
+
+- **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/ListPickerScreen.java`
+- **Extiende:** `net.minecraft.client.gui.screens.Screen`
+- **Propósito:** título centrado (`y=16`) + panel `GuiStyle` + una `ButtonListWidget` con scroll automático. Cubre tanto los selectores "elige uno de varios" como los menús de botón fijo (Panel de DM, Modo turnos) — un menú fijo es solo una lista que nunca llega a desbordar.
+- **API para subclases:** `buildRows()` (abstracto, llamado desde `init()`, añade filas con `addRow(Component, Button.OnPress)`); `buttonWidth()` (default 200, sobrescribible — `GrimoireScreen` usa 220); `listTop()`/`listHeight()` (sobrescribibles para dejar hueco a un subtítulo o a un botón fijo bajo la lista); `emptyMessage()` (texto centrado si la lista queda vacía, default ninguno).
+- **Notable:** `init()`/`render()` no son `final` — una pantalla con contenido extra (subtítulo de `GrimoireScreen`, botón "Cancelar" fijo de `CharacterOptionListScreen`) sobrescribe, llama a `super` primero y añade lo suyo. `mouseScrolled` e `isPauseScreen() -> false` ya están resueltos aquí, no hace falta repetirlos.
+- **Usada por:** `DmPanelScreen`, `TurnControlScreen`, `PlayerPickerScreen`, `TraitGrantScreen`, `CharacterOptionListScreen`, `ManageCustomAttacksScreen`, `MonsterActionScreen`, `PresetScreen`, `GrimoireScreen`.
 
 ### AdjustableImageButton
 
@@ -171,14 +189,14 @@ Dos columnas de 9 filas cada una, separación vertical `SKILL_SEPARATION = 20`.
 ## DmPanelScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/DmPanelScreen.java`
-- **Tipo:** `Screen` (plana, no registrada como menú)
+- **Tipo:** extiende `ListPickerScreen` (ver esa sección) — no registrada como menú
 - **Cómo se abre:** `DmPanelScreen.open()`, disparado por el keybind `DndsheetsModKeyMappings.DM_PANEL` (comprueba permisos de operador antes)
-- **Textura de fondo:** ninguna (fondo estándar de `Screen`)
-- **Tamaño del panel:** pantalla completa, contenido centrado por `this.width`/`this.height`
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
+- **Tamaño del panel:** pantalla completa, lista top-anchored en `y=30` (ver `ListPickerScreen`)
 
-| Widget | Tipo | X | Y | Ancho | Alto | Notas |
-|---|---|---|---|---|---|---|
-| 5 botones ("Modo turnos", "Invocar NPC genérico", "Conceder rasgo", "Ajustes de hoja", "Aplicar preset a jugador") | Button | (width-200)/2 | centrado verticalmente, fila n: `startY + n×(20+4)` | BUTTON_WIDTH=200 | BUTTON_HEIGHT=20 | `SPACING=4` entre filas; `startY = (height - 5×24)/2` |
+| Widget | Tipo | Notas |
+|---|---|---|
+| 6 filas ("Modo turnos", "Invocar NPC genérico", "Conceder rasgo", "Ajustes de hoja", "Aplicar preset a jugador", guía) | fila de `ListPickerScreen` | `buttonWidth()`/`BUTTON_HEIGHT`/`SPACING` por defecto (200/20/4) |
 
 - Acciones: abren `TurnControlScreen`, `SpawnGenericScreen`, o `PlayerPickerScreen` (para elegir jugador antes de rasgo/ajustes/preset).
 
@@ -191,18 +209,18 @@ Dos columnas de 9 filas cada una, separación vertical `SKILL_SEPARATION = 20`.
 - **Propósito:** caja de diálogo de tamaño fijo centrada en pantalla; evita repetir el mismo esqueleto en cada diálogo modal (antes duplicado en `RestChoiceScreen`/`RestVoteScreen`/`DeathSaveScreen` — ver `AUDIT_TECHNICAL.md M-DUP-7`)
 - **Constructor:** `ModalDialogScreen(Component title, int dialogWidth, int dialogHeight)`
 - **Geometría:** `dialogLeft() = (width - dialogWidth) / 2`, `dialogTop() = (height - dialogHeight) / 2`
-- **API para subclases:** `addModalButton(int x, int y, int width, int height, Component message, Button.OnPress onPress)` — x/y son relativos a la esquina superior izquierda del diálogo (`dialogLeft()+x`, `dialogTop()+y`), no a la pantalla completa.
+- **API para subclases:** `addModalButton(int x, int y, int width, int height, Component message, Button.OnPress onPress)` — x/y son relativos a la esquina superior izquierda del diálogo (`dialogLeft()+x`, `dialogTop()+y`), no a la pantalla completa. `renderPanel(guiGraphics)` — primera línea del `render()` de cada subclase: fondo borroso vanilla + panel `GuiStyle` del tamaño del diálogo (antes cada subclase hacía `renderBackground` suelto y solo `DeathSaveScreen` dibujaba panel propio).
 - Usada por `RestChoiceScreen`, `RestVoteScreen`, `DeathSaveScreen` (ver sus secciones abajo).
 
 ## AddMonsterAttackScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/AddMonsterAttackScreen.java`
-- **Tipo:** `Screen` (plana)
+- **Tipo:** extiende `SmallFormScreen` (ver esa sección), `titleRows=3`
 - **Cómo se abre:** `AddMonsterAttackScreen.open(int entityId)` — desde el botón "+ Añadir ataque" de `MonsterActionScreen`
-- **Textura de fondo:** ninguna
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `SmallFormScreen`
 - **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*3` (`ROW_HEIGHT=26` → `height/2 - 78`)
 
-Constantes: `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=26`
+Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=26`. Campos/cíclicos añadidos con `addField(...)`/`addCycleButton(...)`, Confirmar/Cancelar generados automáticamente por la base.
 
 | Widget | Tipo | X | Y | Ancho | Alto | Notas |
 |---|---|---|---|---|---|---|
@@ -220,12 +238,12 @@ Constantes: `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=26`
 ## SpawnGenericScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/SpawnGenericScreen.java`
-- **Tipo:** `Screen` (plana)
+- **Tipo:** extiende `SmallFormScreen` (ver esa sección), `titleRows=2`
 - **Cómo se abre:** `SpawnGenericScreen.open()` — desde el Panel de DM
-- **Textura de fondo:** ninguna
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `SmallFormScreen`
 - **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*2` (= `height/2 - 52`)
 
-Constantes: `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=26`
+Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=26`
 
 | Widget | Tipo | X | Y | Ancho | Alto | Notas |
 |---|---|---|---|---|---|---|
@@ -242,12 +260,12 @@ Constantes: `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=26`
 ## AddTurnEffectScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/AddTurnEffectScreen.java`
-- **Tipo:** `Screen` (plana)
+- **Tipo:** extiende `SmallFormScreen` (ver esa sección), `titleRows=2`
 - **Cómo se abre:** `AddTurnEffectScreen.open(String targetUuid)` — callback pasado a `PlayerPickerScreen.open(...)` desde el botón "Aplicar efecto" de `TurnControlScreen`
-- **Textura de fondo:** ninguna
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `SmallFormScreen`
 - **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*2` (= `height/2 - 52`)
 
-Constantes: `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=26`
+Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=26`
 
 | Widget | Tipo | X | Y | Ancho | Alto | Notas |
 |---|---|---|---|---|---|---|
@@ -263,131 +281,119 @@ Constantes: `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=26`
 ## TurnControlScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/TurnControlScreen.java`
-- **Tipo:** `Screen` (plana)
+- **Tipo:** extiende `ListPickerScreen` (ver esa sección)
 - **Cómo se abre:** `TurnControlScreen.open()` — desde el Panel de DM (equivalente GUI de `/dndturns start|next|cancel|end`)
-- **Textura de fondo:** ninguna
-- **Tamaño del panel:** full-screen centrado; `BUTTON_WIDTH=200`, `BUTTON_HEIGHT=20`, `SPACING=4`; `totalHeight = 5*24 = 120`; `startY = (height-120)/2`
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
+- **Tamaño del panel:** full-screen; lista top-anchored en `y=30`, botones por defecto (200/20/4)
 
-| Widget | Tipo | X | Y | Ancho | Alto | Notas |
-|---|---|---|---|---|---|---|
-| Botones de acción (bucle ×4) | Button | (width-200)/2 | startY + i×24 (i=0..3) | 200 | 20 | ACTIONS=[start,next,cancel,end], LABELS=["Iniciar turnos","Siguiente turno","Saltar (cancelar)","Terminar turnos"]; envían `TurnControlMessage(action)`, cierran |
-| Aplicar efecto | Button | (width-200)/2 | startY + 4×24 | 200 | 20 | abre `PlayerPickerScreen.open("Elige a quién aplicar el efecto", AddTurnEffectScreen::open)` |
+| Widget | Tipo | Notas |
+|---|---|---|
+| 4 filas de acción | fila de `ListPickerScreen` | ACTIONS=[start,next,cancel,end], LABELS=["Iniciar turnos","Siguiente turno","Saltar (cancelar)","Terminar turnos"]; envían `TurnControlMessage(action)`, cierran |
+| Aplicar efecto | fila de `ListPickerScreen` | abre `PlayerPickerScreen.open("Elige a quién aplicar el efecto", AddTurnEffectScreen::open)` |
 
 ## PresetScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/PresetScreen.java`
-- **Tipo:** `Screen` (plana)
+- **Tipo:** extiende `ListPickerScreen` (ver esa sección)
 - **Cómo se abre:** `PresetScreen.open(String targetUuid, List<String> ids, List<String> names)` — al recibir `PresetListMessage` del servidor (pedida al pulsar "Presets" en la hoja, o por un DM tras elegir jugador en `PlayerPickerScreen`)
-- **Textura de fondo:** ninguna
-- **Tamaño del panel:** full-screen; lista con scroll `ButtonListWidget`
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
+- **Tamaño del panel:** full-screen; lista top-anchored en `y=30`, botones por defecto (200/20/4)
 
-Constantes: `BUTTON_WIDTH=200`, `BUTTON_HEIGHT=20`, `SPACING=4`
-
-| Widget | Tipo | X | Y | Ancho | Alto | Notas |
-|---|---|---|---|---|---|---|
-| Título "Elige un preset de clase" | drawCenteredString | width/2 | 16 | — | — | color `0xFFFFFF` |
-| list (ButtonListWidget) | contenedor scroll | (width-200)/2 | 30 | 200 | height-44 | fila = 24 |
-| Botones de preset (bucle) | Button (en `list`) | 0 rel. | 0 rel. | 200 | 20 | uno por preset; onClick envía `PresetApplyMessage`/`PresetApplyToMessage`, cierra |
-| Mensaje "sin presets" | drawCenteredString | width/2 | height/2 | — | — | solo si vacío, color `0x888888` |
-
-- **Notas:** `mouseScrolled` forzado siempre hacia `list` (mismo arreglo que `CharacterSheetScreen.mouseScrolled`).
+| Widget | Tipo | Notas |
+|---|---|---|
+| Filas de preset (bucle) | fila de `ListPickerScreen` | una por preset; onClick envía `PresetApplyMessage`/`PresetApplyToMessage`, cierra |
+| Mensaje "sin presets" | `emptyMessage()` | solo si `names` vacío |
 
 ## TraitGrantScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/TraitGrantScreen.java`
-- **Tipo:** `Screen` (plana)
+- **Tipo:** extiende `ListPickerScreen` (ver esa sección)
 - **Cómo se abre:** `TraitGrantScreen.open(String targetUuid, List<String> ids, List<String> names)` — último paso de conceder un rasgo desde el Panel de DM, tras elegir jugador en `PlayerPickerScreen`
-- **Textura de fondo:** ninguna
-- **Tamaño del panel:** full-screen, centrado
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
+- **Tamaño del panel:** full-screen; lista top-anchored en `y=30`, botones por defecto (200/20/4)
 
-| Widget | Tipo | X | Y | Ancho | Alto | Notas |
-|---|---|---|---|---|---|---|
-| Título "Elige un rasgo para conceder" | drawCenteredString | width/2 | 16 | — | — | color `0xFFFFFF` |
-| Lista de rasgos | ButtonListWidget | (width-200)/2 | 30 | 200 | height-44 | fila=24; onClick envía `TraitGrantMessage`, cierra |
-| Mensaje "No hay rasgos cargados" | drawCenteredString | width/2 | height/2 | — | — | solo si vacío, color `0x888888` |
+| Widget | Tipo | Notas |
+|---|---|---|
+| Lista de rasgos | fila de `ListPickerScreen` | onClick envía `TraitGrantMessage`, cierra |
+| Mensaje "No hay rasgos cargados" | `emptyMessage()` | solo si `names` vacío |
 
 ## PlayerPickerScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/PlayerPickerScreen.java`
-- **Tipo:** `Screen` (plana)
+- **Tipo:** extiende `ListPickerScreen` (ver esa sección) — el `prompt` dinámico se pasa como título de la pantalla
 - **Cómo se abre:** `PlayerPickerScreen.open(String prompt, Consumer<String> onPick)` — primer paso genérico de cualquier herramienta del Panel de DM que actúa sobre otro jugador
-- **Textura de fondo:** ninguna
-- **Tamaño del panel:** full-screen, centrado
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
+- **Tamaño del panel:** full-screen; lista top-anchored en `y=30`, botones por defecto (200/20/4)
 
-| Widget | Tipo | X | Y | Ancho | Alto | Notas |
-|---|---|---|---|---|---|---|
-| Título (`prompt`, dinámico) | drawCenteredString | width/2 | 16 | — | — | color `0xFFFFFF` |
-| Lista de jugadores conectados | ButtonListWidget | (width-200)/2 | 30 | 200 | height-44 | fila=24; una fila por jugador de la tablist; onClick llama `onPick.accept(uuid)` (no cierra por sí misma) |
+| Widget | Tipo | Notas |
+|---|---|---|
+| Lista de jugadores conectados | fila de `ListPickerScreen` | una fila por jugador de la tablist; onClick llama `onPick.accept(uuid)` (no cierra por sí misma) |
 
 ## CharacterOptionListScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/CharacterOptionListScreen.java`
-- **Tipo:** `Screen` (plana)
+- **Tipo:** extiende `ListPickerScreen` (ver esa sección); sobrescribe `listHeight()` (resta hueco para el botón fijo) e `init()` (añade el botón fijo tras `super.init()`)
 - **Cómo se abre:** `CharacterOptionListScreen.open(CharacterSheetScreen returnTo, String category, List<String> options)` — selector de Raza/Trasfondo/Clase invocado desde `CharacterSheetScreen`
-- **Textura de fondo:** ninguna
-- **Tamaño del panel:** full-screen, centrado
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
+- **Tamaño del panel:** full-screen; lista top-anchored en `y=30`, botones por defecto (200/20/4)
 
 | Widget | Tipo | X | Y | Ancho | Alto | Notas |
 |---|---|---|---|---|---|---|
-| Título (dinámico: "Elige una raza/un trasfondo/una clase/una opción") | drawCenteredString | width/2 | 16 | — | — | color `0xFFFFFF` |
-| Lista de opciones | ButtonListWidget | (width-200)/2 | 30 | 200 | height-44-20-4 | fila=24; deja hueco para "Cancelar" fijo debajo; onClick escribe el campo y envía `SheetServerMessage`, cierra |
+| Lista de opciones | fila de `ListPickerScreen` | — | — | 200 | — | deja hueco para "Cancelar" fijo debajo; onClick escribe el campo y envía `SheetServerMessage`, cierra |
 | Botón "Cancelar" | Button | (width-200)/2 | height-20-8 | 200 | 20 | fijo, fuera de la lista; `onClose()` |
-| Mensaje "No hay opciones cargadas" | drawCenteredString | width/2 | height/2 | — | — | solo si vacío, color `0x888888` |
+| Mensaje "No hay opciones cargadas" | `emptyMessage()` | — | — | — | — | solo si `options` vacío |
 
 - **Notas:** `onClose()` vuelve a `returnTo` (misma instancia de `CharacterSheetScreen`) en vez de cerrar todo, tanto al elegir como al cancelar/Escape.
 
 ## ManageCustomAttacksScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/ManageCustomAttacksScreen.java`
-- **Tipo:** `Screen` (plana)
+- **Tipo:** extiende `ListPickerScreen` (ver esa sección)
 - **Cómo se abre:** `ManageCustomAttacksScreen.open(int entityId, List<String> customAttackNames)` — desde `MonsterActionScreen` ("Gestionar ataques personalizados")
-- **Textura de fondo:** ninguna
-- **Tamaño del panel:** full-screen, centrado
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
+- **Tamaño del panel:** full-screen; lista top-anchored en `y=30`, botones por defecto (200/20/4)
 
-| Widget | Tipo | X | Y | Ancho | Alto | Notas |
-|---|---|---|---|---|---|---|
-| Lista de ataques + "Borrar todos" | ButtonListWidget | (width-200)/2 | 30 | 200 | height-44 | fila=24; una fila "Quitar: {name}" por ataque (envía `RemoveCustomAttackMessage`, cierra), más fila final fija "Borrar todos" (`ClearCustomAttacksMessage`, cierra) |
-| Mensaje "Este monstruo no tiene ataques personalizados" | drawCenteredString | width/2 | 16 | — | — | solo si vacío, color `0x888888` (sin título de texto separado en esta pantalla) |
+| Widget | Tipo | Notas |
+|---|---|---|
+| Lista de ataques + "Borrar todos" | fila de `ListPickerScreen` | una fila "Quitar: {name}" por ataque (envía `RemoveCustomAttackMessage`, cierra), más fila final fija "Borrar todos" (`ClearCustomAttacksMessage`, cierra) — esta última se añade siempre, incluso con la lista vacía |
+| Mensaje "Este monstruo no tiene ataques personalizados" | `emptyMessage()` | solo si `customAttackNames` vacío |
 
 ## MonsterActionScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/MonsterActionScreen.java`
-- **Tipo:** `Screen` (plana)
+- **Tipo:** extiende `ListPickerScreen` (ver esa sección)
 - **Cómo se abre:** `MonsterActionScreen.open(int entityId, List<String> actionNames, List<String> customAttackNames)` — al hacer clic derecho con la Vara de DM sobre un monstruo invocado
-- **Textura de fondo:** ninguna
-- **Tamaño del panel:** full-screen, centrado
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
+- **Tamaño del panel:** full-screen; lista top-anchored en `y=30`, botones por defecto (200/20/4)
 
-| Widget | Tipo | X | Y | Ancho | Alto | Notas |
-|---|---|---|---|---|---|---|
-| Lista de acciones | ButtonListWidget | (width-200)/2 | 30 | 200 | height-44 | fila=24; una fila por acción (envía `MonsterActionChooseMessage(entityId, i)`, cierra); fila fija "+ Añadir ataque" (abre `AddMonsterAttackScreen`); fila fija "Gestionar ataques personalizados" (abre `ManageCustomAttacksScreen`) |
+| Widget | Tipo | Notas |
+|---|---|---|
+| Lista de acciones | fila de `ListPickerScreen` | una fila por acción (envía `MonsterActionChooseMessage(entityId, i)`, cierra); fila fija "+ Añadir ataque" (abre `AddMonsterAttackScreen`); fila fija "Gestionar ataques personalizados" (abre `ManageCustomAttacksScreen`) |
 
-- **Notas:** sin título ni mensajes de estado vacío (no sobreescribe `render()`).
+- **Notas:** título "Acciones del monstruo" ahora visible (antes no se dibujaba: la pantalla no sobrescribía `render()`) — efecto colateral positivo de heredar de `ListPickerScreen`, no un cambio deliberado de contenido.
 
 ## GrimoireScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/GrimoireScreen.java`
-- **Tipo:** `Screen` (plana)
+- **Tipo:** extiende `ListPickerScreen` (ver esa sección); sobrescribe `buttonWidth()` (220), `listTop()` (deja hueco al subtítulo) y `listHeight()` (deja hueco al botón de lanzar), más `init()`/`render()` para el botón y el subtítulo
 - **Cómo se abre:** sin `open()` estático; instanciado directo con `new GrimoireScreen()` desde el botón `grimoireButton` de `CharacterSheetScreen`
-- **Textura de fondo:** ninguna
-- **Tamaño del panel:** full-screen centrado; lista de ancho fijo `WIDTH=220`, alto dinámico según `this.height`
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
+- **Tamaño del panel:** full-screen centrado; ancho fijo 220 (vía `buttonWidth()`)
 
 | Widget | Tipo | X | Y | Ancho | Alto | Notas |
 |---|---|---|---|---|---|---|
-| Título "Grimorio" | drawCenteredString | width/2 | 12 | — | — | color `0xFFFFFF` |
-| "Espacios de conjuro: n/max" | drawCenteredString | width/2 | 26 | — | — | color `0xAAAAAA` |
-| Lista de hechizos | ButtonListWidget | (width-220)/2 | LIST_TOP=40 | 220 | max(20, (height-28)-40) | scrollable; fila=24 |
-| Fila de hechizo (bucle) | Button (en lista) | 0 rel. | 0 rel. | 220 | 20 | label "<nombre> (nv. <nivel>)" |
-| Botón "Elige un hechizo / Lanzar: X" | Button | (width-220)/2 | LIST_TOP+listHeight+SPACING | 220 | 20 | inactivo hasta seleccionar hechizo |
-| Mensaje "No conoces ningún hechizo..." | drawCenteredString | width/2 | height/2 | — | — | solo si vacío, color `0x888888` |
-
-- **Colores especiales:** `0xFFFFFF` título, `0xAAAAAA` subtítulo, `0x888888` mensaje vacío.
+| Título "Grimorio" | `ListPickerScreen` (base) | width/2 | 16 | — | — | color `GuiStyle.TITLE_COLOR` |
+| "Espacios de conjuro: n/max" | drawCenteredString | width/2 | SUBTITLE_Y=30 | — | — | color `GuiStyle.SUBTITLE_COLOR` |
+| Lista de hechizos | fila de `ListPickerScreen` | (width-220)/2 | listTop()=44 | 220 | listHeight() | scrollable |
+| Botón "Elige un hechizo / Lanzar: X" | Button | (width-220)/2 | listTop()+listHeight()+SPACING | 220 | 20 | inactivo hasta seleccionar hechizo |
+| Mensaje "No conoces ningún hechizo..." | `emptyMessage()` | — | — | — | — | solo si no hay hechizos conocidos |
 
 ## SheetAdjustScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/SheetAdjustScreen.java`
-- **Tipo:** `Screen` (plana)
+- **Tipo:** `Screen` (plana) — layout propio, no encaja en `ListPickerScreen`/`SmallFormScreen`; dibuja el panel `GuiStyle` directamente en `render()`
 - **Cómo se abre:** `SheetAdjustScreen.open(targetUuid, targetName, gold, slotsMax, slotsCurrent, hp, maxHp, ac)` — desde el Panel de DM tras elegir jugador en `PlayerPickerScreen`
-- **Textura de fondo:** ninguna
+- **Textura de fondo:** ninguna — panel `GuiStyle.panel(...)` de `(centerX-WIDE_WIDTH/2-14, y0-40)` a `(centerX+WIDE_WIDTH/2+14, formBottom)`
 - **Tamaño del panel:** full-screen centrado; `centerX=width/2`, `y0 = height/2 - ROW_HEIGHT*6` (`ROW_HEIGHT=26`), `FIELD_WIDTH=90`, `WIDE_WIDTH=190`, `FIELD_HEIGHT=20`
 
 | Widget | Tipo | X | Y | Ancho | Alto | Notas |
@@ -419,7 +425,7 @@ Constantes: `BUTTON_WIDTH=200`, `BUTTON_HEIGHT=20`, `SPACING=4`
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/RestChoiceScreen.java`
 - **Tipo:** extiende `ModalDialogScreen`
 - **Cómo se abre:** `RestChoiceScreen.open()` — para quien usó el Kit de Descanso
-- **Textura de fondo:** ninguna
+- **Textura de fondo:** ninguna — panel `GuiStyle` vía `renderPanel()`
 - **Tamaño del panel:** `dialogWidth x dialogHeight = 220 x 80`, centrado
 
 | Widget | Tipo | X (rel. diálogo) | Y (rel. diálogo) | Ancho | Alto | Notas |
@@ -435,7 +441,7 @@ Constantes: `BUTTON_WIDTH=200`, `BUTTON_HEIGHT=20`, `SPACING=4`
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/RestVoteScreen.java`
 - **Tipo:** extiende `ModalDialogScreen`
 - **Cómo se abre:** `RestVoteScreen.open(proposerName, typeLabel)` — a todos al recibir una propuesta de descanso; `RestVoteScreen.close()` fuerza el cierre
-- **Textura de fondo:** ninguna
+- **Textura de fondo:** ninguna — panel `GuiStyle` vía `renderPanel()`
 - **Tamaño del panel:** `dialogWidth x dialogHeight = 240 x 90`, centrado
 
 | Widget | Tipo | X (rel. diálogo) | Y (rel. diálogo) | Ancho | Alto | Notas |
@@ -453,16 +459,15 @@ Constantes: `BUTTON_WIDTH=200`, `BUTTON_HEIGHT=20`, `SPACING=4`
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/DeathSaveScreen.java`
 - **Tipo:** extiende `ModalDialogScreen`
 - **Cómo se abre:** `DeathSaveScreen.open()` — forzada mientras el personaje está a 0 PG; `DeathSaveScreen.close()` solo lo cierra el servidor
-- **Textura de fondo:** ninguna; dibuja panel propio con `guiGraphics.fill(...)`
+- **Textura de fondo:** ninguna — panel `GuiStyle` vía `renderPanel()` (antes dibujaba su propio `guiGraphics.fill(...)`, ahora unificado con el resto de modales)
 - **Tamaño del panel:** `dialogWidth x dialogHeight = 240 x 90`, centrado
 
 | Widget | Tipo | X (rel. diálogo) | Y (rel. diálogo) | Ancho | Alto | Notas |
 |---|---|---|---|---|---|---|
-| Fondo del diálogo | guiGraphics.fill | dialogLeft() | dialogTop() | 240 | 90 | color `0xCC000000` |
 | Título "¡Estás caído!" | drawCenteredString | width/2 (absoluto) | dialogTop()+8 | — | — | color `0xFFFFFF` |
 | "Éxitos: ●●○  Fallos: ●○○" | drawCenteredString | width/2 (absoluto) | dialogTop()+24 | — | — | color `0xAAAAAA`; símbolos según `deathSaveSuccesses`/`deathSaveFailures` de la hoja |
 | "Otro jugador puede reanimarte interactuando contigo." | drawCenteredString | width/2 (absoluto) | dialogTop()+38 | — | — | color `0x888888` |
 | Botón "Tirar salvación de muerte" | addModalButton | 20 | 60 | 200 | 20 | `DeathSaveRollMessage()` |
 
-- **Colores especiales:** `0xCC000000` panel de fondo, `0xFFFFFF` título, `0xAAAAAA` marcadores éxito/fallo, `0x888888` texto de ayuda.
+- **Colores especiales:** `0xFFFFFF` título, `0xAAAAAA` marcadores éxito/fallo, `0x888888` texto de ayuda.
 - **Notas:** `shouldCloseOnEsc()` e `isPauseScreen()` devuelven `false`.

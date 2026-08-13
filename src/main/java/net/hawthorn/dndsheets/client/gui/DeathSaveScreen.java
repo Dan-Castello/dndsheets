@@ -58,12 +58,9 @@ public class DeathSaveScreen extends ModalDialogScreen {
 
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-		this.renderBackground(guiGraphics);
+		this.renderPanel(guiGraphics);
 
-		int left = dialogLeft();
 		int top = dialogTop();
-		guiGraphics.fill(left, top, left + WIDTH, top + HEIGHT, 0xCC000000);
-
 		guiGraphics.drawCenteredString(this.font, Component.literal("¡Estás caído!"), this.width / 2, top + 8, 0xFFFFFF);
 
 		JsonObject sheet = SheetLoader.getClientSheet();

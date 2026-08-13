@@ -1,10 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
-import net.hawthorn.dndsheets.client.gui.components.ButtonListWidget;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 
@@ -19,18 +15,11 @@ import java.util.function.Consumer;
  * falta pedírsela al servidor. Elegir uno pasa su UUID (como texto) a {@code onPick}, que decide qué
  * pantalla u mensaje viene después — así esta pantalla no necesita saber para qué se la está usando.</p>
  */
-public class PlayerPickerScreen extends Screen {
-	private static final int BUTTON_WIDTH = 200;
-	private static final int BUTTON_HEIGHT = 20;
-	private static final int SPACING = 4;
-
-	private final String prompt;
+public class PlayerPickerScreen extends ListPickerScreen {
 	private final Consumer<String> onPick;
-	private ButtonListWidget list;
 
 	private PlayerPickerScreen(String prompt, Consumer<String> onPick) {
-		super(Component.literal("Elegir jugador"));
-		this.prompt = prompt;
+		super(Component.literal(prompt));
 		this.onPick = onPick;
 	}
 
@@ -39,38 +28,11 @@ public class PlayerPickerScreen extends Screen {
 	}
 
 	@Override
-	protected void init() {
+	protected void buildRows() {
 		List<PlayerInfo> players = new ArrayList<>(this.minecraft.getConnection() != null ? this.minecraft.getConnection().getOnlinePlayers() : List.of());
-
-		//Lista con scroll en vez de centrada a mano sin tope: con muchos jugadores conectados, el cálculo
-		//viejo empujaba botones fuera de pantalla sin forma de alcanzarlos (ver AUDIT_UX.md).
-		list = new ButtonListWidget((this.width - BUTTON_WIDTH) / 2, 30, BUTTON_WIDTH, this.height - 44, BUTTON_HEIGHT + SPACING);
 		for (PlayerInfo info : players) {
 			String uuid = info.getProfile().getId().toString();
-			Button button = Button.builder(Component.literal(info.getProfile().getName()), b -> onPick.accept(uuid))
-				.bounds(0, 0, BUTTON_WIDTH, BUTTON_HEIGHT).build();
-			this.addWidget(button);
-			list.addRow(button);
+			addRow(Component.literal(info.getProfile().getName()), b -> onPick.accept(uuid));
 		}
-		this.addRenderableWidget(list);
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
-	}
-
-	//Ver PresetScreen.mouseScrolled: sin esto, el scroll solo funciona pasando el mouse por huecos sin
-	//botón, se detiene en cuanto queda sobre una fila.
-	@Override
-	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-		return list.mouseScrolled(mouseX, mouseY, delta) || super.mouseScrolled(mouseX, mouseY, delta);
-	}
-
-	@Override
-	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-		this.renderBackground(guiGraphics);
-		guiGraphics.drawCenteredString(this.font, Component.literal(prompt), this.width / 2, 16, 0xFFFFFF);
-		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 	}
 }

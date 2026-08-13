@@ -53,7 +53,7 @@ public class RestVoteScreen extends ModalDialogScreen {
 
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-		this.renderBackground(guiGraphics);
+		this.renderPanel(guiGraphics);
 		int top = dialogTop();
 		guiGraphics.drawCenteredString(this.font, Component.literal(proposerName + " propone un descanso " + typeLabel + "."), this.width / 2, top + 8, 0xFFFFFF);
 		guiGraphics.drawCenteredString(this.font, Component.literal("Se aplicará solo si todos aceptan."), this.width / 2, top + 22, 0xAAAAAA);
