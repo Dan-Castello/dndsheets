@@ -66,6 +66,9 @@ runClient/dndsheets/weapons/weapons.json
 /lib/
 
 
+# Claude Code: config/agentes/cache de sesión, todo local a cada dev, nada de esto es del proyecto.
+.claude/
+
 # Ignore Gradle GUI config
 gradle-app.setting
 
