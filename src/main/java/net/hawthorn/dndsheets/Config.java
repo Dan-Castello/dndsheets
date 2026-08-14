@@ -188,23 +188,12 @@ public class Config {
 	 * <p>Registra (o sobrescribe) un arma en memoria, típicamente desde un JSON cargado con
 	 * {@code /dndweapons load}. No se guarda en el toml: se pierde al reiniciar el servidor a menos
 	 * que se vuelva a cargar el mismo archivo.</p>
+	 *
+	 * <p>F22 del audit: de los 5 overloads posicionales que había antes (hasta 10 parámetros String),
+	 * solo este de 10 parámetros tenía llamadas reales (ver {@link #loadFile} y
+	 * {@link net.hawthorn.dndsheets.api.DndSheetsApi#registerWeapon}, que ya resuelve los campos
+	 * opcionales con {@link net.hawthorn.dndsheets.api.WeaponRegistration}) — el resto se eliminó.</p>
 	 */
-	public static void registerWeapon(String id, String dice, String ability, String displayName, String baseItemId) {
-		registerWeapon(id, dice, ability, "fisico", displayName, baseItemId);
-	}
-
-	public static void registerWeapon(String id, String dice, String ability, String damageType, String displayName, String baseItemId) {
-		registerWeapon(id, dice, ability, damageType, "one", null, displayName, baseItemId);
-	}
-
-	public static void registerWeapon(String id, String dice, String ability, String damageType, String hands, String versatileDice, String displayName, String baseItemId) {
-		registerWeapon(id, dice, ability, damageType, hands, versatileDice, List.of(), displayName, baseItemId);
-	}
-
-	public static void registerWeapon(String id, String dice, String ability, String damageType, String hands, String versatileDice, List<String> classes, String displayName, String baseItemId) {
-		registerWeapon(id, dice, ability, damageType, hands, versatileDice, classes, displayName, baseItemId, null);
-	}
-
 	public static void registerWeapon(String id, String dice, String ability, String damageType, String hands, String versatileDice, List<String> classes, String displayName, String baseItemId, Integer customModelData) {
 		List<String> normalizedClasses = new java.util.ArrayList<>();
 		for (String c : classes) normalizedClasses.add(c.toLowerCase(Locale.ROOT));

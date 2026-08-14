@@ -87,9 +87,6 @@ public class RollIndex {
     public int getIndex() {
         return index;
     }
-    public int getSubIndex() {
-        return subIndex;
-    }
 
     public List<String> findContextsInSheet(JsonObject sheet) {
 

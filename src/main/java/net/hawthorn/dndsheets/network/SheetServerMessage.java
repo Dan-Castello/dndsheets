@@ -23,8 +23,8 @@ public class SheetServerMessage {
 	//Únicos campos que la propia hoja del jugador (CharacterSheetSaveProcedure/RollIndex) escribe alguna
 	//vez. Todo lo demás (oro, espacios de conjuro, afinidades de daño, ventaja, nivel de personaje, pacto
 	//del brujo, recursos de clase, salvaciones de muerte...) lo escribe el SERVIDOR por su cuenta a través
-	//de comandos/mensajes ya gateados con permiso de operador (SheetGoldMessage, SheetSlotsMessage,
-	//SheetDamageAffinityMessage, /dndsheet...) — sin esta lista, un cliente modificado podía mandar de
+	//de comandos/mensajes ya gateados con permiso de operador (SheetAdjustMessage, /dndsheet...) — sin
+	//esta lista, un cliente modificado podía mandar de
 	//vuelta el JSON completo que el servidor le dio, con esos campos alterados, y pisaba el candado de
 	//esos otros mensajes por completo.
 	private static final Set<String> PLAYER_EDITABLE_KEYS = Set.of(

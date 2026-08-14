@@ -7,6 +7,7 @@ import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.network.SpellCastMessage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.util.ArrayList;
@@ -30,8 +31,8 @@ public class GrimoireScreen extends ListPickerScreen {
 	private KnownSpell selected;
 	private Button castButton;
 
-	protected GrimoireScreen() {
-		super(Component.literal("Grimorio"));
+	protected GrimoireScreen(Screen parent) {
+		super(Component.literal("Grimorio"), parent);
 	}
 
 	@Override
@@ -80,7 +81,13 @@ public class GrimoireScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return knownSpells().isEmpty() ? Component.literal("No conoces ningún hechizo. Pide al DM /dndspells learn.") : null;
+		return hasNoKnownSpells() ? Component.literal("No conoces ningún hechizo. Pide al DM /dndspells learn.") : null;
+	}
+
+	//F9 del audit: evita reconstruir toda la lista de KnownSpell solo para saber si está vacía.
+	private static boolean hasNoKnownSpells() {
+		JsonObject sheet = SheetLoader.getClientSheet();
+		return sheet == null || !sheet.has("spells") || sheet.getAsJsonArray("spells").isEmpty();
 	}
 
 	@Override

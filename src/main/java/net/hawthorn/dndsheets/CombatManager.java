@@ -149,7 +149,7 @@ public class CombatManager {
 		if (!(event.getEntity() instanceof Projectile projectile) || !(projectile.getOwner() instanceof Player player)) return;
 
 		if (target instanceof ArmorStand) {
-			event.setCanceled(true); //Muñeco de pruebas: no se destruye al recibir el disparo.
+			event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY); //Muñeco de pruebas: no se destruye al recibir el disparo.
 			IdentifiedWeapon weapon = identifyRangedWeapon(player, projectile);
 			if (weapon == null) return;
 			Roll roll = computeDamageRoll(player, weapon);
@@ -163,7 +163,7 @@ public class CombatManager {
 				//disparo sigue enganchando el modo turnos, pero el daño real lo resuelve Minecraft tal cual.
 				autoStartCombatIfNeeded(target, player);
 				if (!TurnManager.tryAct(player)) {
-					event.setCanceled(true);
+					event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY);
 					TurnManager.notifyCantAct(player);
 				}
 				return;
@@ -176,7 +176,7 @@ public class CombatManager {
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.combat.wrong_class").withStyle(ChatFormatting.RED));
 				return; //Ni se resuelve como 5e ni se toca el turno: el disparo vanilla ya salió antes del impacto.
 			}
-			event.setCanceled(true); //Se resuelve como un encuentro real, no como el impacto de Minecraft.
+			event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY); //Se resuelve como un encuentro real, no como el impacto de Minecraft.
 			autoStartCombatIfNeeded(target, player);
 			if (!TurnManager.tryAct(player)) { TurnManager.notifyCantAct(player); return; }
 			resolveAttackOnMonster(player, target, weapon);
@@ -251,11 +251,9 @@ public class CombatManager {
 		if (!attackRoll.criticalHit() && !attackRoll.criticalMiss() && victim instanceof ServerPlayer serverVictim) {
 			targetAc = ShieldManager.effectiveAc(serverVictim, attackRoll.outcome().result().getValue(), targetAc);
 		}
-		if (inspiration > 0) ChatFeedback.broadcast(attacker, Component.translatable("chat.dndsheets.combat.bardic_inspiration", attackerName, inspiration).withStyle(ChatFormatting.LIGHT_PURPLE));
-
 		if (attackRoll.criticalMiss() || (!attackRoll.criticalHit() && attackRoll.outcome().result().getValue() < targetAc)) {
 			event.setCanceled(true); //Fallo: ni siquiera se aplica la reducción de daño de la armadura de Minecraft, no hay golpe.
-			ChatFeedback.broadcast(attacker, ChatFeedback.attackResult(attackerName, victimName, weapon.name(), attackRoll.outcome().formatted(), targetAc, false, null));
+			ChatFeedback.broadcast(attacker, ChatFeedback.attackResult(attackerName, victimName, weapon.name(), attackRoll.outcome().formatted(), targetAc, false, null, inspiration));
 			return;
 		}
 
@@ -268,8 +266,8 @@ public class CombatManager {
 		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), affinity);
 		event.setAmount(finalAmount);
 		ConcentrationManager.onDamageTaken((ServerPlayer) victim, finalAmount);
-		CombatFx.hit(victim, attackRoll.criticalHit());
-		ChatFeedback.broadcast(attacker, ChatFeedback.attackResult(attackerName, victimName, weapon.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()));
+		CombatFx.hit(victim, attackRoll.criticalHit(), weaponDefault.damageType());
+		ChatFeedback.broadcast(attacker, ChatFeedback.attackResult(attackerName, victimName, weapon.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted(), inspiration));
 	}
 
 	//Jugador ataca a un monstruo invocado por /dndmonsters spawn: mismo ataque-vs-CA que en PvP, pero el
@@ -297,10 +295,9 @@ public class CombatManager {
 		sendSheetUpdate(attacker);
 
 		String attackerName = SheetLoader.characterNameOf(attackerSheet, attacker);
-		if (inspiration > 0) ChatFeedback.broadcast(attacker, Component.translatable("chat.dndsheets.combat.bardic_inspiration", attackerName, inspiration).withStyle(ChatFormatting.LIGHT_PURPLE));
 
 		if (attackRoll.criticalMiss() || (!attackRoll.criticalHit() && attackRoll.outcome().result().getValue() < block.ac())) {
-			ChatFeedback.broadcast(attacker, ChatFeedback.attackResult(attackerName, block.name(), weapon.name(), attackRoll.outcome().formatted(), block.ac(), false, null));
+			ChatFeedback.broadcast(attacker, ChatFeedback.attackResult(attackerName, block.name(), weapon.name(), attackRoll.outcome().formatted(), block.ac(), false, null, inspiration));
 			return;
 		}
 
@@ -308,10 +305,9 @@ public class CombatManager {
 		if (damageRoll == null) return;
 
 		int remainingHp = MonsterRegistry.currentHpOf(monsterEntity) - damageRoll.amount();
-		CombatFx.hit(monsterEntity, attackRoll.criticalHit());
-		MutableComponent message = ChatFeedback.attackResult(attackerName, block.name(), weapon.name(), attackRoll.outcome().formatted(), block.ac(), true, damageRoll.formatted())
+		CombatFx.hit(monsterEntity, attackRoll.criticalHit(), weaponDefault != null ? weaponDefault.damageType() : "contundente");
+		MutableComponent message = ChatFeedback.attackResult(attackerName, block.name(), weapon.name(), attackRoll.outcome().formatted(), block.ac(), true, damageRoll.formatted(), inspiration)
 			.append(Component.translatable("chat.dndsheets.combat.hp_suffix", Math.max(remainingHp, 0), block.maxHp()).withStyle(ChatFormatting.DARK_GRAY));
-		ChatFeedback.broadcast(attacker, message);
 
 		if (remainingHp <= 0) {
 			CombatFx.defeated(monsterEntity);
@@ -330,10 +326,13 @@ public class CombatManager {
 			} else {
 				monsterEntity.remove(Entity.RemovalReason.KILLED);
 			}
-			ChatFeedback.broadcast(attacker, ChatFeedback.defeated(attackerName, block.name()));
+			//Antes esto era un ChatFeedback.defeated() aparte, una segunda línea de chat para el mismo golpe
+			//que ya se acaba de anunciar arriba — se pega como sufijo a la misma línea en su lugar.
+			message.append(Component.translatable("chat.dndsheets.combat.defeated_suffix", block.name()).withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
 		} else {
 			MonsterRegistry.setCurrentHp(monsterEntity, remainingHp);
 		}
+		ChatFeedback.broadcast(attacker, message);
 	}
 
 	//Bono de CA de llevar un escudo de verdad (+2 en 5e): player.getArmorValue() vanilla NUNCA lo cuenta —

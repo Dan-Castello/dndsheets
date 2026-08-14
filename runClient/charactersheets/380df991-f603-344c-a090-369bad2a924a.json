@@ -76,30 +76,125 @@
       "rolls": [
         [
           {
+            "context": "",
+            "expression": ""
+          },
+          {
+            "context": "",
+            "expression": ""
+          }
+        ]
+      ]
+    },
+    {
+      "name": "New Attack",
+      "rolls": [
+        [
+          {
+            "context": "Damage Roll",
+            "expression": "2d6 + $str"
+          },
+          {
+            "context": "",
+            "expression": ""
+          }
+        ],
+        [
+          {
+            "context": "Attack Roll",
+            "expression": "1d20 + $str + $prof"
+          },
+          {
+            "context": "",
+            "expression": ""
+          }
+        ]
+      ]
+    },
+    {
+      "name": "New Attack",
+      "rolls": [
+        [
+          {
+            "context": "Damage Roll",
+            "expression": "2d6 + $str"
+          },
+          {
+            "context": "",
+            "expression": ""
+          }
+        ],
+        [
+          {
+            "context": "Attack Roll",
+            "expression": "1d20 + $str + $prof"
+          },
+          {
+            "context": "",
+            "expression": ""
+          }
+        ]
+      ]
+    },
+    {
+      "name": "New Attack",
+      "rolls": [
+        [
+          {
+            "context": "Damage Roll",
+            "expression": "2d6 + $str"
+          },
+          {
+            "context": "",
+            "expression": ""
+          }
+        ],
+        [
+          {
+            "context": "Attack Roll",
+            "expression": "1d20 + $str + $prof"
+          },
+          {
+            "context": "",
+            "expression": ""
+          }
+        ]
+      ]
+    },
+    {
+      "name": "Espada de netherita",
+      "itemId": "minecraft:netherite_sword",
+      "rolls": [
+        [
+          {
             "context": "Daño",
-            "expression": "1d8 + $dex"
+            "expression": "1d6 + $str"
           }
         ]
       ]
     }
   ],
-  "characterClass": "Hechicero",
-  "characterRace": "Semielfo",
-  "background": "Héroe del pueblo",
-  "hitPoints": "6",
-  "hitPointsMax": "6",
+  "characterClass": "Brujo",
+  "characterRace": "Tiefling",
+  "background": "Criminal",
+  "hitPoints": "8",
+  "hitPointsMax": "8",
   "hitPointsTemp": "0",
   "armorClass": "10",
   "speed": "",
   "hitDiceTypes": "",
   "hitDice": "",
   "schemaVersion": 1,
-  "level": "1",
+  "level": "4",
   "nextAttackAdvantage": "normal",
   "counterspellReady": true,
-  "twinnedSpellPending": true,
   "spells": [],
-  "traits": [],
-  "spellSlotsCurrent": 2,
-  "spellSlotsMax": 5
+  "traits": [
+    "monje:artes_marciales",
+    "picaro:ataque_furtivo"
+  ],
+  "spellSlotsCurrent": 6,
+  "spellSlotsMax": 10,
+  "gold": 0,
+  "warlockPact": "cadena"
 }

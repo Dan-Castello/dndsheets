@@ -33,10 +33,8 @@ import java.util.function.Function;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.List;
 import java.util.Collection;
-import java.util.ArrayList;
-import java.util.AbstractMap;
+import java.util.Iterator;
 import java.util.UUID;
 
 @Mod("dndsheets")
@@ -56,7 +54,13 @@ public class DndsheetsMod {
 		ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC, "dndsheets-common.toml");
 	}
 
-	private static final String PROTOCOL_VERSION = "1";
+	//Sube a "2": registerNetworkMessages() fusionó 6 mensajes en SheetAdjustMessage (ver F14 del audit).
+	//messageID se asigna por ORDEN de registro, no por constante fija por clase — fusionar/quitar/añadir
+	//una entrada renumera TODO lo que se registra después en la lista, no solo lo tocado. Sin subir esto,
+	//un cliente y un servidor de versiones de mod distintas igual pasarían el handshake (mismo string de
+	//antes) y acabarían desalineados en el id de mensaje para cualquier cosa después del punto de cambio,
+	//en vez de que Forge los rechace limpio al conectar por versión de protocolo incompatible.
+	private static final String PROTOCOL_VERSION = "2";
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 
@@ -77,6 +81,14 @@ public class DndsheetsMod {
 		addNetworkMessage(CharacterSheetOpenMessage.class, CharacterSheetOpenMessage::buffer, CharacterSheetOpenMessage::new, CharacterSheetOpenMessage::handler);
 		addNetworkMessage(ClearCustomAttacksMessage.class, ClearCustomAttacksMessage::buffer, ClearCustomAttacksMessage::new, ClearCustomAttacksMessage::handler);
 		addNetworkMessage(DeathSaveGiveUpMessage.class, DeathSaveGiveUpMessage::buffer, DeathSaveGiveUpMessage::new, DeathSaveGiveUpMessage::handler);
+		addNetworkMessage(DungeonGenerateMessage.class, DungeonGenerateMessage::buffer, DungeonGenerateMessage::new, DungeonGenerateMessage::handler);
+		addNetworkMessage(DungeonJigsawConfigureMessage.class, DungeonJigsawConfigureMessage::buffer, DungeonJigsawConfigureMessage::new, DungeonJigsawConfigureMessage::handler);
+		addNetworkMessage(DungeonJigsawConfigureOpenMessage.class, DungeonJigsawConfigureOpenMessage::buffer, DungeonJigsawConfigureOpenMessage::new, DungeonJigsawConfigureOpenMessage::handler);
+		addNetworkMessage(DungeonPieceAddOpenMessage.class, DungeonPieceAddOpenMessage::buffer, DungeonPieceAddOpenMessage::new, DungeonPieceAddOpenMessage::handler);
+		addNetworkMessage(DungeonPieceCaptureMessage.class, DungeonPieceCaptureMessage::buffer, DungeonPieceCaptureMessage::new, DungeonPieceCaptureMessage::handler);
+		addNetworkMessage(DungeonPieceListMessage.class, DungeonPieceListMessage::buffer, DungeonPieceListMessage::new, DungeonPieceListMessage::handler);
+		addNetworkMessage(DungeonPieceListRequestMessage.class, DungeonPieceListRequestMessage::buffer, DungeonPieceListRequestMessage::new, DungeonPieceListRequestMessage::handler);
+		addNetworkMessage(DungeonPieceUpdateMessage.class, DungeonPieceUpdateMessage::buffer, DungeonPieceUpdateMessage::new, DungeonPieceUpdateMessage::handler);
 		addNetworkMessage(DeathSaveRollMessage.class, DeathSaveRollMessage::buffer, DeathSaveRollMessage::new, DeathSaveRollMessage::handler);
 		addNetworkMessage(MonsterActionChooseMessage.class, MonsterActionChooseMessage::buffer, MonsterActionChooseMessage::new, MonsterActionChooseMessage::handler);
 		addNetworkMessage(MonsterActionOpenMessage.class, MonsterActionOpenMessage::buffer, MonsterActionOpenMessage::new, MonsterActionOpenMessage::handler);
@@ -92,16 +104,11 @@ public class DndsheetsMod {
 		addNetworkMessage(RestVoteResponseMessage.class, RestVoteResponseMessage::buffer, RestVoteResponseMessage::new, RestVoteResponseMessage::handler);
 		addNetworkMessage(RollEditorOpenMessage.class, RollEditorOpenMessage::buffer, RollEditorOpenMessage::new, RollEditorOpenMessage::handler);
 		addNetworkMessage(ScreenActionMessage.class, ScreenActionMessage::buffer, ScreenActionMessage::new, ScreenActionMessage::handler);
-		addNetworkMessage(SheetAdvantageMessage.class, SheetAdvantageMessage::buffer, SheetAdvantageMessage::new, SheetAdvantageMessage::handler);
+		addNetworkMessage(SheetAdjustMessage.class, SheetAdjustMessage::buffer, SheetAdjustMessage::new, SheetAdjustMessage::handler);
 		addNetworkMessage(SheetClientMessage.class, SheetClientMessage::buffer, SheetClientMessage::new, SheetClientMessage::handler);
-		addNetworkMessage(SheetDamageAffinityMessage.class, SheetDamageAffinityMessage::buffer, SheetDamageAffinityMessage::new, SheetDamageAffinityMessage::handler);
 		addNetworkMessage(SheetFieldUpdateMessage.class, SheetFieldUpdateMessage::buffer, SheetFieldUpdateMessage::new, SheetFieldUpdateMessage::handler);
-		addNetworkMessage(SheetGoldMessage.class, SheetGoldMessage::buffer, SheetGoldMessage::new, SheetGoldMessage::handler);
-		addNetworkMessage(SheetLevelMessage.class, SheetLevelMessage::buffer, SheetLevelMessage::new, SheetLevelMessage::handler);
-		addNetworkMessage(SheetPactMessage.class, SheetPactMessage::buffer, SheetPactMessage::new, SheetPactMessage::handler);
 		addNetworkMessage(SheetRollButtonMessage.class, SheetRollButtonMessage::buffer, SheetRollButtonMessage::new, SheetRollButtonMessage::handler);
 		addNetworkMessage(SheetServerMessage.class, SheetServerMessage::buffer, SheetServerMessage::new, SheetServerMessage::handler);
-		addNetworkMessage(SheetSlotsMessage.class, SheetSlotsMessage::buffer, SheetSlotsMessage::new, SheetSlotsMessage::handler);
 		addNetworkMessage(SheetSummaryMessage.class, SheetSummaryMessage::buffer, SheetSummaryMessage::new, SheetSummaryMessage::handler);
 		addNetworkMessage(SheetSummaryRequestMessage.class, SheetSummaryRequestMessage::buffer, SheetSummaryRequestMessage::new, SheetSummaryRequestMessage::handler);
 		addNetworkMessage(SpawnGenericMessage.class, SpawnGenericMessage::buffer, SpawnGenericMessage::new, SpawnGenericMessage::handler);
@@ -114,8 +121,7 @@ public class DndsheetsMod {
 		addNetworkMessage(TurnStateMessage.class, TurnStateMessage::buffer, TurnStateMessage::new, TurnStateMessage::handler);
 	}
 
-	//Patrón repetido en los mensajes cliente(DM)->servidor que actúan sobre OTRO jugador (SheetLevelMessage,
-	//SheetGoldMessage, SheetSlotsMessage, SheetAdvantageMessage, SheetDamageAffinityMessage, SheetPactMessage,
+	//Patrón repetido en los mensajes cliente(DM)->servidor que actúan sobre OTRO jugador (SheetAdjustMessage,
 	//TraitGrantMessage, PresetApplyToMessage): comprobar que quien envía el mensaje es un operador y que el
 	//jugador objetivo sigue conectado, antes de delegar. Llamar dentro de context.enqueueWork(...).
 	public static void withDmTarget(NetworkEvent.Context context, String targetUuid, Consumer<ServerPlayer> action) {
@@ -140,23 +146,35 @@ public class DndsheetsMod {
 		PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetFieldUpdateMessage(patch.toString().getBytes()));
 	}
 
-	private static final Collection<AbstractMap.SimpleEntry<Runnable, Integer>> workQueue = new ConcurrentLinkedQueue<>();
+	//Mutable a propósito (ticksLeft se decrementa in place cada tick): un record forzaría reconstruir/
+	//reemplazar la entrada en la cola en cada tick solo para restar 1.
+	private static final class PendingWork {
+		final Runnable action;
+		int ticksLeft;
+
+		PendingWork(Runnable action, int ticksLeft) {
+			this.action = action;
+			this.ticksLeft = ticksLeft;
+		}
+	}
+
+	private static final Collection<PendingWork> workQueue = new ConcurrentLinkedQueue<>();
 
 	public static void queueServerWork(int tick, Runnable action) {
-		workQueue.add(new AbstractMap.SimpleEntry(action, tick));
+		workQueue.add(new PendingWork(action, tick));
 	}
 
 	@SubscribeEvent
 	public void tick(TickEvent.ServerTickEvent event) {
-		if (event.phase == TickEvent.Phase.END) {
-			List<AbstractMap.SimpleEntry<Runnable, Integer>> actions = new ArrayList<>();
-			workQueue.forEach(work -> {
-				work.setValue(work.getValue() - 1);
-				if (work.getValue() == 0)
-					actions.add(work);
-			});
-			actions.forEach(e -> e.getKey().run());
-			workQueue.removeAll(actions);
+		if (event.phase != TickEvent.Phase.END || workQueue.isEmpty()) return;
+
+		Iterator<PendingWork> it = workQueue.iterator();
+		while (it.hasNext()) {
+			PendingWork work = it.next();
+			if (--work.ticksLeft <= 0) {
+				work.action.run();
+				it.remove();
+			}
 		}
 	}
 }

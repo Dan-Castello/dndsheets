@@ -131,13 +131,14 @@ public class ChatFeedback {
 		return msg;
 	}
 
-	//[Combate] ¡Fulano ha derrotado a Goblin!
-	public static MutableComponent defeated(String attackerName, String targetName) {
-		return tag("chat.dndsheets.tag.combat", COMBAT_TAG)
-			.append(name(attackerName))
-			.append(Component.translatable("chat.dndsheets.combat.defeated").withStyle(HIT, ChatFormatting.BOLD))
-			.append(name(targetName))
-			.append(dim("."));
+	//Igual que arriba, más una nota de Inspiración de Bardo pegada a la MISMA línea (0 = sin inspiración,
+	//no agrega nada). Antes cada ataque con inspiración activa eran DOS broadcast() separados ("Fulano usa
+	//su Inspiración de Bardo" + la línea del ataque en sí) — mismo evento, mismo turno, el doble de líneas
+	//en un chat que ya se llena rápido con varios jugadores y enemigos actuando por ronda.
+	public static MutableComponent attackResult(String attackerName, String targetName, String weaponName, String rollText, int ac, boolean hit, String damageText, int inspiration) {
+		MutableComponent msg = attackResult(attackerName, targetName, weaponName, rollText, ac, hit, damageText);
+		if (inspiration > 0) msg.append(dim(Component.translatable("chat.dndsheets.combat.inspiration_note", inspiration)));
+		return msg;
 	}
 
 	//[Magia] Fulano cura a Mengano con Curar Heridas: 8=8[1d8]+3 PG

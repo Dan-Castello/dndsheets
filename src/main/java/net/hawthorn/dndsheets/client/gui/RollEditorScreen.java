@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.network.CharacterSheetOpenMessage;
-import net.hawthorn.dndsheets.procedures.CharacterSheetSaveProcedure;
+import net.hawthorn.dndsheets.client.procedures.CharacterSheetSaveProcedure;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;

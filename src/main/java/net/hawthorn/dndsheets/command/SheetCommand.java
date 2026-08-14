@@ -271,7 +271,7 @@ public class SheetCommand {
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.SheetPactMessage).
+	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage).
 	public static void applyPact(ServerPlayer target, String pacto) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;
@@ -289,7 +289,7 @@ public class SheetCommand {
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.SheetLevelMessage).
+	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage).
 	public static void applyLevel(ServerPlayer target, int nivel) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;
@@ -350,7 +350,7 @@ public class SheetCommand {
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.SheetAdvantageMessage). "label" ya debe ser
+	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage). "label" ya debe ser
 	//"normal"/"ventaja"/"desventaja" — el llamador es quien decide con qué texto exacto llegar aquí.
 	public static void applyAdvantage(ServerPlayer target, String label) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
@@ -371,7 +371,7 @@ public class SheetCommand {
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.SheetDamageAffinityMessage).
+	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage).
 	public static void applyDamageAffinity(ServerPlayer target, String damageType, String affinity) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;
@@ -398,7 +398,7 @@ public class SheetCommand {
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.SheetGoldMessage). Devuelve el oro resultante,
+	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage). Devuelve el oro resultante,
 	//para que el panel pueda refrescar lo que muestra sin pedirlo aparte.
 	public static int applyGold(ServerPlayer target, String mode, int amount) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
@@ -446,13 +446,13 @@ public class SheetCommand {
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.SheetSlotsMessage). "current" se recorta a "max" igual que el comando.
+	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage). "current" se recorta a "max" igual que el comando.
 	public static void applySlots(ServerPlayer target, int max, int current) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;
 
 		//El comando ya acota [0,99] con Brigadier, pero el Panel de DM llega acá directo por
-		//network.SheetSlotsMessage (un VarInt crudo, sin cota) — se acota acá, en el único punto por el
+		//network.SheetAdjustMessage (un VarInt crudo, sin cota) — se acota acá, en el único punto por el
 		//que pasan los dos caminos, para no depender de que cada llamador se acuerde de validar.
 		max = Math.max(0, Math.min(max, 99));
 		current = Math.max(0, Math.min(current, 99));

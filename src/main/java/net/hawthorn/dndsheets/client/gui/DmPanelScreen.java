@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
+import net.hawthorn.dndsheets.network.DungeonPieceListRequestMessage;
 import net.hawthorn.dndsheets.network.PresetListRequestMessage;
 import net.hawthorn.dndsheets.network.SheetSummaryRequestMessage;
 import net.hawthorn.dndsheets.network.TraitListRequestMessage;
@@ -34,6 +35,8 @@ public class DmPanelScreen extends ListPickerScreen {
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetSummaryRequestMessage(uuid))));
 		addRow(Component.literal("Aplicar preset a jugador"), b -> PlayerPickerScreen.open("Elige a quién aplicar el preset",
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage(uuid))));
+		addRow(Component.literal("Mazmorras (piezas y generación)"),
+			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new DungeonPieceListRequestMessage()));
 		addRow(Component.translatable("gui.dndsheets.guide.button"), b -> GuideBook.open(true));
 	}
 }

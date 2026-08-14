@@ -7,7 +7,7 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.RollIndex;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.network.CharacterSheetOpenMessage;
-import net.hawthorn.dndsheets.procedures.CharacterSheetSaveProcedure;
+import net.hawthorn.dndsheets.client.procedures.CharacterSheetSaveProcedure;
 import net.hawthorn.dndsheets.world.inventory.AdvancedRollEditorMenu;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;

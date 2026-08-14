@@ -154,13 +154,21 @@ public class RollScrollWidget extends AbstractScrollWidget {
         return names.toArray(arr);
     }
 
-    public EditBox[] getEditBoxes() {
-        List<EditBox> editboxes = new ArrayList<>();
-        EditBox[] arr = new EditBox[0];
-        list.forEach((item) -> {
-            editboxes.add(item.nameBox);
-        });
-        return editboxes.toArray(arr);
+    //F12 del audit: containerTick() llamaba a esto 20 veces por segundo solo para iterar el resultado una
+    //vez y tirarlo — se reconstruía un ArrayList + array nuevos en cada tick aunque la lista de armas no
+    //hubiera cambiado. tickNameBoxes()/forwardKeyToFocusedNameBox() iteran la lista interna directo.
+    public void tickNameBoxes() {
+        list.forEach((item) -> item.nameBox.tick());
+    }
+
+    public boolean forwardKeyToFocusedNameBox(int key, int scancode, int modifiers) {
+        for (ListItem item : list) {
+            if (item.nameBox.isFocused()) {
+                item.nameBox.keyPressed(key, scancode, modifiers);
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

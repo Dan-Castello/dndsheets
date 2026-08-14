@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.client.gui.components.ButtonListWidget;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -18,17 +19,33 @@ import net.minecraft.network.chat.Component;
  * <p>{@code init()} e {@code render()} no son {@code final}: una pantalla con contenido extra (un
  * subtítulo, un botón fijo bajo la lista) puede sobrescribirlos, llamar a {@code super} primero y
  * añadir lo suyo encima — más simple que intentar prever cada variante con parámetros.</p>
+ *
+ * <p><b>Navegación:</b> si esta pantalla se abrió desde otra (Panel de DM, selector de jugador...),
+ * pasa esa pantalla como {@code parent}. Elegir una fila, pulsar "&lt; Atrás" o Escape vuelve a
+ * {@code parent} en vez de cerrar todo el menú — antes solo {@code CharacterOptionListScreen} hacía
+ * esto a mano; ahora es el comportamiento por defecto de la base. Sin {@code parent} (pantallas raíz
+ * como {@code DmPanelScreen}/{@code MonsterActionScreen}) se comporta como antes: cierra el menú.</p>
  */
 public abstract class ListPickerScreen extends Screen {
 	protected static final int BUTTON_HEIGHT = 20;
 	protected static final int SPACING = 4;
 	private static final int LIST_TOP = 30;
 	private static final int PANEL_PADDING = 10;
+	private static final int BACK_BUTTON_WIDTH = 50;
+	private static final int BACK_BUTTON_HEIGHT = 14;
 
+	private final Screen parent;
 	private ButtonListWidget list;
 
+	/** Pantalla raíz, sin nada a lo que volver (p. ej. abierta por keybind o clic derecho). */
 	protected ListPickerScreen(Component title) {
+		this(title, null);
+	}
+
+	/** {@code parent} es la pantalla a la que "&lt; Atrás"/Escape deben volver; null si es la pantalla raíz de su flujo. */
+	protected ListPickerScreen(Component title, Screen parent) {
 		super(title);
+		this.parent = parent;
 	}
 
 	/** Ancho de los botones de la lista y del panel. Sobrescribir para una lista más ancha (p. ej. Grimorio). */
@@ -66,6 +83,20 @@ public abstract class ListPickerScreen extends Screen {
 		list = new ButtonListWidget((this.width - buttonWidth()) / 2, listTop(), buttonWidth(), listHeight(), BUTTON_HEIGHT + SPACING);
 		buildRows();
 		this.addRenderableWidget(list);
+
+		if (parent != null) {
+			int left = (this.width - buttonWidth()) / 2 - PANEL_PADDING;
+			int top = 16 - PANEL_PADDING;
+			this.addRenderableWidget(Button.builder(Component.literal("< Atrás"), b -> this.onClose())
+				.bounds(left + 2, top + 2, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT).build());
+		}
+	}
+
+	//Volver a la pantalla anterior en vez de cerrar el menú entero — setScreen(null) cuando no hay
+	//parent replica exactamente el comportamiento por defecto de Screen#onClose().
+	@Override
+	public void onClose() {
+		Minecraft.getInstance().setScreen(parent);
 	}
 
 	@Override

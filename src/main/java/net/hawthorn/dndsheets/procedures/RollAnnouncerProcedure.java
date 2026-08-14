@@ -120,12 +120,17 @@ public class RollAnnouncerProcedure {
 		announce(world, x, y, z, roller, message, isPrivate);
 	}
 
-	//Punto único de entrega, para las dos formas de tirada (sheet y /roll): pública a todo el servidor
-	//como siempre, o privada (ver sendPrivately) — el sonido de dado se oye igual en ambos casos, es
-	//ambiente, no delata el resultado.
+	//Punto único de entrega, para las dos formas de tirada (sheet y /roll): pública a quien esté cerca de
+	//verdad (ver ChatFeedback.broadcast, mismo radio), o privada (ver sendPrivately) — antes esto era
+	//broadcastSystemMessage server-wide, así que CUALQUIER tirada suelta de habilidad/salvación de
+	//CUALQUIER jugador (los botones de la hoja, /roll) llegaba a todo el servidor sin importar dónde
+	//estuviera — con una mesa grande esto era la mayor fuente de saturación del chat, muy por encima de
+	//combate/magia (que ya estaban acotados). El sonido de dado se oye igual en ambos casos, es ambiente,
+	//no delata el resultado.
 	private static void announce(LevelAccessor world, double x, double y, double z, Entity roller, Component message, boolean isPrivate) {
 		if (isPrivate) sendPrivately(world, roller, message);
-		else world.getServer().getPlayerList().broadcastSystemMessage(message, false);
+		else if (roller != null) ChatFeedback.broadcast(roller, message);
+		else world.getServer().getPlayerList().broadcastSystemMessage(message, false); //Sin entidad de origen (no debería pasar, ver RollCommand), no hay desde dónde medir radio.
 
 		if (world instanceof Level level && !level.isClientSide()) {
 			level.playSound(null, BlockPos.containing(x, y, z), DndsheetsModSounds.DICE.get(), SoundSource.NEUTRAL, 1, 1);

@@ -4,6 +4,7 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.TurnEffectApplyMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -20,13 +21,13 @@ public class AddTurnEffectScreen extends SmallFormScreen {
 	private EditBox turnsBox;
 	private CycleField dice;
 
-	private AddTurnEffectScreen(String targetUuid) {
-		super(Component.literal("Aplicar efecto"), 2);
+	private AddTurnEffectScreen(String targetUuid, Screen parent) {
+		super(Component.literal("Aplicar efecto"), 2, parent);
 		this.targetUuid = targetUuid;
 	}
 
 	public static void open(String targetUuid) {
-		Minecraft.getInstance().setScreen(new AddTurnEffectScreen(targetUuid));
+		Minecraft.getInstance().setScreen(new AddTurnEffectScreen(targetUuid, Minecraft.getInstance().screen));
 	}
 
 	@Override

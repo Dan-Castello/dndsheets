@@ -2,12 +2,7 @@ package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.PassivePerceptionRequestMessage;
-import net.hawthorn.dndsheets.network.SheetAdvantageMessage;
-import net.hawthorn.dndsheets.network.SheetDamageAffinityMessage;
-import net.hawthorn.dndsheets.network.SheetGoldMessage;
-import net.hawthorn.dndsheets.network.SheetLevelMessage;
-import net.hawthorn.dndsheets.network.SheetPactMessage;
-import net.hawthorn.dndsheets.network.SheetSlotsMessage;
+import net.hawthorn.dndsheets.network.SheetAdjustMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -70,6 +65,7 @@ public class SheetAdjustScreen extends Screen {
 
 	private final String targetUuid;
 	private final String targetName;
+	private final Screen parent;
 	private final int gold;
 	private final int slotsMax;
 	private final int slotsCurrent;
@@ -92,7 +88,7 @@ public class SheetAdjustScreen extends Screen {
 	private Button affinityButton;
 	private Button pactButton;
 
-	private SheetAdjustScreen(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac) {
+	private SheetAdjustScreen(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac, Screen parent) {
 		super(Component.literal("Ajustes de hoja"));
 		this.targetUuid = targetUuid;
 		this.targetName = targetName;
@@ -102,10 +98,18 @@ public class SheetAdjustScreen extends Screen {
 		this.hp = hp;
 		this.maxHp = maxHp;
 		this.ac = ac;
+		this.parent = parent;
 	}
 
 	public static void open(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac) {
-		Minecraft.getInstance().setScreen(new SheetAdjustScreen(targetUuid, targetName, gold, slotsMax, slotsCurrent, hp, maxHp, ac));
+		Minecraft.getInstance().setScreen(new SheetAdjustScreen(targetUuid, targetName, gold, slotsMax, slotsCurrent, hp, maxHp, ac, Minecraft.getInstance().screen));
+	}
+
+	//Vuelve a la pantalla anterior (normalmente PlayerPickerScreen) en vez de cerrar todo el menú —
+	//mismo mecanismo que ListPickerScreen/SmallFormScreen, ver esas clases.
+	@Override
+	public void onClose() {
+		Minecraft.getInstance().setScreen(parent);
 	}
 
 	@Override
@@ -118,16 +122,17 @@ public class SheetAdjustScreen extends Screen {
 		goldAmountBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Cantidad"));
 		goldAmountBox.setValue("0");
 		goldAmountBox.setMaxLength(10);
+		goldAmountBox.setTooltip(Tooltip.create(Component.literal("Cantidad de oro a sumar o fijar con los botones de la derecha.")));
 		this.addWidget(goldAmountBox);
 		this.setInitialFocus(goldAmountBox);
 		Button addGoldButton = Button.builder(Component.literal("Añadir"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetGoldMessage(targetUuid, "add", parseIntOr(goldAmountBox.getValue(), 0)))
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.gold(targetUuid, "add", parseIntOr(goldAmountBox.getValue(), 0)))
 		).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, 40, FIELD_HEIGHT).build();
 		addGoldButton.setTooltip(Tooltip.create(Component.literal("Suma esta cantidad al oro actual del jugador.")));
 		this.addRenderableWidget(addGoldButton);
 
 		Button setGoldButton = Button.builder(Component.literal("Fijar"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetGoldMessage(targetUuid, "set", parseIntOr(goldAmountBox.getValue(), 0)))
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.gold(targetUuid, "set", parseIntOr(goldAmountBox.getValue(), 0)))
 		).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 48, y, 40, FIELD_HEIGHT).build();
 		setGoldButton.setTooltip(Tooltip.create(Component.literal("Reemplaza el oro actual del jugador por esta cantidad.")));
 		this.addRenderableWidget(setGoldButton);
@@ -137,15 +142,17 @@ public class SheetAdjustScreen extends Screen {
 		slotsMaxBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Máximo"));
 		slotsMaxBox.setValue(String.valueOf(slotsMax));
 		slotsMaxBox.setMaxLength(3);
+		slotsMaxBox.setTooltip(Tooltip.create(Component.literal("Espacios de conjuro MÁXIMOS del jugador.")));
 		this.addWidget(slotsMaxBox);
 
 		slotsCurrentBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Actual"));
 		slotsCurrentBox.setValue(String.valueOf(slotsCurrent));
 		slotsCurrentBox.setMaxLength(3);
+		slotsCurrentBox.setTooltip(Tooltip.create(Component.literal("Espacios de conjuro que le quedan AHORA MISMO al jugador.")));
 		this.addWidget(slotsCurrentBox);
 
 		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetSlotsMessage(targetUuid, parseIntOr(slotsMaxBox.getValue(), 0), parseIntOr(slotsCurrentBox.getValue(), 0)))
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.slots(targetUuid, parseIntOr(slotsMaxBox.getValue(), 0), parseIntOr(slotsCurrentBox.getValue(), 0)))
 		).bounds(centerX - WIDE_WIDTH / 2 + (FIELD_WIDTH + 4) * 2, y, WIDE_WIDTH - (FIELD_WIDTH + 4) * 2, FIELD_HEIGHT).build());
 		y += ROW_HEIGHT;
 
@@ -156,7 +163,7 @@ public class SheetAdjustScreen extends Screen {
 		}).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH - 60, FIELD_HEIGHT).build());
 		advantageButton.setTooltip(Tooltip.create(Component.literal("Se aplica solo a la próxima tirada de ataque del jugador, luego vuelve a Normal.")));
 		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetAdvantageMessage(targetUuid, ADVANTAGE_LABELS[advantageIndex]))
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.advantage(targetUuid, ADVANTAGE_LABELS[advantageIndex]))
 		).bounds(centerX - WIDE_WIDTH / 2 + WIDE_WIDTH - 56, y, 56, FIELD_HEIGHT).build());
 		y += ROW_HEIGHT;
 
@@ -171,7 +178,7 @@ public class SheetAdjustScreen extends Screen {
 		}).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, FIELD_WIDTH, FIELD_HEIGHT).build());
 		affinityButton.setTooltip(Tooltip.create(Component.literal("Normal = daño normal, Resistente = mitad, Vulnerable = doble, Inmune = ninguno.")));
 		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetDamageAffinityMessage(targetUuid, DAMAGE_TYPES[damageTypeIndex], AFFINITIES[affinityIndex]))
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.damageAffinity(targetUuid, DAMAGE_TYPES[damageTypeIndex], AFFINITIES[affinityIndex]))
 		).bounds(centerX - WIDE_WIDTH / 2 + (FIELD_WIDTH + 4) * 2, y, WIDE_WIDTH - (FIELD_WIDTH + 4) * 2, FIELD_HEIGHT).build());
 		y += ROW_HEIGHT;
 
@@ -182,7 +189,7 @@ public class SheetAdjustScreen extends Screen {
 		}).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH - 60, FIELD_HEIGHT).build());
 		pactButton.setTooltip(Tooltip.create(Component.literal("Elección permanente: Pacto de la Hoja usa Carisma para atacar/dañar con armas.")));
 		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetPactMessage(targetUuid, PACTS[pactIndex]))
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.pact(targetUuid, PACTS[pactIndex]))
 		).bounds(centerX - WIDE_WIDTH / 2 + WIDE_WIDTH - 56, y, 56, FIELD_HEIGHT).build());
 		y += ROW_HEIGHT;
 
@@ -193,7 +200,7 @@ public class SheetAdjustScreen extends Screen {
 		levelBox.setTooltip(Tooltip.create(Component.literal("Desacopla el nivel de personaje del XP real de Minecraft.")));
 		this.addWidget(levelBox);
 		Button setLevelButton = Button.builder(Component.literal("Fijar nivel"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetLevelMessage(targetUuid, parseIntOr(levelBox.getValue(), 1)))
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.level(targetUuid, parseIntOr(levelBox.getValue(), 1)))
 		).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, WIDE_WIDTH - FIELD_WIDTH - 4, FIELD_HEIGHT).build();
 		setLevelButton.setTooltip(Tooltip.create(Component.literal("Elección permanente: fija el nivel de personaje, no solo lo estima del XP.")));
 		this.addRenderableWidget(setLevelButton);
@@ -205,7 +212,7 @@ public class SheetAdjustScreen extends Screen {
 		).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT).build());
 		y += ROW_HEIGHT + 4;
 
-		this.addRenderableWidget(Button.builder(Component.literal("Cerrar"), button -> this.onClose())
+		this.addRenderableWidget(Button.builder(Component.literal("< Atrás"), button -> this.onClose())
 			.bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT).build());
 
 		formBottom = y + FIELD_HEIGHT + 10;

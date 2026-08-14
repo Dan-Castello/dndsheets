@@ -28,6 +28,8 @@ public class GuideBook {
 	private static final String[] DM_PAGES = {
 		"gui.dndsheets.guide.page.dm_panel",
 		"gui.dndsheets.guide.page.dm_wand",
+		"gui.dndsheets.guide.page.dm_dungeons_1",
+		"gui.dndsheets.guide.page.dm_dungeons_2",
 		"gui.dndsheets.guide.page.dm_notes",
 		"gui.dndsheets.guide.page.dm_turns",
 		"gui.dndsheets.guide.page.dm_content_packs",

@@ -14,7 +14,7 @@ import net.hawthorn.dndsheets.network.AdvancedRollEditorOpenMessage;
 import net.hawthorn.dndsheets.network.CharacterOptionsRequestMessage;
 import net.hawthorn.dndsheets.network.PresetListRequestMessage;
 import net.hawthorn.dndsheets.network.RollEditorOpenMessage;
-import net.hawthorn.dndsheets.procedures.CharacterSheetSaveProcedure;
+import net.hawthorn.dndsheets.client.procedures.CharacterSheetSaveProcedure;
 import net.minecraft.client.gui.components.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
@@ -34,7 +34,7 @@ import java.util.List;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import net.hawthorn.dndsheets.procedures.CharacterSheetLoadProcedure;
+import net.hawthorn.dndsheets.client.procedures.CharacterSheetLoadProcedure;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -54,7 +54,6 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	EditBox hitPointsTemp;  // Sincronizado en vivo desde entity.getAbsorptionAmount() (corazones dorados = PG temporales de D&D)
 	EditBox armorClass;
 	EditBox speed;
-	EditBox initiative;
 	EditBox characterName;
 	EditBox characterRace;
 	EditBox characterClass;
@@ -89,14 +88,6 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	AdjustableImageButton mainTab;
 	AdjustableImageButton skillsTab;
 	AdjustableImageButton attacksTab;
-	ImageButton editToggle;
-
-	Checkbox dsaves_success_1;
-	Checkbox dsaves_success_2;
-	Checkbox dsaves_success_3;
-	Checkbox dsaves_fail_1;
-	Checkbox dsaves_fail_2;
-	Checkbox dsaves_fail_3;
 
 	RollScrollWidget attackRolls;
 	ImageButton addButton;
@@ -223,6 +214,15 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	//renderLabels corre cada frame: estos Component (texto estático, nunca cambia) se cachean una sola
 	//vez en vez de construirse de nuevo en cada uno.
 	private static final Component LABEL_NAME = Component.translatable("gui.dndsheets.character_sheet.label_name");
+	//Los íconos junto a los campos de característica (str.png, dex.png...) son pictogramas sin texto —
+	//sin esto, un jugador nuevo no tiene forma de saber cuál campo es Fuerza y cuál es Destreza salvo por
+	//el orden. Usados como tooltip (ver initAbilityScoreBoxes) y como texto de los botones de tirada.
+	private static final Component LABEL_ABILITY_STR = Component.translatable("gui.dndsheets.character_sheet.ability_str");
+	private static final Component LABEL_ABILITY_DEX = Component.translatable("gui.dndsheets.character_sheet.ability_dex");
+	private static final Component LABEL_ABILITY_CON = Component.translatable("gui.dndsheets.character_sheet.ability_con");
+	private static final Component LABEL_ABILITY_INT = Component.translatable("gui.dndsheets.character_sheet.ability_int");
+	private static final Component LABEL_ABILITY_WIS = Component.translatable("gui.dndsheets.character_sheet.ability_wis");
+	private static final Component LABEL_ABILITY_CHA = Component.translatable("gui.dndsheets.character_sheet.ability_cha");
 	private static final Component LABEL_ARMOR_CLASS_AC = Component.translatable("gui.dndsheets.character_sheet.label_armor_class_ac");
 	private static final Component LABEL_HIT_POINTS = Component.translatable("gui.dndsheets.character_sheet.label_hit_points");
 	private static final Component LABEL_HIT_POINTS_MAX = Component.translatable("gui.dndsheets.character_sheet.label_hit_points_max");
@@ -319,11 +319,6 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		guiGraphics.blit(ICON_WIS, this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y + ABILITY_SEPARATION*4, 0, 0, 16, 16, 16, 16);
 		guiGraphics.blit(ICON_CHA, this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y + ABILITY_SEPARATION*5, 0, 0, 16, 16, 16, 16);
 
-		//guiGraphics.blit(new ResourceLocation("dndsheets:textures/screens/dsaves_success.png"), this.leftPos + DEATHSAVES_OFFSET_X, this.topPos + DEATHSAVES_OFFSET_Y, 0, 0, 16, 16, 16, 16);
-		//guiGraphics.blit(new ResourceLocation("dndsheets:textures/screens/dsaves_fail.png"), this.leftPos + DEATHSAVES_OFFSET_X, this.topPos + DEATHSAVES_OFFSET_Y + 20, 0, 0, 16, 16, 16, 16);
-
-
-
 		RenderSystem.disableBlend();
 	}
 
@@ -367,13 +362,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			}
 		}
 
-		EditBox[] scrollBoxes = attackRolls.getEditBoxes();
-        for (EditBox box : scrollBoxes) {
-            if (box.isFocused()) {
-                box.keyPressed(key, b, c);
-                return true;
-            }
-        }
+		if (attackRolls.forwardKeyToFocusedNameBox(key, b, c)) return true;
 
 		return super.keyPressed(key, b, c);
 	}
@@ -405,11 +394,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		wisdom.tick();
 		charisma.tick();
 
-		EditBox[] scrollBoxes = attackRolls.getEditBoxes();
-		for (EditBox box : scrollBoxes) {
-			box.tick();
-
-		}
+		attackRolls.tickNameBoxes();
 	}
 
 	/**
@@ -467,7 +452,6 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 	@Override
 	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-		//guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.character_sheet.label_character_sheet"), 15, 10, -12829636, false);
 		final int lightColor = 0xFFFFFF;
 		final int darkColor = 0x1F1F1F;
 		guiGraphics.drawString(this.font, LABEL_NAME, NAME_OFFSET_X, NAME_OFFSET_Y - 10, lightColor, false);
@@ -585,22 +569,10 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		});
 
 		//Side Panel
-		checkButtons.forEach((e) -> {
-			e.active = !editMode;
-			e.visible = !editMode;
-		});
-		saveButtons.forEach((e) -> {
-			e.active = !editMode;
-			e.visible = !editMode;
-		});
-		checkEditButtons.forEach((e) -> {
-			e.active = editMode;
-			e.visible = editMode;
-		});
-		saveEditButtons.forEach((e) -> {
-			e.active = editMode;
-			e.visible = editMode;
-		});
+		checkButtons.forEach((e) -> setActiveVisible(!editMode, e));
+		saveButtons.forEach((e) -> setActiveVisible(!editMode, e));
+		checkEditButtons.forEach((e) -> setActiveVisible(editMode, e));
+		saveEditButtons.forEach((e) -> setActiveVisible(editMode, e));
 
 		//Main Tab
 		//A diferencia de las pestañas Skills/Attacks (más abajo), a estos campos antes solo se les tocaba
@@ -608,59 +580,32 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		//encima de Skills/Attacks en su misma posición de pantalla — la UI superpuesta reportada en
 		//AUDIT_UX.md. EditBox.visible arranca en true y nunca se apagaba.
 		isActive = panelActive == PanelStatus.MAIN;
-		hitPoints.active = isActive;
-		hitPoints.visible = isActive;
-		hitPointsTemp.active = isActive;
-		hitPointsTemp.visible = isActive;
-		hitPointsMax.active = isActive;
-		hitPointsMax.visible = isActive;
-		armorClass.active = isActive;
-		armorClass.visible = isActive;
-		characterRace.active = isActive;
-		characterRace.visible = isActive;
-		characterClass.active = isActive;
-		characterClass.visible = isActive;
-		background.active = isActive;
-		background.visible = isActive;
-		speed.active = isActive;
-		speed.visible = isActive;
-		proficiency.active = isActive;
-		proficiency.visible = isActive;
-		hitDice.active = isActive;
-		hitDice.visible = isActive;
-		hitDiceTypes.active = isActive;
-		hitDiceTypes.visible = isActive;
-		grimoireButton.active = isActive;
-		grimoireButton.visible = isActive;
-		presetsButton.active = isActive;
-		presetsButton.visible = isActive;
+		setActiveVisible(isActive, hitPoints, hitPointsTemp, hitPointsMax, armorClass, characterRace,
+			characterClass, background, speed, proficiency, hitDice, hitDiceTypes, grimoireButton, presetsButton);
 
-		isActive = panelActive == PanelStatus.MAIN && !editMode;
-		initiativeButton.active = isActive;
-		initiativeButton.visible = isActive;
-		isActive = panelActive == PanelStatus.MAIN && editMode;
-		initiativeEditButton.active = isActive;
-		initiativeEditButton.visible = isActive;
+		setActiveVisible(panelActive == PanelStatus.MAIN && !editMode, initiativeButton);
+		setActiveVisible(panelActive == PanelStatus.MAIN && editMode, initiativeEditButton);
 
 		//Skill Tab
-		skillButtons.forEach((e) -> {
-			boolean isActiveL = panelActive == PanelStatus.SKILLS && !editMode;
-            e.active = isActiveL;
-			e.visible = isActiveL;
-		});
-		skillEditButtons.forEach((e) -> {
-			boolean isActiveL = panelActive == PanelStatus.SKILLS && editMode;
-			e.active = isActiveL;
-			e.visible = isActiveL;
-		});
+		boolean skillsActive = panelActive == PanelStatus.SKILLS && !editMode;
+		skillButtons.forEach((e) -> setActiveVisible(skillsActive, e));
+		boolean skillsEditActive = panelActive == PanelStatus.SKILLS && editMode;
+		skillEditButtons.forEach((e) -> setActiveVisible(skillsEditActive, e));
 
 		//Attack Tab
 		isActive = panelActive == PanelStatus.ATTACKS;
 		attackRolls.setActive(isActive);
 		attackRolls.setEditMode(editMode);
 
-		addButton.active = isActive;
-		addButton.visible = isActive;
+		setActiveVisible(isActive, addButton);
+	}
+
+	//F4 del audit: reemplaza ~16 pares repetidos de "x.active = isActive; x.visible = isActive;".
+	private static void setActiveVisible(boolean isActive, AbstractWidget... widgets) {
+		for (AbstractWidget widget : widgets) {
+			widget.active = isActive;
+			widget.visible = isActive;
+		}
 	}
 
 	/**
@@ -674,10 +619,11 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	 * @param rollButtonList
 	 * @param editButtonList
 	 */
-	private void makeRollButton(String guistateKey, int x, int y, int category, int index, boolean isSave, List<ImageButton> rollButtonList, List<ImageButton> editButtonList) {
+	private void makeRollButton(String guistateKey, int x, int y, int category, int index, boolean isSave, List<ImageButton> rollButtonList, List<ImageButton> editButtonList, Component label) {
 		ImageButton rollButton = new ImageButton(this.leftPos + x, this.topPos + y, 16, 16, 0, 0, 16, new ResourceLocation(!isSave ? "dndsheets:textures/screens/atlas/imagebutton_d20.png" : "dndsheets:textures/screens/atlas/imagebutton_d20_save.png"), 16, 32, e -> {
 			sendRoll(category, index, 0);
 		});
+		rollButton.setTooltip(Tooltip.create(Component.literal((isSave ? "Tirada de salvación: " : "Tirar: ") + label.getString())));
 		guistate.put(guistateKey, rollButton);
 		this.addRenderableWidget(rollButton);
 
@@ -687,6 +633,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			RollEditorScreen.workingIndex = index;
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new RollEditorOpenMessage());
 		});
+		editButton.setTooltip(Tooltip.create(Component.literal("Editar la fórmula de: " + label.getString())));
 		guistate.put(guistateKey + "_edit", editButton);
 		this.addRenderableWidget(editButton);
 
@@ -745,10 +692,17 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			}
 
 
+			String rollTooltip = switch (i) {
+				case 0 -> "daño";
+				case 1 -> "ataque";
+				default -> "tirada";
+			};
+
 			ImageButton rollButton = new ImageButton(0, 0, 16, 16, 0, 0, 16, new ResourceLocation(imgLocation), 16, 32, e -> {
 				int btnIndex = scrollList.getIndex(e);
 				sendRoll(category, btnIndex, subIndex);
 			});
+			rollButton.setTooltip(Tooltip.create(Component.literal("Tirar " + rollTooltip + ".")));
 			this.addWidget(rollButton);
 			rollButtons.add(rollButton);
 
@@ -762,6 +716,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				AdvancedRollEditorScreen.workingSubIndex = subIndex;
 				DndsheetsMod.PACKET_HANDLER.sendToServer(new AdvancedRollEditorOpenMessage());
 			});
+			editButton.setTooltip(Tooltip.create(Component.literal("Editar la fórmula de " + rollTooltip + ".")));
 			this.addWidget(editButton);
 			editButtons.add(editButton);
 		}
@@ -778,6 +733,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			JsonArray arr = sheet.getAsJsonArray(RollIndex.Category.fromInt(category).toString());
 			arr.remove(removedIndex);
 		});
+		deleteButton.setTooltip(Tooltip.create(Component.literal("Eliminar esta fila.")));
 		this.addWidget(deleteButton);
 
 		scrollList.addListItem(nameBox, rollButtons, editButtons, deleteButton);
@@ -821,26 +777,32 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 	private void initAbilityScoreBoxes() {
 		strength = placeholderEditBox(ABILITY_OFFSET_X, ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, "gui.dndsheets.character_sheet.strength", 2);
+		strength.setTooltip(Tooltip.create(LABEL_ABILITY_STR));
 		guistate.put("text:strength", strength);
 		this.addWidget(this.strength);
 
 		dexterity = placeholderEditBox(ABILITY_OFFSET_X, ABILITY_SEPARATION + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, "gui.dndsheets.character_sheet.dexterity", 2);
+		dexterity.setTooltip(Tooltip.create(LABEL_ABILITY_DEX));
 		guistate.put("text:dexterity", dexterity);
 		this.addWidget(this.dexterity);
 
 		constitution = placeholderEditBox(ABILITY_OFFSET_X, ABILITY_SEPARATION*2 + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, "gui.dndsheets.character_sheet.constitution", 2);
+		constitution.setTooltip(Tooltip.create(LABEL_ABILITY_CON));
 		guistate.put("text:constitution", constitution);
 		this.addWidget(this.constitution);
 
 		intelligence = placeholderEditBox(ABILITY_OFFSET_X, ABILITY_SEPARATION*3 + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, "gui.dndsheets.character_sheet.intelligence", 2);
+		intelligence.setTooltip(Tooltip.create(LABEL_ABILITY_INT));
 		guistate.put("text:intelligence", intelligence);
 		this.addWidget(this.intelligence);
 
 		wisdom = placeholderEditBox(ABILITY_OFFSET_X, ABILITY_SEPARATION*4 + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, "gui.dndsheets.character_sheet.wisdom", 2);
+		wisdom.setTooltip(Tooltip.create(LABEL_ABILITY_WIS));
 		guistate.put("text:wisdom", wisdom);
 		this.addWidget(this.wisdom);
 
 		charisma = placeholderEditBox(ABILITY_OFFSET_X, ABILITY_SEPARATION*5 + ABILITY_OFFSET_Y, ABILITY_SIZE_X, ABILITY_SIZE_Y, "gui.dndsheets.character_sheet.charisma", 2);
+		charisma.setTooltip(Tooltip.create(LABEL_ABILITY_CHA));
 		guistate.put("text:charisma", charisma);
 		this.addWidget(this.charisma);
 	}
@@ -850,23 +812,23 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		int saveBtnOffset = -24;
 
 		//STR
-		makeRollButton("button:roll_str", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y, 0, 0, false, checkButtons, checkEditButtons);
-		makeRollButton("button:roll_str_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y, 1, 0, true, saveButtons, saveEditButtons);
+		makeRollButton("button:roll_str", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y, 0, 0, false, checkButtons, checkEditButtons, LABEL_ABILITY_STR);
+		makeRollButton("button:roll_str_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y, 1, 0, true, saveButtons, saveEditButtons, LABEL_ABILITY_STR);
 		//DEX
-		makeRollButton("button:roll_dex", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION, 0, 1, false, checkButtons, checkEditButtons);
-		makeRollButton("button:roll_dex_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION, 1, 1, true, saveButtons, saveEditButtons);
+		makeRollButton("button:roll_dex", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION, 0, 1, false, checkButtons, checkEditButtons, LABEL_ABILITY_DEX);
+		makeRollButton("button:roll_dex_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION, 1, 1, true, saveButtons, saveEditButtons, LABEL_ABILITY_DEX);
 		//CON
-		makeRollButton("button:roll_con", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*2, 0, 2, false, checkButtons, checkEditButtons);
-		makeRollButton("button:roll_con_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*2, 1, 2, true, saveButtons, saveEditButtons);
+		makeRollButton("button:roll_con", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*2, 0, 2, false, checkButtons, checkEditButtons, LABEL_ABILITY_CON);
+		makeRollButton("button:roll_con_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*2, 1, 2, true, saveButtons, saveEditButtons, LABEL_ABILITY_CON);
 		//INT
-		makeRollButton("button:roll_int", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*3, 0, 3, false, checkButtons, checkEditButtons);
-		makeRollButton("button:roll_int_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*3, 1, 3, true, saveButtons, saveEditButtons);
+		makeRollButton("button:roll_int", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*3, 0, 3, false, checkButtons, checkEditButtons, LABEL_ABILITY_INT);
+		makeRollButton("button:roll_int_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*3, 1, 3, true, saveButtons, saveEditButtons, LABEL_ABILITY_INT);
 		//WIS
-		makeRollButton("button:roll_wis", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*4, 0, 4, false, checkButtons, checkEditButtons);
-		makeRollButton("button:roll_wis_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*4, 1, 4, true, saveButtons, saveEditButtons);
+		makeRollButton("button:roll_wis", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*4, 0, 4, false, checkButtons, checkEditButtons, LABEL_ABILITY_WIS);
+		makeRollButton("button:roll_wis_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*4, 1, 4, true, saveButtons, saveEditButtons, LABEL_ABILITY_WIS);
 		//CHA
-		makeRollButton("button:roll_cha", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*5, 0, 5, false, checkButtons, checkEditButtons);
-		makeRollButton("button:roll_cha_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*5, 1, 5, true, saveButtons, saveEditButtons);
+		makeRollButton("button:roll_cha", ABILITY_OFFSET_X+checkBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*5, 0, 5, false, checkButtons, checkEditButtons, LABEL_ABILITY_CHA);
+		makeRollButton("button:roll_cha_save", ABILITY_OFFSET_X+saveBtnOffset, ABILITY_OFFSET_Y+ABILITY_SEPARATION*5, 1, 5, true, saveButtons, saveEditButtons, LABEL_ABILITY_CHA);
 	}
 
 	private void initMainPanel() {
@@ -980,6 +942,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		initiativeButton = new ImageButton(this.leftPos + INITIATIVE_OFFSET_X, this.topPos + INITIATIVE_OFFSET_Y, 16, 16, 0, 0, 16, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_d20.png"), 16, 32, e -> {
 			sendRoll(0, 6, 0);
 		});
+		initiativeButton.setTooltip(Tooltip.create(Component.literal("Tirar: " + LABEL_INITIATIVE.getString())));
 		guistate.put("button:roll_init", initiativeButton);
 		this.addRenderableWidget(initiativeButton);
 
@@ -989,6 +952,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			RollEditorScreen.workingIndex = 6;
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new RollEditorOpenMessage());
 		});
+		initiativeEditButton.setTooltip(Tooltip.create(Component.literal("Editar la fórmula de: " + LABEL_INITIATIVE.getString())));
 		guistate.put("button:roll_init_edit", initiativeEditButton);
 		this.addRenderableWidget(initiativeEditButton);
 	}
@@ -996,7 +960,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private void initBottomButtons() {
 		//NOTA: sin hueco dibujado en la textura todavía. Puestos en el margen inferior, debajo de Nivel/
 		//Hambre, para no pisar el círculo de Iniciativa (que ocupa la zona x=270-345, y=90-200).
-		grimoireButton = Button.builder(Component.translatable("gui.dndsheets.character_sheet.grimoire"), b -> this.minecraft.setScreen(new GrimoireScreen()))
+		grimoireButton = Button.builder(Component.translatable("gui.dndsheets.character_sheet.grimoire"), b -> this.minecraft.setScreen(new GrimoireScreen(this)))
 			.bounds(this.leftPos + GRIMOIRE_OFFSET_X, this.topPos + GRIMOIRE_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT).build();
 		guistate.put("button:grimoire", grimoireButton);
 		this.addRenderableWidget(grimoireButton);
@@ -1024,32 +988,32 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		int skillBtnOffsetY = -5;
 
 		//STR
-		makeRollButton("button:roll_athletics", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y, 2, 0, false, skillButtons, skillEditButtons);
+		makeRollButton("button:roll_athletics", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y, 2, 0, false, skillButtons, skillEditButtons, LABEL_SKILL_ATHLETICS);
 
 		//DEX
-		makeRollButton("button:roll_acrobatics", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION, 2, 1, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_sleightofhand", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*2, 2, 2, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_stealth", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*3, 2, 3, false, skillButtons, skillEditButtons);
+		makeRollButton("button:roll_acrobatics", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION, 2, 1, false, skillButtons, skillEditButtons, LABEL_SKILL_ACROBATICS);
+		makeRollButton("button:roll_sleightofhand", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*2, 2, 2, false, skillButtons, skillEditButtons, LABEL_SKILL_SLEIGHTOFHAND);
+		makeRollButton("button:roll_stealth", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*3, 2, 3, false, skillButtons, skillEditButtons, LABEL_SKILL_STEALTH);
 
 		//INT
-		makeRollButton("button:roll_arcana", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*4, 2, 4, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_history", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*5, 2, 5, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_investigation", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*6, 2, 6, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_nature", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*7, 2, 7, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_religion", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*8, 2, 8, false, skillButtons, skillEditButtons);
+		makeRollButton("button:roll_arcana", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*4, 2, 4, false, skillButtons, skillEditButtons, LABEL_SKILL_ARCANA);
+		makeRollButton("button:roll_history", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*5, 2, 5, false, skillButtons, skillEditButtons, LABEL_SKILL_HISTORY);
+		makeRollButton("button:roll_investigation", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*6, 2, 6, false, skillButtons, skillEditButtons, LABEL_SKILL_INVESTIGATION);
+		makeRollButton("button:roll_nature", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*7, 2, 7, false, skillButtons, skillEditButtons, LABEL_SKILL_NATURE);
+		makeRollButton("button:roll_religion", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*8, 2, 8, false, skillButtons, skillEditButtons, LABEL_SKILL_RELIGION);
 
 		//WIS
-		makeRollButton("button:roll_animalhandling", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y, 2, 9, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_insight", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION, 2, 10, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_medicine", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*2, 2, 11, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_perception", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*3, 2, 12, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_survival", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*4, 2, 13, false, skillButtons, skillEditButtons);
+		makeRollButton("button:roll_animalhandling", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y, 2, 9, false, skillButtons, skillEditButtons, LABEL_SKILL_ANIMALHANDLING);
+		makeRollButton("button:roll_insight", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION, 2, 10, false, skillButtons, skillEditButtons, LABEL_SKILL_INSIGHT);
+		makeRollButton("button:roll_medicine", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*2, 2, 11, false, skillButtons, skillEditButtons, LABEL_SKILL_MEDICINE);
+		makeRollButton("button:roll_perception", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*3, 2, 12, false, skillButtons, skillEditButtons, LABEL_SKILL_PERCEPTION);
+		makeRollButton("button:roll_survival", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*4, 2, 13, false, skillButtons, skillEditButtons, LABEL_SKILL_SURVIVAL);
 
 		//CHA
-		makeRollButton("button:roll_deception", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*5, 2, 14, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_intimidation", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*6, 2, 15, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_performance", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*7, 2, 16, false, skillButtons, skillEditButtons);
-		makeRollButton("button:roll_persuasion", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*8, 2, 17, false, skillButtons, skillEditButtons);
+		makeRollButton("button:roll_deception", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*5, 2, 14, false, skillButtons, skillEditButtons, LABEL_SKILL_DECEPTION);
+		makeRollButton("button:roll_intimidation", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*6, 2, 15, false, skillButtons, skillEditButtons, LABEL_SKILL_INTIMIDATION);
+		makeRollButton("button:roll_performance", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*7, 2, 16, false, skillButtons, skillEditButtons, LABEL_SKILL_PERFORMANCE);
+		makeRollButton("button:roll_persuasion", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*8, 2, 17, false, skillButtons, skillEditButtons, LABEL_SKILL_PERSUASION);
 
 	}
 
@@ -1097,6 +1061,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			addToScrollList(attackRolls, rollForm, 3, attackRolls.getListSize(), PanelStatus.ATTACKS);
 
 		});
+		addButton.setTooltip(Tooltip.create(Component.literal("Añadir un ataque nuevo.")));
 		this.addRenderableWidget(addButton);
 	}
 
@@ -1129,6 +1094,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			editMode = !editMode;
 			updateTabs();
 		});
+		editToggle.setTooltip(Tooltip.create(Component.literal("Alternar modo edición: cambia los dados de tirada por editar fórmula/eliminar en la pestaña de Ataques.")));
 		guistate.put("button:edit_toggle", editToggle);
 		this.addRenderableWidget(editToggle);
 

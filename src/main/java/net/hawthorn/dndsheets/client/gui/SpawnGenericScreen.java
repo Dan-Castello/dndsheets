@@ -4,6 +4,7 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.SpawnGenericMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -17,12 +18,12 @@ public class SpawnGenericScreen extends SmallFormScreen {
 	private EditBox acBox;
 	private EditBox hpBox;
 
-	private SpawnGenericScreen() {
-		super(Component.literal("NPC genérico"), 2);
+	private SpawnGenericScreen(Screen parent) {
+		super(Component.literal("NPC genérico"), 2, parent);
 	}
 
 	public static void open() {
-		Minecraft.getInstance().setScreen(new SpawnGenericScreen());
+		Minecraft.getInstance().setScreen(new SpawnGenericScreen(Minecraft.getInstance().screen));
 	}
 
 	@Override

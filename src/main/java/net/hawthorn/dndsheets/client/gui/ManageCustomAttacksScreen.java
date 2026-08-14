@@ -4,6 +4,7 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.ClearCustomAttacksMessage;
 import net.hawthorn.dndsheets.network.RemoveCustomAttackMessage;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
@@ -17,14 +18,14 @@ public class ManageCustomAttacksScreen extends ListPickerScreen {
 	private final int entityId;
 	private final List<String> customAttackNames;
 
-	private ManageCustomAttacksScreen(int entityId, List<String> customAttackNames) {
-		super(Component.literal("Ataques personalizados"));
+	private ManageCustomAttacksScreen(int entityId, List<String> customAttackNames, Screen parent) {
+		super(Component.literal("Ataques personalizados"), parent);
 		this.entityId = entityId;
 		this.customAttackNames = customAttackNames;
 	}
 
 	public static void open(int entityId, List<String> customAttackNames) {
-		Minecraft.getInstance().setScreen(new ManageCustomAttacksScreen(entityId, customAttackNames));
+		Minecraft.getInstance().setScreen(new ManageCustomAttacksScreen(entityId, customAttackNames, Minecraft.getInstance().screen));
 	}
 
 	@Override

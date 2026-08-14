@@ -66,6 +66,11 @@ public class DndPaths {
 		autoLoadAll(RACES_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.RACE, file), "razas");
 		autoLoadAll(BACKGROUNDS_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.BACKGROUND, file), "trasfondos");
 		autoLoadAll(CLASSES_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.CLASS, file), "clases");
+
+		//Por-mundo, no bajo ROOT: las piezas de mazmorra referencian .nbt publicados en el datapack DE LA
+		//PARTIDA actual (ver DungeonManager), así que necesitan la ruta real del server.getWorldPath(...) en
+		//vez de la carpeta de instancia compartida que usa el resto de esta clase.
+		DungeonPieceRegistry.load(event.getServer());
 	}
 
 	//Público: cada comando *Command lo usa para que el argumento "archivo" de su "load" se autocomplete

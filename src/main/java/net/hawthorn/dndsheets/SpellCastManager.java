@@ -299,13 +299,12 @@ public class SpellCastManager {
 		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(new JsonObject(), "1d20 + " + (abilityMod + proficiency + inspiration), advantage);
 		if (attackRoll.outcome().result() == null) return;
 		if (casterSheet != null) sendAdvantageAndInspirationUpdate(caster);
-		if (inspiration > 0) ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.combat.bardic_inspiration", casterName, inspiration).withStyle(ChatFormatting.LIGHT_PURPLE));
 
 		int targetAc = armorClassOfEntity(target);
 		String targetName = nameOf(target);
 
 		if (attackRoll.criticalMiss() || (!attackRoll.criticalHit() && attackRoll.outcome().result().getValue() < targetAc)) {
-			ChatFeedback.broadcast(caster, ChatFeedback.attackResult(casterName, targetName, spell.name(), attackRoll.outcome().formatted(), targetAc, false, null));
+			ChatFeedback.broadcast(caster, ChatFeedback.attackResult(casterName, targetName, spell.name(), attackRoll.outcome().formatted(), targetAc, false, null, inspiration));
 			return;
 		}
 
@@ -313,8 +312,8 @@ public class SpellCastManager {
 		if (damageRoll.formatted() == null) return;
 
 		applyDamage(target, damageRoll.amount(), spell.damageType());
-		CombatFx.hit(target, attackRoll.criticalHit());
-		ChatFeedback.broadcast(caster, ChatFeedback.attackResult(casterName, targetName, spell.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()));
+		CombatFx.hit(target, attackRoll.criticalHit(), spell.damageType());
+		ChatFeedback.broadcast(caster, ChatFeedback.attackResult(casterName, targetName, spell.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted(), inspiration));
 		applySpellEffect(caster, spell, target);
 	}
 
@@ -333,7 +332,7 @@ public class SpellCastManager {
 		int finalDamage = saved ? (spell.halfOnSave() ? damageRoll.result().getValue() / 2 : 0) : damageRoll.result().getValue();
 		Component outcomeLabel = Component.translatable(saved ? (spell.halfOnSave() ? "chat.dndsheets.spell.save_half" : "chat.dndsheets.spell.save_none") : "chat.dndsheets.spell.save_fail");
 
-		CombatFx.spellImpact(target, saved);
+		CombatFx.spellImpact(target, saved, spell.damageType());
 		ChatFeedback.broadcast(caster, ChatFeedback.saveResult(casterName, targetName, spell.name(), saveRoll.formatted(), saveDc, saved, outcomeLabel,
 			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null));
 

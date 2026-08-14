@@ -10,13 +10,8 @@ import net.minecraft.world.item.ItemStack;
 //Patrón repetido en los ítems "botón" de habilidad de clase (Furia, Segundo Aliento, Castigo Divino,
 //Escudo, Contrahechizo, Marca del Cazador, Forma Salvaje, Inspiración Bárdica, Hechizo Gemelo, ítems de
 //turno, Kit de Descanso...): un flag booleano bajo la etiqueta NBT "dndsheets" que activa la habilidad al
-//usar el ítem, más su nombre y lore. Ver AUDIT_TECHNICAL.md A-DUP-2.
+//usar el ítem, más su nombre y lore.
 public class AbilityItem {
-	public static boolean hasFlag(ItemStack stack, String flag) {
-		CompoundTag tag = stack.getTag();
-		return tag != null && tag.contains("dndsheets") && tag.getCompound("dndsheets").getBoolean(flag);
-	}
-
 	public static ItemStack build(Item item, String flag, Component name, Component... loreLines) {
 		ItemStack stack = new ItemStack(item);
 		CompoundTag dndTag = new CompoundTag();

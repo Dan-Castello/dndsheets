@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -15,21 +16,30 @@ import java.util.List;
 //cycleLabel/parseIntOr y el patrón de render/tick de sus EditBox — ver AUDIT_REPORT_2026.md F6. Mismo
 //espíritu que ModalDialogScreen, pero para un formulario vertical centrado en vez de una caja de diálogo
 //de tamaño fijo.
+//
+//"Cancelar" (y "Confirmar", una vez enviado el mensaje) vuelven a `parent` en vez de cerrar todo el
+//menú — mismo mecanismo de navegación que ListPickerScreen, ver esa clase.
 public abstract class SmallFormScreen extends Screen {
 	protected static final int FIELD_WIDTH = 160;
 	protected static final int FIELD_HEIGHT = 20;
-	protected static final int ROW_HEIGHT = 26;
+	//30, no 26: deja 10px libres arriba de cada campo para su etiqueta (ver addField) sin pisar el
+	//campo anterior — antes ningún campo de este formulario mostraba en pantalla para qué era, solo su
+	//Component de narración (invisible, solo lectores de accesibilidad) y el valor por defecto ya escrito.
+	protected static final int ROW_HEIGHT = 30;
 
 	private final int titleRows;
+	private final Screen parent;
 	private final List<EditBox> editBoxes = new ArrayList<>();
+	private final List<String> editBoxLabels = new ArrayList<>();
 	protected int centerX;
 	protected int formTop;
 	private int cursorY;
 	private int formBottom;
 
-	protected SmallFormScreen(Component title, int titleRows) {
+	protected SmallFormScreen(Component title, int titleRows, Screen parent) {
 		super(title);
 		this.titleRows = titleRows;
+		this.parent = parent;
 	}
 
 	/** Añade los campos/botones del formulario, en orden, con addField(...)/addCycleButton(...). */
@@ -72,15 +82,23 @@ public abstract class SmallFormScreen extends Screen {
 		this.addWidget(box);
 		if (editBoxes.isEmpty()) this.setInitialFocus(box);
 		editBoxes.add(box);
+		editBoxLabels.add(label);
 		return box;
 	}
 
 	protected CycleField addCycleButton(String prefix, String[] options) {
+		return addCycleButton(prefix, options, options);
+	}
+
+	//Para opciones cuyo valor real (guardado/enviado al servidor) es un código interno poco claro para un
+	//DM (p.ej. "str"/"dex") — displayLabels es SOLO lo que se muestra en el botón, en el mismo orden que
+	//options; CycleField.value() sigue devolviendo el código interno de options, no el texto mostrado.
+	protected CycleField addCycleButton(String prefix, String[] options, String[] displayLabels) {
 		int y = nextRowY();
 		CycleField field = new CycleField(options);
-		field.button = this.addRenderableWidget(Button.builder(cycleLabel(prefix, field.value()), button -> {
+		field.button = this.addRenderableWidget(Button.builder(cycleLabel(prefix, displayLabels[field.index]), button -> {
 			field.index = (field.index + 1) % options.length;
-			field.button.setMessage(cycleLabel(prefix, field.value()));
+			field.button.setMessage(cycleLabel(prefix, displayLabels[field.index]));
 		}).bounds(centerX - FIELD_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT).build());
 		return field;
 	}
@@ -118,7 +136,16 @@ public abstract class SmallFormScreen extends Screen {
 		GuiStyle.panel(guiGraphics, centerX - FIELD_WIDTH / 2 - 14, formTop - 24, centerX + FIELD_WIDTH / 2 + 14, formBottom);
 		guiGraphics.drawCenteredString(this.font, title, this.width / 2, formTop - 16, GuiStyle.TITLE_COLOR);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
-		for (EditBox box : editBoxes) box.render(guiGraphics, mouseX, mouseY, partialTicks);
+		for (int i = 0; i < editBoxes.size(); i++) {
+			EditBox box = editBoxes.get(i);
+			guiGraphics.drawString(this.font, editBoxLabels.get(i), box.getX(), box.getY() - 10, GuiStyle.TITLE_COLOR, false);
+			box.render(guiGraphics, mouseX, mouseY, partialTicks);
+		}
+	}
+
+	@Override
+	public void onClose() {
+		Minecraft.getInstance().setScreen(parent);
 	}
 
 	@Override

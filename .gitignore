@@ -13,8 +13,8 @@ runServer/world/
 runClient/usercache.json
 runServer/usercache.json
 
-# Estado de servidor de pruebas regenerable y configs de mods de terceros ajenos a dndsheets (ver
-# AUDIT_REPORT_2026.md F20) — no aplican a lo ya trackeado, solo evitan volver a agregarlo si se borra.
+# Estado de servidor/cliente de pruebas regenerable y configs de mods de terceros ajenos a dndsheets
+# — no aplican a lo ya trackeado, solo evitan volver a agregarlo si se borra.
 runServer/ops.json
 runServer/whitelist.json
 runServer/banned-ips.json
@@ -29,11 +29,36 @@ runServer/config/CoroUtil/
 runServer/config/watut-*
 runServer/config/fml.toml
 runServer/config/forge-client.toml
+runClient/ops.json
+runClient/whitelist.json
+runClient/banned-ips.json
+runClient/banned-players.json
+runClient/servers.dat
+runClient/servers.dat_old
+runClient/usernamecache.json
+runClient/options.txt
+runClient/eula.txt
+runClient/imgui.ini
+runClient/config/CoroUtil/
+runClient/config/watut-*
+runClient/config/fml.toml
+runClient/config/forge-client.toml
 
-# Artefactos de desarrollo local que no pertenecen al repo (ver AUDIT_TECHNICAL.md QW-7/QW-8):
-# bin/ es un residuo de otro mod (MCreator, mod-id distinto) commiteado por error; crash/ y logs/
-# son diagnóstico de una sesión local; patch/ es una copia de trabajo; lib/ debe resolverse por
-# Gradle (ver dependencies en build.gradle), no versionarse como jar suelto.
+# sheet.json vacío en ambas carpetas, y copia de las reglas por defecto (dndsheets/{monsters,
+# presets,spells,traits,weapons}.json) que runClient/ auto-genera desde src/main/resources al
+# arrancar sin datos — es estado regenerable, la fuente real vive en src/main/resources/dndsheets/defaults.
+runClient/sheet.json
+runServer/sheet.json
+runClient/dndsheets/monsters/monsters.json
+runClient/dndsheets/presets/presets.json
+runClient/dndsheets/spells/spells.json
+runClient/dndsheets/traits/traits.json
+runClient/dndsheets/weapons/weapons.json
+
+# Artefactos de desarrollo local que no pertenecen al repo: bin/ es un residuo de otro mod
+# (MCreator, mod-id distinto) commiteado por error; crash/ y logs/ son diagnóstico de una sesión
+# local; patch/ es una copia de trabajo; lib/ debe resolverse por Gradle (ver dependencies en
+# build.gradle), no versionarse como jar suelto.
 /bin/
 /crash/
 /logs/

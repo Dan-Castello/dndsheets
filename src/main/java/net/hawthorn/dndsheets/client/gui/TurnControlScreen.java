@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets.client.gui;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.TurnControlMessage;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -15,12 +16,12 @@ public class TurnControlScreen extends ListPickerScreen {
 	private static final String[] ACTIONS = {"start", "next", "cancel", "end"};
 	private static final String[] LABELS = {"Iniciar turnos", "Siguiente turno", "Saltar (cancelar)", "Terminar turnos"};
 
-	private TurnControlScreen() {
-		super(Component.literal("Modo turnos"));
+	private TurnControlScreen(Screen parent) {
+		super(Component.literal("Modo turnos"), parent);
 	}
 
 	public static void open() {
-		Minecraft.getInstance().setScreen(new TurnControlScreen());
+		Minecraft.getInstance().setScreen(new TurnControlScreen(Minecraft.getInstance().screen));
 	}
 
 	@Override

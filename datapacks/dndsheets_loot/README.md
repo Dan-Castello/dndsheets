@@ -1,8 +1,7 @@
 # dndsheets_loot (scaffold)
 
 Estructura preparada para delegar contenido 100% vanilla (loot, encuentros, recetas) sin tocar el mod
-Java. Carpetas vacías (con `.gitkeep`) listas para recibir archivos reales en otra sesión — ver
-`AUDIT.md` sección 4 en la raíz del repo para el detalle de qué va en cada una.
+Java. Carpetas vacías (con `.gitkeep`) listas para recibir archivos reales en otra sesión.
 
 - `data/dndsheets_loot/loot_table/chests/` — loot tables de cofres que inyectan armas con
   `set_nbt`/`set_components`, usando la misma etiqueta `{dndsheets:{weapon:"id"}}` que ya generan

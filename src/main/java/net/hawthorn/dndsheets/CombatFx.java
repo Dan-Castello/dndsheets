@@ -18,6 +18,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.Map;
+
 /**
  * <p>Efectos nativos de Minecraft (partículas, sonidos, texto en pantalla) para acompañar al
  * {@link ChatFeedback} textual — reutiliza partículas y sonidos que ya trae el juego (crit, totem,
@@ -30,15 +32,60 @@ public class CombatFx {
 	//suena distinto del roce normal — antes de esto un 20 natural que triplicaba el daño se sentía
 	//idéntico a un golpe raspado, ver AUDIT_UX.md, Transversal #4.
 	public static void hit(Entity target, boolean critical) {
+		hit(target, critical, null);
+	}
+
+	//Igual que arriba, pero con partículas/sonido según el tipo de daño real del golpe (fuego, frío,
+	//veneno...) en vez de las mismas chispas CRIT genéricas para todo — antes un mordisco venenoso y un
+	//espadazo normal se veían y sonaban exactamente igual, sin ninguna pista visual de QUÉ tipo de daño
+	//fue (había que leer el chat). damageType null o sin mapear (daño físico mundano: cortante,
+	//perforante, contundente, o el puño en el muñeco de pruebas) cae al chispazo genérico de siempre.
+	public static void hit(Entity target, boolean critical, String damageType) {
+		HitFx fx = FX_BY_DAMAGE_TYPE.getOrDefault(damageType, DEFAULT_FX);
+		playCombo(target, fx, critical ? 2.0 : 1.0, 1.0f, critical ? 1.2f : 1.0f);
 		if (critical) {
-			particles(target, ParticleTypes.CRIT, 30, 0.5);
 			particles(target, ParticleTypes.END_ROD, 10, 0.3);
 			sound(target, SoundEvents.PLAYER_ATTACK_CRIT, 1.0f, 1.0f);
-		} else {
-			particles(target, ParticleTypes.CRIT, 10, 0.3);
-			sound(target, SoundEvents.PLAYER_ATTACK_STRONG, 1.0f, 1.0f);
 		}
 	}
+
+	//Núcleo (particle/count/spread/sound de siempre) + un acento MÁS chico y MÁS disperso encima — el
+	//mismo truco que ya usaba el crítico (CRIT + END_ROD), generalizado a los diez tipos de daño: un
+	//único chispazo se leía plano, dos capas (centro compacto + halo suelto) da profundidad sin
+	//convertirse en fuegos artificiales. accent==null (DEFAULT_FX) se queda con una sola capa, a
+	//propósito: el golpe físico de toda la vida no necesita reinventarse.
+	private record HitFx(ParticleOptions particle, int count, double spread, ParticleOptions accent, int accentCount, SoundEvent sound) {}
+
+	private static HitFx solo(ParticleOptions particle, int count, double spread, SoundEvent sound) {
+		return new HitFx(particle, count, spread, null, 0, sound);
+	}
+
+	private static void playCombo(Entity target, HitFx fx, double scale, float volume, float pitch) {
+		particles(target, fx.particle(), (int) Math.round(fx.count() * scale), fx.spread());
+		if (fx.accent() != null) particles(target, fx.accent(), (int) Math.round(fx.accentCount() * scale), fx.spread() * 1.6);
+		sound(target, fx.sound(), volume, pitch);
+	}
+
+	private static final HitFx DEFAULT_FX = solo(ParticleTypes.CRIT, 10, 0.3, SoundEvents.PLAYER_ATTACK_STRONG);
+
+	//Claves = damageType tal cual aparece en weapons/monsters/spells.json (ver DamageTypes). Sin entrada
+	//propia para fisico/cortante/perforante/contundente: ese es el golpe "de toda la vida", se queda con
+	//DEFAULT_FX en vez de repetir la misma fila trece veces. Cada combo empareja partícula núcleo + acento
+	//que YA existen en vanilla y de verdad leen como el elemento (llama + brasa, copo + vaho helado, chispa
+	//+ destello, nube + chispa, tóxico + tinta, gel + burbujeo, alma azul + almas subiendo, brillo + rayo
+	//de luz, portal + antiportal, explosión + tajo), en vez de una partícula sola y listo.
+	private static final Map<String, HitFx> FX_BY_DAMAGE_TYPE = Map.ofEntries(
+		Map.entry("fuego", new HitFx(ParticleTypes.FLAME, 16, 0.35, ParticleTypes.ASH, 8, SoundEvents.FIRECHARGE_USE)),
+		Map.entry("frio", new HitFx(ParticleTypes.SNOWFLAKE, 20, 0.4, ParticleTypes.CLOUD, 6, SoundEvents.GLASS_BREAK)),
+		Map.entry("rayo", new HitFx(ParticleTypes.ELECTRIC_SPARK, 25, 0.4, ParticleTypes.FLASH, 1, SoundEvents.TRIDENT_THUNDER)),
+		Map.entry("trueno", new HitFx(ParticleTypes.CLOUD, 20, 0.4, ParticleTypes.ELECTRIC_SPARK, 10, SoundEvents.GENERIC_EXPLODE)),
+		Map.entry("veneno", new HitFx(ParticleTypes.SNEEZE, 20, 0.35, ParticleTypes.SQUID_INK, 6, SoundEvents.SPIDER_HURT)),
+		Map.entry("ácido", new HitFx(ParticleTypes.ITEM_SLIME, 16, 0.35, ParticleTypes.BUBBLE_POP, 10, SoundEvents.GENERIC_EXTINGUISH_FIRE)),
+		Map.entry("necrótico", new HitFx(ParticleTypes.SOUL_FIRE_FLAME, 16, 0.35, ParticleTypes.SOUL, 10, SoundEvents.SOUL_ESCAPE)),
+		Map.entry("radiante", new HitFx(ParticleTypes.GLOW, 20, 0.4, ParticleTypes.END_ROD, 8, SoundEvents.AMETHYST_BLOCK_CHIME)),
+		Map.entry("psíquico", new HitFx(ParticleTypes.PORTAL, 25, 0.4, ParticleTypes.REVERSE_PORTAL, 12, SoundEvents.ENDERMAN_TELEPORT)),
+		Map.entry("fuerza", new HitFx(ParticleTypes.EXPLOSION, 6, 0.3, ParticleTypes.SWEEP_ATTACK, 2, SoundEvents.ANVIL_LAND))
+	);
 
 	//Humo al derrotar a un monstruo invocado (no pasa por LivingEntity#die(), así que Minecraft no lo pone solo).
 	public static void defeated(Entity target) {
@@ -58,14 +105,23 @@ public class CombatFx {
 		sound(target, SoundEvents.PLAYER_LEVELUP, 0.6f, 1.6f);
 	}
 
-	//Impacto de hechizo: llamas si falla la salvación (o no hay salvación), destello suave si la supera.
+	//Impacto de hechizo sin tipo de daño conocido (mantiene el llamazo genérico de siempre): destello suave
+	//si supera la salvación, llamas si falla.
 	public static void spellImpact(Entity target, boolean saved) {
+		spellImpact(target, saved, null);
+	}
+
+	//Igual que arriba, pero el fallo de salvación usa las mismas partículas/sonido por tipo de daño que
+	//hit() (ver FX_BY_DAMAGE_TYPE) en vez de fuego a secas para CUALQUIER hechizo — un Rayo de Escarcha
+	//fallado ya no se ve como una bola de fuego. Superar la salvación se queda con el destello genérico:
+	//"resististe" es el mismo alivio visual sin importar el elemento.
+	public static void spellImpact(Entity target, boolean saved, String damageType) {
 		if (saved) {
 			particles(target, ParticleTypes.ENCHANT, 10, 0.4);
-		} else {
-			particles(target, ParticleTypes.FLAME, 20, 0.4);
-			sound(target, SoundEvents.GENERIC_EXPLODE, 0.6f, 1.2f);
+			return;
 		}
+		HitFx fx = FX_BY_DAMAGE_TYPE.getOrDefault(damageType, solo(ParticleTypes.FLAME, 20, 0.4, SoundEvents.GENERIC_EXPLODE));
+		playCombo(target, fx, 1.0, 0.6f, 1.2f);
 	}
 
 	//El mismo sonido de dado que ya usan las demás tiradas, para la tirada de salvación de muerte (no pasa por DiceManager).

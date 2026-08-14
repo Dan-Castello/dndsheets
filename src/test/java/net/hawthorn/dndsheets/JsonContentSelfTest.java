@@ -7,6 +7,8 @@ import com.google.gson.JsonParser;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>Comprobación mínima (sin JUnit, sin fixtures) de que los JSON de ejemplo en {@code test/dndsheets/}
@@ -34,6 +36,7 @@ public class JsonContentSelfTest {
 		checkTraits(); //Antes de checkPresets(): el preset de monje concede este rasgo por id.
 		checkPresets();
 		checkDice();
+		checkDungeonPools();
 
 		System.out.println("JsonContentSelfTest: OK, los 5 JSON de ejemplo parsean con los registros reales.");
 	}
@@ -53,7 +56,7 @@ public class JsonContentSelfTest {
 				w.has("damageType") ? w.get("damageType").getAsString() : "fisico",
 				w.has("hands") ? w.get("hands").getAsString() : "one",
 				w.has("versatileDice") ? w.get("versatileDice").getAsString() : null,
-				w.get("name").getAsString(), w.get("item").getAsString());
+				List.of(), w.get("name").getAsString(), w.get("item").getAsString(), null);
 			count++;
 		}
 		expect("armas", count, 4);
@@ -179,6 +182,44 @@ public class JsonContentSelfTest {
 		//devolver un resultado vacío.
 		DiceManager.RollOutcome invalid = DiceManager.roll(sheet, "esto no es una expresión de dados $$$");
 		assertTrue(invalid.result() == null, "una expresión inválida debería devolver result() == null, no lanzar");
+	}
+
+	//Única lógica con ramas reales de la feature de mazmorras (ver DungeonManager): agrupar por pool,
+	//acotar weight a [1,150] (StructureTemplatePool.DIRECT_CODEC lo exige, un valor fuera de rango tumba
+	//el parseo del archivo entero) y saltar piezas con structureId corrupto. El resto (copiar el .nbt,
+	///reload, JigsawPlacement.generateJigsaw) son llamadas finas a APIs vanilla, no hace falta re-testearlas.
+	private static void checkDungeonPools() {
+		List<DungeonPieceRegistry.DungeonPiece> pieces = List.of(
+			new DungeonPieceRegistry.DungeonPiece("entrance", "dndsheets_dm:rooms/entrance", "start", 200, ""),
+			new DungeonPieceRegistry.DungeonPiece("corridor1", "dndsheets_dm:rooms/corridor1", "corridor", 3, ""),
+			new DungeonPieceRegistry.DungeonPiece("corridor2", "dndsheets_dm:rooms/corridor2", "corridor", 0, ""),
+			new DungeonPieceRegistry.DungeonPiece("broken", "esto no es un id valido", "corridor", 5, "")
+		);
+
+		Map<String, JsonObject> pools = DungeonManager.buildPoolJsons(pieces);
+		assertTrue(pools.size() == 2, "buildPoolJsons debería producir 2 pools (start, corridor), dio " + pools.size());
+
+		JsonObject start = pools.get("start");
+		assertTrue(start != null && "minecraft:empty".equals(start.get("fallback").getAsString()), "el pool start debería tener fallback=minecraft:empty");
+		JsonArray startElements = start.getAsJsonArray("elements");
+		assertTrue(startElements.size() == 1, "el pool start debería tener 1 elemento");
+		JsonObject startWrapper = startElements.get(0).getAsJsonObject();
+		assertTrue(startWrapper.get("weight").getAsInt() == 150, "el peso 200 debería acotarse a 150");
+		JsonObject startElement = startWrapper.getAsJsonObject("element");
+		assertTrue("minecraft:single_pool_element".equals(startElement.get("element_type").getAsString()), "element_type debería ser minecraft:single_pool_element");
+		assertTrue("dndsheets_dm:rooms/entrance".equals(startElement.get("location").getAsString()), "location debería ser el structureId de la pieza");
+		assertTrue("minecraft:empty".equals(startElement.get("processors").getAsString()), "processors debería ser minecraft:empty");
+		assertTrue("rigid".equals(startElement.get("projection").getAsString()), "projection debería ser rigid");
+
+		JsonObject corridor = pools.get("corridor");
+		JsonArray corridorElements = corridor.getAsJsonArray("elements");
+		//"broken" tiene un structureId inválido y se salta: solo corridor1 y corridor2 quedan.
+		assertTrue(corridorElements.size() == 2, "el pool corridor debería tener 2 elementos (la pieza con structureId inválido se salta), dio " + corridorElements.size());
+		boolean foundClampedZero = false;
+		for (JsonElement el : corridorElements) {
+			if (el.getAsJsonObject().get("weight").getAsInt() == 1) foundClampedZero = true;
+		}
+		assertTrue(foundClampedZero, "el peso 0 debería acotarse a 1");
 	}
 
 	private static void require(JsonObject obj, String... fields) {

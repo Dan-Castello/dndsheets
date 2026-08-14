@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 
@@ -18,13 +19,13 @@ import java.util.function.Consumer;
 public class PlayerPickerScreen extends ListPickerScreen {
 	private final Consumer<String> onPick;
 
-	private PlayerPickerScreen(String prompt, Consumer<String> onPick) {
-		super(Component.literal(prompt));
+	private PlayerPickerScreen(String prompt, Consumer<String> onPick, Screen parent) {
+		super(Component.literal(prompt), parent);
 		this.onPick = onPick;
 	}
 
 	public static void open(String prompt, Consumer<String> onPick) {
-		Minecraft.getInstance().setScreen(new PlayerPickerScreen(prompt, onPick));
+		Minecraft.getInstance().setScreen(new PlayerPickerScreen(prompt, onPick, Minecraft.getInstance().screen));
 	}
 
 	@Override

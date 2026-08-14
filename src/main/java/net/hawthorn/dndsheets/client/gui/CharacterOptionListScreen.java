@@ -6,7 +6,6 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.network.SheetServerMessage;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
@@ -21,23 +20,20 @@ import java.util.List;
  * jugador según {@code SheetServerMessage.PLAYER_EDITABLE_KEYS}, elegir de una lista fija en vez de
  * escribirlos a mano no cambia ese contrato.</p>
  *
- * <p>A diferencia de Presets (que sí cierra todo, ver AUDIT_UX.md Jugador fricción media #7), aquí se
- * vuelve a la MISMA hoja que pidió la lista tanto al elegir como al cancelar/Escape: {@code returnTo} se
- * captura en {@code CharacterOptionsListMessage} en el instante justo antes de navegar (la pantalla
- * activa en ese momento es la hoja), y {@link #onClose()} vuelve ahí en vez de cerrar todo. El
- * contenedor nunca se cerró (solo cambió qué {@code Screen} se dibuja), así que reabrir la MISMA
- * instancia es seguro; su {@code init()} se vuelve a ejecutar solo, releyendo de {@code
+ * <p>Vuelve a la MISMA hoja que pidió la lista tanto al elegir una opción como al pulsar "&lt; Atrás"
+ * o Escape — se pasa como {@code parent} a {@link ListPickerScreen} (capturado en {@code
+ * CharacterOptionsListMessage} en el instante justo antes de navegar, cuando la pantalla activa es la
+ * hoja). El contenedor nunca se cerró (solo cambió qué {@code Screen} se dibuja), así que reabrir la
+ * MISMA instancia es seguro; su {@code init()} se vuelve a ejecutar solo, releyendo de {@code
  * SheetLoader.getClientSheet()} (ya actualizada aquí) sin perder el resto de campos gracias al guardado
  * completo que {@code CharacterSheetScreen.requestOptionPicker} hace antes de abrir este selector.</p>
  */
 public class CharacterOptionListScreen extends ListPickerScreen {
-	private final CharacterSheetScreen returnTo;
 	private final String category;
 	private final List<String> options;
 
 	private CharacterOptionListScreen(CharacterSheetScreen returnTo, String category, List<String> options) {
-		super(Component.literal(titleFor(category)));
-		this.returnTo = returnTo;
+		super(Component.literal(titleFor(category)), returnTo);
 		this.category = category;
 		this.options = options;
 	}
@@ -63,19 +59,6 @@ public class CharacterOptionListScreen extends ListPickerScreen {
 		};
 	}
 
-	//Deja hueco fijo bajo la lista para el botón "Cancelar", que no se desplaza con el resto de opciones.
-	@Override
-	protected int listHeight() {
-		return super.listHeight() - BUTTON_HEIGHT - SPACING;
-	}
-
-	@Override
-	protected void init() {
-		super.init();
-		this.addRenderableWidget(Button.builder(Component.literal("Cancelar"), b -> this.onClose())
-			.bounds((this.width - buttonWidth()) / 2, this.height - BUTTON_HEIGHT - 8, buttonWidth(), BUTTON_HEIGHT).build());
-	}
-
 	@Override
 	protected void buildRows() {
 		for (String option : options) {
@@ -93,11 +76,5 @@ public class CharacterOptionListScreen extends ListPickerScreen {
 	@Override
 	protected Component emptyMessage() {
 		return options.isEmpty() ? Component.literal("No hay opciones cargadas (pide al DM /dndoptions load).") : null;
-	}
-
-	@Override
-	public void onClose() {
-		if (returnTo != null) Minecraft.getInstance().setScreen(returnTo);
-		else super.onClose();
 	}
 }

@@ -4,6 +4,7 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.PresetApplyMessage;
 import net.hawthorn.dndsheets.network.PresetApplyToMessage;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
@@ -21,15 +22,15 @@ public class PresetScreen extends ListPickerScreen {
 	private final List<String> ids;
 	private final List<String> names;
 
-	private PresetScreen(String targetUuid, List<String> ids, List<String> names) {
-		super(Component.literal("Elige un preset de clase"));
+	private PresetScreen(String targetUuid, List<String> ids, List<String> names, Screen parent) {
+		super(Component.literal("Elige un preset de clase"), parent);
 		this.targetUuid = targetUuid;
 		this.ids = ids;
 		this.names = names;
 	}
 
 	public static void open(String targetUuid, List<String> ids, List<String> names) {
-		Minecraft.getInstance().setScreen(new PresetScreen(targetUuid, ids, names));
+		Minecraft.getInstance().setScreen(new PresetScreen(targetUuid, ids, names, Minecraft.getInstance().screen));
 	}
 
 	@Override

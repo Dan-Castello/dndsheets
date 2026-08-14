@@ -39,6 +39,7 @@ Essentially, this mod is designed for DMs and players alike that wish to play D&
 - **`/dnddistance <target>`**: distance to any entity in feet (5 ft/block, rounded to the nearest 5, same grid the rest of the sheet uses).
 - **AoE preview**: shift+click an area-spell báculo to see the blast radius (particle ring) at the point you're aiming, without actually casting — a normal click still casts for real.
 - **A DM Notebook** (`/dndnotes give <players>`, operator-only): a renamed Book and Quill for private DM notes — private and persistent for free, since it's just a normal book.
+- **Dungeon generation** on top of vanilla's jigsaw system: build a room, save it with a structure block, then right-click it (and its jigsaw blocks) with the DM Wand to capture/configure it without hand-editing datapack JSON or the jigsaw block's own GUI. Generate from the DM Panel or `/dnddungeon generate`. See `DUNGEON_GUIDE.md`.
 
 ## Content packs (JSON)
 Weapons, spells, monsters, presets, and traits are all defined the same way: drop a JSON file in the matching subfolder of `<world folder>/dndsheets/` and it loads automatically on server start (or immediately with the matching `/dnd... load <filename>` command). See `/test/dndsheets` in this repo for ready-to-copy sample packs covering every content type — copy that folder's contents straight into your world's `dndsheets/` folder to try them.

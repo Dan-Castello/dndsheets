@@ -15,9 +15,9 @@ El mod usa la API de GUI **vanilla de Minecraft/Forge** (`net.minecraft.client.g
 Documentados una sola vez aquí; las pantallas que los usan solo indican qué instancia crean (posición/tamaño), no repiten su comportamiento.
 
 - `GuiStyle` (`client/gui/GuiStyle.java`) — colores y panel de fondo compartidos por toda pantalla plana sin textura propia.
-- `ListPickerScreen` (`client/gui/ListPickerScreen.java`) — base para pantallas de lista/menú vertical de botones.
+- `ListPickerScreen` (`client/gui/ListPickerScreen.java`) — base para pantallas de lista/menú vertical de botones. Maneja la navegación "&lt; Atrás" (ver más abajo).
 - `ModalDialogScreen` (`client/gui/ModalDialogScreen.java`) — base para diálogos centrados de tamaño fijo. Usada por `RestChoiceScreen`, `RestVoteScreen`, `DeathSaveScreen`.
-- `SmallFormScreen` (`client/gui/SmallFormScreen.java`) — base para formularios cortos de una columna. Usada por `SpawnGenericScreen`, `AddTurnEffectScreen`, `AddMonsterAttackScreen`.
+- `SmallFormScreen` (`client/gui/SmallFormScreen.java`) — base para formularios cortos de una columna. Usada por `SpawnGenericScreen`, `AddTurnEffectScreen`, `AddMonsterAttackScreen`, `DungeonPieceAddScreen`, `DungeonPieceEditScreen`, `DungeonGenerateScreen`, `DungeonJigsawConfigureScreen`. Misma navegación "&lt; Atrás" que `ListPickerScreen`.
 - `AdjustableImageButton` (`client/gui/components/AdjustableImageButton.java`)
 - `ButtonListWidget` (`client/gui/components/ButtonListWidget.java`)
 - `RollScrollWidget` (`client/gui/components/RollScrollWidget.java`)
@@ -34,8 +34,9 @@ Documentados una sola vez aquí; las pantallas que los usan solo indican qué in
 - **Extiende:** `net.minecraft.client.gui.screens.Screen`
 - **Propósito:** título centrado (`y=16`) + panel `GuiStyle` + una `ButtonListWidget` con scroll automático. Cubre tanto los selectores "elige uno de varios" como los menús de botón fijo (Panel de DM, Modo turnos) — un menú fijo es solo una lista que nunca llega a desbordar.
 - **API para subclases:** `buildRows()` (abstracto, llamado desde `init()`, añade filas con `addRow(Component, Button.OnPress)`); `buttonWidth()` (default 200, sobrescribible — `GrimoireScreen` usa 220); `listTop()`/`listHeight()` (sobrescribibles para dejar hueco a un subtítulo o a un botón fijo bajo la lista); `emptyMessage()` (texto centrado si la lista queda vacía, default ninguno).
-- **Notable:** `init()`/`render()` no son `final` — una pantalla con contenido extra (subtítulo de `GrimoireScreen`, botón "Cancelar" fijo de `CharacterOptionListScreen`) sobrescribe, llama a `super` primero y añade lo suyo. `mouseScrolled` e `isPauseScreen() -> false` ya están resueltos aquí, no hace falta repetirlos.
-- **Usada por:** `DmPanelScreen`, `TurnControlScreen`, `PlayerPickerScreen`, `TraitGrantScreen`, `CharacterOptionListScreen`, `ManageCustomAttacksScreen`, `MonsterActionScreen`, `PresetScreen`, `GrimoireScreen`.
+- **Notable:** `init()`/`render()` no son `final` — una pantalla con contenido extra (subtítulo de `GrimoireScreen`, botón fijo bajo la lista de `GrimoireScreen`) sobrescribe, llama a `super` primero y añade lo suyo. `mouseScrolled` e `isPauseScreen() -> false` ya están resueltos aquí, no hace falta repetirlos.
+- **Navegación (constructor `(Component title, Screen parent)`, o `(Component title)` para una pantalla raíz):** si `parent` no es null, `init()` añade un botón "&lt; Atrás" en la esquina superior izquierda del panel, y `onClose()` (Escape, o cualquier fila/botón que llame a `this.onClose()`) vuelve a `parent` en vez de cerrar el menú entero. Cada pantalla captura su `parent` en su propio `open(...)` estático con `Minecraft.getInstance().screen` — la pantalla que estaba visible en el momento de abrir esta — así que los sitios que llaman a `open(...)` no necesitan pasar nada extra. Sin `parent` (pantallas raíz: `DmPanelScreen`, `MonsterActionScreen`) no hay botón "Atrás" y Escape cierra el menú, igual que antes.
+- **Usada por:** `DmPanelScreen`, `TurnControlScreen`, `PlayerPickerScreen`, `TraitGrantScreen`, `CharacterOptionListScreen`, `ManageCustomAttacksScreen`, `MonsterActionScreen`, `PresetScreen`, `GrimoireScreen`, `DungeonPieceListScreen`.
 
 ### AdjustableImageButton
 
@@ -65,7 +66,7 @@ Documentados una sola vez aquí; las pantallas que los usan solo indican qué in
 
 ## Registro de pantallas
 
-Solo 3 de las 20 pantallas son `AbstractContainerScreen` registradas como menú real (`init/DndsheetsModScreens.java`): `CharacterSheetScreen`, `RollEditorScreen`, `AdvancedRollEditorScreen`. El resto son `Screen` planas abiertas imperativamente vía un método estático `open(...)`.
+Solo 3 de las 25 pantallas son `AbstractContainerScreen` registradas como menú real (`init/DndsheetsModScreens.java`): `CharacterSheetScreen`, `RollEditorScreen`, `AdvancedRollEditorScreen`. El resto son `Screen` planas abiertas imperativamente vía un método estático `open(...)`.
 
 ---
 
@@ -332,18 +333,18 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 ## CharacterOptionListScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/CharacterOptionListScreen.java`
-- **Tipo:** extiende `ListPickerScreen` (ver esa sección); sobrescribe `listHeight()` (resta hueco para el botón fijo) e `init()` (añade el botón fijo tras `super.init()`)
+- **Tipo:** extiende `ListPickerScreen` (ver esa sección); `returnTo` (la `CharacterSheetScreen` que la abrió) se pasa como `parent` al constructor de la base — nada bespoke aquí, es el mecanismo genérico de navegación
 - **Cómo se abre:** `CharacterOptionListScreen.open(CharacterSheetScreen returnTo, String category, List<String> options)` — selector de Raza/Trasfondo/Clase invocado desde `CharacterSheetScreen`
 - **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
 - **Tamaño del panel:** full-screen; lista top-anchored en `y=30`, botones por defecto (200/20/4)
 
-| Widget | Tipo | X | Y | Ancho | Alto | Notas |
-|---|---|---|---|---|---|---|
-| Lista de opciones | fila de `ListPickerScreen` | — | — | 200 | — | deja hueco para "Cancelar" fijo debajo; onClick escribe el campo y envía `SheetServerMessage`, cierra |
-| Botón "Cancelar" | Button | (width-200)/2 | height-20-8 | 200 | 20 | fijo, fuera de la lista; `onClose()` |
-| Mensaje "No hay opciones cargadas" | `emptyMessage()` | — | — | — | — | solo si `options` vacío |
+| Widget | Tipo | Notas |
+|---|---|---|
+| Lista de opciones | fila de `ListPickerScreen` | onClick escribe el campo, envía `SheetServerMessage`, `onClose()` |
+| Botón "&lt; Atrás" | fila de `ListPickerScreen` (base) | esquina superior izquierda; vuelve a `returnTo` |
+| Mensaje "No hay opciones cargadas" | `emptyMessage()` | solo si `options` vacío |
 
-- **Notas:** `onClose()` vuelve a `returnTo` (misma instancia de `CharacterSheetScreen`) en vez de cerrar todo, tanto al elegir como al cancelar/Escape.
+- **Notas:** vuelve a `returnTo` (misma instancia de `CharacterSheetScreen`) tanto al elegir una opción como al pulsar "&lt; Atrás" o Escape — su `init()` se re-ejecuta al reabrirla, releyendo la hoja actualizada.
 
 ## ManageCustomAttacksScreen
 
@@ -376,7 +377,7 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/GrimoireScreen.java`
 - **Tipo:** extiende `ListPickerScreen` (ver esa sección); sobrescribe `buttonWidth()` (220), `listTop()` (deja hueco al subtítulo) y `listHeight()` (deja hueco al botón de lanzar), más `init()`/`render()` para el botón y el subtítulo
-- **Cómo se abre:** sin `open()` estático; instanciado directo con `new GrimoireScreen()` desde el botón `grimoireButton` de `CharacterSheetScreen`
+- **Cómo se abre:** sin `open()` estático; instanciado directo con `new GrimoireScreen(this)` desde el botón `grimoireButton` de `CharacterSheetScreen` — `this` (la hoja) es el `parent`, así que "&lt; Atrás"/Escape vuelven a ella
 - **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
 - **Tamaño del panel:** full-screen centrado; ancho fijo 220 (vía `buttonWidth()`)
 
@@ -391,8 +392,8 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 ## SheetAdjustScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/SheetAdjustScreen.java`
-- **Tipo:** `Screen` (plana) — layout propio, no encaja en `ListPickerScreen`/`SmallFormScreen`; dibuja el panel `GuiStyle` directamente en `render()`
-- **Cómo se abre:** `SheetAdjustScreen.open(targetUuid, targetName, gold, slotsMax, slotsCurrent, hp, maxHp, ac)` — desde el Panel de DM tras elegir jugador en `PlayerPickerScreen`
+- **Tipo:** `Screen` (plana) — layout propio, no encaja en `ListPickerScreen`/`SmallFormScreen`; dibuja el panel `GuiStyle` directamente en `render()`; captura `parent = Minecraft.getInstance().screen` en `open()` y sobrescribe `onClose()` a mano (mismo mecanismo que `ListPickerScreen`, sin heredar de ella)
+- **Cómo se abre:** `SheetAdjustScreen.open(targetUuid, targetName, gold, slotsMax, slotsCurrent, hp, maxHp, ac)` — desde el Panel de DM tras elegir jugador en `PlayerPickerScreen` (que queda como `parent`)
 - **Textura de fondo:** ninguna — panel `GuiStyle.panel(...)` de `(centerX-WIDE_WIDTH/2-14, y0-40)` a `(centerX+WIDE_WIDTH/2+14, formBottom)`
 - **Tamaño del panel:** full-screen centrado; `centerX=width/2`, `y0 = height/2 - ROW_HEIGHT*6` (`ROW_HEIGHT=26`), `FIELD_WIDTH=90`, `WIDE_WIDTH=190`, `FIELD_HEIGHT=20`
 
@@ -416,7 +417,7 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 | levelBox | EditBox | centerX-95 | y0+130 | 90 | 20 | default "1", maxLen 2 |
 | Botón "Fijar nivel" (permanente) | Button | centerX-1 | y0+130 | 96 | 20 | `SheetLevelMessage` |
 | Botón "Ver percepción pasiva (solo tú la ves)" | Button | centerX-95 | y0+156 | 190 | 20 | `PassivePerceptionRequestMessage` |
-| Botón "Cerrar" | Button | centerX-95 | y0+186 | 190 | 20 | `onClose()` |
+| Botón "&lt; Atrás" | Button | centerX-95 | y0+186 | 190 | 20 | `onClose()` — vuelve a `parent` (normalmente `PlayerPickerScreen`) |
 
 - **Colores especiales:** `0xFFFFFF` título, `0xFFAA00` línea PG/CA de solo lectura.
 
@@ -471,3 +472,88 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 
 - **Colores especiales:** `0xFFFFFF` título, `0xAAAAAA` marcadores éxito/fallo, `0x888888` texto de ayuda.
 - **Notas:** `shouldCloseOnEsc()` e `isPauseScreen()` devuelven `false`.
+
+## DungeonPieceListScreen
+
+- **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/DungeonPieceListScreen.java`
+- **Tipo:** extiende `ListPickerScreen` (ver esa sección); sobrescribe `listTop()` (deja hueco al aviso de Structurize/BlockUI si no están instalados) y `render()` para ese aviso
+- **Cómo se abre:** `DungeonPieceListScreen.open(List<DungeonPieceRegistry.DungeonPiece> pieces)` — al recibir `DungeonPieceListMessage` del servidor (pedida desde el botón "Mazmorras" del Panel de DM, o como eco tras capturar/editar una pieza)
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
+- **Tamaño del panel:** full-screen; lista top-anchored en `y=30` (o `y=44` si falta el aviso de Structurize/BlockUI), botones por defecto (200/20/4)
+
+| Widget | Tipo | Notas |
+|---|---|---|
+| Aviso "Structurize + BlockUI no detectados..." | drawCenteredString | solo si `DungeonManager.structurizeAvailable()` es falso; color `GuiStyle.MUTED_COLOR` |
+| Filas de pieza (bucle) | fila de `ListPickerScreen` | una por pieza (`id — pool (peso n)`); onClick abre `DungeonPieceEditScreen` |
+| "+ Añadir pieza" | fila de `ListPickerScreen` | abre `DungeonPieceAddScreen` |
+| "Generar mazmorra" | fila de `ListPickerScreen` | abre `DungeonGenerateScreen` |
+| Mensaje "Sin piezas todavía..." | `emptyMessage()` | solo si `pieces` vacío |
+
+## DungeonPieceAddScreen
+
+- **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/DungeonPieceAddScreen.java`
+- **Tipo:** extiende `SmallFormScreen` (ver esa sección), `titleRows=3`
+- **Cómo se abre:** `DungeonPieceAddScreen.open()` sin prellenar — desde "+ Añadir pieza" en `DungeonPieceListScreen`; o `DungeonPieceAddScreen.open(structureId, suggestedId)` prellenado — al recibir `DungeonPieceAddOpenMessage`, disparado por clic derecho con la Vara de DM sobre un bloque de estructura ya nombrado (ver `DungeonToolManager`), para no tener que retipear a mano el id que ya se escribió una vez al guardar la estructura
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `SmallFormScreen`
+- **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*3` (`ROW_HEIGHT=30` → `height/2 - 90`)
+
+| Widget | Tipo | Notas |
+|---|---|---|
+| idBox | EditBox | prellenado con `suggestedId` (último segmento de la ruta) si vino de la Vara de DM, si no vacío; maxLen 32, foco inicial |
+| structureBox | EditBox | "Estructura (namespace:ruta)"; prellenado con `structureId` si vino de la Vara de DM, si no vacío (el DM lo escribe a mano, el mismo id que le puso al bloque de estructura al escanear); maxLen 64 |
+| poolBox | EditBox | maxLen 32 |
+| weightBox | EditBox | default "1", maxLen 4 |
+| tagsBox | EditBox | maxLen 64 |
+| Confirmar | Button | envía `DungeonPieceCaptureMessage(id, structure, pool, weight, tags)`, cierra |
+| Cancelar | Button | `onClose()` |
+
+## DungeonPieceEditScreen
+
+- **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/DungeonPieceEditScreen.java`
+- **Tipo:** extiende `SmallFormScreen` (ver esa sección), `titleRows=2`
+- **Cómo se abre:** `DungeonPieceEditScreen.open(DungeonPieceRegistry.DungeonPiece piece)` — al elegir una fila de pieza en `DungeonPieceListScreen`; los valores prellenados vienen del objeto `piece` recibido por red, no de una relectura local (`DungeonPieceRegistry` solo vive en memoria del servidor)
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `SmallFormScreen`
+- **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*2` (`ROW_HEIGHT=30` → `height/2 - 60`)
+
+| Widget | Tipo | Notas |
+|---|---|---|
+| poolBox | EditBox | prellenado con `piece.pool()`, maxLen 32, foco inicial |
+| weightBox | EditBox | prellenado con `piece.weight()`, maxLen 4 |
+| tagsBox | EditBox | prellenado con `piece.tags()`, maxLen 64 |
+| Confirmar | Button | envía `DungeonPieceUpdateMessage(id, pool, weight, tags)`, cierra |
+| Cancelar | Button | `onClose()` |
+
+- **Notas:** sin botón de borrar (deliberado) — `SmallFormScreen.init()` es `final`, así que borrar una pieza sigue siendo solo `/dnddungeon piece remove <id>`.
+
+## DungeonGenerateScreen
+
+- **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/DungeonGenerateScreen.java`
+- **Tipo:** extiende `SmallFormScreen` (ver esa sección), `titleRows=3`
+- **Cómo se abre:** `DungeonGenerateScreen.open()` — desde "Generar mazmorra" en `DungeonPieceListScreen`
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `SmallFormScreen`
+- **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*3` (`ROW_HEIGHT=30` → `height/2 - 90`)
+
+| Widget | Tipo | Notas |
+|---|---|---|
+| poolBox | EditBox | maxLen 32, foco inicial |
+| maxDepthBox | EditBox | default "7", maxLen 2 |
+| xBox / yBox / zBox | EditBox | prellenados con `Minecraft.getInstance().player.blockPosition()` al abrir |
+| Confirmar | Button | envía `DungeonGenerateMessage(pool, maxDepth, pos)` (publica los pools y corre `/reload` en el servidor antes de generar), cierra |
+| Cancelar | Button | `onClose()` |
+
+## DungeonJigsawConfigureScreen
+
+- **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/DungeonJigsawConfigureScreen.java`
+- **Tipo:** extiende `SmallFormScreen` (ver esa sección), `titleRows=1`
+- **Cómo se abre:** `DungeonJigsawConfigureScreen.open(BlockPos pos, String currentPool, boolean currentIsStart)` — al recibir `DungeonJigsawConfigureOpenMessage`, disparado por clic derecho (sin agachar) con la Vara de DM sobre un jigsaw block (ver `DungeonToolManager`); prellenado con el portapapeles del DM si copió otro jigsaw antes (agachado + clic derecho sobre uno ya configurado), si no con lo que ya tuviera guardado ESTE jigsaw si era de nuestro namespace, vacío/"No" si es un jigsaw recién colocado sin nada copiado
+- **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `SmallFormScreen`
+- **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*1` (`ROW_HEIGHT=30` → `height/2 - 30`)
+
+| Widget | Tipo | Notas |
+|---|---|---|
+| poolBox | EditBox | "Pool destino" — a qué pool debería tirar esta salida; maxLen 32, foco inicial |
+| isStart | Button (cíclico) | "Pieza de inicio: Sí/No" |
+| Confirmar | Button | envía `DungeonJigsawConfigureMessage(pos, pool, isStart)` — el servidor escribe `Name`/`Target`/`Pool`/`Joint` directo en el block entity, sin abrir la GUI vanilla del jigsaw (ver `DungeonManager.configureJigsaw`), cierra |
+| Cancelar | Button | `onClose()` |
+
+- **Notas:** `Target` siempre queda en `dndsheets:connector` (no se pide) y `Joint` siempre en `ALIGNED` (no se expone) — simplificación deliberada, ver comentario en `DungeonManager.configureJigsaw`.

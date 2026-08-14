@@ -18,7 +18,10 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * <p>El DM controla los monstruos sin IA con la Vara de DM ({@link MonsterRegistry#isDmTool}): clic
@@ -74,6 +77,52 @@ public class MonsterActionManager {
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> serverDm), new MonsterActionOpenMessage(target.getId(), actionNames, customAttackNames));
 	}
 
+	//Vara de Movimiento: reposicionar un monstruo ya invocado sin pasar por su menú de ataques ni tener que
+	//esperar a que le toque el turno — para montar la escena (o corregir dónde cayó al invocarlo) sin
+	//comandos ni coordenadas a mano. Selección en memoria por jugador: clic derecho en un monstruo lo
+	//selecciona (sobreescribe la selección anterior si había una), clic derecho en un bloque lo mueve ahí.
+	private static final Map<UUID, Integer> pendingMove = new HashMap<>();
+
+	@SubscribeEvent
+	public static void onSelectMonsterToMove(PlayerInteractEvent.EntityInteract event) {
+		if (event.getEntity().level().isClientSide()) return;
+		Player dm = event.getEntity();
+		if (!MonsterRegistry.isMoveTool(dm.getMainHandItem()) && !MonsterRegistry.isMoveTool(dm.getOffhandItem())) return;
+		if (!dm.hasPermissions(2)) return;
+
+		Entity target = event.getTarget();
+		if (MonsterRegistry.statBlockOf(target) == null) return;
+
+		event.setCanceled(true);
+		pendingMove.put(dm.getUUID(), target.getId());
+		if (dm instanceof ServerPlayer serverDm) {
+			serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.monster.move_selected", target.getName().getString()).withStyle(ChatFormatting.GRAY));
+		}
+	}
+
+	@SubscribeEvent
+	public static void onSelectMoveDestination(PlayerInteractEvent.RightClickBlock event) {
+		if (event.getEntity().level().isClientSide()) return;
+		Player dm = event.getEntity();
+		if (!MonsterRegistry.isMoveTool(dm.getMainHandItem()) && !MonsterRegistry.isMoveTool(dm.getOffhandItem())) return;
+
+		Integer entityId = pendingMove.get(dm.getUUID());
+		if (entityId == null) return;
+
+		event.setCanceled(true);
+		pendingMove.remove(dm.getUUID());
+		if (!(event.getLevel() instanceof ServerLevel level)) return;
+
+		Entity monster = level.getEntity(entityId);
+		if (monster == null || !monster.isAlive()) return; //Ya no existe (muerto/borrado desde que se seleccionó): nada que mover.
+
+		BlockPos destination = event.getPos().relative(event.getFace());
+		monster.teleportTo(destination.getX() + 0.5, destination.getY(), destination.getZ() + 0.5);
+		if (dm instanceof ServerPlayer serverDm) {
+			serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.monster.moved", monster.getName().getString()).withStyle(ChatFormatting.GRAY));
+		}
+	}
+
 	//Carta de invocación (pestaña creativa o /dndspells... análogo): clic derecho en un bloque la invoca
 	//encima, igual que un huevo de spawn vanilla. En creativo no se gasta; en supervivencia sí.
 	@SubscribeEvent
@@ -119,6 +168,11 @@ public class MonsterActionManager {
 			return;
 		}
 
+		//Mismo acercamiento que ya usa autoAct (turno automático sin DM) — sin esto, un monstruo controlado
+		//a mano con la Vara de DM atacaba siempre desde donde apareció, sin acercarse nunca (NoAI fijo desde
+		//que se invoca, ver MonsterRegistry.spawnAt), aunque el jugador estuviera fuera de su alcance.
+		moveTowardIfNeeded(monsterEntity, target);
+
 		//Mismo orden que onInteractWithMonster arma el menú: ataques de la especie, luego los personalizados
 		//de esta instancia (ver MonsterRegistry.addCustomAttack), luego hechizos.
 		List<MonsterRegistry.MonsterAttack> attacks = new ArrayList<>(block.attacks());
@@ -153,12 +207,12 @@ public class MonsterActionManager {
 	}
 
 	//Turno automático del monstruo: TurnManager.beginTurn lo llama en cuanto le toca a un monstruo, sin
-	//esperar a la Vara de DM — es la pieza que hace que "sin DM" sea real (ver AUDIT.md sección 0). Ataca
-	//al jugador más cercano con su primer ataque disponible (de especie, luego personalizado); si no tiene
-	//ataques, prueba con su primer hechizo. ponytail: sin selección táctica de objetivo/ataque (no elige
-	//blanco más débil, no varía de ataque, no huye con poca vida) — un monstruo siempre golpea al más
-	//cercano de la forma más simple posible. El DM sigue pudiendo intervenir a mano en cualquier otro
-	//momento (p.ej. entre rondas) con la Vara de DM de siempre.
+	//esperar a la Vara de DM — es la pieza que hace que "sin DM" sea real. Ataca al jugador más cercano con
+	//un ataque elegido al azar entre los disponibles (de especie + personalizados); si no tiene ataques,
+	//prueba con un hechizo al azar entre los suyos. ponytail: el azar solo decide QUÉ ataque usa, sin
+	//selección táctica de objetivo (no elige blanco más débil, no huye con poca vida) — un monstruo siempre
+	//golpea al más cercano. El DM sigue pudiendo intervenir a mano en cualquier otro momento (p.ej. entre
+	//rondas) con la Vara de DM de siempre.
 	public static void autoAct(ServerLevel level, Entity monsterEntity) {
 		if (!monsterEntity.isAlive()) return;
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monsterEntity);
@@ -178,12 +232,19 @@ public class MonsterActionManager {
 		List<MonsterRegistry.MonsterAttack> attacks = new ArrayList<>(block.attacks());
 		attacks.addAll(MonsterRegistry.customAttacksOf(monsterEntity));
 		if (!attacks.isEmpty()) {
-			resolveAttack(block, monsterEntity, attacks.get(0), target);
+			resolveAttack(block, monsterEntity, randomOf(attacks), target);
 			return;
 		}
 		if (!block.spells().isEmpty()) {
-			resolveSpell(block, monsterEntity, block.spells().get(0), target);
+			resolveSpell(block, monsterEntity, randomOf(block.spells()), target);
 		}
+	}
+
+	//Elige entre varias opciones (ataques o hechizos) al azar en vez de siempre la primera — así un
+	//monstruo con "mordisco" y "garra" no repite el mismo golpe en cada turno. Con una sola opción,
+	//nextInt(1) siempre da 0: no hace falta un caso especial para ese tamaño.
+	private static <T> T randomOf(List<T> options) {
+		return options.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(options.size()));
 	}
 
 	//Antes el monstruo atacaba desde donde estuviera parado, sin importar la distancia real al objetivo
@@ -212,8 +273,8 @@ public class MonsterActionManager {
 
 	//Ataque de oportunidad: TurnManager lo dispara cuando quien tiene el turno sale del alcance cuerpo a
 	//cuerpo de un monstruo sin haber usado ya su reacción esta ronda (ver OpportunityAttackTracker.checkOpportunityAttacks).
-	//Usa el primer ataque real disponible (de especie o personalizado), sin pasar por resolveAction: esto es
-	//una reacción del monstruo, no su acción del turno, así que no toca TurnManager.tryAct.
+	//Usa un ataque real al azar entre los disponibles (de especie o personalizado), sin pasar por
+	//resolveAction: esto es una reacción del monstruo, no su acción del turno, así que no toca TurnManager.tryAct.
 	public static void resolveOpportunityAttack(Entity monsterEntity, Player mover) {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monsterEntity);
 		if (block == null) return;
@@ -223,7 +284,7 @@ public class MonsterActionManager {
 		if (attacks.isEmpty()) return;
 
 		ChatFeedback.broadcast(monsterEntity, Component.translatable("chat.dndsheets.monster.opportunity_attack", block.name(), mover.getName().getString()).withStyle(ChatFormatting.DARK_PURPLE));
-		resolveAttack(block, monsterEntity, attacks.get(0), mover);
+		resolveAttack(block, monsterEntity, randomOf(attacks), mover);
 	}
 
 	private static void resolveAttack(MonsterRegistry.MonsterStatBlock block, Entity monsterEntity, MonsterRegistry.MonsterAttack attack, Player target) {
@@ -251,7 +312,7 @@ public class MonsterActionManager {
 		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), affinity);
 		target.hurt(target.damageSources().generic(), finalAmount);
 		if (target instanceof ServerPlayer serverTarget) ConcentrationManager.onDamageTaken(serverTarget, finalAmount);
-		CombatFx.hit(target, attackRoll.criticalHit());
+		CombatFx.hit(target, attackRoll.criticalHit(), attack.damageType());
 		ChatFeedback.broadcast(monsterEntity, ChatFeedback.attackResult(block.name(), target.getName().getString(), attack.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()));
 
 		if (attack.appliesEffect()) applyEffectFromHit(target, attack.effectName(), attack.effectDice(), attack.effectTurns());
@@ -284,7 +345,7 @@ public class MonsterActionManager {
 		Component outcomeLabel = Component.translatable(saved ? (spell.halfOnSave() ? "chat.dndsheets.spell.save_half" : "chat.dndsheets.spell.save_none") : "chat.dndsheets.spell.save_fail");
 
 		CombatFx.spellCast(monsterEntity);
-		CombatFx.spellImpact(target, saved);
+		CombatFx.spellImpact(target, saved, spell.damageType());
 		ChatFeedback.broadcast(monsterEntity, ChatFeedback.saveResult(block.name(), target.getName().getString(), spell.name(), saveRoll.formatted(), spell.saveDc(), saved, outcomeLabel,
 			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null));
 

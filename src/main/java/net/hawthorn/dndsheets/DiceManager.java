@@ -2,17 +2,11 @@
 // https://mvnrepository.com/artifact/com.bernardomg.tabletop/dice
 package net.hawthorn.dndsheets;
 
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.api.distmarker.Dist;
 import com.google.gson.JsonObject;
 import io.github.tfriedrichs.dicebot.result.DiceResult;
 import io.github.tfriedrichs.dicebot.result.DiceResultPrettyPrinter;
 import io.github.tfriedrichs.dicebot.expression.DiceExpression;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,7 +14,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 //Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
 //y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
 //expone a que cambien de firma sin aviso.
@@ -33,9 +26,6 @@ public class DiceManager {
 	private static final Pattern ABSURD_DICE_COUNT_PATTERN = Pattern.compile("(\\d+)d\\d");
 	private static final Pattern DICE_NOTATION_PATTERN = Pattern.compile("\\d*d\\d+");
 	private static final Pattern BRACKETED_VALUE_PATTERN = Pattern.compile("\\[[^\\]]*]");
-
-	public DiceManager() {
-	}
 
 	/**
 	 * @param result the rolled outcome, or null if the expression failed to parse/roll.
@@ -118,7 +108,7 @@ public class DiceManager {
 	}
 
 	public static RollOutcome roll(JsonObject sheet, String expression) {
-		LOGGER.log(org.apache.logging.log4j.Level.getLevel("info"), "Initial parse: " + expression);
+		LOGGER.log(Level.INFO, "Initial parse: " + expression);
 		expression = expression.toLowerCase();
 		try {
 			int score, modifier;
@@ -159,9 +149,9 @@ public class DiceManager {
 				modifier = Integer.parseInt(sheet.get("proficiencyBonus").getAsString()) / 2;
 				expression = expression.replace("$hprof", String.valueOf(modifier));
 			}
-			LOGGER.log(org.apache.logging.log4j.Level.getLevel("info"), "Final roll: " + expression);
+			LOGGER.log(Level.INFO, "Final roll: " + expression);
 			if (hasAbsurdDiceCount(expression)) {
-				LOGGER.log(org.apache.logging.log4j.Level.getLevel("info"), "Roll rejected, dice count too large: " + expression);
+				LOGGER.log(Level.INFO, "Roll rejected, dice count too large: " + expression);
 				return new RollOutcome(null, null);
 			}
 			expression = wrapDiceTermsInParens(expression);
@@ -174,7 +164,7 @@ public class DiceManager {
 			//tire OutOfMemoryError, que es un Error, no una Exception — un catch (Exception e) no lo
 			//atrapaba, y eso tumbaba el hilo del servidor entero. hasAbsurdDiceCount ya corta el caso común
 			//antes de llegar aquí; este catch es el respaldo para cualquier otro fallo raro de la librería.
-			LOGGER.log(org.apache.logging.log4j.Level.getLevel("info"), "Some roll turned up an error, so it will be ignored.");
+			LOGGER.log(Level.INFO, "Some roll turned up an error, so it will be ignored.");
 			return new RollOutcome(null, null);
 		}
 
@@ -228,22 +218,5 @@ public class DiceManager {
 		}
 		out.append(pretty.substring(lastEnd));
 		return out.toString();
-	}
-
-	@SubscribeEvent
-	public static void init(FMLCommonSetupEvent event) {
-		
-	}
-
-	@Mod.EventBusSubscriber
-	private static class ForgeBusEvents {
-		@SubscribeEvent
-		public static void serverLoad(ServerStartingEvent event) {
-		}
-
-		@OnlyIn(Dist.CLIENT)
-		@SubscribeEvent
-		public static void clientLoad(FMLClientSetupEvent event) {
-		}
 	}
 }

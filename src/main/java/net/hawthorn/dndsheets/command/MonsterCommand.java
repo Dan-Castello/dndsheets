@@ -54,7 +54,9 @@ public class MonsterCommand {
 			.then(spawnNode())
 			.then(attackNode())
 			.then(Commands.literal("dmtool")
-				.then(Commands.argument("jugadores", EntityArgument.players()).executes(MonsterCommand::giveDmTool))));
+				.then(Commands.argument("jugadores", EntityArgument.players()).executes(MonsterCommand::giveDmTool)))
+			.then(Commands.literal("movetool")
+				.then(Commands.argument("jugadores", EntityArgument.players()).executes(MonsterCommand::giveMoveTool))));
 	}
 
 	private static LiteralArgumentBuilder<CommandSourceStack> spawnNode() {
@@ -238,6 +240,35 @@ public class MonsterCommand {
 			Component.literal("Clic derecho en un monstruo invocado: menú de sus ataques/hechizos.").withStyle(net.minecraft.ChatFormatting.GRAY))));
 		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
 			Component.literal("Agachado + clic derecho en un monstruo o armor stand: lo borra.").withStyle(net.minecraft.ChatFormatting.GRAY))));
+		stack.getOrCreateTagElement("display").put("Lore", lore);
+
+		return stack;
+	}
+
+	private static int giveMoveTool(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+		ItemStack stack = buildMoveToolStack();
+
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		for (ServerPlayer target : targets) {
+			target.getInventory().add(stack.copy());
+		}
+		ctx.getSource().sendSuccess(() -> Component.literal("Entregada la Vara de Movimiento a " + targets.size() + " jugador(es)."), true);
+		return targets.size();
+	}
+
+	//Público: también lo usa la pestaña creativa (DndsheetsModCreativeTab).
+	public static ItemStack buildMoveToolStack() {
+		ItemStack stack = new ItemStack(Items.STICK);
+		CompoundTag dndTag = new CompoundTag();
+		dndTag.putBoolean("movetool", true);
+		stack.getOrCreateTag().put("dndsheets", dndTag);
+		stack.setHoverName(Component.literal("Vara de Movimiento"));
+
+		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
+		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
+			Component.literal("Clic derecho en un monstruo invocado: lo selecciona.").withStyle(net.minecraft.ChatFormatting.GRAY))));
+		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
+			Component.literal("Clic derecho en un bloque: mueve ahí al monstruo seleccionado.").withStyle(net.minecraft.ChatFormatting.GRAY))));
 		stack.getOrCreateTagElement("display").put("Lore", lore);
 
 		return stack;

@@ -49,6 +49,7 @@ public class DndsheetsModCreativeTab {
 		.icon(() -> new ItemStack(Items.BLAZE_ROD))
 		.displayItems((params, output) -> {
 			safeAccept(output, MonsterCommand.buildDmToolStack());
+			safeAccept(output, MonsterCommand.buildMoveToolStack());
 			safeAccept(output, NotesCommand.buildNotebookStack());
 			safeAccept(output, RestManager.buildRestKitStack());
 			safeAccept(output, TurnItemManager.buildNextTurnStack());

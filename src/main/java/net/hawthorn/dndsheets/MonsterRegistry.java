@@ -255,6 +255,14 @@ public class MonsterRegistry {
 		return tag != null && tag.contains("dndsheets") && tag.getCompound("dndsheets").getBoolean("dmtool");
 	}
 
+	//--- Vara de Movimiento: mismo patrón que la Vara de DM, pero para reposicionar un monstruo ya invocado
+	//sin pasar por su menú de ataques (ver MonsterActionManager.onSelectMonsterToMove) ---
+
+	public static boolean isMoveTool(ItemStack stack) {
+		CompoundTag tag = stack.getTag();
+		return tag != null && tag.contains("dndsheets") && tag.getCompound("dndsheets").getBoolean("movetool");
+	}
+
 	//--- Carta de invocación: cualquier ítem etiquetado {dndsheets:{monsterSpawn:"id"}} (usada como un huevo de spawn vanilla) ---
 
 	public static String monsterSpawnIdOf(ItemStack stack) {
