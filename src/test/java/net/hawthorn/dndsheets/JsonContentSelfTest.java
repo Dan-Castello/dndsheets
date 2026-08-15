@@ -181,7 +181,7 @@ public class JsonContentSelfTest {
 				}
 			}
 		}
-		assertTrue(bestiary.size() >= 182, "monsters.json debería traer al menos los 182 del lote 3 del SRD, trae " + bestiary.size());
+		assertTrue(bestiary.size() >= 330, "monsters.json debería traer al menos los 330 de los lotes 3 y 4 del SRD, trae " + bestiary.size());
 
 		//Resistencia condicional: el hombre rata es inmune al daño físico NO mágico, y normal frente al
 		//mágico. Es la mitad del bestiario de VD medio, así que conviene fijar que las dos ramas difieren
