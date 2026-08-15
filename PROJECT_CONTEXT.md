@@ -6,6 +6,42 @@ Deep-dive reference for anyone (human or AI) picking up this codebase cold. `REA
 
 A Minecraft Forge mod (**1.20.1**, Forge `47.2.0`/`47.4.10`, mod id `dndsheets`) that turns Minecraft into a D&D 5e VTT: a fillable character sheet bound to a keypress, real 5e combat resolution layered on top of vanilla PvP/mob combat (opt-in per weapon/monster/spell — anything unconfigured behaves like normal Minecraft), and a full DM toolkit (spawn monsters with real stat blocks, run initiative, generate dungeons from vanilla's jigsaw system, create content in-game). It needs to be installed on both client and server. No plans to port to other MC versions or other tabletop systems (see the FAQ in `README.md`) — PRs welcome if someone wants to.
 
+## Invariants — break these and it fails silently
+
+Every one of these has already cost someone a debugging session, or would. They are cheap to
+respect and expensive to discover. If you are an agent or a new contributor, read this list
+before your first edit.
+
+1. **Never reorder or delete an entry in `DndsheetsMod.registerNetworkMessages`.** The message id
+   is the registration order, so an insertion silently renumbers everything after it. Add new
+   entries at the end.
+2. **Never insert a constant into the middle of an enum that crosses the network.**
+   `FriendlyByteBuf.writeEnum`/`readEnum` travel by ordinal — same failure as above.
+   `SheetAdjustMessage.Field` is the live example; `CONDITION` is last for exactly this reason.
+3. **Prefer extending a parameterized message over registering a new class.**
+   `SheetAdjustMessage` already merges six former message classes behind a `Field` enum; the
+   bulk "give one of N similar things" flows follow the same shape.
+4. **Anything that mutates a sheet must reach `SheetLoader.saveServer`.** The 5-minute autosave is
+   a backstop, not the write path — relying on it already lost DM-side edits once.
+5. **`/reload` can never publish a new or edited dungeon pool in the same session.**
+   `Registries.TEMPLATE_POOL` is worldgen; it loads with the world. Tell the DM to re-enter the
+   world; don't add retry logic.
+6. **A dungeon start pool must contain only pieces that have the start jigsaw.** Vanilla picks one
+   random piece from the pool and searches only inside it, never retrying. Mixed pools fail
+   non-deterministically.
+7. **Read `GUI_REFERENCE.md` before adding or moving a screen.** Almost every screen should extend
+   `ListPickerScreen` or `SmallFormScreen`; the two worst layout bugs in the project's history
+   both came from a screen fighting its base's math instead of using it.
+8. **Content JSON is user data.** Adding a field is fine; renaming or requiring one breaks every
+   pack a DM already wrote. Every parser defaults missing fields and isolates errors per element.
+9. **Leave vanilla alone when nothing is configured.** An unregistered weapon, a mob with no stat
+   block, a player with no sheet — all must behave exactly like normal Minecraft. This is the
+   mod's core compatibility promise.
+10. **Every non-trivial rule gets a case in `JsonContentSelfTest`.** It runs on `gradlew build`,
+    needs no Forge runtime, and has already caught a real bug (accented NPC names slugging to
+    `npc-capit-n`). Logic that can't be reached without a running game belongs behind a pure
+    helper class that can — that is why `CharacterRules` exists.
+
 ## Repository layout
 
 ```
@@ -54,6 +90,75 @@ DUNGEON_GUIDE.md             DM-facing dungeon walkthrough + troubleshooting, ke
                              the actual jigsaw/reload/pool mechanics (see bugs #6-#9 below).
 ```
 
+## The rules core (read this before touching combat)
+
+Three files carry the 5e rules layer. They are newer than everything else described below and
+they supersede the older duplicated shapes, so read them before assuming a pattern from an
+older file is still the way to do something.
+
+**`Combatant`** is the single abstraction over "anything that participates in 5e rules": a
+player (backed by a `JsonObject` sheet) or a monster (backed by a `MonsterStatBlock` + entity
+NBT). Before it existed, that split was a `boolean isMonster` and every rule that needed "the
+target's AC" or "take N hit points off it" was written twice. That cost was real and was never
+a design decision: monsters had **no** resistances (`DamageTypes.multiplierFor` required a
+sheet), **no** defensive reactions (`ShieldManager.effectiveAc` required a `ServerPlayer`), and
+**no** concentration (`ConcentrationManager.onDamageTaken` did a hard cast). All three are fixed
+in one place now. `Combatant.of(entity)` returns null for anything outside the rules (a modded
+mob with no stat block, a practice armor stand, a player whose sheet failed to load) — callers
+must fall back to vanilla Minecraft behaviour exactly as before.
+
+Implementations hold **no state of their own**: they read and write where that state already
+lived, so they can be constructed and thrown away per call, and conditions survive restarts by
+the same path hit points already did.
+
+**`Condition`** is the 14-condition table of 5e. Each rule is a `switch` inside the method that
+applies it rather than a seven-boolean positional constructor, so each line reads as the manual
+sentence it encodes. What existed before was `TurnManager.StatusEffect(name, dice, turns)` — a
+damage-over-time timer whose `name` was free text nothing in the engine ever read. `"aturdido"`
+was a tab-completion suggestion, not a mechanic.
+
+Conditions reach the engine through `TurnManager.applyEffect`, which checks whether the effect
+name *is* a condition. That means every existing path that could already apply an effect
+(`/dndturns effect`, monster attacks and spells, player spells) now produces real conditions
+with no new command and no new JSON field, and a free-text name (`"fuego"`, `"sangrado"`) still
+behaves exactly as it always did. They are lifted again when the timer expires or concentration
+breaks — the condition is persisted and the timer is not, so without that closing step you stay
+paralysed forever.
+
+Three single choke points enforce conditions, one hook each rather than one per caller:
+`TurnManager.tryAct` (cannot act), `MovementAnchorTracker.enforceBudget` (speed 0), and
+`CombatManager.resolveAttack` (advantage/auto-crit). Charmed is the exception — it depends on
+*who* the target is, so it is checked at the three attack entry points next to the existing
+grip/class restrictions, before the turn is spent or vanilla damage is let through.
+
+Storage format is `label` or `label@sourceEntityId` in both the sheet's JSON array and the
+monster's NBT string. The suffix is optional so anything written before sources existed still
+loads. Entity ids do not survive a server restart, so after one a condition keeps its effect but
+forgets who it pointed at; the two rules that use the source treat "can't see it" as "doesn't
+apply", which is the safe side.
+
+`Combatant` has three implementations, and the two sheet-backed ones share `SheetBacked` so the
+split they replaced cannot creep back in: `PlayerCombatant` (hit points from the real Minecraft
+health attribute, AC includes equipped armour and shield, can react), `NpcCombatant` (hit points
+and AC from the sheet, because the entity is the body and the character is the sheet — it
+survives the entity being unloaded or re-spawned), and `MonsterCombatant` (stat block + NBT).
+
+**`CharacterRules`** holds the "whose character is this and which one are they wearing" rules
+plus the max-hit-points formula, split out of `SheetLoader` because `SheetLoader` resolves
+`FMLPaths.GAMEDIR` at class-init and
+therefore cannot even be loaded outside a running Forge instance — these are exactly the rules
+with branches worth pinning in `JsonContentSelfTest`. `SheetLoader.sheets` is now keyed by
+**character id**, not player UUID, with a derived `player → active character` binding. A player
+UUID is still a valid character id, which is what makes every sheet written before this change
+resolve itself with no migration: its file was already named that way.
+
+The binding is **derived** from an `active` field on each sheet rather than stored as a separate
+index — an index can drift out of sync with the sheets and leave someone unable to play; a field
+inside the sheet cannot contradict itself. `saveServer` resolves its id the same way reads do:
+its three callers pass a player UUID, and without resolving it they would write over the legacy
+sheet instead of the character being worn. `saveAll` must use `saveCharacter` directly for the
+mirror-image reason.
+
 ## Architecture and the patterns worth reusing
 
 **Content registries** (weapons, spells, monsters, presets, traits) all follow the same shape: an in-memory map (`NamedRegistry<T>`, generic — `register`/`get`/`ids`/`remove`), loaded from a JSON array file via `JsonRegistryLoader<T>` (per-element error isolation: one malformed entry warns and gets skipped, doesn't abort the whole file). `Config` (weapons) predates this shared pattern and still hand-rolls its own two maps instead of using `NamedRegistry` — a known inconsistency, not worth unifying unless you're already touching weapon loading for another reason. Race/background/class options (`CharacterOptionsRegistry`) are the odd one out: `loadFile` *replaces* the whole category rather than merging by id, because there's no id, just a flat string list — this distinction has caused real bugs (see the content-creator design below) and is worth remembering before assuming all five content types behave identically.
@@ -97,10 +202,44 @@ For older, already-resolved technical debt (naming, duplication, dead code — n
 - **2025-09-19 — MCreator origin** (`6c01dd2` through `9a4de9f`, all same day): the mod started as an MCreator export (commit messages like *"fuck it"*, *"welp"*, *"remnants of a certain bad program"* say it plainly). `cba86da`/`95f4a80` clean up the generated Gradle project and MCreator assets. `7e6a6db` (2025-09-25) adds the original README; `309da21` merges a small patch PR. No further activity for ~10 months.
 - **2026-08-02 onward — current maintenance** (`a9c061d` through `dc4d637`, all Dan-Castello): `a9c061d` "Full refactor" is the real break from the MCreator-era code. Then a steady cadence of focused passes, each with a real commit message instead of "welp": `8fa8aae` resolves the first 17 blocks of a technical audit; `6a07ec3`/`afa9511` unify GUI visual identity (`GuiStyle`, `ListPickerScreen`); `d07cf75` adds distance measurement, AoE preview, the DM Notebook; `1b170f2` adds the entire dungeon/jigsaw system and applies a second audit pass; `6f1e354`/`dc4d637` are housekeeping (gitignore, cleanup).
 
-**As of this file, none of the current session's work is committed** — the content creator, the full DM-Panel command-parity pass, the search bars, and every bug fix in the numbered list above are all uncommitted working-tree changes (`git status` shows ~40 modified files and ~30 new ones). Worth a deliberate, reviewed commit (or a few logically-split ones) rather than one giant diff, given the size.
+**A large amount of work is uncommitted.** The content creator, the DM-Panel command-parity pass, the search bars, every bug fix in the numbered list above, and all of Fase 0 + the Fase 1 core are working-tree changes. Worth a deliberate, logically-split set of commits rather than one giant diff, given the size.
+
+## The VTT roadmap and why it is in this order
+
+The goal is a VTT that competes with Roll20/Foundry/TaleSpire/Owlbear. The gap was never code
+quality — it was scope, and three measured structural defects. The order below is forced by
+dependencies, not preference.
+
+- **Fase 0 — `Combatant` + conditions. DONE.** Without it every rule is written three times
+  (player / monster / armor stand). See the rules-core section above.
+- **Fase 1 — character identity. DONE except its GUI.** Characters keyed independently of players;
+  `/dndchar list|new|switch|npc|spawn`. NPC sheets get a body via `SheetLoader.spawnNpc`, are tagged
+  onto the entity's NBT (`dndsheets.character`) and resolve through `Combatant.of` as
+  `NpcCombatant` — a character with no one sitting behind it, playing by the full PC rules rather
+  than degrading to a monster stat block. Note `TurnManager.isMonster` (is it an **enemy**, drives
+  end-of-combat) is deliberately separate from `isCombatTarget` (is it a valid 5e target): merging
+  them would mean a friendly innkeeper in the room keeps combat from ever ending.
+  **Still missing:** a character-switching GUI and a party roster for the DM.
+- **Fase 2 — SRD content.** The mod ships 24 spells / 13 monsters / 0 magic items against
+  Foundry's ~319 / ~325 / ~200. This is the biggest *user-facing* gap and it is data, not
+  architecture — the loading pipeline already works. It is deliberately **after** Fase 0: most
+  SRD spells and monster abilities apply or check a condition, so importing them into an engine
+  that could only do damage-over-time would produce hundreds of entries that don't do what they
+  say, and they'd all have to be re-imported.
+- **Fase 3 — the table layer.** Shared journal, handouts with per-player secrets, party view,
+  in-game searchable compendium. Cheapest layer, and worth little until there is content to
+  consult.
+
+**What already beats the competition and should be leaned on, not rebuilt:** the 3D map, real
+line of sight, real lighting and real movement are *native*. That is literally what Roll20 and
+Foundry emulate with polygons and fog layers. Do not build a fog-of-war system; do not build a
+token layer. Compete where Minecraft already wins.
 
 ## Where to go next
 
+- Touching combat, damage, AC, hit points or conditions → go through `Combatant`. If you find
+  yourself writing `instanceof Player` to decide how to read a stat, that branch already exists
+  behind the interface.
 - Adding a screen or touching layout → read `GUI_REFERENCE.md` first, reuse `ListPickerScreen`/`SmallFormScreen`.
 - Adding a content type or command → check whether it fits the `ContentType`/`NamedRegistry`/`JsonRegistryLoader` pattern before writing a parallel one.
 - Touching dungeons → read `DUNGEON_GUIDE.md`'s "regla de oro" and bugs #7-#11 above before assuming `/reload` or a captured piece is trustworthy without checking.
