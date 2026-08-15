@@ -321,9 +321,23 @@ dependencies, not preference.
 
   Silvered/adamantine resistance variants collapse into plain "nonmagical" on purpose: the mod has
   no such materials, and the alternative was discarding the resistance entirely.
-- **Fase 3 — the table layer.** Shared journal, handouts with per-player secrets, party view,
-  in-game searchable compendium. Cheapest layer, and worth little until there is content to
-  consult.
+- **Fase 3 — the table layer. DONE.** The searchable in-game **compendium** (`/dndcompendium`) is what
+  makes 779 imported entries usable: before it, looking a spell up meant remembering its id and typing
+  a command. The **journal and handouts turned out to be one thing**, verified before writing: an entry
+  with a title, a body and a visibility — a journal note is visible to the party, a handout only to who
+  you gave it to, a DM note to nobody else. Splitting them would have duplicated persistence, GUI and
+  network message to vary only who may read them.
+
+  Two decisions worth keeping: the text comes from a **vanilla Book and Quill**, because Minecraft
+  already ships a multi-line editor and the mod already hands one out — far better than paragraphs
+  through a command argument or a one-line text box. And **visibility is filtered server-side**, never
+  on the client: shipping entries that the client then hides would leave the DM's secrets in the memory
+  of people who must not have them, which is not hiding them. The detail request re-checks
+  readability too, because a client can ask for any id.
+
+  Neither piece registered a new network message: the `Browse*` pair (renamed from `Roster*` when it
+  widened) already had the right shape — "show me a list only the server knows" — and now carries the
+  roster, the compendium and the journal.
 
 **What already beats the competition and should be leaned on, not rebuilt:** the 3D map, real
 line of sight, real lighting and real movement are *native*. That is literally what Roll20 and

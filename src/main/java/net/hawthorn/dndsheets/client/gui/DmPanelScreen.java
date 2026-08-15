@@ -47,6 +47,11 @@ public class DmPanelScreen extends ListPickerScreen {
 		addRow(Component.literal("Mazmorras (piezas y generación)"),
 			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new DungeonPieceListRequestMessage()));
 		addRow(Component.literal("Compendio"), b -> CompendiumScreen.open());
+		//El diario se abre por comando (/dndjournal) y no desde aquí con un mensaje: el servidor ya sabe
+		//qué puede leer cada uno, y pedirlo desde el cliente sería un viaje de más para el mismo resultado.
+		addRow(Component.literal("Diario y handouts"), b -> {
+			net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndjournal");
+		});
 		addRow(Component.literal("Crear contenido"), b -> ContentTypeListScreen.open());
 		addRow(Component.translatable("gui.dndsheets.guide.button"), b -> GuideBook.open(true));
 	}

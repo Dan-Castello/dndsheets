@@ -34,7 +34,7 @@ import java.util.function.Supplier;
 public class BrowseActionMessage {
 
 	//Al final, nunca en medio: writeEnum viaja por ordinal (ver la invariante 2 de PROJECT_CONTEXT.md).
-	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL }
+	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL, JOURNAL_DETAIL }
 
 	final Action action;
 	final String characterId; //Solo lo usa SWITCH; las otras dos lo mandan vacío.
@@ -74,6 +74,7 @@ public class BrowseActionMessage {
 				//o en la ficha de un monstruo al pelearlo: no se gatea por operador.
 				case LIST_CONTENT -> CompendiumQuery.sendList(sender, message.characterId);
 				case CONTENT_DETAIL -> CompendiumQuery.sendDetail(sender, message.characterId);
+				case JOURNAL_DETAIL -> sendJournalEntry(sender, message.characterId);
 				case SWITCH -> {
 					if (SheetLoader.switchCharacter(sender, message.characterId)) {
 						JsonObject sheet = SheetLoader.getCharacterSheet(message.characterId);
@@ -86,6 +87,35 @@ public class BrowseActionMessage {
 				}
 			}
 		});
+	}
+
+	/**
+	 * <p>El diario con lo que ESE jugador puede leer. El filtro se aplica en el servidor y no en el
+	 * cliente: mandar entradas que luego se ocultan al pintarlas dejaría los secretos del DM en la memoria
+	 * de quien no debe verlos, que no es ocultarlos.</p>
+	 */
+	public static void sendJournal(ServerPlayer player) {
+		List<String> ids = new ArrayList<>();
+		List<String> labels = new ArrayList<>();
+		boolean isDm = player.hasPermissions(2);
+		for (net.hawthorn.dndsheets.JournalManager.Entry entry : net.hawthorn.dndsheets.JournalManager.readableBy(player)) {
+			ids.add(entry.id());
+			//La etiqueta de visibilidad solo se le enseña al DM: a un jugador no le aporta nada saber que
+			//lo que acaba de recibir es "2 jugadores", y sí le dice que hay alguien más en el ajo.
+			labels.add(entry.title() + (isDm ? "  ·  " + entry.visibilityLabel() : ""));
+		}
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
+			new BrowseListMessage(BrowseListMessage.Kind.JOURNAL, ids, labels));
+	}
+
+	//Se vuelve a comprobar la visibilidad al pedir la entrada concreta: la lista que tiene el cliente pudo
+	//quedarse vieja, y un cliente modificado puede pedir cualquier id. Filtrar solo al listar no es filtrar.
+	private static void sendJournalEntry(ServerPlayer player, String id) {
+		net.hawthorn.dndsheets.JournalManager.Entry entry = net.hawthorn.dndsheets.JournalManager.get(id);
+		if (entry == null || !entry.canRead(player)) return;
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
+			new BrowseListMessage(BrowseListMessage.Kind.DETAIL, List.of(id),
+				List.of(entry.title() + "\n" + entry.body())));
 	}
 
 	/** Público: también lo usa {@code /dndchar} sin argumentos, que ya está del lado del servidor. */

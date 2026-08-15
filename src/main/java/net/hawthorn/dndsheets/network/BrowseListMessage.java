@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets.network;
 import net.hawthorn.dndsheets.client.gui.CharacterListScreen;
 import net.hawthorn.dndsheets.client.gui.CompendiumEntryScreen;
 import net.hawthorn.dndsheets.client.gui.CompendiumListScreen;
+import net.hawthorn.dndsheets.client.gui.JournalScreen;
 import net.hawthorn.dndsheets.client.gui.PartyScreen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
@@ -19,7 +20,7 @@ import java.util.function.Supplier;
 public class BrowseListMessage {
 
 	//Al final, igual que arriba: el ordinal viaja por la red.
-	public enum Kind { MINE, PARTY, CONTENT, DETAIL }
+	public enum Kind { MINE, PARTY, CONTENT, DETAIL, JOURNAL }
 
 	final Kind kind;
 	final List<String> ids;
@@ -50,6 +51,7 @@ public class BrowseListMessage {
 				case MINE -> CharacterListScreen.open(message.ids, message.labels);
 				case PARTY -> PartyScreen.open(message.labels);
 				case CONTENT -> CompendiumListScreen.open(message.ids, message.labels);
+				case JOURNAL -> JournalScreen.open(message.ids, message.labels);
 				//Una ficha suelta viaja como una lista de un elemento: mismo mensaje, sin una clase nueva
 				//para transportar un texto largo.
 				case DETAIL -> CompendiumEntryScreen.open(
