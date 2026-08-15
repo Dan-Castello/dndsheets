@@ -1,0 +1,8 @@
+[
+  { "id": "dndsheets:adamantine_armor", "name": "Armadura de Adamantina", "rarity": "poco comun", "item": "minecraft:iron_chestplate", "description": "Armor (medium or heavy, but not hide), uncommon This suit of armor is reinforced with adamantine, one of the hardest substances in existence. While you're wearing it, any critical hit against you becomes a normal hit.", "acBonus": 1 },
+  { "id": "dndsheets:animated_shield", "name": "Escudo Animado", "rarity": "muy raro", "item": "minecraft:iron_chestplate", "description": "Armor (shield), very rare (requires attunement) While holding this shield, you can speak its command word as a bonus action to cause it to animate.", "acBonus": 2, "attunement": true },
+  { "id": "dndsheets:armor_1", "name": "Armadura +1", "rarity": "raro", "item": "minecraft:iron_chestplate", "description": "Armor (light, medium, or heavy), rare You have a +1 bonus to AC while wearing this armor.", "acBonus": 1 },
+  { "id": "dndsheets:armor_2", "name": "Armadura +2", "rarity": "muy raro", "item": "minecraft:iron_chestplate", "description": "Armor (light, medium, or heavy), very rare You have a +2 bonus to AC while wearing this armor.", "acBonus": 2 },
+  { "id": "dndsheets:armor_3", "name": "Armadura +3", "rarity": "legendario", "item": "minecraft:iron_chestplate", "description": "Armor (light, medium, or heavy), legendary You have a +3 bonus to AC while wearing this armor.", "acBonus": 3 },
+  { "id": "dndsheets:armor_of_invulnerability", "name": "Armadura de Invulnerabilidad", "rarity": "legendario", "item": "minecraft:iron_chestplate", "description": "Armor (plate), legendary (requires attunement) You have resistance to nonmagical damage while you wear this armor.", "acBonus": 1, "attunement": true }
+]

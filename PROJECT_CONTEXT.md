@@ -227,7 +227,7 @@ dependencies, not preference.
   `RosterActionMessage`/`RosterListMessage` pair, registered **at the end** of the list rather than
   in its alphabetical slot — see invariant 1.
 - **Fase 2 — SRD content. Imported in four batches; the bestiary is done.** 24 → **87 spells**
-  and 13 → **330 monsters** (145 with resistances, 68 of them conditional). Content comes from
+  13 → **330 monsters** and 0 → **362 magic items** (145 with resistances, 68 of them conditional). Content comes from
   SRD 5.1 under CC-BY-4.0 — see `ATTRIBUTION.md`, which is a licence obligation, not a courtesy.
 
   Putting content **after** Fase 0 was load-bearing, not tidiness. The very first batch found two
@@ -279,8 +279,20 @@ dependencies, not preference.
      a spherical zone from persisting. `followsCaster` covers Spirit Guardians, which re-centres on its
      caster each round. `aoeShape: "wall"` still implies a zone, so packs written before the field
      existed keep working.
-  6. **Magic items** — ~200 in the SRD, none in the mod, no schema yet. The only large untouched area
-     left, and the last item on this list.
+  6. ~~Magic items~~ — **done**, and the import worked differently from every other batch, which is the
+     point worth remembering: **the SRD publishes magic items as prose only.** Name, rarity, category
+     and a paragraph — there is no bonus field or resistance field to read, so their mechanics cannot
+     be derived without inventing them. So an item has two halves, imported by different routes: the
+     **reference** half (name, rarity, description) is fully automatic and already useful — a DM can
+     look all 362 up and hand them out — and the **mechanical** half (AC, saves, resistances) is
+     hand-written, and exists only where a pattern actually repeats. **362 imported, 21 mechanical.**
+     An item with no mechanics is not broken, it is an item the DM narrates, which is how most magic
+     items work at a real table anyway.
+
+     Attunement is not decoration: 5e's limit of 3 is what stops a character hoarding bonuses, and in
+     Minecraft it also solves a problem the tabletop doesn't have — there is no ring or cloak slot, so
+     without attunement a Ring of Protection could never be "worn". Non-attunement items apply while
+     held or worn in armour slots.
 
   Silvered/adamantine resistance variants collapse into plain "nonmagical" on purpose: the mod has
   no such materials, and the alternative was discarding the resistance entirely.

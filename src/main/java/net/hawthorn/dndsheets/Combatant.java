@@ -364,7 +364,17 @@ public interface Combatant {
 		//Una hoja de personaje solo tiene afinidades incondicionales ("damageAffinities"), asi que ignora
 		//"magical" a proposito: el dia que un objeto magico conceda una condicional, se lee aqui y ya.
 		@Override default double damageMultiplier(String damageType, boolean magical) {
-			return DamageTypes.multiplierFor(entity(), sheet(), damageType);
+			double multiplier = DamageTypes.multiplierFor(entity(), sheet(), damageType);
+			//Las resistencias de objetos mágicos se combinan con las de la hoja quedándose con la MÁS
+			//protectora, no sumándose: en 5e dos fuentes de resistencia al fuego siguen siendo resistencia
+			//al fuego, no inmunidad.
+			if (entity() instanceof Player wearer && damageType != null) {
+				for (MagicItemRegistry.MagicItem item : MagicItemRegistry.activeFor(wearer, sheet())) {
+					String declared = item.affinities().get(damageType.toLowerCase(Locale.ROOT));
+					if (declared != null) multiplier = Math.min(multiplier, DamageTypes.multiplierForLabel(declared));
+				}
+			}
+			return multiplier;
 		}
 
 		//En la hoja, igual que las condiciones: es lo que persiste y lo que el jugador ve al abrirla.
@@ -407,7 +417,24 @@ public interface Combatant {
 		@Override public String name() { return SheetLoader.characterNameOf(sheet, player); }
 
 		/** Incluye la armadura y el escudo REALES equipados, cosa que solo un jugador tiene. */
-		@Override public int armorClass() { return CombatManager.armorClassOf(player, sheet); }
+		@Override public int armorClass() {
+			int base = CombatManager.armorClassOf(player, sheet);
+			//Los objetos mágicos suman aquí y no en CombatManager porque este ES el punto único por el que
+			//pasa toda pregunta de "¿cuál es su CA?" — incluida la del Panel de DM y la de un monstruo
+			//decidiendo si acierta.
+			for (MagicItemRegistry.MagicItem item : MagicItemRegistry.activeFor(player, sheet)) base += item.acBonus();
+			return base;
+		}
+
+		@Override public Combatant.SaveRoll rollSave(String ability) {
+			Combatant.SaveRoll roll = SheetBacked.super.rollSave(ability);
+			int bonus = 0;
+			for (MagicItemRegistry.MagicItem item : MagicItemRegistry.activeFor(player, sheet)) bonus += item.saveBonus();
+			//Solo si de verdad se tiró: una salvación que falla sola por condición no mejora por llevar un
+			//anillo, y sumarle el bono la convertiría en un número que no significa nada.
+			if (bonus == 0 || roll.blockedBy() != null || roll.outcome() == null || roll.outcome().result() == null) return roll;
+			return new Combatant.SaveRoll(DiceManager.roll(sheet, "1d20 + " + (abilityModifier(ability) + bonus)), null);
+		}
 
 		//PG del atributo de salud real de Minecraft, no de la hoja: para un jugador esa ES su vida, y la
 		//hoja solo la refleja.

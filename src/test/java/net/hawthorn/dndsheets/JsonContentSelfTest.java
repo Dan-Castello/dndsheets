@@ -34,6 +34,7 @@ public class JsonContentSelfTest {
 		checkWeapons();
 		checkSpells();
 		checkMonsters();
+		checkMagicItems();
 		checkTraits(); //Antes de checkPresets(): el preset de monje concede este rasgo por id.
 		checkPresets();
 		checkDice();
@@ -229,6 +230,65 @@ public class JsonContentSelfTest {
 		assertTrue(wererat.damageAffinities().isEmpty(), "el hombre rata no tiene resistencias incondicionales");
 		assertTrue("immune".equals(wererat.nonmagicalAffinities().get("cortante")),
 			"el hombre rata debería ser inmune al daño cortante no mágico");
+	}
+
+	/**
+	 * <p>Objetos mágicos. La comprobación clave no es que parseen, sino la distinción entre los que el
+	 * motor aplica y los que narra el DM: un objeto con mecánicas escritas mal no falla en ningún sitio,
+	 * simplemente deja de dar el bonificador que su descripción promete.</p>
+	 */
+	private static void checkMagicItems() throws Exception {
+		JsonArray items = readArray("items", "items.json");
+		java.util.Set<String> ids = new java.util.HashSet<>();
+		java.util.Set<String> damageTypes = java.util.Set.of("fisico", "cortante", "perforante", "contundente",
+			"fuego", "frio", "rayo", "acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno");
+		int mechanical = 0;
+
+		for (JsonElement el : items) {
+			JsonObject json = el.getAsJsonObject();
+			String id = json.get("id").getAsString();
+			assertTrue(ids.add(id), "id de objeto mágico duplicado: " + id);
+			MagicItemRegistry.MagicItem item = MagicItemRegistry.parse(json);
+			if (MagicItemRegistry.get(id) == null) MagicItemRegistry.register(item);
+
+			assertTrue(!item.name().isBlank(), id + " debería tener nombre");
+			//Todo objeto tiene un ítem vanilla que le presta la apariencia: sin él, /dnditems give no puede
+			//entregar nada y el objeto solo existe como texto.
+			assertTrue(item.itemId().startsWith("minecraft:"), id + " debería declarar un ítem base vanilla");
+			for (Map.Entry<String, String> affinity : item.affinities().entrySet()) {
+				assertTrue(damageTypes.contains(affinity.getKey()),
+					"tipo de daño desconocido \"" + affinity.getKey() + "\" en " + id);
+			}
+			if (item.hasMechanics()) mechanical++;
+		}
+
+		assertTrue(items.size() >= 362, "items.json debería traer los 362 del SRD, trae " + items.size());
+		//Que HAYA objetos narrativos es correcto y esperado: el SRD publica los objetos mágicos como prosa,
+		//así que la mayoría no tiene mecánicas derivables. Lo que se fija aquí es que las escritas a mano no
+		//se hayan perdido por el camino.
+		assertTrue(mechanical >= 20, "deberían quedar al menos 20 objetos con mecánicas reales, hay " + mechanical);
+
+		MagicItemRegistry.MagicItem ring = MagicItemRegistry.get("dndsheets:ring_of_protection");
+		assertTrue(ring != null && ring.acBonus() == 1 && ring.saveBonus() == 1,
+			"el Anillo de Protección debería dar +1 a CA y a salvaciones");
+		assertTrue(ring.attunement(), "y requerir sintonización, que es lo que limita a tres objetos");
+		assertTrue(ring.hasMechanics(), "un objeto con bonificadores no es narrativo");
+
+		//Sintonización: el límite de 3 es lo que impide acumular objetos sin freno, así que conviene fijarlo.
+		JsonObject sheet = new JsonObject();
+		assertTrue(MagicItemRegistry.attunedIds(sheet).isEmpty(), "una hoja nueva no tiene nada sintonizado");
+		assertTrue(MagicItemRegistry.attune(sheet, "a"), "el primero debería entrar");
+		assertTrue(!MagicItemRegistry.attune(sheet, "a"), "el mismo dos veces, no");
+		assertTrue(MagicItemRegistry.attune(sheet, "b") && MagicItemRegistry.attune(sheet, "c"), "hasta tres");
+		assertTrue(!MagicItemRegistry.attune(sheet, "d"), "el cuarto debería rechazarse");
+		assertTrue(MagicItemRegistry.unattune(sheet, "b"), "desintonizar uno que sí estaba");
+		assertTrue(!MagicItemRegistry.unattune(sheet, "b"), "y no dos veces");
+		assertTrue(MagicItemRegistry.attune(sheet, "d"), "liberado un hueco, el cuarto ya entra");
+		assertTrue(MagicItemRegistry.attunedIds(sheet).size() == MagicItemRegistry.MAX_ATTUNED,
+			"deberían quedar exactamente " + MagicItemRegistry.MAX_ATTUNED);
+
+		System.out.println("checkMagicItems: OK, " + items.size() + " objetos (" + mechanical
+			+ " con mecánicas, el resto narrativos) y la sintonización respeta su límite.");
 	}
 
 	private static void checkTraits() throws Exception {

@@ -23,6 +23,7 @@ public class DndPaths {
 	public static final Path ROOT = SheetLoader.GAME_DIR.resolve("dndsheets");
 	public static final Path WEAPONS_DIR = ROOT.resolve("weapons");
 	public static final Path SPELLS_DIR = ROOT.resolve("spells");
+	public static final Path ITEMS_DIR = ROOT.resolve("items");
 	public static final Path MONSTERS_DIR = ROOT.resolve("monsters");
 	public static final Path PRESETS_DIR = ROOT.resolve("presets");
 	public static final Path TRAITS_DIR = ROOT.resolve("traits");
@@ -39,6 +40,7 @@ public class DndPaths {
 	public static void onServerStarting(ServerStartingEvent event) {
 		createIfMissing(WEAPONS_DIR);
 		createIfMissing(SPELLS_DIR);
+		createIfMissing(ITEMS_DIR);
 		createIfMissing(MONSTERS_DIR);
 		createIfMissing(PRESETS_DIR);
 		createIfMissing(TRAITS_DIR);
@@ -52,12 +54,14 @@ public class DndPaths {
 		//trae una lista por defecto en código, sin JSON de por medio.
 		seedDefaultsIfEmpty(WEAPONS_DIR, "weapons.json");
 		seedDefaultsIfEmpty(SPELLS_DIR, "spells.json");
+		seedDefaultsIfEmpty(ITEMS_DIR, "items.json");
 		seedDefaultsIfEmpty(MONSTERS_DIR, "monsters.json");
 		seedDefaultsIfEmpty(TRAITS_DIR, "traits.json");
 		seedDefaultsIfEmpty(PRESETS_DIR, "presets.json");
 
 		autoLoadAll(WEAPONS_DIR, Config::loadFile, "armas");
 		autoLoadAll(SPELLS_DIR, SpellRegistry::loadFile, "hechizos");
+		autoLoadAll(ITEMS_DIR, MagicItemRegistry::loadFile, "objetos mágicos");
 		autoLoadAll(MONSTERS_DIR, MonsterRegistry::loadFile, "monstruos");
 		autoLoadAll(TRAITS_DIR, TraitRegistry::loadFile, "rasgos");
 		autoLoadAll(PRESETS_DIR, PresetRegistry::loadFile, "presets");
