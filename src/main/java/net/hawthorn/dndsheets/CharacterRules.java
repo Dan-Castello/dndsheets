@@ -1,0 +1,140 @@
+package net.hawthorn.dndsheets;
+
+import com.google.gson.JsonObject;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * <p>Las reglas de personaje que no dependen de Minecraft: de quién es cada hoja, cuál lleva puesta su
+ * dueño, y los PG máximos que salen de clase/nivel/Constitución. Separadas de {@link SheetLoader}, separadas de {@link SheetLoader}
+ * porque este resuelve {@code FMLPaths.GAMEDIR} al inicializarse y por tanto
+ * ni siquiera se puede cargar fuera de una instancia de Forge arrancada — y estas son justo las reglas
+ * con ramas que conviene poder fijar en {@code JsonContentSelfTest}.</p>
+ *
+ * <p>Todo aquí son funciones puras sobre el mapa de hojas: no hay estado propio que pueda
+ * desincronizarse del de {@code SheetLoader}.</p>
+ */
+final class CharacterRules {
+
+	private CharacterRules() {}
+
+	/**
+	 * <p>PG máximos por clase, nivel y Constitución, con la regla de media del SRD: dado de golpe completo
+	 * a nivel 1, y media del dado + 1 (más el modificador de Constitución) por cada nivel siguiente, con un
+	 * mínimo de 1 PG por nivel aunque la Constitución sea penosa.</p>
+	 */
+	static int maxHitPointsFor(JsonObject sheet, int level) {
+		int con = intField(sheet, "constitution", 10);
+		int hitDie = Config.hitDieFor(sheet != null && sheet.has("characterClass") ? sheet.get("characterClass").getAsString() : "");
+		int conMod = Math.floorDiv(con - 10, 2);
+
+		int maxHp = hitDie + conMod;
+		for (int lvl = 2; lvl <= Math.max(1, level); lvl++) {
+			maxHp += Math.max(1, (hitDie / 2 + 1) + conMod);
+		}
+		return Math.max(1, maxHp);
+	}
+
+	/**
+	 * <p>Nivel de personaje de una hoja sin jugador detrás. La versión con {@code Player} cae al XP real de
+	 * Minecraft cuando el DM no fijó un nivel; una ficha de PNJ no tiene XP del que caer, así que empieza en
+	 * 1 — en 5e ningún personaje es de nivel 0.</p>
+	 */
+	static int levelOf(JsonObject sheet) {
+		if (sheet != null && sheet.has("characterLevel")) return Math.max(1, sheet.get("characterLevel").getAsInt());
+		return 1;
+	}
+
+	//Las características se guardan como cadena en la hoja, y una hoja vieja puede tener ahí cualquier cosa.
+	private static int intField(JsonObject sheet, String key, int fallback) {
+		if (sheet == null || !sheet.has(key)) return fallback;
+		try {
+			return Integer.parseInt(sheet.get(key).getAsString());
+		} catch (RuntimeException e) {
+			return fallback;
+		}
+	}
+
+	/**
+	 * <p>Dueño de una hoja, o {@code null} si no es de nadie (un PNJ). Sin campo {@code ownerUuid} —toda
+	 * hoja anterior a que existieran los personajes— el dueño es el propio id, porque entonces el id de
+	 * una hoja <em>era</em> el UUID de su jugador. Ese fallback es lo que hace que no haga falta migrar
+	 * nada en disco.</p>
+	 */
+	static String ownerOf(String characterId, JsonObject sheet) {
+		if (sheet != null && sheet.has("ownerUuid")) {
+			String owner = sheet.get("ownerUuid").getAsString();
+			return owner.isEmpty() ? null : owner;
+		}
+		return characterId;
+	}
+
+	/** Ids de los personajes de ese jugador, en orden estable. */
+	static List<String> ownedBy(Map<String, JsonObject> sheets, String playerUuid) {
+		List<String> owned = new ArrayList<>();
+		for (Map.Entry<String, JsonObject> entry : sheets.entrySet()) {
+			if (playerUuid.equals(ownerOf(entry.getKey(), entry.getValue()))) owned.add(entry.getKey());
+		}
+		Collections.sort(owned);
+		return owned;
+	}
+
+	/**
+	 * <p>Binding jugador → personaje activo, derivado del campo {@code active} de cada hoja en vez de
+	 * guardado como índice aparte: un índice puede desincronizarse de las hojas y dejar a alguien sin poder
+	 * jugar, mientras que el campo dentro de la propia hoja no puede contradecirse a sí mismo.</p>
+	 *
+	 * <p>Si un jugador acabara con dos hojas marcadas activas (edición manual del JSON), gana la de id
+	 * menor. El desempate importa que sea determinista, no cuál gane: sin ordenar, el jugador se
+	 * encontraría con un personaje distinto según el arranque.</p>
+	 */
+	static Map<String, String> buildActive(Map<String, JsonObject> sheets) {
+		Map<String, String> active = new HashMap<>();
+		List<String> ids = new ArrayList<>(sheets.keySet());
+		Collections.sort(ids);
+		for (String characterId : ids) {
+			JsonObject sheet = sheets.get(characterId);
+			if (sheet == null || !sheet.has("active") || !sheet.get("active").getAsBoolean()) continue;
+			String owner = ownerOf(characterId, sheet);
+			if (owner == null) continue; //PNJ: no lo lleva puesto ningún jugador.
+			active.putIfAbsent(owner, characterId);
+		}
+		return active;
+	}
+
+	/**
+	 * Id para un personaje más de ese jugador. Derivado de su UUID, así que es único entre jugadores sin
+	 * necesitar un contador global, y sigue siendo un nombre de archivo válido en cualquier sistema.
+	 */
+	static String nextCharacterId(Set<String> existing, String playerUuid) {
+		for (int n = 2; ; n++) {
+			String candidate = playerUuid + "-" + n;
+			if (!existing.contains(candidate)) return candidate;
+		}
+	}
+
+	/**
+	 * <p>Id para una ficha de PNJ, legible y apta como nombre de archivo. Los acentos se descomponen y se
+	 * quitan ANTES de filtrar caracteres: sin eso, "Capitán" daba {@code npc-capit-n}, porque la "á" no
+	 * entra en {@code [a-z0-9]} y se convertía en separador. En un mod en español eso afecta a la mayoría
+	 * de los nombres, no a un caso raro.</p>
+	 */
+	static String npcIdFor(Set<String> existing, String characterName) {
+		String withoutAccents = characterName == null ? "" : java.text.Normalizer
+			.normalize(characterName, java.text.Normalizer.Form.NFD)
+			.replaceAll("\\p{M}+", "");
+		String slug = withoutAccents.toLowerCase(Locale.ROOT)
+			.replaceAll("[^a-z0-9]+", "-")
+			.replaceAll("(^-|-$)", "");
+		if (slug.isEmpty()) slug = "pnj"; //Un nombre entero en caracteres no latinos no debe dar un id vacío.
+		String candidate = "npc-" + slug;
+		for (int n = 2; existing.contains(candidate); n++) candidate = "npc-" + slug + "-" + n;
+		return candidate;
+	}
+}

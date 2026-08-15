@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * <p>Comprobación mínima (sin JUnit, sin fixtures) de que los JSON de ejemplo en {@code test/dndsheets/}
@@ -37,6 +38,9 @@ public class JsonContentSelfTest {
 		checkPresets();
 		checkDice();
 		checkDungeonPools();
+		checkConditions();
+		checkCombatantRules();
+		checkCharacterRules();
 
 		System.out.println("JsonContentSelfTest: OK, los 5 JSON de ejemplo parsean con los registros reales.");
 	}
@@ -96,6 +100,13 @@ public class JsonContentSelfTest {
 		assertTrue(spider != null, "giant_spider debería haberse registrado");
 		MonsterRegistry.MonsterAttack bite = spider.attacks().get(0);
 		assertTrue(bite.appliesEffect() && "veneno".equals(bite.effectName()), "el mordisco de la araña debería aplicar veneno");
+
+		//Resistencias del monstruo: campo opcional, así que hay que comprobar las dos ramas — que se lea
+		//cuando está y que no estorbe cuando no.
+		MonsterRegistry.MonsterStatBlock fireMage = MonsterRegistry.get("dndsheets:fire_mage");
+		assertTrue(fireMage != null && "resistant".equals(fireMage.damageAffinities().get("fuego")), "el mago de fuego debería resistir el fuego");
+		assertTrue("vulnerable".equals(fireMage.damageAffinities().get("frio")), "el mago de fuego debería ser vulnerable al frío");
+		assertTrue(spider.damageAffinities().isEmpty(), "un monstruo sin damageAffinities debería quedar con el mapa vacío, no null");
 	}
 
 	private static void checkTraits() throws Exception {
@@ -220,6 +231,267 @@ public class JsonContentSelfTest {
 			if (el.getAsJsonObject().get("weight").getAsInt() == 1) foundClampedZero = true;
 		}
 		assertTrue(foundClampedZero, "el peso 0 debería acotarse a 1");
+	}
+
+	/**
+	 * <p>La tabla de condiciones de 5e ({@link Condition}) y la regla de que ventaja y desventaja se anulan
+	 * ({@link DiceManager#combineAdvantage}). Ninguna de las dos toca clases de Minecraft, así que se
+	 * comprueban de pie aquí mismo; el resto de {@link Combatant} sí necesita una entidad real y se queda
+	 * fuera. Se prueban los casos que de verdad se pueden escribir mal: los que combinan varias reglas.</p>
+	 */
+	private static void checkConditions() {
+		//Paralizado: la condición más cargada del manual (incapacita, velocidad 0, ventaja a los atacantes,
+		//crítico automático en cuerpo a cuerpo, falla salvaciones de FUE/DES). Si algún switch se queda
+		//corto, se nota aquí.
+		assertTrue(Condition.PARALIZADO.preventsActions(), "paralizado debería impedir actuar");
+		assertTrue(Condition.PARALIZADO.preventsMovement(), "paralizado debería impedir moverse");
+		assertTrue(Condition.PARALIZADO.attackersAdvantage(), "atacar a un paralizado debería dar ventaja");
+		assertTrue(Condition.PARALIZADO.autoCritInMelee(), "un golpe cuerpo a cuerpo a un paralizado debería ser crítico");
+		assertTrue(Condition.PARALIZADO.autoFailsStrDexSaves(), "paralizado debería fallar salvaciones de FUE/DES");
+
+		//Invisible es la única que da ventaja propia y desventaja a quien le ataca: el caso invertido, fácil
+		//de escribir al revés por copiar el switch de al lado.
+		assertTrue(Condition.INVISIBLE.selfAttackAdvantage(), "invisible debería atacar con ventaja");
+		assertTrue(Condition.INVISIBLE.attackersDisadvantage(), "atacar a un invisible debería dar desventaja");
+		assertTrue(!Condition.INVISIBLE.attackersAdvantage(), "atacar a un invisible NO debería dar ventaja");
+
+		//Derribado queda fuera de attackersAdvantage() a propósito: depende de la distancia y lo resuelve
+		//Combatant.advantageAgainst. Si alguien lo mete en el switch "para completar la tabla", rompe el
+		//caso a distancia sin que nada más lo note.
+		assertTrue(!Condition.DERRIBADO.attackersAdvantage(), "derribado no debe resolverse sin saber la distancia");
+		assertTrue(Condition.DERRIBADO.selfAttackDisadvantage(), "derribado debería atacar con desventaja");
+
+		//Solo petrificado da resistencia a todo el daño en 5e.
+		assertTrue(Condition.PETRIFICADO.resistsAllDamage(), "petrificado debería resistir todo el daño");
+		long resisting = java.util.Arrays.stream(Condition.values()).filter(Condition::resistsAllDamage).count();
+		assertTrue(resisting == 1, "solo petrificado debería resistir todo el daño, resisten " + resisting);
+
+		//Ida y vuelta por etiqueta: es el formato que usan el JSON de la hoja, el NBT del monstruo y los
+		//comandos, así que si se rompe, las condiciones dejan de sobrevivir a un reinicio en silencio.
+		for (Condition condition : Condition.values()) {
+			assertTrue(Condition.fromLabel(condition.label()) == condition, "ida y vuelta por etiqueta rota en " + condition);
+		}
+		assertTrue(Condition.fromLabel("fuego") == null, "un efecto libre como \"fuego\" no debería ser una condición");
+		assertTrue(Condition.fromLabel(null) == null, "fromLabel(null) debería devolver null, no reventar");
+
+		//La regla que más fácil se implementa mal: ventaja + desventaja no es ventaja, es una tirada normal,
+		//por muchas fuentes de cada lado que haya.
+		DiceManager.Advantage adv = DiceManager.Advantage.ADVANTAGE;
+		DiceManager.Advantage dis = DiceManager.Advantage.DISADVANTAGE;
+		DiceManager.Advantage normal = DiceManager.Advantage.NORMAL;
+		assertTrue(DiceManager.combineAdvantage(adv, dis) == normal, "ventaja + desventaja debería anularse");
+		assertTrue(DiceManager.combineAdvantage(adv, adv, adv, dis) == normal, "las ventajas no se acumulan para vencer a una desventaja");
+		assertTrue(DiceManager.combineAdvantage(adv, normal, normal) == adv, "una sola ventaja debería mantenerse");
+		assertTrue(DiceManager.combineAdvantage(dis, normal) == dis, "una sola desventaja debería mantenerse");
+		assertTrue(DiceManager.combineAdvantage() == normal, "sin fuentes debería quedar una tirada normal");
+
+		System.out.println("checkConditions: OK, las 14 condiciones de 5e y la combinación de ventaja se comportan.");
+	}
+
+	/**
+	 * <p>Combatiente falso, en memoria, para probar los métodos por defecto de {@link Combatant} sin un
+	 * mundo de Minecraft: guardar/leer condiciones, la salvación con fallo automático y la ventaja según
+	 * el estado del objetivo. Los métodos que sí necesitan una entidad real ({@code seesSourceOf} con
+	 * fuente conocida, {@code cannotAttack}, {@code takeDamage}) se quedan fuera — se prueban en el juego.</p>
+	 */
+	private static final class FakeCombatant implements Combatant {
+		private final Map<Condition, Integer> conditions = new java.util.EnumMap<>(Condition.class);
+		private final int abilityMod;
+
+		FakeCombatant(int abilityMod) { this.abilityMod = abilityMod; }
+
+		@Override public net.minecraft.world.entity.Entity entity() { return null; }
+		@Override public String name() { return "falso"; }
+		@Override public int armorClass() { return 10; }
+		@Override public int currentHp() { return 10; }
+		@Override public int maxHp() { return 10; }
+		@Override public int abilityModifier(String ability) { return abilityMod; }
+		@Override public int proficiencyBonus() { return 2; }
+		@Override public double damageMultiplier(String damageType) { return 1.0; }
+		@Override public void takeDamage(int amount) { }
+		@Override public boolean isDefeated() { return false; }
+		@Override public Map<Condition, Integer> conditionSources() { return conditions; }
+		@Override public void setConditionSources(Map<Condition, Integer> sources) {
+			conditions.clear();
+			conditions.putAll(sources);
+		}
+	}
+
+	/**
+	 * <p>Las reglas de {@link Combatant} que no necesitan mundo. Las tres cosas que de verdad se pueden
+	 * romper en silencio: el formato con el que las condiciones llegan al disco, cuándo una salvación falla
+	 * sola, y que derribado cambie de signo según la distancia.</p>
+	 */
+	private static void checkCombatantRules() {
+		//Formato en disco: "etiqueta" o "etiqueta@idFuente". Si esto se rompe, las condiciones dejan de
+		//sobrevivir a un reinicio sin que falle nada visible.
+		Map<Condition, Integer> parsed = new java.util.EnumMap<>(Condition.class);
+		Combatant.parseEntry("derribado", parsed);
+		Combatant.parseEntry("hechizado@42", parsed);
+		Combatant.parseEntry("noexisto", parsed);       //Efecto de nombre libre: se ignora, no revienta.
+		Combatant.parseEntry("apresado@basura", parsed); //Id manipulado a mano: entra sin fuente.
+		assertTrue(parsed.size() == 3, "deberían haber entrado 3 condiciones, entraron " + parsed.size());
+		assertTrue(parsed.get(Condition.DERRIBADO) == Combatant.NO_SOURCE, "derribado sin sufijo debería quedar sin fuente");
+		assertTrue(parsed.get(Condition.HECHIZADO) == 42, "hechizado@42 debería recordar la fuente 42");
+		assertTrue(parsed.get(Condition.APRESADO) == Combatant.NO_SOURCE, "un id no numérico debería degradar a sin fuente, no romper la carga");
+
+		assertTrue("derribado".equals(Combatant.formatEntry(Map.entry(Condition.DERRIBADO, Combatant.NO_SOURCE))),
+			"sin fuente no debería escribirse ningún sufijo");
+		assertTrue("hechizado@42".equals(Combatant.formatEntry(Map.entry(Condition.HECHIZADO, 42))),
+			"con fuente debería escribirse etiqueta@id");
+
+		//Alta y baja de condiciones a través de los métodos por defecto.
+		FakeCombatant combatant = new FakeCombatant(3);
+		assertTrue(combatant.conditions().isEmpty(), "un combatiente nuevo no debería tener condiciones");
+		combatant.addCondition(Condition.PARALIZADO);
+		assertTrue(combatant.hasCondition(Condition.PARALIZADO), "paralizado debería quedar puesto");
+		assertTrue(combatant.cannotAct(), "un paralizado no debería poder actuar");
+		assertTrue(combatant.cannotMove(), "un paralizado no debería poder moverse");
+
+		//Salvación con fallo automático: paralizado falla FUE y DES, pero NO el resto.
+		Combatant.SaveRoll dexSave = combatant.rollSave("dex");
+		assertTrue(dexSave.blockedBy() == Condition.PARALIZADO, "un paralizado debería fallar sola la salvación de DES");
+		assertTrue(!dexSave.succeeds(1), "una salvación auto-fallada no debería superar ni una CD de 1");
+		assertTrue(combatant.rollSave("dexterity").blockedBy() == Condition.PARALIZADO, "el nombre largo debería valer igual que el corto");
+		Combatant.SaveRoll conSave = combatant.rollSave("con");
+		assertTrue(conSave.blockedBy() == null, "paralizado NO debería hacer fallar sola la salvación de CON");
+		assertTrue(conSave.formatted() != null, "una salvación que sí se tira debería traer texto para el chat");
+
+		//Derribado: la única condición que cambia de signo según la distancia.
+		FakeCombatant prone = new FakeCombatant(0);
+		prone.addCondition(Condition.DERRIBADO);
+		assertTrue(prone.advantageAgainst(true) == DiceManager.Advantage.ADVANTAGE, "atacar en cuerpo a cuerpo a un derribado debería dar ventaja");
+		assertTrue(prone.advantageAgainst(false) == DiceManager.Advantage.DISADVANTAGE, "dispararle a un derribado debería dar desventaja");
+		assertTrue(prone.ownAttackAdvantage() == DiceManager.Advantage.DISADVANTAGE, "un derribado debería atacar con desventaja");
+
+		//Invisible y derribado a la vez en cuerpo a cuerpo: ventaja y desventaja de fuentes distintas, se anulan.
+		prone.addCondition(Condition.INVISIBLE);
+		assertTrue(prone.advantageAgainst(true) == DiceManager.Advantage.NORMAL,
+			"derribado (ventaja) e invisible (desventaja) deberían anularse para quien ataca");
+
+		prone.removeCondition(Condition.DERRIBADO);
+		assertTrue(!prone.hasCondition(Condition.DERRIBADO), "quitar una condición debería quitarla de verdad");
+		assertTrue(prone.hasCondition(Condition.INVISIBLE), "quitar una condición no debería llevarse las demás por delante");
+
+		//Petrificado da resistencia a todo el daño encima de las afinidades declaradas.
+		FakeCombatant petrified = new FakeCombatant(0);
+		assertTrue(petrified.effectiveDamageMultiplier("fuego") == 1.0, "sin condiciones ni afinidades, el daño va entero");
+		petrified.addCondition(Condition.PETRIFICADO);
+		assertTrue(petrified.effectiveDamageMultiplier("fuego") == 0.5, "petrificado debería resistir todo el daño");
+
+		//Vocabulario de afinidades, compartido ahora entre la hoja del jugador y el bloque de monstruo.
+		assertTrue(DamageTypes.multiplierForLabel("resistant") == 0.5, "resistant debería ser 0.5");
+		assertTrue(DamageTypes.multiplierForLabel("vulnerable") == 2.0, "vulnerable debería ser 2.0");
+		assertTrue(DamageTypes.multiplierForLabel("immune") == 0.0, "immune debería ser 0.0");
+		assertTrue(DamageTypes.multiplierForLabel(null) == 1.0, "sin afinidad declarada, el daño va entero");
+		assertTrue(DamageTypes.multiplierForLabel("cualquier_cosa") == 1.0, "una afinidad desconocida no debería cambiar el daño");
+
+		System.out.println("checkCombatantRules: OK, persistencia de condiciones, salvaciones y ventaja por estado se comportan.");
+	}
+
+	private static JsonObject characterSheet(String ownerUuid, boolean active) {
+		JsonObject sheet = new JsonObject();
+		if (ownerUuid != null) sheet.addProperty("ownerUuid", ownerUuid);
+		sheet.addProperty("active", active);
+		return sheet;
+	}
+
+	/**
+	 * <p>Las reglas de "de quién es este personaje y cuál lleva puesto" ({@link CharacterRules}). Lo que
+	 * hay que fijar aquí es sobre todo la <b>retrocompatibilidad</b>: una hoja guardada antes de que
+	 * existieran los personajes no tiene {@code ownerUuid} ni {@code active}, y si dejara de reconocerse
+	 * como suya, un jugador perdería su personaje de siempre sin que fallara nada visible.</p>
+	 */
+	private static void checkCharacterRules() {
+		String alice = "11111111-1111-1111-1111-111111111111";
+		String bob = "22222222-2222-2222-2222-222222222222";
+
+		//Hoja legacy: sin ownerUuid, su dueño es su propio id (que era el UUID del jugador).
+		assertTrue(alice.equals(CharacterRules.ownerOf(alice, new JsonObject())),
+			"una hoja sin ownerUuid debería seguir siendo de quien da nombre a su archivo");
+		assertTrue(bob.equals(CharacterRules.ownerOf(alice + "-2", characterSheet(bob, false))),
+			"con ownerUuid, manda ownerUuid y no el id");
+		assertTrue(CharacterRules.ownerOf("npc-guardia", characterSheet("", false)) == null,
+			"ownerUuid vacío significa PNJ, sin dueño");
+
+		Map<String, JsonObject> sheets = new java.util.HashMap<>();
+		sheets.put(alice, new JsonObject());                       //Legacy de Alice, sin campos nuevos.
+		sheets.put(alice + "-2", characterSheet(alice, true));      //Segundo personaje de Alice, puesto.
+		sheets.put(bob, new JsonObject());                          //Legacy de Bob.
+		sheets.put("npc-guardia", characterSheet("", false));       //PNJ del DM.
+
+		List<String> aliceChars = CharacterRules.ownedBy(sheets, alice);
+		assertTrue(aliceChars.size() == 2, "Alice debería tener 2 personajes, tiene " + aliceChars.size());
+		assertTrue(aliceChars.get(0).equals(alice) && aliceChars.get(1).equals(alice + "-2"), "los personajes deberían salir en orden estable");
+		assertTrue(CharacterRules.ownedBy(sheets, bob).size() == 1, "Bob debería tener solo su hoja de siempre");
+
+		Map<String, String> active = CharacterRules.buildActive(sheets);
+		assertTrue((alice + "-2").equals(active.get(alice)), "Alice debería estar llevando su segundo personaje");
+		assertTrue(active.get(bob) == null, "Bob no marcó ninguna activa: debe caer al fallback, no aparecer aquí");
+		assertTrue(!active.containsValue("npc-guardia"), "un PNJ no lo lleva puesto nadie");
+
+		//Dos hojas activas por edición manual del JSON: el desempate tiene que ser determinista, o el
+		//jugador se encontraría un personaje distinto según el arranque.
+		Map<String, JsonObject> conflicted = new java.util.HashMap<>();
+		conflicted.put(alice + "-3", characterSheet(alice, true));
+		conflicted.put(alice + "-2", characterSheet(alice, true));
+		assertTrue((alice + "-2").equals(CharacterRules.buildActive(conflicted).get(alice)),
+			"con dos hojas activas debería ganar siempre la de id menor");
+
+		//Ids nuevos: no deben chocar con los que ya existen.
+		assertTrue((alice + "-3").equals(CharacterRules.nextCharacterId(sheets.keySet(), alice)),
+			"el siguiente id de Alice debería saltarse el -2 que ya existe");
+		assertTrue((bob + "-2").equals(CharacterRules.nextCharacterId(sheets.keySet(), bob)),
+			"el primer personaje extra de Bob debería ser -2");
+
+		assertTrue("npc-capitan-de-la-guardia".equals(CharacterRules.npcIdFor(Set.of(), "Capitán de la Guardia")),
+			"el id de PNJ debería salir del nombre en minúsculas y con guiones, dio " + CharacterRules.npcIdFor(Set.of(), "Capitán de la Guardia"));
+		assertTrue("npc-guardia-2".equals(CharacterRules.npcIdFor(sheets.keySet(), "Guardia")),
+			"un PNJ con nombre repetido debería numerarse en vez de pisar al anterior");
+		assertTrue("npc-pnj".equals(CharacterRules.npcIdFor(Set.of(), "白鬼")),
+			"un nombre sin caracteres latinos no debería dar un id vacío");
+
+		//--- PG máximos por clase/nivel/Constitución (regla de media del SRD) ---
+		//Vive en CharacterRules y no en SheetLoader precisamente para poder comprobarse aquí: SheetLoader
+		//resuelve FMLPaths al inicializarse y ni siquiera carga fuera de una instancia de Forge.
+		//OJO: aquí el dado de golpe es SIEMPRE d8. Config.hitDiceByClass solo se llena al parsear el .toml,
+		//que no se carga fuera del juego, así que Config.hitDieFor cae a su valor por defecto documentado
+		//(8, el más común en 5e). Eso es justo lo que conviene fijar: la forma de la fórmula y el fallback.
+		JsonObject hero = new JsonObject();
+		hero.addProperty("characterClass", "fighter");
+		hero.addProperty("constitution", "14"); //+2
+
+		//Nivel 1 = dado completo + mod → 8 + 2.
+		assertTrue(CharacterRules.maxHitPointsFor(hero, 1) == 10,
+			"a d8 con CON 14 deberían salir 10 PG a nivel 1, dio " + CharacterRules.maxHitPointsFor(hero, 1));
+		//Cada nivel siguiente suma media+1 (5) + mod (2) = 7.
+		assertTrue(CharacterRules.maxHitPointsFor(hero, 2) == 17,
+			"debería subir a 17 PG a nivel 2, dio " + CharacterRules.maxHitPointsFor(hero, 2));
+		assertTrue(CharacterRules.maxHitPointsFor(hero, 3) == 24,
+			"debería escalar de forma lineal por nivel, dio " + CharacterRules.maxHitPointsFor(hero, 3));
+		//Nivel 0 o negativo se trata como 1: en 5e ningún personaje es de nivel 0.
+		assertTrue(CharacterRules.maxHitPointsFor(hero, 0) == 10, "el nivel 0 debería tratarse como nivel 1");
+
+		//Constitución penosa: nunca menos de 1 PG por nivel, aunque el modificador sea muy negativo.
+		JsonObject frail = new JsonObject();
+		frail.addProperty("characterClass", "wizard");
+		frail.addProperty("constitution", "1"); //-5, peor que la media de cualquier dado
+		assertTrue(CharacterRules.maxHitPointsFor(frail, 5) >= 5,
+			"cada nivel debería aportar al menos 1 PG, dio " + CharacterRules.maxHitPointsFor(frail, 5));
+		assertTrue(CharacterRules.maxHitPointsFor(frail, 1) >= 1, "los PG máximos nunca deberían quedar por debajo de 1");
+
+		//Hoja corrupta o vacía: valores por defecto, no excepción. Una hoja vieja puede tener cualquier cosa.
+		assertTrue(CharacterRules.maxHitPointsFor(new JsonObject(), 1) >= 1, "una hoja vacía no debería reventar el cálculo de PG");
+		assertTrue(CharacterRules.maxHitPointsFor(null, 3) >= 1, "una hoja null tampoco debería reventar");
+
+		//Nivel de una ficha sin jugador detrás: 1 por defecto, nunca 0.
+		assertTrue(CharacterRules.levelOf(new JsonObject()) == 1, "una ficha sin nivel fijado debería ser de nivel 1");
+		assertTrue(CharacterRules.levelOf(null) == 1, "una hoja null debería dar nivel 1, no reventar");
+		JsonObject leveled = new JsonObject();
+		leveled.addProperty("characterLevel", 7);
+		assertTrue(CharacterRules.levelOf(leveled) == 7, "debería respetar el nivel fijado por el DM");
+
+		System.out.println("checkCharacterRules: OK, personajes múltiples, PNJ, hojas antiguas y PG por nivel se comportan.");
 	}
 
 	private static void require(JsonObject obj, String... fields) {

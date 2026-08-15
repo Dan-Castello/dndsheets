@@ -214,6 +214,10 @@
 
   "chat.dndsheets.turn.already_acted": "You already used your action this turn.",
   "chat.dndsheets.turn.blocked_elsewhere": "There's already an active combat somewhere else on the map — end it before starting another one.",
+  "chat.dndsheets.condition.gained": "You are now %s.",
+  "chat.dndsheets.condition.lost": "You are no longer %s.",
+  "chat.dndsheets.condition.charmed_block": "You are charmed by that creature — you cannot attack it.",
+  "chat.dndsheets.condition.cant_act": "You cannot act: you are %s.",
   "chat.dndsheets.turn.not_your_turn": "It's not your turn — it's %s's turn.",
   "chat.dndsheets.turn.other_combatant": "another combatant",
   "chat.dndsheets.turn.undo": "%s undoes their action: they can choose again.",

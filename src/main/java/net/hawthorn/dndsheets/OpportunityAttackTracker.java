@@ -37,17 +37,17 @@ class OpportunityAttackTracker {
 
 	//Al empezar el turno de un jugador, se anota qué monstruos lo tienen ya al alcance (adyacentes desde el
 	//principio, sin "salir" de nada) para no dispararles una reacción falsa en el primer tick de su turno.
-	void seedReachState(ServerLevel level, ServerPlayer mover, List<TurnManager.Combatant> order) {
+	void seedReachState(ServerLevel level, ServerPlayer mover, List<TurnManager.TurnEntry> order) {
 		withinReach.clear();
 		//Sin esto, si el jugador termina un turno anterior y empieza este SIN moverse de esa posición, el
 		//primer tick del turno nuevo vería la misma posición "ya comprobada" del turno anterior y se
 		//saltaría el chequeo de oportunidad que en realidad hace falta reevaluar desde cero.
 		lastCheckedPos.remove(mover.getId());
-		for (TurnManager.Combatant combatant : order) {
-			if (combatant.entityId() == mover.getId()) continue;
-			Entity entity = level.getEntity(combatant.entityId());
+		for (TurnManager.TurnEntry entry : order) {
+			if (entry.entityId() == mover.getId()) continue;
+			Entity entity = level.getEntity(entry.entityId());
 			if (entity != null && MonsterRegistry.statBlockOf(entity) != null && entity.position().distanceTo(mover.position()) <= MELEE_REACH) {
-				withinReach.add(combatant.entityId());
+				withinReach.add(entry.entityId());
 			}
 		}
 	}
@@ -57,20 +57,20 @@ class OpportunityAttackTracker {
 	//ahora (se alejó sin desengancharse) gasta su reacción en un ataque de oportunidad con su primer ataque
 	//real disponible. Simplificación deliberada: solo monstruos, no PvP entre jugadores (los demás
 	//jugadores están anclados y no pueden moverse de todos modos mientras no sea su turno).
-	void checkOpportunityAttacks(ServerLevel level, ServerPlayer mover, List<TurnManager.Combatant> order) {
+	void checkOpportunityAttacks(ServerLevel level, ServerPlayer mover, List<TurnManager.TurnEntry> order) {
 		Vec3 pos = mover.position();
 		if (pos.equals(lastCheckedPos.get(mover.getId()))) return; //Sin cambio de posición, nada que reevaluar.
 		lastCheckedPos.put(mover.getId(), pos);
 
-		for (TurnManager.Combatant combatant : order) {
-			if (combatant.entityId() == mover.getId()) continue;
-			Entity entity = level.getEntity(combatant.entityId());
+		for (TurnManager.TurnEntry entry : order) {
+			if (entry.entityId() == mover.getId()) continue;
+			Entity entity = level.getEntity(entry.entityId());
 			if (entity == null || !entity.isAlive() || MonsterRegistry.statBlockOf(entity) == null) continue;
 
 			boolean nowInReach = entity.position().distanceTo(mover.position()) <= MELEE_REACH;
 			if (nowInReach) {
-				withinReach.add(combatant.entityId());
-			} else if (withinReach.remove(combatant.entityId()) && TurnManager.tryReact(entity)) {
+				withinReach.add(entry.entityId());
+			} else if (withinReach.remove(entry.entityId()) && TurnManager.tryReact(entity)) {
 				MonsterActionManager.resolveOpportunityAttack(entity, mover);
 			}
 		}

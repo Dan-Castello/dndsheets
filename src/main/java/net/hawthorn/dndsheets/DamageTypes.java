@@ -30,7 +30,17 @@ public class DamageTypes {
 		if (sheet == null || damageType == null || !sheet.has("damageAffinities")) return 1.0;
 		JsonObject affinities = sheet.getAsJsonObject("damageAffinities");
 		if (!affinities.has(damageType)) return 1.0;
-		return switch (affinities.get(damageType).getAsString()) {
+		return multiplierForLabel(affinities.get(damageType).getAsString());
+	}
+
+	/**
+	 * <p>Traduce una afinidad declarada ({@code resistant}/{@code vulnerable}/{@code immune}) a su
+	 * multiplicador. Público porque los bloques de monstruo guardan las suyas en un mapa propio, no en una
+	 * hoja JSON: sin esto, el mismo vocabulario acabaría parseado en dos sitios que podrían discrepar.</p>
+	 */
+	public static double multiplierForLabel(String affinity) {
+		if (affinity == null) return 1.0;
+		return switch (affinity.toLowerCase(java.util.Locale.ROOT)) {
 			case "resistant" -> 0.5;
 			case "vulnerable" -> 2.0;
 			case "immune" -> 0.0;

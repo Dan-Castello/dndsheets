@@ -8,7 +8,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
@@ -74,9 +73,9 @@ public class CombatManager {
 			return;
 		}
 
-		if (TurnManager.isMonster(target)) {
-			if (MonsterRegistry.monsterIdOf(target) == null) {
-				//Jefe/enemigo de otro mod, sin bloque de estadísticas propio (ver TurnManager.isMonster): no
+		if (TurnManager.isCombatTarget(target)) {
+			if (Combatant.of(target) == null) {
+				//Jefe/enemigo de otro mod, sin representación en las reglas (ni bloque ni ficha): no
 				//hay tirada de ataque/daño 5e que resolver, pero el golpe igual engancha el modo turnos
 				//(arranca el combate solo, cuenta como tu acción, bloquea golpear fuera de turno) — el daño
 				//real lo sigue resolviendo Minecraft tal cual.
@@ -104,6 +103,11 @@ public class CombatManager {
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.combat.wrong_class").withStyle(ChatFormatting.RED));
 				return;
 			}
+			if (blockedByCharm(player, target)) {
+				event.setCanceled(true);
+				player.sendSystemMessage(Component.translatable("chat.dndsheets.condition.charmed_block").withStyle(ChatFormatting.RED));
+				return; //No fue un intento de ataque válido: no arranca combate ni gasta el turno.
+			}
 			autoStartCombatIfNeeded(target, player);
 			if (!TurnManager.tryAct(player)) {
 				event.setCanceled(true); //Fuera de turno: ni siquiera el puñetazo flojo de Minecraft pasa.
@@ -112,7 +116,7 @@ public class CombatManager {
 			}
 			if (weapon == null) return; //Sin arma ni rasgo de golpe desnudo: Minecraft resuelve el golpe normal, turno ya gastado.
 			event.setCanceled(true); //Se resuelve como un encuentro real, no como el golpe de Minecraft.
-			resolveAttackOnMonster(player, target, weapon);
+			resolveAttackOnCreature(player, target, weapon, true);
 		}
 	}
 
@@ -157,9 +161,9 @@ public class CombatManager {
 			return;
 		}
 
-		if (TurnManager.isMonster(target)) {
-			if (MonsterRegistry.monsterIdOf(target) == null) {
-				//Mismo criterio de compatibilidad que onAttackEntity: sin bloque de estadísticas propio, el
+		if (TurnManager.isCombatTarget(target)) {
+			if (Combatant.of(target) == null) {
+				//Mismo criterio de compatibilidad que onAttackEntity: sin representación en las reglas, el
 				//disparo sigue enganchando el modo turnos, pero el daño real lo resuelve Minecraft tal cual.
 				autoStartCombatIfNeeded(target, player);
 				if (!TurnManager.tryAct(player)) {
@@ -176,10 +180,15 @@ public class CombatManager {
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.combat.wrong_class").withStyle(ChatFormatting.RED));
 				return; //Ni se resuelve como 5e ni se toca el turno: el disparo vanilla ya salió antes del impacto.
 			}
+			if (blockedByCharm(player, target)) {
+				event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY);
+				player.sendSystemMessage(Component.translatable("chat.dndsheets.condition.charmed_block").withStyle(ChatFormatting.RED));
+				return;
+			}
 			event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY); //Se resuelve como un encuentro real, no como el impacto de Minecraft.
 			autoStartCombatIfNeeded(target, player);
 			if (!TurnManager.tryAct(player)) { TurnManager.notifyCantAct(player); return; }
-			resolveAttackOnMonster(player, target, weapon);
+			resolveAttackOnCreature(player, target, weapon, false);
 		}
 	}
 
@@ -207,6 +216,11 @@ public class CombatManager {
 			attacker.sendSystemMessage(Component.translatable("chat.dndsheets.combat.needs_both_hands").withStyle(ChatFormatting.RED));
 			return;
 		}
+		if (blockedByCharm(attacker, victim)) {
+			if (melee) event.setCanceled(true); //Cuerpo a cuerpo sí se puede cancelar a tiempo; una flecha ya en vuelo, no.
+			attacker.sendSystemMessage(Component.translatable("chat.dndsheets.condition.charmed_block").withStyle(ChatFormatting.RED));
+			return;
+		}
 		if (blockedByClass(attacker, weapon)) {
 			if (melee) event.setCanceled(true); //Cuerpo a cuerpo sí se puede cancelar a tiempo; una flecha ya en vuelo, no.
 			attacker.sendSystemMessage(Component.translatable("chat.dndsheets.combat.wrong_class").withStyle(ChatFormatting.RED));
@@ -214,8 +228,8 @@ public class CombatManager {
 		}
 
 		JsonObject attackerSheet = SheetLoader.getServerSheet(attacker.getStringUUID());
-		JsonObject victimSheet = SheetLoader.getServerSheet(victim.getStringUUID());
-		if (attackerSheet == null || victimSheet == null) return;
+		Combatant target = Combatant.of(victim);
+		if (attackerSheet == null || target == null) return;
 
 		//weaponDefault también se comprueba ANTES de tocar el turno: identifyWeapon devuelve un
 		//IdentifiedWeapon no-nulo para CUALQUIER ítem no vacío en la mano, esté o no dado de alta en
@@ -234,103 +248,111 @@ public class CombatManager {
 			return;
 		}
 
-		DiceManager.Advantage advantage = consumeAdvantage(attackerSheet);
-		String expression = "1d20 + $" + weaponDefault.ability() + " + $prof";
+		AttackOutcome outcome = resolveAttack(attacker, attackerSheet, target, weapon,
+			weaponDefault.ability(), weaponDefault.damageType(), melee);
+		if (outcome == null) return;
+		if (!outcome.hit()) {
+			event.setCanceled(true); //Fallo: ni siquiera se aplica la reducción de daño de la armadura de Minecraft, no hay golpe.
+			ChatFeedback.broadcast(attacker, outcome.message());
+			return;
+		}
+
+		//El daño se entrega por el propio evento, NO por Combatant.takeDamage: ya estamos DENTRO de la
+		//tubería de daño de Minecraft y llamarlo aquí recurriría. A partir de este punto la armadura real
+		//del objetivo todavía puede restar algo más — Minecraft lo hace solo después de este evento.
+		event.setAmount(outcome.damage());
+		ConcentrationManager.onDamageTaken((ServerPlayer) victim, outcome.damage());
+		ChatFeedback.broadcast(attacker, outcome.message());
+	}
+
+	private record AttackOutcome(boolean hit, int damage, MutableComponent message) {}
+
+	/**
+	 * <p>Núcleo compartido de toda tirada de ataque de un jugador contra un {@link Combatant}, sea otro
+	 * jugador o un monstruo. Antes esto eran dos métodos casi idénticos —este camino de PvP y
+	 * {@code resolveAttackOnCreature}— que solo se diferenciaban en cómo leían la CA, los PG y el nombre del
+	 * objetivo; y esa diferencia se había llevado por delante, sin que nadie lo decidiera, las resistencias,
+	 * la reacción de Escudo y la concentración del lado del monstruo.</p>
+	 *
+	 * <p>No aplica el daño a propósito: lo devuelve. Los dos llamadores lo entregan por caminos que no se
+	 * pueden unificar sin romper algo — el PvP está dentro del {@code LivingHurtEvent} de Minecraft y usa
+	 * {@code setAmount}, mientras que el monstruo lleva sus PG de 5e aparte del atributo de salud vanilla.</p>
+	 */
+	private static AttackOutcome resolveAttack(Player attacker, JsonObject attackerSheet, Combatant target,
+			IdentifiedWeapon weapon, String ability, String damageType, boolean melee) {
+		DiceManager.Advantage advantage = DiceManager.combineAdvantage(
+			consumeAdvantage(attackerSheet),
+			new Combatant.PlayerCombatant(attacker, attackerSheet).ownAttackAdvantage(),
+			target.advantageAgainst(melee));
+
+		String expression = "1d20 + $" + ability + " + $prof";
 		int inspiration = BardInspirationManager.consumeAttackBonus(attackerSheet);
 		if (inspiration > 0) expression = expression + " + " + inspiration;
 		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(attackerSheet, expression, advantage);
-		if (attackRoll.outcome().result() == null) return;
+		if (attackRoll.outcome().result() == null) return null;
 		CombatFx.diceTick(attacker);
 		sendSheetUpdate(attacker);
 
 		String attackerName = SheetLoader.characterNameOf(attackerSheet, attacker);
-		String victimName = SheetLoader.characterNameOf(victimSheet, victim);
-		int targetAc = armorClassOf(victim, victimSheet);
-		//Escudo: solo tiene sentido comprobarlo si el golpe de verdad depende de la CA (un crítico siempre
-		//acierta, un pifia siempre falla, con o sin Escudo).
-		if (!attackRoll.criticalHit() && !attackRoll.criticalMiss() && victim instanceof ServerPlayer serverVictim) {
-			targetAc = ShieldManager.effectiveAc(serverVictim, attackRoll.outcome().result().getValue(), targetAc);
+		int targetAc = target.armorClass();
+		//Reacciones defensivas (Escudo): solo tiene sentido comprobarlas si el golpe de verdad depende de la
+		//CA — un crítico siempre acierta y un pifia siempre falla, con o sin Escudo.
+		if (!attackRoll.criticalHit() && !attackRoll.criticalMiss()) {
+			targetAc = target.reactiveArmorClass(attackRoll.outcome().result().getValue());
 		}
+
 		if (attackRoll.criticalMiss() || (!attackRoll.criticalHit() && attackRoll.outcome().result().getValue() < targetAc)) {
-			event.setCanceled(true); //Fallo: ni siquiera se aplica la reducción de daño de la armadura de Minecraft, no hay golpe.
-			ChatFeedback.broadcast(attacker, ChatFeedback.attackResult(attackerName, victimName, weapon.name(), attackRoll.outcome().formatted(), targetAc, false, null, inspiration));
-			return;
+			return new AttackOutcome(false, 0, ChatFeedback.attackResult(attackerName, target.name(), weapon.name(),
+				attackRoll.outcome().formatted(), targetAc, false, null, inspiration));
 		}
 
-		Roll damageRoll = computeDamageRoll(attacker, weapon, attackRoll.criticalHit(), advantage, weaponDefault.ability(), victim);
-		if (damageRoll == null) return;
+		//Crítico automático de 5e: cualquier impacto cuerpo a cuerpo contra un objetivo paralizado o
+		//inconsciente es crítico, aunque el d20 no haya sacado un 20.
+		boolean critical = attackRoll.criticalHit() || (melee && target.autoCritInMelee());
+		Roll damageRoll = computeDamageRoll(attacker, weapon, critical, advantage, ability, target.entity());
+		if (damageRoll == null) return null;
 
-		//A partir de aquí, la armadura REAL del objetivo (puntos de armadura de Minecraft) todavía puede
-		//restar algo más de daño: Minecraft lo hace solo después de este evento, no hace falta tocar nada.
-		double affinity = DamageTypes.multiplierFor(victim, victimSheet, weaponDefault.damageType());
-		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), affinity);
-		event.setAmount(finalAmount);
-		ConcentrationManager.onDamageTaken((ServerPlayer) victim, finalAmount);
-		CombatFx.hit(victim, attackRoll.criticalHit(), weaponDefault.damageType());
-		ChatFeedback.broadcast(attacker, ChatFeedback.attackResult(attackerName, victimName, weapon.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted(), inspiration));
+		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), target.effectiveDamageMultiplier(damageType));
+		CombatFx.hit(target.entity(), critical, damageType);
+		return new AttackOutcome(true, finalAmount, ChatFeedback.attackResult(attackerName, target.name(), weapon.name(),
+			attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted(), inspiration));
 	}
 
 	//Jugador ataca a un monstruo invocado por /dndmonsters spawn: mismo ataque-vs-CA que en PvP, pero el
 	//objetivo no tiene hoja, tiene un bloque de estadísticas (MonsterRegistry), y sí lleva PG reales
 	//trackeados en su NBT persistente en vez de infinitos como el armor stand.
-	private static void resolveAttackOnMonster(Player attacker, Entity monsterEntity, IdentifiedWeapon weapon) {
+	private static void resolveAttackOnCreature(Player attacker, Entity targetEntity, IdentifiedWeapon weapon, boolean melee) {
 		if (weapon == null) return;
-		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monsterEntity);
-		if (block == null) return;
-		MonsterRegistry.faceTarget(monsterEntity, attacker); //Que quede claro a quién le está respondiendo, acierte o no.
+		Combatant target = Combatant.of(targetEntity);
+		if (target == null) return;
+		MonsterRegistry.faceTarget(targetEntity, attacker); //Que quede claro a quién le está respondiendo, acierte o no.
 
 		JsonObject attackerSheet = SheetLoader.getServerSheet(attacker.getStringUUID());
 		if (attackerSheet == null) return;
 
 		ResolvedWeapon weaponDefault = resolveWeapon(attacker, attackerSheet, weapon, SheetLoader.characterLevelOf(attackerSheet, attacker));
 		String ability = weaponDefault != null ? weaponDefault.ability() : "str";
+		String damageType = weaponDefault != null ? weaponDefault.damageType() : "contundente";
 
-		DiceManager.Advantage advantage = consumeAdvantage(attackerSheet);
-		String expression = "1d20 + $" + ability + " + $prof";
-		int inspiration = BardInspirationManager.consumeAttackBonus(attackerSheet);
-		if (inspiration > 0) expression = expression + " + " + inspiration;
-		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(attackerSheet, expression, advantage);
-		if (attackRoll.outcome().result() == null) return;
-		CombatFx.diceTick(attacker);
-		sendSheetUpdate(attacker);
-
-		String attackerName = SheetLoader.characterNameOf(attackerSheet, attacker);
-
-		if (attackRoll.criticalMiss() || (!attackRoll.criticalHit() && attackRoll.outcome().result().getValue() < block.ac())) {
-			ChatFeedback.broadcast(attacker, ChatFeedback.attackResult(attackerName, block.name(), weapon.name(), attackRoll.outcome().formatted(), block.ac(), false, null, inspiration));
+		AttackOutcome outcome = resolveAttack(attacker, attackerSheet, target, weapon, ability, damageType, melee);
+		if (outcome == null) return;
+		if (!outcome.hit()) {
+			ChatFeedback.broadcast(attacker, outcome.message());
 			return;
 		}
 
-		Roll damageRoll = computeDamageRoll(attacker, weapon, attackRoll.criticalHit(), advantage, ability, monsterEntity);
-		if (damageRoll == null) return;
+		//Los PG restantes se calculan ANTES de aplicar el daño, porque takeDamage puede matar a la entidad
+		//(y entonces currentHp ya no diría nada útil). El sufijo de PG sigue siendo solo del lado del
+		//monstruo a propósito: en PvP la armadura real de Minecraft resta más daño DESPUÉS del evento, así
+		//que cualquier número que anunciáramos ahí sería mentira.
+		int remainingHp = Math.max(0, target.currentHp() - outcome.damage());
+		MutableComponent message = outcome.message()
+			.append(Component.translatable("chat.dndsheets.combat.hp_suffix", remainingHp, target.maxHp()).withStyle(ChatFormatting.DARK_GRAY));
 
-		int remainingHp = MonsterRegistry.currentHpOf(monsterEntity) - damageRoll.amount();
-		CombatFx.hit(monsterEntity, attackRoll.criticalHit(), weaponDefault != null ? weaponDefault.damageType() : "contundente");
-		MutableComponent message = ChatFeedback.attackResult(attackerName, block.name(), weapon.name(), attackRoll.outcome().formatted(), block.ac(), true, damageRoll.formatted(), inspiration)
-			.append(Component.translatable("chat.dndsheets.combat.hp_suffix", Math.max(remainingHp, 0), block.maxHp()).withStyle(ChatFormatting.DARK_GRAY));
-
-		if (remainingHp <= 0) {
-			CombatFx.defeated(monsterEntity);
-			TurnManager.markDefeated(monsterEntity.getId());
-			//die(), no remove(): un remove() a secas nunca pasa por el camino de muerte vanilla (loot table,
-			//XP...), así que un monstruo "asesinado" así jamás soltaba nada. Nuestra salud real de Minecraft
-			//nunca baja (el HP de 5e se trackea aparte en MonsterRegistry), así que die() no puede inferir la
-			//muerte solo — hay que llamarlo a mano en cuanto NUESTRO HP llega a 0. setHealth(0) es
-			//imprescindible ANTES de die(): die() por sí solo no toca la salud real, e isDeadOrDying() (que
-			//vanilla usa para arrancar el conteo de tickDeath() que de verdad elimina la entidad) sigue
-			//devolviendo false con la salud llena — sin esto el mob se queda tirado en pose de muerte para
-			//siempre, nunca desaparece.
-			if (monsterEntity instanceof LivingEntity living) {
-				living.setHealth(0.0F);
-				living.die(monsterEntity.damageSources().generic());
-			} else {
-				monsterEntity.remove(Entity.RemovalReason.KILLED);
-			}
-			//Antes esto era un ChatFeedback.defeated() aparte, una segunda línea de chat para el mismo golpe
-			//que ya se acaba de anunciar arriba — se pega como sufijo a la misma línea en su lugar.
-			message.append(Component.translatable("chat.dndsheets.combat.defeated_suffix", block.name()).withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
-		} else {
-			MonsterRegistry.setCurrentHp(monsterEntity, remainingHp);
+		target.takeDamage(outcome.damage()); //Si llega a 0, mata al mob y lo saca del orden de turnos — ver Combatant.MonsterCombatant.
+		if (target.isDefeated()) {
+			//Sufijo en la MISMA línea del golpe que acaba de anunciarse, no una segunda línea de chat aparte.
+			message.append(Component.translatable("chat.dndsheets.combat.defeated_suffix", target.name()).withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
 		}
 		ChatFeedback.broadcast(attacker, message);
 	}
@@ -434,6 +456,16 @@ public class CombatManager {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		String characterClass = sheet != null && sheet.has("characterClass") ? sheet.get("characterClass").getAsString() : null;
 		return !weaponDefault.allowsClass(characterClass);
+	}
+
+	/**
+	 * <p>Hechizado: no puedes atacar a quien te hechizó, pero sí a cualquier otro. Se comprueba junto al
+	 * resto de restricciones de empuñadura/clase de este archivo, y no dentro de {@code resolveAttack},
+	 * porque hay que decidirlo ANTES de gastar el turno o dejar pasar el daño vanilla.</p>
+	 */
+	private static boolean blockedByCharm(Player attacker, Entity target) {
+		Combatant combatant = Combatant.of(attacker);
+		return combatant != null && combatant.cannotAttack(target);
 	}
 
 	private static String pactOf(JsonObject sheet) {

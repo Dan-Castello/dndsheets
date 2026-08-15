@@ -43,10 +43,17 @@ public class MonsterRegistry {
 		public boolean appliesEffect() { return effectName != null; }
 	}
 
+	/**
+	 * @param damageAffinities tipo de daño → {@code resistant}/{@code vulnerable}/{@code immune}, mismo
+	 *                         vocabulario que {@code damageAffinities} en la hoja de un jugador (ver
+	 *                         {@link DamageTypes#multiplierForLabel}). Vacío = sin afinidades, que es como
+	 *                         se comportaban todos los monstruos hasta ahora.
+	 */
 	public record MonsterStatBlock(
 		String id, String name, String baseEntityId, int ac, int maxHp,
 		Map<String, Integer> abilities, int proficiencyBonus,
-		List<MonsterAttack> attacks, List<MonsterSpell> spells
+		List<MonsterAttack> attacks, List<MonsterSpell> spells,
+		Map<String, String> damageAffinities
 	) {
 		public int abilityModifier(String key) {
 			Integer score = abilities.get(key.toLowerCase(Locale.ROOT));
@@ -123,7 +130,16 @@ public class MonsterRegistry {
 			}
 		}
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells);
+		//Opcional: un monstruo sin "damageAffinities" se comporta exactamente como antes, sin resistencias.
+		Map<String, String> damageAffinities = new HashMap<>();
+		if (json.has("damageAffinities")) {
+			JsonObject affinities = json.getAsJsonObject("damageAffinities");
+			for (String type : affinities.keySet()) {
+				damageAffinities.put(type.toLowerCase(Locale.ROOT), affinities.get(type).getAsString().toLowerCase(Locale.ROOT));
+			}
+		}
+
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities);
 	}
 
 	//Extraído de parse() para que también lo use el ataque personalizado que un DM añade en vivo a un
@@ -163,6 +179,14 @@ public class MonsterRegistry {
 			JsonArray attacks = new JsonArray();
 			for (MonsterAttack attack : block.attacks()) attacks.add(attackToJson(attack));
 			json.add("attacks", attacks);
+		}
+
+		//Se omite si está vacío, para no ensuciar cada monstruo guardado con un objeto que no dice nada:
+		//parse() ya trata "sin campo" y "vacío" igual.
+		if (!block.damageAffinities().isEmpty()) {
+			JsonObject affinities = new JsonObject();
+			for (Map.Entry<String, String> entry : block.damageAffinities().entrySet()) affinities.addProperty(entry.getKey(), entry.getValue());
+			json.add("damageAffinities", affinities);
 		}
 		return json;
 	}
@@ -324,7 +348,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		for (String key : new String[]{"str", "dex", "con", "int", "wis", "cha"}) abilities.put(key, 10);
 
-		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>()));
+		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>()));
 		return spawnAt(level, x, y, z, id);
 	}
 

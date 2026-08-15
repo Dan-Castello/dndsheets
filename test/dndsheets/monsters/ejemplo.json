@@ -22,6 +22,7 @@
     "ac": 12, "hp": 20,
     "abilities": { "str": 8, "dex": 12, "con": 12, "int": 16, "wis": 12, "cha": 10 },
     "proficiencyBonus": 3,
+    "damageAffinities": { "fuego": "resistant", "frio": "vulnerable" },
     "attacks": [
       { "name": "Bastón", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
     ],

@@ -47,7 +47,10 @@ public class ConcentrationManager {
 	public static void stopConcentrating(ServerPlayer caster) {
 		Concentrating previous = concentratingOn.remove(caster.getUUID());
 		if (previous != null && previous.effectName() != null) {
-			TurnManager.removeEffect(previous.targetEntityId(), previous.effectName());
+			//El nivel sale del propio lanzador: se necesita para resolver la entidad objetivo y poder
+			//levantarle la condición, no solo parar su temporizador de daño (ver TurnManager.removeEffect).
+			net.minecraft.server.level.ServerLevel level = caster.level() instanceof net.minecraft.server.level.ServerLevel serverLevel ? serverLevel : null;
+			TurnManager.removeEffect(level, previous.targetEntityId(), previous.effectName());
 		}
 	}
 

@@ -325,10 +325,10 @@ public class SpellCastManager {
 		DiceManager.RollOutcome damageRoll = DiceManager.roll(new JsonObject(), spell.dice());
 		if (damageRoll.result() == null) return;
 
-		DiceManager.RollOutcome saveRoll = rollTargetSave(target, spell.saveAbility());
-		if (saveRoll == null || saveRoll.result() == null) return;
+		Combatant.SaveRoll saveRoll = rollTargetSave(target, spell.saveAbility());
+		if (saveRoll == null || saveRoll.formatted() == null) return;
 
-		boolean saved = saveRoll.result().getValue() >= saveDc;
+		boolean saved = saveRoll.succeeds(saveDc);
 		int finalDamage = saved ? (spell.halfOnSave() ? damageRoll.result().getValue() / 2 : 0) : damageRoll.result().getValue();
 		Component outcomeLabel = Component.translatable(saved ? (spell.halfOnSave() ? "chat.dndsheets.spell.save_half" : "chat.dndsheets.spell.save_none") : "chat.dndsheets.spell.save_fail");
 
@@ -348,20 +348,20 @@ public class SpellCastManager {
 	//registro de ConcentrationManager para que se revierta solo si el lanzador pierde la concentración.
 	private static void applySpellEffect(ServerPlayer caster, SpellRegistry.Spell spell, Entity target) {
 		if (!spell.appliesEffect()) return;
-		TurnManager.applyEffect(target, spell.effectName(), spell.effectDice(), spell.effectTurns());
+		TurnManager.applyEffect(target, spell.effectName(), spell.effectDice(), spell.effectTurns(), caster);
 		ChatFeedback.broadcast(target, Component.translatable("chat.dndsheets.monster.effect_applied", nameOf(target), spell.effectName(), spell.effectTurns()).withStyle(ChatFormatting.DARK_PURPLE));
 		if (spell.concentration()) ConcentrationManager.attachEffect(caster, target.getId(), spell.effectName());
 	}
 
-	private static DiceManager.RollOutcome rollTargetSave(Entity target, String saveAbility) {
-		if (target instanceof Player player) {
-			JsonObject targetSheet = SheetLoader.getServerSheet(player.getStringUUID());
-			if (targetSheet == null) return null;
-			return DiceManager.roll(targetSheet, "1d20 + $" + saveAbility);
-		}
-		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(target);
-		int monsterMod = block != null ? block.abilityModifier(saveAbility) : 0;
-		return DiceManager.roll(new JsonObject(), "1d20 + " + monsterMod);
+	private static Combatant.SaveRoll rollTargetSave(Entity target, String saveAbility) {
+		Combatant combatant = Combatant.of(target);
+		if (combatant != null) return combatant.rollSave(saveAbility);
+		//Jugador sin hoja cargada: no se resuelve nada, igual que antes — mejor no hacer daño que hacerlo
+		//con características inventadas.
+		if (target instanceof Player) return null;
+		//Mob de otro mod sin bloque de estadísticas (ver TurnManager.isMonster): no hay características que
+		//consultar, así que tira el d20 pelado, exactamente como hacía antes con modificador 0.
+		return new Combatant.SaveRoll(DiceManager.roll(new JsonObject(), "1d20"), null);
 	}
 
 	//Público: también lo usa TurnManager para el daño de efectos de estado (veneno, etc.) al inicio del turno.

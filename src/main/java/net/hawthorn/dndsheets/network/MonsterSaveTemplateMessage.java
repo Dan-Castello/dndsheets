@@ -78,7 +78,8 @@ public class MonsterSaveTemplateMessage {
 			List<MonsterRegistry.MonsterAttack> attacks = MonsterRegistry.customAttacksOf(target);
 			MonsterRegistry.MonsterStatBlock template = new MonsterRegistry.MonsterStatBlock(
 				message.id, block.name(), block.baseEntityId(), block.ac(), block.maxHp(),
-				parseAbilities(message.abilitiesCsv), block.proficiencyBonus(), attacks, List.of());
+				parseAbilities(message.abilitiesCsv), block.proficiencyBonus(), attacks, List.of(),
+				block.damageAffinities()); //Se heredan del monstruo capturado: la plantilla no debería perder sus resistencias.
 			JsonObject json = MonsterRegistry.toJson(template);
 
 			try {

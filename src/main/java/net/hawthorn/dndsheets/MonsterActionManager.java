@@ -308,19 +308,24 @@ public class MonsterActionManager {
 		DiceManager.DamageResult damageRoll = DiceManager.rollDamage(new JsonObject(), attack.dice() + " + " + damageMod, attackRoll.criticalHit());
 		if (damageRoll.formatted() == null) return;
 
-		double affinity = DamageTypes.multiplierFor(target, targetSheet, attack.damageType());
+		//Por Combatant y no por DamageTypes directo: así el objetivo cobra además la resistencia a todo el
+		//daño de petrificado, que no está declarada en su hoja sino en sus condiciones.
+		Combatant targetCombatant = Combatant.of(target);
+		double affinity = targetCombatant != null
+			? targetCombatant.effectiveDamageMultiplier(attack.damageType())
+			: DamageTypes.multiplierFor(target, targetSheet, attack.damageType());
 		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), affinity);
 		target.hurt(target.damageSources().generic(), finalAmount);
 		if (target instanceof ServerPlayer serverTarget) ConcentrationManager.onDamageTaken(serverTarget, finalAmount);
 		CombatFx.hit(target, attackRoll.criticalHit(), attack.damageType());
 		ChatFeedback.broadcast(monsterEntity, ChatFeedback.attackResult(block.name(), target.getName().getString(), attack.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()));
 
-		if (attack.appliesEffect()) applyEffectFromHit(target, attack.effectName(), attack.effectDice(), attack.effectTurns());
+		if (attack.appliesEffect()) applyEffectFromHit(target, attack.effectName(), attack.effectDice(), attack.effectTurns(), monsterEntity);
 	}
 
 	//Deja el efecto listo para que TurnManager lo vaya aplicando al empezar cada uno de los turnos del objetivo.
-	private static void applyEffectFromHit(Entity target, String name, String dice, int turns) {
-		TurnManager.applyEffect(target, name, dice, turns);
+	private static void applyEffectFromHit(Entity target, String name, String dice, int turns, Entity source) {
+		TurnManager.applyEffect(target, name, dice, turns, source);
 		ChatFeedback.broadcast(target, net.minecraft.network.chat.Component.translatable("chat.dndsheets.monster.effect_applied", target.getName().getString(), name, turns).withStyle(ChatFormatting.DARK_PURPLE));
 	}
 
@@ -334,13 +339,15 @@ public class MonsterActionManager {
 			return;
 		}
 
-		DiceManager.RollOutcome saveRoll = DiceManager.roll(targetSheet, "1d20 + $" + spell.saveAbility());
-		if (saveRoll.result() == null) return;
+		Combatant targetCombatant = Combatant.of(target);
+		if (targetCombatant == null) return;
+		Combatant.SaveRoll saveRoll = targetCombatant.rollSave(spell.saveAbility());
+		if (saveRoll.formatted() == null) return;
 
 		DiceManager.RollOutcome damageRoll = DiceManager.roll(new JsonObject(), spell.dice());
 		if (damageRoll.result() == null) return;
 
-		boolean saved = saveRoll.result().getValue() >= spell.saveDc();
+		boolean saved = saveRoll.succeeds(spell.saveDc());
 		int finalDamage = saved ? (spell.halfOnSave() ? damageRoll.result().getValue() / 2 : 0) : damageRoll.result().getValue();
 		Component outcomeLabel = Component.translatable(saved ? (spell.halfOnSave() ? "chat.dndsheets.spell.save_half" : "chat.dndsheets.spell.save_none") : "chat.dndsheets.spell.save_fail");
 
@@ -350,11 +357,11 @@ public class MonsterActionManager {
 			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null));
 
 		if (finalDamage > 0) {
-			double affinity = DamageTypes.multiplierFor(target, targetSheet, spell.damageType());
+			double affinity = targetCombatant.effectiveDamageMultiplier(spell.damageType()); //Incluye la resistencia de petrificado, ver Combatant.
 			int appliedAmount = DamageTypes.applyMultiplier(finalDamage, affinity);
 			target.hurt(target.damageSources().generic(), appliedAmount);
 			if (target instanceof ServerPlayer serverTarget) ConcentrationManager.onDamageTaken(serverTarget, appliedAmount);
 		}
-		if (finalDamage > 0 && spell.appliesEffect()) applyEffectFromHit(target, spell.effectName(), spell.effectDice(), spell.effectTurns());
+		if (finalDamage > 0 && spell.appliesEffect()) applyEffectFromHit(target, spell.effectName(), spell.effectDice(), spell.effectTurns(), monsterEntity);
 	}
 }

@@ -169,6 +169,11 @@ class MovementAnchorTracker {
 		int id = entity.getId();
 		Pinned origin = moveOrigin.get(id);
 		if (origin == null) return false;
+		//Velocidad 0 por condición (agarrado, apresado, paralizado, petrificado, inconsciente): se cobra
+		//aquí, el único punto por el que ya pasan tanto el jugador como el mob, en vez de en los dos
+		//llamadores. speedBlocks se ignora del todo, no se reduce: en 5e la velocidad es 0, no "menos".
+		Combatant combatant = Combatant.of(entity);
+		if (combatant != null && combatant.cannotMove()) speedBlocks = 0.0;
 		if (entity.level().dimension() != origin.dimension()) {
 			//Cruzó a otro nivel (portal) con el turno activo: las coordenadas grabadas ya no significan
 			//nada acá — se suelta el presupuesto en vez de comparar/teletransportar entre dimensiones.

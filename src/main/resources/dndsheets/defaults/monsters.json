@@ -22,6 +22,7 @@
     "ac": 12, "hp": 20,
     "abilities": { "str": 8, "dex": 12, "con": 12, "int": 16, "wis": 12, "cha": 10 },
     "proficiencyBonus": 3,
+    "damageAffinities": { "fuego": "resistant", "frio": "vulnerable" },
     "attacks": [
       { "name": "Bastón", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
     ],
@@ -74,6 +75,7 @@
     "ac": 8, "hp": 22,
     "abilities": { "str": 13, "dex": 6, "con": 16, "int": 3, "wis": 6, "cha": 5 },
     "proficiencyBonus": 2,
+    "damageAffinities": { "veneno": "immune" },
     "attacks": [
       { "name": "Golpe", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
     ]
@@ -83,6 +85,7 @@
     "ac": 13, "hp": 13,
     "abilities": { "str": 10, "dex": 14, "con": 15, "int": 6, "wis": 8, "cha": 5 },
     "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "vulnerable", "veneno": "immune" },
     "attacks": [
       { "name": "Espada Corta", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" }
     ]
@@ -111,6 +114,7 @@
     "ac": 14, "hp": 45,
     "abilities": { "str": 15, "dex": 14, "con": 16, "int": 10, "wis": 13, "cha": 15 },
     "proficiencyBonus": 3,
+    "damageAffinities": { "necrotico": "resistant", "veneno": "immune" },
     "attacks": [
       { "name": "Espada Larga", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "cortante" }
     ],
@@ -123,6 +127,7 @@
     "ac": 18, "hp": 178,
     "abilities": { "str": 23, "dex": 10, "con": 21, "int": 14, "wis": 11, "cha": 19 },
     "proficiencyBonus": 4,
+    "damageAffinities": { "fuego": "immune" },
     "attacks": [
       { "name": "Mordisco", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "perforante" },
       { "name": "Garra", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }

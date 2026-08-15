@@ -28,7 +28,17 @@ import java.util.Collection;
 @Mod.EventBusSubscriber
 public class TurnCommand {
 	//Solo sugerencias de tab: cualquier otro texto sigue siendo válido, esto no restringe el argumento.
-	private static final String[] EFFECT_NAME_SUGGESTIONS = {"veneno", "fuego", "sangrado", "aturdido"};
+	//Las 14 condiciones de 5e primero (esas SÍ tienen consecuencias mecánicas reales, ver Condition y
+	//TurnManager.applyEffect), y detrás los efectos de daño con nombre libre de siempre. Sigue sin
+	//restringir el argumento: cualquier otro texto vale y se comporta como un temporizador de daño.
+	private static final String[] EFFECT_NAME_SUGGESTIONS = buildEffectSuggestions();
+
+	private static String[] buildEffectSuggestions() {
+		java.util.List<String> names = new java.util.ArrayList<>();
+		for (net.hawthorn.dndsheets.Condition condition : net.hawthorn.dndsheets.Condition.values()) names.add(condition.label());
+		names.addAll(java.util.List.of("veneno", "fuego", "sangrado"));
+		return names.toArray(new String[0]);
+	}
 	private static final String[] DICE_SUGGESTIONS = {"1d4", "1d6", "1d8", "1d10", "1d12", "2d6", "2d8"};
 
 	@SubscribeEvent

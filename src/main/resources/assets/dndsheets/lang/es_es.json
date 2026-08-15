@@ -214,6 +214,10 @@
 
   "chat.dndsheets.turn.already_acted": "Ya usaste tu acción este turno.",
   "chat.dndsheets.turn.blocked_elsewhere": "Ya hay un combate activo en otra parte del mapa — termínalo antes de arrancar otro.",
+  "chat.dndsheets.condition.gained": "Ahora estás %s.",
+  "chat.dndsheets.condition.lost": "Ya no estás %s.",
+  "chat.dndsheets.condition.charmed_block": "Estás hechizado por esa criatura — no puedes atacarla.",
+  "chat.dndsheets.condition.cant_act": "No puedes actuar: estás %s.",
   "chat.dndsheets.turn.not_your_turn": "No es tu turno — le toca a %s.",
   "chat.dndsheets.turn.other_combatant": "otro combatiente",
   "chat.dndsheets.turn.undo": "%s deshace su acción: puede elegir de nuevo.",

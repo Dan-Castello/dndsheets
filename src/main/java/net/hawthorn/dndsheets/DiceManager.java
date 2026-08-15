@@ -43,6 +43,22 @@ public class DiceManager {
 	}
 
 	/**
+	 * <p>Junta ventaja/desventaja de varias fuentes a la vez (el {@code /dndsheet advantage} del DM, las
+	 * condiciones del atacante, las del objetivo). En 5e no se acumulan: por muchas de cada lado que haya,
+	 * basta una de cada para que se anulen entre sí y quede una tirada normal.</p>
+	 */
+	public static Advantage combineAdvantage(Advantage... sources) {
+		boolean advantage = false;
+		boolean disadvantage = false;
+		for (Advantage source : sources) {
+			if (source == Advantage.ADVANTAGE) advantage = true;
+			if (source == Advantage.DISADVANTAGE) disadvantage = true;
+		}
+		if (advantage == disadvantage) return Advantage.NORMAL;
+		return advantage ? Advantage.ADVANTAGE : Advantage.DISADVANTAGE;
+	}
+
+	/**
 	 * @param outcome the (possibly advantage/disadvantage-adjusted) roll, formatted for chat.
 	 * @param criticalHit true on a natural 20: auto-hits, and damage should be rolled via {@link #rollDamage} with {@code critical=true}.
 	 * @param criticalMiss true on a natural 1: auto-misses regardless of the total.

@@ -51,7 +51,23 @@ public class SheetLoader {
 	//existente cambie de forma de verdad (no cuando se añade uno nuevo: eso ya lo cubre validateSheet
 	//solo, sin necesidad de versión).
 	public static final int CURRENT_SCHEMA_VERSION = 1;
-	private static HashMap<String, JsonObject> sheets = new HashMap<String, JsonObject>(); //A list of all loaded character sheets. Privado: sin consumo externo confirmado (ver AUDIT_TECHNICAL.md M-API-1), solo se lee/escribe a través de getServerSheet/saveServer, que ya validan/loguean.
+	/**
+	 * <p>Todas las hojas cargadas, <b>indexadas por id de personaje</b>, no por UUID de jugador. Hasta Fase 1
+	 * eran lo mismo: una hoja por jugador, para siempre, así que no existía el concepto de "personaje" —
+	 * y sin él no se podía tener un segundo PJ, ni una hoja de PNJ, ni cambiar de personaje, ni archivar
+	 * una campaña. Ahora un id de personaje es cualquier cadena apta para nombre de archivo; el UUID del
+	 * jugador sigue siendo un id válido, que es exactamente lo que hace que todo lo guardado antes de este
+	 * cambio siga funcionando sin migración: su archivo ya se llamaba así.</p>
+	 */
+	private static HashMap<String, JsonObject> sheets = new HashMap<String, JsonObject>(); //Privado: sin consumo externo confirmado (ver AUDIT_TECHNICAL.md M-API-1), solo se lee/escribe a través de getServerSheet/saveServer, que ya validan/loguean.
+
+	/**
+	 * <p>UUID de jugador → id del personaje que lleva ahora mismo. Es una caché derivada de las propias
+	 * hojas (el campo {@code active} de cada una), no una fuente de verdad aparte: se reconstruye entera en
+	 * {@link #load()} y se actualiza al cambiar de personaje. Existe solo porque {@code getServerSheet} se
+	 * llama en cada golpe de cada combate y recorrer todas las hojas ahí sería absurdo.</p>
+	 */
+	private static final Map<String, String> activeCharacter = new HashMap<>();
 	private static JsonObject current = null; //Currently active character sheet. Important for populating GUIs when they're opened and knowing which to save to.
 
 	@SubscribeEvent
@@ -143,6 +159,25 @@ public class SheetLoader {
 
 	private static final UUID CLASS_HP_MODIFIER_ID = UUID.fromString("6f2f8f0a-3b1a-4c8e-9d2a-1a2b3c4d5e6f");
 
+	/**
+	 * <p>PG máximos de una hoja por clase, nivel y Constitución (regla de media del SRD: dado completo a
+	 * nivel 1, media+1 por nivel siguiente). Extraído de {@link #applyClassHitPoints}, que solo sabía
+	 * aplicárselos a un {@code Player} real: una ficha de PNJ necesita el <em>número</em>, porque no tiene
+	 * atributo de salud de Minecraft donde reflejarlo.</p>
+	 */
+	public static int maxHitPointsFor(JsonObject sheet, int level) {
+		return CharacterRules.maxHitPointsFor(sheet, level);
+	}
+
+	/**
+	 * <p>Nivel de personaje de una hoja sin jugador detrás. La sobrecarga con {@code Player} cae al XP real
+	 * de Minecraft cuando el DM no fijó un nivel; una ficha de PNJ no tiene XP del que caer, así que empieza
+	 * en 1 — en 5e ningún personaje es de nivel 0.</p>
+	 */
+	public static int characterLevelOf(JsonObject sheet) {
+		return CharacterRules.levelOf(sheet);
+	}
+
 	private static int sheetInt(JsonObject sheet, String key, int fallback) {
 		if (!sheet.has(key)) return fallback;
 		try {
@@ -168,16 +203,7 @@ public class SheetLoader {
 		//la hoja, pero en cuanto el DM fija un nivel de personaje con /dndsheet setlevel (characterLevel),
 		//el PG máximo debe escalar con ESE nivel — si no, "desacoplar el nivel del XP" no desacoplaba nada
 		//para el PG máximo, justo la razón más obvia de tener un nivel de personaje en 5e.
-		int level = Math.max(1, characterLevelOf(sheet, entity));
-		int con = sheetInt(sheet, "constitution", 10);
-		int hitDie = Config.hitDieFor(sheet.has("characterClass") ? sheet.get("characterClass").getAsString() : "");
-		int conMod = Math.floorDiv(con - 10, 2);
-
-		int maxHp = hitDie + conMod;
-		for (int lvl = 2; lvl <= level; lvl++) {
-			maxHp += Math.max(1, (hitDie / 2 + 1) + conMod);
-		}
-		maxHp = Math.max(1, maxHp);
+		int maxHp = maxHitPointsFor(sheet, Math.max(1, characterLevelOf(sheet, entity)));
 
 		maxHealthAttr.removeModifier(CLASS_HP_MODIFIER_ID);
 		maxHealthAttr.addPermanentModifier(new AttributeModifier(CLASS_HP_MODIFIER_ID, "dndsheets class hit points", maxHp - maxHealthAttr.getBaseValue(), AttributeModifier.Operation.ADDITION));
@@ -228,8 +254,11 @@ public class SheetLoader {
 	}
 
 	private static void saveAll() {
+		//saveCharacter y NO saveServer: las claves de "sheets" ya son ids de personaje, y saveServer las
+		//volvería a pasar por activeCharacterOf. Para un jugador con un segundo personaje puesto, eso
+		//escribiría el contenido de su hoja vieja encima del archivo del personaje activo.
 		for (Map.Entry<String, JsonObject> entry : sheets.entrySet()) {
-			saveServer(entry.getValue(), entry.getKey());
+			saveCharacter(entry.getKey(), entry.getValue());
 		}
 	}
 
@@ -240,14 +269,63 @@ public class SheetLoader {
 		return current;
 	}
 
+	/**
+	 * <p>Hoja del personaje que ese jugador lleva ahora mismo. La firma no cambió al separar personaje de
+	 * jugador (Fase 1) a propósito: los ~68 sitios que la llaman quieren "la hoja de quien está jugando",
+	 * y esa pregunta sigue teniendo la misma respuesta — solo que ahora pasa por una indirección.</p>
+	 *
+	 * <p>También acepta un id de personaje directo (un PNJ, o un PJ que su dueño no lleva puesto): un id
+	 * sin binding se resuelve a sí mismo, así que no hace falta un método aparte para ese caso.</p>
+	 */
 	public static JsonObject getServerSheet(String uuid) {
-		if (sheets.containsKey(uuid)) {
-			return sheets.get(uuid);
+		String characterId = activeCharacterOf(uuid);
+		if (sheets.containsKey(characterId)) {
+			return sheets.get(characterId);
 		}
 		else {
 			DndsheetsMod.LOGGER.warn("Server character sheet retrieval failed. Make sure the UUID is correct and that you're not calling this from the client.");
 			return null;
 		}
+	}
+
+	/**
+	 * <p>Id del personaje activo de ese jugador, o el propio argumento si no hay ninguno registrado. Ese
+	 * fallback es lo que hace que una hoja anterior a Fase 1 (archivo llamado {@code <uuid>.json}, sin
+	 * campo {@code active}) siga resolviéndose sola, y también lo que permite pasar un id de personaje
+	 * directo a {@link #getServerSheet}.</p>
+	 */
+	public static String activeCharacterOf(String playerUuid) {
+		String characterId = activeCharacter.get(playerUuid);
+		return characterId != null ? characterId : playerUuid;
+	}
+
+	/** Hoja de un personaje por su id exacto, sin pasar por el binding de jugador activo. */
+	public static JsonObject getCharacterSheet(String characterId) {
+		return sheets.get(characterId);
+	}
+
+	/** Ids de las fichas sin dueño (PNJ), en orden estable. Para autocompletado y menús de DM. */
+	public static List<String> npcIds() {
+		List<String> npcs = new ArrayList<>();
+		for (Map.Entry<String, JsonObject> entry : sheets.entrySet()) {
+			if (ownerOf(entry.getKey(), entry.getValue()) == null) npcs.add(entry.getKey());
+		}
+		Collections.sort(npcs);
+		return npcs;
+	}
+
+	/**
+	 * <p>Ids de todos los personajes de ese jugador, el activo incluido, en orden estable por id. Recorre
+	 * todas las hojas en vez de mantener un índice: se llama al abrir un menú o escribir un comando, nunca
+	 * en un bucle de combate, y un índice más que mantener es justo el tipo de estado que se desincroniza.</p>
+	 */
+	public static List<String> charactersOf(String playerUuid) {
+		return CharacterRules.ownedBy(sheets, playerUuid);
+	}
+
+	/** Ver {@link CharacterRules#ownerOf} — la regla vive ahí para poder comprobarse fuera del juego. */
+	public static String ownerOf(String characterId, JsonObject sheet) {
+		return CharacterRules.ownerOf(characterId, sheet);
 	}
 
 	//Nombres por defecto que deja el propio mod cuando el jugador nunca escribió el suyo (ver
@@ -280,10 +358,14 @@ public class SheetLoader {
 	}
 
 	//Save the given sheet into a JSON file, making a new one if it doesn't exist, and updates the "sheets" HashMap.
+	//El id se resuelve por activeCharacterOf igual que en la lectura: los 3 llamadores pasan un UUID de
+	//jugador, y sin esto guardarían siempre sobre la hoja legacy en vez de sobre el personaje que lleva
+	//puesto. Un id de personaje que no sea de nadie (un PNJ) se resuelve a sí mismo y se guarda tal cual.
 	public static void saveServer(JsonObject sheet, String uuid) {
-		sheets.put(uuid, sheet);
-		
-		Path file = SHEETS_DIR.resolve(uuid + ".json").toAbsolutePath();
+		String characterId = activeCharacterOf(uuid);
+		sheets.put(characterId, sheet);
+
+		Path file = SHEETS_DIR.resolve(characterId + ".json").toAbsolutePath();
 		
 		try {
 			Files.createDirectories(SHEETS_DIR);
@@ -336,6 +418,160 @@ public class SheetLoader {
 			} catch (Exception e) {
 				DndsheetsMod.LOGGER.warn("Skipping corrupt character sheet file " + path + ": " + e);
 			}
+		}
+
+		rebuildActiveCharacters();
+	}
+
+	/**
+	 * <p>Reconstruye el binding jugador → personaje activo mirando el campo {@code active} de cada hoja.
+	 * Derivado, en vez de un índice guardado aparte: un índice puede desincronizarse de las hojas y dejar
+	 * a alguien sin poder jugar; el campo dentro de la propia hoja no puede contradecirse a sí mismo.</p>
+	 *
+	 * <p>Si un jugador acabara con dos hojas marcadas activas (por edición manual del JSON), gana la de id
+	 * menor y se avisa por log, en vez de elegir en silencio una distinta en cada arranque.</p>
+	 */
+	private static void rebuildActiveCharacters() {
+		activeCharacter.clear();
+		List<String> ids = new ArrayList<>(sheets.keySet());
+		Collections.sort(ids); //Orden estable: sin esto, dos hojas activas darían un ganador distinto en cada arranque.
+		for (String characterId : ids) {
+			JsonObject sheet = sheets.get(characterId);
+			if (sheet == null || !sheet.has("active") || !sheet.get("active").getAsBoolean()) continue;
+			String owner = ownerOf(characterId, sheet);
+			if (owner == null) continue; //PNJ: no lo lleva puesto ningún jugador.
+			String previous = activeCharacter.putIfAbsent(owner, characterId);
+			if (previous != null) {
+				DndsheetsMod.LOGGER.warn("El jugador {} tiene varias hojas marcadas como activas ({} y {}); se usa {}.", owner, previous, characterId, previous);
+			}
+		}
+	}
+
+	//--- Personajes múltiples (Fase 1) ------------------------------------------------------------------
+
+	//Id derivado del UUID del dueño: único entre jugadores sin necesitar un contador global, y sigue siendo
+	//un nombre de archivo válido en cualquier sistema.
+	private static String nextCharacterId(String playerUuid) {
+		return CharacterRules.nextCharacterId(sheets.keySet(), playerUuid);
+	}
+
+	/**
+	 * <p>Crea un personaje más para ese jugador, creado pero <b>no</b> activo: ponérselo es una acción
+	 * aparte y deliberada ({@link #switchCharacter}), no un efecto secundario de crearlo.</p>
+	 *
+	 * @return el id del personaje nuevo.
+	 */
+	public static String createCharacter(String playerUuid, String characterName) {
+		String characterId = nextCharacterId(playerUuid);
+		JsonObject sheet = new JsonObject();
+		sheet.addProperty("characterName", characterName);
+		sheet.addProperty("ownerUuid", playerUuid);
+		sheet.addProperty("active", false);
+		validateSheet(sheet);
+		sheets.put(characterId, sheet);
+		saveCharacter(characterId, sheet);
+		return characterId;
+	}
+
+	/**
+	 * <p>Hoja de PNJ: un personaje sin dueño, que nadie lleva puesto. Es lo que permite que el DM tenga
+	 * fichas de aliados y secundarios con las mismas reglas que un PJ, en vez de tener que convertirlos en
+	 * monstruos con bloque de estadísticas.</p>
+	 */
+	public static String createNpc(String characterName) {
+		String characterId = CharacterRules.npcIdFor(sheets.keySet(), characterName);
+
+		JsonObject sheet = new JsonObject();
+		sheet.addProperty("characterName", characterName);
+		sheet.addProperty("ownerUuid", ""); //Vacío, no ausente: "de nadie" tiene que distinguirse de "hoja legacy".
+		sheet.addProperty("active", false);
+		validateSheet(sheet);
+		sheets.put(characterId, sheet);
+		saveCharacter(characterId, sheet);
+		return characterId;
+	}
+
+	/**
+	 * <p>Pone a ese jugador a llevar otro de sus personajes. Devuelve false si el personaje no existe o no
+	 * es suyo — nadie puede ponerse la hoja de otro.</p>
+	 */
+	public static boolean switchCharacter(ServerPlayer player, String characterId) {
+		String playerUuid = player.getStringUUID();
+		JsonObject target = sheets.get(characterId);
+		if (target == null || !playerUuid.equals(ownerOf(characterId, target))) return false;
+
+		//Se desmarca el anterior y se marca el nuevo, para que rebuildActiveCharacters() reconstruya
+		//exactamente este mismo estado tras un reinicio.
+		for (String owned : charactersOf(playerUuid)) {
+			JsonObject sheet = sheets.get(owned);
+			boolean shouldBeActive = owned.equals(characterId);
+			if (sheet.has("active") && sheet.get("active").getAsBoolean() == shouldBeActive) continue;
+			sheet.addProperty("active", shouldBeActive);
+			//La hoja legacy no tenía ownerUuid; al tocarla hay que estampárselo, o dejaría de reconocerse como
+			//suya en cuanto el jugador lleve puesto un personaje con otro id.
+			if (!sheet.has("ownerUuid")) sheet.addProperty("ownerUuid", playerUuid);
+			saveCharacter(owned, sheet);
+		}
+		activeCharacter.put(playerUuid, characterId);
+
+		//El personaje nuevo tiene sus propios PG máximos (clase, nivel, Constitución) y su propia hoja en el
+		//cliente: sin estas dos líneas, cambiar de personaje dejaba al jugador con el cuerpo del anterior.
+		applyClassHitPoints(player, target);
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(target.toString().getBytes()));
+		return true;
+	}
+
+	/**
+	 * <p>Le da cuerpo a una ficha de PNJ: invoca una entidad en el mundo ligada a ese personaje. Sin esto,
+	 * {@link #createNpc} producía una hoja perfectamente válida que nadie podía usar para nada.</p>
+	 *
+	 * <p>El mob va sin IA, igual que un monstruo invocado: lo lleva el DM, no se mueve solo. La entidad es
+	 * el cuerpo; el personaje —PG, condiciones, características— vive en la hoja y le sobrevive.</p>
+	 *
+	 * @return la entidad invocada, o {@code null} si el personaje o el tipo de entidad no existen.
+	 */
+	public static net.minecraft.world.entity.Entity spawnNpc(net.minecraft.server.level.ServerLevel level,
+			double x, double y, double z, String characterId, String baseEntityId) {
+		JsonObject sheet = sheets.get(characterId);
+		if (sheet == null) return null;
+
+		net.minecraft.resources.ResourceLocation entityLoc = net.minecraft.resources.ResourceLocation.tryParse(baseEntityId);
+		net.minecraft.world.entity.EntityType<?> type = entityLoc == null ? null
+			: net.minecraftforge.registries.ForgeRegistries.ENTITY_TYPES.getValue(entityLoc);
+		if (type == null) return null;
+
+		net.minecraft.world.entity.Entity entity = type.create(level);
+		if (entity == null) return null;
+
+		String name = sheet.has("characterName") ? sheet.get("characterName").getAsString() : characterId;
+		entity.moveTo(x, y, z, 0, 0);
+		entity.setCustomName(Component.literal(name));
+		entity.setCustomNameVisible(true);
+		if (entity instanceof net.minecraft.world.entity.Mob mob) mob.setNoAi(true);
+		Combatant.tagAsCharacter(entity, characterId);
+
+		level.addFreshEntity(entity);
+
+		//Si se le da cuerpo a mitad de un combate ya en marcha, entra al orden de turnos ya mismo: si no,
+		//quedaría plantado sin poder actuar durante todo el encuentro.
+		TurnManager.addLateMonster(level, entity, name);
+		return entity;
+	}
+
+	//Mismo cuerpo que saveServer pero sin resolver el id: aquí ya se sabe sobre qué personaje se escribe, y
+	//pasarlo por activeCharacterOf lo redirigiría al personaje activo de su dueño.
+	private static void saveCharacter(String characterId, JsonObject sheet) {
+		sheets.put(characterId, sheet);
+		Path file = SHEETS_DIR.resolve(characterId + ".json").toAbsolutePath();
+		try {
+			Files.createDirectories(SHEETS_DIR);
+			Files.deleteIfExists(file);
+			String prettyJson = new GsonBuilder().setPrettyPrinting().create().toJson(sheet);
+			try (OutputStream out = Files.newOutputStream(file, StandardOpenOption.CREATE)) {
+				out.write(prettyJson.getBytes());
+			}
+		} catch (IOException e) {
+			DndsheetsMod.LOGGER.error("No se pudo guardar el personaje " + characterId + " en disco.", e);
 		}
 	}
 

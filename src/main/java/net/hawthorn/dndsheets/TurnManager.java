@@ -63,10 +63,10 @@ public class TurnManager {
 	//compatibilidad recuperado tras un reinicio no recordaba su NoAI/movimiento a medio turno, quedando en
 	//un estado más raro que simplemente perder el encuentro). Las sesiones de este mod son al momento; un
 	//reinicio de servidor a mitad de combate simplemente lo corta, como cualquier otra cosa en memoria.
-	public record Combatant(int entityId, String name, boolean isMonster, String playerUuid) {}
+	public record TurnEntry(int entityId, String name, boolean isMonster, String playerUuid) {}
 	public record StatusEffect(String name, String damageDice, int remainingTurns) {}
 
-	private static final List<Combatant> order = new ArrayList<>();
+	private static final List<TurnEntry> order = new ArrayList<>();
 	private static int currentIndex = -1;
 	private static int round = 0;
 	private static boolean active = false;
@@ -242,8 +242,22 @@ public class TurnManager {
 	//enemigo de otro mod) debe igualmente enganchar el modo turnos. Enemy es la interfaz vanilla que
 	//cualquier mob hostil (propio o de otro mod) ya implementa para que el resto de Minecraft/Forge lo
 	//trate como hostil — reusarla evita mantener una lista de compatibilidad aparte por mod.
+	/**
+	 * <p>Si cuenta como <b>enemigo</b>. Se usa para decidir cuándo termina un encuentro, así que un PNJ
+	 * aliado con ficha NO entra aquí a propósito: si entrara, un tabernero en la sala impediría que el
+	 * combate terminara nunca.</p>
+	 */
 	public static boolean isMonster(Entity entity) {
 		return MonsterRegistry.monsterIdOf(entity) != null || entity instanceof Enemy;
+	}
+
+	/**
+	 * <p>Si es un objetivo válido de las reglas de combate, sea enemigo o no. Un PNJ con ficha
+	 * ({@link Combatant#characterIdOf}) es atacable y curable con reglas de 5e completas sin ser un
+	 * enemigo — separar las dos preguntas es lo que permite tener aliados sin romper el fin de combate.</p>
+	 */
+	public static boolean isCombatTarget(Entity entity) {
+		return isMonster(entity) || Combatant.characterIdOf(entity) != null;
 	}
 
 	//Público: llamado justo tras markDefeated cuando un monstruo se borra A MANO en mitad de combate (Vara
@@ -296,7 +310,7 @@ public class TurnManager {
 		return active;
 	}
 
-	private static Combatant current() {
+	private static TurnEntry current() {
 		return currentIndex >= 0 && currentIndex < order.size() ? order.get(currentIndex) : null;
 	}
 
@@ -309,9 +323,15 @@ public class TurnManager {
 	 * recurso (espacios de conjuro, etc.), para no cobrar por una acción que se va a descartar.</p>
 	 */
 	public static boolean tryAct(Entity actor) {
+		//Antes que nada del modo turnos, y también fuera de combate: una condición que incapacita
+		//(paralizado, aturdido, petrificado, inconsciente) impide actuar aunque no haya iniciativa activa.
+		//Aquí y no en cada llamador porque TODA ruta de ataque —cuerpo a cuerpo, proyectil, PvP, hechizo—
+		//pasa ya por este mismo punto.
+		Combatant combatant = Combatant.of(actor);
+		if (combatant != null && combatant.cannotAct()) return false;
 		if (!active) return true;
-		Combatant currentCombatant = current();
-		if (currentCombatant == null || currentCombatant.entityId() != actor.getId()) return false;
+		TurnEntry currentEntry = current();
+		if (currentEntry == null || currentEntry.entityId() != actor.getId()) return false;
 		boolean acted = actedThisTurn.add(actor.getId());
 		//En cuanto se gasta la acción, el turno se acaba solo: nadie tiene que escribir /dndturns next.
 		//Se difiere un tick para que el chat/HUD del ataque que acaba de pasar se vea antes del "turno de...".
@@ -325,12 +345,21 @@ public class TurnManager {
 	//Mensaje uniforme para cuando tryAct() devuelve false, distinguiendo "no te toca" de "ya actuaste".
 	public static void notifyCantAct(Entity actor) {
 		if (!(actor instanceof Player player)) return;
-		Combatant currentCombatant = current();
-		boolean isCurrentActor = currentCombatant != null && currentCombatant.entityId() == actor.getId();
+		//Una condición incapacitante manda sobre cualquier otra explicación: decir "no es tu turno" a quien
+		//está paralizado es exactamente el tipo de mensaje que hace que un cambio que SÍ funciona parezca roto.
+		Combatant combatant = Combatant.of(actor);
+		if (combatant != null && combatant.cannotAct()) {
+			String blocking = combatant.conditions().stream()
+				.filter(Condition::preventsActions).findFirst().map(Condition::label).orElse("");
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.condition.cant_act", blocking).withStyle(ChatFormatting.RED));
+			return;
+		}
+		TurnEntry currentEntry = current();
+		boolean isCurrentActor = currentEntry != null && currentEntry.entityId() == actor.getId();
 		Component reason = isCurrentActor
 			? Component.translatable("chat.dndsheets.turn.already_acted")
 			: Component.translatable("chat.dndsheets.turn.not_your_turn",
-				currentCombatant != null ? currentCombatant.name() : Component.translatable("chat.dndsheets.turn.other_combatant"));
+				currentEntry != null ? currentEntry.name() : Component.translatable("chat.dndsheets.turn.other_combatant"));
 		player.sendSystemMessage(reason.copy().withStyle(ChatFormatting.RED));
 	}
 
@@ -341,7 +370,7 @@ public class TurnManager {
 	private static void scheduleAutoAdvance(ServerLevel level, int entityId) {
 		int scheduledToken = turnToken;
 		DndsheetsMod.queueServerWork(1, () -> {
-			Combatant stillCurrent = current();
+			TurnEntry stillCurrent = current();
 			if (!active || stillCurrent == null || stillCurrent.entityId() != entityId || turnToken != scheduledToken) return;
 			advance(level);
 		});
@@ -349,8 +378,8 @@ public class TurnManager {
 
 	//Usado por los ítems de comodidad (TurnItemManager): solo quien tiene el turno puede usarlos.
 	public static boolean isCurrentActor(Entity actor) {
-		Combatant currentCombatant = current();
-		return active && currentCombatant != null && currentCombatant.entityId() == actor.getId();
+		TurnEntry currentEntry = current();
+		return active && currentEntry != null && currentEntry.entityId() == actor.getId();
 	}
 
 	//"Deshacer turno": le devuelve su acción a quien tiene el turno ahora mismo, sin perder su lugar en
@@ -398,8 +427,8 @@ public class TurnManager {
 		}
 		rolled.sort((a, b) -> b.score() - a.score());
 
-		List<Combatant> combatants = new ArrayList<>();
-		for (Rolled r : rolled) combatants.add(new Combatant(r.entityId(), r.name() + " (" + r.score() + ")", r.isMonster(), r.playerUuid()));
+		List<TurnEntry> combatants = new ArrayList<>();
+		for (Rolled r : rolled) combatants.add(new TurnEntry(r.entityId(), r.name() + " (" + r.score() + ")", r.isMonster(), r.playerUuid()));
 
 		if (combatants.isEmpty()) return 0;
 
@@ -431,7 +460,7 @@ public class TurnManager {
 	}
 
 	private static boolean isInOrder(int entityId) {
-		for (Combatant combatant : order) if (combatant.entityId() == entityId) return true;
+		for (TurnEntry entry : order) if (entry.entityId() == entityId) return true;
 		return false;
 	}
 
@@ -455,7 +484,7 @@ public class TurnManager {
 		return block != null ? block.name() : entity.getName().getString();
 	}
 
-	public static void start(ServerLevel level, List<Combatant> rolledOrder) {
+	public static void start(ServerLevel level, List<TurnEntry> rolledOrder) {
 		if (debounce(level)) return;
 
 		//Reinicio en caliente (un encuentro ya activo, p.ej. /dndturns start disparado dos veces o un golpe
@@ -548,9 +577,9 @@ public class TurnManager {
 	//desde fuera del área).
 	public static void addLateMonster(ServerLevel level, Entity monster, String displayName) {
 		if (!active) return;
-		Combatant newCombatant = new Combatant(monster.getId(), displayName, true, null);
-		order.add(currentIndex + 1, newCombatant);
-		freeze(level, newCombatant); //Congela de entrada a un mob de compatibilidad recién sumado (no le toca aún); no-op para uno propio (ya NoAI desde que se invocó).
+		TurnEntry newEntry = new TurnEntry(monster.getId(), displayName, true, null);
+		order.add(currentIndex + 1, newEntry);
+		freeze(level, newEntry); //Congela de entrada a un mob de compatibilidad recién sumado (no le toca aún); no-op para uno propio (ya NoAI desde que se invocó).
 		broadcast(level, Component.translatable("chat.dndsheets.turn.joins_combat", displayName).withStyle(ChatFormatting.GOLD));
 		broadcastTurnState(level);
 	}
@@ -562,13 +591,13 @@ public class TurnManager {
 	//cualquier otro combatiente en espera, ya que no es su turno todavía. No hace nada si ya tenía puesto.
 	public static void addLatePlayerIfMissing(ServerLevel level, ServerPlayer player) {
 		if (!active) return;
-		for (Combatant combatant : order) {
-			if (combatant.entityId() == player.getId()) return;
+		for (TurnEntry entry : order) {
+			if (entry.entityId() == player.getId()) return;
 		}
 		String name = SheetLoader.characterNameOf(SheetLoader.getServerSheet(player.getStringUUID()), player);
-		Combatant newCombatant = new Combatant(player.getId(), name, false, player.getStringUUID());
-		order.add(currentIndex + 1, newCombatant);
-		freeze(level, newCombatant);
+		TurnEntry newEntry = new TurnEntry(player.getId(), name, false, player.getStringUUID());
+		order.add(currentIndex + 1, newEntry);
+		freeze(level, newEntry);
 		broadcast(level, Component.translatable("chat.dndsheets.turn.joins_combat", name).withStyle(ChatFormatting.GOLD));
 		broadcastTurnState(level);
 	}
@@ -582,12 +611,12 @@ public class TurnManager {
 		if (!active) return;
 		String uuid = player.getStringUUID();
 		for (int i = 0; i < order.size(); i++) {
-			Combatant old = order.get(i);
+			TurnEntry old = order.get(i);
 			if (!uuid.equals(old.playerUuid()) || old.entityId() == player.getId()) continue;
 
 			int oldId = old.entityId();
 			int newId = player.getId();
-			order.set(i, new Combatant(newId, old.name(), old.isMonster(), old.playerUuid()));
+			order.set(i, new TurnEntry(newId, old.name(), old.isMonster(), old.playerUuid()));
 			movementAnchors.rekey(oldId, newId);
 			if (effects.containsKey(oldId)) effects.put(newId, effects.remove(oldId));
 			if (actedThisTurn.remove(oldId)) actedThisTurn.add(newId);
@@ -598,7 +627,25 @@ public class TurnManager {
 	}
 
 	public static void applyEffect(Entity target, String name, String dice, int turns) {
+		applyEffect(target, name, dice, turns, null);
+	}
+
+	/**
+	 * @param source quien lo provoca, o {@code null} si no se sabe (el DM aplicándolo a mano). Solo importa
+	 *               para hechizado y asustado, las dos condiciones de 5e cuyo efecto depende de quién es la
+	 *               fuente — ver {@link Combatant#cannotAttack} y {@link Combatant#seesSourceOf}.
+	 */
+	public static void applyEffect(Entity target, String name, String dice, int turns, Entity source) {
 		effects.computeIfAbsent(target.getId(), id -> new ArrayList<>()).add(new StatusEffect(name, dice, turns));
+		//Si el nombre del efecto ES una condición de 5e ("derribado", "paralizado"...), además de contar los
+		//turnos y hacer su daño se aplica de verdad como condición, con sus consecuencias mecánicas. Así todo
+		//lo que ya sabía aplicar efectos —/dndturns effect, los ataques y hechizos de monstruo, los hechizos
+		//de jugador— empieza a producir condiciones reales sin un comando nuevo ni un campo nuevo en el JSON.
+		//Un nombre libre ("fuego", "sangrado") sigue siendo exactamente lo que era: un temporizador de daño.
+		Condition condition = Condition.fromLabel(name);
+		if (condition == null) return;
+		Combatant combatant = Combatant.of(target);
+		if (combatant != null) combatant.addCondition(condition, source == null ? Combatant.NO_SOURCE : source.getId());
 	}
 
 	//Único camino para quitar un efecto ANTES de que expire solo por tickEffects — hasta ahora solo se
@@ -607,7 +654,17 @@ public class TurnManager {
 	//concentración (falla la salvación de Constitución) — antes eso solo tiraba el dado y mandaba un
 	//mensaje, sin deshacer nada de verdad. No-op si el efecto ya no está (ya expiró, ya se quitó, o el
 	//combate ya terminó y effects está vacío).
-	public static void removeEffect(int entityId, String name) {
+	public static void removeEffect(ServerLevel level, int entityId, String name) {
+		//La condición se quita aunque el efecto ya no estuviera en el mapa: ambos caminos se aplicaron juntos
+		//en applyEffect, pero el temporizador vive en memoria y solo durante el combate, mientras que la
+		//condición se persiste. Sin esto, terminar un combate dejaba paralizado a alguien para siempre.
+		Condition condition = Condition.fromLabel(name);
+		if (condition != null && level != null) {
+			Entity target = level.getEntity(entityId);
+			Combatant combatant = target == null ? null : Combatant.of(target);
+			if (combatant != null) combatant.removeCondition(condition);
+		}
+
 		List<StatusEffect> current = effects.get(entityId);
 		if (current == null) return;
 		List<StatusEffect> remaining = current.stream().filter(e -> !e.name().equals(name)).toList();
@@ -637,7 +694,7 @@ public class TurnManager {
 
 	private static void advance(ServerLevel level) {
 		turnToken++; //Cualquier auto-avance encolado antes de este avance real queda invalidado.
-		Combatant finishing = current();
+		TurnEntry finishing = current();
 		if (finishing != null) freeze(level, finishing); //Se ancla donde termine su turno.
 		currentIndex++;
 		if (currentIndex >= order.size()) {
@@ -648,13 +705,13 @@ public class TurnManager {
 		beginTurn(level);
 	}
 
-	private static void freeze(ServerLevel level, Combatant combatant) {
-		Entity entity = level.getEntity(combatant.entityId());
+	private static void freeze(ServerLevel level, TurnEntry entry) {
+		Entity entity = level.getEntity(entry.entityId());
 		if (entity != null) {
-			movementAnchors.pin(level, combatant.entityId(), entity.position());
-			if (combatant.isMonster() && MonsterRegistry.statBlockOf(entity) == null) setCompatMobActive(entity, false);
+			movementAnchors.pin(level, entry.entityId(), entity.position());
+			if (entry.isMonster() && MonsterRegistry.statBlockOf(entity) == null) setCompatMobActive(entity, false);
 		}
-		clearGlow(level, combatant);
+		clearGlow(level, entry);
 	}
 
 	//Ayuda visual (sección "para jugadores nuevos"): a quien tiene el turno se lo marca con el efecto
@@ -665,9 +722,9 @@ public class TurnManager {
 		if (entity instanceof LivingEntity living) living.addEffect(new MobEffectInstance(MobEffects.GLOWING, 30 * 20 * 60, 0, false, false));
 	}
 
-	private static void clearGlow(ServerLevel level, Combatant combatant) {
-		if (combatant == null) return;
-		Entity entity = level.getEntity(combatant.entityId());
+	private static void clearGlow(ServerLevel level, TurnEntry entry) {
+		if (entry == null) return;
+		Entity entity = level.getEntity(entry.entityId());
 		if (entity instanceof LivingEntity living) living.removeEffect(MobEffects.GLOWING);
 	}
 
@@ -678,34 +735,34 @@ public class TurnManager {
 			return;
 		}
 
-		Combatant combatant = current();
-		if (combatant == null) return;
-		actedThisTurn.remove(combatant.entityId()); //Turno nuevo, acción nueva disponible.
-		reactionUsed.remove(combatant.entityId()); //Turno nuevo, reacción nueva disponible (regla real de 5e).
-		movementAnchors.release(combatant.entityId()); //A quien le toca ahora, se le suelta el ancla.
+		TurnEntry entry = current();
+		if (entry == null) return;
+		actedThisTurn.remove(entry.entityId()); //Turno nuevo, acción nueva disponible.
+		reactionUsed.remove(entry.entityId()); //Turno nuevo, reacción nueva disponible (regla real de 5e).
+		movementAnchors.release(entry.entityId()); //A quien le toca ahora, se le suelta el ancla.
 
-		Entity entity = level.getEntity(combatant.entityId());
+		Entity entity = level.getEntity(entry.entityId());
 		if (entity == null || !entity.isAlive()) {
 			//Ya no puede actuar (murió, se desconectó...): nadie va a escribir /dndturns next por él, así
 			//que se salta su turno solo en vez de dejar el encuentro colgado para siempre.
-			scheduleAutoAdvance(level, combatant.entityId());
+			scheduleAutoAdvance(level, entry.entityId());
 			return;
 		}
 
-		tickEffects(level, entity, combatant);
+		tickEffects(level, entity, entry);
 		if (!entity.isAlive()) { //El propio efecto de estado (veneno...) pudo haberlo matado recién.
-			scheduleAutoAdvance(level, combatant.entityId());
+			scheduleAutoAdvance(level, entry.entityId());
 			return;
 		}
 
 		glow(entity);
 		broadcast(level, Component.translatable("chat.dndsheets.turn.round_header", round).withStyle(ChatFormatting.AQUA)
-			.append(Component.literal(combatant.name()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)));
+			.append(Component.literal(entry.name()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)));
 
 		if (entity instanceof ServerPlayer serverPlayer) {
 			CombatFx.actionBar(serverPlayer, Component.translatable("chat.dndsheets.turn.your_turn").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
 			opportunityAttacks.seedReachState(level, serverPlayer, order);
-			movementAnchors.beginMovementBudget(level, combatant.entityId(), serverPlayer.position());
+			movementAnchors.beginMovementBudget(level, entry.entityId(), serverPlayer.position());
 			broadcastTurnState(level);
 		} else if (MonsterRegistry.statBlockOf(entity) != null) {
 			//Sin DM en directo, un monstruo no puede esperar a que alguien le clique con la Vara de DM:
@@ -723,8 +780,8 @@ public class TurnManager {
 			//a llamar por él, y por si ninguna de las dos pasa nunca (el slime más pequeño, p.ej., jamás hace
 			//daño al tocar por diseño vanilla — ver mobTurnStartTick), un límite de tiempo se lo corta igual.
 			setCompatMobActive(entity, true);
-			movementAnchors.beginMovementBudget(level, combatant.entityId(), entity.position());
-			mobTurnStartTick.put(combatant.entityId(), level.getGameTime());
+			movementAnchors.beginMovementBudget(level, entry.entityId(), entity.position());
+			mobTurnStartTick.put(entry.entityId(), level.getGameTime());
 			broadcastTurnState(level);
 		}
 	}
@@ -735,11 +792,11 @@ public class TurnManager {
 	//monstruos (modo turnos usado para otra cosa, p.ej. una escena sin combate real).
 	private static boolean allEnemiesDefeated(ServerLevel level) {
 		boolean hadMonster = false;
-		for (Combatant combatant : order) {
-			if (!combatant.isMonster()) continue;
+		for (TurnEntry entry : order) {
+			if (!entry.isMonster()) continue;
 			hadMonster = true;
-			if (confirmedDefeated.contains(combatant.entityId())) continue; //Muerto/borrado de verdad, confirmado.
-			Entity entity = level.getEntity(combatant.entityId());
+			if (confirmedDefeated.contains(entry.entityId())) continue; //Muerto/borrado de verdad, confirmado.
+			Entity entity = level.getEntity(entry.entityId());
 			//entity==null sin confirmación de arriba puede ser un chunk descargado, no una muerte: se asume
 			//que sigue en pie para no terminar el combate de más (ver markDefeated).
 			if (entity == null || entity.isAlive()) return false;
@@ -754,10 +811,10 @@ public class TurnManager {
 	//pueda reanimar) ni desconexión (reconcilePlayerEntity ya asume que puede volver).
 	private static boolean allPlayersDefeated() {
 		boolean hadPlayer = false;
-		for (Combatant combatant : order) {
-			if (combatant.isMonster()) continue;
+		for (TurnEntry entry : order) {
+			if (entry.isMonster()) continue;
 			hadPlayer = true;
-			if (!confirmedDefeated.contains(combatant.entityId())) return false;
+			if (!confirmedDefeated.contains(entry.entityId())) return false;
 		}
 		return hadPlayer;
 	}
@@ -778,17 +835,17 @@ public class TurnManager {
 	//Se manda cada vez que algo visible cambia (arranca, avanza, alguien gasta/deshace su acción) — ningún
 	//cliente tiene que pedirlo, siempre llega solo.
 	private static void broadcastTurnState(ServerLevel level) {
-		Combatant combatant = current();
-		String name = combatant != null ? combatant.name() : "";
-		int entityId = combatant != null ? combatant.entityId() : -1;
-		boolean actioned = combatant != null && actedThisTurn.contains(combatant.entityId());
-		Vec3 origin = combatant != null ? movementAnchors.originOf(combatant.entityId()) : Vec3.ZERO;
+		TurnEntry entry = current();
+		String name = entry != null ? entry.name() : "";
+		int entityId = entry != null ? entry.entityId() : -1;
+		boolean actioned = entry != null && actedThisTurn.contains(entry.entityId());
+		Vec3 origin = entry != null ? movementAnchors.originOf(entry.entityId()) : Vec3.ZERO;
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.ALL.noArg(),
 			new TurnStateMessage(active, round, name, entityId, actioned, origin.x, origin.y, origin.z));
 	}
 
-	private static void tickEffects(ServerLevel level, Entity entity, Combatant combatant) {
-		List<StatusEffect> active_ = effects.get(combatant.entityId());
+	private static void tickEffects(ServerLevel level, Entity entity, TurnEntry entry) {
+		List<StatusEffect> active_ = effects.get(entry.entityId());
 		if (active_ == null || active_.isEmpty()) return;
 
 		List<StatusEffect> remaining = new ArrayList<>();
@@ -797,17 +854,25 @@ public class TurnManager {
 			if (outcome.result() != null) {
 				int amount = outcome.result().getValue();
 				SpellCastManager.applyDamage(entity, amount, effect.name());
-				broadcast(level, Component.translatable("chat.dndsheets.turn.effect_tick", combatant.name(), effect.name(), outcome.formatted()).withStyle(ChatFormatting.DARK_GREEN));
+				broadcast(level, Component.translatable("chat.dndsheets.turn.effect_tick", entry.name(), effect.name(), outcome.formatted()).withStyle(ChatFormatting.DARK_GREEN));
 			}
 			int left = effect.remainingTurns() - 1;
 			if (left > 0) {
 				remaining.add(new StatusEffect(effect.name(), effect.damageDice(), left));
 			} else {
-				broadcast(level, Component.translatable("chat.dndsheets.turn.effect_ended", combatant.name(), effect.name()).withStyle(ChatFormatting.GRAY));
+				//Se acabó el contador: si el efecto era una condición de verdad, se levanta también la
+				//condición. Sin esto expiraba el temporizador pero el personaje se quedaba derribado o
+				//paralizado para siempre, porque la condición se persiste y el temporizador no.
+				Condition condition = Condition.fromLabel(effect.name());
+				if (condition != null) {
+					Combatant combatant = Combatant.of(entity);
+					if (combatant != null) combatant.removeCondition(condition);
+				}
+				broadcast(level, Component.translatable("chat.dndsheets.turn.effect_ended", entry.name(), effect.name()).withStyle(ChatFormatting.GRAY));
 			}
 		}
-		if (remaining.isEmpty()) effects.remove(combatant.entityId());
-		else effects.put(combatant.entityId(), remaining);
+		if (remaining.isEmpty()) effects.remove(entry.entityId());
+		else effects.put(entry.entityId(), remaining);
 	}
 
 	//ponytail: un solo guardado global para todos los mutadores en vez de uno por encuentro — solo se
@@ -845,8 +910,8 @@ public class TurnManager {
 
 		if (movementAnchors.isAnchorHandledThisTick(player)) return;
 
-		Combatant currentCombatant = current();
-		if (currentCombatant != null && currentCombatant.entityId() == player.getId() && player.level() instanceof ServerLevel level) {
+		TurnEntry currentEntry = current();
+		if (currentEntry != null && currentEntry.entityId() == player.getId() && player.level() instanceof ServerLevel level) {
 			opportunityAttacks.checkOpportunityAttacks(level, player, order);
 			movementAnchors.enforceMovementBudget(player);
 		}
