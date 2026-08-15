@@ -15,9 +15,11 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.hawthorn.dndsheets.network.SheetClientMessage;
+import net.hawthorn.dndsheets.network.TutorialOpenMessage;
 import net.hawthorn.dndsheets.api.event.SheetValidateEvent;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -86,7 +88,13 @@ public class SheetLoader {
 		//FMLDedicatedServerSetupEvent.serverLoad nunca dispara); en cualquier evento posterior las hojas ya
 		//están en memoria (makeNew/saveServer las mantiene actualizadas ahí) y no hace falta releerlas.
 		if (sheets.isEmpty()) load();
-		if (SheetLoader.getServerSheet(uuidString) == null) {
+		//Verdadero solo la primerísima vez que esta UUID recibe una hoja — nunca vuelve a serlo (queda en
+		//memoria/disco desde acá en adelante), y sigue siendo falso para un jugador ya existente incluso tras
+		//reiniciar el servidor (load() ya repobló "sheets" desde disco antes de esta línea). Es, sin
+		//necesidad de ningún campo nuevo en la hoja, exactamente la señal de "está entrando al mundo por
+		//primera vez" que necesita el tutorial de abajo.
+		boolean brandNew = SheetLoader.getServerSheet(uuidString) == null;
+		if (brandNew) {
 			makeNew("New Sheet", uuidString);
 		};
 
@@ -104,6 +112,21 @@ public class SheetLoader {
 			DndsheetsMod.LOGGER.error("Fallo al enviar la hoja al jugador que se conectó.", e);
 		}
 
+		//Primer ingreso al mundo: abre la Guía sola, con un pequeño retraso para no pelear con la pantalla
+		//de carga del mundo (todavía visible en el cliente justo cuando dispara este evento). Reengancha al
+		//jugador por UUID al disparar en vez de capturar "entity" directo — mismo patrón que
+		//BarbarianRageManager.activate — por si se desconecta durante los ~3 segundos de espera.
+		if (brandNew) {
+			UUID playerId = uuid;
+			MinecraftServer server = entity.getServer();
+			boolean isDm = entity.hasPermissions(2);
+			DndsheetsMod.queueServerWork(60, () -> {
+				ServerPlayer stillHere = server.getPlayerList().getPlayer(playerId);
+				if (stillHere != null) {
+					DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> stillHere), new TutorialOpenMessage(isDm));
+				}
+			});
+		}
 	}
 
 	//Sin esto no había ninguna forma de enterarse de la tecla H (u P para operadores) salvo que alguien te

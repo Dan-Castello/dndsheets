@@ -119,6 +119,7 @@ public class DndsheetsMod {
 		addNetworkMessage(TurnControlMessage.class, TurnControlMessage::buffer, TurnControlMessage::new, TurnControlMessage::handler);
 		addNetworkMessage(TurnEffectApplyMessage.class, TurnEffectApplyMessage::buffer, TurnEffectApplyMessage::new, TurnEffectApplyMessage::handler);
 		addNetworkMessage(TurnStateMessage.class, TurnStateMessage::buffer, TurnStateMessage::new, TurnStateMessage::handler);
+		addNetworkMessage(TutorialOpenMessage.class, TutorialOpenMessage::buffer, TutorialOpenMessage::new, TutorialOpenMessage::handler);
 	}
 
 	//Patrón repetido en los mensajes cliente(DM)->servidor que actúan sobre OTRO jugador (SheetAdjustMessage,

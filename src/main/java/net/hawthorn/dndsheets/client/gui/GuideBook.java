@@ -23,6 +23,7 @@ public class GuideBook {
 		"gui.dndsheets.guide.page.death_saves",
 		"gui.dndsheets.guide.page.spells",
 		"gui.dndsheets.guide.page.distance",
+		"gui.dndsheets.guide.page.class_items",
 	};
 
 	private static final String[] DM_PAGES = {
@@ -33,6 +34,8 @@ public class GuideBook {
 		"gui.dndsheets.guide.page.dm_notes",
 		"gui.dndsheets.guide.page.dm_turns",
 		"gui.dndsheets.guide.page.dm_content_packs",
+		"gui.dndsheets.guide.page.dm_sheet_admin",
+		"gui.dndsheets.guide.page.dm_more_packs",
 		"gui.dndsheets.guide.page.dm_commands",
 	};
 
