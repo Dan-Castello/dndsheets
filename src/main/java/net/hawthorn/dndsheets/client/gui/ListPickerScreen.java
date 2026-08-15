@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.client.gui.components.ButtonListWidget;
+import net.hawthorn.dndsheets.client.gui.components.TomeButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -89,7 +90,10 @@ public abstract class ListPickerScreen extends Screen {
 	}
 
 	protected final Button addRow(Component label, Button.OnPress onPress) {
-		Button button = Button.builder(label, onPress).bounds(0, 0, buttonWidth(), BUTTON_HEIGHT).build();
+		//TomeButton y no Button: el botón gris de piedra de vanilla sobre un panel de cuero se lee como un
+		//widget prestado de otra interfaz. Al cambiarlo aquí se repintan por dentro las más de cuarenta
+		//pantallas que cuelgan de esta base, igual que GuiStyle hizo con sus marcos.
+		Button button = TomeButton.of(label, onPress, 0, 0, buttonWidth(), BUTTON_HEIGHT);
 		this.addWidget(button);
 		//Sin buscador: se agrega directo, como siempre. Con buscador, applyFilter() decide qué entra a
 		//"list" después de que buildRows() termine de llamar a addRow() para todas las filas.
@@ -125,8 +129,8 @@ public abstract class ListPickerScreen extends Screen {
 		if (parent != null) {
 			int left = (this.width - buttonWidth()) / 2 - PANEL_PADDING;
 			int top = 16 - PANEL_PADDING;
-			this.addRenderableWidget(Button.builder(Component.literal("< Atrás"), b -> this.onClose())
-				.bounds(left + 2, top + 2, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT).build());
+			this.addRenderableWidget(TomeButton.of(Component.literal("< Atrás"), b -> this.onClose(),
+				left + 2, top + 2, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT));
 		}
 	}
 
@@ -179,6 +183,9 @@ public abstract class ListPickerScreen extends Screen {
 		GuiStyle.panel(guiGraphics, left, top, right, bottom);
 
 		guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 16, GuiStyle.TITLE_COLOR);
+		//Filete bajo el título: separa la cabecera del contenido sin gastar una fila entera de alto, que es
+		//lo que costaría un separador de verdad en una lista con scroll.
+		GuiStyle.rule(guiGraphics, left + 8, right - 8, 28);
 
 		Component empty = emptyMessage();
 		if (empty != null) {

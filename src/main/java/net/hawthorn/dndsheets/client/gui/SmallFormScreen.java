@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets.client.gui;
 import net.hawthorn.dndsheets.client.gui.components.DirectionalCycleButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.hawthorn.dndsheets.client.gui.components.TomeButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -74,13 +75,15 @@ public abstract class SmallFormScreen extends Screen {
 		buildForm();
 
 		int y = nextRowY();
-		this.addRenderableWidget(Button.builder(Component.literal("Confirmar"), button -> {
+		//TomeButton, igual que las filas de ListPickerScreen: los dos son las únicas fábricas de botones
+		//del mod, así que el aspecto se cambia en dos sitios y llega a todas las pantallas.
+		this.addRenderableWidget(TomeButton.of(Component.literal("Confirmar"), button -> {
 			onConfirm();
 			this.onClose();
-		}).bounds(centerX - FIELD_WIDTH / 2, y, FIELD_WIDTH / 2 - 2, FIELD_HEIGHT).build());
+		}, centerX - FIELD_WIDTH / 2, y, FIELD_WIDTH / 2 - 2, FIELD_HEIGHT));
 
-		this.addRenderableWidget(Button.builder(Component.literal("Cancelar"), button -> this.onClose())
-			.bounds(centerX + 2, y, FIELD_WIDTH / 2 - 2, FIELD_HEIGHT).build());
+		this.addRenderableWidget(TomeButton.of(Component.literal("Cancelar"), button -> this.onClose(),
+			centerX + 2, y, FIELD_WIDTH / 2 - 2, FIELD_HEIGHT));
 
 		formBottom = y + FIELD_HEIGHT + 10;
 
@@ -89,10 +92,10 @@ public abstract class SmallFormScreen extends Screen {
 		//fila "Borrar: X" extra por cada elemento — ocupaba el doble de alto que hacía falta).
 		if (showDeleteButton()) {
 			int deleteY = nextRowY();
-			this.addRenderableWidget(Button.builder(deleteButtonLabel(), button -> {
+			this.addRenderableWidget(TomeButton.of(deleteButtonLabel(), button -> {
 				onDelete();
 				this.onClose();
-			}).bounds(centerX - FIELD_WIDTH / 2, deleteY, FIELD_WIDTH, FIELD_HEIGHT).build());
+			}, centerX - FIELD_WIDTH / 2, deleteY, FIELD_WIDTH, FIELD_HEIGHT));
 			formBottom = deleteY + FIELD_HEIGHT + 10;
 		}
 	}

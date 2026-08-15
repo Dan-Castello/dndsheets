@@ -36,6 +36,9 @@ public abstract class ModalDialogScreen extends Screen {
 	//x/y relativos a la esquina superior izquierda del diálogo, igual que las coordenadas que ya usaba
 	//cada pantalla a mano contra su propio "left"/"top".
 	protected Button addModalButton(int x, int y, int width, int height, Component message, Button.OnPress onPress) {
-		return this.addRenderableWidget(Button.builder(message, onPress).bounds(dialogLeft() + x, dialogTop() + y, width, height).build());
+		//TomeButton: tercer y último sitio del mod que fabrica botones, para que los diálogos no se queden
+		//con el gris de vanilla mientras listas y formularios llevan el pergamino.
+		return this.addRenderableWidget(net.hawthorn.dndsheets.client.gui.components.TomeButton.of(
+			message, onPress, dialogLeft() + x, dialogTop() + y, width, height));
 	}
 }
