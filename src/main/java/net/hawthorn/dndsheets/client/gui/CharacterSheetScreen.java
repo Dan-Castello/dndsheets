@@ -167,7 +167,11 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 	//Color del texto de los campos que se rellenan solos (PG, CA, nivel, hambre, competencia): ámbar, para
 	//distinguirlos de un vistazo de los campos en blanco normal que sí se pueden escribir a mano.
-	private static final int AUTO_FIELD_COLOR = 0xFFD37F;
+	//Tinta sobre pergamino: marrón muy oscuro en vez de negro puro, que sobre un fondo cálido se ve duro.
+	private static final int INK_COLOR = 0x2A2118;
+	//Ámbar quemado para lo que se rellena solo. El ámbar claro de antes (0xFFD37F) estaba pensado para un
+	//fondo oscuro; sobre pergamino no tenía contraste suficiente para leerse.
+	private static final int AUTO_FIELD_COLOR = 0x8A5A12;
 
 	//Raza/Trasfondo/Clase eran texto libre: un jugador nuevo no tiene forma de adivinar qué escribir, y en
 	//el caso de Clase encima importa de verdad (Config.hitDieFor, WarlockPactMagicManager,
@@ -452,8 +456,12 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 	@Override
 	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-		final int lightColor = 0xFFFFFF;
-		final int darkColor = 0x1F1F1F;
+		//UNA sola tinta. Antes eran dos —lightColor blanco y darkColor casi negro— repartidos sin criterio
+		//aparente entre etiquetas vecinas, y el fondo era BLANCO: la mayoría de las etiquetas eran blanco
+		//sobre blanco, invisibles. Lo que las tapaba era el texto horneado en el PNG, que además estaba en
+		//inglés y duplicaba a estas. Con el pergamino nuevo, una tinta oscura las hace legibles todas.
+		final int lightColor = INK_COLOR;
+		final int darkColor = INK_COLOR;
 		guiGraphics.drawString(this.font, LABEL_NAME, NAME_OFFSET_X, NAME_OFFSET_Y - 10, lightColor, false);
 
 		switch (panelActive) {

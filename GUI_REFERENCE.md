@@ -27,6 +27,8 @@ Documentados una sola vez aquí; las pantallas que los usan solo indican qué in
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/GuiStyle.java`
 - **Propósito:** único sitio que define el aspecto de las pantallas "planas" (sin textura de fondo): un panel `0xCC101010` con borde de 1px `0xFF3E3E3E` (método estático `panel(guiGraphics, left, top, right, bottom)`), más las constantes de color `TITLE_COLOR` (`0xFFFFFF`), `SUBTITLE_COLOR` (`0xAAAAAA`) y `MUTED_COLOR` (`0x888888`, texto de estado vacío). Antes cada pantalla flotaba con sus botones sueltos sobre el fondo borroso vanilla sin ningún panel — la única excepción ad hoc era el relleno manual que tenía `DeathSaveScreen`.
 - **Consumido por:** `ListPickerScreen`, `ModalDialogScreen.renderPanel()`, `SmallFormScreen`, `SheetAdjustScreen` — es decir, todas las pantallas sin textura del mod.
+- **Identidad visual (rediseño):** tomo encuadernado en cuero con cantoneras de latón, dibujado con el **biselado de Minecraft** (claro arriba/izquierda, oscuro abajo/derecha). El tema de D&D entra por el color y las cantoneras, no por romper esa gramática — un panel que no bisela se lee como una ventana pegada encima del juego. El relleno es casi opaco a propósito: translúcido sobre un bioma nevado deja el texto ilegible.
+- **Colores:** `TITLE_COLOR` es pergamino y no blanco puro (el blanco absoluto sobre cuero oscuro vibra); `ACCENT_COLOR` es latón envejecido. `rule()` dibuja un filete horizontal para separar secciones sin que cada pantalla invente su propio color de línea.
 
 ### ListPickerScreen
 
@@ -86,6 +88,15 @@ Solo 3 de las 25 pantallas son `AbstractContainerScreen` registradas como menú 
 ---
 
 ## CharacterSheetScreen
+
+**Fondos (rediseño).** Los tres PNG (`character_sheet.png`, `_2`, `_3`) se generan con `tools/make_sheet_bg.py`: pergamino envejecido dentro del mismo marco de cuero y latón que dibuja `GuiStyle`. Se dibujan a 4× (1592×1152) del tamaño lógico del blit (398×288) porque Minecraft los reduce, y ese supersampling evita que el grano se vea a bloques con GUI Scale alto.
+
+Dos cosas que el fondo **ya no lleva**, y no es un olvido:
+
+- **Texto.** Las etiquetas las dibuja `renderLabels()` desde claves de traducción. Tenerlas también en el PNG las duplicaba y las dejaba en inglés para siempre.
+- **Casillas.** Los `EditBox` de Minecraft pintan su propio marco encima, así que las casillas del fondo eran redundantes — y obligaban a que el dibujo cuadrara al píxel con unas coordenadas que solo viven en el código. Sin ellas no hay nada que alinear ni que se pueda desalinear al mover un campo.
+
+**Tinta.** `renderLabels()` usaba dos colores (`lightColor` blanco y `darkColor` casi negro) repartidos sin criterio aparente entre etiquetas vecinas, sobre un fondo **blanco**: la mayoría eran blanco sobre blanco, invisibles, y lo que las tapaba era el texto horneado del PNG. Ahora hay una sola tinta (`INK_COLOR`), y `AUTO_FIELD_COLOR` pasó de ámbar claro (pensado para fondo oscuro) a ámbar quemado, legible sobre pergamino.
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/CharacterSheetScreen.java`
 - **Tipo:** `AbstractContainerScreen<CharacterSheetMenu>` (registrada como menú)
