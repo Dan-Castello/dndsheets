@@ -117,7 +117,17 @@ public class JsonContentSelfTest {
 		//Un muro no se resuelve al lanzarlo: se coloca y daña por asaltos (ver WallManager). Si alguien lo
 		//degradara a esfera, explotaría una vez en la cara del lanzador en vez de quedarse ahí.
 		SpellRegistry.Spell wall = SpellRegistry.get("dndsheets:wall_of_fire");
-		assertTrue(wall != null && wall.isWall(), "wall_of_fire debería ser un muro");
+		assertTrue(wall != null && wall.isZone(), "wall_of_fire debería ser una zona persistente");
+		//Lo que define una zona es la PERSISTENCIA, no la forma: un muro y un Rayo de Luna son la misma
+		//capacidad con geometría distinta. Si alguien atara isZone() a la forma otra vez, el Rayo de Luna
+		//volvería a resolverse una sola vez y a no volver a actuar.
+		SpellRegistry.Spell beam = SpellRegistry.get("dndsheets:moonbeam");
+		assertTrue(beam != null && beam.isZone(), "moonbeam debería ser una zona persistente");
+		assertTrue("sphere".equals(beam.aoeShape()), "y su forma es esférica, no de muro");
+		assertTrue(!beam.followsCaster(), "el Rayo de Luna se queda donde se puso");
+		SpellRegistry.Spell guardians2 = SpellRegistry.get("dndsheets:spirit_guardians");
+		assertTrue(guardians2 != null && guardians2.followsCaster(),
+			"los Guardianes Espirituales sí se recentran en el lanzador cada asalto");
 		assertTrue(wall.concentration(), "un muro es de concentración: perderla tiene que apagarlo");
 		assertTrue(wall.aoeRadius() > 0, "un muro necesita longitud");
 

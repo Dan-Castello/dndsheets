@@ -47,7 +47,7 @@ public class ConcentrationManager {
 	public static void stopConcentrating(ServerPlayer caster) {
 		//Los muros son de concentración: perderla los apaga. Sin esto, fallar la salvación de Constitución
 		//dejaba el muro ardiendo igual — el mismo fallo que ya se corrigió una vez para los efectos de estado.
-		WallManager.removeFor(caster.getUUID());
+		ZoneManager.removeFor(caster.getUUID());
 		//Los buffs de arma tambien son de concentracion (Favor Divino, Castigo Marcador).
 		WeaponBuffManager.clear(SheetLoader.getServerSheet(caster.getStringUUID()));
 		//Las invocaciones tambien: Arma Espiritual y Esfera Flamigera son de concentracion.

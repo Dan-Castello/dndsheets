@@ -71,7 +71,7 @@ public class SummonManager {
 			CompoundTag data = entity.getPersistentData();
 			CompoundTag tag = data.getCompound("dndsheets"); //Mismo compartimento que el resto del estado NBT.
 			tag.putString(OWNER_KEY, caster.getStringUUID());
-			tag.putInt(ROUNDS_KEY, WallManager.DEFAULT_ROUNDS);
+			tag.putInt(ROUNDS_KEY, ZoneManager.DEFAULT_ROUNDS);
 			data.put("dndsheets", tag);
 		});
 		if (summoned == null) return null;

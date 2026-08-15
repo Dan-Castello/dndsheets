@@ -3,6 +3,6 @@
   { "id": "dndsheets:magic_missile", "name": "Misil Mágico", "level": 1, "mode": "attack", "castingAbility": "int", "dice": "3d4", "damageType": "fuerza" },
   { "id": "dndsheets:fireball", "name": "Bola de Fuego", "level": 3, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "8d6", "halfOnSave": true, "damageType": "fuego", "aoeRadius": 6 },
   { "id": "dndsheets:sacred_flame", "name": "Llama Sagrada", "level": 0, "mode": "save", "castingAbility": "wis", "saveAbility": "dex", "dice": "1d8", "halfOnSave": false, "damageType": "radiante" },
-  { "id": "dndsheets:spirit_guardians", "name": "Guardianes Espirituales", "level": 3, "mode": "save", "castingAbility": "wis", "saveAbility": "wis", "dice": "3d8", "halfOnSave": true, "damageType": "radiante", "aoeRadius": 3, "concentration": true },
+  { "id": "dndsheets:spirit_guardians", "name": "Guardianes Espirituales", "level": 3, "mode": "zone", "castingAbility": "wis", "saveAbility": "wis", "dice": "3d8", "halfOnSave": true, "damageType": "radiante", "concentration": true, "aoeRadius": 3, "aoeShape": "sphere", "followsCaster": true },
   { "id": "dndsheets:cure_wounds", "name": "Curar Heridas", "level": 1, "mode": "heal", "castingAbility": "wis", "dice": "1d8 + $wis" }
 ]

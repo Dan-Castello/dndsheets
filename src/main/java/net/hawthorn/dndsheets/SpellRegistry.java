@@ -28,7 +28,7 @@ public class SpellRegistry {
 	public record Spell(
 		String id, String name, int level, String mode,
 		String castingAbility, String saveAbility, String dice, boolean halfOnSave, String damageType,
-		boolean concentration, int aoeRadius, String aoeShape, String summonEntityId,
+		boolean concentration, int aoeRadius, String aoeShape, String summonEntityId, boolean followsCasterFlag,
 		String effectName, String effectDice, int effectTurns
 	) {
 		/**
@@ -37,14 +37,21 @@ public class SpellRegistry {
 		 * LANZADOR y salen hacia donde mira. Tratar un cono como radio golpearía a todo lo que tiene detrás,
 		 * que es exactamente por qué Rayo y Cono de Frío no se pudieron importar hasta ahora.</p>
 		 */
-		public boolean originatesAtCaster() { return "line".equals(aoeShape) || "cone".equals(aoeShape) || isWall(); }
+		public boolean originatesAtCaster() { return "line".equals(aoeShape) || "cone".equals(aoeShape) || isZone(); }
 
 		/**
-		 * <p>Un muro no se resuelve al lanzarlo: se coloca y daña a quien empiece su turno dentro durante
-		 * varios asaltos (ver {@link WallManager}). Es una capacidad distinta de una forma de area, aunque
-		 * comparta la geometria.</p>
+		 * <p>Zona persistente: no se resuelve al lanzarla, se coloca y daña a quien empiece su turno dentro
+		 * durante varios asaltos (ver {@link ZoneManager}). Lo que la define es la PERSISTENCIA, no la
+		 * forma: un Muro de Fuego y un Rayo de Luna son la misma capacidad con geometría distinta.</p>
+		 *
+		 * <p>{@code aoeShape:"wall"} sigue implicando zona por compatibilidad: los muros existían antes de
+		 * que la persistencia fuera un campo propio, y un pack que ya los tuviera escritos debe seguir
+		 * funcionando sin tocarlo.</p>
 		 */
-		public boolean isWall() { return "wall".equals(aoeShape); }
+		public boolean isZone() { return "zone".equals(mode) || "wall".equals(aoeShape); }
+
+		/** La zona se recentra en el lanzador cada asalto (Guardianes Espirituales). */
+		public boolean followsCaster() { return followsCasterFlag; }
 
 		/**
 		 * <p>Modos que actúan sobre el propio lanzador y no necesitan a nadie delante: {@code buff} (dados
@@ -134,6 +141,7 @@ public class SpellRegistry {
 		//Cuerpo vanilla de una invocación. Vex por defecto: flota, es pequeño y no se parece a ningún mob
 		//hostil concreto, que es lo más cerca de "un arma espiritual" que hay sin modelo propio.
 		String summonEntityId = json.has("summonEntity") ? json.get("summonEntity").getAsString() : "minecraft:vex";
+		boolean followsCaster = json.has("followsCaster") && json.get("followsCaster").getAsBoolean();
 
 		//Mismo formato anidado que MonsterRegistry.parse/parseAttack usan para sus propios monstruos:
 		//"appliesEffect": {"name": "...", "dice": "...", "turns": N}.
@@ -142,7 +150,7 @@ public class SpellRegistry {
 		String effectDice = effect != null ? effect.get("dice").getAsString() : null;
 		int effectTurns = effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0;
 
-		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId,
+		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId, followsCaster,
 			effectName, effectDice, effectTurns);
 	}
 

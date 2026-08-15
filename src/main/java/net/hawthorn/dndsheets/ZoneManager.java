@@ -13,10 +13,14 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * <p>Muros persistentes (Muro de Fuego, de Hielo, de Espinas, Barrera de Hojas). Es una capacidad
- * distinta de las formas de área de {@link SpellCastManager}, aunque se parezcan: una línea o un cono
- * se emiten desde el lanzador y se resuelven <em>una vez</em>, mientras que un muro es una superficie
- * que se <em>coloca</em> y sigue ahí durante asaltos, dañando a quien empiece su turno dentro.</p>
+ * <p>Zonas persistentes: un área que se <em>coloca</em> y sigue ahí durante asaltos, dañando a quien
+ * empiece su turno dentro. Cubre tanto los muros (Muro de Fuego, Barrera de Hojas) como los efectos de
+ * área que duran (Rayo de Luna, Nube Mortal, Guardianes Espirituales).</p>
+ *
+ * <p>Es una capacidad distinta de las formas de área de {@link SpellCastManager}, aunque compartan la
+ * geometría: una línea o un cono se emiten desde el lanzador y se resuelven <em>una vez</em>. Lo que
+ * distingue a una zona es la <b>persistencia</b>, no la forma — por eso la forma es un campo más y no
+ * una clase aparte, y por eso {@code inShape} se reutiliza tal cual.</p>
  *
  * <p>El muro no coloca bloques reales: cambiar el mundo obligaría a limpiarlo después y a decidir qué
  * pasa si alguien lo pica o si el chunk se descarga. Se guarda como una región y se comprueba al empezar
@@ -26,24 +30,36 @@ import java.util.UUID;
  * <p>Estado en memoria y por encuentro, igual que el orden de turnos: un muro no debería sobrevivir a un
  * reinicio del servidor, porque tampoco sobrevive el combate en el que se lanzó.</p>
  */
-public class WallManager {
+public class ZoneManager {
 
 	/**
 	 * @param origin      base del muro, a la altura de los pies del lanzador (la altura se cuenta hacia
 	 *                    arriba desde ahí, ver {@code SpellCastManager.WALL_HEIGHT}).
 	 * @param casterId    de quién es: hace falta para retirarlo si pierde la concentración.
 	 */
-	public record Wall(UUID casterId, String spellName, Vec3 origin, Vec3 direction, double length,
+	/**
+	 * @param shape          geometría, la misma que entiende {@code SpellCastManager.inShape}:
+	 *                       {@code wall}, {@code sphere}, {@code cone}, {@code line}.
+	 * @param followsCaster  la zona se recentra sobre el lanzador cada asalto (Guardianes Espirituales).
+	 *                       Sin esto habría que elegir entre no tener ese hechizo o mentir sobre él.
+	 */
+	public record Zone(UUID casterId, String spellName, Vec3 origin, Vec3 direction, double size,
+	                   String shape, boolean followsCaster,
 	                   String dice, String damageType, String saveAbility, int saveDc, boolean halfOnSave,
 	                   int roundsRemaining) {
 
-		Wall tick() {
-			return new Wall(casterId, spellName, origin, direction, length, dice, damageType,
-				saveAbility, saveDc, halfOnSave, roundsRemaining - 1);
+		Zone tick() {
+			return new Zone(casterId, spellName, origin, direction, size, shape, followsCaster,
+				dice, damageType, saveAbility, saveDc, halfOnSave, roundsRemaining - 1);
+		}
+
+		Zone movedTo(Vec3 newOrigin) {
+			return new Zone(casterId, spellName, newOrigin, direction, size, shape, followsCaster,
+				dice, damageType, saveAbility, saveDc, halfOnSave, roundsRemaining);
 		}
 	}
 
-	private static final List<Wall> active = new ArrayList<>();
+	private static final List<Zone> active = new ArrayList<>();
 
 	//Duración por defecto: 1 minuto de 5e = 10 asaltos, que es lo que dura la mayoría de los muros.
 	public static final int DEFAULT_ROUNDS = 10;
@@ -51,13 +67,16 @@ public class WallManager {
 	public static void place(ServerPlayer caster, SpellRegistry.Spell spell, int saveDc) {
 		//Base a la altura de los pies y no de los ojos: el muro nace del suelo, y con la altura contada
 		//desde los ojos su mitad inferior quedaría enterrada.
-		Vec3 origin = caster.position();
+		//Una zona que NO sigue al lanzador se coloca un par de bloques hacia donde mira; una que sí
+		//(Guardianes Espirituales) nace centrada en él y se recentra al cerrar cada asalto.
 		Vec3 direction = caster.getViewVector(1.0f).normalize();
-		active.add(new Wall(caster.getUUID(), spell.name(), origin, direction, spell.aoeRadius(),
+		Vec3 origin = spell.followsCaster() ? caster.position() : caster.position().add(direction.scale(2.0));
+		active.add(new Zone(caster.getUUID(), spell.name(), origin, direction, spell.aoeRadius(),
+			spell.aoeShape(), spell.followsCaster(),
 			spell.dice(), spell.damageType(), spell.saveAbility(), saveDc, spell.halfOnSave(), DEFAULT_ROUNDS));
 
 		if (caster.level() instanceof ServerLevel level) draw(level, active.get(active.size() - 1));
-		ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.wall_placed",
+		ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.zone_placed",
 			SheetLoader.characterNameOf(SheetLoader.getServerSheet(caster.getStringUUID()), caster), spell.name())
 			.withStyle(ChatFormatting.DARK_PURPLE));
 	}
@@ -72,8 +91,8 @@ public class WallManager {
 		Combatant combatant = Combatant.of(entity);
 		if (combatant == null) return;
 
-		for (Wall wall : new ArrayList<>(active)) {
-			if (!SpellCastManager.inShape("wall", wall.origin(), wall.direction(), wall.length(),
+		for (Zone wall : new ArrayList<>(active)) {
+			if (!SpellCastManager.inShape(wall.shape(), wall.origin(), wall.direction(), wall.size(),
 					entity.getBoundingBox().getCenter())) {
 				continue;
 			}
@@ -88,7 +107,7 @@ public class WallManager {
 			amount = DamageTypes.applyMultiplier(amount, combatant.effectiveDamageMultiplier(wall.damageType(), true));
 
 			CombatFx.spellImpact(entity, saved, wall.damageType());
-			broadcast(level, Component.translatable("chat.dndsheets.spell.wall_tick",
+			broadcast(level, Component.translatable("chat.dndsheets.spell.zone_tick",
 				combatant.name(), wall.spellName(), save.formatted(), wall.saveDc(), amount).withStyle(ChatFormatting.DARK_RED));
 			if (amount > 0) combatant.takeDamage(amount);
 		}
@@ -96,16 +115,23 @@ public class WallManager {
 
 	/** Llamado al cerrarse un asalto completo: descuenta duración y retira lo que expira. */
 	public static void endRound(ServerLevel level) {
-		Iterator<Wall> it = active.iterator();
-		List<Wall> renewed = new ArrayList<>();
+		Iterator<Zone> it = active.iterator();
+		List<Zone> renewed = new ArrayList<>();
 		while (it.hasNext()) {
-			Wall wall = it.next().tick();
+			Zone wall = it.next().tick();
+			//Guardianes Espirituales y similares: la zona va con su lanzador, así que se recentra en él al
+			//cerrar el asalto. Si el lanzador ya no está en el mundo, se queda donde estaba en vez de
+			//desaparecer sin avisar.
+			if (wall.followsCaster()) {
+				ServerPlayer owner = level.getServer().getPlayerList().getPlayer(wall.casterId());
+				if (owner != null) wall = wall.movedTo(owner.position());
+			}
 			it.remove();
 			if (wall.roundsRemaining() > 0) {
 				renewed.add(wall);
 				draw(level, wall); //Se redibuja cada asalto: sin esto el muro es invisible salvo el instante en que se lanzó.
 			} else {
-				broadcast(level, Component.translatable("chat.dndsheets.spell.wall_faded", wall.spellName()).withStyle(ChatFormatting.GRAY));
+				broadcast(level, Component.translatable("chat.dndsheets.spell.zone_faded", wall.spellName()).withStyle(ChatFormatting.GRAY));
 			}
 		}
 		active.addAll(renewed);
@@ -127,15 +153,21 @@ public class WallManager {
 
 	//Partículas a lo largo del muro y en toda su altura, para que se vea dónde está: sin representación
 	//visual, un muro persistente es una trampa invisible en vez de una decisión táctica.
-	private static void draw(ServerLevel level, Wall wall) {
-		int samplesAlong = Math.max(4, (int) (wall.length() * 2));
-		for (int i = 0; i <= samplesAlong; i++) {
-			Vec3 base = wall.origin().add(wall.direction().scale(wall.length() * i / samplesAlong));
-			for (double y = 0; y <= SpellCastManager.WALL_HEIGHT; y += 0.5) {
-				level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
-					base.x, base.y + y, base.z, 1, 0, 0, 0, 0);
+	private static void draw(ServerLevel level, Zone wall) {
+		if ("wall".equals(wall.shape())) {
+			int samplesAlong = Math.max(4, (int) (wall.size() * 2));
+			for (int i = 0; i <= samplesAlong; i++) {
+				Vec3 base = wall.origin().add(wall.direction().scale(wall.size() * i / samplesAlong));
+				for (double y = 0; y <= SpellCastManager.WALL_HEIGHT; y += 0.5) {
+					level.sendParticles(net.minecraft.core.particles.ParticleTypes.FLAME,
+						base.x, base.y + y, base.z, 1, 0, 0, 0, 0);
+				}
 			}
+			return;
 		}
+		//Cualquier otra forma se marca con el mismo anillo que ya usa un área instantánea: el jugador ya
+		//sabe leerlo, y reinventar un dibujo por forma no aporta nada.
+		CombatFx.aoeRing(level, wall.origin(), wall.size());
 	}
 
 	private static void broadcast(ServerLevel level, Component message) {

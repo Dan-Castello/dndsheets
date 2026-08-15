@@ -53,8 +53,8 @@ public class SpellCastManager {
 	}
 
 	private static boolean isAoe(SpellRegistry.Spell spell) {
-		//Un muro tiene aoeRadius pero NO se resuelve como area al lanzarlo: se coloca (ver WallManager).
-		return "save".equals(spell.mode()) && spell.aoeRadius() > 0 && !spell.isWall();
+		//Una zona persistente tiene aoeRadius pero NO se resuelve como area al lanzarla: se coloca (ver ZoneManager).
+		return "save".equals(spell.mode()) && spell.aoeRadius() > 0 && !spell.isZone();
 	}
 
 	//Agachado + clic con un báculo de área (Bola de Fuego y similares): muestra dónde caería el radio real
@@ -95,8 +95,8 @@ public class SpellCastManager {
 		List<Entity> aoeTargets = null;
 		Vec3 impactPoint = null;
 
-		if (spell.isWall() || spell.isSelfTargeted() || spell.isSummon()) {
-			//Ni objetivo ni punto de impacto: el muro nace en el lanzador, y buff/temphp son sobre uno mismo.
+		if (spell.isZone() || spell.isSelfTargeted() || spell.isSummon()) {
+			//Ni objetivo ni punto de impacto: la zona se coloca, y buff/temphp/summon son sobre uno mismo.
 			//Se sigue igual con el resto del flujo (turno, contrahechizo, espacio de conjuro).
 		} else if (isAoe) {
 			impactPoint = findImpactPoint(caster);
@@ -126,7 +126,7 @@ public class SpellCastManager {
 		//Un muro no tiene ni objetivo ni lista de area, asi que no hay a quien "atacar" para arrancar el
 		//combate: lo arrancara el primero que empiece su turno dentro. Sin este guardia, la linea de abajo
 		//desreferenciaba null en cuanto alguien colocaba un muro.
-		if (!"heal".equals(spell.mode()) && !spell.isWall() && !spell.isSelfTargeted() && !spell.isSummon()) {
+		if (!"heal".equals(spell.mode()) && !spell.isZone() && !spell.isSelfTargeted() && !spell.isSummon()) {
 			CombatManager.autoStartCombatIfNeeded(isAoe ? aoeTargets.get(0) : target, caster);
 		}
 
@@ -163,7 +163,7 @@ public class SpellCastManager {
 			SummonManager.summon(caster, spell, proficiency, abilityMod);
 		} else if ("buff".equals(spell.mode())) {
 			//Se concede al propio lanzador: es un hechizo sobre uno mismo, no necesita objetivo delante.
-			WeaponBuffManager.grant(casterSheet, spell.name(), spell.dice(), spell.damageType(), WallManager.DEFAULT_ROUNDS);
+			WeaponBuffManager.grant(casterSheet, spell.name(), spell.dice(), spell.damageType(), ZoneManager.DEFAULT_ROUNDS);
 			ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.buff_granted",
 				casterName, spell.name(), spell.dice()).withStyle(ChatFormatting.GOLD));
 		} else if ("temphp".equals(spell.mode())) {
@@ -174,8 +174,8 @@ public class SpellCastManager {
 				ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.temp_hp_granted",
 					casterName, spell.name(), roll.result().getValue()).withStyle(ChatFormatting.GOLD));
 			}
-		} else if (spell.isWall()) {
-			WallManager.place(caster, spell, 8 + proficiency + abilityMod);
+		} else if (spell.isZone()) {
+			ZoneManager.place(caster, spell, 8 + proficiency + abilityMod);
 		} else if (isAoe) {
 			//Antes no había ninguna representación visual del radio: te enterabas de a quién golpeó leyendo
 			//el chat, después del hecho — un anillo de partículas en el radio real usado deja ver el alcance

@@ -271,8 +271,16 @@ dependencies, not preference.
      found while wiring it: a summon must **not** count as an enemy or combat never ends while it
      lasts (same split as friendly NPCs, `isMonster` vs `isCombatTarget`), and it must be tagged with
      its owner **before** joining initiative, which is why `spawnAt` grew a `configure` hook.
-  5. **Multi-round area effects** — Moonbeam, Storm of Vengeance.
-  6. **Magic items** — ~200 in the SRD, none in the mod, no schema yet. Biggest untouched area.
+  5. ~~Multi-round area effects~~ — **done**, and it was a generalisation rather than a new capability:
+     `WallManager` already was "a persistent region that damages whoever starts their turn inside, for
+     N rounds, tied to concentration". A Moonbeam is that with a sphere instead of a surface. It is now
+     `ZoneManager`, the shape is a field, and `inShape` is reused untouched. Persistence became its own
+     field (`mode: "zone"`) rather than being inferred from the shape — inferring it is what would stop
+     a spherical zone from persisting. `followsCaster` covers Spirit Guardians, which re-centres on its
+     caster each round. `aoeShape: "wall"` still implies a zone, so packs written before the field
+     existed keep working.
+  6. **Magic items** — ~200 in the SRD, none in the mod, no schema yet. The only large untouched area
+     left, and the last item on this list.
 
   Silvered/adamantine resistance variants collapse into plain "nonmagical" on purpose: the mod has
   no such materials, and the alternative was discarding the resistance entirely.

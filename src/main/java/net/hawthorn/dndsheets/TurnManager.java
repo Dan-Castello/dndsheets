@@ -500,7 +500,7 @@ public class TurnManager {
 
 		order.clear();
 		effects.clear();
-		WallManager.clear(); //Sin orden de turnos no hay asaltos que contar, así que no hay muro que mantener.
+		ZoneManager.clear(); //Sin orden de turnos no hay asaltos que contar, así que no hay muro que mantener.
 		actedThisTurn.clear();
 		reactionUsed.clear();
 		opportunityAttacks.clear();
@@ -549,7 +549,7 @@ public class TurnManager {
 		broadcast(level, Component.translatable("chat.dndsheets.turn.ended").withStyle(ChatFormatting.GRAY));
 		order.clear();
 		effects.clear();
-		WallManager.clear(); //Sin orden de turnos no hay asaltos que contar, así que no hay muro que mantener.
+		ZoneManager.clear(); //Sin orden de turnos no hay asaltos que contar, así que no hay muro que mantener.
 		actedThisTurn.clear();
 		reactionUsed.clear();
 		opportunityAttacks.clear();
@@ -708,7 +708,7 @@ public class TurnManager {
 			currentIndex = 0;
 			round++;
 			fireDueRoundCallbacks();
-			WallManager.endRound(level); //Asalto completo: los muros descuentan duración y se redibujan.
+			ZoneManager.endRound(level); //Asalto completo: los muros descuentan duración y se redibujan.
 			tickWeaponBuffs(level);
 			SummonManager.endRound(level);
 		}
@@ -773,7 +773,7 @@ public class TurnManager {
 
 		tickEffects(level, entity, entry);
 		//Muros persistentes: 5e los resuelve justo aquí, al empezar el turno de quien está dentro.
-		WallManager.onTurnStart(level, entity);
+		ZoneManager.onTurnStart(level, entity);
 		if (!entity.isAlive()) { //El propio efecto de estado (veneno...) pudo haberlo matado recién.
 			scheduleAutoAdvance(level, entry.entityId());
 			return;
