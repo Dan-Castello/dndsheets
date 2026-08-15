@@ -214,6 +214,9 @@
 
   "chat.dndsheets.turn.already_acted": "Ya usaste tu acción este turno.",
   "chat.dndsheets.turn.blocked_elsewhere": "Ya hay un combate activo en otra parte del mapa — termínalo antes de arrancar otro.",
+  "chat.dndsheets.spell.buff_faded": "La potenciación del arma se desvanece.",
+  "chat.dndsheets.spell.buff_granted": "%s se potencia con %s (+%s por golpe).",
+  "chat.dndsheets.spell.temp_hp_granted": "%s gana %2$s: %3$d puntos de golpe temporales.",
   "chat.dndsheets.spell.wall_placed": "%s levanta %s.",
   "chat.dndsheets.spell.wall_tick": "%s queda atrapado en %s — salvación %s contra CD %d, recibe %d.",
   "chat.dndsheets.spell.wall_faded": "%s se desvanece.",

@@ -103,7 +103,7 @@ public class JsonContentSelfTest {
 			SpellRegistry.Spell parsed = SpellRegistry.parse(json);
 			if (SpellRegistry.get(id) == null) SpellRegistry.register(parsed);
 		}
-		assertTrue(bulk.size() >= 80, "spells.json debería traer al menos los 80 hechizos importados del SRD, trae " + bulk.size());
+		assertTrue(bulk.size() >= 83, "spells.json debería traer al menos los 83 hechizos importados del SRD, trae " + bulk.size());
 
 		//Un muro no se resuelve al lanzarlo: se coloca y daña por asaltos (ver WallManager). Si alguien lo
 		//degradara a esfera, explotaría una vez en la cara del lanzador en vez de quedarse ahí.
@@ -475,7 +475,10 @@ public class JsonContentSelfTest {
 		@Override public int abilityModifier(String ability) { return abilityMod; }
 		@Override public int proficiencyBonus() { return 2; }
 		@Override public double damageMultiplier(String damageType, boolean magical) { return 1.0; }
-		@Override public void takeDamage(int amount) { }
+		private int temporary;
+		@Override public void applyRealDamage(int amount) { }
+		@Override public int temporaryHp() { return temporary; }
+		@Override public void setTemporaryHp(int amount) { temporary = Math.max(0, amount); }
 		@Override public boolean isDefeated() { return false; }
 		@Override public Map<Condition, Integer> conditionSources() { return conditions; }
 		@Override public void setConditionSources(Map<Condition, Integer> sources) {
@@ -561,6 +564,45 @@ public class JsonContentSelfTest {
 		assertTrue(beast.damageMultiplier("fuego", true) == 2.0, "una afinidad incondicional aplica sea mágico o no");
 		assertTrue(beast.damageMultiplier("fuego", false) == 2.0, "y tambien cuando no lo es");
 		assertTrue(beast.damageMultiplier("veneno", false) == 1.0, "un tipo sin afinidad declarada pasa entero");
+
+		//--- Puntos de golpe temporales ---
+		//La absorción vive en el método por defecto de la interfaz, así que basta un combatiente falso para
+		//fijarla: es la misma regla para jugador, PNJ y monstruo, y esa es justo la razón de que esté ahí.
+		FakeCombatant guarded = new FakeCombatant(0);
+		assertTrue(guarded.temporaryHp() == 0, "sin conceder nada no debería haber PG temporales");
+		guarded.grantTemporaryHp(10);
+		assertTrue(guarded.temporaryHp() == 10, "conceder 10 debería dejar 10");
+
+		//No se apilan: un montón nuevo menor no baja el que ya había, y uno mayor lo reemplaza.
+		guarded.grantTemporaryHp(4);
+		assertTrue(guarded.temporaryHp() == 10, "un montón menor no debería reducir el que ya había");
+		guarded.grantTemporaryHp(15);
+		assertTrue(guarded.temporaryHp() == 15, "un montón mayor sí debería reemplazarlo");
+
+		//Absorción parcial: 15 temporales contra 20 de daño dejan 5 para los PG reales, y la reserva a 0.
+		assertTrue(guarded.absorbWithTemporaryHp(20) == 5, "deberían pasar 5 a los PG reales");
+		assertTrue(guarded.temporaryHp() == 0, "la reserva debería quedar agotada");
+
+		//Absorción total: el golpe entero se lo come la reserva y los PG reales ni se tocan.
+		guarded.grantTemporaryHp(12);
+		assertTrue(guarded.absorbWithTemporaryHp(5) == 0, "un golpe menor que la reserva no debería llegar a los PG");
+		assertTrue(guarded.temporaryHp() == 7, "la reserva debería bajar exactamente lo absorbido");
+		assertTrue(guarded.absorbWithTemporaryHp(0) == 0, "un daño de 0 no debería gastar reserva");
+		assertTrue(guarded.temporaryHp() == 7, "y la reserva sigue intacta");
+
+		//--- Buff de arma con duración ---
+		//A diferencia de Castigo Divino NO se consume por golpe: dura asaltos. Si alguien lo hiciera
+		//consumible, Favor Divino pasaría de "1 minuto" a "un golpe" sin que fallara nada.
+		JsonObject buffed = new JsonObject();
+		assertTrue(WeaponBuffManager.active(buffed) == null, "una hoja sin buff no debería tener ninguno activo");
+		WeaponBuffManager.grant(buffed, "Favor Divino", "1d4", "radiante", 2);
+		assertTrue(WeaponBuffManager.active(buffed) != null, "el buff recién concedido debería estar activo");
+		assertTrue("1d4".equals(WeaponBuffManager.active(buffed).dice()), "debería recordar sus dados");
+		assertTrue(WeaponBuffManager.active(buffed) != null, "consultarlo dos veces no debería consumirlo");
+		assertTrue(!WeaponBuffManager.tickRound(buffed), "tras el primer asalto todavía no expira");
+		assertTrue(WeaponBuffManager.active(buffed) != null, "y sigue activo");
+		assertTrue(WeaponBuffManager.tickRound(buffed), "al agotarse los asaltos debería expirar");
+		assertTrue(WeaponBuffManager.active(buffed) == null, "y dejar de estar activo");
 
 		//Vocabulario de afinidades, compartido ahora entre la hoja del jugador y el bloque de monstruo.
 		assertTrue(DamageTypes.multiplierForLabel("resistant") == 0.5, "resistant debería ser 0.5");

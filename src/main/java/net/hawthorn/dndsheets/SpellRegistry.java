@@ -45,6 +45,13 @@ public class SpellRegistry {
 		 * comparta la geometria.</p>
 		 */
 		public boolean isWall() { return "wall".equals(aoeShape); }
+
+		/**
+		 * <p>Modos que actúan sobre el propio lanzador y no necesitan a nadie delante: {@code buff} (dados
+		 * extra a cada golpe con arma mientras dure, ver {@link WeaponBuffManager}) y {@code temphp} (puntos
+		 * de golpe temporales, ver {@link Combatant#grantTemporaryHp}).</p>
+		 */
+		public boolean isSelfTargeted() { return "buff".equals(mode) || "temphp".equals(mode); }
 		//Mismo patrón que MonsterRegistry.MonsterAttack/MonsterSpell: un hechizo de concentración
 		//(Guardianes Espirituales, Rayo de Luna...) puede dejar un efecto de estado corriendo mientras dura
 		//la concentración (ver ConcentrationManager/TurnManager.applyEffect), que se revierte solo si se

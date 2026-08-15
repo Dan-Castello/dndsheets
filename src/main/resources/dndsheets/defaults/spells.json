@@ -83,5 +83,8 @@
   { "id": "dndsheets:wall_of_fire", "name": "Muro de Fuego", "level": 4, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "5d8", "halfOnSave": true, "damageType": "fuego", "concentration": true, "aoeRadius": 12, "aoeShape": "wall" },
   { "id": "dndsheets:wall_of_ice", "name": "Muro de Hielo", "level": 6, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "10d6", "halfOnSave": true, "damageType": "frio", "concentration": true, "aoeRadius": 12, "aoeShape": "wall" },
   { "id": "dndsheets:wall_of_thorns", "name": "Muro de Espinas", "level": 6, "mode": "save", "castingAbility": "wis", "saveAbility": "dex", "dice": "7d8", "halfOnSave": true, "damageType": "perforante", "concentration": true, "aoeRadius": 12, "aoeShape": "wall" },
-  { "id": "dndsheets:blade_barrier", "name": "Barrera de Hojas", "level": 6, "mode": "save", "castingAbility": "wis", "saveAbility": "dex", "dice": "6d10", "halfOnSave": true, "damageType": "cortante", "concentration": true, "aoeRadius": 20, "aoeShape": "wall" }
+  { "id": "dndsheets:blade_barrier", "name": "Barrera de Hojas", "level": 6, "mode": "save", "castingAbility": "wis", "saveAbility": "dex", "dice": "6d10", "halfOnSave": true, "damageType": "cortante", "concentration": true, "aoeRadius": 20, "aoeShape": "wall" },
+  { "id": "dndsheets:false_life", "name": "Falsa Vida", "level": 1, "mode": "temphp", "castingAbility": "int", "dice": "1d4 + 4" },
+  { "id": "dndsheets:divine_favor", "name": "Favor Divino", "level": 1, "mode": "buff", "castingAbility": "wis", "dice": "1d4", "damageType": "radiante", "concentration": true },
+  { "id": "dndsheets:branding_smite", "name": "Castigo Marcador", "level": 2, "mode": "buff", "castingAbility": "cha", "dice": "2d6", "damageType": "radiante", "concentration": true }
 ]

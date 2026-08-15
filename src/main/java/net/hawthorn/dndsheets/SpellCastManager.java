@@ -95,8 +95,8 @@ public class SpellCastManager {
 		List<Entity> aoeTargets = null;
 		Vec3 impactPoint = null;
 
-		if (spell.isWall()) {
-			//Ni objetivo ni punto de impacto: el muro nace en el lanzador y no necesita a nadie delante.
+		if (spell.isWall() || spell.isSelfTargeted()) {
+			//Ni objetivo ni punto de impacto: el muro nace en el lanzador, y buff/temphp son sobre uno mismo.
 			//Se sigue igual con el resto del flujo (turno, contrahechizo, espacio de conjuro).
 		} else if (isAoe) {
 			impactPoint = findImpactPoint(caster);
@@ -126,7 +126,7 @@ public class SpellCastManager {
 		//Un muro no tiene ni objetivo ni lista de area, asi que no hay a quien "atacar" para arrancar el
 		//combate: lo arrancara el primero que empiece su turno dentro. Sin este guardia, la linea de abajo
 		//desreferenciaba null en cuanto alguien colocaba un muro.
-		if (!"heal".equals(spell.mode()) && !spell.isWall()) {
+		if (!"heal".equals(spell.mode()) && !spell.isWall() && !spell.isSelfTargeted()) {
 			CombatManager.autoStartCombatIfNeeded(isAoe ? aoeTargets.get(0) : target, caster);
 		}
 
@@ -159,7 +159,20 @@ public class SpellCastManager {
 
 		if (spell.concentration()) ConcentrationManager.startConcentrating(caster, spell.name());
 
-		if (spell.isWall()) {
+		if ("buff".equals(spell.mode())) {
+			//Se concede al propio lanzador: es un hechizo sobre uno mismo, no necesita objetivo delante.
+			WeaponBuffManager.grant(casterSheet, spell.name(), spell.dice(), spell.damageType(), WallManager.DEFAULT_ROUNDS);
+			ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.buff_granted",
+				casterName, spell.name(), spell.dice()).withStyle(ChatFormatting.GOLD));
+		} else if ("temphp".equals(spell.mode())) {
+			Combatant self = Combatant.of(caster);
+			DiceManager.RollOutcome roll = DiceManager.roll(casterSheet, spell.dice());
+			if (self != null && roll.result() != null) {
+				self.grantTemporaryHp(roll.result().getValue());
+				ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.temp_hp_granted",
+					casterName, spell.name(), roll.result().getValue()).withStyle(ChatFormatting.GOLD));
+			}
+		} else if (spell.isWall()) {
 			WallManager.place(caster, spell, 8 + proficiency + abilityMod);
 		} else if (isAoe) {
 			//Antes no había ninguna representación visual del radio: te enterabas de a quién golpeó leyendo
@@ -449,51 +462,25 @@ public class SpellCastManager {
 	}
 
 	public static void applyDamage(Entity target, int amount, String damageType) {
-		if (target instanceof ServerPlayer player) {
-			JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
-			int applied = DamageTypes.applyMultiplier(amount, DamageTypes.multiplierFor(player, sheet, damageType));
-			player.hurt(player.damageSources().generic(), applied);
-			ConcentrationManager.onDamageTaken(player, applied);
+		//Esto eran ~35 líneas con un instanceof Player decidiendo cómo aplicar el daño, quién trackea los PG
+		//y cómo matar — exactamente la duplicación que Combatant vino a borrar, y que además dejaba a los
+		//monstruos sin resistencias frente al daño de conjuro. Un conjuro siempre cuenta como mágico.
+		Combatant combatant = Combatant.of(target);
+		if (combatant != null) {
+			combatant.takeDamage(DamageTypes.applyMultiplier(amount, combatant.effectiveDamageMultiplier(damageType, true)));
 			return;
 		}
-		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(target);
-		if (block == null) {
-			//Mob de compatibilidad (Enemy de otro mod o vanilla, ver TurnManager.isMonster): a diferencia de
-			//un monstruo propio (PG trackeado aparte en NBT, salud vanilla nunca se mueve, por eso el
-			//die()/setHealth(0) a mano de abajo), su PG real ES su salud vanilla — hurt() ya dispara solo el
-			//camino de muerte vanilla real (loot, XP, sonido) si lo mata, sin nada manual. Antes esto no
-			//hacía nada (block==null, sin más): el mensaje de impacto se mostraba pero el mob no recibía daño.
-			if (target instanceof LivingEntity living) living.hurt(target.damageSources().generic(), amount);
-			return;
-		}
-		int remainingHp = MonsterRegistry.currentHpOf(target) - amount;
-		if (remainingHp <= 0) {
-			TurnManager.markDefeated(target.getId());
-			//die(), no remove(): un remove() a secas nunca pasa por el camino de muerte vanilla (loot table,
-			//XP, sonido/partículas de muerte), así que un monstruo "asesinado" así jamás soltaba nada. Nuestra
-			//salud real de Minecraft nunca baja (el HP de 5e se trackea aparte en MonsterRegistry), así que
-			//die() no puede inferir la muerte solo — hay que llamarlo a mano en cuanto NUESTRO HP llega a 0.
-			//setHealth(0) es imprescindible ANTES de die(): sin ella isDeadOrDying() sigue viendo salud llena
-			//y nunca arranca el tickDeath() que de verdad elimina la entidad — se queda tirado para siempre
-			//(ver CombatManager.resolveAttackOnMonster, mismo bug con el mismo arreglo).
-			if (target instanceof LivingEntity living) {
-				living.setHealth(0.0F);
-				living.die(target.damageSources().generic());
-			} else {
-				target.remove(Entity.RemovalReason.KILLED);
-			}
-		} else {
-			MonsterRegistry.setCurrentHp(target, remainingHp);
-		}
+		//Mob de compatibilidad (Enemy de otro mod o vanilla, ver TurnManager.isMonster): no tiene bloque de
+		//estadísticas ni ficha, así que su PG real ES su salud vanilla — hurt() ya dispara solo el camino de
+		//muerte vanilla (loot, XP, sonido), sin nada manual.
+		if (target instanceof LivingEntity living) living.hurt(target.damageSources().generic(), amount);
 	}
 
 	private static int armorClassOfEntity(Entity target) {
-		if (target instanceof Player player) {
-			JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
-			return sheet != null ? CombatManager.armorClassOf(player, sheet) : 10;
-		}
-		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(target);
-		return block != null ? block.ac() : 10;
+		Combatant combatant = Combatant.of(target);
+		//10 es la CA de referencia de 5e para algo sin armadura ni destreza: es lo que le queda a un mob de
+		//compatibilidad, que no tiene ni hoja ni bloque de estadísticas del que sacarla.
+		return combatant != null ? combatant.armorClass() : 10;
 	}
 
 	private static String nameOf(Entity target) {

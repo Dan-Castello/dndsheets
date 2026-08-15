@@ -260,8 +260,11 @@ public class CombatManager {
 		//El daño se entrega por el propio evento, NO por Combatant.takeDamage: ya estamos DENTRO de la
 		//tubería de daño de Minecraft y llamarlo aquí recurriría. A partir de este punto la armadura real
 		//del objetivo todavía puede restar algo más — Minecraft lo hace solo después de este evento.
-		event.setAmount(outcome.damage());
-		ConcentrationManager.onDamageTaken((ServerPlayer) victim, outcome.damage());
+		//Los PG temporales se descuentan aquí a mano: este camino entrega el daño por el propio evento, así
+		//que no puede pasar por Combatant.takeDamage (recurriría). Ver Combatant.absorbWithTemporaryHp.
+		int afterTemporary = target.absorbWithTemporaryHp(outcome.damage());
+		event.setAmount(afterTemporary);
+		ConcentrationManager.onDamageTaken((ServerPlayer) victim, afterTemporary);
 		ChatFeedback.broadcast(attacker, outcome.message());
 	}
 
@@ -576,6 +579,18 @@ public class CombatManager {
 					amount += smite.amount();
 					formatted = formatted + " + Castigo Divino " + smite.formatted();
 				}
+			}
+		}
+
+		//Buff de arma con duración (Favor Divino): a diferencia de Castigo Divino NO se consume, se aplica a
+		//todos los golpes mientras dure. Se tira aparte por lo mismo que el resto de dados extra: el motor
+		//de dados no resuelve dos grupos distintos en una sola expresión.
+		WeaponBuffManager.Buff buff = WeaponBuffManager.active(sheet);
+		if (buff != null) {
+			DiceManager.DamageResult extra = DiceManager.rollDamage(sheet, buff.dice(), critical);
+			if (extra.formatted() != null) {
+				amount += extra.amount();
+				formatted = formatted + " + " + buff.name() + " " + extra.formatted();
 			}
 		}
 

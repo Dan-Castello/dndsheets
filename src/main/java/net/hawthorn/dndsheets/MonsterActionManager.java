@@ -315,8 +315,10 @@ public class MonsterActionManager {
 			? targetCombatant.effectiveDamageMultiplier(attack.damageType(), false) //Un ataque natural de monstruo no es mágico salvo que su bloque lo diga, y el esquema todavía no lo dice.
 			: DamageTypes.multiplierFor(target, targetSheet, attack.damageType());
 		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), affinity);
-		target.hurt(target.damageSources().generic(), finalAmount);
-		if (target instanceof ServerPlayer serverTarget) ConcentrationManager.onDamageTaken(serverTarget, finalAmount);
+		//Por Combatant y no por hurt() directo: así los PG temporales absorben también el golpe de un
+		//monstruo, y la concentración la comprueba PlayerCombatant.applyRealDamage en un solo sitio.
+		if (targetCombatant != null) targetCombatant.takeDamage(finalAmount);
+		else target.hurt(target.damageSources().generic(), finalAmount);
 		CombatFx.hit(target, attackRoll.criticalHit(), attack.damageType());
 		ChatFeedback.broadcast(monsterEntity, ChatFeedback.attackResult(block.name(), target.getName().getString(), attack.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()));
 
@@ -359,8 +361,7 @@ public class MonsterActionManager {
 		if (finalDamage > 0) {
 			double affinity = targetCombatant.effectiveDamageMultiplier(spell.damageType(), true); //Un conjuro siempre es mágico. Incluye además la resistencia de petrificado, ver Combatant.
 			int appliedAmount = DamageTypes.applyMultiplier(finalDamage, affinity);
-			target.hurt(target.damageSources().generic(), appliedAmount);
-			if (target instanceof ServerPlayer serverTarget) ConcentrationManager.onDamageTaken(serverTarget, appliedAmount);
+			targetCombatant.takeDamage(appliedAmount);
 		}
 		//Mismo criterio que SpellCastManager.castSaveSpell: la condición la decide la salvación, no el daño.
 		//Un aliento paralizante que no hace daño debe paralizar igual, y uno que sí lo hace no debe imponer

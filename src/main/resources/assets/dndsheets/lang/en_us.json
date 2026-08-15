@@ -214,6 +214,9 @@
 
   "chat.dndsheets.turn.already_acted": "You already used your action this turn.",
   "chat.dndsheets.turn.blocked_elsewhere": "There's already an active combat somewhere else on the map — end it before starting another one.",
+  "chat.dndsheets.spell.buff_faded": "The weapon empowerment fades.",
+  "chat.dndsheets.spell.buff_granted": "%s is empowered by %s (+%s per hit).",
+  "chat.dndsheets.spell.temp_hp_granted": "%s gains %2$s: %3$d temporary hit points.",
   "chat.dndsheets.spell.wall_placed": "%s raises %s.",
   "chat.dndsheets.spell.wall_tick": "%s is caught in %s — save %s vs DC %d, takes %d.",
   "chat.dndsheets.spell.wall_faded": "%s fades away.",

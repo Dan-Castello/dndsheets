@@ -48,6 +48,8 @@ public class ConcentrationManager {
 		//Los muros son de concentración: perderla los apaga. Sin esto, fallar la salvación de Constitución
 		//dejaba el muro ardiendo igual — el mismo fallo que ya se corrigió una vez para los efectos de estado.
 		WallManager.removeFor(caster.getUUID());
+		//Los buffs de arma tambien son de concentracion (Favor Divino, Castigo Marcador).
+		WeaponBuffManager.clear(SheetLoader.getServerSheet(caster.getStringUUID()));
 		Concentrating previous = concentratingOn.remove(caster.getUUID());
 		if (previous != null && previous.effectName() != null) {
 			//El nivel sale del propio lanzador: se necesita para resolver la entidad objetivo y poder

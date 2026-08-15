@@ -704,8 +704,21 @@ public class TurnManager {
 			round++;
 			fireDueRoundCallbacks();
 			WallManager.endRound(level); //Asalto completo: los muros descuentan duración y se redibujan.
+			tickWeaponBuffs(level);
 		}
 		beginTurn(level);
+	}
+
+	//Los buffs de arma con duración (Favor Divino) se descuentan por asalto completo, no por turno: un
+	//"1 minuto" de 5e son 10 asaltos, y descontarlo por turno lo acortaría tantas veces como combatientes
+	//haya en la iniciativa.
+	private static void tickWeaponBuffs(ServerLevel level) {
+		for (ServerPlayer player : level.players()) {
+			JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+			if (WeaponBuffManager.tickRound(sheet)) {
+				player.sendSystemMessage(Component.translatable("chat.dndsheets.spell.buff_faded").withStyle(ChatFormatting.GRAY));
+			}
+		}
 	}
 
 	private static void freeze(ServerLevel level, TurnEntry entry) {

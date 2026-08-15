@@ -59,8 +59,55 @@ public interface Combatant {
 	 */
 	double damageMultiplier(String damageType, boolean magical);
 
-	/** Aplica daño ya multiplicado. Ver la nota de {@link #takeDamage} en cada implementación. */
-	void takeDamage(int amount);
+	/**
+	 * <p>Aplica daño a los puntos de golpe reales, ya multiplicado y ya descontados los temporales. No se
+	 * llama directamente desde las reglas: el punto de entrada es {@link #takeDamage}, que es quien aplica
+	 * la absorción de PG temporales antes de llegar aquí.</p>
+	 */
+	void applyRealDamage(int amount);
+
+	/**
+	 * <p>Puntos de golpe temporales: una reserva que absorbe daño ANTES que los reales y que no se cura ni
+	 * se apila — un montón nuevo reemplaza al viejo, se queda el mayor. En 5e los dan Falsa Vida, Heroísmo,
+	 * Palabra de Ánimo y varios rasgos de clase.</p>
+	 */
+	int temporaryHp();
+
+	void setTemporaryHp(int amount);
+
+	/**
+	 * <p>Punto de entrada del daño para TODAS las reglas. Los PG temporales se descuentan primero y solo
+	 * el resto llega a los PG reales. Vive aquí y no en cada implementación porque la regla es idéntica
+	 * para jugador, PNJ y monstruo — repetirla tres veces es exactamente lo que {@link Combatant} vino a
+	 * evitar.</p>
+	 */
+	default void takeDamage(int amount) {
+		applyRealDamage(absorbWithTemporaryHp(amount));
+	}
+
+	/**
+	 * <p>Gasta los PG temporales contra ese daño y devuelve lo que queda por aplicar. Público porque hay
+	 * un camino que NO puede usar {@link #takeDamage}: el PvP con arma vive dentro del
+	 * {@code LivingHurtEvent} de Minecraft y entrega el daño con {@code setAmount}, así que necesita
+	 * descontar la reserva y quedarse con el resto en vez de aplicarlo él. Sin esto, los PG temporales
+	 * absorbían conjuros y golpes de monstruo pero no un espadazo de otro jugador.</p>
+	 */
+	default int absorbWithTemporaryHp(int amount) {
+		if (amount <= 0) return 0;
+		int temporary = temporaryHp();
+		if (temporary <= 0) return amount;
+		int absorbed = Math.min(temporary, amount);
+		setTemporaryHp(temporary - absorbed);
+		return amount - absorbed;
+	}
+
+	/**
+	 * <p>Concede PG temporales. No se suman a los que ya haya: en 5e se elige uno de los dos montones, y
+	 * quedarse con el mayor es la lectura estándar y la que no castiga por relanzar el conjuro.</p>
+	 */
+	default void grantTemporaryHp(int amount) {
+		if (amount > temporaryHp()) setTemporaryHp(amount);
+	}
 
 	boolean isDefeated();
 
@@ -320,6 +367,16 @@ public interface Combatant {
 			return DamageTypes.multiplierFor(entity(), sheet(), damageType);
 		}
 
+		//En la hoja, igual que las condiciones: es lo que persiste y lo que el jugador ve al abrirla.
+		@Override default int temporaryHp() {
+			return sheet().has("temporaryHp") ? sheet().get("temporaryHp").getAsInt() : 0;
+		}
+
+		@Override default void setTemporaryHp(int amount) {
+			sheet().addProperty("temporaryHp", Math.max(0, amount));
+			SheetLoader.saveServer(sheet(), saveId());
+		}
+
 		@Override default Map<Condition, Integer> conditionSources() {
 			Map<Condition, Integer> result = new EnumMap<>(Condition.class);
 			if (!sheet().has("conditions")) return result;
@@ -368,7 +425,7 @@ public interface Combatant {
 		 * aplica el propio evento con {@code setAmount}; llamar a esto allí recurriría. Este camino existe
 		 * para el daño que NO nace de un golpe vanilla (hechizos, ataques de monstruo, efectos por turno).
 		 */
-		@Override public void takeDamage(int amount) {
+		@Override public void applyRealDamage(int amount) {
 			if (amount <= 0) return;
 			player.hurt(player.damageSources().generic(), amount);
 			if (player instanceof ServerPlayer serverPlayer) ConcentrationManager.onDamageTaken(serverPlayer, amount);
@@ -417,7 +474,7 @@ public interface Combatant {
 			return sheet.has("currentHp") ? sheet.get("currentHp").getAsInt() : maxHp();
 		}
 
-		@Override public void takeDamage(int amount) {
+		@Override public void applyRealDamage(int amount) {
 			if (amount <= 0) return;
 			int remaining = Math.max(0, currentHp() - amount);
 			sheet.addProperty("currentHp", remaining);
@@ -480,7 +537,20 @@ public interface Combatant {
 			return multiplier;
 		}
 
-		@Override public void takeDamage(int amount) {
+		//En el mismo compartimento NBT que los PG y las condiciones — ver MonsterRegistry.setCurrentHp.
+		@Override public int temporaryHp() {
+			CompoundTag data = monster.getPersistentData();
+			return data.contains("dndsheets") ? data.getCompound("dndsheets").getInt("temporaryHp") : 0;
+		}
+
+		@Override public void setTemporaryHp(int amount) {
+			CompoundTag data = monster.getPersistentData();
+			CompoundTag tag = data.getCompound("dndsheets");
+			tag.putInt("temporaryHp", Math.max(0, amount));
+			data.put("dndsheets", tag);
+		}
+
+		@Override public void applyRealDamage(int amount) {
 			int remaining = currentHp() - amount;
 			if (remaining > 0) {
 				MonsterRegistry.setCurrentHp(monster, remaining);
