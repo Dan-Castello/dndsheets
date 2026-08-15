@@ -95,7 +95,7 @@ public class SpellCastManager {
 		List<Entity> aoeTargets = null;
 		Vec3 impactPoint = null;
 
-		if (spell.isWall() || spell.isSelfTargeted()) {
+		if (spell.isWall() || spell.isSelfTargeted() || spell.isSummon()) {
 			//Ni objetivo ni punto de impacto: el muro nace en el lanzador, y buff/temphp son sobre uno mismo.
 			//Se sigue igual con el resto del flujo (turno, contrahechizo, espacio de conjuro).
 		} else if (isAoe) {
@@ -126,7 +126,7 @@ public class SpellCastManager {
 		//Un muro no tiene ni objetivo ni lista de area, asi que no hay a quien "atacar" para arrancar el
 		//combate: lo arrancara el primero que empiece su turno dentro. Sin este guardia, la linea de abajo
 		//desreferenciaba null en cuanto alguien colocaba un muro.
-		if (!"heal".equals(spell.mode()) && !spell.isWall() && !spell.isSelfTargeted()) {
+		if (!"heal".equals(spell.mode()) && !spell.isWall() && !spell.isSelfTargeted() && !spell.isSummon()) {
 			CombatManager.autoStartCombatIfNeeded(isAoe ? aoeTargets.get(0) : target, caster);
 		}
 
@@ -159,7 +159,9 @@ public class SpellCastManager {
 
 		if (spell.concentration()) ConcentrationManager.startConcentrating(caster, spell.name());
 
-		if ("buff".equals(spell.mode())) {
+		if (spell.isSummon()) {
+			SummonManager.summon(caster, spell, proficiency, abilityMod);
+		} else if ("buff".equals(spell.mode())) {
 			//Se concede al propio lanzador: es un hechizo sobre uno mismo, no necesita objetivo delante.
 			WeaponBuffManager.grant(casterSheet, spell.name(), spell.dice(), spell.damageType(), WallManager.DEFAULT_ROUNDS);
 			ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.buff_granted",

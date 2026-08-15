@@ -28,7 +28,7 @@ public class SpellRegistry {
 	public record Spell(
 		String id, String name, int level, String mode,
 		String castingAbility, String saveAbility, String dice, boolean halfOnSave, String damageType,
-		boolean concentration, int aoeRadius, String aoeShape,
+		boolean concentration, int aoeRadius, String aoeShape, String summonEntityId,
 		String effectName, String effectDice, int effectTurns
 	) {
 		/**
@@ -52,6 +52,9 @@ public class SpellRegistry {
 		 * de golpe temporales, ver {@link Combatant#grantTemporaryHp}).</p>
 		 */
 		public boolean isSelfTargeted() { return "buff".equals(mode) || "temphp".equals(mode); }
+
+		/** Invocación que entra en la iniciativa y ataca sola en sus turnos — ver {@link SummonManager}. */
+		public boolean isSummon() { return "summon".equals(mode); }
 		//Mismo patrón que MonsterRegistry.MonsterAttack/MonsterSpell: un hechizo de concentración
 		//(Guardianes Espirituales, Rayo de Luna...) puede dejar un efecto de estado corriendo mientras dura
 		//la concentración (ver ConcentrationManager/TurnManager.applyEffect), que se revierte solo si se
@@ -128,6 +131,9 @@ public class SpellRegistry {
 		//que siempre. Un valor desconocido cae también a esfera en vez de descartar el hechizo entero.
 		String aoeShape = json.has("aoeShape") ? json.get("aoeShape").getAsString().toLowerCase(Locale.ROOT) : "sphere";
 		if (!aoeShape.equals("line") && !aoeShape.equals("cone") && !aoeShape.equals("wall")) aoeShape = "sphere";
+		//Cuerpo vanilla de una invocación. Vex por defecto: flota, es pequeño y no se parece a ningún mob
+		//hostil concreto, que es lo más cerca de "un arma espiritual" que hay sin modelo propio.
+		String summonEntityId = json.has("summonEntity") ? json.get("summonEntity").getAsString() : "minecraft:vex";
 
 		//Mismo formato anidado que MonsterRegistry.parse/parseAttack usan para sus propios monstruos:
 		//"appliesEffect": {"name": "...", "dice": "...", "turns": N}.
@@ -136,7 +142,7 @@ public class SpellRegistry {
 		String effectDice = effect != null ? effect.get("dice").getAsString() : null;
 		int effectTurns = effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0;
 
-		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius, aoeShape,
+		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId,
 			effectName, effectDice, effectTurns);
 	}
 

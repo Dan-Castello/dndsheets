@@ -86,5 +86,9 @@
   { "id": "dndsheets:blade_barrier", "name": "Barrera de Hojas", "level": 6, "mode": "save", "castingAbility": "wis", "saveAbility": "dex", "dice": "6d10", "halfOnSave": true, "damageType": "cortante", "concentration": true, "aoeRadius": 20, "aoeShape": "wall" },
   { "id": "dndsheets:false_life", "name": "Falsa Vida", "level": 1, "mode": "temphp", "castingAbility": "int", "dice": "1d4 + 4" },
   { "id": "dndsheets:divine_favor", "name": "Favor Divino", "level": 1, "mode": "buff", "castingAbility": "wis", "dice": "1d4", "damageType": "radiante", "concentration": true },
-  { "id": "dndsheets:branding_smite", "name": "Castigo Marcador", "level": 2, "mode": "buff", "castingAbility": "cha", "dice": "2d6", "damageType": "radiante", "concentration": true }
+  { "id": "dndsheets:branding_smite", "name": "Castigo Marcador", "level": 2, "mode": "buff", "castingAbility": "cha", "dice": "2d6", "damageType": "radiante", "concentration": true },
+  { "id": "dndsheets:spiritual_weapon", "name": "Arma Espiritual", "level": 2, "mode": "summon", "castingAbility": "wis", "dice": "1d8", "damageType": "fuerza", "summonEntity": "minecraft:vex" },
+  { "id": "dndsheets:flaming_sphere", "name": "Esfera Flamigera", "level": 2, "mode": "summon", "castingAbility": "int", "dice": "2d6", "damageType": "fuego", "concentration": true, "summonEntity": "minecraft:blaze" },
+  { "id": "dndsheets:faithful_hound", "name": "Sabueso Fiel", "level": 4, "mode": "summon", "castingAbility": "int", "dice": "4d8", "damageType": "perforante", "summonEntity": "minecraft:wolf" },
+  { "id": "dndsheets:arcane_sword", "name": "Espada Arcana", "level": 7, "mode": "summon", "castingAbility": "int", "dice": "3d10", "damageType": "fuerza", "concentration": true, "summonEntity": "minecraft:vex" }
 ]

@@ -579,7 +579,12 @@ public class TurnManager {
 	//desde fuera del área).
 	public static void addLateMonster(ServerLevel level, Entity monster, String displayName) {
 		if (!active) return;
-		TurnEntry newEntry = new TurnEntry(monster.getId(), displayName, true, null);
+		//isMonster aquí significa "es un ENEMIGO", y es lo que decide cuándo termina el encuentro (ver
+		//allEnemiesDefeated). Una invocación del jugador entra en la iniciativa —tiene que actuar— pero NO
+		//es un enemigo: marcarla como tal dejaría el combate sin terminar nunca mientras durase el Arma
+		//Espiritual. Mismo criterio que separa isMonster de isCombatTarget para los PNJ aliados.
+		boolean isEnemy = SummonManager.ownerOf(monster) == null;
+		TurnEntry newEntry = new TurnEntry(monster.getId(), displayName, isEnemy, null);
 		order.add(currentIndex + 1, newEntry);
 		freeze(level, newEntry); //Congela de entrada a un mob de compatibilidad recién sumado (no le toca aún); no-op para uno propio (ya NoAI desde que se invocó).
 		broadcast(level, Component.translatable("chat.dndsheets.turn.joins_combat", displayName).withStyle(ChatFormatting.GOLD));
@@ -705,6 +710,7 @@ public class TurnManager {
 			fireDueRoundCallbacks();
 			WallManager.endRound(level); //Asalto completo: los muros descuentan duración y se redibujan.
 			tickWeaponBuffs(level);
+			SummonManager.endRound(level);
 		}
 		beginTurn(level);
 	}

@@ -224,7 +224,11 @@ public class MonsterActionManager {
 		//escribir /dndturns next por él.
 		if (!TurnManager.tryAct(monsterEntity)) return;
 
-		Player target = level.getNearestPlayer(monsterEntity, 30);
+		//Una invocación del jugador ataca a los enemigos de su dueño; un monstruo del DM, al jugador más
+		//cercano. Sin esta distinción, el Arma Espiritual le pegaba a quien la invocó.
+		Entity target = SummonManager.ownerOf(monsterEntity) != null
+			? SummonManager.findEnemyTarget(level, monsterEntity, 30)
+			: level.getNearestPlayer(monsterEntity, 30);
 		if (target == null) return; //Nadie cerca: pasa el turno sin hacer nada, ya quedó consumido arriba.
 
 		moveTowardIfNeeded(monsterEntity, target);
@@ -235,8 +239,9 @@ public class MonsterActionManager {
 			resolveAttack(block, monsterEntity, randomOf(attacks), target);
 			return;
 		}
-		if (!block.spells().isEmpty()) {
-			resolveSpell(block, monsterEntity, randomOf(block.spells()), target);
+		//Los hechizos de monstruo siguen exigiendo un jugador: su resolución lee la hoja del objetivo.
+		if (!block.spells().isEmpty() && target instanceof Player playerTarget) {
+			resolveSpell(block, monsterEntity, randomOf(block.spells()), playerTarget);
 		}
 	}
 
@@ -287,40 +292,45 @@ public class MonsterActionManager {
 		resolveAttack(block, monsterEntity, randomOf(attacks), mover);
 	}
 
-	private static void resolveAttack(MonsterRegistry.MonsterStatBlock block, Entity monsterEntity, MonsterRegistry.MonsterAttack attack, Player target) {
+	/**
+	 * <p>Objetivo {@code Entity} y no {@code Player}: un invocado del jugador (Arma Espiritual, Esfera
+	 * Flamígera) ataca a monstruos, no a jugadores. Todo lo específico del objetivo —CA, resistencias,
+	 * PG temporales, cómo recibe el daño— ya lo resuelve {@link Combatant}, así que generalizarlo no
+	 * costó una segunda rama sino borrar las que quedaban.</p>
+	 */
+	private static void resolveAttack(MonsterRegistry.MonsterStatBlock block, Entity monsterEntity, MonsterRegistry.MonsterAttack attack, Entity target) {
+		Combatant targetCombatant = Combatant.of(target);
+		if (targetCombatant == null) return;
+
 		int toHitMod = block.abilityModifier(attack.toHitAbility()) + block.proficiencyBonus();
 		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(new JsonObject(), "1d20 + " + toHitMod, DiceManager.Advantage.NORMAL);
 		if (attackRoll.outcome().result() == null) return;
 		CombatFx.diceTick(monsterEntity);
 
-		JsonObject targetSheet = SheetLoader.getServerSheet(target.getStringUUID());
-		int targetAc = targetSheet != null ? CombatManager.armorClassOf(target, targetSheet) : 10 + (int) target.getArmorValue();
-		if (!attackRoll.criticalHit() && !attackRoll.criticalMiss() && target instanceof ServerPlayer serverTarget) {
-			targetAc = ShieldManager.effectiveAc(serverTarget, attackRoll.outcome().result().getValue(), targetAc);
+		int targetAc = targetCombatant.armorClass();
+		//Reacciones defensivas (Escudo): igual que en CombatManager, solo si el golpe depende de la CA.
+		if (!attackRoll.criticalHit() && !attackRoll.criticalMiss()) {
+			targetAc = targetCombatant.reactiveArmorClass(attackRoll.outcome().result().getValue());
 		}
+		String targetName = targetCombatant.name();
 
 		if (attackRoll.criticalMiss() || (!attackRoll.criticalHit() && attackRoll.outcome().result().getValue() < targetAc)) {
-			ChatFeedback.broadcast(monsterEntity, ChatFeedback.attackResult(block.name(), target.getName().getString(), attack.name(), attackRoll.outcome().formatted(), targetAc, false, null));
+			ChatFeedback.broadcast(monsterEntity, ChatFeedback.attackResult(block.name(), targetName, attack.name(), attackRoll.outcome().formatted(), targetAc, false, null));
 			return;
 		}
 
+		//Crítico automático contra un objetivo paralizado o inconsciente, igual que en CombatManager: el
+		//monstruo juega con las mismas reglas que el jugador, que es de lo que iba todo esto.
+		boolean critical = attackRoll.criticalHit() || targetCombatant.autoCritInMelee();
 		int damageMod = block.abilityModifier(attack.damageAbility());
-		DiceManager.DamageResult damageRoll = DiceManager.rollDamage(new JsonObject(), attack.dice() + " + " + damageMod, attackRoll.criticalHit());
+		DiceManager.DamageResult damageRoll = DiceManager.rollDamage(new JsonObject(), attack.dice() + " + " + damageMod, critical);
 		if (damageRoll.formatted() == null) return;
 
-		//Por Combatant y no por DamageTypes directo: así el objetivo cobra además la resistencia a todo el
-		//daño de petrificado, que no está declarada en su hoja sino en sus condiciones.
-		Combatant targetCombatant = Combatant.of(target);
-		double affinity = targetCombatant != null
-			? targetCombatant.effectiveDamageMultiplier(attack.damageType(), false) //Un ataque natural de monstruo no es mágico salvo que su bloque lo diga, y el esquema todavía no lo dice.
-			: DamageTypes.multiplierFor(target, targetSheet, attack.damageType());
-		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), affinity);
-		//Por Combatant y no por hurt() directo: así los PG temporales absorben también el golpe de un
-		//monstruo, y la concentración la comprueba PlayerCombatant.applyRealDamage en un solo sitio.
-		if (targetCombatant != null) targetCombatant.takeDamage(finalAmount);
-		else target.hurt(target.damageSources().generic(), finalAmount);
-		CombatFx.hit(target, attackRoll.criticalHit(), attack.damageType());
-		ChatFeedback.broadcast(monsterEntity, ChatFeedback.attackResult(block.name(), target.getName().getString(), attack.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()));
+		//Un ataque natural de monstruo no es mágico salvo que su bloque lo diga, y el esquema todavía no lo dice.
+		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), targetCombatant.effectiveDamageMultiplier(attack.damageType(), false));
+		targetCombatant.takeDamage(finalAmount); //Cubre PG temporales, concentración y muerte en un solo sitio.
+		CombatFx.hit(target, critical, attack.damageType());
+		ChatFeedback.broadcast(monsterEntity, ChatFeedback.attackResult(block.name(), targetName, attack.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()));
 
 		if (attack.appliesEffect()) applyEffectFromHit(target, attack.effectName(), attack.effectDice(), attack.effectTurns(), monsterEntity);
 	}

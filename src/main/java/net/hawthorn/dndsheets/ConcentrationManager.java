@@ -50,6 +50,10 @@ public class ConcentrationManager {
 		WallManager.removeFor(caster.getUUID());
 		//Los buffs de arma tambien son de concentracion (Favor Divino, Castigo Marcador).
 		WeaponBuffManager.clear(SheetLoader.getServerSheet(caster.getStringUUID()));
+		//Las invocaciones tambien: Arma Espiritual y Esfera Flamigera son de concentracion.
+		if (caster.level() instanceof net.minecraft.server.level.ServerLevel summonLevel) {
+			SummonManager.removeFor(summonLevel, caster.getUUID());
+		}
 		Concentrating previous = concentratingOn.remove(caster.getUUID());
 		if (previous != null && previous.effectName() != null) {
 			//El nivel sale del propio lanzador: se necesita para resolver la entidad objetivo y poder

@@ -376,6 +376,18 @@ public class MonsterRegistry {
 	 * @return la entidad invocada, o null si el monstruo no existe o su ítem base no es válido.
 	 */
 	public static Entity spawnAt(ServerLevel level, double x, double y, double z, String monsterId) {
+		return spawnAt(level, x, y, z, monsterId, null);
+	}
+
+	/**
+	 * @param configure se ejecuta sobre la entidad recién creada ANTES de que entre al orden de turnos.
+	 *                  Existe porque hay estado que decide cómo entra: una invocación se etiqueta con su
+	 *                  dueño, y {@code addLateMonster} lee esa etiqueta para saber si es enemigo o aliado.
+	 *                  Etiquetarla después la metía en la iniciativa como enemigo, y entonces el combate no
+	 *                  terminaba nunca mientras durase.
+	 */
+	public static Entity spawnAt(ServerLevel level, double x, double y, double z, String monsterId,
+			java.util.function.Consumer<Entity> configure) {
 		MonsterStatBlock block = get(monsterId);
 		if (block == null) return null;
 
@@ -391,6 +403,7 @@ public class MonsterRegistry {
 		entity.setCustomNameVisible(true);
 		if (entity instanceof Mob mob) mob.setNoAi(true);
 		tagAsMonster(entity, monsterId, block.maxHp());
+		if (configure != null) configure.accept(entity);
 
 		level.addFreshEntity(entity);
 

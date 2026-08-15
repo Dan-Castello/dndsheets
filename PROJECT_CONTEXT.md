@@ -226,7 +226,7 @@ dependencies, not preference.
   player's character, real hit points, AC and active conditions). Both ride on one parameterized
   `RosterActionMessage`/`RosterListMessage` pair, registered **at the end** of the list rather than
   in its alphabetical slot — see invariant 1.
-- **Fase 2 — SRD content. Imported in four batches; the bestiary is done.** 24 → **83 spells**
+- **Fase 2 — SRD content. Imported in four batches; the bestiary is done.** 24 → **87 spells**
   and 13 → **330 monsters** (145 with resistances, 68 of them conditional). Content comes from
   SRD 5.1 under CC-BY-4.0 — see `ATTRIBUTION.md`, which is a licence obligation, not a courtesy.
 
@@ -263,7 +263,14 @@ dependencies, not preference.
      per hit: they last rounds, and making them consumable would silently turn Divine Favor from
      "1 minute" into "one swing". Aid stays out: raising the party's HP *maximum* is a third
      mechanic, neither temp HP nor a buff.
-  4. **Summoned entities that act on later turns** — ~5 spells (Spiritual Weapon, Flaming Sphere).
+  4. ~~Summoned entities that act on later turns~~ — **done**, and it turned out to be mostly wiring:
+     `MonsterRegistry.spawnAt` already spawns stat-blocked entities, `TurnManager.addLateMonster`
+     already inserts them mid-encounter and `MonsterActionManager.autoAct` already makes a monster
+     attack on its own turn. What was actually missing was **who** it attacks — `autoAct` targets the
+     nearest *player*, which for a player's own Spiritual Weapon is exactly backwards. Two traps
+     found while wiring it: a summon must **not** count as an enemy or combat never ends while it
+     lasts (same split as friendly NPCs, `isMonster` vs `isCombatTarget`), and it must be tagged with
+     its owner **before** joining initiative, which is why `spawnAt` grew a `configure` hook.
   5. **Multi-round area effects** — Moonbeam, Storm of Vengeance.
   6. **Magic items** — ~200 in the SRD, none in the mod, no schema yet. Biggest untouched area.
 

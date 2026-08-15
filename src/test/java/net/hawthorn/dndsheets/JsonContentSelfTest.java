@@ -103,7 +103,16 @@ public class JsonContentSelfTest {
 			SpellRegistry.Spell parsed = SpellRegistry.parse(json);
 			if (SpellRegistry.get(id) == null) SpellRegistry.register(parsed);
 		}
-		assertTrue(bulk.size() >= 83, "spells.json debería traer al menos los 83 hechizos importados del SRD, trae " + bulk.size());
+		assertTrue(bulk.size() >= 87, "spells.json debería traer al menos los 87 hechizos importados del SRD, trae " + bulk.size());
+
+		//Invocación: deja algo en el mundo que entra en la iniciativa y ataca solo. Si alguien la degradara
+		//a un hechizo de ataque normal, se resolvería una vez y no volvería a actuar nunca.
+		SpellRegistry.Spell summon = SpellRegistry.get("dndsheets:spiritual_weapon");
+		assertTrue(summon != null && summon.isSummon(), "spiritual_weapon debería ser una invocación");
+		assertTrue(summon.summonEntityId() != null && !summon.summonEntityId().isEmpty(),
+			"una invocación necesita un cuerpo vanilla que la represente");
+		assertTrue(summon.isSelfTargeted() || summon.isSummon(),
+			"una invocación no necesita objetivo delante para lanzarse");
 
 		//Un muro no se resuelve al lanzarlo: se coloca y daña por asaltos (ver WallManager). Si alguien lo
 		//degradara a esfera, explotaría una vez en la cara del lanzador en vez de quedarse ahí.
