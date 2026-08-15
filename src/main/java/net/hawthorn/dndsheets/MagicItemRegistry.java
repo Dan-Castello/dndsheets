@@ -43,11 +43,24 @@ public class MagicItemRegistry {
 	 */
 	public record MagicItem(String id, String name, String rarity, String description, String itemId,
 	                        int acBonus, int saveBonus, Map<String, String> affinities,
-	                        String grantsSpellId, boolean attunement) {
+	                        String grantsSpellId, boolean attunement,
+	                        String healDice, String temporaryHpDice, String grantsCondition,
+	                        Map<String, String> temporaryAffinities, int durationRounds) {
+
+		/**
+		 * <p>Se usa gastándolo (pociones, aceites). Sus efectos NO son pasivos: modelar una poción de
+		 * resistencia como afinidad permanente protegería a quien lleva la botella en el bolsillo sin
+		 * beberla, que es justo el falso positivo que hubo que excluir al derivar mecánicas de la prosa.</p>
+		 */
+		public boolean isConsumable() {
+			return healDice != null || temporaryHpDice != null || grantsCondition != null
+				|| !temporaryAffinities.isEmpty();
+		}
 
 		/** Un objeto puramente narrativo: el DM lo describe, el motor no tiene nada que aplicar. */
 		public boolean hasMechanics() {
-			return acBonus != 0 || saveBonus != 0 || !affinities.isEmpty() || grantsSpellId != null;
+			return acBonus != 0 || saveBonus != 0 || !affinities.isEmpty() || grantsSpellId != null
+				|| isConsumable();
 		}
 	}
 
@@ -68,13 +81,8 @@ public class MagicItemRegistry {
 
 	public static MagicItem parse(JsonObject json) {
 		String id = json.get("id").getAsString();
-		Map<String, String> affinities = new HashMap<>();
-		if (json.has("damageAffinities")) {
-			JsonObject declared = json.getAsJsonObject("damageAffinities");
-			for (String type : declared.keySet()) {
-				affinities.put(type.toLowerCase(Locale.ROOT), declared.get(type).getAsString().toLowerCase(Locale.ROOT));
-			}
-		}
+		Map<String, String> affinities = readAffinities(json, "damageAffinities");
+		Map<String, String> temporaryAffinities = readAffinities(json, "temporaryAffinities");
 		return new MagicItem(
 			id,
 			json.has("name") ? json.get("name").getAsString() : id,
@@ -87,7 +95,23 @@ public class MagicItemRegistry {
 			json.has("saveBonus") ? json.get("saveBonus").getAsInt() : 0,
 			affinities,
 			json.has("grantsSpell") ? json.get("grantsSpell").getAsString() : null,
-			json.has("attunement") && json.get("attunement").getAsBoolean());
+			json.has("attunement") && json.get("attunement").getAsBoolean(),
+			json.has("healDice") ? json.get("healDice").getAsString() : null,
+			json.has("temporaryHpDice") ? json.get("temporaryHpDice").getAsString() : null,
+			json.has("grantsCondition") ? json.get("grantsCondition").getAsString() : null,
+			temporaryAffinities,
+			//10 asaltos = 1 minuto de 5e, que es lo que dura la mayoría de las pociones.
+			json.has("durationRounds") ? json.get("durationRounds").getAsInt() : 10);
+	}
+
+	private static Map<String, String> readAffinities(JsonObject json, String field) {
+		Map<String, String> result = new HashMap<>();
+		if (!json.has(field)) return result;
+		JsonObject declared = json.getAsJsonObject(field);
+		for (String type : declared.keySet()) {
+			result.put(type.toLowerCase(Locale.ROOT), declared.get(type).getAsString().toLowerCase(Locale.ROOT));
+		}
+		return result;
 	}
 
 	//--- Etiqueta NBT del ItemStack, mismo patrón que quickSpell y monsterSpawn ---

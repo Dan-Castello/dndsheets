@@ -724,6 +724,9 @@ public class TurnManager {
 			if (WeaponBuffManager.tickRound(sheet)) {
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.spell.buff_faded").withStyle(ChatFormatting.GRAY));
 			}
+			for (String type : ConsumableManager.tickRound(sheet)) {
+				player.sendSystemMessage(Component.translatable("chat.dndsheets.item.resistance_faded", type).withStyle(ChatFormatting.GRAY));
+			}
 		}
 	}
 

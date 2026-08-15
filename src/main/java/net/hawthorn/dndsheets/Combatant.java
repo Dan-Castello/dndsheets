@@ -365,6 +365,10 @@ public interface Combatant {
 		//"magical" a proposito: el dia que un objeto magico conceda una condicional, se lee aqui y ya.
 		@Override default double damageMultiplier(String damageType, boolean magical) {
 			double multiplier = DamageTypes.multiplierFor(entity(), sheet(), damageType);
+			//Resistencia temporal de una poción: se combina quedándose con la más protectora, igual que las
+			//de objeto — beber dos pociones del mismo tipo no da inmunidad.
+			String temporary = ConsumableManager.activeAffinity(sheet(), damageType == null ? null : damageType.toLowerCase(Locale.ROOT));
+			if (temporary != null) multiplier = Math.min(multiplier, DamageTypes.multiplierForLabel(temporary));
 			//Las resistencias de objetos mágicos se combinan con las de la hoja quedándose con la MÁS
 			//protectora, no sumándose: en 5e dos fuentes de resistencia al fuego siguen siendo resistencia
 			//al fuego, no inmunidad.

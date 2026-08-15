@@ -35,7 +35,18 @@ public class AbilityItemDispatcher {
 		else if (dndTag.getBoolean("divineSmite")) PaladinSmiteManager.tryUse(event);
 		else if (dndTag.getBoolean("twinnedSpell")) SorcererMetamagicManager.tryUse(event);
 		else if (dndTag.getBoolean("wildShape")) DruidWildShapeManager.tryUse(event);
+		//Antes que quickSpell: una varita que ADEMAS es consumible no existe hoy, pero si existiera, gastarla
+		//debe ganar — lanzar sin gastarla seria darla infinita.
+		else if (isConsumable(dndTag)) ConsumableManager.tryUse(event, dndTag.getString("magicItem"));
 		else if (dndTag.contains("quickSpell")) QuickSpellManager.tryUse(event, dndTag.getString("quickSpell"));
+	}
+
+	//Un objeto magico solo entra por aqui si de verdad es consumible: los pasivos (anillos, capas) no
+	//deben hacer nada al pulsarlos, y cancelar su evento impediria colocarlos en una ranura de Curios.
+	private static boolean isConsumable(CompoundTag dndTag) {
+		if (!dndTag.contains("magicItem")) return false;
+		MagicItemRegistry.MagicItem item = MagicItemRegistry.get(dndTag.getString("magicItem"));
+		return item != null && item.isConsumable();
 	}
 
 	@SubscribeEvent
@@ -50,6 +61,9 @@ public class AbilityItemDispatcher {
 		else if (dndTag.getBoolean("turnUndo")) TurnItemManager.tryUse(event, false);
 		else if (dndTag.getBoolean("secondWind")) FighterSecondWindManager.tryUse(event);
 		else if (dndTag.getBoolean("wildShape")) DruidWildShapeManager.tryUse(event);
+		//Antes que quickSpell: una varita que ADEMAS es consumible no existe hoy, pero si existiera, gastarla
+		//debe ganar — lanzar sin gastarla seria darla infinita.
+		else if (isConsumable(dndTag)) ConsumableManager.tryUse(event, dndTag.getString("magicItem"));
 		else if (dndTag.contains("quickSpell")) QuickSpellManager.tryUse(event, dndTag.getString("quickSpell"));
 	}
 
@@ -67,6 +81,9 @@ public class AbilityItemDispatcher {
 		else if (dndTag.getBoolean("secondWind")) FighterSecondWindManager.tryUse(event);
 		else if (dndTag.getBoolean("wildShape")) DruidWildShapeManager.tryUse(event);
 		else if (dndTag.getBoolean("bardicInspiration")) BardInspirationManager.tryUse(event);
+		//Antes que quickSpell: una varita que ADEMAS es consumible no existe hoy, pero si existiera, gastarla
+		//debe ganar — lanzar sin gastarla seria darla infinita.
+		else if (isConsumable(dndTag)) ConsumableManager.tryUse(event, dndTag.getString("magicItem"));
 		else if (dndTag.contains("quickSpell")) QuickSpellManager.tryUse(event, dndTag.getString("quickSpell"));
 	}
 

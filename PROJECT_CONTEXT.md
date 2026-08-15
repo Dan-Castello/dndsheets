@@ -289,9 +289,10 @@ dependencies, not preference.
      second-person subject ("**you** gain resistance to fire") to avoid picking up effects that describe
      something other than the wearer, and review still caught three classes of false positive worth
      remembering: potions (their effect comes from *drinking*, so a passive affinity would protect
-     whoever carries the bottle), generic family entries whose concrete variants are the real items, and
+     whoever carries the bottle — they are now **consumables**, see below), generic family entries
+     whose concrete variants are the real items, and
      the Defender sword (+2 AC **in exchange for** attack bonus — applying it unconditionally makes the
-     item strictly better than it is, the same kind of lie as inflating a die). **362 imported, 62 mechanical.**
+     item strictly better than it is, the same kind of lie as inflating a die). **362 imported, 80 mechanical.**
      An item with no mechanics is not broken, it is an item the DM narrates, which is how most magic
      items work at a real table anyway.
 
@@ -308,6 +309,15 @@ dependencies, not preference.
      lives in package-private `CuriosSlots`, reached only after `isLoaded()`, and Java's lazy class
      loading does the rest. In the build it is `compileOnly` (plus `runtimeOnly` purely so the dev
      client can test it) and in `mods.toml` it is `mandatory=false`; it never ships inside the jar.
+
+     **Consumables** (`ConsumableManager`) are the capability that let the ~40 potions stop being
+     narrative: their effect comes from *using them up*, not from carrying them. It invents almost
+     nothing — healing goes through vanilla health, temporary hit points through
+     `Combatant.grantTemporaryHp`, and a granted condition through `TurnManager.applyEffect`, which
+     already knows how to lift it when the timer runs out. The only genuinely new storage is temporary
+     resistances, because there was nowhere to record "resistant to fire for 10 rounds"; they merge with
+     every other resistance source by taking the **most protective**, so drinking two of the same potion
+     is still resistance, not immunity.
 
   Silvered/adamantine resistance variants collapse into plain "nonmagical" on purpose: the mod has
   no such materials, and the alternative was discarding the resistance entirely.

@@ -214,6 +214,8 @@
 
   "chat.dndsheets.turn.already_acted": "Ya usaste tu acción este turno.",
   "chat.dndsheets.turn.blocked_elsewhere": "Ya hay un combate activo en otra parte del mapa — termínalo antes de arrancar otro.",
+  "chat.dndsheets.item.consumed": "%s usa %s: %s.",
+  "chat.dndsheets.item.resistance_faded": "Tu resistencia a %s se desvanece.",
   "chat.dndsheets.spell.summoned": "%s invoca %s.",
   "chat.dndsheets.spell.summon_faded": "%s se desvanece.",
   "chat.dndsheets.spell.buff_faded": "La potenciación del arma se desvanece.",

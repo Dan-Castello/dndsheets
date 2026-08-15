@@ -266,7 +266,30 @@ public class JsonContentSelfTest {
 		//Que HAYA objetos narrativos es correcto y esperado: el SRD publica los objetos mágicos como prosa,
 		//así que la mayoría no tiene mecánicas derivables. Lo que se fija aquí es que las escritas a mano no
 		//se hayan perdido por el camino.
-		assertTrue(mechanical >= 60, "deberían quedar al menos 60 objetos con mecánicas reales, hay " + mechanical);
+		assertTrue(mechanical >= 78, "deberían quedar al menos 78 objetos con mecánicas reales, hay " + mechanical);
+
+		//Consumibles: sus efectos NO son pasivos. Una poción de resistencia modelada como afinidad
+		//permanente protegería a quien lleva la botella sin beberla — es el falso positivo que motivó
+		//que existiera esta distinción, así que conviene fijarla.
+		MagicItemRegistry.MagicItem potion = MagicItemRegistry.get("dndsheets:potion_of_resistance_fire");
+		assertTrue(potion != null && potion.isConsumable(), "la poción de resistencia debería ser consumible");
+		assertTrue(potion.affinities().isEmpty(), "y NO tener afinidad pasiva: solo la da al beberla");
+		assertTrue("resistant".equals(potion.temporaryAffinities().get("fuego")), "su resistencia es temporal");
+		assertTrue(potion.durationRounds() > 0, "y con duración en asaltos");
+
+		MagicItemRegistry.MagicItem heal = MagicItemRegistry.get("dndsheets:potion_of_healing_greater");
+		assertTrue(heal != null && heal.isConsumable() && heal.healDice() != null, "la poción de curación cura al beberla");
+
+		//Una condición concedida por un consumible tiene que ser una condición REAL: si no, TurnManager la
+		//trata como efecto de daño de nombre libre y con dados "0" no hace absolutamente nada.
+		for (JsonElement el : items) {
+			JsonObject json = el.getAsJsonObject();
+			if (!json.has("grantsCondition")) continue;
+			String condition = json.get("grantsCondition").getAsString();
+			assertTrue(Condition.fromLabel(condition) != null,
+				json.get("id").getAsString() + " concede \"" + condition + "\", que no es una condición real");
+		}
+
 
 		//Un objeto que concede un conjuro solo funciona si ese conjuro EXISTE: si no, se etiqueta como
 		//báculo rápido apuntando a la nada y el clic derecho no hace absolutamente nada.
@@ -283,6 +306,9 @@ public class JsonContentSelfTest {
 			"el Anillo de Protección debería dar +1 a CA y a salvaciones");
 		assertTrue(ring.attunement(), "y requerir sintonización, que es lo que limita a tres objetos");
 		assertTrue(ring.hasMechanics(), "un objeto con bonificadores no es narrativo");
+		//Y NO es consumible: pulsarlo lo gastaría, y además cancelaría el clic que hace falta para ponerlo
+		//en una ranura de Curios.
+		assertTrue(!ring.isConsumable(), "el Anillo de Protección es pasivo, no se bebe");
 
 		//Sintonización: el límite de 3 es lo que impide acumular objetos sin freno, así que conviene fijarlo.
 		JsonObject sheet = new JsonObject();

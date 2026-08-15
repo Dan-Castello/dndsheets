@@ -214,6 +214,8 @@
 
   "chat.dndsheets.turn.already_acted": "You already used your action this turn.",
   "chat.dndsheets.turn.blocked_elsewhere": "There's already an active combat somewhere else on the map — end it before starting another one.",
+  "chat.dndsheets.item.consumed": "%s uses %s: %s.",
+  "chat.dndsheets.item.resistance_faded": "Your resistance to %s fades.",
   "chat.dndsheets.spell.summoned": "%s summons %s.",
   "chat.dndsheets.spell.summon_faded": "%s vanishes.",
   "chat.dndsheets.spell.buff_faded": "The weapon empowerment fades.",
