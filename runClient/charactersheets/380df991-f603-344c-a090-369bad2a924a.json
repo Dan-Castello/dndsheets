@@ -1,10 +1,10 @@
 {
   "characterName": "New Sheet",
-  "strength": "10",
-  "dexterity": "10",
-  "constitution": "10",
-  "intelligence": "10",
-  "wisdom": "10",
+  "strength": "15",
+  "dexterity": "13",
+  "constitution": "14",
+  "intelligence": "8",
+  "wisdom": "12",
   "charisma": "10",
   "proficiencyBonus": "2",
   "checks": [
@@ -71,99 +71,20 @@
       ]
     },
     {
-      "name": "Arco",
-      "itemId": "minecraft:bow",
+      "name": "Daga",
+      "itemId": "dndsheets:dagger",
       "rolls": [
         [
           {
-            "context": "",
-            "expression": ""
-          },
-          {
-            "context": "",
-            "expression": ""
+            "context": "Daño",
+            "expression": "1d4 + $dex"
           }
         ]
       ]
     },
     {
-      "name": "New Attack",
-      "rolls": [
-        [
-          {
-            "context": "Damage Roll",
-            "expression": "2d6 + $str"
-          },
-          {
-            "context": "",
-            "expression": ""
-          }
-        ],
-        [
-          {
-            "context": "Attack Roll",
-            "expression": "1d20 + $str + $prof"
-          },
-          {
-            "context": "",
-            "expression": ""
-          }
-        ]
-      ]
-    },
-    {
-      "name": "New Attack",
-      "rolls": [
-        [
-          {
-            "context": "Damage Roll",
-            "expression": "2d6 + $str"
-          },
-          {
-            "context": "",
-            "expression": ""
-          }
-        ],
-        [
-          {
-            "context": "Attack Roll",
-            "expression": "1d20 + $str + $prof"
-          },
-          {
-            "context": "",
-            "expression": ""
-          }
-        ]
-      ]
-    },
-    {
-      "name": "New Attack",
-      "rolls": [
-        [
-          {
-            "context": "Damage Roll",
-            "expression": "2d6 + $str"
-          },
-          {
-            "context": "",
-            "expression": ""
-          }
-        ],
-        [
-          {
-            "context": "Attack Roll",
-            "expression": "1d20 + $str + $prof"
-          },
-          {
-            "context": "",
-            "expression": ""
-          }
-        ]
-      ]
-    },
-    {
-      "name": "Espada de netherita",
-      "itemId": "minecraft:netherite_sword",
+      "name": "Iron Sword",
+      "itemId": "minecraft:iron_sword",
       "rolls": [
         [
           {
@@ -174,21 +95,27 @@
       ]
     }
   ],
-  "characterClass": "Brujo",
+  "characterClass": "Guerrero",
   "characterRace": "Tiefling",
   "background": "Criminal",
-  "hitPoints": "8",
-  "hitPointsMax": "8",
+  "hitPoints": "36",
+  "hitPointsMax": "36",
   "hitPointsTemp": "0",
-  "armorClass": "10",
+  "armorClass": "11",
   "speed": "",
-  "hitDiceTypes": "",
+  "hitDiceTypes": "1d10",
   "hitDice": "",
   "schemaVersion": 1,
   "level": "4",
   "nextAttackAdvantage": "normal",
   "counterspellReady": true,
-  "spells": [],
+  "spells": [
+    {
+      "id": "dndsheets:burning_hands",
+      "name": "Manos Ardientes",
+      "level": 1
+    }
+  ],
   "traits": [
     "monje:artes_marciales",
     "picaro:ataque_furtivo"
@@ -196,5 +123,6 @@
   "spellSlotsCurrent": 6,
   "spellSlotsMax": 10,
   "gold": 0,
-  "warlockPact": "cadena"
+  "warlockPact": "cadena",
+  "appliedPresetId": "fighter"
 }
