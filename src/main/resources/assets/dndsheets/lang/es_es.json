@@ -27,14 +27,17 @@
   "gui.dndsheets.guide.page.death_saves": "A 0 PG tiras salvaciones de muerte. 3 éxitos te estabiliza, 3 fallos es la muerte, y un 20 natural te despierta. Un jugador cerca también puede reanimarte.",
   "gui.dndsheets.guide.page.spells": "Abre tu Grimorio desde la hoja para ver hechizos conocidos y espacios. Mira a un objetivo y lanza para usar un hechizo. Agachado + clic con un báculo de hechizo de área previsualiza el radio sin lanzarlo.",
   "gui.dndsheets.guide.page.distance": "Escribe /dnddistance seguido del nombre de un objetivo para ver la distancia en pies hasta él.",
-  "gui.dndsheets.guide.page.dm_panel": "Pulsa P (requiere permiso de operador) para abrir el Panel de DM: iniciar modo turnos, invocar un NPC genérico, conceder un rasgo, ajustar una hoja o aplicar un preset de clase.",
+  "gui.dndsheets.guide.page.class_items": "Tu DM puede darte un ítem de recurso de clase (Tótem de Furia, Segundo Aliento, Cuerno de Inspiración, ficha de Forma Salvaje, amuleto de Metamagia, guantelete de Castigo Divino, flecha de Marca del Cazador, Escudo, runa de Contrahechizo...). Clic derecho para usarlo.",
+  "gui.dndsheets.guide.page.dm_panel": "Pulsa P (requiere permiso de operador) para abrir el Panel de DM: turnos, invocar NPCs/monstruos, conceder rasgos, dar objetos/armas/hechizos, ajustar una hoja, aplicar presets, mazmorras y crear contenido — todo sin comandos.",
   "gui.dndsheets.guide.page.dm_wand": "Haz clic derecho sobre un monstruo con la Vara de DM para resolver sus ataques y hechizos, o gestionar sus ataques personalizados.",
   "gui.dndsheets.guide.page.dm_dungeons_1": "Mazmorras: construí una sala, guardala con un bloque de estructura (SAVE), y clic derecho sobre él con la Vara de DM para capturarla como pieza, prellenado. Ver DUNGEON_GUIDE.md para la guía completa.",
   "gui.dndsheets.guide.page.dm_dungeons_2": "Configurá cada jigsaw block con clic derecho (agachado + clic para copiar la config a otro), y generá desde Panel de DM (P) -> Mazmorras -> Generar mazmorra.",
   "gui.dndsheets.guide.page.dm_notes": "/dndnotes give <jugadores> entrega un Cuaderno del DM: un Libro y Pluma renombrado. Es privado como cualquier libro, y Minecraft guarda su contenido solo.",
   "gui.dndsheets.guide.page.dm_turns": "Controla el combate con /dndturns: start, next, cancel, end, y effect para aplicar un efecto de estado a un jugador.",
   "gui.dndsheets.guide.page.dm_content_packs": "Armas, hechizos, monstruos y presets personalizados son archivos JSON en <mundo>/dndsheets/{weapons,spells,monsters,presets}/.",
-  "gui.dndsheets.guide.page.dm_commands": "Referencia rápida: /dndsheet, /dndweapons, /dndspells, /dndmonsters, /dndpresets, /dndtraits, /dndoptions, /roll, /dndturns.",
+  "gui.dndsheets.guide.page.dm_sheet_admin": "/dndsheet ajusta a distancia la hoja de cualquier jugador: setslots, restkit, advantage, damagetype, gold, pact, setlevel, setac, setroll, y los subcomandos ...item (rageitem, secondwinditem, smiteitem...) que entregan ítems de recurso de clase.",
+  "gui.dndsheets.guide.page.dm_more_packs": "/dndweapons y /dndpresets cargan packs JSON de armas y presets de clase; /dndtraits carga y concede rasgos pasivos; /dndoptions carga las listas de Raza/Trasfondo/Clase del selector.",
+  "gui.dndsheets.guide.page.dm_commands": "Referencia rápida: /dndsheet, /dndweapons, /dndspells, /dndmonsters, /dndpresets, /dndtraits, /dndoptions, /dndturns, /dnddungeon, /dndnotes, /dndguide, /roll (/r), /rollprivate (/rp), /dnddistance. Todos menos /roll, /rollprivate, /dnddistance y /dndguide requieren permiso de operador.",
 
   "gui.dndsheets.character_sheet.ability_str": "Fuerza",
   "gui.dndsheets.character_sheet.ability_dex": "Destreza",
@@ -230,6 +233,6 @@
   "chat.dndsheets.concentration.kept": "%s mantiene la concentración en %s (CD %s: %s).",
   "chat.dndsheets.concentration.lost": "%s pierde la concentración en %s (CD %s: %s).",
 
-  "chat.dndsheets.welcome.sheet_key": "Pulsa H para abrir tu hoja de personaje.",
-  "chat.dndsheets.welcome.dm_key": "Eres operador — pulsa P para abrir el Panel de DM."
+  "chat.dndsheets.welcome.sheet_key": "Pulsa H para abrir tu hoja de personaje. ¿Primera vez? El botón Guía de la hoja te explica todo paso a paso.",
+  "chat.dndsheets.welcome.dm_key": "Eres operador — pulsa P para abrir el Panel de DM. Su botón Guía incluye instrucciones para DMs (Vara de DM, mazmorras, turnos, etc.)."
 }

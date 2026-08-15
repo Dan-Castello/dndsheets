@@ -49,24 +49,31 @@ El portapapeles es por DM y no se borra solo — seguís pudiendo pegarlo en pie
    - **Tags**: libre, no se usa todavía para filtrar generación — solo para tu propia organización.
 4. **Confirmar.** Esto copia el `.nbt` al datapack de la partida actual y registra la pieza. Si el bloque de estructura todavía no tiene nombre, o el `.nbt` no se guardó, te avisa en vez de fallar en silencio.
 
+El clic derecho del paso 1 también **re-guarda el bloque de estructura en ese mismo instante**, así que no importa si configuraste los jigsaws (paso 2) antes o después del último "Save" manual — la foto que se captura siempre es la más reciente, jigsaws incluidos.
+
 Repetí los pasos 1-3 para cada habitación que quieras tener disponible.
 
 ## 4. Generar la mazmorra
 
+**Regla de oro, léela antes de generar: el pool de entrada debe contener SOLO la(s) pieza(s) que tienen el jigsaw de inicio — nunca mezcles ahí piezas normales.** Minecraft, al arrancar la generación, elige **una pieza al azar (pesada por "Peso") de todo el pool** y busca el jigsaw de inicio *solo dentro de esa*. Si el pool tiene la pieza de entrada mezclada con piezas normales, cada generación tiene una probabilidad real de que le toque una pieza sin ese jigsaw — y falla. No es intermitencia rara ni un problema de tu configuración: es tirar una moneda cada vez que generás. Dale a tu pieza de entrada un pool **propio y dedicado** (llamalo `entrada` o `start`, y no lo uses para nada más) al capturarla en el paso 3.
+
+`DungeonPieceListScreen` (Panel de DM → Mazmorras) marca `[inicio]` junto a cada pieza que tiene el jigsaw — mirá esa lista antes de generar: si un pool tiene piezas con y sin `[inicio]` mezcladas, separalas primero. `Generar mazmorra` también valida esto solo y te avisa con el motivo exacto en vez de dejar que falle en silencio.
+
 **Panel de DM (P) → Mazmorras → Generar mazmorra:**
-- **Pool**: el pool de tu pieza de *entrada* (la que tiene el jigsaw marcado "Pieza de inicio: Sí").
+- **Pool**: el pool *dedicado* de tu pieza de entrada (ver regla de arriba) — no el pool al que sus jigsaws tiran hacia afuera, ese es otro campo del paso 2.
 - **Profundidad máx.** (1-7): cuántos pasos de piezas puede encadenar como máximo antes de parar.
 - **X/Y/Z**: dónde empezar a generar (prellenado con tu posición actual).
 
-Al confirmar, el mod publica todos los pools (escribe los JSON del datapack + corre `/reload`) y dispara la generación. Vas a ver `¡Recargando!` seguido de un resultado: `Mazmorra generada en ...` o un mensaje de error concreto.
+Al confirmar, el mod valida el pool (ver arriba), publica todos los pools (escribe los JSON del datapack) y corre `/reload`. Vas a ver `¡Recargando!` seguido de un resultado: `Mazmorra generada en ...` o un mensaje de error concreto.
+
+**Importante — la primera vez que generás con un pool nuevo (o después de editar/agregar piezas a uno existente), va a fallar la primera vez.** No es un error de configuración: Minecraft solo lee los pools de estructura (`template_pool`) al cargar el mundo, y `/reload` no los toca — recarga recetas, loot tables, tags, funciones y logros nada más. El datapack queda escrito bien en disco, pero el pool sigue "invisible" para la generación hasta que el mundo se recarga de verdad. El mensaje de error te lo dice: **salí al menú principal y volvé a entrar al mundo** (en un server dedicado, reinicialo) y generá de nuevo — ahí sí va a encontrar el pool. Esto solo hace falta una vez por pool nuevo/editado, no en cada generación.
 
 **Equivalente por comando** (útil para depurar o automatizar): `/dnddungeon generate <pool> <maxDepth> <x> <y> <z>`.
 
 ## 5. Gestionar piezas ya capturadas
 
-- **Panel de DM → Mazmorras** lista todas las piezas; tocar una abre "Editar pieza" (pool/peso/tags — no el id ni la estructura, esos son fijos desde la captura).
-- **Borrar una pieza** solo por comando: `/dnddungeon piece remove <id>` (acción rara de operador, no tiene botón en la GUI a propósito).
-- `/dnddungeon piece list` / `/dnddungeon publish` también están disponibles si preferís la terminal.
+- **Panel de DM → Mazmorras** lista todas las piezas; tocar una abre "Editar pieza" (pool/peso/tags — no el id ni la estructura, esos son fijos desde la captura), con un botón "Borrar pieza" ahí mismo.
+- `/dnddungeon piece remove <id>` hace lo mismo por comando, si preferís la terminal — igual que `/dnddungeon piece list` / `/dnddungeon publish`.
 
 ## Solución de problemas
 
@@ -74,8 +81,10 @@ Al confirmar, el mod publica todos los pools (escribe los JSON del datapack + co
 |---|---|
 | "No encontré una estructura escaneada como..." al capturar | El id que escribiste no coincide *exactamente* con el que le pusiste al bloque de estructura, o todavía no le diste Save. |
 | "Este jigsaw todavía no está configurado — nada que copiar" | Intentaste copiar (agachado + clic) un jigsaw que nunca configuraste con la Vara de DM (ni con la GUI vanilla usando nuestro namespace). |
-| `No starting jigsaw dndsheets:dungeon_start found in start pool ...` (log del servidor) + "La generación falló" en el chat | El **pool** que pusiste en "Generar mazmorra" no es el pool de tu pieza de entrada, o ningún jigsaw de esa pieza tiene "Pieza de inicio: Sí". |
-| "No encontré el pool \"X\" tras publicar" | Ninguna pieza capturada tiene ese pool exacto (revisá mayúsculas/espacios) — publicar solo escribe pools que tengan al menos una pieza. |
+| "Ninguna pieza en el pool ... tiene el jigsaw de inicio" | Ninguna pieza de ese pool tiene un jigsaw `Name=dndsheets:dungeon_start` en su `.nbt` capturado. O nunca marcaste "Pieza de inicio: Sí" en ningún jigsaw, o lo marcaste pero nunca volviste a capturar la pieza (clic con la Vara en el bloque de estructura) después — `DungeonPieceListScreen` marca `[inicio]` en las piezas que sí lo tienen, revisá ahí antes de generar. |
+| "El pool ... mezcla tu pieza de entrada con N pieza(s) sin jigsaw de inicio" | Exactamente la regla de oro de "4. Generar la mazmorra": tenés piezas normales compartiendo pool con tu pieza de entrada. Movelas a otro pool (editalas desde `DungeonPieceListScreen` → tocar la pieza → cambiar Pool), o recapturá la de entrada con un pool nuevo y dedicado. |
+| `No starting jigsaw dndsheets:dungeon_start found in start pool ...` (log del servidor) pese a que la validación de arriba no avisó nada | Recargaste el mundo *después* de la última captura/publicación pero *antes* de que el `.nbt` reflejara el jigsaw — volvé a capturar la pieza (clic con la Vara en el bloque de estructura, ahora re-guarda solo antes de copiar) y generá de nuevo. |
+| "Pool \"X\" publicado pero todavía no cargado" | Esperado la primera vez que usás un pool nuevo (o justo después de editarlo/agregarle piezas) — ver el aviso de arriba en "4. Generar la mazmorra". Salí al menú principal, volvé a entrar al mundo, y generá de nuevo. Si el mensaje sigue apareciendo después de recargar el mundo, ahí sí revisá que alguna pieza tenga exactamente ese pool (mayúsculas/espacios). |
 | La mazmorra generó menos de lo esperado / se cortó pronto | Subí "Profundidad máx.", o revisá que los jigsaws de tus piezas intermedias (no solo la de entrada) también tengan Pool configurado — un jigsaw sin pool propio no sigue expandiendo. |
 
 ## Referencia rápida — convención de nombres

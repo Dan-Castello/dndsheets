@@ -27,14 +27,17 @@
   "gui.dndsheets.guide.page.death_saves": "At 0 HP you roll death saves. 3 successes stabilizes you, 3 failures means death, and a natural 20 wakes you up. A nearby player can also revive you.",
   "gui.dndsheets.guide.page.spells": "Open your Grimoire from the sheet to see known spells and slots. Look at a target and cast to use a spell. Shift+click an area-spell staff to preview the blast radius without casting it.",
   "gui.dndsheets.guide.page.distance": "Type /dnddistance followed by a target's name to check the distance to them in feet.",
-  "gui.dndsheets.guide.page.dm_panel": "Press P (requires operator permission) to open the DM Panel: start turn mode, spawn a generic NPC, grant a trait, adjust a sheet, or apply a class preset.",
+  "gui.dndsheets.guide.page.class_items": "Your DM may hand you a class-resource item (Rage Totem, Second Wind, Bardic Inspiration Horn, Wild Shape token, Metamagic charm, Divine Smite gauntlet, Hunter's Mark arrow, Shield, Counterspell rune...). Right-click it to use that feature.",
+  "gui.dndsheets.guide.page.dm_panel": "Press P (requires operator permission) to open the DM Panel: turns, spawn NPCs/monsters, grant traits, give items/weapons/spells, adjust a sheet, apply presets, dungeons, and create content — all without commands.",
   "gui.dndsheets.guide.page.dm_wand": "Right-click a monster with the DM Wand to resolve its attacks and spells, or manage its custom attacks.",
   "gui.dndsheets.guide.page.dm_dungeons_1": "Dungeons: build a room, save it with a structure block (SAVE), then right-click it with the DM Wand to capture it as a piece, pre-filled. See DUNGEON_GUIDE.md for the full guide.",
   "gui.dndsheets.guide.page.dm_dungeons_2": "Configure each jigsaw block with a right-click (sneak+click to copy its config to another), then generate from DM Panel (P) -> Dungeons -> Generate dungeon.",
   "gui.dndsheets.guide.page.dm_notes": "/dndnotes give <players> hands out a DM Notebook: a renamed Book and Quill. It's private like any book, and Minecraft saves its contents on its own.",
   "gui.dndsheets.guide.page.dm_turns": "Run combat with /dndturns: start, next, cancel, end, and effect to apply a status effect to a player.",
   "gui.dndsheets.guide.page.dm_content_packs": "Custom weapons, spells, monsters and presets are JSON files placed in <world>/dndsheets/{weapons,spells,monsters,presets}/.",
-  "gui.dndsheets.guide.page.dm_commands": "Quick reference: /dndsheet, /dndweapons, /dndspells, /dndmonsters, /dndpresets, /dndtraits, /dndoptions, /roll, /dndturns.",
+  "gui.dndsheets.guide.page.dm_sheet_admin": "/dndsheet adjusts any player's sheet remotely: setslots, restkit, advantage, damagetype, gold, pact, setlevel, setac, setroll, plus the ...item subcommands (rageitem, secondwinditem, smiteitem...) that hand out class-resource items.",
+  "gui.dndsheets.guide.page.dm_more_packs": "/dndweapons and /dndpresets load custom weapon and class-preset JSON packs; /dndtraits loads and grants passive traits; /dndoptions loads the race/background/class picker lists.",
+  "gui.dndsheets.guide.page.dm_commands": "Quick reference: /dndsheet, /dndweapons, /dndspells, /dndmonsters, /dndpresets, /dndtraits, /dndoptions, /dndturns, /dnddungeon, /dndnotes, /dndguide, /roll (/r), /rollprivate (/rp), /dnddistance. All but /roll, /rollprivate, /dnddistance and /dndguide require operator permission.",
 
   "gui.dndsheets.character_sheet.ability_str": "Strength",
   "gui.dndsheets.character_sheet.ability_dex": "Dexterity",
@@ -230,6 +233,6 @@
   "chat.dndsheets.concentration.kept": "%s maintains concentration on %s (DC %s: %s).",
   "chat.dndsheets.concentration.lost": "%s loses concentration on %s (DC %s: %s).",
 
-  "chat.dndsheets.welcome.sheet_key": "Press H to open your character sheet.",
-  "chat.dndsheets.welcome.dm_key": "You're an operator — press P to open the DM Panel."
+  "chat.dndsheets.welcome.sheet_key": "Press H to open your character sheet. First time here? The sheet's Guide button walks you through everything step by step.",
+  "chat.dndsheets.welcome.dm_key": "You're an operator — press P to open the DM Panel. Its Guide button includes DM-specific instructions (DM Wand, dungeons, turns, etc.)."
 }

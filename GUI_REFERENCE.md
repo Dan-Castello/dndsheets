@@ -484,7 +484,7 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 | Widget | Tipo | Notas |
 |---|---|---|
 | Aviso "Structurize + BlockUI no detectados..." | drawCenteredString | solo si `DungeonManager.structurizeAvailable()` es falso; color `GuiStyle.MUTED_COLOR` |
-| Filas de pieza (bucle) | fila de `ListPickerScreen` | una por pieza (`id — pool (peso n)`); onClick abre `DungeonPieceEditScreen` |
+| Filas de pieza (bucle) | fila de `ListPickerScreen` | una por pieza: `id — pool (peso n)`, con sufijo ` [inicio]` si `DungeonManager.hasStartJigsaw` es true para esa pieza (ver `DungeonPieceListMessage.hasStart`); onClick abre `DungeonPieceEditScreen`, que tiene el botón "Borrar pieza" (ver `SmallFormScreen.showDeleteButton()`) |
 | "+ Añadir pieza" | fila de `ListPickerScreen` | abre `DungeonPieceAddScreen` |
 | "Generar mazmorra" | fila de `ListPickerScreen` | abre `DungeonGenerateScreen` |
 | Mensaje "Sin piezas todavía..." | `emptyMessage()` | solo si `pieces` vacío |
@@ -523,7 +523,7 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 | Confirmar | Button | envía `DungeonPieceUpdateMessage(id, pool, weight, tags)`, cierra |
 | Cancelar | Button | `onClose()` |
 
-- **Notas:** sin botón de borrar (deliberado) — `SmallFormScreen.init()` es `final`, así que borrar una pieza sigue siendo solo `/dnddungeon piece remove <id>`.
+- **Notas:** sin botón de borrar en este formulario — `SmallFormScreen.init()` es `final` (solo Confirmar/Cancelar); borrar es una fila propia en `DungeonPieceListScreen` (ver esa sección), no algo de esta pantalla.
 
 ## DungeonGenerateScreen
 
