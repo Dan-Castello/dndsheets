@@ -28,9 +28,16 @@ public class SpellRegistry {
 	public record Spell(
 		String id, String name, int level, String mode,
 		String castingAbility, String saveAbility, String dice, boolean halfOnSave, String damageType,
-		boolean concentration, int aoeRadius,
+		boolean concentration, int aoeRadius, String aoeShape,
 		String effectName, String effectDice, int effectTurns
 	) {
+		/**
+		 * <p>Forma del área: {@code sphere} (por defecto), {@code line} o {@code cone}. La diferencia no es
+		 * cosmética — una esfera nace en el punto de impacto, mientras que una línea y un cono nacen en el
+		 * LANZADOR y salen hacia donde mira. Tratar un cono como radio golpearía a todo lo que tiene detrás,
+		 * que es exactamente por qué Rayo y Cono de Frío no se pudieron importar hasta ahora.</p>
+		 */
+		public boolean originatesAtCaster() { return "line".equals(aoeShape) || "cone".equals(aoeShape); }
 		//Mismo patrón que MonsterRegistry.MonsterAttack/MonsterSpell: un hechizo de concentración
 		//(Guardianes Espirituales, Rayo de Luna...) puede dejar un efecto de estado corriendo mientras dura
 		//la concentración (ver ConcentrationManager/TurnManager.applyEffect), que se revierte solo si se
@@ -103,6 +110,10 @@ public class SpellRegistry {
 		//SpellCastManager.findAoeTargets escanee todas las entidades cargadas del servidor en cada lanzado,
 		//sin límite superior — un vector de lag real, no solo un valor raro.
 		int aoeRadius = json.has("aoeRadius") ? Math.max(0, Math.min(json.get("aoeRadius").getAsInt(), 40)) : 0;
+		//Esfera por defecto: cualquier hechizo escrito antes de que existieran las formas se comporta igual
+		//que siempre. Un valor desconocido cae también a esfera en vez de descartar el hechizo entero.
+		String aoeShape = json.has("aoeShape") ? json.get("aoeShape").getAsString().toLowerCase(Locale.ROOT) : "sphere";
+		if (!aoeShape.equals("line") && !aoeShape.equals("cone")) aoeShape = "sphere";
 
 		//Mismo formato anidado que MonsterRegistry.parse/parseAttack usan para sus propios monstruos:
 		//"appliesEffect": {"name": "...", "dice": "...", "turns": N}.
@@ -111,7 +122,7 @@ public class SpellRegistry {
 		String effectDice = effect != null ? effect.get("dice").getAsString() : null;
 		int effectTurns = effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0;
 
-		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius,
+		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius, aoeShape,
 			effectName, effectDice, effectTurns);
 	}
 

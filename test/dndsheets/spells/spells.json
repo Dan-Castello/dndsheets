@@ -12,7 +12,7 @@
   { "id": "dndsheets:vicious_mockery", "name": "Burla Viciosa", "level": 0, "mode": "save", "castingAbility": "cha", "saveAbility": "wis", "dice": "1d4", "halfOnSave": false, "damageType": "psíquico" },
   { "id": "dndsheets:produce_flame", "name": "Producir Llama", "level": 0, "mode": "attack", "castingAbility": "wis", "dice": "1d8", "damageType": "fuego" },
 
-  { "id": "dndsheets:burning_hands", "name": "Manos Ardientes", "level": 1, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "3d6", "halfOnSave": true, "damageType": "fuego", "aoeRadius": 5 },
+  { "id": "dndsheets:burning_hands", "name": "Manos Ardientes", "level": 1, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "3d6", "halfOnSave": true, "damageType": "fuego", "aoeRadius": 3, "aoeShape": "cone" },
   { "id": "dndsheets:guiding_bolt", "name": "Destello Guiador", "level": 1, "mode": "attack", "castingAbility": "wis", "dice": "4d6", "damageType": "radiante" },
   { "id": "dndsheets:chromatic_orb", "name": "Orbe Cromático", "level": 1, "mode": "attack", "castingAbility": "int", "dice": "3d8", "damageType": "fuego" },
   { "id": "dndsheets:thunderwave", "name": "Onda Atronadora", "level": 1, "mode": "save", "castingAbility": "int", "saveAbility": "con", "dice": "2d8", "halfOnSave": true, "damageType": "trueno", "aoeRadius": 5 },
@@ -23,7 +23,7 @@
   { "id": "dndsheets:shatter", "name": "Destrozar", "level": 2, "mode": "save", "castingAbility": "int", "saveAbility": "con", "dice": "3d8", "halfOnSave": true, "damageType": "trueno", "aoeRadius": 3 },
   { "id": "dndsheets:moonbeam", "name": "Rayo de Luna", "level": 2, "mode": "save", "castingAbility": "wis", "saveAbility": "con", "dice": "2d10", "halfOnSave": true, "damageType": "radiante", "aoeRadius": 1.5, "concentration": true, "appliesEffect": {"name": "rayo de luna", "dice": "2d10", "turns": 3} },
 
-  { "id": "dndsheets:lightning_bolt", "name": "Rayo Relámpago", "level": 3, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "8d6", "halfOnSave": true, "damageType": "rayo" },
+  { "id": "dndsheets:lightning_bolt", "name": "Relampago", "level": 3, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "8d6", "halfOnSave": true, "damageType": "rayo", "aoeRadius": 20, "aoeShape": "line" },
   { "id": "dndsheets:call_lightning", "name": "Llamar al Rayo", "level": 3, "mode": "save", "castingAbility": "wis", "saveAbility": "dex", "dice": "3d10", "halfOnSave": true, "damageType": "rayo", "concentration": true },
 
   { "id": "dndsheets:cure_wounds", "name": "Curar Heridas", "level": 1, "mode": "heal", "castingAbility": "wis", "dice": "1d8 + $wis" },
@@ -74,5 +74,10 @@
   { "id": "dndsheets:sunburst", "name": "Estallido Solar", "level": 8, "mode": "save", "castingAbility": "int", "saveAbility": "con", "dice": "12d6", "halfOnSave": true, "damageType": "radiante", "aoeRadius": 12, "appliesEffect": { "name": "cegado", "dice": "0", "turns": 10 } },
   { "id": "dndsheets:mass_heal", "name": "Sanar en Masa", "level": 9, "mode": "heal", "castingAbility": "wis", "dice": "700" },
   { "id": "dndsheets:meteor_swarm", "name": "Lluvia de Meteoros", "level": 9, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "40d6", "halfOnSave": true, "damageType": "fuego", "aoeRadius": 8 },
-  { "id": "dndsheets:weird", "name": "Fantasmagoria", "level": 9, "mode": "save", "castingAbility": "int", "saveAbility": "wis", "dice": "0", "halfOnSave": false, "concentration": true, "aoeRadius": 6, "appliesEffect": { "name": "asustado", "dice": "0", "turns": 10 } }
+  { "id": "dndsheets:weird", "name": "Fantasmagoria", "level": 9, "mode": "save", "castingAbility": "int", "saveAbility": "wis", "dice": "0", "halfOnSave": false, "concentration": true, "aoeRadius": 6, "appliesEffect": { "name": "asustado", "dice": "0", "turns": 10 } },
+  { "id": "dndsheets:fear", "name": "Miedo", "level": 3, "mode": "save", "castingAbility": "int", "saveAbility": "wis", "dice": "0", "halfOnSave": false, "concentration": true, "aoeRadius": 6, "aoeShape": "cone", "appliesEffect": { "name": "asustado", "dice": "0", "turns": 10 } },
+  { "id": "dndsheets:wind_wall", "name": "Muro de Viento", "level": 3, "mode": "save", "castingAbility": "wis", "saveAbility": "str", "dice": "3d8", "halfOnSave": true, "damageType": "contundente", "concentration": true, "aoeRadius": 10, "aoeShape": "line" },
+  { "id": "dndsheets:cone_of_cold", "name": "Cono de Frio", "level": 5, "mode": "save", "castingAbility": "int", "saveAbility": "con", "dice": "8d8", "halfOnSave": true, "damageType": "frio", "aoeRadius": 12, "aoeShape": "cone" },
+  { "id": "dndsheets:sunbeam", "name": "Rayo de Sol", "level": 6, "mode": "save", "castingAbility": "wis", "saveAbility": "con", "dice": "6d8", "halfOnSave": true, "damageType": "radiante", "concentration": true, "aoeRadius": 12, "aoeShape": "line", "appliesEffect": { "name": "cegado", "dice": "0", "turns": 10 } },
+  { "id": "dndsheets:prismatic_spray", "name": "Rociada Prismatica", "level": 7, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "10d6", "halfOnSave": false, "aoeRadius": 12, "aoeShape": "cone", "appliesEffect": { "name": "cegado", "dice": "0", "turns": 10 } }
 ]

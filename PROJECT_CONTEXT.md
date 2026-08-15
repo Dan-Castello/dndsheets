@@ -226,7 +226,7 @@ dependencies, not preference.
   player's character, real hit points, AC and active conditions). Both ride on one parameterized
   `RosterActionMessage`/`RosterListMessage` pair, registered **at the end** of the list rather than
   in its alphabetical slot — see invariant 1.
-- **Fase 2 — SRD content. Imported in four batches; the bestiary is done.** 24 → **71 spells**
+- **Fase 2 — SRD content. Imported in four batches; the bestiary is done.** 24 → **76 spells**
   and 13 → **330 monsters** (145 with resistances, 68 of them conditional). Content comes from
   SRD 5.1 under CC-BY-4.0 — see `ATTRIBUTION.md`, which is a licence obligation, not a courtesy.
 
@@ -239,13 +239,18 @@ dependencies, not preference.
 
   **The engine backlog, ordered by how much content each item unlocks.** Every entry comes from a
   converter's "requires engine" list, which is the most valuable output of an import run:
-  1. **Area shapes** — line, cone, wall. ~10 spells including Lightning Bolt and Cone of Cold.
-     The mod only has a radius; turning a cone into one would hit everything *behind* the caster,
-     so these are deliberately not imported rather than imported wrong.
-  2. **Temporary hit points and weapon buffs** — ~6 spells (Aid, False Life, Divine Favor).
-  3. **Summoned entities that act on later turns** — ~5 spells (Spiritual Weapon, Flaming Sphere).
-  4. **Multi-round area effects** — Moonbeam, Storm of Vengeance.
-  5. **Magic items** — ~200 in the SRD, none in the mod, no schema yet. Biggest untouched area.
+  1. ~~Area shapes: line and cone~~ — **done**. `aoeShape` on the spell schema, geometry in
+     `SpellCastManager.inShape`. Spheres originate at the impact point; lines and cones originate
+     at the **caster** and run along their view vector, which is the whole reason they could not be
+     approximated with a radius: a cone flattened into one hits everything behind the caster,
+     including their own party. Unblocked Lightning Bolt, Cone of Cold, Fear, Sunbeam, Prismatic
+     Spray and Wind Wall, and corrected Burning Hands, which batch 1 had imported as a sphere.
+  2. **Walls** — still open, and not the same capability: a wall is a persistent surface you place,
+     not a shape emitted from the caster. Wall of Fire, Wall of Ice, Wall of Thorns, Blade Barrier.
+  3. **Temporary hit points and weapon buffs** — ~6 spells (Aid, False Life, Divine Favor).
+  4. **Summoned entities that act on later turns** — ~5 spells (Spiritual Weapon, Flaming Sphere).
+  5. **Multi-round area effects** — Moonbeam, Storm of Vengeance.
+  6. **Magic items** — ~200 in the SRD, none in the mod, no schema yet. Biggest untouched area.
 
   Silvered/adamantine resistance variants collapse into plain "nonmagical" on purpose: the mod has
   no such materials, and the alternative was discarding the resistance entirely.

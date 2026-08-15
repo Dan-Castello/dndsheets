@@ -64,6 +64,9 @@ public class SpellCastManager {
 	public static void previewAoe(ServerPlayer caster, String spellId) {
 		SpellRegistry.Spell spell = SpellRegistry.get(spellId);
 		if (spell == null || !isAoe(spell)) return;
+		//Previsualización solo para la esfera: el anillo marca dónde cae, y en una línea o un cono el área
+		//nace en el lanzador, así que un anillo en el punto de impacto mentiría sobre a quién alcanza.
+		if (spell.originatesAtCaster()) return;
 		CombatFx.aoeRing(caster.level(), findImpactPoint(caster), spell.aoeRadius());
 	}
 
@@ -93,7 +96,7 @@ public class SpellCastManager {
 
 		if (isAoe) {
 			impactPoint = findImpactPoint(caster);
-			aoeTargets = findAoeTargets(caster, impactPoint, spell.aoeRadius());
+			aoeTargets = findAoeTargets(caster, impactPoint, spell.aoeRadius(), spell.aoeShape());
 			if (aoeTargets.isEmpty()) {
 				caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_aoe_targets").withStyle(ChatFormatting.GRAY));
 				return;
@@ -153,7 +156,7 @@ public class SpellCastManager {
 			//Antes no había ninguna representación visual del radio: te enterabas de a quién golpeó leyendo
 			//el chat, después del hecho — un anillo de partículas en el radio real usado deja ver el alcance
 			//de la explosión, no solo el punto de impacto (ver CombatFx.aoeRing).
-			CombatFx.aoeRing(caster.level(), impactPoint, spell.aoeRadius());
+			if (!spell.originatesAtCaster()) CombatFx.aoeRing(caster.level(), impactPoint, spell.aoeRadius());
 			//Gemelar un hechizo que ya reparte daño a todo un radio no tendría sentido (5e tampoco lo deja);
 			//se ignora el flag pendiente en vez de consumirlo, para no gastarlo en un lanzado que no aplica.
 			for (Entity aoeTarget : aoeTargets) castSaveSpell(caster, casterName, spell, aoeTarget, proficiency, abilityMod);
@@ -258,16 +261,64 @@ public class SpellCastManager {
 	//real: un objetivo dentro del radio solo cuenta si hay línea de visión libre de bloques sólidos desde
 	//el punto de impacto hasta él (una pared lo protege, igual que en 5e de verdad).
 	private static List<Entity> findAoeTargets(ServerPlayer caster, Vec3 center, double radius) {
-		AABB box = new AABB(center, center).inflate(radius);
-		List<Entity> candidates = caster.level().getEntities((Entity) null, box,
-			entity -> entity != caster && entity.isAlive() && (entity instanceof Player || TurnManager.isMonster(entity))
-				&& entity.position().distanceTo(center) <= radius);
+		return findAoeTargets(caster, center, radius, "sphere");
+	}
 
-		List<Entity> visible = new ArrayList<>();
+	/**
+	 * <p>Objetivos dentro del área, con oclusión de terreno real: uno dentro de la forma solo cuenta si
+	 * hay línea de visión libre de bloques sólidos desde el origen del efecto hasta él (una pared lo
+	 * protege, igual que en 5e).</p>
+	 *
+	 * <p>La esfera nace en el punto de impacto; la línea y el cono nacen en el LANZADOR y salen hacia
+	 * donde mira. Esa diferencia es la razón de que existan como formas propias en vez de aproximarse con
+	 * un radio: un cono convertido en radio golpea a todo lo que el lanzador tiene detrás, incluido su
+	 * propio grupo.</p>
+	 */
+	private static List<Entity> findAoeTargets(ServerPlayer caster, Vec3 center, double radius, String shape) {
+		boolean fromCaster = "line".equals(shape) || "cone".equals(shape);
+		Vec3 origin = fromCaster ? caster.getEyePosition(1.0f) : center;
+		Vec3 direction = caster.getViewVector(1.0f).normalize();
+
+		//La caja de búsqueda cubre el alcance máximo de la forma en cualquier dirección; el filtro fino lo
+		//hace inShape más abajo. Buscar de más aquí es barato y evita geometría de cajas orientadas.
+		AABB box = new AABB(origin, origin).inflate(radius);
+		List<Entity> candidates = caster.level().getEntities((Entity) null, box,
+			entity -> entity != caster && entity.isAlive() && (entity instanceof Player || TurnManager.isMonster(entity)));
+
+		List<Entity> hit = new ArrayList<>();
 		for (Entity entity : candidates) {
-			if (hasClearPath(caster, center, entity.getBoundingBox().getCenter())) visible.add(entity);
+			Vec3 point = entity.getBoundingBox().getCenter();
+			if (!inShape(shape, origin, direction, radius, point)) continue;
+			if (hasClearPath(caster, origin, point)) hit.add(entity);
 		}
-		return visible;
+		return hit;
+	}
+
+	//Un cono de 5e es tan ancho como largo en cualquier punto de su longitud, lo que da un semiángulo de
+	//atan(0.5) ≈ 26,57°. Se guarda su coseno para comparar con un producto escalar y ahorrarse el arcocoseno
+	//en cada objetivo candidato de cada lanzado.
+	private static final double CONE_COS_HALF_ANGLE = Math.cos(Math.atan(0.5));
+
+	//Una línea de 5e mide 5 pies de ancho = 1 bloque, así que medio bloque a cada lado del eje.
+	private static final double LINE_HALF_WIDTH = 0.5;
+
+	//Package-private, no privado: es geometria pura (sin mundo, sin entidades) y es justo la clase de
+	//logica que conviene fijar en JsonContentSelfTest — un cono que se abre al reves no falla en ningun
+	//sitio, simplemente golpea al grupo propio en vez de al enemigo.
+	static boolean inShape(String shape, Vec3 origin, Vec3 direction, double length, Vec3 point) {
+		Vec3 offset = point.subtract(origin);
+		double along = offset.dot(direction); //Proyección sobre el eje: negativa = está detrás del lanzador.
+
+		return switch (shape) {
+			//Distancia perpendicular al eje, acotando la proyección al segmento para que un objetivo pasado
+			//el final del rayo no cuente por estar cerca de la recta infinita.
+			case "line" -> along >= 0 && along <= length
+				&& offset.subtract(direction.scale(along)).length() <= LINE_HALF_WIDTH;
+			//Dentro del alcance Y dentro del ángulo. El caso de longitud 0 se descarta antes por along >= 0.
+			case "cone" -> along > 0 && offset.length() <= length
+				&& along / offset.length() >= CONE_COS_HALF_ANGLE;
+			default -> offset.length() <= length;
+		};
 	}
 
 	//ponytail: un solo rayo al centro de la hitbox del objetivo, no varios puntos de su volumen ni un

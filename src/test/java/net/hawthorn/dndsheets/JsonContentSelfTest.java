@@ -39,6 +39,7 @@ public class JsonContentSelfTest {
 		checkDice();
 		checkDungeonPools();
 		checkConditions();
+		checkAoeShapes();
 		checkCombatantRules();
 		checkCharacterRules();
 
@@ -102,7 +103,18 @@ public class JsonContentSelfTest {
 			SpellRegistry.Spell parsed = SpellRegistry.parse(json);
 			if (SpellRegistry.get(id) == null) SpellRegistry.register(parsed);
 		}
-		assertTrue(bulk.size() >= 71, "spells.json debería traer al menos los 71 hechizos de los lotes 1 y 2 del SRD, trae " + bulk.size());
+		assertTrue(bulk.size() >= 76, "spells.json debería traer al menos los 76 hechizos importados del SRD, trae " + bulk.size());
+
+		//Formas de área: Relámpago es una línea y Cono de Frío un cono, y las dos nacen en el lanzador.
+		//Si alguien las degradara a esfera "para simplificar", golpearían al grupo propio sin fallar nada.
+		SpellRegistry.Spell bolt = SpellRegistry.get("dndsheets:lightning_bolt");
+		assertTrue(bolt != null && "line".equals(bolt.aoeShape()), "lightning_bolt debería ser una línea");
+		assertTrue(bolt.originatesAtCaster(), "una línea tiene que nacer en el lanzador");
+		SpellRegistry.Spell cone = SpellRegistry.get("dndsheets:cone_of_cold");
+		assertTrue(cone != null && "cone".equals(cone.aoeShape()), "cone_of_cold debería ser un cono");
+		//Bola de Fuego sigue siendo esférica y NO nace en el lanzador: es el caso que no debía cambiar.
+		assertTrue(!SpellRegistry.get("dndsheets:fireball").originatesAtCaster(),
+			"la Bola de Fuego explota donde impacta, no en la cara del lanzador");
 
 		//Hechizo de solo condición: sin daño ninguno. Antes ni se podía escribir — "dice" era obligatorio y
 		//el efecto solo se aplicaba si había daño, así que Inmovilizar Persona no habría hecho nada.
@@ -370,6 +382,54 @@ public class JsonContentSelfTest {
 		assertTrue(DiceManager.combineAdvantage() == normal, "sin fuentes debería quedar una tirada normal");
 
 		System.out.println("checkConditions: OK, las 14 condiciones de 5e y la combinación de ventaja se comportan.");
+	}
+
+	/**
+	 * <p>Geometría de las formas de área ({@link SpellCastManager#inShape}). Es pura —sin mundo ni
+	 * entidades— y es justo la clase de lógica que no falla en ningún sitio cuando está mal: un cono que
+	 * se abre hacia atrás simplemente alcanza al grupo propio en vez de al enemigo, y eso solo se descubre
+	 * en mitad de una sesión.</p>
+	 */
+	private static void checkAoeShapes() {
+		net.minecraft.world.phys.Vec3 origin = new net.minecraft.world.phys.Vec3(0, 0, 0);
+		net.minecraft.world.phys.Vec3 forward = new net.minecraft.world.phys.Vec3(1, 0, 0); //Mirando a +X.
+
+		//--- Línea: 1 bloque de ancho (5 pies), y solo hacia delante ---
+		assertTrue(SpellCastManager.inShape("line", origin, forward, 10, new net.minecraft.world.phys.Vec3(5, 0, 0)),
+			"un objetivo justo sobre el eje de la línea debería entrar");
+		assertTrue(SpellCastManager.inShape("line", origin, forward, 10, new net.minecraft.world.phys.Vec3(5, 0, 0.4)),
+			"medio bloque de desviación sigue dentro de una línea de 5 pies");
+		assertTrue(!SpellCastManager.inShape("line", origin, forward, 10, new net.minecraft.world.phys.Vec3(5, 0, 2)),
+			"dos bloques de desviación quedan fuera de la línea");
+		assertTrue(!SpellCastManager.inShape("line", origin, forward, 10, new net.minecraft.world.phys.Vec3(15, 0, 0)),
+			"más allá del alcance no entra, aunque esté sobre la recta");
+		//EL caso que motivó todo esto: nada detrás del lanzador debe recibir el efecto.
+		assertTrue(!SpellCastManager.inShape("line", origin, forward, 10, new net.minecraft.world.phys.Vec3(-5, 0, 0)),
+			"un aliado DETRÁS del lanzador nunca debe entrar en la línea");
+
+		//--- Cono: tan ancho como largo en cada punto, y tampoco hacia atrás ---
+		assertTrue(SpellCastManager.inShape("cone", origin, forward, 10, new net.minecraft.world.phys.Vec3(5, 0, 0)),
+			"el centro del cono debería entrar");
+		//A 6 bloques de distancia el cono mide ~6 de ancho, o sea ~3 a cada lado del eje.
+		assertTrue(SpellCastManager.inShape("cone", origin, forward, 10, new net.minecraft.world.phys.Vec3(6, 0, 2)),
+			"2 bloques de desviación a 6 de distancia siguen dentro del cono");
+		assertTrue(!SpellCastManager.inShape("cone", origin, forward, 10, new net.minecraft.world.phys.Vec3(6, 0, 5)),
+			"5 bloques de desviación a 6 de distancia quedan fuera");
+		assertTrue(!SpellCastManager.inShape("cone", origin, forward, 10, new net.minecraft.world.phys.Vec3(-5, 0, 0)),
+			"un aliado DETRÁS del lanzador nunca debe entrar en el cono");
+		assertTrue(!SpellCastManager.inShape("cone", origin, forward, 10, new net.minecraft.world.phys.Vec3(20, 0, 0)),
+			"más allá del alcance no entra en el cono");
+
+		//--- Esfera: sin cambios, y SÍ alcanza hacia atrás, que es lo correcto para una explosión ---
+		assertTrue(SpellCastManager.inShape("sphere", origin, forward, 10, new net.minecraft.world.phys.Vec3(-5, 0, 0)),
+			"una esfera sí debería alcanzar en todas direcciones");
+		assertTrue(!SpellCastManager.inShape("sphere", origin, forward, 10, new net.minecraft.world.phys.Vec3(0, 0, 15)),
+			"fuera del radio no entra");
+		//Una forma desconocida cae a esfera, igual que hace el parser: nunca deja un hechizo sin efecto.
+		assertTrue(SpellCastManager.inShape("loquesea", origin, forward, 10, new net.minecraft.world.phys.Vec3(3, 0, 0)),
+			"una forma desconocida debería comportarse como esfera, no dejar el hechizo inerte");
+
+		System.out.println("checkAoeShapes: OK, línea y cono salen del lanzador y no alcanzan a lo que tiene detrás.");
 	}
 
 	/**
