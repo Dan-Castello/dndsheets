@@ -60,7 +60,12 @@ public class DndsheetsMod {
 	//un cliente y un servidor de versiones de mod distintas igual pasarían el handshake (mismo string de
 	//antes) y acabarían desalineados en el id de mensaje para cualquier cosa después del punto de cambio,
 	//en vez de que Forge los rechace limpio al conectar por versión de protocolo incompatible.
-	private static final String PROTOCOL_VERSION = "2";
+	//Sube a "3": SheetSummaryMessage gana un campo en el cable (las condiciones activas del objetivo),
+	//SheetAdjustMessage.Field gana la constante CONDITION, y se registran RosterActionMessage/
+	//RosterListMessage. Lo primero es lo verdaderamente peligroso: un campo más en un mensaje ya existente
+	//no cambia ningún id, así que sin subir esto el handshake pasaría y el cliente antiguo leería ese
+	//mensaje corrido un campo, en silencio y con datos plausibles, en vez de fallar limpio al conectar.
+	private static final String PROTOCOL_VERSION = "3";
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 
@@ -133,6 +138,12 @@ public class DndsheetsMod {
 		addNetworkMessage(TurnStateMessage.class, TurnStateMessage::buffer, TurnStateMessage::new, TurnStateMessage::handler);
 		addNetworkMessage(TutorialOpenMessage.class, TutorialOpenMessage::buffer, TutorialOpenMessage::new, TutorialOpenMessage::handler);
 		addNetworkMessage(WeaponGiveMessage.class, WeaponGiveMessage::buffer, WeaponGiveMessage::new, WeaponGiveMessage::handler);
+
+		//A PARTIR DE AQUÍ, POR ORDEN DE INCORPORACIÓN, NO ALFABÉTICO. El id de red de cada mensaje es su
+		//orden de registro, así que meter uno nuevo en su hueco alfabético (Roster... iría entre Rest... y
+		//Sheet...) renumeraría en silencio todos los de después. Añade siempre al final de esta lista.
+		addNetworkMessage(RosterActionMessage.class, RosterActionMessage::buffer, RosterActionMessage::new, RosterActionMessage::handler);
+		addNetworkMessage(RosterListMessage.class, RosterListMessage::buffer, RosterListMessage::new, RosterListMessage::handler);
 	}
 
 	//Patrón repetido en los mensajes cliente(DM)->servidor que actúan sobre OTRO jugador (SheetAdjustMessage,

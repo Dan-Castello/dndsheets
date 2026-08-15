@@ -36,7 +36,10 @@ public class CharacterCommand {
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndchar")
 			//Sin requires(hasPermission) en la raíz: list/new/switch son sobre los personajes de uno mismo,
-			//no hay nada que gatear. Solo "npc" pide operador, y lo pide en su propia rama.
+			//no hay nada que gatear. Solo "npc" y "spawn" piden operador, y lo piden en su propia rama.
+			//Sin subcomando abre la pantalla, que es lo que va a querer el 90% de las veces; "list" sigue
+			//existiendo para quien prefiera el chat o esté leyendo la salida de un script.
+			.executes(CharacterCommand::openScreen)
 			.then(Commands.literal("list")
 				.executes(CharacterCommand::list))
 			.then(Commands.literal("new")
@@ -69,6 +72,13 @@ public class CharacterCommand {
 		} catch (CommandSyntaxException e) {
 			return List.of();
 		}
+	}
+
+	//El servidor ya sabe qué personajes tiene: manda la lista directamente, sin que el cliente tenga que
+	//pedirla primero. La ida y vuelta solo hace falta desde un botón de GUI (ver RosterActionMessage).
+	private static int openScreen(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		net.hawthorn.dndsheets.network.RosterActionMessage.sendOwnCharacters(ctx.getSource().getPlayerOrException());
+		return 1;
 	}
 
 	private static int list(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

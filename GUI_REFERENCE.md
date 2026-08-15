@@ -36,7 +36,19 @@ Documentados una sola vez aquí; las pantallas que los usan solo indican qué in
 - **API para subclases:** `buildRows()` (abstracto, llamado desde `init()`, añade filas con `addRow(Component, Button.OnPress)`); `buttonWidth()` (default 200, sobrescribible — `GrimoireScreen` usa 220); `listTop()`/`listHeight()` (sobrescribibles para dejar hueco a un subtítulo o a un botón fijo bajo la lista); `emptyMessage()` (texto centrado si la lista queda vacía, default ninguno).
 - **Notable:** `init()`/`render()` no son `final` — una pantalla con contenido extra (subtítulo de `GrimoireScreen`, botón fijo bajo la lista de `GrimoireScreen`) sobrescribe, llama a `super` primero y añade lo suyo. `mouseScrolled` e `isPauseScreen() -> false` ya están resueltos aquí, no hace falta repetirlos.
 - **Navegación (constructor `(Component title, Screen parent)`, o `(Component title)` para una pantalla raíz):** si `parent` no es null, `init()` añade un botón "&lt; Atrás" en la esquina superior izquierda del panel, y `onClose()` (Escape, o cualquier fila/botón que llame a `this.onClose()`) vuelve a `parent` en vez de cerrar el menú entero. Cada pantalla captura su `parent` en su propio `open(...)` estático con `Minecraft.getInstance().screen` — la pantalla que estaba visible en el momento de abrir esta — así que los sitios que llaman a `open(...)` no necesitan pasar nada extra. Sin `parent` (pantallas raíz: `DmPanelScreen`, `MonsterActionScreen`) no hay botón "Atrás" y Escape cierra el menú, igual que antes.
-- **Usada por:** `DmPanelScreen`, `TurnControlScreen`, `PlayerPickerScreen`, `TraitGrantScreen`, `CharacterOptionListScreen`, `ManageCustomAttacksScreen`, `MonsterActionScreen`, `PresetScreen`, `GrimoireScreen`, `DungeonPieceListScreen`.
+- **Usada por:** `DmPanelScreen`, `TurnControlScreen`, `PlayerPickerScreen`, `TraitGrantScreen`, `CharacterOptionListScreen`, `ManageCustomAttacksScreen`, `MonsterActionScreen`, `PresetScreen`, `GrimoireScreen`, `DungeonPieceListScreen`, `ConditionListScreen`, `CharacterListScreen`, `PartyScreen`.
+
+### Pantallas de personajes y condiciones
+
+Las tres cuelgan de `ListPickerScreen` sin layout propio; lo único reseñable de cada una es de dónde saca sus datos y por qué.
+
+| Pantalla | Se abre desde | Datos | Notas |
+|---|---|---|---|
+| `ConditionListScreen` | `SheetAdjustScreen` → «Condiciones…» | `conditionsCsv` del `SheetSummaryMessage` que ya traía oro/PG/CA | Alterna las 14 condiciones de 5e. **Sin buscador a propósito**: alternar una reconstruye la pantalla (`rebuildWidgets()`) y eso vaciaría la caja en cada clic. |
+| `CharacterListScreen` | `/dndchar` sin argumentos | `RosterListMessage(MINE, …)` | Pulsar una fila manda `SWITCH`; **no** repinta en local, espera la lista nueva del servidor, que es quien decide si el personaje era tuyo. |
+| `PartyScreen` | Panel de DM → «Grupo» | `RosterListMessage(PARTY, …)` | Solo lectura. `buttonWidth()` a 260: a 200 se cortaba la fila (nombre + PG + CA + condiciones). |
+
+El estado llega **ya formateado desde el servidor** en las tres: el cliente solo lo pinta, así que componer el texto allí evita mandar media hoja de personaje por la red. Y ninguna registró un mensaje nuevo salvo el par `Roster*`, que no tenía equivalente reutilizable — `ConditionListScreen` viaja entera sobre `SheetSummaryMessage` y `SheetAdjustMessage`, que ya existían.
 
 ### AdjustableImageButton
 

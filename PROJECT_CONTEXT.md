@@ -218,8 +218,11 @@ dependencies, not preference.
   `NpcCombatant` — a character with no one sitting behind it, playing by the full PC rules rather
   than degrading to a monster stat block. Note `TurnManager.isMonster` (is it an **enemy**, drives
   end-of-combat) is deliberately separate from `isCombatTarget` (is it a valid 5e target): merging
-  them would mean a friendly innkeeper in the room keeps combat from ever ending.
-  **Still missing:** a character-switching GUI and a party roster for the DM.
+  them would mean a friendly innkeeper in the room keeps combat from ever ending. `/dndchar` with no
+  arguments opens the character switcher, and the DM Panel's first row is the party roster (each
+  player's character, real hit points, AC and active conditions). Both ride on one parameterized
+  `RosterActionMessage`/`RosterListMessage` pair, registered **at the end** of the list rather than
+  in its alphabetical slot — see invariant 1.
 - **Fase 2 — SRD content.** The mod ships 24 spells / 13 monsters / 0 magic items against
   Foundry's ~319 / ~325 / ~200. This is the biggest *user-facing* gap and it is data, not
   architecture — the loading pipeline already works. It is deliberately **after** Fase 0: most
