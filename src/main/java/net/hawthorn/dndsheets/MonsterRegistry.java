@@ -44,6 +44,12 @@ public class MonsterRegistry {
 	}
 
 	/**
+	 * @param nonmagicalAffinities igual que {@code damageAffinities}, pero solo frente a ataques NO mágicos.
+	 *                             Es la forma mas comun del SRD ("contundente, perforante y cortante de
+	 *                             ataques no magicos") y afecta a licantropos, demonios, diablos y buena
+	 *                             parte del bestiario de VD medio. Las variantes con plata o adamantina se
+	 *                             tratan aqui como simplemente "no magico": el mod no tiene esos materiales,
+	 *                             y la alternativa era ignorar la resistencia entera.
 	 * @param damageAffinities tipo de daño → {@code resistant}/{@code vulnerable}/{@code immune}, mismo
 	 *                         vocabulario que {@code damageAffinities} en la hoja de un jugador (ver
 	 *                         {@link DamageTypes#multiplierForLabel}). Vacío = sin afinidades, que es como
@@ -53,7 +59,7 @@ public class MonsterRegistry {
 		String id, String name, String baseEntityId, int ac, int maxHp,
 		Map<String, Integer> abilities, int proficiencyBonus,
 		List<MonsterAttack> attacks, List<MonsterSpell> spells,
-		Map<String, String> damageAffinities
+		Map<String, String> damageAffinities, Map<String, String> nonmagicalAffinities
 	) {
 		public int abilityModifier(String key) {
 			Integer score = abilities.get(key.toLowerCase(Locale.ROOT));
@@ -130,16 +136,21 @@ public class MonsterRegistry {
 			}
 		}
 
-		//Opcional: un monstruo sin "damageAffinities" se comporta exactamente como antes, sin resistencias.
-		Map<String, String> damageAffinities = new HashMap<>();
-		if (json.has("damageAffinities")) {
-			JsonObject affinities = json.getAsJsonObject("damageAffinities");
-			for (String type : affinities.keySet()) {
-				damageAffinities.put(type.toLowerCase(Locale.ROOT), affinities.get(type).getAsString().toLowerCase(Locale.ROOT));
-			}
-		}
+		//Opcionales: un monstruo sin ellas se comporta exactamente como antes, sin resistencias.
+		Map<String, String> damageAffinities = readAffinities(json, "damageAffinities");
+		Map<String, String> nonmagicalAffinities = readAffinities(json, "nonmagicalAffinities");
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities);
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities);
+	}
+
+	private static Map<String, String> readAffinities(JsonObject json, String field) {
+		Map<String, String> result = new HashMap<>();
+		if (!json.has(field)) return result;
+		JsonObject affinities = json.getAsJsonObject(field);
+		for (String type : affinities.keySet()) {
+			result.put(type.toLowerCase(Locale.ROOT), affinities.get(type).getAsString().toLowerCase(Locale.ROOT));
+		}
+		return result;
 	}
 
 	//Extraído de parse() para que también lo use el ataque personalizado que un DM añade en vivo a un
@@ -183,12 +194,18 @@ public class MonsterRegistry {
 
 		//Se omite si está vacío, para no ensuciar cada monstruo guardado con un objeto que no dice nada:
 		//parse() ya trata "sin campo" y "vacío" igual.
-		if (!block.damageAffinities().isEmpty()) {
-			JsonObject affinities = new JsonObject();
-			for (Map.Entry<String, String> entry : block.damageAffinities().entrySet()) affinities.addProperty(entry.getKey(), entry.getValue());
-			json.add("damageAffinities", affinities);
-		}
+		writeAffinities(json, "damageAffinities", block.damageAffinities());
+		writeAffinities(json, "nonmagicalAffinities", block.nonmagicalAffinities());
 		return json;
+	}
+
+	//Se omite si está vacío, para no ensuciar cada monstruo guardado con un objeto que no dice nada:
+	//parse() ya trata "sin campo" y "vacío" igual.
+	private static void writeAffinities(JsonObject json, String field, Map<String, String> affinities) {
+		if (affinities.isEmpty()) return;
+		JsonObject out = new JsonObject();
+		for (Map.Entry<String, String> entry : affinities.entrySet()) out.addProperty(entry.getKey(), entry.getValue());
+		json.add(field, out);
 	}
 
 	private static JsonObject attackToJson(MonsterAttack attack) {
@@ -348,7 +365,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		for (String key : new String[]{"str", "dex", "con", "int", "wis", "cha"}) abilities.put(key, 10);
 
-		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>()));
+		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>()));
 		return spawnAt(level, x, y, z, id);
 	}
 

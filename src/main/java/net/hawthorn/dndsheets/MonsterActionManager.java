@@ -312,7 +312,7 @@ public class MonsterActionManager {
 		//daño de petrificado, que no está declarada en su hoja sino en sus condiciones.
 		Combatant targetCombatant = Combatant.of(target);
 		double affinity = targetCombatant != null
-			? targetCombatant.effectiveDamageMultiplier(attack.damageType())
+			? targetCombatant.effectiveDamageMultiplier(attack.damageType(), false) //Un ataque natural de monstruo no es mágico salvo que su bloque lo diga, y el esquema todavía no lo dice.
 			: DamageTypes.multiplierFor(target, targetSheet, attack.damageType());
 		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), affinity);
 		target.hurt(target.damageSources().generic(), finalAmount);
@@ -357,7 +357,7 @@ public class MonsterActionManager {
 			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null));
 
 		if (finalDamage > 0) {
-			double affinity = targetCombatant.effectiveDamageMultiplier(spell.damageType()); //Incluye la resistencia de petrificado, ver Combatant.
+			double affinity = targetCombatant.effectiveDamageMultiplier(spell.damageType(), true); //Un conjuro siempre es mágico. Incluye además la resistencia de petrificado, ver Combatant.
 			int appliedAmount = DamageTypes.applyMultiplier(finalDamage, affinity);
 			target.hurt(target.damageSources().generic(), appliedAmount);
 			if (target instanceof ServerPlayer serverTarget) ConcentrationManager.onDamageTaken(serverTarget, appliedAmount);

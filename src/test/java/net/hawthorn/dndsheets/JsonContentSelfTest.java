@@ -172,14 +172,25 @@ public class JsonContentSelfTest {
 				assertTrue(damageTypes.contains(attack.damageType()),
 					"tipo de daño desconocido \"" + attack.damageType() + "\" en el ataque " + attack.name() + " de " + id);
 			}
-			for (Map.Entry<String, String> affinity : block.damageAffinities().entrySet()) {
-				assertTrue(damageTypes.contains(affinity.getKey()),
-					"afinidad sobre un tipo de daño desconocido \"" + affinity.getKey() + "\" en " + id);
-				assertTrue(java.util.List.of("resistant", "vulnerable", "immune").contains(affinity.getValue()),
-					"afinidad desconocida \"" + affinity.getValue() + "\" en " + id);
+			for (Map<String, String> affinities : java.util.List.of(block.damageAffinities(), block.nonmagicalAffinities())) {
+				for (Map.Entry<String, String> affinity : affinities.entrySet()) {
+					assertTrue(damageTypes.contains(affinity.getKey()),
+						"afinidad sobre un tipo de daño desconocido \"" + affinity.getKey() + "\" en " + id);
+					assertTrue(java.util.List.of("resistant", "vulnerable", "immune").contains(affinity.getValue()),
+						"afinidad desconocida \"" + affinity.getValue() + "\" en " + id);
+				}
 			}
 		}
 		assertTrue(bestiary.size() >= 182, "monsters.json debería traer al menos los 182 del lote 3 del SRD, trae " + bestiary.size());
+
+		//Resistencia condicional: el hombre rata es inmune al daño físico NO mágico, y normal frente al
+		//mágico. Es la mitad del bestiario de VD medio, así que conviene fijar que las dos ramas difieren
+		//de verdad y no que una tapa a la otra.
+		MonsterRegistry.MonsterStatBlock wererat = MonsterRegistry.get("dndsheets:wererat_human");
+		assertTrue(wererat != null, "wererat_human debería haberse registrado");
+		assertTrue(wererat.damageAffinities().isEmpty(), "el hombre rata no tiene resistencias incondicionales");
+		assertTrue("immune".equals(wererat.nonmagicalAffinities().get("cortante")),
+			"el hombre rata debería ser inmune al daño cortante no mágico");
 	}
 
 	private static void checkTraits() throws Exception {
@@ -380,7 +391,7 @@ public class JsonContentSelfTest {
 		@Override public int maxHp() { return 10; }
 		@Override public int abilityModifier(String ability) { return abilityMod; }
 		@Override public int proficiencyBonus() { return 2; }
-		@Override public double damageMultiplier(String damageType) { return 1.0; }
+		@Override public double damageMultiplier(String damageType, boolean magical) { return 1.0; }
 		@Override public void takeDamage(int amount) { }
 		@Override public boolean isDefeated() { return false; }
 		@Override public Map<Condition, Integer> conditionSources() { return conditions; }
@@ -448,9 +459,25 @@ public class JsonContentSelfTest {
 
 		//Petrificado da resistencia a todo el daño encima de las afinidades declaradas.
 		FakeCombatant petrified = new FakeCombatant(0);
-		assertTrue(petrified.effectiveDamageMultiplier("fuego") == 1.0, "sin condiciones ni afinidades, el daño va entero");
+		assertTrue(petrified.effectiveDamageMultiplier("fuego", false) == 1.0, "sin condiciones ni afinidades, el daño va entero");
 		petrified.addCondition(Condition.PETRIFICADO);
-		assertTrue(petrified.effectiveDamageMultiplier("fuego") == 0.5, "petrificado debería resistir todo el daño");
+		assertTrue(petrified.effectiveDamageMultiplier("fuego", false) == 0.5, "petrificado debería resistir todo el daño");
+
+		//Resistencia condicional a lo no mágico, sobre el Combatant real de un monstruo. Se puede construir
+		//con entidad null porque damageMultiplier solo mira el bloque de estadísticas — y esa es justo la
+		//razón por la que la lógica vive ahí y no repartida por las rutas de combate.
+		MonsterRegistry.MonsterStatBlock conditional = new MonsterRegistry.MonsterStatBlock(
+			"test:licantropo", "Licantropo", "minecraft:zombie", 12, 30,
+			Map.of("str", 10, "dex", 10, "con", 10, "int", 10, "wis", 10, "cha", 10), 2,
+			List.of(), List.of(),
+			Map.of("fuego", "vulnerable"),          //Incondicional.
+			Map.of("cortante", "immune"));          //Solo frente a armas no mágicas.
+		Combatant beast = new Combatant.MonsterCombatant(null, conditional);
+		assertTrue(beast.damageMultiplier("cortante", false) == 0.0, "cortante no mágico debería rebotar en el licántropo");
+		assertTrue(beast.damageMultiplier("cortante", true) == 1.0, "cortante mágico debería atravesarlo entero");
+		assertTrue(beast.damageMultiplier("fuego", true) == 2.0, "una afinidad incondicional aplica sea mágico o no");
+		assertTrue(beast.damageMultiplier("fuego", false) == 2.0, "y tambien cuando no lo es");
+		assertTrue(beast.damageMultiplier("veneno", false) == 1.0, "un tipo sin afinidad declarada pasa entero");
 
 		//Vocabulario de afinidades, compartido ahora entre la hoja del jugador y el bloque de monstruo.
 		assertTrue(DamageTypes.multiplierForLabel("resistant") == 0.5, "resistant debería ser 0.5");

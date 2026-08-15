@@ -50,10 +50,14 @@ public interface Combatant {
 	int proficiencyBonus();
 
 	/**
-	 * Multiplicador de daño por resistencias/vulnerabilidades/inmunidades. Petrificado (resistencia a todo)
-	 * lo aplica {@link #effectiveDamageMultiplier}, común a los dos lados.
+	 * <p>Multiplicador de daño por resistencias/vulnerabilidades/inmunidades. Petrificado (resistencia a
+	 * todo) lo aplica {@link #effectiveDamageMultiplier}, común a los dos lados.</p>
+	 *
+	 * @param magical si el golpe cuenta como mágico. Media docena de resistencias del SRD dependen de ello
+	 *                ("contundente, perforante y cortante de ataques no mágicos"), y sin el dato el
+	 *                bestiario entero resultaba más blando de lo que dice su bloque de estadísticas.
 	 */
-	double damageMultiplier(String damageType);
+	double damageMultiplier(String damageType, boolean magical);
 
 	/** Aplica daño ya multiplicado. Ver la nota de {@link #takeDamage} en cada implementación. */
 	void takeDamage(int amount);
@@ -222,8 +226,8 @@ public interface Combatant {
 	}
 
 	/** Resistencias propias más la resistencia a todo el daño de petrificado, que aplica a ambos lados. */
-	default double effectiveDamageMultiplier(String damageType) {
-		double multiplier = damageMultiplier(damageType);
+	default double effectiveDamageMultiplier(String damageType, boolean magical) {
+		double multiplier = damageMultiplier(damageType, magical);
 		if (conditions().stream().anyMatch(Condition::resistsAllDamage)) multiplier = Math.min(multiplier, 0.5);
 		return multiplier;
 	}
@@ -310,7 +314,9 @@ public interface Combatant {
 			}
 		}
 
-		@Override default double damageMultiplier(String damageType) {
+		//Una hoja de personaje solo tiene afinidades incondicionales ("damageAffinities"), asi que ignora
+		//"magical" a proposito: el dia que un objeto magico conceda una condicional, se lee aqui y ya.
+		@Override default double damageMultiplier(String damageType, boolean magical) {
 			return DamageTypes.multiplierFor(entity(), sheet(), damageType);
 		}
 
@@ -454,10 +460,24 @@ public interface Combatant {
 
 		@Override public int proficiencyBonus() { return block.proficiencyBonus(); }
 
-		/** Mismo vocabulario que las afinidades de la hoja de un jugador — ver {@link DamageTypes#multiplierForLabel}. */
-		@Override public double damageMultiplier(String damageType) {
+		/**
+		 * Mismo vocabulario que las afinidades de la hoja de un jugador — ver
+		 * {@link DamageTypes#multiplierForLabel}. Se queda con la MAS protectora de las dos cuando ambas
+		 * aplican: una inmunidad incondicional no debe empeorar porque el golpe sea mágico.
+		 */
+		@Override public double damageMultiplier(String damageType, boolean magical) {
 			if (damageType == null) return 1.0;
-			return DamageTypes.multiplierForLabel(block.damageAffinities().get(damageType.toLowerCase(Locale.ROOT)));
+			String type = damageType.toLowerCase(Locale.ROOT);
+			double multiplier = DamageTypes.multiplierForLabel(block.damageAffinities().get(type));
+			//Solo si HAY entrada condicional para ese tipo: comparar contra el 1.0 que devuelve una ausente
+			//aplastaba cualquier resistencia incondicional a "daño normal", que es lo contrario de lo que se
+			//pretende. Cuando existen las dos gana la más protectora — una inmunidad no debe empeorar porque
+			//el golpe encima sea no mágico.
+			String conditional = magical ? null : block.nonmagicalAffinities().get(type);
+			if (conditional != null) {
+				multiplier = Math.min(multiplier, DamageTypes.multiplierForLabel(conditional));
+			}
+			return multiplier;
 		}
 
 		@Override public void takeDamage(int amount) {

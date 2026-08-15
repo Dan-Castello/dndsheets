@@ -618,6 +618,7 @@
     "abilities": { "str": 15, "dex": 11, "con": 16, "int": 6, "wis": 11, "cha": 7 },
     "proficiencyBonus": 2,
     "damageAffinities": { "veneno": "immune" },
+    "nonmagicalAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
     "attacks": [
       { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" },
       { "name": "Garras", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "cortante" }
@@ -929,6 +930,7 @@
     "ac": 14, "hp": 27,
     "abilities": { "str": 14, "dex": 14, "con": 11, "int": 3, "wis": 14, "cha": 5 },
     "proficiencyBonus": 2,
+    "nonmagicalAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
     "attacks": [
       { "name": "Tentaculos", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" },
       { "name": "Pico", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
@@ -1045,6 +1047,7 @@
     "abilities": { "str": 6, "dex": 17, "con": 13, "int": 11, "wis": 12, "cha": 14 },
     "proficiencyBonus": 2,
     "damageAffinities": { "frio": "resistant", "fuego": "immune", "veneno": "immune" },
+    "nonmagicalAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
     "attacks": [
       { "name": "Aguijon (mordisco en forma bestial)", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
     ]
@@ -1115,6 +1118,7 @@
     "abilities": { "str": 7, "dex": 15, "con": 12, "int": 8, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
     "damageAffinities": { "fuego": "immune" },
+    "nonmagicalAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
     "attacks": [
       { "name": "Contacto", "toHitAbility": "dex", "dice": "2d6", "damageAbility": "dex", "damageType": "fuego" }
     ]
@@ -1307,6 +1311,7 @@
     "abilities": { "str": 5, "dex": 17, "con": 10, "int": 7, "wis": 10, "cha": 10 },
     "proficiencyBonus": 2,
     "damageAffinities": { "frio": "resistant", "fuego": "resistant", "rayo": "resistant", "veneno": "immune" },
+    "nonmagicalAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
     "attacks": [
       { "name": "Garra (mordisco en forma bestial)", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "perforante" }
     ]
@@ -1440,6 +1445,7 @@
     "abilities": { "str": 6, "dex": 14, "con": 13, "int": 6, "wis": 10, "cha": 8 },
     "proficiencyBonus": 2,
     "damageAffinities": { "radiante": "vulnerable", "acido": "resistant", "frio": "resistant", "fuego": "resistant", "rayo": "resistant", "trueno": "resistant", "necrotico": "immune", "veneno": "immune" },
+    "nonmagicalAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
     "attacks": [
       { "name": "Drenar Fuerza", "toHitAbility": "dex", "dice": "2d6", "damageAbility": "dex", "damageType": "necrotico" }
     ]
@@ -1460,6 +1466,7 @@
     "abilities": { "str": 1, "dex": 14, "con": 11, "int": 10, "wis": 10, "cha": 11 },
     "proficiencyBonus": 2,
     "damageAffinities": { "acido": "resistant", "frio": "resistant", "fuego": "resistant", "rayo": "resistant", "trueno": "resistant", "necrotico": "immune", "veneno": "immune" },
+    "nonmagicalAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
     "attacks": [
       { "name": "Drenar Vida", "toHitAbility": "dex", "dice": "3d6", "damageAbility": "dex", "damageType": "necrotico" }
     ]
@@ -1692,6 +1699,7 @@
     "ac": 12, "hp": 33,
     "abilities": { "str": 10, "dex": 15, "con": 12, "int": 11, "wis": 10, "cha": 8 },
     "proficiencyBonus": 2,
+    "nonmagicalAffinities": { "contundente": "immune", "perforante": "immune", "cortante": "immune" },
     "attacks": [
       { "name": "Espada Corta", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" },
       { "name": "Ballesta de Mano", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" }
@@ -1702,6 +1710,7 @@
     "ac": 12, "hp": 33,
     "abilities": { "str": 10, "dex": 15, "con": 12, "int": 11, "wis": 10, "cha": 8 },
     "proficiencyBonus": 2,
+    "nonmagicalAffinities": { "contundente": "immune", "perforante": "immune", "cortante": "immune" },
     "attacks": [
       { "name": "Mordisco", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" },
       { "name": "Espada Corta", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" },
@@ -1713,6 +1722,7 @@
     "ac": 12, "hp": 33,
     "abilities": { "str": 10, "dex": 15, "con": 12, "int": 11, "wis": 10, "cha": 8 },
     "proficiencyBonus": 2,
+    "nonmagicalAffinities": { "contundente": "immune", "perforante": "immune", "cortante": "immune" },
     "attacks": [
       { "name": "Mordisco", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
     ]
@@ -1733,6 +1743,7 @@
     "abilities": { "str": 1, "dex": 28, "con": 10, "int": 13, "wis": 14, "cha": 11 },
     "proficiencyBonus": 2,
     "damageAffinities": { "acido": "resistant", "frio": "resistant", "fuego": "resistant", "necrotico": "resistant", "trueno": "resistant", "rayo": "immune", "veneno": "immune" },
+    "nonmagicalAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
     "attacks": [
       { "name": "Descarga", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "rayo" }
     ]

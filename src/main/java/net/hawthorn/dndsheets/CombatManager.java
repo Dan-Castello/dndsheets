@@ -312,7 +312,11 @@ public class CombatManager {
 		Roll damageRoll = computeDamageRoll(attacker, weapon, critical, advantage, ability, target.entity());
 		if (damageRoll == null) return null;
 
-		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), target.effectiveDamageMultiplier(damageType));
+		//Un golpe de arma cuenta como mágico si el arma lleva algún encantamiento que el mod reconozca
+		//(ver Config.enchantBonusPerLevelFor). Es la única señal de "arma mágica" que existe en Minecraft
+		//sin inventar un material nuevo, y es la que decide media docena de resistencias del SRD.
+		boolean magical = weapon.enchantBonus() != 0;
+		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), target.effectiveDamageMultiplier(damageType, magical));
 		CombatFx.hit(target.entity(), critical, damageType);
 		return new AttackOutcome(true, finalAmount, ChatFeedback.attackResult(attackerName, target.name(), weapon.name(),
 			attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted(), inspiration));
