@@ -214,6 +214,9 @@
 
   "chat.dndsheets.turn.already_acted": "You already used your action this turn.",
   "chat.dndsheets.turn.blocked_elsewhere": "There's already an active combat somewhere else on the map — end it before starting another one.",
+  "chat.dndsheets.spell.wall_placed": "%s raises %s.",
+  "chat.dndsheets.spell.wall_tick": "%s is caught in %s — save %s vs DC %d, takes %d.",
+  "chat.dndsheets.spell.wall_faded": "%s fades away.",
   "chat.dndsheets.condition.gained": "You are now %s.",
   "chat.dndsheets.condition.lost": "You are no longer %s.",
   "chat.dndsheets.condition.charmed_block": "You are charmed by that creature — you cannot attack it.",

@@ -103,7 +103,14 @@ public class JsonContentSelfTest {
 			SpellRegistry.Spell parsed = SpellRegistry.parse(json);
 			if (SpellRegistry.get(id) == null) SpellRegistry.register(parsed);
 		}
-		assertTrue(bulk.size() >= 76, "spells.json debería traer al menos los 76 hechizos importados del SRD, trae " + bulk.size());
+		assertTrue(bulk.size() >= 80, "spells.json debería traer al menos los 80 hechizos importados del SRD, trae " + bulk.size());
+
+		//Un muro no se resuelve al lanzarlo: se coloca y daña por asaltos (ver WallManager). Si alguien lo
+		//degradara a esfera, explotaría una vez en la cara del lanzador en vez de quedarse ahí.
+		SpellRegistry.Spell wall = SpellRegistry.get("dndsheets:wall_of_fire");
+		assertTrue(wall != null && wall.isWall(), "wall_of_fire debería ser un muro");
+		assertTrue(wall.concentration(), "un muro es de concentración: perderla tiene que apagarlo");
+		assertTrue(wall.aoeRadius() > 0, "un muro necesita longitud");
 
 		//Formas de área: Relámpago es una línea y Cono de Frío un cono, y las dos nacen en el lanzador.
 		//Si alguien las degradara a esfera "para simplificar", golpearían al grupo propio sin fallar nada.
@@ -429,7 +436,23 @@ public class JsonContentSelfTest {
 		assertTrue(SpellCastManager.inShape("loquesea", origin, forward, 10, new net.minecraft.world.phys.Vec3(3, 0, 0)),
 			"una forma desconocida debería comportarse como esfera, no dejar el hechizo inerte");
 
-		System.out.println("checkAoeShapes: OK, línea y cono salen del lanzador y no alcanzan a lo que tiene detrás.");
+		//--- Muro: una SUPERFICIE, no un cilindro ---
+		//La diferencia importa: si la distancia al eje se midiera en 3D como en la línea, saldría un tubo y
+		//alguien de pie encima o debajo del muro se llevaría el daño sin haberlo tocado nunca.
+		assertTrue(SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(6, 0, 0)),
+			"pegado al muro a media longitud debería contar");
+		assertTrue(SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(6, 3, 0)),
+			"3 bloques de altura siguen dentro de un muro de 20 pies");
+		assertTrue(!SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(6, 8, 0)),
+			"volar por encima del muro debería librarte");
+		assertTrue(!SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(6, -3, 0)),
+			"estar por debajo del muro también debería librarte");
+		assertTrue(!SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(6, 0, 3)),
+			"3 bloques a un lado del muro es estar fuera de él");
+		assertTrue(!SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(-6, 0, 0)),
+			"el muro no se extiende hacia atrás del lanzador");
+
+		System.out.println("checkAoeShapes: OK, línea y cono salen del lanzador, y el muro es superficie y no cilindro.");
 	}
 
 	/**

@@ -37,7 +37,14 @@ public class SpellRegistry {
 		 * LANZADOR y salen hacia donde mira. Tratar un cono como radio golpearía a todo lo que tiene detrás,
 		 * que es exactamente por qué Rayo y Cono de Frío no se pudieron importar hasta ahora.</p>
 		 */
-		public boolean originatesAtCaster() { return "line".equals(aoeShape) || "cone".equals(aoeShape); }
+		public boolean originatesAtCaster() { return "line".equals(aoeShape) || "cone".equals(aoeShape) || isWall(); }
+
+		/**
+		 * <p>Un muro no se resuelve al lanzarlo: se coloca y daña a quien empiece su turno dentro durante
+		 * varios asaltos (ver {@link WallManager}). Es una capacidad distinta de una forma de area, aunque
+		 * comparta la geometria.</p>
+		 */
+		public boolean isWall() { return "wall".equals(aoeShape); }
 		//Mismo patrón que MonsterRegistry.MonsterAttack/MonsterSpell: un hechizo de concentración
 		//(Guardianes Espirituales, Rayo de Luna...) puede dejar un efecto de estado corriendo mientras dura
 		//la concentración (ver ConcentrationManager/TurnManager.applyEffect), que se revierte solo si se
@@ -113,7 +120,7 @@ public class SpellRegistry {
 		//Esfera por defecto: cualquier hechizo escrito antes de que existieran las formas se comporta igual
 		//que siempre. Un valor desconocido cae también a esfera en vez de descartar el hechizo entero.
 		String aoeShape = json.has("aoeShape") ? json.get("aoeShape").getAsString().toLowerCase(Locale.ROOT) : "sphere";
-		if (!aoeShape.equals("line") && !aoeShape.equals("cone")) aoeShape = "sphere";
+		if (!aoeShape.equals("line") && !aoeShape.equals("cone") && !aoeShape.equals("wall")) aoeShape = "sphere";
 
 		//Mismo formato anidado que MonsterRegistry.parse/parseAttack usan para sus propios monstruos:
 		//"appliesEffect": {"name": "...", "dice": "...", "turns": N}.

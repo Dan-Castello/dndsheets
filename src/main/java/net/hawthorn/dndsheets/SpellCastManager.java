@@ -53,7 +53,8 @@ public class SpellCastManager {
 	}
 
 	private static boolean isAoe(SpellRegistry.Spell spell) {
-		return "save".equals(spell.mode()) && spell.aoeRadius() > 0;
+		//Un muro tiene aoeRadius pero NO se resuelve como area al lanzarlo: se coloca (ver WallManager).
+		return "save".equals(spell.mode()) && spell.aoeRadius() > 0 && !spell.isWall();
 	}
 
 	//Agachado + clic con un báculo de área (Bola de Fuego y similares): muestra dónde caería el radio real
@@ -94,7 +95,10 @@ public class SpellCastManager {
 		List<Entity> aoeTargets = null;
 		Vec3 impactPoint = null;
 
-		if (isAoe) {
+		if (spell.isWall()) {
+			//Ni objetivo ni punto de impacto: el muro nace en el lanzador y no necesita a nadie delante.
+			//Se sigue igual con el resto del flujo (turno, contrahechizo, espacio de conjuro).
+		} else if (isAoe) {
 			impactPoint = findImpactPoint(caster);
 			aoeTargets = findAoeTargets(caster, impactPoint, spell.aoeRadius(), spell.aoeShape());
 			if (aoeTargets.isEmpty()) {
@@ -119,7 +123,10 @@ public class SpellCastManager {
 		//(a diferencia de un golpe con arma, ver CombatManager.autoStartCombatIfNeeded) — tryAct de abajo
 		//deja pasar cualquier cosa mientras no haya combate activo, así que el hechizo se resolvía "gratis",
 		//sin turno ni congelamiento para nadie. Curar no cuenta: sanar a alguien no es una agresión.
-		if (!"heal".equals(spell.mode())) {
+		//Un muro no tiene ni objetivo ni lista de area, asi que no hay a quien "atacar" para arrancar el
+		//combate: lo arrancara el primero que empiece su turno dentro. Sin este guardia, la linea de abajo
+		//desreferenciaba null en cuanto alguien colocaba un muro.
+		if (!"heal".equals(spell.mode()) && !spell.isWall()) {
 			CombatManager.autoStartCombatIfNeeded(isAoe ? aoeTargets.get(0) : target, caster);
 		}
 
@@ -152,7 +159,9 @@ public class SpellCastManager {
 
 		if (spell.concentration()) ConcentrationManager.startConcentrating(caster, spell.name());
 
-		if (isAoe) {
+		if (spell.isWall()) {
+			WallManager.place(caster, spell, 8 + proficiency + abilityMod);
+		} else if (isAoe) {
 			//Antes no había ninguna representación visual del radio: te enterabas de a quién golpeó leyendo
 			//el chat, después del hecho — un anillo de partículas en el radio real usado deja ver el alcance
 			//de la explosión, no solo el punto de impacto (ver CombatFx.aoeRing).
@@ -302,6 +311,11 @@ public class SpellCastManager {
 	//Una línea de 5e mide 5 pies de ancho = 1 bloque, así que medio bloque a cada lado del eje.
 	private static final double LINE_HALF_WIDTH = 0.5;
 
+	//Muro de Fuego y compañía: 20 pies de alto (4 bloques) y 1 pie de grosor, redondeado a medio bloque a
+	//cada lado para que quepa una hitbox y no haya que atravesarlo con precisión de píxel.
+	static final double WALL_HEIGHT = 4.0;
+	static final double WALL_HALF_THICKNESS = 0.5;
+
 	//Package-private, no privado: es geometria pura (sin mundo, sin entidades) y es justo la clase de
 	//logica que conviene fijar en JsonContentSelfTest — un cono que se abre al reves no falla en ningun
 	//sitio, simplemente golpea al grupo propio en vez de al enemigo.
@@ -317,6 +331,18 @@ public class SpellCastManager {
 			//Dentro del alcance Y dentro del ángulo. El caso de longitud 0 se descarta antes por along >= 0.
 			case "cone" -> along > 0 && offset.length() <= length
 				&& along / offset.length() >= CONE_COS_HALF_ANGLE;
+			//Un muro es una SUPERFICIE, no un cilindro: la distancia al eje se mide solo en horizontal, y
+			//la altura se comprueba aparte. Medirla en 3D como la línea daría un tubo, y alguien de pie
+			//justo encima o debajo del muro se llevaría el daño sin haberlo tocado.
+			case "wall" -> {
+				if (along < 0 || along > length) yield false;
+				double vertical = point.y - origin.y;
+				if (vertical < 0 || vertical > WALL_HEIGHT) yield false;
+				Vec3 flatOffset = new Vec3(offset.x, 0, offset.z);
+				Vec3 flatAxis = new Vec3(direction.x, 0, direction.z).normalize();
+				double flatAlong = flatOffset.dot(flatAxis);
+				yield flatOffset.subtract(flatAxis.scale(flatAlong)).length() <= WALL_HALF_THICKNESS;
+			}
 			default -> offset.length() <= length;
 		};
 	}
