@@ -3,6 +3,8 @@ package net.hawthorn.dndsheets.network;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.command.SheetCommand;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -89,16 +91,26 @@ public class SheetAdjustMessage {
 
 	public static void handler(SheetAdjustMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid, target -> {
-			switch (message.field) {
-				case GOLD -> SheetCommand.applyGold(target, message.strA, message.intA);
-				//Mismo clamp [1,20] que aplicaba SheetLevelMessage.handler antes de delegar.
-				case LEVEL -> SheetCommand.applyLevel(target, Math.max(1, Math.min(20, message.intA)));
-				case SLOTS -> SheetCommand.applySlots(target, message.intA, message.intB);
-				case ADVANTAGE -> SheetCommand.applyAdvantage(target, message.strA);
-				case DAMAGE_AFFINITY -> SheetCommand.applyDamageAffinity(target, message.strA, message.strB);
-				case PACT -> SheetCommand.applyPact(target, message.strA);
-			}
-		}));
+		NetworkUtil.handleOnServer(context, () -> {
+			//withDmTarget no le da al llamador una referencia al DM (solo al target), así que el aviso de
+			//confirmación se manda acá aparte — sin esto, pulsar "Aplicar" en SheetAdjustScreen (cualquier
+			//fila: oro, espacios de conjuro, ventaja, tipo de daño, pacto, nivel) no daba NINGUNA señal de
+			//que había pasado algo, así que un cambio que sí funcionaba parecía no hacer nada.
+			ServerPlayer dm = context.getSender();
+			DndsheetsMod.withDmTarget(context, message.targetUuid, target -> {
+				switch (message.field) {
+					case GOLD -> SheetCommand.applyGold(target, message.strA, message.intA);
+					//Mismo clamp [1,20] que aplicaba SheetLevelMessage.handler antes de delegar.
+					case LEVEL -> SheetCommand.applyLevel(target, Math.max(1, Math.min(20, message.intA)));
+					case SLOTS -> SheetCommand.applySlots(target, message.intA, message.intB);
+					case ADVANTAGE -> SheetCommand.applyAdvantage(target, message.strA);
+					case DAMAGE_AFFINITY -> SheetCommand.applyDamageAffinity(target, message.strA, message.strB);
+					case PACT -> SheetCommand.applyPact(target, message.strA);
+				}
+				if (dm != null) {
+					dm.sendSystemMessage(Component.literal("Hoja de " + target.getName().getString() + " actualizada."));
+				}
+			});
+		});
 	}
 }

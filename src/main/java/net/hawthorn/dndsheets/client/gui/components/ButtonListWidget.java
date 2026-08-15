@@ -35,6 +35,21 @@ public class ButtonListWidget extends AbstractScrollWidget {
 		rows.add(button);
 	}
 
+	//Usado por ListPickerScreen para filtrar por texto de búsqueda: los botones que salen de la lista
+	//visible no se destruyen (siguen registrados en Screen#children para que un futuro replaceRows los
+	//pueda traer de vuelta), pero hay que apagarles visible/active a mano — renderContents solo lo hace
+	//para los que YA están dentro del rango de scroll de la lista actual.
+	public void replaceRows(List<Button> newRows) {
+		for (Button button : rows) {
+			if (!newRows.contains(button)) {
+				button.visible = false;
+				button.active = false;
+			}
+		}
+		rows.clear();
+		rows.addAll(newRows);
+	}
+
 	@Override
 	protected void updateWidgetNarration(NarrationElementOutput output) {
 	}

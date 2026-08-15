@@ -4,8 +4,13 @@ import net.hawthorn.dndsheets.client.gui.components.ButtonListWidget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * <p>Base compartida para pantallas de "lista vertical de botones": título centrado + panel con
@@ -33,9 +38,16 @@ public abstract class ListPickerScreen extends Screen {
 	private static final int PANEL_PADDING = 10;
 	private static final int BACK_BUTTON_WIDTH = 50;
 	private static final int BACK_BUTTON_HEIGHT = 14;
+	private static final int SEARCH_HEIGHT = 16;
+	private static final int SEARCH_GAP = 6;
 
 	private final Screen parent;
 	private ButtonListWidget list;
+	private EditBox searchBox;
+	//Todas las filas creadas por buildRows(), no solo las visibles — con buscador, list.replaceRows(...)
+	//solo recibe el subconjunto que coincide con el texto tipeado (ver applyFilter()).
+	private final List<Button> allButtons = new ArrayList<>();
+	private final List<String> allLabels = new ArrayList<>();
 
 	/** Pantalla raíz, sin nada a lo que volver (p. ej. abierta por keybind o clic derecho). */
 	protected ListPickerScreen(Component title) {
@@ -53,9 +65,14 @@ public abstract class ListPickerScreen extends Screen {
 		return 200;
 	}
 
-	/** Y donde empieza la lista, bajo el título. Sobrescribir para dejar hueco a un subtítulo. */
+	/** true agrega una caja de búsqueda arriba de la lista que filtra las filas por texto — ver {@link #addRow}. */
+	protected boolean searchable() {
+		return false;
+	}
+
+	/** Y donde empieza la lista, bajo el título (y la búsqueda, si {@link #searchable()}). Sobrescribir para dejar hueco a un subtítulo. */
 	protected int listTop() {
-		return LIST_TOP;
+		return searchable() ? LIST_TOP + SEARCH_HEIGHT + SEARCH_GAP : LIST_TOP;
 	}
 
 	/** Alto disponible para la lista. Sobrescribir para dejar hueco a un botón fijo debajo. */
@@ -74,14 +91,35 @@ public abstract class ListPickerScreen extends Screen {
 	protected final Button addRow(Component label, Button.OnPress onPress) {
 		Button button = Button.builder(label, onPress).bounds(0, 0, buttonWidth(), BUTTON_HEIGHT).build();
 		this.addWidget(button);
-		list.addRow(button);
+		//Sin buscador: se agrega directo, como siempre. Con buscador, applyFilter() decide qué entra a
+		//"list" después de que buildRows() termine de llamar a addRow() para todas las filas.
+		if (searchable()) {
+			allButtons.add(button);
+			allLabels.add(label.getString().toLowerCase(Locale.ROOT));
+		} else {
+			list.addRow(button);
+		}
 		return button;
 	}
 
 	@Override
 	protected void init() {
+		allButtons.clear();
+		allLabels.clear();
 		list = new ButtonListWidget((this.width - buttonWidth()) / 2, listTop(), buttonWidth(), listHeight(), BUTTON_HEIGHT + SPACING);
+
+		if (searchable()) {
+			searchBox = new EditBox(this.font, (this.width - buttonWidth()) / 2, LIST_TOP, buttonWidth(), SEARCH_HEIGHT, Component.literal("Buscar"));
+			searchBox.setHint(Component.literal("Buscar..."));
+			searchBox.setResponder(text -> applyFilter());
+			this.addRenderableWidget(searchBox);
+			this.setInitialFocus(searchBox);
+		} else {
+			searchBox = null;
+		}
+
 		buildRows();
+		applyFilter();
 		this.addRenderableWidget(list);
 
 		if (parent != null) {
@@ -90,6 +128,24 @@ public abstract class ListPickerScreen extends Screen {
 			this.addRenderableWidget(Button.builder(Component.literal("< Atrás"), b -> this.onClose())
 				.bounds(left + 2, top + 2, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT).build());
 		}
+	}
+
+	//No-op sin buscador (allButtons se queda vacío, cada addRow ya fue directo a "list"). Con buscador,
+	//reconstruye la lista visible cada vez que cambia el texto — O(n²) por el contains() de replaceRows,
+	//aceptable para listas de contenido cargado (decenas de filas, no miles).
+	private void applyFilter() {
+		if (!searchable()) return;
+		String query = searchBox.getValue().trim().toLowerCase(Locale.ROOT);
+		List<Button> visible = new ArrayList<>();
+		for (int i = 0; i < allButtons.size(); i++) {
+			if (query.isEmpty() || allLabels.get(i).contains(query)) visible.add(allButtons.get(i));
+		}
+		list.replaceRows(visible);
+	}
+
+	@Override
+	public void tick() {
+		if (searchBox != null) searchBox.tick();
 	}
 
 	//Volver a la pantalla anterior en vez de cerrar el menú entero — setScreen(null) cuando no hay

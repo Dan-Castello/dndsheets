@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.hawthorn.dndsheets.client.gui.components.DirectionalCycleButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -48,10 +49,26 @@ public abstract class SmallFormScreen extends Screen {
 	/** Se llama al pulsar "Confirmar", antes de cerrar la pantalla. */
 	protected abstract void onConfirm();
 
+	/** true agrega una fila "Borrar" propia bajo Confirmar/Cancelar — ver {@link #onDelete()}. */
+	protected boolean showDeleteButton() {
+		return false;
+	}
+
+	/** Solo se llama si {@link #showDeleteButton()} es true; cierra la pantalla después, igual que onConfirm. */
+	protected void onDelete() {
+	}
+
+	protected Component deleteButtonLabel() {
+		return Component.literal("Borrar");
+	}
+
 	@Override
 	protected final void init() {
 		centerX = this.width / 2;
-		formTop = this.height / 2 - ROW_HEIGHT * titleRows;
+		//Mismo tope que SheetAdjustScreen: sin esto, un formulario con muchos campos (los del creador de
+		//contenido, p.ej.) centrado en height/2 sin piso empujaba las primeras filas (y su título) fuera de
+		//la pantalla en ventanas bajas/GUI Scale alto, en vez de solo quedar apretado.
+		formTop = Math.max(44, this.height / 2 - ROW_HEIGHT * titleRows);
 		cursorY = formTop;
 		editBoxes.clear();
 		buildForm();
@@ -66,6 +83,18 @@ public abstract class SmallFormScreen extends Screen {
 			.bounds(centerX + 2, y, FIELD_WIDTH / 2 - 2, FIELD_HEIGHT).build());
 
 		formBottom = y + FIELD_HEIGHT + 10;
+
+		//Borrar vive en el detalle de lo que se está editando en vez de una fila aparte en la lista de
+		//afuera (ManageCustomAttacksScreen/DungeonPieceListScreen/ContentEntryListScreen usaban antes una
+		//fila "Borrar: X" extra por cada elemento — ocupaba el doble de alto que hacía falta).
+		if (showDeleteButton()) {
+			int deleteY = nextRowY();
+			this.addRenderableWidget(Button.builder(deleteButtonLabel(), button -> {
+				onDelete();
+				this.onClose();
+			}).bounds(centerX - FIELD_WIDTH / 2, deleteY, FIELD_WIDTH, FIELD_HEIGHT).build());
+			formBottom = deleteY + FIELD_HEIGHT + 10;
+		}
 	}
 
 	private int nextRowY() {
@@ -87,19 +116,32 @@ public abstract class SmallFormScreen extends Screen {
 	}
 
 	protected CycleField addCycleButton(String prefix, String[] options) {
-		return addCycleButton(prefix, options, options);
+		return addCycleButton(prefix, options, options, 0);
 	}
 
 	//Para opciones cuyo valor real (guardado/enviado al servidor) es un código interno poco claro para un
 	//DM (p.ej. "str"/"dex") — displayLabels es SOLO lo que se muestra en el botón, en el mismo orden que
 	//options; CycleField.value() sigue devolviendo el código interno de options, no el texto mostrado.
 	protected CycleField addCycleButton(String prefix, String[] options, String[] displayLabels) {
+		return addCycleButton(prefix, options, displayLabels, 0);
+	}
+
+	//Con índice inicial: para prellenar un formulario de EDICIÓN (ver ContentFormScreen) con el valor que ya
+	//tenía la entrada, en vez de arrancar siempre en options[0] como si fuera nueva.
+	protected CycleField addCycleButton(String prefix, String[] options, String[] displayLabels, int initialIndex) {
 		int y = nextRowY();
 		CycleField field = new CycleField(options);
-		field.button = this.addRenderableWidget(Button.builder(cycleLabel(prefix, displayLabels[field.index]), button -> {
-			field.index = (field.index + 1) % options.length;
-			field.button.setMessage(cycleLabel(prefix, displayLabels[field.index]));
-		}).bounds(centerX - FIELD_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT).build());
+		field.index = initialIndex >= 0 && initialIndex < options.length ? initialIndex : 0;
+		field.button = this.addRenderableWidget(new DirectionalCycleButton(centerX - FIELD_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT,
+			cycleLabel(prefix, displayLabels[field.index]),
+			() -> {
+				field.index = (field.index + 1) % options.length;
+				field.button.setMessage(cycleLabel(prefix, displayLabels[field.index]));
+			},
+			() -> {
+				field.index = (field.index - 1 + options.length) % options.length;
+				field.button.setMessage(cycleLabel(prefix, displayLabels[field.index]));
+			}));
 		return field;
 	}
 

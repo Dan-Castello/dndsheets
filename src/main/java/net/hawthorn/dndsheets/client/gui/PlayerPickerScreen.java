@@ -29,6 +29,11 @@ public class PlayerPickerScreen extends ListPickerScreen {
 	}
 
 	@Override
+	protected boolean searchable() {
+		return true;
+	}
+
+	@Override
 	protected void buildRows() {
 		List<PlayerInfo> players = new ArrayList<>(this.minecraft.getConnection() != null ? this.minecraft.getConnection().getOnlinePlayers() : List.of());
 		for (PlayerInfo info : players) {

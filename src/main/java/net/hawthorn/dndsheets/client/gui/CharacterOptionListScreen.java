@@ -60,6 +60,11 @@ public class CharacterOptionListScreen extends ListPickerScreen {
 	}
 
 	@Override
+	protected boolean searchable() {
+		return true;
+	}
+
+	@Override
 	protected void buildRows() {
 		for (String option : options) {
 			addRow(Component.literal(option), b -> {

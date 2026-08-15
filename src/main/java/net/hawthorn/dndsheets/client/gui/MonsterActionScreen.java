@@ -31,6 +31,11 @@ public class MonsterActionScreen extends ListPickerScreen {
 	}
 
 	@Override
+	protected boolean searchable() {
+		return true;
+	}
+
+	@Override
 	protected void buildRows() {
 		for (int i = 0; i < actionNames.size(); i++) {
 			int actionIndex = i;

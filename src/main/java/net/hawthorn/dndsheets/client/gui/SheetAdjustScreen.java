@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
+import net.hawthorn.dndsheets.client.gui.components.DirectionalCycleButton;
 import net.hawthorn.dndsheets.network.PassivePerceptionRequestMessage;
 import net.hawthorn.dndsheets.network.SheetAdjustMessage;
 import net.minecraft.client.Minecraft;
@@ -115,7 +116,11 @@ public class SheetAdjustScreen extends Screen {
 	@Override
 	protected void init() {
 		int centerX = this.width / 2;
-		y0 = this.height / 2 - ROW_HEIGHT * 6;
+		//Centrado normalmente, pero sin dejar que el panel (título en y0-26, borde en y0-40) se salga por
+		//arriba de la pantalla en ventanas bajas/GUI Scale alto — con 8 filas, centrar en height/2 sin tope
+		//empujaba "Espacios de conjuro" y el resto fuera de la vista (ni se veía ni se podía pulsar
+		//"Aplicar") en vez de solo verse recortado.
+		y0 = Math.max(44, this.height / 2 - ROW_HEIGHT * 6);
 		int y = y0;
 
 		//--- Oro ---
@@ -150,44 +155,52 @@ public class SheetAdjustScreen extends Screen {
 		slotsCurrentBox.setMaxLength(3);
 		slotsCurrentBox.setTooltip(Tooltip.create(Component.literal("Espacios de conjuro que le quedan AHORA MISMO al jugador.")));
 		this.addWidget(slotsCurrentBox);
+		y += ROW_HEIGHT;
 
-		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
+		//Fila propia para "Aplicar": los dos campos (90px cada uno) ya casi llenan WIDE_WIDTH (190px), así
+		//que compartir la fila con ellos dejaba el botón en 190-188=2 PÍXELES de ancho — prácticamente
+		//imposible de pulsar, la causa real de "los cambios de espacios de conjuro no se aplican" (no era
+		//el recorte vertical que se corrigió antes, este es un bug de ancho aparte).
+		this.addRenderableWidget(Button.builder(Component.literal("Aplicar espacios de conjuro"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.slots(targetUuid, parseIntOr(slotsMaxBox.getValue(), 0), parseIntOr(slotsCurrentBox.getValue(), 0)))
-		).bounds(centerX - WIDE_WIDTH / 2 + (FIELD_WIDTH + 4) * 2, y, WIDE_WIDTH - (FIELD_WIDTH + 4) * 2, FIELD_HEIGHT).build());
+		).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT).build());
 		y += ROW_HEIGHT;
 
 		//--- Ventaja próximo ataque ---
-		advantageButton = this.addRenderableWidget(Button.builder(cycleLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex]), button -> {
-			advantageIndex = (advantageIndex + 1) % ADVANTAGE_LABELS.length;
-			advantageButton.setMessage(cycleLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex]));
-		}).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH - 60, FIELD_HEIGHT).build());
-		advantageButton.setTooltip(Tooltip.create(Component.literal("Se aplica solo a la próxima tirada de ataque del jugador, luego vuelve a Normal.")));
+		advantageButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH - 60, FIELD_HEIGHT,
+			cycleLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex]),
+			() -> { advantageIndex = (advantageIndex + 1) % ADVANTAGE_LABELS.length; advantageButton.setMessage(cycleLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex])); },
+			() -> { advantageIndex = (advantageIndex - 1 + ADVANTAGE_LABELS.length) % ADVANTAGE_LABELS.length; advantageButton.setMessage(cycleLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex])); }));
+		advantageButton.setTooltip(Tooltip.create(Component.literal("Se aplica solo a la próxima tirada de ataque del jugador, luego vuelve a Normal. Clic derecho para retroceder.")));
 		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.advantage(targetUuid, ADVANTAGE_LABELS[advantageIndex]))
 		).bounds(centerX - WIDE_WIDTH / 2 + WIDE_WIDTH - 56, y, 56, FIELD_HEIGHT).build());
 		y += ROW_HEIGHT;
 
 		//--- Tipo de daño / afinidad ---
-		damageTypeButton = this.addRenderableWidget(Button.builder(cycleLabel("Tipo", DAMAGE_TYPES[damageTypeIndex]), button -> {
-			damageTypeIndex = (damageTypeIndex + 1) % DAMAGE_TYPES.length;
-			damageTypeButton.setMessage(cycleLabel("Tipo", DAMAGE_TYPES[damageTypeIndex]));
-		}).bounds(centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT).build());
-		affinityButton = this.addRenderableWidget(Button.builder(cycleLabel("Afinidad", AFFINITIES[affinityIndex]), button -> {
-			affinityIndex = (affinityIndex + 1) % AFFINITIES.length;
-			affinityButton.setMessage(cycleLabel("Afinidad", AFFINITIES[affinityIndex]));
-		}).bounds(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, FIELD_WIDTH, FIELD_HEIGHT).build());
-		affinityButton.setTooltip(Tooltip.create(Component.literal("Normal = daño normal, Resistente = mitad, Vulnerable = doble, Inmune = ninguno.")));
-		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
+		damageTypeButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT,
+			cycleLabel("Tipo", DAMAGE_TYPES[damageTypeIndex]),
+			() -> { damageTypeIndex = (damageTypeIndex + 1) % DAMAGE_TYPES.length; damageTypeButton.setMessage(cycleLabel("Tipo", DAMAGE_TYPES[damageTypeIndex])); },
+			() -> { damageTypeIndex = (damageTypeIndex - 1 + DAMAGE_TYPES.length) % DAMAGE_TYPES.length; damageTypeButton.setMessage(cycleLabel("Tipo", DAMAGE_TYPES[damageTypeIndex])); }));
+		affinityButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, FIELD_WIDTH, FIELD_HEIGHT,
+			cycleLabel("Afinidad", AFFINITIES[affinityIndex]),
+			() -> { affinityIndex = (affinityIndex + 1) % AFFINITIES.length; affinityButton.setMessage(cycleLabel("Afinidad", AFFINITIES[affinityIndex])); },
+			() -> { affinityIndex = (affinityIndex - 1 + AFFINITIES.length) % AFFINITIES.length; affinityButton.setMessage(cycleLabel("Afinidad", AFFINITIES[affinityIndex])); }));
+		affinityButton.setTooltip(Tooltip.create(Component.literal("Normal = daño normal, Resistente = mitad, Vulnerable = doble, Inmune = ninguno. Clic derecho para retroceder.")));
+		y += ROW_HEIGHT;
+
+		//Misma fila propia que arriba, mismo bug de ancho (190-188=2px) si compartía fila con los dos botones cíclicos.
+		this.addRenderableWidget(Button.builder(Component.literal("Aplicar tipo de daño"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.damageAffinity(targetUuid, DAMAGE_TYPES[damageTypeIndex], AFFINITIES[affinityIndex]))
-		).bounds(centerX - WIDE_WIDTH / 2 + (FIELD_WIDTH + 4) * 2, y, WIDE_WIDTH - (FIELD_WIDTH + 4) * 2, FIELD_HEIGHT).build());
+		).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT).build());
 		y += ROW_HEIGHT;
 
 		//--- Pacto del brujo (elección permanente, ver AUDIT_UX.md DM #3) ---
-		pactButton = this.addRenderableWidget(Button.builder(cycleLabel("Pacto", PACTS[pactIndex]), button -> {
-			pactIndex = (pactIndex + 1) % PACTS.length;
-			pactButton.setMessage(cycleLabel("Pacto", PACTS[pactIndex]));
-		}).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH - 60, FIELD_HEIGHT).build());
-		pactButton.setTooltip(Tooltip.create(Component.literal("Elección permanente: Pacto de la Hoja usa Carisma para atacar/dañar con armas.")));
+		pactButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH - 60, FIELD_HEIGHT,
+			cycleLabel("Pacto", PACTS[pactIndex]),
+			() -> { pactIndex = (pactIndex + 1) % PACTS.length; pactButton.setMessage(cycleLabel("Pacto", PACTS[pactIndex])); },
+			() -> { pactIndex = (pactIndex - 1 + PACTS.length) % PACTS.length; pactButton.setMessage(cycleLabel("Pacto", PACTS[pactIndex])); }));
+		pactButton.setTooltip(Tooltip.create(Component.literal("Elección permanente: Pacto de la Hoja usa Carisma para atacar/dañar con armas. Clic derecho para retroceder.")));
 		this.addRenderableWidget(Button.builder(Component.literal("Aplicar"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.pact(targetUuid, PACTS[pactIndex]))
 		).bounds(centerX - WIDE_WIDTH / 2 + WIDE_WIDTH - 56, y, 56, FIELD_HEIGHT).build());

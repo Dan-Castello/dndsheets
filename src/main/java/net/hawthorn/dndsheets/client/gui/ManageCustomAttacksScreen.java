@@ -29,6 +29,11 @@ public class ManageCustomAttacksScreen extends ListPickerScreen {
 	}
 
 	@Override
+	protected boolean searchable() {
+		return true;
+	}
+
+	@Override
 	protected void buildRows() {
 		for (String name : customAttackNames) {
 			addRow(Component.literal("Quitar: " + name), b -> {

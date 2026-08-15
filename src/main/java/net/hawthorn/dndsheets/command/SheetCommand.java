@@ -463,7 +463,14 @@ public class SheetCommand {
 		sendSheetUpdate(target, sheet);
 	}
 
+	//Sin el saveServer, un cambio de oro/nivel/espacios/etc. hecho por un DM (comando o Panel de DM) solo
+	//tocaba la copia en memoria — sobrevivía a que el propio jugador reabriera su hoja (eso sí guarda,
+	//ver network.SheetServerMessage) pero se perdía si el servidor se reiniciaba/caía antes del autoguardado
+	//periódico de 5 min o de un /stop limpio. Todos los métodos de esta clase pasan por este único método
+	//de salida, así que arreglarlo acá cierra el hueco para gold/level/slots/advantage/damageAffinity/pact
+	//a la vez, sin tener que acordarse en cada uno.
 	private static void sendSheetUpdate(ServerPlayer target, JsonObject sheet) {
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes()));
+		SheetLoader.saveServer(sheet, target.getStringUUID());
 	}
 }

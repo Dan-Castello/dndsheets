@@ -31,6 +31,11 @@ public class TraitGrantScreen extends ListPickerScreen {
 	}
 
 	@Override
+	protected boolean searchable() {
+		return true;
+	}
+
+	@Override
 	protected void buildRows() {
 		for (int i = 0; i < names.size(); i++) {
 			String traitId = ids.get(i);
