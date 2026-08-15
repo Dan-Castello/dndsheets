@@ -1,5 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.hawthorn.dndsheets.client.gui.components.TomeButton;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -968,21 +970,19 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private void initBottomButtons() {
 		//NOTA: sin hueco dibujado en la textura todavía. Puestos en el margen inferior, debajo de Nivel/
 		//Hambre, para no pisar el círculo de Iniciativa (que ocupa la zona x=270-345, y=90-200).
-		grimoireButton = Button.builder(Component.translatable("gui.dndsheets.character_sheet.grimoire"), b -> this.minecraft.setScreen(new GrimoireScreen(this)))
-			.bounds(this.leftPos + GRIMOIRE_OFFSET_X, this.topPos + GRIMOIRE_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT).build();
+		grimoireButton = TomeButton.of(Component.translatable("gui.dndsheets.character_sheet.grimoire"), b -> this.minecraft.setScreen(new GrimoireScreen(this)), this.leftPos + GRIMOIRE_OFFSET_X, this.topPos + GRIMOIRE_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
 		guistate.put("button:grimoire", grimoireButton);
 		this.addRenderableWidget(grimoireButton);
 
-		presetsButton = Button.builder(Component.translatable("gui.dndsheets.character_sheet.presets"), b -> {
+		presetsButton = TomeButton.of(Component.translatable("gui.dndsheets.character_sheet.presets"), b -> {
 			CharacterSheetSaveProcedure.execute(guistate);
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage());
-		}).bounds(this.leftPos + PRESETS_OFFSET_X, this.topPos + PRESETS_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT).build();
+		}, this.leftPos + PRESETS_OFFSET_X, this.topPos + PRESETS_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
 		guistate.put("button:presets", presetsButton);
 		this.addRenderableWidget(presetsButton);
 
 		boolean isDm = this.minecraft.player != null && this.minecraft.player.hasPermissions(2);
-		guideButton = Button.builder(Component.translatable("gui.dndsheets.guide.button"), b -> GuideBook.open(isDm))
-			.bounds(this.leftPos + GUIDE_OFFSET_X, this.topPos + GUIDE_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT).build();
+		guideButton = TomeButton.of(Component.translatable("gui.dndsheets.guide.button"), b -> GuideBook.open(isDm), this.leftPos + GUIDE_OFFSET_X, this.topPos + GUIDE_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
 		guistate.put("button:guide", guideButton);
 		this.addRenderableWidget(guideButton);
 	}

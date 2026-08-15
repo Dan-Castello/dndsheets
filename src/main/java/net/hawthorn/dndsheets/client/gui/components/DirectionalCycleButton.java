@@ -7,14 +7,16 @@ import net.minecraft.network.chat.Component;
 //Botón cíclico que avanza con clic izquierdo y retrocede con clic derecho. Antes de esto, todo botón
 //cíclico del mod (dado de efecto de turno, hab. de ataque/daño, tipo de daño, ventaja, pacto...) solo
 //avanzaba: pasarse una opción obligaba a recorrer TODA la lista de vuelta en vez de retroceder un paso.
+//Hereda de TomeButton y no de Button para pintarse como el resto del mod: siendo un Button pelado
+//salia gris de piedra sobre el panel de cuero, que es justo lo que el rediseno vino a quitar.
 //No hereda el onPress de Button (privado en la clase base) — guarda sus propios callbacks y sobrescribe
 //mouseClicked entero, ya que AbstractWidget#onClick no recibe qué botón del mouse se usó.
-public class DirectionalCycleButton extends Button {
+public class DirectionalCycleButton extends TomeButton {
 	private final Runnable onNext;
 	private final Runnable onPrevious;
 
 	public DirectionalCycleButton(int x, int y, int width, int height, Component message, Runnable onNext, Runnable onPrevious) {
-		super(x, y, width, height, message, b -> {}, DEFAULT_NARRATION);
+		super(x, y, width, height, message, b -> {});
 		this.onNext = onNext;
 		this.onPrevious = onPrevious;
 	}

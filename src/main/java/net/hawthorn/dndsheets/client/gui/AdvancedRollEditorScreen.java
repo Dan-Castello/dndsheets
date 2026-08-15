@@ -1,5 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.hawthorn.dndsheets.client.gui.components.TomeButton;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -144,11 +146,11 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 	 * @param subStringToAdd
 	 */
 	private void makeAdderButton(String guistateKey, int x, int y, int sizeX, int sizeY, List<Button> buttonList, EditBox editBox, String subStringToAdd, String type) {
-		Button btn = Button.builder(Component.translatable("gui.dndsheets.roll_editor.button_" + type), e -> {
+		Button btn = TomeButton.of(Component.translatable("gui.dndsheets.roll_editor.button_" + type), e -> {
 			if (editBox != null) {
 				editBox.setValue(editBox.getValue() + subStringToAdd);
 			}
-		}).bounds(this.leftPos + x, this.topPos + y, sizeX, sizeY).build();
+		}, this.leftPos + x, this.topPos + y, sizeX, sizeY);
 		btn.setTooltip(Tooltip.create(Component.literal("Añade \"" + subStringToAdd.trim() + "\" a la expresión de la tirada.")));
 		guistate.put(guistateKey, btn);
 		this.addRenderableWidget(btn);

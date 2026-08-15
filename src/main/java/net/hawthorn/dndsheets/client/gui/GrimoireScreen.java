@@ -1,5 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.hawthorn.dndsheets.client.gui.components.TomeButton;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.DndsheetsMod;
@@ -61,10 +63,10 @@ public class GrimoireScreen extends ListPickerScreen {
 		//Lanzar ya no pasa por un solo clic sobre el hechizo: un jugador que clica para leer qué hay en la
 		//lista no quiere gastar un espacio de conjuro real por curiosidad (ver AUDIT_UX.md, Jugador #2).
 		//Elegir un hechizo solo lo selecciona; este botón aparte es el que de verdad lo lanza.
-		castButton = this.addRenderableWidget(Button.builder(Component.literal("Elige un hechizo para lanzarlo"), button -> {
+		castButton = this.addRenderableWidget(TomeButton.of(Component.literal("Elige un hechizo para lanzarlo"), button -> {
 			if (selected == null) return;
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new SpellCastMessage(selected.id()));
-		}).bounds(left, castY, buttonWidth(), BUTTON_HEIGHT).build());
+		}, left, castY, buttonWidth(), BUTTON_HEIGHT));
 		castButton.active = false;
 	}
 
