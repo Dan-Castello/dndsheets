@@ -130,5 +130,1624 @@
     "abilities_special": [
       { "name": "Aliento de Fuego", "saveAbility": "dex", "saveDc": 17, "dice": "16d6", "halfOnSave": true, "damageType": "fuego" }
     ]
+  },
+  {
+    "id": "dndsheets:acolyte", "name": "Acolito", "baseEntity": "minecraft:villager",
+    "ac": 10, "hp": 9,
+    "abilities": { "str": 10, "dex": 10, "con": 10, "int": 10, "wis": 14, "cha": 11 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Garrote", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:animated_armor", "name": "Armadura Animada", "baseEntity": "minecraft:iron_golem",
+    "ac": 18, "hp": 33,
+    "abilities": { "str": 14, "dex": 11, "con": 13, "int": 1, "wis": 3, "cha": 1 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "veneno": "immune", "psiquico": "immune" },
+    "attacks": [
+      { "name": "Golpe", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:ankheg", "name": "Ankheg", "baseEntity": "minecraft:frog",
+    "ac": 14, "hp": 39,
+    "abilities": { "str": 17, "dex": 11, "con": 13, "int": 1, "wis": 13, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:ape", "name": "Simio", "baseEntity": "minecraft:polar_bear",
+    "ac": 12, "hp": 19,
+    "abilities": { "str": 16, "dex": 14, "con": 14, "int": 6, "wis": 12, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Puno", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" },
+      { "name": "Roca", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:awakened_shrub", "name": "Arbusto Despierto", "baseEntity": "minecraft:zombie",
+    "ac": 9, "hp": 10,
+    "abilities": { "str": 3, "dex": 8, "con": 11, "int": 10, "wis": 10, "cha": 6 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "fuego": "vulnerable", "perforante": "resistant" },
+    "attacks": [
+      { "name": "Zarpazo", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:awakened_tree", "name": "Arbol Despierto", "baseEntity": "minecraft:iron_golem",
+    "ac": 13, "hp": 59,
+    "abilities": { "str": 19, "dex": 6, "con": 15, "int": 10, "wis": 10, "cha": 7 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "fuego": "vulnerable", "contundente": "resistant", "perforante": "resistant" },
+    "attacks": [
+      { "name": "Golpe", "toHitAbility": "str", "dice": "3d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:axe_beak", "name": "Pico Hacha", "baseEntity": "minecraft:goat",
+    "ac": 11, "hp": 19,
+    "abilities": { "str": 14, "dex": 12, "con": 12, "int": 2, "wis": 10, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Pico", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:azer", "name": "Azer", "baseEntity": "minecraft:blaze",
+    "ac": 15, "hp": 39,
+    "abilities": { "str": 17, "dex": 12, "con": 15, "int": 12, "wis": 13, "cha": 10 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "fuego": "immune", "veneno": "immune" },
+    "attacks": [
+      { "name": "Martillo de Guerra", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:baboon", "name": "Babuino", "baseEntity": "minecraft:polar_bear",
+    "ac": 12, "hp": 3,
+    "abilities": { "str": 8, "dex": 14, "con": 11, "int": 4, "wis": 12, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:badger", "name": "Tejon", "baseEntity": "minecraft:silverfish",
+    "ac": 10, "hp": 3,
+    "abilities": { "str": 4, "dex": 11, "con": 12, "int": 2, "wis": 12, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:bandit_captain", "name": "Capitan Bandido", "baseEntity": "minecraft:vindicator",
+    "ac": 15, "hp": 65,
+    "abilities": { "str": 15, "dex": 16, "con": 14, "int": 14, "wis": 11, "cha": 14 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Cimitarra", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "cortante" },
+      { "name": "Daga", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:bat", "name": "Murcielago", "baseEntity": "minecraft:bat",
+    "ac": 12, "hp": 1,
+    "abilities": { "str": 2, "dex": 15, "con": 8, "int": 2, "wis": 12, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:berserker", "name": "Berserker", "baseEntity": "minecraft:vindicator",
+    "ac": 13, "hp": 67,
+    "abilities": { "str": 16, "dex": 12, "con": 17, "int": 9, "wis": 11, "cha": 9 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Hacha Grande", "toHitAbility": "str", "dice": "1d12", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:black_bear", "name": "Oso Negro", "baseEntity": "minecraft:polar_bear",
+    "ac": 11, "hp": 19,
+    "abilities": { "str": 15, "dex": 10, "con": 14, "int": 2, "wis": 12, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:black_dragon_wyrmling", "name": "Cria de Dragon Negro", "baseEntity": "minecraft:ravager",
+    "ac": 17, "hp": 33,
+    "abilities": { "str": 15, "dex": 14, "con": 13, "int": 10, "wis": 11, "cha": 13 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "acido": "immune" },
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:blink_dog", "name": "Perro Parpadeante", "baseEntity": "minecraft:wolf",
+    "ac": 13, "hp": 22,
+    "abilities": { "str": 12, "dex": 17, "con": 12, "int": 10, "wis": 13, "cha": 11 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:blood_hawk", "name": "Halcon Sanguinario", "baseEntity": "minecraft:parrot",
+    "ac": 12, "hp": 7,
+    "abilities": { "str": 6, "dex": 14, "con": 10, "int": 3, "wis": 14, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Pico", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:boar", "name": "Jabali", "baseEntity": "minecraft:hoglin",
+    "ac": 11, "hp": 11,
+    "abilities": { "str": 13, "dex": 11, "con": 12, "int": 2, "wis": 9, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Colmillo", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:brass_dragon_wyrmling", "name": "Cria de Dragon de Laton", "baseEntity": "minecraft:ravager",
+    "ac": 16, "hp": 16,
+    "abilities": { "str": 15, "dex": 10, "con": 13, "int": 10, "wis": 11, "cha": 13 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "fuego": "immune" },
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:bronze_dragon_wyrmling", "name": "Cria de Dragon de Bronce", "baseEntity": "minecraft:ravager",
+    "ac": 17, "hp": 32,
+    "abilities": { "str": 17, "dex": 10, "con": 15, "int": 12, "wis": 11, "cha": 15 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "rayo": "immune" },
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:brown_bear", "name": "Oso Pardo", "baseEntity": "minecraft:polar_bear",
+    "ac": 11, "hp": 34,
+    "abilities": { "str": 19, "dex": 10, "con": 16, "int": 2, "wis": 13, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:bugbear", "name": "Osgo", "baseEntity": "minecraft:piglin_brute",
+    "ac": 16, "hp": 27,
+    "abilities": { "str": 15, "dex": 14, "con": 13, "int": 8, "wis": 11, "cha": 9 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Lucero del Alba", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Jabalina", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:camel", "name": "Camello", "baseEntity": "minecraft:camel",
+    "ac": 9, "hp": 15,
+    "abilities": { "str": 16, "dex": 8, "con": 14, "int": 2, "wis": 8, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:cat", "name": "Gato", "baseEntity": "minecraft:cat",
+    "ac": 12, "hp": 2,
+    "abilities": { "str": 3, "dex": 15, "con": 10, "int": 3, "wis": 12, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Garras", "toHitAbility": "str", "dice": "1", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:centaur", "name": "Centauro", "baseEntity": "minecraft:horse",
+    "ac": 12, "hp": 45,
+    "abilities": { "str": 18, "dex": 14, "con": 14, "int": 9, "wis": 13, "cha": 11 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Pica", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Cascos", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "contundente" },
+      { "name": "Arco Largo", "toHitAbility": "dex", "dice": "1d8", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:cockatrice", "name": "Cocatriz", "baseEntity": "minecraft:parrot",
+    "ac": 11, "hp": 27,
+    "abilities": { "str": 6, "dex": 12, "con": 12, "int": 2, "wis": 13, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:commoner", "name": "Plebeyo", "baseEntity": "minecraft:villager",
+    "ac": 10, "hp": 4,
+    "abilities": { "str": 10, "dex": 10, "con": 10, "int": 10, "wis": 10, "cha": 10 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Garrote", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:constrictor_snake", "name": "Serpiente Constrictora", "baseEntity": "minecraft:frog",
+    "ac": 12, "hp": 13,
+    "abilities": { "str": 15, "dex": 14, "con": 12, "int": 1, "wis": 10, "cha": 3 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Constrenir", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:copper_dragon_wyrmling", "name": "Cria de Dragon de Cobre", "baseEntity": "minecraft:ravager",
+    "ac": 16, "hp": 22,
+    "abilities": { "str": 15, "dex": 12, "con": 13, "int": 14, "wis": 11, "cha": 13 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "acido": "immune" },
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:crab", "name": "Cangrejo", "baseEntity": "minecraft:turtle",
+    "ac": 11, "hp": 2,
+    "abilities": { "str": 2, "dex": 11, "con": 10, "int": 1, "wis": 8, "cha": 2 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Garra", "toHitAbility": "str", "dice": "1", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:crocodile", "name": "Cocodrilo", "baseEntity": "minecraft:frog",
+    "ac": 12, "hp": 19,
+    "abilities": { "str": 15, "dex": 10, "con": 13, "int": 2, "wis": 10, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:cult_fanatic", "name": "Fanatico de Culto", "baseEntity": "minecraft:witch",
+    "ac": 13, "hp": 22,
+    "abilities": { "str": 11, "dex": 14, "con": 12, "int": 10, "wis": 13, "cha": 14 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Daga", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:cultist", "name": "Cultista", "baseEntity": "minecraft:pillager",
+    "ac": 12, "hp": 9,
+    "abilities": { "str": 11, "dex": 12, "con": 10, "int": 10, "wis": 11, "cha": 10 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Cimitarra", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:darkmantle", "name": "Manto Oscuro", "baseEntity": "minecraft:bat",
+    "ac": 11, "hp": 22,
+    "abilities": { "str": 16, "dex": 12, "con": 13, "int": 2, "wis": 10, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Aplastamiento", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:death_dog", "name": "Perro de la Muerte", "baseEntity": "minecraft:wolf",
+    "ac": 12, "hp": 39,
+    "abilities": { "str": 15, "dex": 14, "con": 14, "int": 3, "wis": 13, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:deep_gnome_svirfneblin", "name": "Gnomo de las Profundidades", "baseEntity": "minecraft:zombie",
+    "ac": 15, "hp": 16,
+    "abilities": { "str": 15, "dex": 14, "con": 14, "int": 12, "wis": 10, "cha": 9 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Pico de Guerra", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Dardo Envenenado", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:deer", "name": "Ciervo", "baseEntity": "minecraft:goat",
+    "ac": 13, "hp": 4,
+    "abilities": { "str": 11, "dex": 16, "con": 11, "int": 2, "wis": 14, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:dire_wolf", "name": "Lobo Terrible", "baseEntity": "minecraft:wolf",
+    "ac": 14, "hp": 37,
+    "abilities": { "str": 17, "dex": 15, "con": 15, "int": 3, "wis": 12, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:draft_horse", "name": "Caballo de Tiro", "baseEntity": "minecraft:horse",
+    "ac": 10, "hp": 19,
+    "abilities": { "str": 18, "dex": 10, "con": 12, "int": 2, "wis": 11, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Cascos", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:dretch", "name": "Dretch", "baseEntity": "minecraft:zoglin",
+    "ac": 11, "hp": 18,
+    "abilities": { "str": 11, "dex": 11, "con": 12, "int": 5, "wis": 8, "cha": 3 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "frio": "resistant", "fuego": "resistant", "rayo": "resistant", "veneno": "immune" },
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:drow", "name": "Drow", "baseEntity": "minecraft:pillager",
+    "ac": 15, "hp": 13,
+    "abilities": { "str": 10, "dex": 14, "con": 10, "int": 11, "wis": 11, "cha": 12 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Espada Corta", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" },
+      { "name": "Ballesta de Mano", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:druid", "name": "Druida", "baseEntity": "minecraft:witch",
+    "ac": 11, "hp": 27,
+    "abilities": { "str": 10, "dex": 12, "con": 13, "int": 12, "wis": 15, "cha": 11 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Baston", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:dryad", "name": "Driade", "baseEntity": "minecraft:allay",
+    "ac": 11, "hp": 22,
+    "abilities": { "str": 10, "dex": 12, "con": 11, "int": 14, "wis": 15, "cha": 18 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Garrote", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:duergar", "name": "Duergar", "baseEntity": "minecraft:zombie",
+    "ac": 16, "hp": 26,
+    "abilities": { "str": 14, "dex": 11, "con": 14, "int": 11, "wis": 10, "cha": 9 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "veneno": "resistant" },
+    "attacks": [
+      { "name": "Pico de Guerra", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Jabalina", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:dust_mephit", "name": "Mefito de Polvo", "baseEntity": "minecraft:vex",
+    "ac": 12, "hp": 17,
+    "abilities": { "str": 5, "dex": 14, "con": 10, "int": 9, "wis": 11, "cha": 10 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "fuego": "vulnerable", "veneno": "immune" },
+    "attacks": [
+      { "name": "Garras", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:eagle", "name": "Aguila", "baseEntity": "minecraft:parrot",
+    "ac": 12, "hp": 3,
+    "abilities": { "str": 6, "dex": 15, "con": 10, "int": 2, "wis": 14, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Talones", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:elk", "name": "Alce", "baseEntity": "minecraft:goat",
+    "ac": 10, "hp": 13,
+    "abilities": { "str": 16, "dex": 10, "con": 12, "int": 2, "wis": 10, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Embestida", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" },
+      { "name": "Cascos", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:ettercap", "name": "Ettercap", "baseEntity": "minecraft:spider",
+    "ac": 13, "hp": 44,
+    "abilities": { "str": 14, "dex": 15, "con": 13, "int": 7, "wis": 12, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:flying_snake", "name": "Serpiente Voladora", "baseEntity": "minecraft:parrot",
+    "ac": 14, "hp": 5,
+    "abilities": { "str": 4, "dex": 18, "con": 11, "int": 2, "wis": 12, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:flying_sword", "name": "Espada Voladora", "baseEntity": "minecraft:vex",
+    "ac": 17, "hp": 17,
+    "abilities": { "str": 12, "dex": 15, "con": 11, "int": 1, "wis": 5, "cha": 1 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "veneno": "immune", "psiquico": "immune" },
+    "attacks": [
+      { "name": "Espada Larga", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:gargoyle", "name": "Gargola", "baseEntity": "minecraft:iron_golem",
+    "ac": 15, "hp": 52,
+    "abilities": { "str": 15, "dex": 11, "con": 16, "int": 6, "wis": 11, "cha": 7 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "veneno": "immune" },
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:gelatinous_cube", "name": "Cubo Gelatinoso", "baseEntity": "minecraft:slime",
+    "ac": 6, "hp": 84,
+    "abilities": { "str": 14, "dex": 3, "con": 20, "int": 1, "wis": 6, "cha": 1 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Seudopodo", "toHitAbility": "str", "dice": "3d6", "damageAbility": "str", "damageType": "acido" }
+    ]
+  },
+  {
+    "id": "dndsheets:ghast", "name": "Ghast", "baseEntity": "minecraft:husk",
+    "ac": 13, "hp": 36,
+    "abilities": { "str": 16, "dex": 17, "con": 10, "int": 11, "wis": 10, "cha": 8 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "necrotico": "resistant", "veneno": "immune" },
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:ghoul", "name": "Ghoul", "baseEntity": "minecraft:husk",
+    "ac": 12, "hp": 22,
+    "abilities": { "str": 13, "dex": 15, "con": 10, "int": 7, "wis": 10, "cha": 6 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "veneno": "immune" },
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "dex", "dice": "2d4", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_badger", "name": "Tejon Gigante", "baseEntity": "minecraft:silverfish",
+    "ac": 10, "hp": 13,
+    "abilities": { "str": 13, "dex": 10, "con": 15, "int": 2, "wis": 12, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_bat", "name": "Murcielago Gigante", "baseEntity": "minecraft:bat",
+    "ac": 13, "hp": 22,
+    "abilities": { "str": 15, "dex": 16, "con": 11, "int": 2, "wis": 12, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_boar", "name": "Jabali Gigante", "baseEntity": "minecraft:hoglin",
+    "ac": 12, "hp": 42,
+    "abilities": { "str": 17, "dex": 10, "con": 16, "int": 2, "wis": 7, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Colmillo", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_centipede", "name": "Ciempies Gigante", "baseEntity": "minecraft:silverfish",
+    "ac": 13, "hp": 4,
+    "abilities": { "str": 5, "dex": 14, "con": 12, "int": 1, "wis": 7, "cha": 3 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_constrictor_snake", "name": "Serpiente Constrictora Gigante", "baseEntity": "minecraft:frog",
+    "ac": 12, "hp": 60,
+    "abilities": { "str": 19, "dex": 14, "con": 12, "int": 1, "wis": 10, "cha": 3 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Constrenir", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_crab", "name": "Cangrejo Gigante", "baseEntity": "minecraft:turtle",
+    "ac": 15, "hp": 13,
+    "abilities": { "str": 13, "dex": 15, "con": 11, "int": 1, "wis": 9, "cha": 3 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Garra", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_eagle", "name": "Aguila Gigante", "baseEntity": "minecraft:parrot",
+    "ac": 13, "hp": 26,
+    "abilities": { "str": 16, "dex": 17, "con": 13, "int": 8, "wis": 14, "cha": 10 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Pico", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Talones", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_elk", "name": "Alce Gigante", "baseEntity": "minecraft:goat",
+    "ac": 14, "hp": 42,
+    "abilities": { "str": 19, "dex": 16, "con": 14, "int": 7, "wis": 14, "cha": 10 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Embestida", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "contundente" },
+      { "name": "Cascos", "toHitAbility": "str", "dice": "4d8", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_fire_beetle", "name": "Escarabajo de Fuego Gigante", "baseEntity": "minecraft:silverfish",
+    "ac": 13, "hp": 4,
+    "abilities": { "str": 8, "dex": 10, "con": 12, "int": 1, "wis": 7, "cha": 3 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_frog", "name": "Rana Gigante", "baseEntity": "minecraft:frog",
+    "ac": 11, "hp": 18,
+    "abilities": { "str": 12, "dex": 13, "con": 11, "int": 2, "wis": 10, "cha": 3 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_goat", "name": "Cabra Gigante", "baseEntity": "minecraft:goat",
+    "ac": 11, "hp": 19,
+    "abilities": { "str": 17, "dex": 11, "con": 12, "int": 3, "wis": 12, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Embestida", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_hyena", "name": "Hiena Gigante", "baseEntity": "minecraft:wolf",
+    "ac": 12, "hp": 45,
+    "abilities": { "str": 16, "dex": 14, "con": 14, "int": 2, "wis": 12, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_lizard", "name": "Lagarto Gigante", "baseEntity": "minecraft:frog",
+    "ac": 12, "hp": 19,
+    "abilities": { "str": 15, "dex": 12, "con": 13, "int": 2, "wis": 10, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_octopus", "name": "Pulpo Gigante", "baseEntity": "minecraft:glow_squid",
+    "ac": 11, "hp": 52,
+    "abilities": { "str": 17, "dex": 13, "con": 13, "int": 4, "wis": 10, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Tentaculos", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_owl", "name": "Buho Gigante", "baseEntity": "minecraft:parrot",
+    "ac": 12, "hp": 19,
+    "abilities": { "str": 13, "dex": 15, "con": 12, "int": 8, "wis": 13, "cha": 10 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Talones", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_poisonous_snake", "name": "Serpiente Venenosa Gigante", "baseEntity": "minecraft:frog",
+    "ac": 14, "hp": 11,
+    "abilities": { "str": 10, "dex": 18, "con": 13, "int": 2, "wis": 10, "cha": 3 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_rat", "name": "Rata Gigante", "baseEntity": "minecraft:silverfish",
+    "ac": 12, "hp": 7,
+    "abilities": { "str": 7, "dex": 15, "con": 11, "int": 2, "wis": 10, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_rat_diseased", "name": "Rata Gigante Enferma", "baseEntity": "minecraft:silverfish",
+    "ac": 12, "hp": 7,
+    "abilities": { "str": 7, "dex": 15, "con": 11, "int": 2, "wis": 10, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_sea_horse", "name": "Caballito de Mar Gigante", "baseEntity": "minecraft:cod",
+    "ac": 13, "hp": 16,
+    "abilities": { "str": 12, "dex": 15, "con": 11, "int": 2, "wis": 12, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Embestida", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_toad", "name": "Sapo Gigante", "baseEntity": "minecraft:frog",
+    "ac": 11, "hp": 39,
+    "abilities": { "str": 15, "dex": 13, "con": 13, "int": 2, "wis": 10, "cha": 3 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_vulture", "name": "Buitre Gigante", "baseEntity": "minecraft:parrot",
+    "ac": 10, "hp": 22,
+    "abilities": { "str": 15, "dex": 10, "con": 15, "int": 6, "wis": 12, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Pico", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Talones", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_wasp", "name": "Avispa Gigante", "baseEntity": "minecraft:bee",
+    "ac": 12, "hp": 13,
+    "abilities": { "str": 10, "dex": 14, "con": 10, "int": 1, "wis": 10, "cha": 3 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Aguijon", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_weasel", "name": "Comadreja Gigante", "baseEntity": "minecraft:silverfish",
+    "ac": 13, "hp": 9,
+    "abilities": { "str": 11, "dex": 16, "con": 10, "int": 4, "wis": 12, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_wolf_spider", "name": "Arana Lobo Gigante", "baseEntity": "minecraft:spider",
+    "ac": 13, "hp": 11,
+    "abilities": { "str": 12, "dex": 16, "con": 13, "int": 3, "wis": 12, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:gibbering_mouther", "name": "Farfullador", "baseEntity": "minecraft:slime",
+    "ac": 9, "hp": 67,
+    "abilities": { "str": 10, "dex": 8, "con": 16, "int": 3, "wis": 10, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordiscos", "toHitAbility": "str", "dice": "5d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:gnoll", "name": "Gnoll", "baseEntity": "minecraft:piglin",
+    "ac": 15, "hp": 22,
+    "abilities": { "str": 14, "dex": 12, "con": 11, "int": 6, "wis": 10, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Lanza", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Arco Largo", "toHitAbility": "dex", "dice": "1d8", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:goat", "name": "Cabra", "baseEntity": "minecraft:goat",
+    "ac": 10, "hp": 4,
+    "abilities": { "str": 12, "dex": 10, "con": 11, "int": 2, "wis": 10, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Embestida", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:gray_ooze", "name": "Cieno Gris", "baseEntity": "minecraft:slime",
+    "ac": 8, "hp": 22,
+    "abilities": { "str": 12, "dex": 6, "con": 16, "int": 1, "wis": 6, "cha": 2 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "acido": "resistant", "frio": "resistant", "fuego": "resistant" },
+    "attacks": [
+      { "name": "Seudopodo", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:green_dragon_wyrmling", "name": "Cria de Dragon Verde", "baseEntity": "minecraft:ravager",
+    "ac": 17, "hp": 38,
+    "abilities": { "str": 15, "dex": 12, "con": 13, "int": 14, "wis": 11, "cha": 13 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "veneno": "immune" },
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:grick", "name": "Grick", "baseEntity": "minecraft:cave_spider",
+    "ac": 14, "hp": 27,
+    "abilities": { "str": 14, "dex": 14, "con": 11, "int": 3, "wis": 14, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Tentaculos", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" },
+      { "name": "Pico", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:griffon", "name": "Grifo", "baseEntity": "minecraft:parrot",
+    "ac": 12, "hp": 59,
+    "abilities": { "str": 18, "dex": 15, "con": 16, "int": 2, "wis": 13, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Pico", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:grimlock", "name": "Grimlock", "baseEntity": "minecraft:zombie",
+    "ac": 11, "hp": 11,
+    "abilities": { "str": 16, "dex": 12, "con": 12, "int": 9, "wis": 8, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Garrote de Hueso con Puas", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:guard", "name": "Guardia", "baseEntity": "minecraft:villager",
+    "ac": 16, "hp": 11,
+    "abilities": { "str": 13, "dex": 12, "con": 12, "int": 10, "wis": 11, "cha": 10 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Lanza", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:harpy", "name": "Arpia", "baseEntity": "minecraft:parrot",
+    "ac": 11, "hp": 38,
+    "abilities": { "str": 12, "dex": 13, "con": 12, "int": 7, "wis": 10, "cha": 13 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Garras", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "cortante" },
+      { "name": "Garrote", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:hawk", "name": "Halcon", "baseEntity": "minecraft:parrot",
+    "ac": 13, "hp": 1,
+    "abilities": { "str": 5, "dex": 16, "con": 8, "int": 2, "wis": 14, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Talones", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:hippogriff", "name": "Hipogrifo", "baseEntity": "minecraft:parrot",
+    "ac": 11, "hp": 19,
+    "abilities": { "str": 17, "dex": 13, "con": 13, "int": 2, "wis": 12, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Pico", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:hobgoblin", "name": "Hobgoblin", "baseEntity": "minecraft:piglin",
+    "ac": 18, "hp": 11,
+    "abilities": { "str": 13, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 9 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Espada Larga", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "cortante" },
+      { "name": "Arco Largo", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:homunculus", "name": "Homunculo", "baseEntity": "minecraft:vex",
+    "ac": 13, "hp": 5,
+    "abilities": { "str": 4, "dex": 15, "con": 11, "int": 10, "wis": 10, "cha": 7 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "veneno": "immune" },
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:hunter_shark", "name": "Tiburon Cazador", "baseEntity": "minecraft:dolphin",
+    "ac": 12, "hp": 45,
+    "abilities": { "str": 18, "dex": 13, "con": 15, "int": 1, "wis": 10, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:hyena", "name": "Hiena", "baseEntity": "minecraft:wolf",
+    "ac": 11, "hp": 5,
+    "abilities": { "str": 11, "dex": 13, "con": 12, "int": 2, "wis": 12, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:ice_mephit", "name": "Mefito de Hielo", "baseEntity": "minecraft:vex",
+    "ac": 11, "hp": 21,
+    "abilities": { "str": 7, "dex": 13, "con": 10, "int": 9, "wis": 11, "cha": 12 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "vulnerable", "fuego": "vulnerable", "frio": "immune", "veneno": "immune" },
+    "attacks": [
+      { "name": "Garras", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:imp", "name": "Diablillo", "baseEntity": "minecraft:vex",
+    "ac": 13, "hp": 10,
+    "abilities": { "str": 6, "dex": 17, "con": 13, "int": 11, "wis": 12, "cha": 14 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "frio": "resistant", "fuego": "immune", "veneno": "immune" },
+    "attacks": [
+      { "name": "Aguijon (mordisco en forma bestial)", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:jackal", "name": "Chacal", "baseEntity": "minecraft:wolf",
+    "ac": 12, "hp": 3,
+    "abilities": { "str": 8, "dex": 15, "con": 11, "int": 3, "wis": 12, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:lemure", "name": "Lemur", "baseEntity": "minecraft:zombified_piglin",
+    "ac": 7, "hp": 13,
+    "abilities": { "str": 10, "dex": 5, "con": 11, "int": 1, "wis": 11, "cha": 3 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "frio": "resistant", "fuego": "immune", "veneno": "immune" },
+    "attacks": [
+      { "name": "Puno", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:lion", "name": "Leon", "baseEntity": "minecraft:cat",
+    "ac": 12, "hp": 26,
+    "abilities": { "str": 17, "dex": 15, "con": 13, "int": 3, "wis": 12, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garra", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:lizard", "name": "Lagarto", "baseEntity": "minecraft:frog",
+    "ac": 10, "hp": 2,
+    "abilities": { "str": 2, "dex": 11, "con": 10, "int": 1, "wis": 8, "cha": 3 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:lizardfolk", "name": "Hombre Lagarto", "baseEntity": "minecraft:drowned",
+    "ac": 13, "hp": 22,
+    "abilities": { "str": 15, "dex": 10, "con": 13, "int": 7, "wis": 12, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garrote Pesado", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" },
+      { "name": "Jabalina", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Escudo con Puas", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:magma_mephit", "name": "Mefito de Magma", "baseEntity": "minecraft:blaze",
+    "ac": 11, "hp": 22,
+    "abilities": { "str": 8, "dex": 12, "con": 12, "int": 7, "wis": 10, "cha": 10 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "frio": "vulnerable", "fuego": "immune", "veneno": "immune" },
+    "attacks": [
+      { "name": "Garras", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:magmin", "name": "Magmin", "baseEntity": "minecraft:blaze",
+    "ac": 14, "hp": 9,
+    "abilities": { "str": 7, "dex": 15, "con": 12, "int": 8, "wis": 11, "cha": 10 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "fuego": "immune" },
+    "attacks": [
+      { "name": "Contacto", "toHitAbility": "dex", "dice": "2d6", "damageAbility": "dex", "damageType": "fuego" }
+    ]
+  },
+  {
+    "id": "dndsheets:mastiff", "name": "Mastin", "baseEntity": "minecraft:wolf",
+    "ac": 12, "hp": 5,
+    "abilities": { "str": 13, "dex": 14, "con": 12, "int": 3, "wis": 12, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:merfolk", "name": "Traton", "baseEntity": "minecraft:drowned",
+    "ac": 11, "hp": 11,
+    "abilities": { "str": 10, "dex": 13, "con": 12, "int": 11, "wis": 11, "cha": 12 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Lanza", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:merrow", "name": "Merrow", "baseEntity": "minecraft:drowned",
+    "ac": 13, "hp": 45,
+    "abilities": { "str": 18, "dex": 10, "con": 15, "int": 8, "wis": 10, "cha": 9 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "cortante" },
+      { "name": "Arpon", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:mimic", "name": "Mimico", "baseEntity": "minecraft:slime",
+    "ac": 12, "hp": 58,
+    "abilities": { "str": 17, "dex": 12, "con": 15, "int": 5, "wis": 13, "cha": 8 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "acido": "immune" },
+    "attacks": [
+      { "name": "Seudopodo", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "contundente" },
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:minotaur_skeleton", "name": "Esqueleto de Minotauro", "baseEntity": "minecraft:wither_skeleton",
+    "ac": 12, "hp": 67,
+    "abilities": { "str": 18, "dex": 11, "con": 15, "int": 6, "wis": 8, "cha": 5 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "vulnerable", "veneno": "immune" },
+    "attacks": [
+      { "name": "Hacha Grande", "toHitAbility": "str", "dice": "2d12", "damageAbility": "str", "damageType": "cortante" },
+      { "name": "Cornada", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:mule", "name": "Mula", "baseEntity": "minecraft:donkey",
+    "ac": 10, "hp": 11,
+    "abilities": { "str": 14, "dex": 10, "con": 13, "int": 2, "wis": 10, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Cascos", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:noble", "name": "Noble", "baseEntity": "minecraft:villager",
+    "ac": 15, "hp": 9,
+    "abilities": { "str": 11, "dex": 12, "con": 11, "int": 12, "wis": 14, "cha": 16 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Estoque", "toHitAbility": "dex", "dice": "1d8", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:ochre_jelly", "name": "Gelatina Ocre", "baseEntity": "minecraft:slime",
+    "ac": 8, "hp": 45,
+    "abilities": { "str": 15, "dex": 6, "con": 14, "int": 2, "wis": 6, "cha": 1 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "acido": "resistant", "rayo": "immune", "cortante": "immune" },
+    "attacks": [
+      { "name": "Seudopodo", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:octopus", "name": "Pulpo", "baseEntity": "minecraft:squid",
+    "ac": 12, "hp": 3,
+    "abilities": { "str": 4, "dex": 15, "con": 11, "int": 3, "wis": 10, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Tentaculos", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:ogre_zombie", "name": "Ogro Zombi", "baseEntity": "minecraft:zombie",
+    "ac": 8, "hp": 85,
+    "abilities": { "str": 19, "dex": 6, "con": 18, "int": 3, "wis": 6, "cha": 5 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "veneno": "immune" },
+    "attacks": [
+      { "name": "Lucero del Alba", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:owl", "name": "Buho", "baseEntity": "minecraft:parrot",
+    "ac": 11, "hp": 1,
+    "abilities": { "str": 3, "dex": 13, "con": 8, "int": 2, "wis": 12, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Talones", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:panther", "name": "Pantera", "baseEntity": "minecraft:cat",
+    "ac": 12, "hp": 13,
+    "abilities": { "str": 14, "dex": 15, "con": 10, "int": 3, "wis": 14, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garra", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:pegasus", "name": "Pegaso", "baseEntity": "minecraft:horse",
+    "ac": 12, "hp": 59,
+    "abilities": { "str": 18, "dex": 15, "con": 16, "int": 10, "wis": 15, "cha": 13 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Cascos", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:plesiosaurus", "name": "Plesiosaurio", "baseEntity": "minecraft:frog",
+    "ac": 13, "hp": 68,
+    "abilities": { "str": 18, "dex": 15, "con": 16, "int": 2, "wis": 12, "cha": 5 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "3d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:poisonous_snake", "name": "Serpiente Venenosa", "baseEntity": "minecraft:frog",
+    "ac": 13, "hp": 2,
+    "abilities": { "str": 2, "dex": 16, "con": 11, "int": 1, "wis": 10, "cha": 3 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:polar_bear", "name": "Oso Polar", "baseEntity": "minecraft:polar_bear",
+    "ac": 12, "hp": 42,
+    "abilities": { "str": 20, "dex": 10, "con": 16, "int": 2, "wis": 13, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:pony", "name": "Poni", "baseEntity": "minecraft:horse",
+    "ac": 10, "hp": 11,
+    "abilities": { "str": 15, "dex": 10, "con": 13, "int": 2, "wis": 11, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Cascos", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:priest", "name": "Sacerdote", "baseEntity": "minecraft:villager",
+    "ac": 13, "hp": 27,
+    "abilities": { "str": 10, "dex": 10, "con": 12, "int": 13, "wis": 16, "cha": 13 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Maza", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:pseudodragon", "name": "Seudodragon", "baseEntity": "minecraft:vex",
+    "ac": 13, "hp": 7,
+    "abilities": { "str": 6, "dex": 15, "con": 13, "int": 10, "wis": 12, "cha": 10 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" },
+      { "name": "Aguijon", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:quasit", "name": "Quasit", "baseEntity": "minecraft:vex",
+    "ac": 13, "hp": 7,
+    "abilities": { "str": 5, "dex": 17, "con": 10, "int": 7, "wis": 10, "cha": 10 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "frio": "resistant", "fuego": "resistant", "rayo": "resistant", "veneno": "immune" },
+    "attacks": [
+      { "name": "Garra (mordisco en forma bestial)", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:quipper", "name": "Quipper", "baseEntity": "minecraft:cod",
+    "ac": 13, "hp": 1,
+    "abilities": { "str": 2, "dex": 16, "con": 9, "int": 1, "wis": 7, "cha": 2 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:rat", "name": "Rata", "baseEntity": "minecraft:silverfish",
+    "ac": 10, "hp": 1,
+    "abilities": { "str": 2, "dex": 11, "con": 9, "int": 2, "wis": 10, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:raven", "name": "Cuervo", "baseEntity": "minecraft:parrot",
+    "ac": 12, "hp": 1,
+    "abilities": { "str": 2, "dex": 14, "con": 8, "int": 2, "wis": 12, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Pico", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:reef_shark", "name": "Tiburon de Arrecife", "baseEntity": "minecraft:dolphin",
+    "ac": 12, "hp": 22,
+    "abilities": { "str": 14, "dex": 13, "con": 13, "int": 1, "wis": 10, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:rhinoceros", "name": "Rinoceronte", "baseEntity": "minecraft:hoglin",
+    "ac": 11, "hp": 45,
+    "abilities": { "str": 21, "dex": 8, "con": 15, "int": 2, "wis": 12, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Cornada", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:riding_horse", "name": "Caballo de Monta", "baseEntity": "minecraft:horse",
+    "ac": 10, "hp": 13,
+    "abilities": { "str": 16, "dex": 10, "con": 12, "int": 2, "wis": 11, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Cascos", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:rust_monster", "name": "Monstruo Oxidador", "baseEntity": "minecraft:silverfish",
+    "ac": 14, "hp": 27,
+    "abilities": { "str": 13, "dex": 12, "con": 13, "int": 2, "wis": 13, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:saber_toothed_tiger", "name": "Tigre Dientes de Sable", "baseEntity": "minecraft:cat",
+    "ac": 12, "hp": 52,
+    "abilities": { "str": 18, "dex": 14, "con": 15, "int": 3, "wis": 12, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garra", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:sahuagin", "name": "Sahuagin", "baseEntity": "minecraft:drowned",
+    "ac": 12, "hp": 22,
+    "abilities": { "str": 13, "dex": 11, "con": 12, "int": 12, "wis": 13, "cha": 9 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garras", "toHitAbility": "str", "dice": "1d4", "damageAbility": "str", "damageType": "cortante" },
+      { "name": "Lanza", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:satyr", "name": "Satiro", "baseEntity": "minecraft:piglin",
+    "ac": 14, "hp": 31,
+    "abilities": { "str": 12, "dex": 16, "con": 11, "int": 12, "wis": 10, "cha": 14 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Embestida", "toHitAbility": "str", "dice": "2d4", "damageAbility": "str", "damageType": "contundente" },
+      { "name": "Espada Corta", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" },
+      { "name": "Arco Corto", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:scorpion", "name": "Escorpion", "baseEntity": "minecraft:turtle",
+    "ac": 11, "hp": 1,
+    "abilities": { "str": 2, "dex": 11, "con": 8, "int": 1, "wis": 8, "cha": 2 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Aguijon", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:scout", "name": "Explorador", "baseEntity": "minecraft:pillager",
+    "ac": 13, "hp": 16,
+    "abilities": { "str": 11, "dex": 14, "con": 12, "int": 11, "wis": 13, "cha": 11 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Espada Corta", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" },
+      { "name": "Arco Largo", "toHitAbility": "dex", "dice": "1d8", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:sea_hag", "name": "Bruja Marina", "baseEntity": "minecraft:witch",
+    "ac": 14, "hp": 52,
+    "abilities": { "str": 16, "dex": 13, "con": 16, "int": 12, "wis": 12, "cha": 13 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Garras", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:shadow", "name": "Sombra", "baseEntity": "minecraft:vex",
+    "ac": 12, "hp": 16,
+    "abilities": { "str": 6, "dex": 14, "con": 13, "int": 6, "wis": 10, "cha": 8 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "radiante": "vulnerable", "acido": "resistant", "frio": "resistant", "fuego": "resistant", "rayo": "resistant", "trueno": "resistant", "necrotico": "immune", "veneno": "immune" },
+    "attacks": [
+      { "name": "Drenar Fuerza", "toHitAbility": "dex", "dice": "2d6", "damageAbility": "dex", "damageType": "necrotico" }
+    ]
+  },
+  {
+    "id": "dndsheets:silver_dragon_wyrmling", "name": "Cria de Dragon de Plata", "baseEntity": "minecraft:ravager",
+    "ac": 17, "hp": 45,
+    "abilities": { "str": 19, "dex": 10, "con": 17, "int": 12, "wis": 11, "cha": 15 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "frio": "immune" },
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:specter", "name": "Espectro", "baseEntity": "minecraft:vex",
+    "ac": 12, "hp": 22,
+    "abilities": { "str": 1, "dex": 14, "con": 11, "int": 10, "wis": 10, "cha": 11 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "acido": "resistant", "frio": "resistant", "fuego": "resistant", "rayo": "resistant", "trueno": "resistant", "necrotico": "immune", "veneno": "immune" },
+    "attacks": [
+      { "name": "Drenar Vida", "toHitAbility": "dex", "dice": "3d6", "damageAbility": "dex", "damageType": "necrotico" }
+    ]
+  },
+  {
+    "id": "dndsheets:spider", "name": "Arana", "baseEntity": "minecraft:cave_spider",
+    "ac": 12, "hp": 1,
+    "abilities": { "str": 2, "dex": 14, "con": 8, "int": 1, "wis": 10, "cha": 2 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:sprite", "name": "Duendecillo", "baseEntity": "minecraft:allay",
+    "ac": 15, "hp": 2,
+    "abilities": { "str": 3, "dex": 18, "con": 10, "int": 14, "wis": 13, "cha": 11 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Espada Larga", "toHitAbility": "str", "dice": "1", "damageAbility": "str", "damageType": "cortante" },
+      { "name": "Arco Corto", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:spy", "name": "Espia", "baseEntity": "minecraft:pillager",
+    "ac": 12, "hp": 27,
+    "abilities": { "str": 10, "dex": 15, "con": 10, "int": 12, "wis": 14, "cha": 16 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Espada Corta", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" },
+      { "name": "Ballesta de Mano", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:steam_mephit", "name": "Mefito de Vapor", "baseEntity": "minecraft:vex",
+    "ac": 10, "hp": 21,
+    "abilities": { "str": 5, "dex": 11, "con": 10, "int": 11, "wis": 10, "cha": 12 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "fuego": "immune", "veneno": "immune" },
+    "attacks": [
+      { "name": "Garras", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:stirge", "name": "Estirge", "baseEntity": "minecraft:bat",
+    "ac": 14, "hp": 2,
+    "abilities": { "str": 4, "dex": 16, "con": 11, "int": 2, "wis": 8, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Drenar Sangre", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:swarm_of_bats", "name": "Enjambre de Murcielagos", "baseEntity": "minecraft:bat",
+    "ac": 12, "hp": 22,
+    "abilities": { "str": 5, "dex": 15, "con": 10, "int": 2, "wis": 12, "cha": 4 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
+    "attacks": [
+      { "name": "Mordiscos", "toHitAbility": "dex", "dice": "2d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:swarm_of_beetles", "name": "Enjambre de Escarabajos", "baseEntity": "minecraft:silverfish",
+    "ac": 12, "hp": 22,
+    "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
+    "attacks": [
+      { "name": "Mordiscos", "toHitAbility": "dex", "dice": "4d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:swarm_of_centipedes", "name": "Enjambre de Ciempies", "baseEntity": "minecraft:silverfish",
+    "ac": 12, "hp": 22,
+    "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
+    "attacks": [
+      { "name": "Mordiscos", "toHitAbility": "dex", "dice": "4d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:swarm_of_insects", "name": "Enjambre de Insectos", "baseEntity": "minecraft:silverfish",
+    "ac": 12, "hp": 22,
+    "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
+    "attacks": [
+      { "name": "Mordiscos", "toHitAbility": "dex", "dice": "4d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:swarm_of_poisonous_snakes", "name": "Enjambre de Serpientes Venenosas", "baseEntity": "minecraft:frog",
+    "ac": 14, "hp": 36,
+    "abilities": { "str": 8, "dex": 18, "con": 11, "int": 1, "wis": 10, "cha": 3 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
+    "attacks": [
+      { "name": "Mordiscos", "toHitAbility": "dex", "dice": "2d6", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:swarm_of_quippers", "name": "Enjambre de Quippers", "baseEntity": "minecraft:cod",
+    "ac": 13, "hp": 28,
+    "abilities": { "str": 13, "dex": 16, "con": 9, "int": 1, "wis": 7, "cha": 2 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
+    "attacks": [
+      { "name": "Mordiscos", "toHitAbility": "dex", "dice": "4d6", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:swarm_of_rats", "name": "Enjambre de Ratas", "baseEntity": "minecraft:silverfish",
+    "ac": 10, "hp": 24,
+    "abilities": { "str": 9, "dex": 11, "con": 9, "int": 2, "wis": 10, "cha": 3 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
+    "attacks": [
+      { "name": "Mordiscos", "toHitAbility": "dex", "dice": "2d6", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:swarm_of_ravens", "name": "Enjambre de Cuervos", "baseEntity": "minecraft:parrot",
+    "ac": 12, "hp": 24,
+    "abilities": { "str": 6, "dex": 14, "con": 8, "int": 3, "wis": 12, "cha": 6 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
+    "attacks": [
+      { "name": "Picos", "toHitAbility": "dex", "dice": "2d6", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:swarm_of_spiders", "name": "Enjambre de Aranas", "baseEntity": "minecraft:cave_spider",
+    "ac": 12, "hp": 22,
+    "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
+    "attacks": [
+      { "name": "Mordiscos", "toHitAbility": "dex", "dice": "4d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:swarm_of_wasps", "name": "Enjambre de Avispas", "baseEntity": "minecraft:bee",
+    "ac": 12, "hp": 22,
+    "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "resistant", "perforante": "resistant", "cortante": "resistant" },
+    "attacks": [
+      { "name": "Mordiscos", "toHitAbility": "dex", "dice": "4d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:thug", "name": "Maton", "baseEntity": "minecraft:vindicator",
+    "ac": 11, "hp": 32,
+    "abilities": { "str": 15, "dex": 11, "con": 14, "int": 10, "wis": 10, "cha": 11 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Maza", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" },
+      { "name": "Ballesta Pesada", "toHitAbility": "dex", "dice": "1d10", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:tiger", "name": "Tigre", "baseEntity": "minecraft:cat",
+    "ac": 12, "hp": 37,
+    "abilities": { "str": 17, "dex": 15, "con": 14, "int": 3, "wis": 12, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" },
+      { "name": "Garra", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "cortante" }
+    ]
+  },
+  {
+    "id": "dndsheets:tribal_warrior", "name": "Guerrero Tribal", "baseEntity": "minecraft:pillager",
+    "ac": 12, "hp": 11,
+    "abilities": { "str": 13, "dex": 11, "con": 12, "int": 8, "wis": 11, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Lanza", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:violet_fungus", "name": "Hongo Violeta", "baseEntity": "minecraft:slime",
+    "ac": 5, "hp": 18,
+    "abilities": { "str": 3, "dex": 1, "con": 10, "int": 1, "wis": 3, "cha": 1 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Contacto Putrefacto", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "necrotico" }
+    ]
+  },
+  {
+    "id": "dndsheets:vulture", "name": "Buitre", "baseEntity": "minecraft:parrot",
+    "ac": 10, "hp": 5,
+    "abilities": { "str": 7, "dex": 10, "con": 13, "int": 2, "wis": 12, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Pico", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:warhorse", "name": "Caballo de Guerra", "baseEntity": "minecraft:horse",
+    "ac": 11, "hp": 19,
+    "abilities": { "str": 18, "dex": 12, "con": 13, "int": 2, "wis": 12, "cha": 7 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Cascos", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:warhorse_skeleton", "name": "Esqueleto de Caballo de Guerra", "baseEntity": "minecraft:skeleton",
+    "ac": 13, "hp": 22,
+    "abilities": { "str": 18, "dex": 12, "con": 15, "int": 2, "wis": 8, "cha": 5 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "contundente": "vulnerable", "veneno": "immune" },
+    "attacks": [
+      { "name": "Cascos", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "contundente" }
+    ]
+  },
+  {
+    "id": "dndsheets:weasel", "name": "Comadreja", "baseEntity": "minecraft:silverfish",
+    "ac": 13, "hp": 1,
+    "abilities": { "str": 3, "dex": 16, "con": 8, "int": 2, "wis": 12, "cha": 3 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:wererat_human", "name": "Hombre Rata (forma humana)", "baseEntity": "minecraft:villager",
+    "ac": 12, "hp": 33,
+    "abilities": { "str": 10, "dex": 15, "con": 12, "int": 11, "wis": 10, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Espada Corta", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" },
+      { "name": "Ballesta de Mano", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:wererat_hybrid", "name": "Hombre Rata (forma hibrida)", "baseEntity": "minecraft:zombie",
+    "ac": 12, "hp": 33,
+    "abilities": { "str": 10, "dex": 15, "con": 12, "int": 11, "wis": 10, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" },
+      { "name": "Espada Corta", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" },
+      { "name": "Ballesta de Mano", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:wererat_rat", "name": "Hombre Rata (forma de rata)", "baseEntity": "minecraft:silverfish",
+    "ac": 12, "hp": 33,
+    "abilities": { "str": 10, "dex": 15, "con": 12, "int": 11, "wis": 10, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "1d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:white_dragon_wyrmling", "name": "Cria de Dragon Blanco", "baseEntity": "minecraft:ravager",
+    "ac": 16, "hp": 32,
+    "abilities": { "str": 14, "dex": 10, "con": 14, "int": 5, "wis": 10, "cha": 11 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "frio": "immune" },
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:will_o_wisp", "name": "Fuego Fatuo", "baseEntity": "minecraft:vex",
+    "ac": 19, "hp": 22,
+    "abilities": { "str": 1, "dex": 28, "con": 10, "int": 13, "wis": 14, "cha": 11 },
+    "proficiencyBonus": 2,
+    "damageAffinities": { "acido": "resistant", "frio": "resistant", "fuego": "resistant", "necrotico": "resistant", "trueno": "resistant", "rayo": "immune", "veneno": "immune" },
+    "attacks": [
+      { "name": "Descarga", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "rayo" }
+    ]
+  },
+  {
+    "id": "dndsheets:wolf", "name": "Lobo", "baseEntity": "minecraft:wolf",
+    "ac": 13, "hp": 11,
+    "abilities": { "str": 12, "dex": 15, "con": 12, "int": 3, "wis": 12, "cha": 6 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "dex", "dice": "2d4", "damageAbility": "dex", "damageType": "perforante" }
+    ]
+  },
+  {
+    "id": "dndsheets:worg", "name": "Worg", "baseEntity": "minecraft:wolf",
+    "ac": 13, "hp": 26,
+    "abilities": { "str": 16, "dex": 13, "con": 13, "int": 7, "wis": 11, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Mordisco", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "perforante" }
+    ]
   }
 ]

@@ -149,6 +149,37 @@ public class JsonContentSelfTest {
 		assertTrue(fireMage != null && "resistant".equals(fireMage.damageAffinities().get("fuego")), "el mago de fuego debería resistir el fuego");
 		assertTrue("vulnerable".equals(fireMage.damageAffinities().get("frio")), "el mago de fuego debería ser vulnerable al frío");
 		assertTrue(spider.damageAffinities().isEmpty(), "un monstruo sin damageAffinities debería quedar con el mapa vacío, no null");
+
+		//El bestiario masivo importado del SRD, con el parser real. Es donde de verdad entra el contenido.
+		JsonArray bestiary = readArray("monsters", "monsters.json");
+		java.util.Set<String> monsterIds = new java.util.HashSet<>();
+		java.util.Set<String> damageTypes = java.util.Set.of("fisico", "cortante", "perforante", "contundente",
+			"fuego", "frio", "rayo", "acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno");
+		for (JsonElement el : bestiary) {
+			JsonObject json = el.getAsJsonObject();
+			String id = json.get("id").getAsString();
+			assertTrue(monsterIds.add(id), "id de monstruo duplicado en monsters.json: " + id);
+			MonsterRegistry.MonsterStatBlock block = MonsterRegistry.parse(json); //Ver checkSpells: parse siempre, register solo si es nuevo.
+			if (MonsterRegistry.get(id) == null) MonsterRegistry.register(block);
+
+			//Un monstruo sin ataques se puede invocar pero no puede hacer nada: no es contenido, es un adorno.
+			assertTrue(!block.attacks().isEmpty(), id + " no tiene ningún ataque");
+			assertTrue(block.maxHp() > 0 && block.ac() > 0, id + " debería tener PG y CA positivos");
+
+			//Un tipo de daño mal escrito no falla en ningún sitio: simplemente deja de coincidir con las
+			//resistencias, y el monstruo recibe daño completo de algo a lo que debería ser inmune.
+			for (MonsterRegistry.MonsterAttack attack : block.attacks()) {
+				assertTrue(damageTypes.contains(attack.damageType()),
+					"tipo de daño desconocido \"" + attack.damageType() + "\" en el ataque " + attack.name() + " de " + id);
+			}
+			for (Map.Entry<String, String> affinity : block.damageAffinities().entrySet()) {
+				assertTrue(damageTypes.contains(affinity.getKey()),
+					"afinidad sobre un tipo de daño desconocido \"" + affinity.getKey() + "\" en " + id);
+				assertTrue(java.util.List.of("resistant", "vulnerable", "immune").contains(affinity.getValue()),
+					"afinidad desconocida \"" + affinity.getValue() + "\" en " + id);
+			}
+		}
+		assertTrue(bestiary.size() >= 182, "monsters.json debería traer al menos los 182 del lote 3 del SRD, trae " + bestiary.size());
 	}
 
 	private static void checkTraits() throws Exception {
