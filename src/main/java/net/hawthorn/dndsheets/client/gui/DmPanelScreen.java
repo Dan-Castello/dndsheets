@@ -2,7 +2,7 @@ package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.DungeonPieceListRequestMessage;
-import net.hawthorn.dndsheets.network.RosterActionMessage;
+import net.hawthorn.dndsheets.network.BrowseActionMessage;
 import net.hawthorn.dndsheets.network.PresetListRequestMessage;
 import net.hawthorn.dndsheets.network.SheetSummaryRequestMessage;
 import net.hawthorn.dndsheets.network.TraitListRequestMessage;
@@ -31,7 +31,7 @@ public class DmPanelScreen extends ListPickerScreen {
 		//Primera fila: es lo que un DM mira más veces por sesión, y hasta ahora había que abrir los Ajustes
 		//de hoja de cada jugador por separado para ver sus PG.
 		addRow(Component.literal("Grupo (PG, CA, condiciones)"),
-			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new RosterActionMessage(RosterActionMessage.Action.LIST_PARTY)));
+			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.LIST_PARTY)));
 		addRow(Component.literal("Modo turnos"), b -> TurnControlScreen.open());
 		addRow(Component.literal("Invocar NPC genérico"), b -> SpawnGenericScreen.open());
 		addRow(Component.literal("Invocar monstruo cargado"), b -> MonsterSpawnListScreen.open());
@@ -46,6 +46,7 @@ public class DmPanelScreen extends ListPickerScreen {
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage(uuid))));
 		addRow(Component.literal("Mazmorras (piezas y generación)"),
 			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new DungeonPieceListRequestMessage()));
+		addRow(Component.literal("Compendio"), b -> CompendiumScreen.open());
 		addRow(Component.literal("Crear contenido"), b -> ContentTypeListScreen.open());
 		addRow(Component.translatable("gui.dndsheets.guide.button"), b -> GuideBook.open(true));
 	}

@@ -11,7 +11,8 @@ import java.util.function.Supplier;
 //Servidor -> cliente: abre/cierra una pantalla modal sin payload propio. Reemplaza DeathSaveOpenMessage,
 //DeathSaveCloseMessage y RestChoiceOpenMessage, que eran 3 clases idénticas salvo qué pantalla accionaban.
 public class ScreenActionMessage {
-	public enum Action { DEATH_SAVE_OPEN, DEATH_SAVE_CLOSE, REST_CHOICE_OPEN }
+	//Al final, nunca en medio: writeEnum viaja por ordinal (invariante 2 de PROJECT_CONTEXT.md).
+	public enum Action { DEATH_SAVE_OPEN, DEATH_SAVE_CLOSE, REST_CHOICE_OPEN, COMPENDIUM_OPEN }
 
 	final Action action;
 
@@ -34,6 +35,7 @@ public class ScreenActionMessage {
 				case DEATH_SAVE_OPEN -> DeathSaveScreen.open();
 				case DEATH_SAVE_CLOSE -> DeathSaveScreen.close();
 				case REST_CHOICE_OPEN -> RestChoiceScreen.open();
+				case COMPENDIUM_OPEN -> net.hawthorn.dndsheets.client.gui.CompendiumScreen.open();
 			}
 		});
 	}

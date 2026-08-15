@@ -1,7 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
-import net.hawthorn.dndsheets.network.RosterActionMessage;
+import net.hawthorn.dndsheets.network.BrowseActionMessage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -39,7 +39,7 @@ public class CharacterListScreen extends ListPickerScreen {
 			String characterId = ids.get(i);
 			boolean active = labels.get(i).startsWith("▶");
 			addRow(Component.literal(labels.get(i)).withStyle(active ? ChatFormatting.GREEN : ChatFormatting.GRAY),
-				button -> DndsheetsMod.PACKET_HANDLER.sendToServer(new RosterActionMessage(RosterActionMessage.Action.SWITCH, characterId)));
+				button -> DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.SWITCH, characterId)));
 		}
 	}
 

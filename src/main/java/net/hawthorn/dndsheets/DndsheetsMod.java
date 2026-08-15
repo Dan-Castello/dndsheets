@@ -61,8 +61,8 @@ public class DndsheetsMod {
 	//antes) y acabarían desalineados en el id de mensaje para cualquier cosa después del punto de cambio,
 	//en vez de que Forge los rechace limpio al conectar por versión de protocolo incompatible.
 	//Sube a "3": SheetSummaryMessage gana un campo en el cable (las condiciones activas del objetivo),
-	//SheetAdjustMessage.Field gana la constante CONDITION, y se registran RosterActionMessage/
-	//RosterListMessage. Lo primero es lo verdaderamente peligroso: un campo más en un mensaje ya existente
+	//SheetAdjustMessage.Field gana la constante CONDITION, y se registran BrowseActionMessage/
+	//BrowseListMessage. Lo primero es lo verdaderamente peligroso: un campo más en un mensaje ya existente
 	//no cambia ningún id, así que sin subir esto el handshake pasaría y el cliente antiguo leería ese
 	//mensaje corrido un campo, en silencio y con datos plausibles, en vez de fallar limpio al conectar.
 	private static final String PROTOCOL_VERSION = "3";
@@ -142,8 +142,8 @@ public class DndsheetsMod {
 		//A PARTIR DE AQUÍ, POR ORDEN DE INCORPORACIÓN, NO ALFABÉTICO. El id de red de cada mensaje es su
 		//orden de registro, así que meter uno nuevo en su hueco alfabético (Roster... iría entre Rest... y
 		//Sheet...) renumeraría en silencio todos los de después. Añade siempre al final de esta lista.
-		addNetworkMessage(RosterActionMessage.class, RosterActionMessage::buffer, RosterActionMessage::new, RosterActionMessage::handler);
-		addNetworkMessage(RosterListMessage.class, RosterListMessage::buffer, RosterListMessage::new, RosterListMessage::handler);
+		addNetworkMessage(BrowseActionMessage.class, BrowseActionMessage::buffer, BrowseActionMessage::new, BrowseActionMessage::handler);
+		addNetworkMessage(BrowseListMessage.class, BrowseListMessage::buffer, BrowseListMessage::new, BrowseListMessage::handler);
 	}
 
 	//Patrón repetido en los mensajes cliente(DM)->servidor que actúan sobre OTRO jugador (SheetAdjustMessage,

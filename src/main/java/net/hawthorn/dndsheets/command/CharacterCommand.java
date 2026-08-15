@@ -75,9 +75,9 @@ public class CharacterCommand {
 	}
 
 	//El servidor ya sabe qué personajes tiene: manda la lista directamente, sin que el cliente tenga que
-	//pedirla primero. La ida y vuelta solo hace falta desde un botón de GUI (ver RosterActionMessage).
+	//pedirla primero. La ida y vuelta solo hace falta desde un botón de GUI (ver BrowseActionMessage).
 	private static int openScreen(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		net.hawthorn.dndsheets.network.RosterActionMessage.sendOwnCharacters(ctx.getSource().getPlayerOrException());
+		net.hawthorn.dndsheets.network.BrowseActionMessage.sendOwnCharacters(ctx.getSource().getPlayerOrException());
 		return 1;
 	}
 

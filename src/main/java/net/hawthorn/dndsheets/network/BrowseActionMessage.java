@@ -2,6 +2,7 @@ package net.hawthorn.dndsheets.network;
 
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.Combatant;
+import net.hawthorn.dndsheets.CompendiumQuery;
 import net.hawthorn.dndsheets.Condition;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
@@ -17,40 +18,47 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * <p>Cliente → servidor: todo lo que tiene que ver con "qué personajes hay". Un solo mensaje
- * parametrizado por {@link Action} en vez de tres clases casi idénticas, siguiendo el mismo patrón que
- * {@link SheetAdjustMessage} (que ya agrupa siete acciones) y {@link ScreenActionMessage}.</p>
+ * <p>Cliente → servidor: "enséñame una lista que solo conoce el servidor". Empezó siendo solo el roster
+ * de personajes y se ensanchó al compendio, que tiene exactamente la misma forma — el cliente no guarda
+ * ni las hojas ni los registros de contenido, así que en ambos casos pide, el servidor formatea y el
+ * cliente pinta. Se renombró de {@code RosterActionMessage} al ensancharse: un nombre que ya no describe
+ * lo que hace la clase es deuda, no un detalle.</p>
+ *
+ * <p>Un solo mensaje parametrizado por {@link Action} en vez de una clase por consulta, siguiendo el
+ * mismo patrón que {@link SheetAdjustMessage} (que ya agrupa siete acciones) y {@link ScreenActionMessage}.
+ * El id de red no cambia al renombrar: se asigna por orden de registro, no por nombre.</p>
  *
  * <p>{@code LIST_PARTY} es la única que exige operador: ver la ficha de todo el mundo es información de
  * DM. Listar los personajes propios y cambiar entre ellos son acciones sobre lo tuyo, sin nada que gatear.</p>
  */
-public class RosterActionMessage {
+public class BrowseActionMessage {
 
-	public enum Action { LIST_MINE, LIST_PARTY, SWITCH }
+	//Al final, nunca en medio: writeEnum viaja por ordinal (ver la invariante 2 de PROJECT_CONTEXT.md).
+	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL }
 
 	final Action action;
 	final String characterId; //Solo lo usa SWITCH; las otras dos lo mandan vacío.
 
-	public RosterActionMessage(Action action) {
+	public BrowseActionMessage(Action action) {
 		this(action, "");
 	}
 
-	public RosterActionMessage(Action action, String characterId) {
+	public BrowseActionMessage(Action action, String characterId) {
 		this.action = action;
 		this.characterId = characterId;
 	}
 
-	public RosterActionMessage(FriendlyByteBuf buffer) {
+	public BrowseActionMessage(FriendlyByteBuf buffer) {
 		this.action = buffer.readEnum(Action.class);
 		this.characterId = buffer.readUtf();
 	}
 
-	public static void buffer(RosterActionMessage message, FriendlyByteBuf buffer) {
+	public static void buffer(BrowseActionMessage message, FriendlyByteBuf buffer) {
 		buffer.writeEnum(message.action);
 		buffer.writeUtf(message.characterId);
 	}
 
-	public static void handler(RosterActionMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
+	public static void handler(BrowseActionMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
 		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer sender = context.getSender();
@@ -62,6 +70,10 @@ public class RosterActionMessage {
 					//mensaje igual, y el permiso tiene que valer del lado del servidor para significar algo.
 					if (sender.hasPermissions(2)) sendParty(sender);
 				}
+				//El compendio es de consulta y no revela nada que el jugador no pueda ver ya en su Grimorio
+				//o en la ficha de un monstruo al pelearlo: no se gatea por operador.
+				case LIST_CONTENT -> CompendiumQuery.sendList(sender, message.characterId);
+				case CONTENT_DETAIL -> CompendiumQuery.sendDetail(sender, message.characterId);
 				case SWITCH -> {
 					if (SheetLoader.switchCharacter(sender, message.characterId)) {
 						JsonObject sheet = SheetLoader.getCharacterSheet(message.characterId);
@@ -91,7 +103,7 @@ public class RosterActionMessage {
 		}
 
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
-			new RosterListMessage(RosterListMessage.Kind.MINE, ids, labels));
+			new BrowseListMessage(BrowseListMessage.Kind.MINE, ids, labels));
 	}
 
 	/**
@@ -128,6 +140,6 @@ public class RosterActionMessage {
 		}
 
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm),
-			new RosterListMessage(RosterListMessage.Kind.PARTY, ids, labels));
+			new BrowseListMessage(BrowseListMessage.Kind.PARTY, ids, labels));
 	}
 }
