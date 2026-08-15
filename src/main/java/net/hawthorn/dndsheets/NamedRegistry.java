@@ -33,4 +33,11 @@ public class NamedRegistry<T> {
 	public Set<String> ids() {
 		return items.keySet();
 	}
+
+	//Público: usado por el creador de contenido in-game para borrar una entrada creada en el propio juego
+	//(ver ContentPackFile) — sin esto no había forma de sacar algo de un *Registry una vez cargado salvo
+	//reiniciar el servidor sin recargar el archivo que lo trajo.
+	public boolean remove(String id) {
+		return items.remove(id) != null;
+	}
 }

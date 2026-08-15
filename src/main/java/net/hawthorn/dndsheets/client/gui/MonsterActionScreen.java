@@ -51,5 +51,9 @@ public class MonsterActionScreen extends ListPickerScreen {
 
 		addRow(Component.literal("+ Añadir ataque"), b -> AddMonsterAttackScreen.open(entityId));
 		addRow(Component.literal("Gestionar ataques personalizados"), b -> ManageCustomAttacksScreen.open(entityId, customAttackNames));
+		//Crear un monstruo reutilizable en JSON, sin escribirlo a mano: invocar un NPC genérico + darle
+		//ataques con lo de arriba ya son 100% GUI — esto solo faltaba para guardar el resultado como
+		//plantilla (ver MonsterTemplateSaveScreen/MonsterRegistry.toJson).
+		addRow(Component.literal("Guardar como plantilla"), b -> MonsterTemplateSaveScreen.open(entityId));
 	}
 }

@@ -42,6 +42,10 @@ public class PresetRegistry {
 		return REGISTRY.ids();
 	}
 
+	public static boolean remove(String id) {
+		return REGISTRY.remove(id);
+	}
+
 	//Público: usado por PresetCommand (/dndpresets load) y por DndPaths para precargar solo todos los
 	//.json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de
 	//comandos — ver AUDIT_TECHNICAL.md M-ARQ-1.

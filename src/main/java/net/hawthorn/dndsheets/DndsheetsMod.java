@@ -80,6 +80,10 @@ public class DndsheetsMod {
 		addNetworkMessage(CharacterOptionsRequestMessage.class, CharacterOptionsRequestMessage::buffer, CharacterOptionsRequestMessage::new, CharacterOptionsRequestMessage::handler);
 		addNetworkMessage(CharacterSheetOpenMessage.class, CharacterSheetOpenMessage::buffer, CharacterSheetOpenMessage::new, CharacterSheetOpenMessage::handler);
 		addNetworkMessage(ClearCustomAttacksMessage.class, ClearCustomAttacksMessage::buffer, ClearCustomAttacksMessage::new, ClearCustomAttacksMessage::handler);
+		addNetworkMessage(ContentEntryListMessage.class, ContentEntryListMessage::buffer, ContentEntryListMessage::new, ContentEntryListMessage::handler);
+		addNetworkMessage(ContentEntryListRequestMessage.class, ContentEntryListRequestMessage::buffer, ContentEntryListRequestMessage::new, ContentEntryListRequestMessage::handler);
+		addNetworkMessage(ContentEntryRemoveMessage.class, ContentEntryRemoveMessage::buffer, ContentEntryRemoveMessage::new, ContentEntryRemoveMessage::handler);
+		addNetworkMessage(ContentEntrySaveMessage.class, ContentEntrySaveMessage::buffer, ContentEntrySaveMessage::new, ContentEntrySaveMessage::handler);
 		addNetworkMessage(DeathSaveGiveUpMessage.class, DeathSaveGiveUpMessage::buffer, DeathSaveGiveUpMessage::new, DeathSaveGiveUpMessage::handler);
 		addNetworkMessage(DungeonGenerateMessage.class, DungeonGenerateMessage::buffer, DungeonGenerateMessage::new, DungeonGenerateMessage::handler);
 		addNetworkMessage(DungeonJigsawConfigureMessage.class, DungeonJigsawConfigureMessage::buffer, DungeonJigsawConfigureMessage::new, DungeonJigsawConfigureMessage::handler);
@@ -92,6 +96,10 @@ public class DndsheetsMod {
 		addNetworkMessage(DeathSaveRollMessage.class, DeathSaveRollMessage::buffer, DeathSaveRollMessage::new, DeathSaveRollMessage::handler);
 		addNetworkMessage(MonsterActionChooseMessage.class, MonsterActionChooseMessage::buffer, MonsterActionChooseMessage::new, MonsterActionChooseMessage::handler);
 		addNetworkMessage(MonsterActionOpenMessage.class, MonsterActionOpenMessage::buffer, MonsterActionOpenMessage::new, MonsterActionOpenMessage::handler);
+		addNetworkMessage(MonsterSaveTemplateMessage.class, MonsterSaveTemplateMessage::buffer, MonsterSaveTemplateMessage::new, MonsterSaveTemplateMessage::handler);
+		addNetworkMessage(OptionsListMessage.class, OptionsListMessage::buffer, OptionsListMessage::new, OptionsListMessage::handler);
+		addNetworkMessage(OptionsListRequestMessage.class, OptionsListRequestMessage::buffer, OptionsListRequestMessage::new, OptionsListRequestMessage::handler);
+		addNetworkMessage(OptionsSaveMessage.class, OptionsSaveMessage::buffer, OptionsSaveMessage::new, OptionsSaveMessage::handler);
 		addNetworkMessage(PassivePerceptionRequestMessage.class, PassivePerceptionRequestMessage::buffer, PassivePerceptionRequestMessage::new, PassivePerceptionRequestMessage::handler);
 		addNetworkMessage(PresetApplyMessage.class, PresetApplyMessage::buffer, PresetApplyMessage::new, PresetApplyMessage::handler);
 		addNetworkMessage(PresetApplyToMessage.class, PresetApplyToMessage::buffer, PresetApplyToMessage::new, PresetApplyToMessage::handler);

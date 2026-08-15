@@ -68,6 +68,10 @@ public class MonsterRegistry {
 		return REGISTRY.ids();
 	}
 
+	public static boolean remove(String id) {
+		return REGISTRY.remove(id);
+	}
+
 	//Público: usado por MonsterCommand (/dndmonsters load) y por DndPaths para precargar solo todos los
 	//.json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de
 	//comandos — ver AUDIT_TECHNICAL.md M-ARQ-1. Antes, un monstruo malformado a mitad del archivo abortaba
@@ -136,6 +140,31 @@ public class MonsterRegistry {
 			effect != null ? effect.get("dice").getAsString() : null,
 			effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0
 		);
+	}
+
+	//Público: usado por el creador de contenido in-game para guardar un monstruo invocado (normalmente un
+	//NPC genérico ya armado con ataques en vivo, ver client.gui.MonsterTemplateSaveScreen) como plantilla
+	//JSON reusable — mismos nombres de campo que parse() espera, para que cargarlo de vuelta funcione igual
+	//que cualquier otro pack de monstruos.
+	public static JsonObject toJson(MonsterStatBlock block) {
+		JsonObject json = new JsonObject();
+		json.addProperty("id", block.id());
+		json.addProperty("name", block.name());
+		json.addProperty("baseEntity", block.baseEntityId());
+		json.addProperty("ac", block.ac());
+		json.addProperty("hp", block.maxHp());
+		json.addProperty("proficiencyBonus", block.proficiencyBonus());
+
+		JsonObject abilities = new JsonObject();
+		for (Map.Entry<String, Integer> entry : block.abilities().entrySet()) abilities.addProperty(entry.getKey(), entry.getValue());
+		json.add("abilities", abilities);
+
+		if (!block.attacks().isEmpty()) {
+			JsonArray attacks = new JsonArray();
+			for (MonsterAttack attack : block.attacks()) attacks.add(attackToJson(attack));
+			json.add("attacks", attacks);
+		}
+		return json;
 	}
 
 	private static JsonObject attackToJson(MonsterAttack attack) {

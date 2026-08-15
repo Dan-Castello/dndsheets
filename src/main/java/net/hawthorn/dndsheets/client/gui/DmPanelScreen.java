@@ -37,6 +37,7 @@ public class DmPanelScreen extends ListPickerScreen {
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage(uuid))));
 		addRow(Component.literal("Mazmorras (piezas y generación)"),
 			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new DungeonPieceListRequestMessage()));
+		addRow(Component.literal("Crear contenido"), b -> ContentTypeListScreen.open());
 		addRow(Component.translatable("gui.dndsheets.guide.button"), b -> GuideBook.open(true));
 	}
 }

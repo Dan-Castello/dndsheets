@@ -217,6 +217,15 @@ public class Config {
 		return jsonWeaponGiveInfo.keySet();
 	}
 
+	//Público: usado por el creador de contenido in-game para borrar un arma creada en el propio juego (ver
+	//ContentPackFile). No es un NamedRegistry como los demás *Registry (ver nota de loadFile más abajo),
+	//así que necesita su propio remove sobre los dos mapas en vez de delegar en NamedRegistry.remove.
+	public static boolean removeWeapon(String id) {
+		boolean removed = jsonWeapons.remove(id) != null;
+		jsonWeaponGiveInfo.remove(id);
+		return removed;
+	}
+
 	//Público: usado por WeaponCommand (/dndweapons load) y por DndPaths para precargar solo todos los
 	//.json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de
 	//comandos — ver AUDIT_TECHNICAL.md M-ARQ-1. No usa JsonRegistryLoader como los demás *Registry: valida

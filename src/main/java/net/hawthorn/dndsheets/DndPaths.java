@@ -73,6 +73,12 @@ public class DndPaths {
 		DungeonPieceRegistry.load(event.getServer());
 	}
 
+	//Archivo único donde el creador de contenido in-game (ver ContentPackFile) guarda todo lo que un DM crea
+	//desde el juego, por tipo — separado de cualquier pack escrito a mano para no arriesgarnos a pisarlo.
+	public static Path dmCreatedFile(Path dir) {
+		return dir.resolve("dm_created.json");
+	}
+
 	//Público: cada comando *Command lo usa para que el argumento "archivo" de su "load" se autocomplete
 	//con tab en el chat, en vez de dejar al DM adivinar de memoria el nombre exacto del .json.
 	public static List<String> jsonFileNames(Path dir) {
