@@ -37,10 +37,13 @@ before your first edit.
 9. **Leave vanilla alone when nothing is configured.** An unregistered weapon, a mob with no stat
    block, a player with no sheet — all must behave exactly like normal Minecraft. This is the
    mod's core compatibility promise.
-10. **Every non-trivial rule gets a case in `JsonContentSelfTest`.** It runs on `gradlew build`,
+10. **Content JSON is formatted by hand, compactly.** Never rewrite these files with a
+    `json.dump` — it reflows everything and makes the diff unreadable. Insert respecting the style.
+11. **Every non-trivial rule gets a case in `JsonContentSelfTest`.** It runs on `gradlew build`,
     needs no Forge runtime, and has already caught a real bug (accented NPC names slugging to
     `npc-capit-n`). Logic that can't be reached without a running game belongs behind a pure
-    helper class that can — that is why `CharacterRules` exists.
+    helper class that can — that is why `CharacterRules` exists. It has caught four real bugs so
+    far, two of them in code written minutes earlier.
 
 ## Repository layout
 
@@ -223,12 +226,29 @@ dependencies, not preference.
   player's character, real hit points, AC and active conditions). Both ride on one parameterized
   `RosterActionMessage`/`RosterListMessage` pair, registered **at the end** of the list rather than
   in its alphabetical slot — see invariant 1.
-- **Fase 2 — SRD content.** The mod ships 24 spells / 13 monsters / 0 magic items against
-  Foundry's ~319 / ~325 / ~200. This is the biggest *user-facing* gap and it is data, not
-  architecture — the loading pipeline already works. It is deliberately **after** Fase 0: most
-  SRD spells and monster abilities apply or check a condition, so importing them into an engine
-  that could only do damage-over-time would produce hundreds of entries that don't do what they
-  say, and they'd all have to be re-imported.
+- **Fase 2 — SRD content. Imported in four batches; the bestiary is done.** 24 → **71 spells**
+  and 13 → **330 monsters** (145 with resistances, 68 of them conditional). Content comes from
+  SRD 5.1 under CC-BY-4.0 — see `ATTRIBUTION.md`, which is a licence obligation, not a courtesy.
+
+  Putting content **after** Fase 0 was load-bearing, not tidiness. The very first batch found two
+  engine bugs that would have silently ruined a bulk import: `dice` was mandatory so a
+  no-damage spell could not even be written, and the effect only applied `if (finalDamage > 0)` —
+  which both blocked condition-only spells *and* imposed conditions on targets who had **passed**
+  their save. Batch 4 was likewise gated on conditional resistances: 58 of its 152 monsters need
+  them, so importing earlier would have left the whole upper bestiary softer than its stat block.
+
+  **The engine backlog, ordered by how much content each item unlocks.** Every entry comes from a
+  converter's "requires engine" list, which is the most valuable output of an import run:
+  1. **Area shapes** — line, cone, wall. ~10 spells including Lightning Bolt and Cone of Cold.
+     The mod only has a radius; turning a cone into one would hit everything *behind* the caster,
+     so these are deliberately not imported rather than imported wrong.
+  2. **Temporary hit points and weapon buffs** — ~6 spells (Aid, False Life, Divine Favor).
+  3. **Summoned entities that act on later turns** — ~5 spells (Spiritual Weapon, Flaming Sphere).
+  4. **Multi-round area effects** — Moonbeam, Storm of Vengeance.
+  5. **Magic items** — ~200 in the SRD, none in the mod, no schema yet. Biggest untouched area.
+
+  Silvered/adamantine resistance variants collapse into plain "nonmagical" on purpose: the mod has
+  no such materials, and the alternative was discarding the resistance entirely.
 - **Fase 3 — the table layer.** Shared journal, handouts with per-player secrets, party view,
   in-game searchable compendium. Cheapest layer, and worth little until there is content to
   consult.
