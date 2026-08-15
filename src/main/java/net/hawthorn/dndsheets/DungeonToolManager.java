@@ -10,6 +10,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.entity.JigsawBlockEntity;
 import net.minecraft.world.level.block.entity.StructureBlockEntity;
+import net.minecraft.world.level.block.state.properties.StructureMode;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -52,6 +53,28 @@ public class DungeonToolManager {
 		String structureId = structureBlock.getStructureName();
 		if (structureId == null || structureId.isBlank()) {
 			serverDm.sendSystemMessage(Component.literal("Este bloque de estructura todavía no tiene nombre — ponle uno y guárdalo primero.").withStyle(ChatFormatting.GRAY));
+			return;
+		}
+
+		//StructureBlockEntity#saveStructure devuelve false sin más detalle que "no" — el motivo más común
+		//con diferencia es que el bloque ya no está en modo SAVE (alguien lo cambió a LOAD/CORNER/DATA con
+		//su GUI vanilla en algún momento, p.ej. mirándolo por curiosidad), así que se distingue ANTES de
+		//intentar, para dar un mensaje que de verdad sirva en vez de "revisá que todo esté bien".
+		if (structureBlock.getMode() != StructureMode.SAVE) {
+			serverDm.sendSystemMessage(Component.literal("Este bloque de estructura está en modo " + structureBlock.getMode()
+				+ ", no SAVE — abrí su GUI vanilla (clic derecho SIN la Vara de DM) y ponelo en SAVE antes de capturar.").withStyle(ChatFormatting.GRAY));
+			return;
+		}
+
+		//Re-escanea y re-guarda el .nbt AHORA, con el bloque de estructura ya posicionado/dimensionado
+		//(structurePos/structureSize) de un Save anterior — sin esto, un jigsaw configurado con la Vara de
+		//DM DESPUÉS del último "Save" manual del bloque de estructura nunca llegaba al .nbt capturado (la
+		//generación busca el jigsaw Name=dungeon_start DENTRO del .nbt ya guardado, no en el mundo en vivo,
+		//ver JigsawPlacement.addPieces), así que la pieza de arranque nunca se generaba salvo que el DM se
+		//acordara de volver a apretar "Save" a mano tras marcar las conexiones. Capturar con la Vara ya es
+		//"la foto final", así que toma la foto en este mismo instante en vez de confiar en una vieja.
+		if (!structureBlock.saveStructure()) {
+			serverDm.sendSystemMessage(Component.literal("No pude re-guardar el bloque de estructura (motivo desconocido) — abrí su GUI vanilla, volvé a apretar Save a mano una vez, y reintentá con la Vara.").withStyle(ChatFormatting.GRAY));
 			return;
 		}
 

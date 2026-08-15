@@ -19,14 +19,19 @@ public class DungeonPieceListScreen extends ListPickerScreen {
 	private static final int SUBTITLE_Y = 30;
 
 	private final List<DungeonPieceRegistry.DungeonPiece> pieces;
+	//DungeonManager.hasStartJigsaw por pieza, mismo orden que "pieces" — ver DungeonPieceListMessage. Deja
+	//ver de un vistazo qué piezas tienen el jigsaw de inicio, para detectar ANTES de generar el problema
+	//real que causaba fallos intermitentes: mezclar la pieza de entrada con piezas normales en el mismo pool.
+	private final List<Boolean> hasStart;
 
-	private DungeonPieceListScreen(List<DungeonPieceRegistry.DungeonPiece> pieces, Screen parent) {
+	private DungeonPieceListScreen(List<DungeonPieceRegistry.DungeonPiece> pieces, List<Boolean> hasStart, Screen parent) {
 		super(Component.literal("Mazmorras"), parent);
 		this.pieces = pieces;
+		this.hasStart = hasStart;
 	}
 
-	public static void open(List<DungeonPieceRegistry.DungeonPiece> pieces) {
-		Minecraft.getInstance().setScreen(new DungeonPieceListScreen(pieces, Minecraft.getInstance().screen));
+	public static void open(List<DungeonPieceRegistry.DungeonPiece> pieces, List<Boolean> hasStart) {
+		Minecraft.getInstance().setScreen(new DungeonPieceListScreen(pieces, hasStart, Minecraft.getInstance().screen));
 	}
 
 	@Override
@@ -36,8 +41,11 @@ public class DungeonPieceListScreen extends ListPickerScreen {
 
 	@Override
 	protected void buildRows() {
-		for (DungeonPieceRegistry.DungeonPiece piece : pieces) {
-			addRow(Component.literal(piece.id() + " — " + piece.pool() + " (peso " + piece.weight() + ")"),
+		for (int i = 0; i < pieces.size(); i++) {
+			DungeonPieceRegistry.DungeonPiece piece = pieces.get(i);
+			String suffix = hasStart.get(i) ? " [inicio]" : "";
+			//Borrar vive en DungeonPieceEditScreen (botón propio) en vez de una fila aparte acá.
+			addRow(Component.literal(piece.id() + " — " + piece.pool() + " (peso " + piece.weight() + ")" + suffix),
 				b -> DungeonPieceEditScreen.open(piece));
 		}
 		addRow(Component.literal("+ Añadir pieza"), b -> DungeonPieceAddScreen.open());

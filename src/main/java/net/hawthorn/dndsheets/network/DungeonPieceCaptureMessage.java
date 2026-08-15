@@ -48,7 +48,7 @@ public class DungeonPieceCaptureMessage {
 			ServerPlayer dm = context.getSender();
 			if (dm == null || !dm.hasPermissions(2)) return;
 			if (!DungeonManager.isValidPoolName(message.pool)) {
-				dm.sendSystemMessage(Component.literal("\"" + message.pool + "\" no es un nombre de pool válido."));
+				dm.sendSystemMessage(Component.literal(DungeonManager.poolNameError(message.pool)));
 				return;
 			}
 
@@ -62,7 +62,7 @@ public class DungeonPieceCaptureMessage {
 			}
 
 			dm.sendSystemMessage(Component.literal("Pieza \"" + message.id + "\" capturada en el pool \"" + message.pool + "\"."));
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), DungeonPieceListMessage.of(DungeonPieceRegistry.all()));
+			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), DungeonPieceListMessage.of(dm.serverLevel(), DungeonPieceRegistry.all()));
 		});
 	}
 }

@@ -28,7 +28,7 @@ public class DungeonPieceListRequestMessage {
 			if (dm == null || !dm.hasPermissions(2)) return;
 
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm),
-				DungeonPieceListMessage.of(DungeonPieceRegistry.all()));
+				DungeonPieceListMessage.of(dm.serverLevel(), DungeonPieceRegistry.all()));
 		});
 	}
 }

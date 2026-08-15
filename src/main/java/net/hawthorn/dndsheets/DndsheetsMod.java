@@ -92,6 +92,7 @@ public class DndsheetsMod {
 		addNetworkMessage(DungeonPieceCaptureMessage.class, DungeonPieceCaptureMessage::buffer, DungeonPieceCaptureMessage::new, DungeonPieceCaptureMessage::handler);
 		addNetworkMessage(DungeonPieceListMessage.class, DungeonPieceListMessage::buffer, DungeonPieceListMessage::new, DungeonPieceListMessage::handler);
 		addNetworkMessage(DungeonPieceListRequestMessage.class, DungeonPieceListRequestMessage::buffer, DungeonPieceListRequestMessage::new, DungeonPieceListRequestMessage::handler);
+		addNetworkMessage(DungeonPieceRemoveMessage.class, DungeonPieceRemoveMessage::buffer, DungeonPieceRemoveMessage::new, DungeonPieceRemoveMessage::handler);
 		addNetworkMessage(DungeonPieceUpdateMessage.class, DungeonPieceUpdateMessage::buffer, DungeonPieceUpdateMessage::new, DungeonPieceUpdateMessage::handler);
 		addNetworkMessage(DeathSaveRollMessage.class, DeathSaveRollMessage::buffer, DeathSaveRollMessage::new, DeathSaveRollMessage::handler);
 		addNetworkMessage(MonsterActionChooseMessage.class, MonsterActionChooseMessage::buffer, MonsterActionChooseMessage::new, MonsterActionChooseMessage::handler);

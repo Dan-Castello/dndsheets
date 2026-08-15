@@ -56,6 +56,14 @@ public class DungeonCommand {
 		String pool = StringArgumentType.getString(ctx, "pool");
 		int weight = IntegerArgumentType.getInteger(ctx, "peso");
 
+		//Mismo chequeo que ya hacía DungeonPieceCaptureMessage.handler (equivalente en GUI) — sin esto, el
+		//comando era el único camino que dejaba pasar un pool con ".."/mayúsculas hasta DungeonManager,
+		//justo lo que isValidPoolName existe para bloquear (ver su comentario: path traversal en publish()).
+		if (!DungeonManager.isValidPoolName(pool)) {
+			ctx.getSource().sendFailure(Component.literal(DungeonManager.poolNameError(pool)));
+			return 0;
+		}
+
 		DungeonPieceRegistry.DungeonPiece piece = new DungeonPieceRegistry.DungeonPiece(id, structureId, pool, weight, "");
 		Optional<String> error = DungeonManager.capturePiece(ctx.getSource().getServer(), piece);
 		if (error.isPresent()) {
@@ -111,6 +119,16 @@ public class DungeonCommand {
 		String pool = StringArgumentType.getString(ctx, "pool");
 		int maxDepth = IntegerArgumentType.getInteger(ctx, "maxDepth");
 		BlockPos pos = BlockPosArgument.getBlockPos(ctx, "pos");
+
+		//Mismo chequeo que ya hacía DungeonGenerateMessage.handler (equivalente en GUI) antes de llegar
+		//acá — sin esto, un pool con mayúsculas o "/" mal puesto no fallaba con un mensaje claro por
+		//comando: el StringArgumentType.word() de "pool" acepta A-Z (isValidPoolName no), así que llegaba
+		//a construir un ResourceLocation inválido más abajo y reventaba con una excepción sin capturar en
+		//vez del mismo aviso limpio que ya daba la GUI.
+		if (!DungeonManager.isValidPoolName(pool)) {
+			ctx.getSource().sendFailure(Component.literal(DungeonManager.poolNameError(pool)));
+			return 0;
+		}
 
 		boolean success = DungeonManager.generate(dm, pool, maxDepth, pos);
 		if (!success) return 0;

@@ -2,6 +2,7 @@ package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.DungeonPieceRegistry;
+import net.hawthorn.dndsheets.network.DungeonPieceRemoveMessage;
 import net.hawthorn.dndsheets.network.DungeonPieceUpdateMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
@@ -9,9 +10,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Edita pool/peso/tags de una pieza ya capturada. Sin botón de borrar a propósito: es una acción rara
- * de operador y {@link SmallFormScreen#init()} es {@code final} (solo Confirmar/Cancelar) — para borrar
- * sigue haciendo falta {@code /dnddungeon piece remove}, igual que cualquier otra limpieza de {@code /dnd*}.</p>
+ * <p>Edita pool/peso/tags de una pieza ya capturada, con un botón "Borrar pieza" propio (ver
+ * {@link SmallFormScreen#showDeleteButton()}) — antes borrar vivía como una fila "Borrar: id" aparte en
+ * {@link DungeonPieceListScreen}, que duplicaba el alto de la lista por cada pieza.</p>
  */
 public class DungeonPieceEditScreen extends SmallFormScreen {
 	//No se relee de DungeonPieceRegistry en el cliente: ese registro solo vive en memoria del servidor (ver
@@ -43,5 +44,20 @@ public class DungeonPieceEditScreen extends SmallFormScreen {
 
 		int weight = parseIntOr(weightBox.getValue(), 1);
 		DndsheetsMod.PACKET_HANDLER.sendToServer(new DungeonPieceUpdateMessage(piece.id(), pool, weight, tagsBox.getValue().trim()));
+	}
+
+	@Override
+	protected boolean showDeleteButton() {
+		return true;
+	}
+
+	@Override
+	protected Component deleteButtonLabel() {
+		return Component.literal("Borrar pieza");
+	}
+
+	@Override
+	protected void onDelete() {
+		DndsheetsMod.PACKET_HANDLER.sendToServer(new DungeonPieceRemoveMessage(piece.id()));
 	}
 }

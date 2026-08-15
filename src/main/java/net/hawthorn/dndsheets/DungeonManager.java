@@ -11,11 +11,15 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.JigsawBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.pools.JigsawPlacement;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.fml.ModList;
 
@@ -67,6 +71,14 @@ public class DungeonManager {
 			if (segment.isEmpty() || segment.equals(".") || segment.equals("..")) return false;
 		}
 		return true;
+	}
+
+	//Mensaje compartido por los ~6 sitios que rechazan un pool inválido (comando y red) — el error más
+	//común con diferencia es escribir el espacio de nombres de la ESTRUCTURA (p.ej. "dndsheets_dm:dungeon",
+	//que el DM eligió libremente al nombrar el bloque de estructura, ver DUNGEON_GUIDE.md paso 1) en el
+	//campo de POOL, que se autonamespacea solo a "dndsheets:X" y nunca debería llevar ":" escrito a mano.
+	public static String poolNameError(String poolName) {
+		return "\"" + poolName + "\" no es un nombre de pool válido. Escribí solo el nombre, sin \":\" — por ejemplo \"dungeon\", no \"" + POOL_NAMESPACE + ":dungeon\" ni el espacio de nombres que le pusiste a tu estructura. Se guarda como \"" + POOL_NAMESPACE + ":" + poolName + "\" solo.";
 	}
 
 	//Puramente informativo (ver decisión del DM): sin llamadas reflectivas a la API de Structurize, solo
@@ -129,6 +141,23 @@ public class DungeonManager {
 		return Optional.empty();
 	}
 
+	//¿Esta pieza tiene, DENTRO de su .nbt ya capturado, un jigsaw con Name=START_JIGSAW_NAME? Mismo chequeo
+	//que hace vanilla — JigsawPlacement.addPieces busca ese jigsaw solo dentro de la pieza que el RNG haya
+	//elegido para arrancar, ver el comentario grande en generate() — pero acá, ANTES de generar, para poder
+	//avisar con precisión en vez de esperar a que vanilla falle y solo loguee un mensaje genérico.
+	public static boolean hasStartJigsaw(ServerLevel level, DungeonPieceRegistry.DungeonPiece piece) {
+		ResourceLocation structureId = ResourceLocation.tryParse(piece.structureId());
+		if (structureId == null) return false;
+
+		Optional<StructureTemplate> template = level.getStructureManager().get(structureId);
+		if (template.isEmpty()) return false;
+
+		for (StructureTemplate.StructureBlockInfo info : template.get().filterBlocks(BlockPos.ZERO, new StructurePlaceSettings(), Blocks.JIGSAW)) {
+			if (info.nbt() != null && START_JIGSAW_NAME.equals(info.nbt().getString("name"))) return true;
+		}
+		return false;
+	}
+
 	public static void removePiece(MinecraftServer server, String id) {
 		DungeonPieceRegistry.remove(id);
 		DungeonPieceRegistry.save(server);
@@ -172,7 +201,13 @@ public class DungeonManager {
 	}
 
 	//Escribe pack.mcmeta (si falta) + un template_pool JSON por pool en el datapack local de la partida,
-	//y corre /reload. Devuelve null en éxito, o un mensaje de error para mostrar al DM.
+	//y corre /reload — que SOLO sirve acá para que el datapack recién creado quede en la lista de "packs
+	//conocidos" del mundo (ver ReloadCommand.discoverNewPacks), NO para que los pools queden disponibles:
+	//Registries.TEMPLATE_POOL es un registro "worldgen", y /reload nunca lo toca (ver el comentario en
+	//generate() sobre ReloadableServerResources.listeners()). Un pool nuevo o editado solo queda visible
+	//tras recargar el mundo de verdad (salir y volver a entrar, o reiniciar el servidor) — generate()
+	//avisa de esto si el pool todavía no aparece. Devuelve null en éxito (de la ESCRITURA, no de que el
+	//pool ya esté listo para generar), o un mensaje de error para mostrar al DM.
 	public static String publish(ServerPlayer dm) {
 		MinecraftServer server = dm.getServer();
 		Path packRoot = server.getWorldPath(LevelResource.DATAPACK_DIR).resolve(PACK_NAME);
@@ -181,9 +216,22 @@ public class DungeonManager {
 		Map<String, JsonObject> pools = buildPoolJsons(DungeonPieceRegistry.all());
 		if (pools.isEmpty()) return "No hay piezas registradas — añade alguna antes de publicar.";
 
+		Path poolDir = packRoot.resolve("data").resolve(POOL_NAMESPACE).resolve("worldgen").resolve("template_pool");
+		//Borra pools publicados en una pasada ANTERIOR que ya no tiene ninguna pieza (se le quitaron todas,
+		//o se le cambió el pool a todas) — sin esto, un pool.json huérfano se quedaba para siempre en el
+		//datapack, listo para confundir la próxima vez que alguien reutilizara ese nombre de pool.
+		try (var existing = Files.list(poolDir)) {
+			for (Path file : existing.filter(p -> p.toString().endsWith(".json")).toList()) {
+				String name = file.getFileName().toString().replace(".json", "");
+				if (!pools.containsKey(name)) Files.deleteIfExists(file);
+			}
+		} catch (IOException ignored) {
+			//poolDir no existe todavía (primera publicación) — nada que limpiar.
+		}
+
 		Gson prettyGson = new GsonBuilder().setPrettyPrinting().create();
 		for (Map.Entry<String, JsonObject> entry : pools.entrySet()) {
-			Path poolFile = packRoot.resolve("data").resolve(POOL_NAMESPACE).resolve("worldgen").resolve("template_pool").resolve(entry.getKey() + ".json");
+			Path poolFile = poolDir.resolve(entry.getKey() + ".json");
 			try {
 				Files.createDirectories(poolFile.getParent());
 				try (OutputStream out = Files.newOutputStream(poolFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
@@ -210,12 +258,46 @@ public class DungeonManager {
 			return false;
 		}
 
+		//JigsawPlacement.addPieces (vanilla, confirmado leyendo su fuente) elige UNA pieza al azar —
+		//pesada, no la primera— de TODO el pool y busca el jigsaw de inicio SOLO adentro de esa. Si el pool
+		//mezcla la pieza de entrada con piezas normales que no tienen ese jigsaw, la generación tiene una
+		//probabilidad real de fallar según a cuál le toque — no es un error de configuración intermitente,
+		//es literalmente una tirada de dados con datos reales. Se valida ACÁ, con los .nbt ya capturados,
+		//en vez de dejar que vanilla lo descubra y solo loguee un mensaje sin contexto.
+		List<DungeonPieceRegistry.DungeonPiece> poolPieces = DungeonPieceRegistry.all().stream()
+			.filter(piece -> piece.pool().equals(poolName))
+			.toList();
+		List<String> missingStart = new ArrayList<>();
+		int withStart = 0;
+		for (DungeonPieceRegistry.DungeonPiece piece : poolPieces) {
+			if (hasStartJigsaw(dm.serverLevel(), piece)) withStart++;
+			else missingStart.add(piece.id());
+		}
+		if (withStart == 0) {
+			dm.sendSystemMessage(Component.literal("Ninguna pieza en el pool \"" + poolName + "\" tiene el jigsaw de inicio (Name=" + START_JIGSAW_NAME
+				+ ") — ¿la capturaste con la Vara de DM (clic en el bloque de estructura) DESPUÉS de marcar el jigsaw como pieza de inicio?"));
+			return false;
+		}
+		if (!missingStart.isEmpty()) {
+			dm.sendSystemMessage(Component.literal("El pool \"" + poolName + "\" mezcla tu pieza de entrada con " + missingStart.size()
+				+ " pieza(s) sin jigsaw de inicio (" + String.join(", ", missingStart) + "). Minecraft elige una pieza al azar de este pool para arrancar"
+				+ " — si le toca una de esas, la generación falla (tenías ~1 en " + poolPieces.size() + " de que pasara justo eso)."
+				+ " Movelas a otro pool, o creá un pool dedicado solo para la(s) pieza(s) de entrada."));
+			return false;
+		}
+
 		Optional<Holder.Reference<StructureTemplatePool>> holder = dm.serverLevel().registryAccess()
 			.registryOrThrow(Registries.TEMPLATE_POOL)
 			.getHolder(ResourceKey.create(Registries.TEMPLATE_POOL, new ResourceLocation(POOL_NAMESPACE, poolName)));
 
 		if (holder.isEmpty()) {
-			dm.sendSystemMessage(Component.literal("No encontré el pool \"" + poolName + "\" tras publicar — revisa que alguna pieza lo use."));
+			//NO es "revisá que alguna pieza lo use" — publish() ya escribió el JSON del pool en disco
+			//correctamente en ese caso. El problema es que /reload (ver publish()) jamás repuebla
+			//Registries.TEMPLATE_POOL: ReloadableServerResources.listeners() solo recarga tags/loot/recetas/
+			//funciones/logros, ninguno de ellos "worldgen" — los pools de estructura se leen SOLO al
+			//cargar el mundo. Un pool nuevo (o uno editado) queda escrito en el datapack pero invisible
+			//para el registro en vivo hasta que el mundo se recarga de verdad.
+			dm.sendSystemMessage(Component.literal("Pool \"" + poolName + "\" publicado pero todavía no cargado — Minecraft solo lee pools de estructura al cargar el mundo, /reload no alcanza. Salí al menú principal y volvé a entrar (o reiniciá el servidor) y generá de nuevo."));
 			return false;
 		}
 
