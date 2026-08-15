@@ -43,8 +43,39 @@ public class JsonContentSelfTest {
 		checkAoeShapes();
 		checkCombatantRules();
 		checkCharacterRules();
+		checkTabTextures();
 
 		System.out.println("JsonContentSelfTest: OK, los 5 JSON de ejemplo parsean con los registros reales.");
+	}
+
+	/**
+	 * <p>Las pestañas de la hoja son {@code ImageButton}, y esos NO tienen dos estados sino tres apilados
+	 * en vertical: normal en v=0, hover en v=yDiffTex y <b>deshabilitado</b> en v=yDiffTex*2
+	 * ({@code AbstractWidget.renderTexture}). Aquí importa más de lo normal porque
+	 * {@code CharacterSheetScreen.updateTabs} marca la pestaña SELECCIONADA con {@code active = false}
+	 * para que no se pueda pulsar la que ya estás viendo: la pestaña abierta se dibuja siempre con esa
+	 * tercera fila.</p>
+	 *
+	 * <p>Los PNG que venían de MCreator solo traían dos filas, así que la seleccionada muestreaba fuera de
+	 * la imagen y salía plana. No falla, no avisa y no se nota mirando el PNG — de ahí esta comprobación.
+	 * Los PNG los genera {@code tools/make_tab_textures.py}.</p>
+	 */
+	private static void checkTabTextures() throws Exception {
+		//Alto de fila declarado en CharacterSheetScreen (yDiffTex) para cada textura.
+		assertTabRows("imagebutton_tabbutton.png", 15);
+		assertTabRows("imagebutton_tabbutton_active.png", 20);
+	}
+
+	private static void assertTabRows(String name, int rowHeight) throws Exception {
+		Path path = Path.of("src", "main", "resources", "assets", "dndsheets", "textures", "screens", "atlas", name);
+		java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(path.toFile());
+		if (image == null) throw new AssertionError(name + ": no se pudo leer el PNG");
+		assertTrue(image.getHeight() == rowHeight * 3,
+			name + ": alto " + image.getHeight() + ", se esperaban 3 filas de " + rowHeight + " = " + (rowHeight * 3)
+				+ ". Con menos filas, la pestaña seleccionada muestrea fuera de la imagen.");
+		//La tercera fila es la de la pestaña abierta: si es transparente, la seleccionada se ve como un hueco.
+		assertTrue((image.getRGB(image.getWidth() / 2, rowHeight * 2 + rowHeight / 2) >>> 24) == 0xFF,
+			name + ": la fila de pestaña seleccionada (la tercera) está transparente");
 	}
 
 	private static JsonArray readArray(String... pathParts) throws Exception {

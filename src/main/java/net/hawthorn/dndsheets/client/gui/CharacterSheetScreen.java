@@ -171,6 +171,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	//distinguirlos de un vistazo de los campos en blanco normal que sí se pueden escribir a mano.
 	//Tinta sobre pergamino: marrón muy oscuro en vez de negro puro, que sobre un fondo cálido se ve duro.
 	private static final int INK_COLOR = 0x2A2118;
+	/** Rótulo de las pestañas cerradas: van sobre cuero, así que el mismo pergamino apagado de TomeButton. */
+	private static final int TAB_TEXT_CLOSED = 0xCBBA97;
 	//Ámbar quemado para lo que se rellena solo. El ámbar claro de antes (0xFFD37F) estaba pensado para un
 	//fondo oscuro; sobre pergamino no tenía contraste suficiente para leerse.
 	private static final int AUTO_FIELD_COLOR = 0x8A5A12;
@@ -567,13 +569,16 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			if (e != activeTab) {
 				e.setY(this.topPos - 12);
 				e.setHeight(15);
-				e.setImage( new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton.png"), 0, 0, 15, 50, 30);
+				e.setImage( new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton.png"), 0, 0, 15, 50, 45);
+				e.txtColor = TAB_TEXT_CLOSED;
 				e.active = true;
 			}
 			else {
 				e.setY(this.topPos - 17);
 				e.setHeight(20);
-				e.setImage( new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton_active.png"), 0, 0, 20, 50, 40);
+				e.setImage( new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton_active.png"), 0, 0, 20, 50, 60);
+				//Tinta oscura: la pestaña abierta es pergamino, y el blanco de MCreator sobre pergamino no se lee.
+				e.txtColor = INK_COLOR;
 				e.active = false;
 			}
 		});
@@ -1077,21 +1082,21 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	public void init() {
 		super.init();
 
-		mainTab = new AdjustableImageButton(this.leftPos + 15, this.topPos - 12, 50, 15, 0, 0, 15, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton.png"), 50, 30, e -> {
+		mainTab = new AdjustableImageButton(this.leftPos + 15, this.topPos - 12, 50, 15, 0, 0, 15, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton.png"), 50, 45, e -> {
 			panelActive = PanelStatus.MAIN;
 			updateTabs();
 
 		}, Component.translatable("gui.dndsheets.character_sheet.main_tab"));
 		this.addRenderableWidget(mainTab);
 
-		skillsTab = new AdjustableImageButton(this.leftPos + 65, this.topPos - 12, 50, 15, 0, 0, 15, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton.png"), 50, 30, e -> {
+		skillsTab = new AdjustableImageButton(this.leftPos + 65, this.topPos - 12, 50, 15, 0, 0, 15, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton.png"), 50, 45, e -> {
 			panelActive = PanelStatus.SKILLS;
 			updateTabs();
 
 		}, Component.translatable("gui.dndsheets.character_sheet.skills_tab"));
 		this.addRenderableWidget(skillsTab);
 
-		attacksTab = new AdjustableImageButton(this.leftPos + 115, this.topPos - 12, 50, 15, 0, 0, 15, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton.png"), 50, 30, e -> {
+		attacksTab = new AdjustableImageButton(this.leftPos + 115, this.topPos - 12, 50, 15, 0, 0, 15, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton.png"), 50, 45, e -> {
 			panelActive = PanelStatus.ATTACKS;
 			updateTabs();
 

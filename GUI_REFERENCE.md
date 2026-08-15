@@ -585,3 +585,19 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 | Cancelar | Button | `onClose()` |
 
 - **Notas:** `Target` siempre queda en `dndsheets:connector` (no se pide) y `Joint` siempre en `ALIGNED` (no se expone) — simplificación deliberada, ver comentario en `DungeonManager.configureJigsaw`.
+
+### Pestañas de la hoja (`AdjustableImageButton`)
+
+Las tres pestañas (Principal / Habilidades / Ataques) no son `TomeButton`: son texturas, así que no salen
+en un grep de `Button.builder` y hay que repintarlas aparte. Los PNG los genera
+`tools/make_tab_textures.py` con la paleta de `GuiStyle`.
+
+**Un `ImageButton` tiene TRES estados apilados en vertical, no dos**: normal en `v=0`, hover en
+`v=yDiffTex` y **deshabilitado** en `v=yDiffTex*2` (`AbstractWidget.renderTexture`). Y aquí eso pesa más
+de lo normal, porque `updateTabs()` marca la pestaña **seleccionada** con `active = false` para que no se
+pueda pulsar la que ya estás viendo: **la pestaña abierta se dibuja siempre con la tercera fila**. Los PNG
+heredados de MCreator solo traían dos, así que la seleccionada muestreaba fuera de la imagen y salía
+plana, sin fallar ni avisar. `JsonContentSelfTest.checkTabTextures` lo comprueba en cada `gradlew build`.
+
+Al regenerarlos hay que actualizar también el alto declarado en `CharacterSheetScreen` (el último
+argumento de `setImage` y del constructor), que es lo que se muestrea.
