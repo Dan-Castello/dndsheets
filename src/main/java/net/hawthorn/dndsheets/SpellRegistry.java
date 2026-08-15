@@ -92,7 +92,10 @@ public class SpellRegistry {
 		String mode = json.has("mode") ? json.get("mode").getAsString().toLowerCase(Locale.ROOT) : "attack";
 		String castingAbility = json.has("castingAbility") ? json.get("castingAbility").getAsString().toLowerCase(Locale.ROOT) : "int";
 		String saveAbility = json.has("saveAbility") ? json.get("saveAbility").getAsString().toLowerCase(Locale.ROOT) : "dex";
-		String dice = json.get("dice").getAsString();
+		//Opcional desde que existen las condiciones: un hechizo puede no hacer daño ninguno y aun así tener
+		//todo su efecto (Inmovilizar Persona, Dormir, Sugestión). Antes era obligatorio, así que esos
+		//hechizos ni siquiera se podían escribir — el parser los descartaba con un aviso.
+		String dice = json.has("dice") ? json.get("dice").getAsString() : "0";
 		boolean halfOnSave = !json.has("halfOnSave") || json.get("halfOnSave").getAsBoolean();
 		String damageType = json.has("damageType") ? json.get("damageType").getAsString().toLowerCase(Locale.ROOT) : "fisico";
 		boolean concentration = json.has("concentration") && json.get("concentration").getAsBoolean();

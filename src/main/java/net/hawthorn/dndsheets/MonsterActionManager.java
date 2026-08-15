@@ -362,6 +362,9 @@ public class MonsterActionManager {
 			target.hurt(target.damageSources().generic(), appliedAmount);
 			if (target instanceof ServerPlayer serverTarget) ConcentrationManager.onDamageTaken(serverTarget, appliedAmount);
 		}
-		if (finalDamage > 0 && spell.appliesEffect()) applyEffectFromHit(target, spell.effectName(), spell.effectDice(), spell.effectTurns(), monsterEntity);
+		//Mismo criterio que SpellCastManager.castSaveSpell: la condición la decide la salvación, no el daño.
+		//Un aliento paralizante que no hace daño debe paralizar igual, y uno que sí lo hace no debe imponer
+		//su condición a quien superó la tirada.
+		if (!saved && spell.appliesEffect()) applyEffectFromHit(target, spell.effectName(), spell.effectDice(), spell.effectTurns(), monsterEntity);
 	}
 }

@@ -336,10 +336,12 @@ public class SpellCastManager {
 		ChatFeedback.broadcast(caster, ChatFeedback.saveResult(casterName, targetName, spell.name(), saveRoll.formatted(), saveDc, saved, outcomeLabel,
 			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null));
 
-		if (finalDamage > 0) {
-			applyDamage(target, finalDamage, spell.damageType());
-			applySpellEffect(caster, spell, target);
-		}
+		if (finalDamage > 0) applyDamage(target, finalDamage, spell.damageType());
+		//El efecto depende de la SALVACIÓN, no del daño: en 5e que una condición prenda lo decide si el
+		//objetivo superó la tirada, y hay hechizos enteros que no hacen daño ninguno (Inmovilizar Persona,
+		//Dormir). Antes esto colgaba de "finalDamage > 0", así que un hechizo de solo condición no aplicaba
+		//nada y uno que sí hacía daño imponía su condición incluso al que había superado la salvación.
+		if (!saved) applySpellEffect(caster, spell, target);
 	}
 
 	//Mismo patrón que MonsterActionManager.applyEffectFromHit: si el hechizo trae appliesEffect (ver

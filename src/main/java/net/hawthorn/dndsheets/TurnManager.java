@@ -851,7 +851,10 @@ public class TurnManager {
 		List<StatusEffect> remaining = new ArrayList<>();
 		for (StatusEffect effect : active_) {
 			DiceManager.RollOutcome outcome = DiceManager.roll(new JsonObject(), effect.damageDice());
-			if (outcome.result() != null) {
+			//amount > 0, no solo "se pudo tirar": una condición pura (Inmovilizar Persona, Dormir) se guarda
+			//con dados "0" porque no hace daño, y sin este filtro anunciaba un tick de 0 puntos cada turno
+			//que dura — ruido en el chat justo cuando más lleno está.
+			if (outcome.result() != null && outcome.result().getValue() > 0) {
 				int amount = outcome.result().getValue();
 				SpellCastManager.applyDamage(entity, amount, effect.name());
 				broadcast(level, Component.translatable("chat.dndsheets.turn.effect_tick", entry.name(), effect.name(), outcome.formatted()).withStyle(ChatFormatting.DARK_GREEN));

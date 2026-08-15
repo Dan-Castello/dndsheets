@@ -27,5 +27,19 @@
   { "id": "dndsheets:call_lightning", "name": "Llamar al Rayo", "level": 3, "mode": "save", "castingAbility": "wis", "saveAbility": "dex", "dice": "3d10", "halfOnSave": true, "damageType": "rayo", "concentration": true },
 
   { "id": "dndsheets:cure_wounds", "name": "Curar Heridas", "level": 1, "mode": "heal", "castingAbility": "wis", "dice": "1d8 + $wis" },
-  { "id": "dndsheets:healing_word", "name": "Palabra Curativa", "level": 1, "mode": "heal", "castingAbility": "wis", "dice": "1d4 + $wis" }
+  { "id": "dndsheets:healing_word", "name": "Palabra Curativa", "level": 1, "mode": "heal", "castingAbility": "wis", "dice": "1d4 + $wis" },
+  { "id": "dndsheets:acid_splash", "name": "Salpicadura Acida", "level": 0, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "1d6", "halfOnSave": false, "damageType": "acido" },
+  { "id": "dndsheets:chill_touch", "name": "Toque Gelido", "level": 0, "mode": "attack", "castingAbility": "int", "dice": "1d8", "damageType": "necrotico" },
+  { "id": "dndsheets:shocking_grasp", "name": "Contacto Electrizante", "level": 0, "mode": "attack", "castingAbility": "int", "dice": "1d8", "damageType": "rayo" },
+  { "id": "dndsheets:charm_person", "name": "Hechizar Persona", "level": 1, "mode": "save", "castingAbility": "cha", "saveAbility": "wis", "dice": "0", "halfOnSave": false, "appliesEffect": { "name": "hechizado", "dice": "0", "turns": 10 } },
+  { "id": "dndsheets:entangle", "name": "Enmaranar", "level": 1, "mode": "save", "castingAbility": "wis", "saveAbility": "str", "dice": "0", "halfOnSave": false, "concentration": true, "aoeRadius": 4, "appliesEffect": { "name": "apresado", "dice": "0", "turns": 10 } },
+  { "id": "dndsheets:hideous_laughter", "name": "Carcajada Horrible", "level": 1, "mode": "save", "castingAbility": "int", "saveAbility": "wis", "dice": "0", "halfOnSave": false, "concentration": true, "appliesEffect": { "name": "incapacitado", "dice": "0", "turns": 10 } },
+  { "id": "dndsheets:inflict_wounds", "name": "Infligir Heridas", "level": 1, "mode": "attack", "castingAbility": "wis", "dice": "3d10", "damageType": "necrotico" },
+  { "id": "dndsheets:sleep", "name": "Dormir", "level": 1, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "5d8", "halfOnSave": false, "aoeRadius": 4, "appliesEffect": { "name": "inconsciente", "dice": "0", "turns": 10 } },
+  { "id": "dndsheets:acid_arrow", "name": "Flecha Acida", "level": 2, "mode": "attack", "castingAbility": "int", "dice": "4d4", "damageType": "acido" },
+  { "id": "dndsheets:blindness_deafness", "name": "Ceguera o Sordera", "level": 2, "mode": "save", "castingAbility": "int", "saveAbility": "con", "dice": "0", "halfOnSave": false, "appliesEffect": { "name": "cegado", "dice": "0", "turns": 10 } },
+  { "id": "dndsheets:heat_metal", "name": "Calentar Metal", "level": 2, "mode": "save", "castingAbility": "wis", "saveAbility": "con", "dice": "2d8", "halfOnSave": false, "damageType": "fuego", "concentration": true },
+  { "id": "dndsheets:hold_person", "name": "Inmovilizar Persona", "level": 2, "mode": "save", "castingAbility": "wis", "saveAbility": "wis", "dice": "0", "halfOnSave": false, "concentration": true, "appliesEffect": { "name": "paralizado", "dice": "0", "turns": 10 } },
+  { "id": "dndsheets:prayer_of_healing", "name": "Plegaria de Curacion", "level": 2, "mode": "heal", "castingAbility": "wis", "dice": "2d8 + MOD" },
+  { "id": "dndsheets:scorching_ray", "name": "Rayo Abrasador", "level": 2, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "2d6", "halfOnSave": false, "damageType": "fuego" }
 ]

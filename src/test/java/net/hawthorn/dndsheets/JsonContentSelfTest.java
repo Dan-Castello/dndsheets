@@ -86,6 +86,48 @@ public class JsonContentSelfTest {
 		assertTrue(guardians != null && guardians.concentration(), "spirit_guardians debería tener concentration=true");
 		SpellRegistry.Spell cureWounds = SpellRegistry.get("dndsheets:cure_wounds");
 		assertTrue(cureWounds != null && "heal".equals(cureWounds.mode()) && cureWounds.dice().contains("$wis"), "cure_wounds debería ser mode=heal con $wis en el dado");
+
+		//El pack masivo, no solo el de ejemplo: es el que trae el contenido importado del SRD, y el que de
+		//verdad hay que validar contra el parser real cada vez que crece un lote.
+		JsonArray bulk = readArray("spells", "spells.json");
+		java.util.Set<String> ids = new java.util.HashSet<>();
+		for (JsonElement el : bulk) {
+			JsonObject json = el.getAsJsonObject();
+			String id = json.get("id").getAsString();
+			assertTrue(ids.add(id), "id de hechizo duplicado en spells.json: " + id);
+			//parse() SIEMPRE (es lo que valida el esquema), pero register() solo si el id es nuevo:
+			//NamedRegistry.register avisa por el logger de DndsheetsMod al detectar un duplicado, y eso
+			//inicializa el canal de red de Forge, que fuera del juego no existe. Ejemplo.json y spells.json
+			//comparten ids a propósito, asi que aqui siempre habria duplicados.
+			SpellRegistry.Spell parsed = SpellRegistry.parse(json);
+			if (SpellRegistry.get(id) == null) SpellRegistry.register(parsed);
+		}
+		assertTrue(bulk.size() >= 38, "spells.json debería traer al menos los 38 hechizos del lote 1 del SRD, trae " + bulk.size());
+
+		//Hechizo de solo condición: sin daño ninguno. Antes ni se podía escribir — "dice" era obligatorio y
+		//el efecto solo se aplicaba si había daño, así que Inmovilizar Persona no habría hecho nada.
+		SpellRegistry.Spell hold = SpellRegistry.get("dndsheets:hold_person");
+		assertTrue(hold != null && "save".equals(hold.mode()), "hold_person debería ser un hechizo de salvación");
+		assertTrue(hold.appliesEffect() && "paralizado".equals(hold.effectName()), "hold_person debería aplicar paralizado");
+		assertTrue("0".equals(hold.dice()), "hold_person no hace daño: su dado debería ser 0");
+		assertTrue(Condition.fromLabel(hold.effectName()) == Condition.PARALIZADO,
+			"el nombre del efecto tiene que coincidir EXACTO con una condición o el motor lo trata como daño con nombre libre");
+
+		//Un nombre de efecto libre ("rayo de luna", "fuego") sigue siendo válido: es un temporizador de daño,
+		//y el mod lo soporta a propósito. Lo que NO puede pasar es un efecto sin daño Y sin condición real:
+		//eso no hace absolutamente nada (TurnManager.tickEffects se salta los ticks de 0), y la causa típica
+		//sería una errata en el nombre de una condición — "paralizados", "paralized" — que degrada el hechizo
+		//en silencio en vez de fallar.
+		for (JsonElement el : bulk) {
+			JsonObject json = el.getAsJsonObject();
+			if (!json.has("appliesEffect")) continue;
+			JsonObject effect = json.getAsJsonObject("appliesEffect");
+			String effectName = effect.get("name").getAsString();
+			boolean noDamage = "0".equals(effect.get("dice").getAsString());
+			if (!noDamage) continue; //Efecto de daño con nombre libre: correcto, no hay nada que comprobar.
+			assertTrue(Condition.fromLabel(effectName) != null,
+				"el efecto \"" + effectName + "\" de " + json.get("id").getAsString() + " no hace daño y no es una condición real: no haría nada");
+		}
 	}
 
 	private static void checkMonsters() throws Exception {
