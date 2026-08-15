@@ -96,6 +96,16 @@ public class MagicItemRegistry {
 		CompoundTag tag = stack.getOrCreateTag();
 		CompoundTag dnd = tag.getCompound("dndsheets");
 		dnd.putString("magicItem", itemId);
+
+		//Una varita o un bastón que lanza un conjuro se etiqueta ADEMÁS como báculo rápido: ese camino ya
+		//existe entero (ver QuickSpellManager y AbilityItemDispatcher) y hace justo lo que hace falta —
+		//clic derecho lanza el conjuro con las características y los espacios del portador. Reutilizarlo
+		//sale gratis; escribir un segundo mecanismo de "objeto que lanza algo" no.
+		MagicItem item = get(itemId);
+		if (item != null && item.grantsSpellId() != null && SpellRegistry.get(item.grantsSpellId()) != null) {
+			dnd.putString("quickSpell", item.grantsSpellId());
+		}
+
 		tag.put("dndsheets", dnd);
 		return stack;
 	}

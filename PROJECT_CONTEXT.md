@@ -284,8 +284,14 @@ dependencies, not preference.
      and a paragraph — there is no bonus field or resistance field to read, so their mechanics cannot
      be derived without inventing them. So an item has two halves, imported by different routes: the
      **reference** half (name, rarity, description) is fully automatic and already useful — a DM can
-     look all 362 up and hand them out — and the **mechanical** half (AC, saves, resistances) is
-     hand-written, and exists only where a pattern actually repeats. **362 imported, 21 mechanical.**
+     look all 362 up and hand them out — and the **mechanical** half (AC, saves, resistances, granted
+     spell) is *derived from the prose and then reviewed*, never trusted blind. The derivation demands a
+     second-person subject ("**you** gain resistance to fire") to avoid picking up effects that describe
+     something other than the wearer, and review still caught three classes of false positive worth
+     remembering: potions (their effect comes from *drinking*, so a passive affinity would protect
+     whoever carries the bottle), generic family entries whose concrete variants are the real items, and
+     the Defender sword (+2 AC **in exchange for** attack bonus — applying it unconditionally makes the
+     item strictly better than it is, the same kind of lie as inflating a die). **362 imported, 62 mechanical.**
      An item with no mechanics is not broken, it is an item the DM narrates, which is how most magic
      items work at a real table anyway.
 

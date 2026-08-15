@@ -266,7 +266,17 @@ public class JsonContentSelfTest {
 		//Que HAYA objetos narrativos es correcto y esperado: el SRD publica los objetos mágicos como prosa,
 		//así que la mayoría no tiene mecánicas derivables. Lo que se fija aquí es que las escritas a mano no
 		//se hayan perdido por el camino.
-		assertTrue(mechanical >= 20, "deberían quedar al menos 20 objetos con mecánicas reales, hay " + mechanical);
+		assertTrue(mechanical >= 60, "deberían quedar al menos 60 objetos con mecánicas reales, hay " + mechanical);
+
+		//Un objeto que concede un conjuro solo funciona si ese conjuro EXISTE: si no, se etiqueta como
+		//báculo rápido apuntando a la nada y el clic derecho no hace absolutamente nada.
+		for (JsonElement el : items) {
+			JsonObject json = el.getAsJsonObject();
+			if (!json.has("grantsSpell")) continue;
+			String spellId = json.get("grantsSpell").getAsString();
+			assertTrue(SpellRegistry.get(spellId) != null,
+				json.get("id").getAsString() + " concede el conjuro \"" + spellId + "\", que no está importado");
+		}
 
 		MagicItemRegistry.MagicItem ring = MagicItemRegistry.get("dndsheets:ring_of_protection");
 		assertTrue(ring != null && ring.acBonus() == 1 && ring.saveBonus() == 1,
