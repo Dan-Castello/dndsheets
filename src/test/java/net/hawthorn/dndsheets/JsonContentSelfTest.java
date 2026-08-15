@@ -102,7 +102,7 @@ public class JsonContentSelfTest {
 			SpellRegistry.Spell parsed = SpellRegistry.parse(json);
 			if (SpellRegistry.get(id) == null) SpellRegistry.register(parsed);
 		}
-		assertTrue(bulk.size() >= 38, "spells.json debería traer al menos los 38 hechizos del lote 1 del SRD, trae " + bulk.size());
+		assertTrue(bulk.size() >= 71, "spells.json debería traer al menos los 71 hechizos de los lotes 1 y 2 del SRD, trae " + bulk.size());
 
 		//Hechizo de solo condición: sin daño ninguno. Antes ni se podía escribir — "dice" era obligatorio y
 		//el efecto solo se aplicaba si había daño, así que Inmovilizar Persona no habría hecho nada.
