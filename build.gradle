@@ -64,12 +64,21 @@ dependencies {
     minecraftLibrary 'io.github.tfriedrichs:dicebot:1.0.0'
     shade 'io.github.tfriedrichs:dicebot:1.0.0'
 
-    // El clasificador "api" en vez del jar completo: es lo unico que se necesita para compilar contra
-    // Curios, y deja claro que no se depende de su implementacion.
-    compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:5.14.1+1.20.1:api")
-    // El jar completo SOLO en el entorno de desarrollo, para poder probar la integracion de verdad en
-    // runClient. No entra en el jar publicado ni en las dependencias del mod.
-    runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:5.14.1+1.20.1")
+    // El clasificador "api" y no el jar completo: es lo unico que hace falta para compilar contra Curios,
+    // y deja claro que no se depende de su implementacion. Se fija una version TEMPRANA de la 5.x a
+    // proposito: los dos metodos que se usan (CuriosApi.getCuriosInventory y getEquippedCurios) existen
+    // desde el principio, y compilar contra la mas antigua es lo que hace que el mod funcione con
+    // cualquier Curios que el usuario tenga instalado, no solo con el ultimo.
+    compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:5.4.7+1.20.1:api")
+
+    // NO se anade el jar completo como runtimeOnly, aunque seria comodo para probar la integracion:
+    // Curios se publica con sus mixins referenciando nombres SRG (f_19803_), y runClient corre con
+    // mapeos parchment, donde ese nombre no existe. El resultado es que el cliente de desarrollo no
+    // arranca — probado con 5.14.1 y con 5.4.7, asi que no es desfase de version sino el remapeo del
+    // entorno. Hacerlo funcionar exigiria configurar el remapeo de refmaps de mixin, y lo unico que
+    // compraria es poder probar Curios en local: la integracion en si esta aislada de forma estructural
+    // (ver CuriosCompat) y se verifica con javap, no ejecutandola. Para probarla de verdad, instalacion
+    // real, no entorno de desarrollo.
 }
 
 jar {
