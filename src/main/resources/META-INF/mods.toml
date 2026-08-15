@@ -20,3 +20,13 @@ description="A mod to let you play D&D 5e in Minecraft."
 
 
 
+
+# Dependencia BLANDA: si Curios esta presente, los objetos magicos usan sus ranuras reales (anillo,
+# collar, capa, cinturon) en vez de depender solo de la sintonizacion; si no lo esta, el mod funciona
+# exactamente igual que antes. mandatory=false es lo que hace que Forge no lo exija para arrancar.
+[[dependencies.dndsheets]]
+    modId="curios"
+    mandatory=false
+    versionRange="[5,)"
+    ordering="AFTER"
+    side="BOTH"

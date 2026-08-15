@@ -51,11 +51,25 @@ configurations {
     implementation.extendsFrom shade
 }
 
+repositories {
+    // Curios API. Dependencia BLANDA: solo compileOnly, nunca se empaqueta ni se exige en runtime — el
+    // mod arranca y funciona igual sin Curios instalado (ver CuriosCompat y la entrada opcional de
+    // mods.toml). Si este maven estuviera caido, lo unico que se rompe es compilar, no el mod publicado.
+    maven { url = "https://maven.theillusivec4.top/" }
+}
+
 dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.2.0'
     // https://mvnrepository.com/artifact/io.github.tfriedrichs/dicebot
     minecraftLibrary 'io.github.tfriedrichs:dicebot:1.0.0'
     shade 'io.github.tfriedrichs:dicebot:1.0.0'
+
+    // El clasificador "api" en vez del jar completo: es lo unico que se necesita para compilar contra
+    // Curios, y deja claro que no se depende de su implementacion.
+    compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:5.14.1+1.20.1:api")
+    // El jar completo SOLO en el entorno de desarrollo, para poder probar la integracion de verdad en
+    // runClient. No entra en el jar publicado ni en las dependencias del mod.
+    runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:5.14.1+1.20.1")
 }
 
 jar {

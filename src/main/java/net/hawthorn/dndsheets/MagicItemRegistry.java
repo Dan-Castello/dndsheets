@@ -155,25 +155,44 @@ public class MagicItemRegistry {
 		List<MagicItem> active = new ArrayList<>();
 		List<String> attuned = attunedIds(sheet);
 
-		for (String id : attuned) {
-			MagicItem item = get(id);
-			if (item != null) active.add(item);
-		}
-
+		List<String> wornIds = new ArrayList<>();
 		for (ItemStack stack : equippedStacks(player)) {
 			String id = magicItemIdOf(stack);
-			if (id == null || attuned.contains(id)) continue; //Ya contado arriba: no se aplica dos veces.
+			if (id != null) wornIds.add(id);
+		}
+
+		for (String id : attuned) {
+			MagicItem item = get(id);
+			if (item == null) continue;
+			//Con Curios instalado hay dónde llevar puesto un anillo o una capa, así que se exige lo mismo
+			//que 5e: sintonizado Y equipado. Sin Curios no existe esa ranura, y exigirlo dejaría el objeto
+			//inservible para siempre — ahí la sintonización hace de las dos cosas a la vez.
+			if (net.hawthorn.dndsheets.compat.CuriosCompat.isLoaded() && !wornIds.contains(id)) continue;
+			active.add(item);
+		}
+
+		for (String id : wornIds) {
+			if (attuned.contains(id)) continue; //Ya contado arriba: no se aplica dos veces.
 			MagicItem item = get(id);
 			if (item != null && !item.attunement()) active.add(item);
 		}
 		return active;
 	}
 
+	/**
+	 * <p>Lo que el jugador lleva puesto de verdad. Con Curios instalado esto incluye sus ranuras (anillo,
+	 * collar, capa, cinturón), que es donde un Anillo de Protección debería ir de forma natural; sin
+	 * Curios, la lista es la de siempre y esos objetos siguen dependiendo de la sintonización.</p>
+	 *
+	 * <p>La integración es blanda: {@link net.hawthorn.dndsheets.compat.CuriosCompat} devuelve una lista
+	 * vacía si Curios no está, así que aquí no hay ninguna rama que mantener.</p>
+	 */
 	private static List<ItemStack> equippedStacks(Player player) {
 		List<ItemStack> stacks = new ArrayList<>();
 		stacks.add(player.getMainHandItem());
 		stacks.add(player.getOffhandItem());
 		player.getArmorSlots().forEach(stacks::add);
+		stacks.addAll(net.hawthorn.dndsheets.compat.CuriosCompat.equippedStacks(player));
 		return stacks;
 	}
 }

@@ -289,10 +289,19 @@ dependencies, not preference.
      An item with no mechanics is not broken, it is an item the DM narrates, which is how most magic
      items work at a real table anyway.
 
-     Attunement is not decoration: 5e's limit of 3 is what stops a character hoarding bonuses, and in
-     Minecraft it also solves a problem the tabletop doesn't have — there is no ring or cloak slot, so
-     without attunement a Ring of Protection could never be "worn". Non-attunement items apply while
-     held or worn in armour slots.
+     Attunement is not decoration: 5e's limit of 3 is what stops a character hoarding bonuses.
+     Non-attunement items apply while held or worn.
+
+     **Curios API is a soft dependency** and solves the slot problem properly: with Curios installed,
+     magic items go in real ring/charm slots and attunement items require being *both* attuned **and**
+     worn, exactly as 5e says. Without Curios there is nowhere to wear a ring, so attunement stands in
+     for both — requiring wear would make those items permanently useless. The isolation is structural,
+     not a convention: `CuriosCompat` contains **zero** references to Curios types (verified with
+     `javap` — 0 in its constant pool against 20 in `CuriosSlots`), because a class that mentions a
+     missing type blows up with `NoClassDefFoundError` the moment it loads. Everything touching the API
+     lives in package-private `CuriosSlots`, reached only after `isLoaded()`, and Java's lazy class
+     loading does the rest. In the build it is `compileOnly` (plus `runtimeOnly` purely so the dev
+     client can test it) and in `mods.toml` it is `mandatory=false`; it never ships inside the jar.
 
   Silvered/adamantine resistance variants collapse into plain "nonmagical" on purpose: the mod has
   no such materials, and the alternative was discarding the resistance entirely.
