@@ -18,7 +18,10 @@ import java.util.function.Supplier;
 //mensajes cambia (ver DndsheetsMod.registerNetworkMessages) — un cliente y un servidor de versiones
 //distintas del mod ya no son compatibles entre sí para estas acciones.
 public class SheetAdjustMessage {
-	public enum Field { GOLD, LEVEL, SLOTS, ADVANTAGE, DAMAGE_AFFINITY, PACT }
+	//CONDITION se añade AL FINAL, no en orden alfabético: writeEnum/readEnum viajan por ordinal, así que
+	//insertarla en medio le cambiaría el número a todas las de después, exactamente el mismo fallo
+	//silencioso que el orden de registro de mensajes (ver DndsheetsMod.registerNetworkMessages).
+	public enum Field { GOLD, LEVEL, SLOTS, ADVANTAGE, DAMAGE_AFFINITY, PACT, CONDITION }
 
 	final String targetUuid;
 	final Field field;
@@ -71,6 +74,14 @@ public class SheetAdjustMessage {
 		return m;
 	}
 
+	/** {@code apply} false quita la condición en vez de ponerla — un solo mensaje para los dos sentidos. */
+	public static SheetAdjustMessage condition(String targetUuid, String conditionLabel, boolean apply) {
+		SheetAdjustMessage m = new SheetAdjustMessage(targetUuid, Field.CONDITION);
+		m.strA = conditionLabel;
+		m.intA = apply ? 1 : 0;
+		return m;
+	}
+
 	public SheetAdjustMessage(FriendlyByteBuf buffer) {
 		this.targetUuid = buffer.readUtf();
 		this.field = buffer.readEnum(Field.class);
@@ -106,6 +117,7 @@ public class SheetAdjustMessage {
 					case ADVANTAGE -> SheetCommand.applyAdvantage(target, message.strA);
 					case DAMAGE_AFFINITY -> SheetCommand.applyDamageAffinity(target, message.strA, message.strB);
 					case PACT -> SheetCommand.applyPact(target, message.strA);
+					case CONDITION -> SheetCommand.applyCondition(target, message.strA, message.intA != 0);
 				}
 				if (dm != null) {
 					dm.sendSystemMessage(Component.literal("Hoja de " + target.getName().getString() + " actualizada."));

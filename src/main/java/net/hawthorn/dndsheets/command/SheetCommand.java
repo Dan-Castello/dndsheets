@@ -25,6 +25,7 @@ import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -277,6 +278,24 @@ public class SheetCommand {
 		if (sheet == null) return;
 		sheet.addProperty("warlockPact", pacto);
 		sendSheetUpdate(target, sheet);
+	}
+
+	/**
+	 * <p>Pone o quita una condición de 5e a un jugador. Público: lo usa el Panel de DM (ver
+	 * {@code network.SheetAdjustMessage}). No pasa por {@code sendSheetUpdate}: la condición la persiste
+	 * {@code Combatant.setConditionSources} por su cuenta, y avisar al propio afectado importa más que
+	 * reenviarle la hoja entera — sin el aviso, quedarse paralizado parece que el juego se rompió.</p>
+	 */
+	public static void applyCondition(ServerPlayer target, String conditionLabel, boolean apply) {
+		net.hawthorn.dndsheets.Condition condition = net.hawthorn.dndsheets.Condition.fromLabel(conditionLabel);
+		if (condition == null) return;
+		net.hawthorn.dndsheets.Combatant combatant = net.hawthorn.dndsheets.Combatant.of(target);
+		if (combatant == null) return;
+		if (apply) combatant.addCondition(condition);
+		else combatant.removeCondition(condition);
+		target.sendSystemMessage(Component.translatable(
+			apply ? "chat.dndsheets.condition.gained" : "chat.dndsheets.condition.lost", condition.label())
+			.withStyle(apply ? ChatFormatting.DARK_PURPLE : ChatFormatting.GRAY));
 	}
 
 	//Nivel de personaje, desacoplado del XP de Minecraft (ver SheetLoader.characterLevelOf, que ya leía

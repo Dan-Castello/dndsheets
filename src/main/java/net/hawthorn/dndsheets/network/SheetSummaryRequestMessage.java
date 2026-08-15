@@ -47,7 +47,18 @@ public class SheetSummaryRequestMessage {
 			int maxHp = Math.round(target.getMaxHealth());
 			int ac = CombatManager.armorClassOf(target, sheet);
 
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), new SheetSummaryMessage(message.targetUuid, name, gold, slotsMax, slotsCurrent, hp, maxHp, ac));
+			//Condiciones activas, para que el DM abra la pantalla viendo cuáles tiene puestas en vez de a
+			//ciegas — ver Combatant y client.gui.ConditionListScreen.
+			StringBuilder conditions = new StringBuilder();
+			net.hawthorn.dndsheets.Combatant combatant = net.hawthorn.dndsheets.Combatant.of(target);
+			if (combatant != null) {
+				for (net.hawthorn.dndsheets.Condition condition : combatant.conditions()) {
+					if (conditions.length() > 0) conditions.append(',');
+					conditions.append(condition.label());
+				}
+			}
+
+			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), new SheetSummaryMessage(message.targetUuid, name, gold, slotsMax, slotsCurrent, hp, maxHp, ac, conditions.toString()));
 		}));
 	}
 }

@@ -73,6 +73,7 @@ public class SheetAdjustScreen extends Screen {
 	private final int hp;
 	private final int maxHp;
 	private final int ac;
+	private final String conditionsCsv;
 
 	private EditBox goldAmountBox;
 	private EditBox slotsMaxBox;
@@ -89,7 +90,7 @@ public class SheetAdjustScreen extends Screen {
 	private Button affinityButton;
 	private Button pactButton;
 
-	private SheetAdjustScreen(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac, Screen parent) {
+	private SheetAdjustScreen(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac, String conditionsCsv, Screen parent) {
 		super(Component.literal("Ajustes de hoja"));
 		this.targetUuid = targetUuid;
 		this.targetName = targetName;
@@ -99,11 +100,12 @@ public class SheetAdjustScreen extends Screen {
 		this.hp = hp;
 		this.maxHp = maxHp;
 		this.ac = ac;
+		this.conditionsCsv = conditionsCsv;
 		this.parent = parent;
 	}
 
-	public static void open(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac) {
-		Minecraft.getInstance().setScreen(new SheetAdjustScreen(targetUuid, targetName, gold, slotsMax, slotsCurrent, hp, maxHp, ac, Minecraft.getInstance().screen));
+	public static void open(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac, String conditionsCsv) {
+		Minecraft.getInstance().setScreen(new SheetAdjustScreen(targetUuid, targetName, gold, slotsMax, slotsCurrent, hp, maxHp, ac, conditionsCsv, Minecraft.getInstance().screen));
 	}
 
 	//Vuelve a la pantalla anterior (normalmente PlayerPickerScreen) en vez de cerrar todo el menú —
@@ -222,6 +224,14 @@ public class SheetAdjustScreen extends Screen {
 		//--- Percepción pasiva ---
 		this.addRenderableWidget(Button.builder(Component.literal("Ver percepción pasiva (solo tú la ves)"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new PassivePerceptionRequestMessage(targetUuid))
+		).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT).build());
+		y += ROW_HEIGHT + 4;
+
+		//Una fila, no catorce: las condiciones viven en su propia lista (ver ConditionListScreen). Esta
+		//pantalla ya llegó a salirse por arriba con 8 filas (ver PROJECT_CONTEXT.md, bug #2), así que no es
+		//sitio para meter un control por condición.
+		this.addRenderableWidget(Button.builder(Component.literal("Condiciones..."), button ->
+			ConditionListScreen.open(targetUuid, targetName, conditionsCsv)
 		).bounds(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT).build());
 		y += ROW_HEIGHT + 4;
 
