@@ -29,8 +29,12 @@ public class DmPanelScreen extends ListPickerScreen {
 	protected void buildRows() {
 		addRow(Component.literal("Modo turnos"), b -> TurnControlScreen.open());
 		addRow(Component.literal("Invocar NPC genérico"), b -> SpawnGenericScreen.open());
+		addRow(Component.literal("Invocar monstruo cargado"), b -> MonsterSpawnListScreen.open());
 		addRow(Component.literal("Conceder rasgo"), b -> PlayerPickerScreen.open("Elige a quién conceder el rasgo",
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new TraitListRequestMessage(uuid))));
+		addRow(Component.literal("Dar objeto"), b -> PlayerPickerScreen.open("Elige a quién dar el objeto", GiveItemListScreen::open));
+		addRow(Component.literal("Dar arma"), b -> PlayerPickerScreen.open("Elige a quién dar el arma", WeaponGiveListScreen::open));
+		addRow(Component.literal("Enseñar/dar hechizo"), b -> PlayerPickerScreen.open("Elige a quién enseñar/dar el hechizo", SpellGiveListScreen::open));
 		addRow(Component.literal("Ajustes de hoja"), b -> PlayerPickerScreen.open("Elige a quién ajustar la hoja",
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetSummaryRequestMessage(uuid))));
 		addRow(Component.literal("Aplicar preset a jugador"), b -> PlayerPickerScreen.open("Elige a quién aplicar el preset",

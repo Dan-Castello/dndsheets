@@ -96,8 +96,10 @@ public class DndsheetsMod {
 		addNetworkMessage(DungeonPieceUpdateMessage.class, DungeonPieceUpdateMessage::buffer, DungeonPieceUpdateMessage::new, DungeonPieceUpdateMessage::handler);
 		addNetworkMessage(DeathSaveRollMessage.class, DeathSaveRollMessage::buffer, DeathSaveRollMessage::new, DeathSaveRollMessage::handler);
 		addNetworkMessage(MonsterActionChooseMessage.class, MonsterActionChooseMessage::buffer, MonsterActionChooseMessage::new, MonsterActionChooseMessage::handler);
+		addNetworkMessage(GiveItemMessage.class, GiveItemMessage::buffer, GiveItemMessage::new, GiveItemMessage::handler);
 		addNetworkMessage(MonsterActionOpenMessage.class, MonsterActionOpenMessage::buffer, MonsterActionOpenMessage::new, MonsterActionOpenMessage::handler);
 		addNetworkMessage(MonsterSaveTemplateMessage.class, MonsterSaveTemplateMessage::buffer, MonsterSaveTemplateMessage::new, MonsterSaveTemplateMessage::handler);
+		addNetworkMessage(MonsterSpawnMessage.class, MonsterSpawnMessage::buffer, MonsterSpawnMessage::new, MonsterSpawnMessage::handler);
 		addNetworkMessage(OptionsListMessage.class, OptionsListMessage::buffer, OptionsListMessage::new, OptionsListMessage::handler);
 		addNetworkMessage(OptionsListRequestMessage.class, OptionsListRequestMessage::buffer, OptionsListRequestMessage::new, OptionsListRequestMessage::handler);
 		addNetworkMessage(OptionsSaveMessage.class, OptionsSaveMessage::buffer, OptionsSaveMessage::new, OptionsSaveMessage::handler);
@@ -122,6 +124,7 @@ public class DndsheetsMod {
 		addNetworkMessage(SheetSummaryRequestMessage.class, SheetSummaryRequestMessage::buffer, SheetSummaryRequestMessage::new, SheetSummaryRequestMessage::handler);
 		addNetworkMessage(SpawnGenericMessage.class, SpawnGenericMessage::buffer, SpawnGenericMessage::new, SpawnGenericMessage::handler);
 		addNetworkMessage(SpellCastMessage.class, SpellCastMessage::buffer, SpellCastMessage::new, SpellCastMessage::handler);
+		addNetworkMessage(SpellGiveMessage.class, SpellGiveMessage::buffer, SpellGiveMessage::new, SpellGiveMessage::handler);
 		addNetworkMessage(TraitGrantMessage.class, TraitGrantMessage::buffer, TraitGrantMessage::new, TraitGrantMessage::handler);
 		addNetworkMessage(TraitListMessage.class, TraitListMessage::buffer, TraitListMessage::new, TraitListMessage::handler);
 		addNetworkMessage(TraitListRequestMessage.class, TraitListRequestMessage::buffer, TraitListRequestMessage::new, TraitListRequestMessage::handler);
@@ -129,6 +132,7 @@ public class DndsheetsMod {
 		addNetworkMessage(TurnEffectApplyMessage.class, TurnEffectApplyMessage::buffer, TurnEffectApplyMessage::new, TurnEffectApplyMessage::handler);
 		addNetworkMessage(TurnStateMessage.class, TurnStateMessage::buffer, TurnStateMessage::new, TurnStateMessage::handler);
 		addNetworkMessage(TutorialOpenMessage.class, TutorialOpenMessage::buffer, TutorialOpenMessage::new, TutorialOpenMessage::handler);
+		addNetworkMessage(WeaponGiveMessage.class, WeaponGiveMessage::buffer, WeaponGiveMessage::new, WeaponGiveMessage::handler);
 	}
 
 	//Patrón repetido en los mensajes cliente(DM)->servidor que actúan sobre OTRO jugador (SheetAdjustMessage,

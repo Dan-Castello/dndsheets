@@ -103,31 +103,36 @@ public class SpellCommand {
 		}
 
 		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
-			if (sheet == null) continue;
-
-			SheetLoader.validateSheet(sheet);
-			boolean alreadyKnown = !SpellRegistry.learn(sheet, spellId);
-
-			//Sin esto, aprender un hechizo por primera vez dejaba al jugador con 0/0 espacios para
-			//siempre (un descanso no crea espacios de la nada, solo rellena los que ya existían) y sin
-			//nada en el inventario para lanzarlo: había que acordarse de /dndsheet setslots Y /dndspells
-			//staff aparte. Si el DM ya configuró espacios a mano, esto no los toca.
-			int slotsMax = sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
-			if (slotsMax <= 0) {
-				sheet.addProperty("spellSlotsMax", 1);
-				sheet.addProperty("spellSlotsCurrent", 1);
-			}
-			if (!alreadyKnown) {
-				target.getInventory().add(buildStaffStack(spellId, spell, "minecraft:blaze_rod"));
-			}
-
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes()));
-		}
+		for (ServerPlayer target : targets) learnForPlayer(target, spellId, spell);
 
 		ctx.getSource().sendSuccess(() -> Component.literal(targets.size() + " jugador(es) aprendieron " + spell.name() + "."), true);
 		return targets.size();
+	}
+
+	//Público: también lo usa network.SpellGiveMessage (equivalente en GUI, ver client.gui.SpellGiveListScreen)
+	//— mismo cuerpo por jugador que el bucle de arriba, para no duplicar la lógica de primer-hechizo entre
+	//comando y GUI.
+	public static void learnForPlayer(ServerPlayer target, String spellId, SpellRegistry.Spell spell) {
+		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
+		if (sheet == null) return;
+
+		SheetLoader.validateSheet(sheet);
+		boolean alreadyKnown = !SpellRegistry.learn(sheet, spellId);
+
+		//Sin esto, aprender un hechizo por primera vez dejaba al jugador con 0/0 espacios para
+		//siempre (un descanso no crea espacios de la nada, solo rellena los que ya existían) y sin
+		//nada en el inventario para lanzarlo: había que acordarse de /dndsheet setslots Y /dndspells
+		//staff aparte. Si el DM ya configuró espacios a mano, esto no los toca.
+		int slotsMax = sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
+		if (slotsMax <= 0) {
+			sheet.addProperty("spellSlotsMax", 1);
+			sheet.addProperty("spellSlotsCurrent", 1);
+		}
+		if (!alreadyKnown) {
+			target.getInventory().add(buildStaffStack(spellId, spell, "minecraft:blaze_rod"));
+		}
+
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes()));
 	}
 
 	//Un báculo (o cualquier ítem base) etiquetado {dndsheets:{quickSpell:"id"}} lo lanza de un clic
