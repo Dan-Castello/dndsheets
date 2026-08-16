@@ -21,10 +21,45 @@ public class AbilityItemDispatcher {
 
 	@SubscribeEvent
 	public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+		dispatch(event);
+	}
+
+	@SubscribeEvent
+	public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+		dispatch(event);
+	}
+
+	@SubscribeEvent
+	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
 		if (event.getEntity().level().isClientSide()) return;
 		CompoundTag dndTag = dndTagOf(event.getItemStack());
 		if (dndTag == null) return;
 
+		//Los dos ítems que NECESITAN una criatura delante, y por eso solo existen en este evento: la Marca
+		//del Cazador marca a quien señalas y la Inspiración se la das a otro jugador. Van antes que el
+		//reparto común porque este evento es el único donde su clic significa algo.
+		if (dndTag.getBoolean("hunterMark")) RangerHunterMarkManager.tryUse(event);
+		else if (dndTag.getBoolean("bardicInspiration")) BardInspirationManager.tryUse(event);
+		else dispatch(event, dndTag);
+	}
+
+	private static void dispatch(PlayerInteractEvent event) {
+		if (event.getEntity().level().isClientSide()) return;
+		CompoundTag dndTag = dndTagOf(event.getItemStack());
+		if (dndTag != null) dispatch(event, dndTag);
+	}
+
+	/**
+	 * <p>Reparto común a los TRES eventos de interacción. Estos ítems se usan sobre uno mismo, así que da
+	 * igual qué haya delante al pulsarlos.</p>
+	 *
+	 * <p>Antes esta cadena estaba copiada tres veces, una por evento, y las copias se habían separado:
+	 * Castigo Divino, Hechizo Gemelo, Contrahechizo y Escudo solo estaban en la de "clic al aire". El
+	 * resultado era que esos cuatro <b>no hacían nada si estabas mirando a un monstruo o a un bloque</b> —
+	 * es decir, justo en combate, que es cuando se usan. Con una sola cadena, un ítem nuevo entra en los
+	 * tres eventos por construcción y no por acordarse.</p>
+	 */
+	private static void dispatch(PlayerInteractEvent event, CompoundTag dndTag) {
 		if (dndTag.getBoolean("restKit")) RestManager.tryOpenRestChoice(event);
 		else if (dndTag.getBoolean("rage")) BarbarianRageManager.tryUse(event);
 		else if (dndTag.getBoolean("counterspellSpell")) CounterspellManager.tryUse(event);
@@ -32,6 +67,7 @@ public class AbilityItemDispatcher {
 		else if (dndTag.getBoolean("turnNext")) TurnItemManager.tryUse(event, true);
 		else if (dndTag.getBoolean("turnUndo")) TurnItemManager.tryUse(event, false);
 		else if (dndTag.getBoolean("secondWind")) FighterSecondWindManager.tryUse(event);
+		else if (dndTag.getBoolean("turnUndead")) ClericTurnUndeadManager.tryUse(event);
 		else if (dndTag.getBoolean("divineSmite")) PaladinSmiteManager.tryUse(event);
 		else if (dndTag.getBoolean("twinnedSpell")) SorcererMetamagicManager.tryUse(event);
 		else if (dndTag.getBoolean("wildShape")) DruidWildShapeManager.tryUse(event);
@@ -47,44 +83,6 @@ public class AbilityItemDispatcher {
 		if (!dndTag.contains("magicItem")) return false;
 		MagicItemRegistry.MagicItem item = MagicItemRegistry.get(dndTag.getString("magicItem"));
 		return item != null && item.isConsumable();
-	}
-
-	@SubscribeEvent
-	public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-		if (event.getEntity().level().isClientSide()) return;
-		CompoundTag dndTag = dndTagOf(event.getItemStack());
-		if (dndTag == null) return;
-
-		if (dndTag.getBoolean("restKit")) RestManager.tryOpenRestChoice(event);
-		else if (dndTag.getBoolean("rage")) BarbarianRageManager.tryUse(event);
-		else if (dndTag.getBoolean("turnNext")) TurnItemManager.tryUse(event, true);
-		else if (dndTag.getBoolean("turnUndo")) TurnItemManager.tryUse(event, false);
-		else if (dndTag.getBoolean("secondWind")) FighterSecondWindManager.tryUse(event);
-		else if (dndTag.getBoolean("wildShape")) DruidWildShapeManager.tryUse(event);
-		//Antes que quickSpell: una varita que ADEMAS es consumible no existe hoy, pero si existiera, gastarla
-		//debe ganar — lanzar sin gastarla seria darla infinita.
-		else if (isConsumable(dndTag)) ConsumableManager.tryUse(event, dndTag.getString("magicItem"));
-		else if (dndTag.contains("quickSpell")) QuickSpellManager.tryUse(event, dndTag.getString("quickSpell"));
-	}
-
-	@SubscribeEvent
-	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-		if (event.getEntity().level().isClientSide()) return;
-		CompoundTag dndTag = dndTagOf(event.getItemStack());
-		if (dndTag == null) return;
-
-		if (dndTag.getBoolean("restKit")) RestManager.tryOpenRestChoice(event);
-		else if (dndTag.getBoolean("rage")) BarbarianRageManager.tryUse(event);
-		else if (dndTag.getBoolean("hunterMark")) RangerHunterMarkManager.tryUse(event);
-		else if (dndTag.getBoolean("turnNext")) TurnItemManager.tryUse(event, true);
-		else if (dndTag.getBoolean("turnUndo")) TurnItemManager.tryUse(event, false);
-		else if (dndTag.getBoolean("secondWind")) FighterSecondWindManager.tryUse(event);
-		else if (dndTag.getBoolean("wildShape")) DruidWildShapeManager.tryUse(event);
-		else if (dndTag.getBoolean("bardicInspiration")) BardInspirationManager.tryUse(event);
-		//Antes que quickSpell: una varita que ADEMAS es consumible no existe hoy, pero si existiera, gastarla
-		//debe ganar — lanzar sin gastarla seria darla infinita.
-		else if (isConsumable(dndTag)) ConsumableManager.tryUse(event, dndTag.getString("magicItem"));
-		else if (dndTag.contains("quickSpell")) QuickSpellManager.tryUse(event, dndTag.getString("quickSpell"));
 	}
 
 	private static CompoundTag dndTagOf(ItemStack stack) {

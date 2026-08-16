@@ -501,6 +501,26 @@ dependencies, not preference.
        "that isn't a humanoid" before anything is spent. In an *area*, the immune creature is simply
        dropped from the list and the blast rolls on.
 
+  9. **Turn Undead — the cleric finally has a button.** Every other class with a preset had a
+     resource item; a player picking cleric got a spell list and nothing else. Undead within 6 blocks
+     roll a Wisdom save against the cleric's own spell DC and the failures are *frightened* for ten
+     rounds, once per rest. It could not be written before item 7 — a "turn undead" that cannot tell
+     what an undead is would just shove everyone.
+
+     **Not implemented:** Destroy Undead (the 5th-level upgrade that annihilates low-CR undead). Stat
+     blocks here carry no challenge rating, and substituting hit points would vanish a legendary
+     undead with few HP while sparing a weak one with many — the threshold would be measuring
+     something else. It needs a new field, not an approximation.
+
+  **Found while wiring item 9:** `AbilityItemDispatcher` had the same if/else chain **copied three
+  times**, one per interaction event, and the copies had drifted. Divine Smite, Twinned Spell,
+  Counterspell and Shield existed only in the "clicked at thin air" chain, so those four items *did
+  nothing while looking at a monster or a block* — which is precisely when a paladin smites and when
+  a reaction fires. Now there is one shared chain plus the two genuinely entity-only items (Hunter's
+  Mark, Bardic Inspiration), so a new item reaches all three events by construction rather than by
+  remembering. `checkInteractHandlers` now asserts every `AbilityItem.build` flag is dispatched and
+  that the chain is not duplicated again.
+
   **Found while doing item 4:** the bulk content packs existed **twice** — once under
   `test/dndsheets/<type>/` and once in `src/main/resources/dndsheets/defaults/` — and the self-test
   read the `test/` copy. The two had already drifted (five monsters had `damageAffinities` only in the

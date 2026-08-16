@@ -22,6 +22,7 @@ public enum GiveableItem {
 	WILD_SHAPE("Forma Salvaje (Druida)", () -> List.of(DruidWildShapeManager.buildWildShapeStack())),
 	METAMAGIC("Metamagia: Hechizo Gemelo (Hechicero)", () -> List.of(SorcererMetamagicManager.buildTwinnedSpellStack())),
 	SMITE("Castigo Divino (Paladín)", () -> List.of(PaladinSmiteManager.buildDivineSmiteStack())),
+	TURN_UNDEAD("Símbolo Sagrado (Clérigo)", () -> List.of(ClericTurnUndeadManager.buildTurnUndeadStack())),
 	HUNTER_MARK("Marca del Cazador (Explorador)", () -> List.of(RangerHunterMarkManager.buildHunterMarkStack())),
 	SHIELD("Escudo (reacción)", () -> List.of(ShieldManager.buildShieldStack())),
 	COUNTERSPELL("Contrahechizo (reacción)", () -> List.of(CounterspellManager.buildCounterspellStack())),

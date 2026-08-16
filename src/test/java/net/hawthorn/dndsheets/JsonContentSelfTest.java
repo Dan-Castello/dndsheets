@@ -109,15 +109,39 @@ public class JsonContentSelfTest {
 
 	private static void checkInteractHandlers() throws Exception {
 		Path dir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets");
+		java.util.Set<String> abilityFlags = new java.util.LinkedHashSet<>();
 		try (java.util.stream.Stream<Path> files = Files.list(dir)) {
 			for (Path file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
 				String source = Files.readString(file);
+				//Cada ítem de capacidad se construye con AbilityItem.build(item, "flag", ...): el segundo
+				//argumento es la etiqueta NBT por la que el despachador lo reconoce.
+				java.util.regex.Matcher built = java.util.regex.Pattern
+					.compile("AbilityItem\\.build\\([^,]+,\\s*\"(\\w+)\"").matcher(source);
+				while (built.find()) abilityFlags.add(built.group(1));
+
 				if (!source.contains("PlayerInteractEvent")) continue;
 				assertTrue(!source.contains("getMainHandItem()") && !source.contains("getOffhandItem()"),
 					file.getFileName() + ": un manejador de PlayerInteractEvent mira las dos manos en vez de "
 						+ "event.getItemStack(). Eso lo hace correr dos veces por clic (una por mano).");
 			}
 		}
+
+		//Un ítem de capacidad que nadie despacha no falla en ningún sitio: se entrega, se ve en el inventario
+		//con su nombre y su descripción, y al pulsarlo no pasa nada. Ya ocurrió — cuatro de ellos solo
+		//estaban en la cadena de "clic al aire" y no hacían nada mirando a un monstruo, que es cuando se usan.
+		String dispatcher = Files.readString(dir.resolve("AbilityItemDispatcher.java"));
+		assertTrue(abilityFlags.size() >= 10, "esperaba encontrar los ítems de capacidad y encontré " + abilityFlags.size());
+		for (String flag : abilityFlags) {
+			assertTrue(dispatcher.contains("getBoolean(\"" + flag + "\")"),
+				"el ítem de capacidad \"" + flag + "\" no lo despacha nadie: al pulsarlo no pasaría nada");
+		}
+
+		//Y la cadena común tiene que estar UNA vez, no copiada por evento: eran tres copias y se separaron.
+		//Contar por un ítem que vale en los tres eventos es la forma barata de fijar que siguen unificados.
+		int copias = dispatcher.split("getBoolean\\(\"rage\"\\)", -1).length - 1;
+		assertTrue(copias == 1, "la cadena de reparto está duplicada " + copias + " veces; con copias se separan y unos ítems dejan de funcionar según a qué mires");
+
+		System.out.println("checkInteractHandlers: OK, los " + abilityFlags.size() + " ítems de capacidad se despachan y la cadena está sin duplicar.");
 	}
 
 	private static void checkTabTextures() throws Exception {
