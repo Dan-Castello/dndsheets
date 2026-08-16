@@ -188,6 +188,9 @@ public class SpellCastManager {
 		//por uno de 4º y el conjuro sube con él. De ahí que la subida de nivel se aplique DESPUÉS de gastar
 		//y no antes, con el nivel real y no con el pedido.
 		if (needsSlot) spell = spell.upcastTo(spendSlot(caster, casterSheet, spell.level(), requestedLevel));
+		//Y lo que no se puede subir gastando un espacio sube con quien lanza: un truco de daño gana un dado a
+		//los niveles 5, 11 y 17. No hace falta un if — para todo lo demás devuelve el mismo conjuro.
+		spell = spell.atCasterLevel(SheetLoader.characterLevelOf(casterSheet, caster));
 
 		if (spell.concentration()) ConcentrationManager.startConcentrating(caster, spell.name());
 

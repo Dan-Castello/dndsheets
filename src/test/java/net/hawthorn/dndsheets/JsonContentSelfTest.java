@@ -1093,7 +1093,25 @@ public class JsonContentSelfTest {
 			"{\"id\":\"x\",\"level\":1,\"dice\":\"0\",\"upcastDice\":\"1d8\"}").getAsJsonObject());
 		assertTrue("2d8".equals(sinDano.upcastTo(3).dice()), "sin daño base debería quedar solo lo añadido, no \"0 + 2d8\"");
 
-		System.out.println("checkUpcasting: OK, los dados extra por nivel de espacio salen donde deben.");
+		//Trucos: suben con el nivel de PERSONAJE, no con el espacio (no gastan ninguno). Los cuatro escalones
+		//se comprueban enteros porque el defecto natural aquí es un límite mal puesto, no una fórmula rara.
+		SpellRegistry.Spell fireBolt = spellFromPack("dndsheets:fire_bolt");
+		assertTrue("1d10".equals(fireBolt.atCasterLevel(4).dice()), "hasta el nivel 4 un truco no crece");
+		assertTrue("2d10".equals(fireBolt.atCasterLevel(5).dice()), "a nivel 5 debería sumar un dado");
+		assertTrue("2d10".equals(fireBolt.atCasterLevel(10).dice()), "y quedarse ahí hasta el 11");
+		assertTrue("3d10".equals(fireBolt.atCasterLevel(11).dice()), "a nivel 11 el tercero");
+		assertTrue("4d10".equals(fireBolt.atCasterLevel(17).dice()), "a nivel 17 el cuarto");
+		assertTrue("4d10".equals(fireBolt.atCasterLevel(20).dice()), "y 20 no añade un quinto");
+
+		//Un conjuro con espacio NO escala por nivel de personaje: si lo hiciera, una Bola de Fuego de un
+		//mago de nivel 17 haría 32d6 sin que nadie lo hubiera pedido.
+		assertTrue("8d6".equals(fireball.atCasterLevel(20).dice()), "solo escalan los trucos, no todo conjuro");
+		//Un truco sin daño (los hay) no gana dados de la nada.
+		SpellRegistry.Spell sinDados = SpellRegistry.parse(com.google.gson.JsonParser.parseString(
+			"{\"id\":\"y\",\"level\":0,\"dice\":\"0\"}").getAsJsonObject());
+		assertTrue("0".equals(sinDados.atCasterLevel(20).dice()), "un truco sin daño se queda sin daño");
+
+		System.out.println("checkUpcasting: OK, los dados extra por nivel de espacio y los trucos por nivel de personaje salen donde deben.");
 	}
 
 	/**

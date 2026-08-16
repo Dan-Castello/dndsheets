@@ -84,6 +84,29 @@ public class SpellRegistry {
 		 * <p>El nombre lleva el nivel usado porque va derecho al chat: sin eso, dos Bolas de Fuego con daños
 		 * distintos se leen como un fallo del mod y no como la decisión que fue.</p>
 		 */
+		/**
+		 * <p><b>Trucos que crecen con quien los lanza.</b> Un truco de daño suma un dado a los niveles de
+		 * personaje 5, 11 y 17: el Rayo de Fuego de un mago de nivel 10 hace 2d10, no 1d10.</p>
+		 *
+		 * <p>Es la contraparte de {@link #upcastTo} para lo único que no puede subirse de nivel gastando un
+		 * espacio. Sin ella, el ataque a voluntad de un lanzador se quedaba clavado en el daño de nivel 1
+		 * mientras todo lo demás escalaba — el mismo defecto que tenía el bono de competencia, en el ataque
+		 * que un lanzador usa más veces por partida.</p>
+		 *
+		 * <p>No hace falta declarar nada en el JSON: la progresión es la misma para todos los trucos de daño
+		 * del SRD, así que se deduce del nivel en vez de repetirse once veces a mano.</p>
+		 */
+		public Spell atCasterLevel(int characterLevel) {
+			if (level != 0 || dice == null || "0".equals(dice.trim())) return this;
+
+			int dice5eCount = 1 + (characterLevel >= 5 ? 1 : 0) + (characterLevel >= 11 ? 1 : 0) + (characterLevel >= 17 ? 1 : 0);
+			if (dice5eCount == 1) return this;
+
+			return new Spell(id, name, level, mode, castingAbility, saveAbility, repeatDice(dice, dice5eCount),
+				halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId, followsCasterFlag,
+				effectName, effectDice, effectTurns, upcastDice);
+		}
+
 		public Spell upcastTo(int slotLevel) {
 			int extraLevels = slotLevel - level;
 			if (extraLevels <= 0 || !scalesWithSlot()) return this;

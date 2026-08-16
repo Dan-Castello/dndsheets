@@ -429,6 +429,19 @@ dependencies, not preference.
        *everything* that changed, and since slots became per-level that is two fields
        (`SpellSlots.clientPatch`).
 
+  5. **Cantrips scale with character level (`Spell.atCasterLevel`).** The other half of item 4: a
+     cantrip cannot be upcast — it spends no slot — so 5e grows it with the caster instead, one extra
+     die at character levels 5, 11 and 17. Without it a caster's *at-will* attack stayed frozen at
+     level-1 damage while everything around it scaled: the same defect as the frozen proficiency
+     bonus, in the attack a caster uses more than any other. A level-10 wizard's Fire Bolt is 2d10.
+
+     Nothing is declared in the JSON for this. The progression is identical for every damage cantrip
+     in the SRD, so it is derived from the level rather than repeated eleven times by hand — and a
+     field would have been eleven chances to typo the same number.
+
+     **Simplified:** Eldritch Blast gains *beams* (separate attack rolls), not dice on one roll. It
+     scales as extra dice here, which is the right damage on a hit but one roll instead of several.
+
   **Found while doing item 4:** the bulk content packs existed **twice** — once under
   `test/dndsheets/<type>/` and once in `src/main/resources/dndsheets/defaults/` — and the self-test
   read the `test/` copy. The two had already drifted (five monsters had `damageAffinities` only in the
