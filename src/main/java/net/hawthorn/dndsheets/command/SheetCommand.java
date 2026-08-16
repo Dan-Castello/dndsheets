@@ -329,7 +329,9 @@ public class SheetCommand {
 		//Las Mejoras de Puntuacion de Caracteristica se conceden AQUI, el unico punto por el que pasa un
 		//cambio de nivel (comando y Panel de DM). Se cuentan por los niveles cruzados, asi que saltar del 1
 		//al 8 concede las dos que tocan en vez de perder una — ver LevelUpManager.
-		LevelUpManager.grantImprovementsFor(sheet, SheetLoader.characterLevelOf(sheet, target), nivel);
+		//El nivel EXPLÍCITO, por lo mismo que en LevelUpManager.levelUp: contar desde el nivel de XP le
+		//quitaría al jugador las Mejoras de los niveles que el fallback se saltó de un brinco.
+		LevelUpManager.grantImprovementsFor(sheet, SheetLoader.characterLevelOf(sheet), nivel);
 		sheet.addProperty("characterLevel", nivel);
 		//Sin esto, el PG máximo (que depende del nivel) se quedaba con el valor viejo hasta la próxima
 		//reconexión — SheetLoader.applyClassHitPoints solo se llamaba antes en EntityJoinLevelEvent.

@@ -69,7 +69,13 @@ public class LevelUpManager {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;
 
-		int before = Math.max(1, SheetLoader.characterLevelOf(sheet, target));
+		//characterLevelOf(sheet) —el explícito— y NO la sobrecarga con el jugador, que cae al nivel de XP de
+		//Minecraft cuando la hoja no tiene nivel puesto. Ese fallback está bien para MOSTRAR un número
+		//mientras el DM no fije uno, y es veneno para decidir el siguiente: un jugador que había picado
+		//piedra hasta el nivel de XP 25 no podía subir de nivel nunca ("ya estás en el 20"), y uno con XP 7
+		//saltaba de golpe al 8 la primera vez, con su Mejora de Característica incluida, por haber minado.
+		//Un personaje al que nadie ha subido de nivel es de nivel 1, mine lo que mine.
+		int before = Math.max(1, SheetLoader.characterLevelOf(sheet));
 		if (before >= MAX_LEVEL) {
 			target.sendSystemMessage(Component.translatable("chat.dndsheets.levelup.at_max", MAX_LEVEL).withStyle(ChatFormatting.GRAY));
 			return;

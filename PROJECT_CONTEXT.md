@@ -740,6 +740,39 @@ dependencies, not preference.
       for reading and dangerous for deciding. `activeCharacterOf` cannot distinguish "wearing this
       one" from "wearing none", so nothing that branches on existence may call it.
 
+  22. **Sweep for the same failure shape.** After item 21, a deliberate pass over every
+      compatibility fallback in the codebase, asking one question of each: *does anything branch on
+      the invented answer?* Reading a plausible default is fine. Deciding on one is the bug.
+
+      **Found live — levelling counted from Minecraft XP.** `characterLevelOf(sheet, player)` falls
+      back to the player's XP level while no character level is set. That fallback is a deliberate
+      feature for *showing* a number, and two places used it to *decide* one:
+      `LevelUpManager.levelUp` and the improvement grant in `SheetCommand.applyLevel`. So a player
+      who had mined to XP level 25 could never level up ("you are already 20"), and one at XP 7
+      jumped straight to 8 with an Ability Score Improvement for it — earned by mining. Both now read
+      the explicit `characterLevel`, which is 1 for a character nobody has levelled.
+
+      **Checked and correct, worth recording so nobody re-litigates them:**
+      - `allEnemiesDefeated` treats an entity it cannot find as *still standing*, because a null can
+        be an unloaded chunk rather than a death. That is the right direction for an invented answer:
+        it fails toward **doing nothing** instead of toward a plausible action.
+      - `MonsterRegistry.typeOf` → `UNKNOWN`, and no rule fires or is blocked on it.
+      - Rage bonus, Bardic die, Second Wind, Arcane Recovery budget, weapon resolution and cantrip
+        scaling all use the XP fallback, but they *scale a number* rather than branch. A level-7-by-XP
+        character getting level-7 numbers is the documented behaviour of the mirror.
+      - `currentHpOf` returns 0 for an untagged entity, which would read as "defeated" — unreachable,
+        because `Combatant.of` only builds a `MonsterCombatant` when the same tag produced a stat
+        block. Noted rather than changed: the guard is upstream, not in the function.
+
+      **Found and softened:** deleting an NPC leaves its body in the world, and `Combatant.of`
+      silently degrades it to a vanilla mob — it stands there, hittable, playing by no rules. The
+      delete now says so instead of letting the DM discover it mid-combat.
+
+      The rule, now written down: *a fallback may invent an answer for display; nothing that branches
+      on existence, identity or permission may call one.* Where the deciding path cannot be reached
+      from the self-test, hold it structurally — `checkAbilityImprovements` asserts neither decision
+      site calls the XP-shaped overload, because the behavioural assertions pass with the bad version.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

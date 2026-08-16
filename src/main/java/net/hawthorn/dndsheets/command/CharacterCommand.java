@@ -138,6 +138,7 @@ public class CharacterCommand {
 		}
 		//El nombre se lee ANTES de borrar: después, la hoja ya no está en memoria y el mensaje diría el id.
 		String name = SheetLoader.nameOfCharacter(characterId);
+		boolean wasNpc = SheetLoader.ownerOf(characterId, SheetLoader.getCharacterSheet(characterId)) == null;
 		String error = SheetLoader.deleteCharacter(player, characterId, ctx.getSource().hasPermission(2));
 		if (error != null) {
 			ctx.getSource().sendFailure(Component.literal("No se pudo borrar: ese personaje no existe o no es tuyo."));
@@ -145,6 +146,13 @@ public class CharacterCommand {
 		}
 		ctx.getSource().sendSuccess(() -> Component.literal("Personaje \"" + name + "\" borrado. Queda una copia en charactersheets/"
 			+ characterId + SheetLoader.DELETED_SUFFIX + " por si te arrepientes.").withStyle(ChatFormatting.GREEN), false);
+		//Un PNJ puede tener su cuerpo puesto en el mundo. Al quedarse sin ficha, Combatant.of lo degrada a
+		//mob vanilla EN SILENCIO: sigue ahí, se le puede pegar, y ya no juega con ninguna regla. Decirlo es
+		//más honesto que dejar al DM descubrirlo en mitad de un combate.
+		if (wasNpc) {
+			ctx.getSource().sendSuccess(() -> Component.literal("Si su cuerpo sigue en el mundo, bórralo con la Vara de DM: sin ficha ya no juega con reglas.")
+				.withStyle(ChatFormatting.GRAY), false);
+		}
 		return 1;
 	}
 

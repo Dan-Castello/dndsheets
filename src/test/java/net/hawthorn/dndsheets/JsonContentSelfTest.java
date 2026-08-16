@@ -1410,7 +1410,11 @@ public class JsonContentSelfTest {
 	}
 
 	private static String readSource(String fileName) throws Exception {
-		return Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", fileName));
+		//Acepta "Algo.java" y "command/Algo.java": los dos sitios que deciden un nivel viven en paquetes
+		//distintos, y partir la ruta aquí evita un segundo helper que haga lo mismo.
+		Path path = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets");
+		for (String part : fileName.split("/")) path = path.resolve(part);
+		return Files.readString(path);
 	}
 
 	/**
@@ -1435,7 +1439,7 @@ public class JsonContentSelfTest {
 	 * varios de golpe. Es lo único que un nivel NO puede derivar, porque es una decisión, y por eso también
 	 * lo único que se puede perder sin que nada falle.</p>
 	 */
-	private static void checkAbilityImprovements() {
+	private static void checkAbilityImprovements() throws Exception {
 		//Los cinco niveles del SRD, y los bordes de cada uno: el fallo natural aquí es una lista mal copiada.
 		for (int level = 1; level <= 20; level++) {
 			boolean esperado = level == 4 || level == 8 || level == 12 || level == 16 || level == 19;
@@ -1466,7 +1470,28 @@ public class JsonContentSelfTest {
 		LevelUpManager.grantImprovementsFor(hoja, 4, 8);
 		assertTrue(LevelUpManager.pendingOf(hoja) == 2, "dos saltos deberían dejar dos mejoras pendientes");
 
-		System.out.println("checkAbilityImprovements: OK, las mejoras se conceden en los niveles del SRD y no se pierden al saltar varios.");
+		//El nivel del que se parte tiene que ser el EXPLÍCITO. La sobrecarga con jugador cae al nivel de XP
+		//de Minecraft mientras el DM no fije uno —bien para mostrar un número, veneno para decidir el
+		//siguiente— y contar desde ahí le regala o le quita Mejoras a alguien por lo que haya minado.
+		JsonObject sinNivel = new JsonObject();
+		assertTrue(CharacterRules.levelOf(sinNivel) == 1, "un personaje al que nadie ha subido de nivel es de nivel 1");
+		assertTrue(LevelUpManager.improvementsBetween(CharacterRules.levelOf(sinNivel), 8) == 2,
+			"subirlo del 1 al 8 son dos Mejoras; contando desde un nivel de XP alto se perderían");
+
+		//Y que los dos sitios que DECIDEN un nivel no llamen a la sobrecarga con jugador. Esto se sostiene por
+		//estructura porque el caso que se rompe necesita un ServerPlayer con XP, que fuera del juego no
+		//existe: la afirmación de arriba pasa igual con la versión mala.
+		for (String archivo : List.of("LevelUpManager.java", "command/SheetCommand.java")) {
+			String cuerpo = readSource(archivo);
+			int desde = cuerpo.indexOf(archivo.endsWith("SheetCommand.java") ? "public static void applyLevel(" : "public static void levelUp(");
+			assertTrue(desde > 0, "no encontré el método que decide el nivel en " + archivo);
+			String metodo = cuerpo.substring(desde, cuerpo.indexOf("\n\t}", desde));
+			assertTrue(!metodo.contains("characterLevelOf(sheet, "),
+				archivo + ": decidir un nivel con la sobrecarga que cae al XP de Minecraft le regala o le "
+					+ "quita niveles y Mejoras al jugador según lo que haya minado");
+		}
+
+		System.out.println("checkAbilityImprovements: OK, las mejoras se conceden en los niveles del SRD, se cuentan desde el nivel explícito y no se pierden al saltar varios.");
 	}
 
 	/**
