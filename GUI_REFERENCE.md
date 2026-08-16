@@ -804,6 +804,38 @@ derecho no deja de dibujar: pinta el rectángulo al revés. En el panel lateral 
 ancho (`CARACTERÍSTICAS` mide 90 px de los 89 disponibles hasta el borde del bloque), así que en español
 la cabecera va sin filete y en inglés con él.
 
+### Iconos de característica (`tools/make_ability_icons.py`)
+
+Los seis del panel lateral. Los de MCreator eran dibujos saturados y de estilos distintos entre sí —brazo
+rojo, conejo blanco, cerebro azul, búho— que no pertenecían a la paleta del mod.
+
+**La tentación al tematizarlos era pasarlos todos a latón, como los iconos de tirada. Habría sido un
+error:** son lo único que identifica cada fila, y seis siluetas del mismo color se convierten en seis
+manchas parecidas. Lo que los hace legibles de un vistazo es el color.
+
+Así que cada uno conserva su tono, pero como pigmento de manuscrito: todos apagados al mismo nivel y todos
+con el mismo contorno de tinta que el resto de la hoja. Contorno común, saturación común, tono y silueta
+distintos — eso es lo que convierte seis dibujos sueltos en un juego.
+
+| | silueta | pigmento |
+|---|---|---|
+| FUE | brazo flexionado | óxido |
+| DES | flecha | cardenillo |
+| CON | corazón | burdeos |
+| INT | libro abierto | lapislázuli |
+| SAB | ojo | verde azulado |
+| CAR | corona | berenjena |
+
+Flecha y no pluma porque a 16 px se confundiría con el icono de modo edición, que ya es una. Ojo y no
+búho porque un búho a ese tamaño es una mancha redonda. Y el brazo va con máscara de píxel y no con
+polígono: lo que distingue un brazo de una herradura son dos detalles asimétricos —el puño arriba y el
+bulto del bíceps abajo— y con un polígono salía un arco simétrico.
+
+Carisma es berenjena y no dorado a propósito: el latón ya significa "esto se pulsa" en esta interfaz.
+
+`JsonContentSelfTest.checkAbilityIcons` exige que los seis pigmentos sean distintos. Repetir uno no rompe
+nada, no avisa, y deja dos características indistinguibles en la columna.
+
 ### Estado del rediseño
 
 Todas las pantallas están cubiertas. `GuideBook` es la única que usa una pantalla de vanilla

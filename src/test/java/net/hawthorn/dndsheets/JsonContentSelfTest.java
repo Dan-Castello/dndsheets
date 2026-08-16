@@ -120,6 +120,42 @@ public class JsonContentSelfTest {
 		assertTabRows("imagebutton_tabbutton.png", 15);
 		assertTabRows("imagebutton_tabbutton_active.png", 20);
 		checkIconButtons();
+		checkAbilityIcons();
+	}
+
+	/**
+	 * <p>Los seis iconos de característica ({@code tools/make_ability_icons.py}) son lo único que
+	 * identifica cada fila del panel lateral de la hoja, y lo que los hace legibles de un vistazo es el
+	 * <b>color</b>, no la silueta: seis siluetas del mismo tono son seis manchas parecidas.</p>
+	 *
+	 * <p>Por eso lo que se comprueba aquí es que cada uno tenga un pigmento propio. Repetir un color al
+	 * regenerarlos no rompe nada, no avisa, y deja dos características indistinguibles en la columna.</p>
+	 */
+	private static void checkAbilityIcons() throws Exception {
+		Path dir = Path.of("src", "main", "resources", "assets", "dndsheets", "textures", "screens");
+		java.util.Map<Integer, String> pigmentos = new java.util.HashMap<>();
+		for (String name : new String[] {"str", "dex", "cons", "int", "wis", "cha"}) {
+			java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(dir.resolve(name + ".png").toFile());
+			assertTrue(image != null && image.getWidth() == 16 && image.getHeight() == 16,
+				name + ".png: debe medir 16x16");
+
+			//El pigmento es el color opaco más repetido que NO sea la tinta del contorno.
+			java.util.Map<Integer, Integer> cuenta = new java.util.HashMap<>();
+			for (int x = 0; x < 16; x++) {
+				for (int y = 0; y < 16; y++) {
+					int pixel = image.getRGB(x, y);
+					if ((pixel >>> 24) != 0xFF || pixel == 0xFF2A2118) continue;
+					cuenta.merge(pixel, 1, Integer::sum);
+				}
+			}
+			assertTrue(!cuenta.isEmpty(), name + ".png: no tiene relleno, solo contorno o nada");
+			int pigmento = cuenta.entrySet().stream()
+				.max(java.util.Map.Entry.comparingByValue()).orElseThrow().getKey();
+
+			String previo = pigmentos.put(pigmento, name);
+			assertTrue(previo == null, name + ".png usa el mismo pigmento que " + previo
+				+ ".png: en la columna de características esas dos filas quedan indistinguibles.");
+		}
 	}
 
 	/**
