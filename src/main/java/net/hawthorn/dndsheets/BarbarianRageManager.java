@@ -13,8 +13,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * <p>Furia del bárbaro: resistencia a daño físico (cortante/perforante/contundente/físico) y +{@value
- * #DAMAGE_BONUS} al daño de armas cuerpo a cuerpo con Fuerza, durante {@value #DURATION_ROUNDS} asaltos
+ * <p>Furia del bárbaro: resistencia a daño físico (cortante/perforante/contundente/físico) y un bono al
+ * daño de armas cuerpo a cuerpo con Fuerza que sube con el nivel ({@link #damageBonusFor}), durante
+ * {@value #DURATION_ROUNDS} asaltos
  * (1 minuto real de 5e). Se activa con clic derecho en el Tótem de Furia
  * ({@code {dndsheets:{rage:true}}}, entregado con {@code /dndsheet rageitem}), igual de patrón que los
  * ítems de turno ({@link TurnItemManager}).</p>
@@ -33,7 +34,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BarbarianRageManager {
 	private static final int DURATION_ROUNDS = 10; //1 minuto de 5e = 10 asaltos.
 	private static final int DURATION_TICKS = 20 * 60; //1 minuto real fuera de modo turnos.
-	public static final int DAMAGE_BONUS = 2; //Bono de Furia a nivel 1-8 (sube a 3/4 en niveles altos en 5e; simplificado a un valor fijo).
+	/**
+	 * <p>Bono de daño de la Furia, por nivel de personaje (+2/+3/+4, ver {@link CharacterRules#rageDamageBonusFor}).</p>
+	 *
+	 * <p>Era una constante fija en +2. La progresión de un bárbaro <em>es</em> este número, así que
+	 * congelarlo dejaba a uno de nivel 20 pegando igual que uno de nivel 1 salvo por el arma.</p>
+	 */
+	public static int damageBonusFor(ServerPlayer player) {
+		return CharacterRules.rageDamageBonusFor(
+			SheetLoader.characterLevelOf(SheetLoader.getServerSheet(player.getStringUUID()), player));
+	}
 
 	private static final Set<UUID> raging = ConcurrentHashMap.newKeySet();
 
@@ -60,7 +70,7 @@ public class BarbarianRageManager {
 		}
 
 		CombatFx.activate(player);
-		player.sendSystemMessage(Component.literal("¡Entras en furia! Resistencia a daño físico y +" + DAMAGE_BONUS + " de daño cuerpo a cuerpo con Fuerza.").withStyle(ChatFeedback.RESOURCE));
+		player.sendSystemMessage(Component.literal("¡Entras en furia! Resistencia a daño físico y +" + damageBonusFor(player) + " de daño cuerpo a cuerpo con Fuerza.").withStyle(ChatFeedback.RESOURCE));
 	}
 
 	//--- Tótem de Furia: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos de

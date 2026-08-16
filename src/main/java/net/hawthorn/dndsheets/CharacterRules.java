@@ -60,6 +60,32 @@ final class CharacterRules {
 		return 2 + (Math.min(20, Math.max(1, level)) - 1) / 4;
 	}
 
+	/**
+	 * <p>Bono de daño de la Furia del bárbaro: +2 hasta el nivel 8, +3 del 9 al 15 y +4 del 16 en adelante.</p>
+	 *
+	 * <p>Estaba fijo en +2 y anotado como simplificación. Un bárbaro es la clase que menos botones tiene:
+	 * su progresión <em>es</em> este número, así que congelarlo dejaba a un bárbaro de nivel 20 pegando
+	 * exactamente igual que uno de nivel 1 salvo por los dados del arma.</p>
+	 */
+	static int rageDamageBonusFor(int level) {
+		if (level >= 16) return 4;
+		if (level >= 9) return 3;
+		return 2;
+	}
+
+	/**
+	 * <p>Dado de Inspiración Bárdica: d6, y sube a d8/d10/d12 en los niveles 5, 10 y 15.</p>
+	 *
+	 * <p>También estaba fijo, con la misma consecuencia: el recurso que define a la clase no mejoraba
+	 * nunca.</p>
+	 */
+	static String bardicInspirationDieFor(int level) {
+		if (level >= 15) return "1d12";
+		if (level >= 10) return "1d10";
+		if (level >= 5) return "1d8";
+		return "1d6";
+	}
+
 	static int levelOf(JsonObject sheet) {
 		if (sheet != null && sheet.has("characterLevel")) return Math.max(1, sheet.get("characterLevel").getAsInt());
 		return 1;

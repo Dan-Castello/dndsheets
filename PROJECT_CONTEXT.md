@@ -442,6 +442,28 @@ dependencies, not preference.
      **Simplified:** Eldritch Blast gains *beams* (separate attack rolls), not dice on one roll. It
      scales as extra dice here, which is the right damage on a hit but one roll instead of several.
 
+  6. **The three remaining frozen class numbers.** Each was a constant with a comment admitting it:
+     `DAMAGE_BONUS = 2`, `DIE = "1d6"`, `DICE = "2d8"`. Same defect as the proficiency bonus, three
+     more times, and in each case the number *is* the class's progression:
+
+     - **Rage damage** +2 / +3 (9th) / +4 (16th). A barbarian has the fewest buttons of any class;
+       frozen, a 20th-level one hit exactly like a 1st-level one apart from the weapon dice.
+     - **Bardic Inspiration die** d6 / d8 (5th) / d10 (10th) / d12 (15th), taken from the **bard's**
+       level, not the target's — the one inspiring sets the quality of the die even though someone
+       else rolls it.
+     - **Divine Smite** 2d8 +1d8 per slot level above 1st, capped at 5d8. This one was blocked, not
+       forgotten: the comment said the slot pool was flat so there was no level to scale by. Once
+       `SpellSlots.spend` returned the level it spent, the rule wrote itself — and it needs no level
+       picker, because taking the lowest slot means the smite grows exactly when the paladin has run
+       out of cheap slots, which is when a table would spend an expensive one anyway.
+
+     The two level tables live in `CharacterRules` next to `proficiencyBonusFor`, which is where
+     level-driven numbers belong and the reason they are testable without touching Minecraft.
+
+     **Still missing:** Divine Smite's extra +1d8 against undead and fiends. Monsters here have no
+     creature type, so there is nothing to check — guessing from the name would get the skeleton
+     right and everything else wrong.
+
   **Found while doing item 4:** the bulk content packs existed **twice** — once under
   `test/dndsheets/<type>/` and once in `src/main/resources/dndsheets/defaults/` — and the self-test
   read the `test/` copy. The two had already drifted (five monsters had `damageAffinities` only in the

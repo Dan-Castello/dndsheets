@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>Inspiración Bárdica: clic derecho del bardo sobre OTRO jugador (con el Cuerno de Inspiración,
- * {@code {dndsheets:{bardicInspiration:true}}}) le da un dado ({@value #DIE}, tirado ya en el momento de
+ * {@code {dndsheets:{bardicInspiration:true}}}) le da un dado (d6 a d12 según el nivel del bardo, tirado ya en el momento de
  * concederlo) que se suma a su PRÓXIMA tirada de ataque, durante {@value #DURATION_ROUNDS} asaltos (10
  * minutos de 5e). Igual que Furia, la duración cuenta en asaltos si el modo turnos está activo al
  * concederla, o en ticks reales si no — ver {@link TurnManager#onRoundsPass}.</p>
@@ -31,7 +31,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Mod.EventBusSubscriber
 public class BardInspirationManager {
-	private static final String DIE = "1d6"; //5e escala a 1d8/1d10/1d12 en niveles 5/10/15; simplificado a un dado fijo.
+	//El dado sale del nivel del BARDO (ver CharacterRules.bardicInspirationDieFor), no de una constante:
+	//estaba fijo en 1d6, así que el recurso que define a la clase no mejoraba nunca. Y del bardo, no del
+	//objetivo — quien inspira es quien pone la calidad del dado, aunque lo tire otro.
 	private static final int DURATION_ROUNDS = 100; //10 minutos de 5e = 100 asaltos.
 	private static final int DURATION_TICKS = 20 * 60 * 10; //10 minutos reales fuera de modo turnos.
 
@@ -64,7 +66,9 @@ public class BardInspirationManager {
 		JsonObject targetSheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (targetSheet == null) return;
 
-		DiceManager.RollOutcome roll = DiceManager.roll(new JsonObject(), DIE);
+		String die = CharacterRules.bardicInspirationDieFor(
+			SheetLoader.characterLevelOf(SheetLoader.getServerSheet(bard.getStringUUID()), bard));
+		DiceManager.RollOutcome roll = DiceManager.roll(new JsonObject(), die);
 		if (roll.result() == null) return;
 		int amount = roll.result().getValue();
 

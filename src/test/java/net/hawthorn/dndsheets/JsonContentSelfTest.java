@@ -1279,7 +1279,29 @@ public class JsonContentSelfTest {
 		assertTrue(CharacterRules.proficiencyBonusFor(0) == 2, "nivel 0 debería caer en el escalón más bajo");
 		assertTrue(CharacterRules.proficiencyBonusFor(99) == 6, "un nivel disparatado debería topar en +6");
 
-		System.out.println("checkCharacterRules: OK, personajes múltiples, PNJ, hojas antiguas, PG y competencia por nivel se comportan.");
+		//Los otros dos números que estaban congelados en su valor de nivel 1. Se comprueban los escalones y
+		//los bordes de cada uno, no una muestra: el fallo natural aquí es un límite corrido, no una fórmula
+		//rara — el bono de Furia sube a los 9 y 16, el dado de Inspiración a los 5, 10 y 15.
+		assertTrue(CharacterRules.rageDamageBonusFor(1) == 2 && CharacterRules.rageDamageBonusFor(8) == 2,
+			"la Furia debería dar +2 hasta el nivel 8");
+		assertTrue(CharacterRules.rageDamageBonusFor(9) == 3 && CharacterRules.rageDamageBonusFor(15) == 3,
+			"+3 del 9 al 15");
+		assertTrue(CharacterRules.rageDamageBonusFor(16) == 4 && CharacterRules.rageDamageBonusFor(20) == 4,
+			"+4 del 16 en adelante");
+
+		assertTrue("1d6".equals(CharacterRules.bardicInspirationDieFor(4)), "Inspiración: d6 hasta el nivel 4");
+		assertTrue("1d8".equals(CharacterRules.bardicInspirationDieFor(5)), "d8 a partir del 5");
+		assertTrue("1d10".equals(CharacterRules.bardicInspirationDieFor(10)), "d10 a partir del 10");
+		assertTrue("1d12".equals(CharacterRules.bardicInspirationDieFor(15)), "d12 a partir del 15");
+		assertTrue("1d12".equals(CharacterRules.bardicInspirationDieFor(20)), "y no hay un d20 al llegar arriba");
+
+		//Castigo Divino: crece con el espacio que se gasta de verdad, con tope en 5d8.
+		assertTrue("2d8".equals(PaladinSmiteManager.diceForSlot(1)), "un espacio de nivel 1 son 2d8");
+		assertTrue("4d8".equals(PaladinSmiteManager.diceForSlot(3)), "uno de nivel 3, 4d8");
+		assertTrue("5d8".equals(PaladinSmiteManager.diceForSlot(4)) && "5d8".equals(PaladinSmiteManager.diceForSlot(9)),
+			"y el tope del SRD son 5d8, por alto que sea el espacio");
+
+		System.out.println("checkCharacterRules: OK, personajes múltiples, PNJ, hojas antiguas, PG, competencia, Furia, Inspiración y Castigo por nivel se comportan.");
 	}
 
 	private static void require(JsonObject obj, String... fields) {

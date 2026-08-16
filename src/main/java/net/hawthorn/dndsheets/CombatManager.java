@@ -531,7 +531,7 @@ public class CombatManager {
 		//número plano, no un dado — seguro de concatenar en la misma expresión (a diferencia de Ataque
 		//Furtivo, que sí es un dado y necesita tirarse aparte).
 		if ("str".equals(attackAbility) && player instanceof ServerPlayer ragingCandidate && BarbarianRageManager.isRaging(ragingCandidate)) {
-			expression = expression + " + " + BarbarianRageManager.DAMAGE_BONUS;
+			expression = expression + " + " + CharacterRules.rageDamageBonusFor(level);
 		}
 
 		DiceManager.DamageResult damage = DiceManager.rollDamage(sheet, expression, critical);
