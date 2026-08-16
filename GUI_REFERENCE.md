@@ -601,3 +601,24 @@ plana, sin fallar ni avisar. `JsonContentSelfTest.checkTabTextures` lo comprueba
 
 Al regenerarlos hay que actualizar también el alto declarado en `CharacterSheetScreen` (el último
 argumento de `setImage` y del constructor), que es lo que se muestrea.
+
+### Sombra del texto: nunca sobre pergamino
+
+La sombra de Minecraft no es un desenfoque, es **una copia del texto un píxel abajo y a la derecha**, en
+el color oscurecido a la cuarta parte. Sobre cuero oscuro con texto claro eso es relieve y ayuda a leer.
+Sobre **pergamino con tinta oscura** —las etiquetas de la hoja y el rótulo de la pestaña abierta— la copia
+queda tan oscura como el original y **la palabra se lee escrita dos veces**.
+
+Lo traicionero es que las dos formas cómodas de centrar texto encienden la sombra sin dejar apagarla:
+
+| Llamada | Sombra | Sobre pergamino |
+|---|---|---|
+| `drawCenteredString(...)` | forzada a `true` | ✗ se duplica |
+| `AbstractWidget.renderString(...)` | acaba en la anterior | ✗ se duplica |
+| `drawString(..., false)` | apagada | ✓ |
+
+Sobre pergamino hay que **centrar a mano** (`x - font.width(texto) / 2`) y usar `drawString(..., false)`.
+`AdjustableImageButton` expone `txtShadow` justo para eso. `JsonContentSelfTest.checkParchmentTextHasNoShadow`
+lo comprueba en cada build sobre los dos ficheros que pintan encima del pergamino.
+
+Los `EditBox` no entran aquí: pintan su propio fondo negro, así que su texto claro con sombra es correcto.

@@ -45,6 +45,7 @@ public class JsonContentSelfTest {
 		checkCharacterRules();
 		checkTabTextures();
 		checkInteractHandlers();
+		checkParchmentTextHasNoShadow();
 
 		System.out.println("JsonContentSelfTest: OK, los 5 JSON de ejemplo parsean con los registros reales.");
 	}
@@ -73,6 +74,34 @@ public class JsonContentSelfTest {
 	 * valiendo llevar la herramienta en la secundaria. Esto ya se arregló una vez en
 	 * {@code DungeonToolManager} y volvió a aparecer en otros cuatro manejadores, de ahí la comprobación.</p>
 	 */
+	/**
+	 * <p>La sombra de Minecraft es una copia del texto un píxel abajo y a la derecha, en el color
+	 * oscurecido a la cuarta parte. Con texto claro sobre fondo oscuro eso es relieve y ayuda a leer. Con
+	 * <b>tinta oscura sobre pergamino</b> —las etiquetas de la hoja y el rótulo de la pestaña abierta— la
+	 * copia queda tan oscura como el original: la palabra se lee escrita dos veces.</p>
+	 *
+	 * <p>El problema es que las dos formas cómodas de centrar texto encienden la sombra sin dejar
+	 * apagarla: {@code GuiGraphics.drawCenteredString} llama a {@code drawString} con {@code shadow=true}
+	 * fijo, y {@code AbstractWidget.renderString} acaba en esa misma llamada. Sobre pergamino hay que
+	 * centrar a mano y usar {@code drawString(..., false)}.</p>
+	 */
+	private static void checkParchmentTextHasNoShadow() throws Exception {
+		//Solo estas dos: son las que pintan sobre el pergamino. El resto del mod dibuja sobre cuero oscuro,
+		//donde la sombra es correcta y se usa a propósito.
+		assertNoShadowedCentering("client/gui/CharacterSheetScreen.java", "drawCenteredString");
+		assertNoShadowedCentering("client/gui/components/AdjustableImageButton.java", "renderString(");
+	}
+
+	private static void assertNoShadowedCentering(String relativePath, String forbidden) throws Exception {
+		Path file = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets").resolve(relativePath);
+		for (String line : Files.readAllLines(file)) {
+			//Los comentarios sí lo nombran: explican por qué no se usa.
+			if (line.trim().startsWith("//") || line.trim().startsWith("*")) continue;
+			assertTrue(!line.contains(forbidden), relativePath + ": usa " + forbidden
+				+ ", que fuerza la sombra del texto. Sobre pergamino eso se lee como la palabra escrita dos veces.");
+		}
+	}
+
 	private static void checkInteractHandlers() throws Exception {
 		Path dir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets");
 		try (java.util.stream.Stream<Path> files = Files.list(dir)) {

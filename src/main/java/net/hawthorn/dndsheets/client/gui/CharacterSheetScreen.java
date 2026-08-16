@@ -485,7 +485,13 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				guiGraphics.drawString(this.font, LABEL_LEVEL, LEVEL_OFFSET_X, LEVEL_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
 				guiGraphics.drawString(this.font, LABEL_HUNGER, HUNGER_OFFSET_X, HUNGER_OFFSET_Y - 10, AUTO_FIELD_COLOR, false);
 
-				guiGraphics.drawCenteredString(this.font, LABEL_INITIATIVE, INITIATIVE_OFFSET_X + 8, INITIATIVE_OFFSET_Y - 15, lightColor);
+				//Centrado a mano en vez de drawCenteredString: ese método fuerza sombra (llama a drawString con
+				//shadow=true, no hay variante sin ella). La sombra de Minecraft es una copia del texto un píxel
+				//abajo y a la derecha, y en tinta oscura sobre pergamino queda igual de oscura que el texto: no
+				//se lee como relieve, se lee como la palabra escrita dos veces. Todas las demás etiquetas de
+				//aquí ya usan drawString(..., false); esta era la única que no.
+				guiGraphics.drawString(this.font, LABEL_INITIATIVE,
+					INITIATIVE_OFFSET_X + 8 - this.font.width(LABEL_INITIATIVE) / 2, INITIATIVE_OFFSET_Y - 15, lightColor, false);
 				break;
 			case SKILLS:
 				//STRENGTH
@@ -571,6 +577,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				e.setHeight(15);
 				e.setImage( new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton.png"), 0, 0, 15, 50, 45);
 				e.txtColor = TAB_TEXT_CLOSED;
+				e.txtShadow = true;  //Claro sobre cuero: la sombra da relieve.
 				e.active = true;
 			}
 			else {
@@ -579,6 +586,9 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				e.setImage( new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton_active.png"), 0, 0, 20, 50, 60);
 				//Tinta oscura: la pestaña abierta es pergamino, y el blanco de MCreator sobre pergamino no se lee.
 				e.txtColor = INK_COLOR;
+				//Sin sombra: en tinta oscura sobre el pergamino de la pestaña abierta, la sombra es una
+				//segunda copia del rótulo a un píxel y la palabra se lee escrita dos veces.
+				e.txtShadow = false;
 				e.active = false;
 			}
 		});

@@ -19,6 +19,16 @@ public class AdjustableImageButton extends Button {
     protected int textureWidth;
     protected int textureHeight;
     public int txtColor = 0xF4F3F3;
+    /**
+     * <p>Sombra del rótulo. Va aparte de {@link #txtColor} porque las dos decisiones no son la misma: la
+     * sombra de Minecraft es una copia del texto un píxel abajo y a la derecha, en el color oscurecido a
+     * la cuarta parte. Con texto claro sobre fondo oscuro eso es relieve y ayuda a leer; con texto oscuro
+     * sobre pergamino (la pestaña seleccionada) la copia queda tan oscura como el original y la palabra
+     * se lee escrita dos veces.</p>
+     *
+     * <p>Arranca en true porque es lo que hacía {@code renderString}, que es a lo que sustituye.</p>
+     */
+    public boolean txtShadow = true;
 
     public AdjustableImageButton(int pX, int pY, int pWidth, int pHeight, int pXTexStart, int pYTexStart, ResourceLocation pResourceLocation, Button.OnPress pOnPress) {
         this(pX, pY, pWidth, pHeight, pXTexStart, pYTexStart, pHeight, pResourceLocation, 256, 256, pOnPress);
@@ -54,6 +64,11 @@ public class AdjustableImageButton extends Button {
     public void renderWidget(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
         Minecraft minecraft = Minecraft.getInstance();
         this.renderTexture(pGuiGraphics, this.resourceLocation, this.getX(), this.getY(), this.xTexStart, this.yTexStart, this.yDiffTex, this.width, this.height, this.textureWidth, this.textureHeight);
-        this.renderString(pGuiGraphics, minecraft.font, txtColor | Mth.ceil(this.alpha * 255.0F) << 24);
+        //Dibujo directo en vez de renderString(): ese acaba en drawCenteredString, que fuerza la sombra sin
+        //dejar apagarla. Ver txtShadow.
+        int color = txtColor | Mth.ceil(this.alpha * 255.0F) << 24;
+        pGuiGraphics.drawString(minecraft.font, this.getMessage(),
+            this.getX() + (this.width - minecraft.font.width(this.getMessage())) / 2,
+            this.getY() + (this.height - 8) / 2, color, txtShadow);
     }
 }
