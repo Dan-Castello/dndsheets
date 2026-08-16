@@ -29,6 +29,30 @@ public class ConcentrationManager {
 	public static void startConcentrating(ServerPlayer caster, String spellName) {
 		stopConcentrating(caster); //Un hechizo de concentración nuevo reemplaza cualquiera anterior — corta el efecto viejo antes de anotar el nuevo, en vez de dejarlo huérfano para siempre.
 		concentratingOn.put(caster.getUUID(), new Concentrating(spellName, -1, null));
+		notifyClient(caster, spellName);
+	}
+
+	/**
+	 * <p>Le dice al cliente en qué se está concentrando, para que se vea en el HUD.</p>
+	 *
+	 * <p>La concentración vivía SOLO en el mapa de esta clase, así que el jugador no tenía forma de saber si
+	 * seguía concentrado: perderla por un golpe es de las cosas que más se consultan en una mesa, y aquí
+	 * pasaba en silencio salvo por una línea de chat que se va con el scroll. El campo va en la hoja para
+	 * que viaje por la tubería que ya existe, no porque la hoja necesite recordarlo — al reiniciar el
+	 * servidor no queda ninguna concentración viva de todos modos.</p>
+	 */
+	private static void notifyClient(ServerPlayer caster, String spellName) {
+		JsonObject sheet = SheetLoader.getServerSheet(caster.getStringUUID());
+		if (sheet == null) return;
+		JsonObject patch = new JsonObject();
+		if (spellName == null) {
+			sheet.remove("concentratingOn");
+			patch.add("concentratingOn", com.google.gson.JsonNull.INSTANCE); //Null en un parche = borrar la clave.
+		} else {
+			sheet.addProperty("concentratingOn", spellName);
+			patch.addProperty("concentratingOn", spellName);
+		}
+		DndsheetsMod.sendSheetFieldUpdate(caster, patch);
 	}
 
 	//Llamado justo después de que el hechizo de concentración recién lanzado de verdad aplicó un efecto de
@@ -55,6 +79,7 @@ public class ConcentrationManager {
 			SummonManager.removeFor(summonLevel, caster.getUUID());
 		}
 		Concentrating previous = concentratingOn.remove(caster.getUUID());
+		if (previous != null) notifyClient(caster, null);
 		if (previous != null && previous.effectName() != null) {
 			//El nivel sale del propio lanzador: se necesita para resolver la entidad objetivo y poder
 			//levantarle la condición, no solo parar su temporizador de daño (ver TurnManager.removeEffect).

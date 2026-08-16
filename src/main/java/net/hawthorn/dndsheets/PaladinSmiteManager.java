@@ -51,6 +51,11 @@ public class PaladinSmiteManager {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (sheet == null) return;
 		sheet.addProperty("smitePending", true);
+		//Un flag armado que no se ve es un flag que se olvida: el paladín no sabía si le quedaba el castigo
+		//preparado de hace tres turnos o si ya lo gastó.
+		JsonObject patch = new JsonObject();
+		patch.addProperty("smitePending", true);
+		DndsheetsMod.sendSheetFieldUpdate(player, patch);
 		CombatFx.activate(player);
 		player.sendSystemMessage(Component.literal("Tu próximo golpe de arma que acierte gastará un espacio de conjuro para Castigo Divino.").withStyle(ChatFeedback.RESOURCE));
 	}

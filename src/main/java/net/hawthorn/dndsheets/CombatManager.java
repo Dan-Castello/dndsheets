@@ -612,6 +612,9 @@ public class CombatManager {
 		JsonObject patch = new JsonObject();
 		patch.addProperty("nextAttackAdvantage", "normal");
 		patch.add("bardicInspiration", JsonNull.INSTANCE);
+		//El castigo se consume en el mismo golpe (ver PaladinSmiteManager.consumeIfPending), así que se apaga
+		//en el mismo parche en vez de dejar el aviso encendido en el HUD hasta la siguiente tirada.
+		patch.add("smitePending", JsonNull.INSTANCE);
 		DndsheetsMod.sendSheetFieldUpdate((ServerPlayer) player, patch);
 	}
 

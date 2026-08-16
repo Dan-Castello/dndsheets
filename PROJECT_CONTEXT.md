@@ -960,6 +960,25 @@ dependencies, not preference.
       This is the same class as items 18 and 21, one layer up: not stale client state, but state that
       was never shown at all. A rule the player cannot see is a rule they will report as a bug.
 
+  33. **What the player is *holding* was invisible too.** Same question as item 32, asked of the
+      one-shot state that decides the next roll: concentration, a Bardic Inspiration die, an armed
+      Divine Smite, a pending advantage. **None of the four managers told the client anything.**
+
+      So you received an Inspiration die and had no way to know; you armed a Smite and could not tell
+      three turns later whether it was still armed; and concentration — one of the most consulted
+      things at a real table — existed only as a chat line that scrolls away. A modifier you cannot
+      see cannot be played around: you find out afterwards, in the result.
+
+      All four now push a short patch and show on the HUD. Concentration gains a sheet field purely
+      so it can travel the pipe that already exists — not because the sheet needs to remember it, as
+      no concentration survives a restart anyway. Smite is cleared in the same patch that already
+      cleared advantage and inspiration, so the HUD does not keep advertising a resource that was
+      spent on the swing that just happened.
+
+      Worth recording what was **already right**: `SheetServerMessage` merges only a whitelist of
+      player-editable keys, so none of these flags could ever be wiped by a client saving a stale
+      sheet. That defence is why this was only an invisibility bug and not a data-loss one.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

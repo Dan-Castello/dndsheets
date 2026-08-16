@@ -1850,7 +1850,21 @@ public class JsonContentSelfTest {
 		assertTrue(writePoint.contains("sendSheetFieldUpdate("),
 			"cambiar las condiciones de un jugador debería avisarle: si no, su copia se queda con las de antes");
 
-		System.out.println("checkIncapacitatedCannotAct: OK, actuar, reaccionar, moverse y atacar respetan las condiciones, y quien las sufre las ve.");
+		//Y lo mismo para lo que el jugador LLEVA ENCIMA y decide su próxima tirada: concentración, dado de
+		//Inspiración y castigo armado vivían solo en el servidor. Un modificador que no se ve no se puede
+		//jugar, se descubre después en el resultado.
+		for (String manager : List.of("ConcentrationManager.java", "BardInspirationManager.java", "PaladinSmiteManager.java")) {
+			assertTrue(readSource(manager).contains("sendSheetFieldUpdate("),
+				manager + " cambia algo que decide la próxima tirada del jugador y debería avisarle");
+		}
+		//El HUD tiene que leerlos: sin esto, los parches llegarían y no se vería nada igualmente.
+		String hud = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
+			"client", "ResourceHudOverlay.java"));
+		for (String field : List.of("concentratingOn", "bardicInspiration", "smitePending", "conditions")) {
+			assertTrue(hud.contains(field), "el HUD debería enseñar \"" + field + "\"");
+		}
+
+		System.out.println("checkIncapacitatedCannotAct: OK, las condiciones se respetan en las dos direcciones y el jugador ve lo que le pasa y lo que lleva encima.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

@@ -50,6 +50,16 @@ public class ResourceHudOverlay {
 			y += lineHeight;
 		}
 
+		//Lo que llevas ENCIMA y decide tu próxima tirada. Vivía todo en el servidor: recibías Inspiración
+		//Bárdica y no lo sabías, armabas un Castigo y no sabías si seguía armado tres turnos después, y la
+		//concentración —de lo que más se consulta en una mesa— solo existía como una línea de chat que se va
+		//con el scroll. Un modificador que no se ve no se puede jugar; se descubre después, en el resultado.
+		String held = heldEffects(sheet);
+		if (!held.isEmpty()) {
+			guiGraphics.drawString(font, held, x, y, 0xFFD9A0);
+			y += lineHeight;
+		}
+
 		if (sheet.has("gold")) {
 			guiGraphics.drawString(font, "Oro: " + sheet.get("gold").getAsInt(), x, y, 0xFFD700);
 		}
@@ -60,6 +70,27 @@ public class ResourceHudOverlay {
 	 * fuente de cada una (ver {@code Combatant.formatEntry}): a quien la sufre le importa que está asustado,
 	 * no el número de entidad que lo asustó.</p>
 	 */
+	/** Los "llevo esto encima" que cambian la próxima tirada: concentración, dado de inspiración, castigo armado, ventaja pendiente. */
+	private static String heldEffects(JsonObject sheet) {
+		StringBuilder held = new StringBuilder();
+		if (sheet.has("concentratingOn")) append(held, "Concentrado: " + sheet.get("concentratingOn").getAsString());
+		if (sheet.has("bardicInspiration")) append(held, "Inspiración +" + sheet.get("bardicInspiration").getAsInt());
+		if (sheet.has("smitePending")) append(held, "Castigo armado");
+		//"normal" es el valor de reposo, no una ventaja pendiente: enseñarlo sería una línea permanente que
+		//no dice nada y que acabaría ignorándose junto con las que sí importan.
+		if (sheet.has("nextAttackAdvantage")) {
+			String advantage = sheet.get("nextAttackAdvantage").getAsString();
+			if ("advantage".equals(advantage)) append(held, "Ventaja");
+			else if ("disadvantage".equals(advantage)) append(held, "Desventaja");
+		}
+		return held.toString();
+	}
+
+	private static void append(StringBuilder to, String text) {
+		if (to.length() > 0) to.append(" · ");
+		to.append(text);
+	}
+
 	private static String activeConditionLabels(JsonObject sheet) {
 		if (!sheet.has("conditions")) return "";
 		StringBuilder labels = new StringBuilder();

@@ -73,6 +73,11 @@ public class BardInspirationManager {
 		int amount = roll.result().getValue();
 
 		targetSheet.addProperty("bardicInspiration", amount);
+		//Al objetivo hay que decírselo: el dado se suma a SU próxima tirada de ataque, y sin esto no tenía
+		//forma de saber que lo llevaba encima hasta que se gastara solo.
+		JsonObject patch = new JsonObject();
+		patch.addProperty("bardicInspiration", amount);
+		DndsheetsMod.sendSheetFieldUpdate(target, patch);
 		CombatFx.activate(target);
 
 		String bardName = SheetLoader.characterNameOf(SheetLoader.getServerSheet(bard.getStringUUID()), bard);
