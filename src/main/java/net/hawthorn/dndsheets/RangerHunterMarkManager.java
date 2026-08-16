@@ -60,7 +60,7 @@ public class RangerHunterMarkManager {
 	static void tryUse(PlayerInteractEvent.EntityInteract event) {
 		if (!(event.getEntity() instanceof ServerPlayer ranger)) return;
 
-		event.setCanceled(true);
+		InteractionEvents.consume(event);
 		mark(ranger, event.getTarget());
 	}
 

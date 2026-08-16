@@ -137,7 +137,7 @@ public class DungeonToolManager {
 	//con un resultado que SÍ consume, el cliente mandaba un segundo paquete con la otra mano y el servidor
 	//terminaba procesando la acción dos veces — se veía como un mensaje de chat duplicado.
 	private static void cancelBothHandsRetry(PlayerInteractEvent.RightClickBlock event) {
-		event.setCanceled(true);
+		InteractionEvents.consume(event);
 		event.setCancellationResult(InteractionResult.SUCCESS);
 	}
 }

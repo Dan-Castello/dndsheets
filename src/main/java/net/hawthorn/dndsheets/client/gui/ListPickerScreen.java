@@ -39,6 +39,13 @@ public abstract class ListPickerScreen extends Screen {
 	private static final int PANEL_PADDING = 10;
 	private static final int BACK_BUTTON_WIDTH = 50;
 	private static final int BACK_BUTTON_HEIGHT = 14;
+	//"< Atrás" y el título comparten la fila de cabecera, así que sus coordenadas tienen que salir de las
+	//mismas constantes. Antes el botón se colocaba en init() y el título en render() por su cuenta, y se
+	//pisaban: el botón caía en y=8..22 y el título en y=16..24, además de solaparse en horizontal en
+	//cuanto el título era largo ("Elige un preset de clase"). Se leía como texto duplicado.
+	private static final int BACK_BUTTON_TOP = 10;
+	/** Centro vertical del botón, para que el rótulo del título quede a su misma altura. */
+	private static final int TITLE_Y = BACK_BUTTON_TOP + (BACK_BUTTON_HEIGHT - 8) / 2;
 	private static final int SEARCH_HEIGHT = 16;
 	private static final int SEARCH_GAP = 6;
 
@@ -72,6 +79,11 @@ public abstract class ListPickerScreen extends Screen {
 	}
 
 	/** Y donde empieza la lista, bajo el título (y la búsqueda, si {@link #searchable()}). Sobrescribir para dejar hueco a un subtítulo. */
+	/** Borde izquierdo del panel. Lo usan init() (para colocar "< Atrás") y render(), que deben coincidir. */
+	private int panelLeft() {
+		return (this.width - buttonWidth()) / 2 - PANEL_PADDING;
+	}
+
 	protected int listTop() {
 		return searchable() ? LIST_TOP + SEARCH_HEIGHT + SEARCH_GAP : LIST_TOP;
 	}
@@ -127,10 +139,8 @@ public abstract class ListPickerScreen extends Screen {
 		this.addRenderableWidget(list);
 
 		if (parent != null) {
-			int left = (this.width - buttonWidth()) / 2 - PANEL_PADDING;
-			int top = 16 - PANEL_PADDING;
 			this.addRenderableWidget(TomeButton.of(Component.literal("< Atrás"), b -> this.onClose(),
-				left + 2, top + 2, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT));
+				panelLeft() + 4, BACK_BUTTON_TOP, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT));
 		}
 	}
 
@@ -173,16 +183,19 @@ public abstract class ListPickerScreen extends Screen {
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics);
 
-		int left = (this.width - buttonWidth()) / 2 - PANEL_PADDING;
+		int left = panelLeft();
 		int right = this.width - left;
-		//El título siempre se dibuja en y=16 (más abajo), así que el borde superior del panel es fijo en
-		//vez de depender de listTop() — una pantalla con subtítulo (Grimorio) mueve listTop() hacia abajo
-		//sin dejar el título sobresaliendo por encima del panel.
+		//La cabecera está en un sitio fijo (más abajo), así que el borde superior del panel también, en vez
+		//de depender de listTop() — una pantalla con subtítulo (Grimorio) mueve listTop() hacia abajo sin
+		//dejar el título sobresaliendo por encima del panel.
 		int top = 16 - PANEL_PADDING;
 		int bottom = listTop() + listHeight() + PANEL_PADDING;
 		GuiStyle.panel(guiGraphics, left, top, right, bottom);
 
-		guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 16, GuiStyle.TITLE_COLOR);
+		//Con "< Atrás" el título se centra en el hueco QUE QUEDA a su derecha, no en la pantalla entera:
+		//centrado en la pantalla, un título largo se metía por debajo del botón.
+		int titleLeft = parent != null ? left + 4 + BACK_BUTTON_WIDTH : left;
+		guiGraphics.drawCenteredString(this.font, this.title, (titleLeft + right) / 2, TITLE_Y, GuiStyle.TITLE_COLOR);
 		//Filete bajo el título: separa la cabecera del contenido sin gastar una fila entera de alto, que es
 		//lo que costaría un separador de verdad en una lista con scroll.
 		GuiStyle.rule(guiGraphics, left + 8, right - 8, 28);

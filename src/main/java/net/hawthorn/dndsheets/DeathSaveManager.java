@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.network.ScreenActionMessage;
 import net.hawthorn.dndsheets.network.SheetClientMessage;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -89,9 +90,16 @@ public class DeathSaveManager {
 	@SubscribeEvent
 	public static void onInteractWithDowned(PlayerInteractEvent.EntityInteract event) {
 		if (event.getEntity().level().isClientSide()) return;
+		//Solo la mano principal: reanimar no depende de llevar nada, así que sin esto las DOS pasadas del
+		//clic (una por mano, ver InteractionEvents) reanimaban y anunciaban por duplicado.
+		if (event.getHand() != InteractionHand.MAIN_HAND) return;
 		if (!(event.getTarget() instanceof ServerPlayer target)) return;
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null || !isDowned(sheet)) return;
+
+		//Sin esto el manejador corría dos veces (una por mano) y el anuncio de reanimación salía duplicado
+		//para toda la mesa. Ver InteractionEvents.
+		InteractionEvents.consume(event);
 
 		String reviverName = event.getEntity().getName().getString();
 		String targetName = characterName(sheet, target);

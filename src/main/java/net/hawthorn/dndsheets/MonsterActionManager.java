@@ -36,7 +36,12 @@ public class MonsterActionManager {
 	public static void onInteractWithMonster(PlayerInteractEvent.EntityInteract event) {
 		if (event.getEntity().level().isClientSide()) return;
 		Player dm = event.getEntity();
-		if (!MonsterRegistry.isDmTool(dm.getMainHandItem()) && !MonsterRegistry.isDmTool(dm.getOffhandItem())) return;
+		//event.getItemStack() es el objeto de LA MANO DE ESTE EVENTO, no "cualquiera de las dos". El
+		//cliente lanza un evento por mano (Minecraft.startUseItem recorre InteractionHand.values() y
+		//reintenta con la otra si la primera no consume), asi que mirar ambas manos hacia que el
+		//manejador corriese DOS veces por clic — el mensaje de chat duplicado. Sigue valiendo llevar la
+		//vara en la mano secundaria: entonces la pasada que coincide es la de esa mano.
+		if (!MonsterRegistry.isDmTool(event.getItemStack())) return;
 		if (!dm.hasPermissions(2)) return; //La Vara de DM solo funciona en manos de un op, aunque un jugador la consiga.
 
 		Entity target = event.getTarget();
@@ -44,7 +49,7 @@ public class MonsterActionManager {
 		boolean isArmorStand = target instanceof ArmorStand;
 		if (block == null && !isArmorStand) return;
 
-		event.setCanceled(true);
+		InteractionEvents.consume(event);
 
 		//Agachado + clic derecho con la Vara de DM: borra al monstruo o armor stand al instante, para
 		//limpiar si se invocó de más. Sin agacharse, se comporta como siempre (menú de acciones).
@@ -87,13 +92,18 @@ public class MonsterActionManager {
 	public static void onSelectMonsterToMove(PlayerInteractEvent.EntityInteract event) {
 		if (event.getEntity().level().isClientSide()) return;
 		Player dm = event.getEntity();
-		if (!MonsterRegistry.isMoveTool(dm.getMainHandItem()) && !MonsterRegistry.isMoveTool(dm.getOffhandItem())) return;
+		//event.getItemStack() es el objeto de LA MANO DE ESTE EVENTO, no "cualquiera de las dos". El
+		//cliente lanza un evento por mano (Minecraft.startUseItem recorre InteractionHand.values() y
+		//reintenta con la otra si la primera no consume), asi que mirar ambas manos hacia que el
+		//manejador corriese DOS veces por clic — el mensaje de chat duplicado. Sigue valiendo llevar la
+		//vara en la mano secundaria: entonces la pasada que coincide es la de esa mano.
+		if (!MonsterRegistry.isMoveTool(event.getItemStack())) return;
 		if (!dm.hasPermissions(2)) return;
 
 		Entity target = event.getTarget();
 		if (MonsterRegistry.statBlockOf(target) == null) return;
 
-		event.setCanceled(true);
+		InteractionEvents.consume(event);
 		pendingMove.put(dm.getUUID(), target.getId());
 		if (dm instanceof ServerPlayer serverDm) {
 			serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.monster.move_selected", target.getName().getString()).withStyle(ChatFormatting.GRAY));
@@ -104,12 +114,17 @@ public class MonsterActionManager {
 	public static void onSelectMoveDestination(PlayerInteractEvent.RightClickBlock event) {
 		if (event.getEntity().level().isClientSide()) return;
 		Player dm = event.getEntity();
-		if (!MonsterRegistry.isMoveTool(dm.getMainHandItem()) && !MonsterRegistry.isMoveTool(dm.getOffhandItem())) return;
+		//event.getItemStack() es el objeto de LA MANO DE ESTE EVENTO, no "cualquiera de las dos". El
+		//cliente lanza un evento por mano (Minecraft.startUseItem recorre InteractionHand.values() y
+		//reintenta con la otra si la primera no consume), asi que mirar ambas manos hacia que el
+		//manejador corriese DOS veces por clic — el mensaje de chat duplicado. Sigue valiendo llevar la
+		//vara en la mano secundaria: entonces la pasada que coincide es la de esa mano.
+		if (!MonsterRegistry.isMoveTool(event.getItemStack())) return;
 
 		Integer entityId = pendingMove.get(dm.getUUID());
 		if (entityId == null) return;
 
-		event.setCanceled(true);
+		InteractionEvents.consume(event);
 		pendingMove.remove(dm.getUUID());
 		if (!(event.getLevel() instanceof ServerLevel level)) return;
 
@@ -132,7 +147,7 @@ public class MonsterActionManager {
 		String monsterId = MonsterRegistry.monsterSpawnIdOf(stack);
 		if (monsterId == null) return;
 
-		event.setCanceled(true);
+		InteractionEvents.consume(event);
 		if (!(event.getLevel() instanceof ServerLevel level)) return;
 
 		BlockPos spawnPos = event.getPos().relative(event.getFace());

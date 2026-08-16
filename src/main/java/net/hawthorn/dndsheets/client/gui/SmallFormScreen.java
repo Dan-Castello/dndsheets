@@ -28,6 +28,9 @@ public abstract class SmallFormScreen extends Screen {
 	//campo anterior — antes ningún campo de este formulario mostraba en pantalla para qué era, solo su
 	//Component de narración (invisible, solo lectores de accesibilidad) y el valor por defecto ya escrito.
 	protected static final int ROW_HEIGHT = 30;
+	//Alto de la banda de cabecera por encima del primer campo: tiene que dejar sitio al título (8 px), al
+	//filete y a la etiqueta del primer campo, que se dibuja en formTop-10.
+	private static final int TITLE_BAND = 34;
 
 	private final int titleRows;
 	private final Screen parent;
@@ -178,8 +181,13 @@ public abstract class SmallFormScreen extends Screen {
 	@Override
 	public final void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics);
-		GuiStyle.panel(guiGraphics, centerX - FIELD_WIDTH / 2 - 14, formTop - 24, centerX + FIELD_WIDTH / 2 + 14, formBottom);
-		guiGraphics.drawCenteredString(this.font, title, this.width / 2, formTop - 16, GuiStyle.TITLE_COLOR);
+		//La cabecera necesita su propia banda. El título estaba en formTop-16 (ocupa hasta formTop-8) y la
+		//etiqueta del primer campo arranca en formTop-10: se pisaban dos filas de píxeles, y con la fuente
+		//de Minecraft eso no se lee como "juntos", se lee como texto duplicado y emborronado.
+		GuiStyle.panel(guiGraphics, centerX - FIELD_WIDTH / 2 - 14, formTop - TITLE_BAND, centerX + FIELD_WIDTH / 2 + 14, formBottom);
+		guiGraphics.drawCenteredString(this.font, title, this.width / 2, formTop - TITLE_BAND + 6, GuiStyle.TITLE_COLOR);
+		//Filete de separación, el mismo recurso que usa ListPickerScreen para su cabecera.
+		GuiStyle.rule(guiGraphics, centerX - FIELD_WIDTH / 2 - 6, centerX + FIELD_WIDTH / 2 + 6, formTop - 18);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		for (int i = 0; i < editBoxes.size(); i++) {
 			EditBox box = editBoxes.get(i);

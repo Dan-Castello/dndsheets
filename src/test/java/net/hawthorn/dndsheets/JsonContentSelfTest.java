@@ -44,6 +44,7 @@ public class JsonContentSelfTest {
 		checkCombatantRules();
 		checkCharacterRules();
 		checkTabTextures();
+		checkInteractHandlers();
 
 		System.out.println("JsonContentSelfTest: OK, los 5 JSON de ejemplo parsean con los registros reales.");
 	}
@@ -60,6 +61,31 @@ public class JsonContentSelfTest {
 	 * la imagen y salía plana. No falla, no avisa y no se nota mirando el PNG — de ahí esta comprobación.
 	 * Los PNG los genera {@code tools/make_tab_textures.py}.</p>
 	 */
+	/**
+	 * <p>Un clic derecho llega como DOS eventos, uno por mano: el cliente recorre
+	 * {@code InteractionHand.values()} y reintenta con la otra mano si la primera no consume nada
+	 * ({@code Minecraft.startUseItem}). Un manejador de {@code PlayerInteractEvent} que pregunte por
+	 * {@code getMainHandItem()} o {@code getOffhandItem()} responde que sí en LAS DOS pasadas, así que
+	 * hace su trabajo dos veces por clic. Se ve como mensajes de chat duplicados; lo que de verdad pasa
+	 * es que se ejecuta el manejador entero dos veces.</p>
+	 *
+	 * <p>Lo correcto es {@code event.getItemStack()}, que es el objeto de la mano de ESE evento — sigue
+	 * valiendo llevar la herramienta en la secundaria. Esto ya se arregló una vez en
+	 * {@code DungeonToolManager} y volvió a aparecer en otros cuatro manejadores, de ahí la comprobación.</p>
+	 */
+	private static void checkInteractHandlers() throws Exception {
+		Path dir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets");
+		try (java.util.stream.Stream<Path> files = Files.list(dir)) {
+			for (Path file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
+				String source = Files.readString(file);
+				if (!source.contains("PlayerInteractEvent")) continue;
+				assertTrue(!source.contains("getMainHandItem()") && !source.contains("getOffhandItem()"),
+					file.getFileName() + ": un manejador de PlayerInteractEvent mira las dos manos en vez de "
+						+ "event.getItemStack(). Eso lo hace correr dos veces por clic (una por mano).");
+			}
+		}
+	}
+
 	private static void checkTabTextures() throws Exception {
 		//Alto de fila declarado en CharacterSheetScreen (yDiffTex) para cada textura.
 		assertTabRows("imagebutton_tabbutton.png", 15);

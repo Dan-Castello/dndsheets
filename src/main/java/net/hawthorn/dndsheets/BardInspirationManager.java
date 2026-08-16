@@ -56,7 +56,7 @@ public class BardInspirationManager {
 	static void tryUse(PlayerInteractEvent.EntityInteract event) {
 		if (!(event.getEntity() instanceof ServerPlayer bard) || !(event.getTarget() instanceof ServerPlayer target)) return;
 
-		event.setCanceled(true);
+		InteractionEvents.consume(event);
 		grant(bard, target);
 	}
 
