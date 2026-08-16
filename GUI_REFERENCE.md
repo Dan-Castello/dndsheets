@@ -652,3 +652,36 @@ de siempre", no parecer otra cosa.
 rectángulo, como las otras cuarenta pantallas. Los dos PNG están borrados. Ningún offset cambió: el panel
 se dibuja en `(leftPos, topPos)`–`(leftPos + imageWidth, topPos + imageHeight)`, exactamente donde iba el
 blit.
+
+### Retícula de la pestaña principal
+
+Las posiciones de la pestaña principal ya no son números sueltos ajustados a ojo contra la textura. Antes
+las filas caían en y = 20, 55, 90, 125, 165, 205 (ritmo 35, 35, 35, 40, 40) y las columnas en x = 125,
+220, 235, 304 sin relación entre ellas: mover un campo obligaba a recolocar sus vecinos a mano.
+
+Ahora todo sale de una retícula de seis constantes en `CharacterSheetScreen`:
+
+| | y |
+|---|---|
+| `SEC1_Y` **IDENTIDAD** | 8 |
+| `ROW1_Y` Raza · Clase · Trasfondo | 30 |
+| `SEC2_Y` **COMBATE** | 68 |
+| `ROW2_Y` CA · PG · PG Máx · PG Temp | 90 |
+| `ROW3_Y` Velocidad · Competencia · Iniciativa | 126 |
+| `SEC3_Y` **RECURSOS** | 164 |
+| `ROW4_Y` Nivel · Hambre · Dados de Golpe | 186 |
+| `BOTTOM_ROW_Y` Grimorio · Presets · Guía | 216 |
+
+Para cambiar el alto de una fila se toca `ROW_STEP`, no seis constantes.
+
+**Velocidad salió del grupo de CA/PG.** Con cinco huecos de 45, el rótulo del quinto (`Velocidad`, 54 px)
+empezaba en x=305 y acababa en 359, fuera del panel de 350 — un desbordamiento que solo aparecía en
+español. Ahora ese grupo tiene cuatro huecos de 54 y Velocidad va con Iniciativa.
+
+**`Bono de Competencia` (114 px) pasó a `Competencia` (66).** No cabía como rótulo de un campo de 14 px de
+ancho, y el `+` que se dibuja pegado al campo ya dice que es un bono.
+
+Un bloque `static` comprueba al cargar la clase que la retícula cabe en el panel. No es una comprobación
+de compilación: salta al abrir la hoja. Se puso porque el desbordamiento pasó al escribir esta retícula
+(los botones caían en y=246 sobre un panel de 240) y ya había pasado antes (y=228 sobre un fondo de 200),
+y en los dos casos no rompe nada, no avisa y solo se ve mirando.
