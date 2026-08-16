@@ -152,7 +152,11 @@ class MovementAnchorTracker {
 	//de alcance. ponytail: distancia en línea recta desde el origen, no ruta acumulada ni solo horizontal —
 	//suficiente para cortar el "vuelo libre" de Minecraft, no un tracker de casillas real.
 	void enforceMovementBudget(ServerPlayer player) {
-		if (enforceBudget(player, speedBlocksFor(SheetLoader.getServerSheet(player.getStringUUID())))) {
+		//Correr dobla el presupuesto, que es lo que hace la acción Correr en 5e: no da un movimiento
+		//"extra" aparte, duplica el que ya tenías.
+		double speed = speedBlocksFor(SheetLoader.getServerSheet(player.getStringUUID()));
+		if (TurnActionManager.isDashing(player)) speed *= 2;
+		if (enforceBudget(player, speed)) {
 			CombatFx.actionBar(player, Component.translatable("chat.dndsheets.turn.no_movement_left").withStyle(ChatFormatting.RED));
 		}
 	}

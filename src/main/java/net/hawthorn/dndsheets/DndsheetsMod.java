@@ -65,7 +65,10 @@ public class DndsheetsMod {
 	//BrowseListMessage. Lo primero es lo verdaderamente peligroso: un campo más en un mensaje ya existente
 	//no cambia ningún id, así que sin subir esto el handshake pasaría y el cliente antiguo leería ese
 	//mensaje corrido un campo, en silencio y con datos plausibles, en vez de fallar limpio al conectar.
-	private static final String PROTOCOL_VERSION = "3";
+	//Sube a "4": se registra TurnActionMessage y ScreenActionMessage.Action gana TURN_ACTION_OPEN. Lo
+	//segundo es lo peligroso de verdad: un cliente antiguo leeria ese ordinal como una accion que no
+	//conoce en vez de fallar limpio al conectar.
+	private static final String PROTOCOL_VERSION = "4";
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 
@@ -129,6 +132,8 @@ public class DndsheetsMod {
 		addNetworkMessage(SheetSummaryRequestMessage.class, SheetSummaryRequestMessage::buffer, SheetSummaryRequestMessage::new, SheetSummaryRequestMessage::handler);
 		addNetworkMessage(SpawnGenericMessage.class, SpawnGenericMessage::buffer, SpawnGenericMessage::new, SpawnGenericMessage::handler);
 		addNetworkMessage(SpellCastMessage.class, SpellCastMessage::buffer, SpellCastMessage::new, SpellCastMessage::handler);
+		addNetworkMessage(net.hawthorn.dndsheets.network.TurnActionMessage.class, net.hawthorn.dndsheets.network.TurnActionMessage::buffer,
+			net.hawthorn.dndsheets.network.TurnActionMessage::new, net.hawthorn.dndsheets.network.TurnActionMessage::handler);
 		addNetworkMessage(SpellGiveMessage.class, SpellGiveMessage::buffer, SpellGiveMessage::new, SpellGiveMessage::handler);
 		addNetworkMessage(TraitGrantMessage.class, TraitGrantMessage::buffer, TraitGrantMessage::new, TraitGrantMessage::handler);
 		addNetworkMessage(TraitListMessage.class, TraitListMessage::buffer, TraitListMessage::new, TraitListMessage::handler);

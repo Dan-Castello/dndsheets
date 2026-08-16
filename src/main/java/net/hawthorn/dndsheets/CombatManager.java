@@ -288,7 +288,10 @@ public class CombatManager {
 		DiceManager.Advantage advantage = DiceManager.combineAdvantage(
 			consumeAdvantage(attackerSheet),
 			new Combatant.PlayerCombatant(attacker, attackerSheet).ownAttackAdvantage(),
-			target.advantageAgainst(melee));
+			target.advantageAgainst(melee),
+			//Esquivar: se resuelve aquí y no dentro de advantageAgainst porque no es una condición del
+			//objetivo, es una acción que gastó este asalto — Combatant no sabe de turnos ni debería.
+			TurnActionManager.isDodging(target.entity()) ? DiceManager.Advantage.DISADVANTAGE : DiceManager.Advantage.NORMAL);
 
 		String expression = "1d20 + $" + ability + " + $prof";
 		int inspiration = BardInspirationManager.consumeAttackBonus(attackerSheet);

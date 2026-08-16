@@ -26,6 +26,7 @@ public enum GiveableItem {
 	HUNTER_MARK("Marca del Cazador (Explorador)", () -> List.of(RangerHunterMarkManager.buildHunterMarkStack())),
 	SHIELD("Escudo (reacción)", () -> List.of(ShieldManager.buildShieldStack())),
 	COUNTERSPELL("Contrahechizo (reacción)", () -> List.of(CounterspellManager.buildCounterspellStack())),
+	TURN_ACTIONS("Acciones de Turno (esquivar/correr/desengancharse)", () -> List.of(TurnActionManager.buildTurnActionStack())),
 	TURN_ITEMS("Ítems de turno (siguiente/deshacer)", () -> List.of(TurnItemManager.buildNextTurnStack(), TurnItemManager.buildUndoTurnStack())),
 	DM_WAND("Vara de DM", () -> List.of(MonsterCommand.buildDmToolStack())),
 	MOVE_WAND("Vara de Movimiento", () -> List.of(MonsterCommand.buildMoveToolStack())),

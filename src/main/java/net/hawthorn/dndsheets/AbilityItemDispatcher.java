@@ -68,6 +68,7 @@ public class AbilityItemDispatcher {
 		else if (dndTag.getBoolean("turnUndo")) TurnItemManager.tryUse(event, false);
 		else if (dndTag.getBoolean("secondWind")) FighterSecondWindManager.tryUse(event);
 		else if (dndTag.getBoolean("turnUndead")) ClericTurnUndeadManager.tryUse(event);
+		else if (dndTag.getBoolean("turnActions")) TurnActionManager.tryUse(event);
 		else if (dndTag.getBoolean("divineSmite")) PaladinSmiteManager.tryUse(event);
 		else if (dndTag.getBoolean("twinnedSpell")) SorcererMetamagicManager.tryUse(event);
 		else if (dndTag.getBoolean("wildShape")) DruidWildShapeManager.tryUse(event);

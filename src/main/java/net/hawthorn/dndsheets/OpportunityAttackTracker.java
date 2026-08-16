@@ -58,6 +58,10 @@ class OpportunityAttackTracker {
 	//real disponible. Simplificación deliberada: solo monstruos, no PvP entre jugadores (los demás
 	//jugadores están anclados y no pueden moverse de todos modos mientras no sea su turno).
 	void checkOpportunityAttacks(ServerLevel level, ServerPlayer mover, List<TurnManager.TurnEntry> order) {
+		//Desengancharse: alejarse deja de provocar reacciones este turno. Se sale ANTES de recorrer nada,
+		//pero sin tocar withinReach — cuando el turno acabe y la acción caduque, el registro de quién lo
+		//tenía a alcance tiene que seguir siendo el bueno.
+		if (TurnActionManager.isDisengaged(mover)) return;
 		Vec3 pos = mover.position();
 		if (pos.equals(lastCheckedPos.get(mover.getId()))) return; //Sin cambio de posición, nada que reevaluar.
 		lastCheckedPos.put(mover.getId(), pos);

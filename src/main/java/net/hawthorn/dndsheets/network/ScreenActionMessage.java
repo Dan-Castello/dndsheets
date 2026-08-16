@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 //DeathSaveCloseMessage y RestChoiceOpenMessage, que eran 3 clases idénticas salvo qué pantalla accionaban.
 public class ScreenActionMessage {
 	//Al final, nunca en medio: writeEnum viaja por ordinal (invariante 2 de PROJECT_CONTEXT.md).
-	public enum Action { DEATH_SAVE_OPEN, DEATH_SAVE_CLOSE, REST_CHOICE_OPEN, COMPENDIUM_OPEN }
+	public enum Action { DEATH_SAVE_OPEN, DEATH_SAVE_CLOSE, REST_CHOICE_OPEN, COMPENDIUM_OPEN, TURN_ACTION_OPEN }
 
 	final Action action;
 
@@ -36,6 +36,7 @@ public class ScreenActionMessage {
 				case DEATH_SAVE_CLOSE -> DeathSaveScreen.close();
 				case REST_CHOICE_OPEN -> RestChoiceScreen.open();
 				case COMPENDIUM_OPEN -> net.hawthorn.dndsheets.client.gui.CompendiumScreen.open();
+				case TURN_ACTION_OPEN -> net.hawthorn.dndsheets.client.gui.TurnActionScreen.open();
 			}
 		});
 	}

@@ -318,19 +318,32 @@ public class MonsterActionManager {
 		if (targetCombatant == null) return;
 
 		int toHitMod = block.abilityModifier(attack.toHitAbility()) + block.proficiencyBonus();
-		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(new JsonObject(), "1d20 + " + toHitMod, DiceManager.Advantage.NORMAL);
+		//Aquí iba un Advantage.NORMAL fijo, y eso se comía la MITAD de lo que hacen las condiciones en 5e:
+		//"los ataques contra ti tienen ventaja" es media definición de derribado, apresado, paralizado,
+		//cegado e inconsciente, y un monstruo atacando a un jugador tirado en el suelo tiraba plano. Se
+		//notaba poco porque el que ataca casi siempre es el monstruo, que es justo el lado que lo ignoraba.
+		//Se asume cuerpo a cuerpo: un bloque de estadísticas no dice el alcance de sus ataques, y el
+		//monstruo se acerca hasta MELEE_REACH antes de pegar (ver moveTowardIfNeeded).
+		DiceManager.Advantage advantage = DiceManager.combineAdvantage(
+			targetCombatant.advantageAgainst(true),
+			//Esquivar (ver TurnActionManager): la acción del objetivo, no una condición suya.
+			TurnActionManager.isDodging(target) ? DiceManager.Advantage.DISADVANTAGE : DiceManager.Advantage.NORMAL);
+		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(new JsonObject(), "1d20 + " + toHitMod, advantage);
 		if (attackRoll.outcome().result() == null) return;
 		CombatFx.diceTick(monsterEntity);
 
-		int targetAc = targetCombatant.armorClass();
+		//Y la cobertura, por el mismo motivo: sin esto un parapeto solo servía para que los monstruos se
+		//escondieran de los jugadores, nunca al revés — que es el único lado que un jugador puede jugar.
+		Cover cover = Cover.between(monsterEntity, target);
+		int targetAc = targetCombatant.armorClass() + cover.bonus();
 		//Reacciones defensivas (Escudo): igual que en CombatManager, solo si el golpe depende de la CA.
 		if (!attackRoll.criticalHit() && !attackRoll.criticalMiss()) {
-			targetAc = targetCombatant.reactiveArmorClass(attackRoll.outcome().result().getValue());
+			targetAc = targetCombatant.reactiveArmorClass(attackRoll.outcome().result().getValue() - cover.bonus()) + cover.bonus();
 		}
 		String targetName = targetCombatant.name();
 
 		if (attackRoll.criticalMiss() || (!attackRoll.criticalHit() && attackRoll.outcome().result().getValue() < targetAc)) {
-			ChatFeedback.broadcast(monsterEntity, ChatFeedback.attackResult(block.name(), targetName, attack.name(), attackRoll.outcome().formatted(), targetAc, false, null));
+			ChatFeedback.broadcast(monsterEntity, ChatFeedback.withCover(ChatFeedback.attackResult(block.name(), targetName, attack.name(), attackRoll.outcome().formatted(), targetAc, false, null), cover));
 			return;
 		}
 
@@ -345,7 +358,7 @@ public class MonsterActionManager {
 		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), targetCombatant.effectiveDamageMultiplier(attack.damageType(), false));
 		targetCombatant.takeDamage(finalAmount); //Cubre PG temporales, concentración y muerte en un solo sitio.
 		CombatFx.hit(target, critical, attack.damageType());
-		ChatFeedback.broadcast(monsterEntity, ChatFeedback.attackResult(block.name(), targetName, attack.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()));
+		ChatFeedback.broadcast(monsterEntity, ChatFeedback.withCover(ChatFeedback.attackResult(block.name(), targetName, attack.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()), cover));
 
 		if (attack.appliesEffect()) applyEffectFromHit(target, attack.effectName(), attack.effectDice(), attack.effectTurns(), monsterEntity);
 	}

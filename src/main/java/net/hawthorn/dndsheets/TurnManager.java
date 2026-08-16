@@ -553,6 +553,7 @@ public class TurnManager {
 		ZoneManager.clear(); //Sin orden de turnos no hay asaltos que contar, así que no hay muro que mantener.
 		actedThisTurn.clear();
 		reactionUsed.clear();
+		TurnActionManager.clearAll(); //Fuera de combate, esquivar/correr/desengancharse no significan nada.
 		opportunityAttacks.clear();
 		movementAnchors.clear();
 		confirmedDefeated.clear();
@@ -602,6 +603,7 @@ public class TurnManager {
 		ZoneManager.clear(); //Sin orden de turnos no hay asaltos que contar, así que no hay muro que mantener.
 		actedThisTurn.clear();
 		reactionUsed.clear();
+		TurnActionManager.clearAll(); //Fuera de combate, esquivar/correr/desengancharse no significan nada.
 		opportunityAttacks.clear();
 		movementAnchors.clear();
 		confirmedDefeated.clear();
@@ -813,6 +815,9 @@ public class TurnManager {
 		TurnEntry entry = current();
 		if (entry == null) return;
 		actedThisTurn.remove(entry.entityId()); //Turno nuevo, acción nueva disponible.
+		//Esquivar dura "hasta el comienzo de tu próximo turno", que es exactamente aquí. Correr y
+		//Desengancharse solo valían durante su propio turno, así que caducan en el mismo sitio.
+		TurnActionManager.clearFor(entry.entityId());
 		reactionUsed.remove(entry.entityId()); //Turno nuevo, reacción nueva disponible (regla real de 5e).
 		movementAnchors.release(entry.entityId()); //A quien le toca ahora, se le suelta el ancla.
 

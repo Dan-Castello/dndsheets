@@ -557,6 +557,32 @@ dependencies, not preference.
       the case that proves the rule is written in *fractions of the body* rather than in a count of
       rays.
 
+  12. **The turn actions: Dodge, Dash, Disengage (`TurnActionManager`).** A turn could only be spent
+      attacking or casting, which made turn mode a "whose turn is it to hit" queue. These three are
+      what make a turn a *decision*: a cornered character on low HP rarely wants to attack — they
+      want out without eating an opportunity attack, or to hunker down and survive the round.
+
+      None of them needed new rules. All three plug into machinery that already existed and was doing
+      nothing else: the movement budget in `MovementAnchorTracker`, the reach registry in
+      `OpportunityAttackTracker`, and advantage/disadvantage. They cost the action through the same
+      `tryAct`, so you cannot dodge *and* attack, and the turn ends by itself as with any other action.
+
+      One map keyed by entity, not three sets: all three expire at the same moment — the start of that
+      creature's next turn, which is literally what Dodge says in 5e — so separate sets would only be
+      three things to remember to clear instead of one.
+
+      **Missing: Help**, the fourth. It grants advantage to an ally, so it needs someone to point at,
+      exactly like Bardic Inspiration — it belongs on an entity-interact item, not in this menu.
+
+  **Found while wiring item 12 — and bigger than it:** monster attacks rolled with a hardcoded
+  `Advantage.NORMAL`. That silently discarded **half of what conditions do in 5e**: "attacks against
+  you have advantage" is half the definition of prone, restrained, paralyzed, blinded and
+  unconscious, and the side that attacks a player is almost always the monster — the exact side that
+  was ignoring it. So a monster swinging at a player lying on the floor rolled flat. Cover had the
+  same shape of hole: applied only when a *player* attacked, so a parapet helped monsters hide from
+  players and never the reverse, which is the only direction a player can actually play. Both are now
+  read from the target's own `Combatant`, along with Dodge.
+
   **Found while wiring item 9:** `AbilityItemDispatcher` had the same if/else chain **copied three
   times**, one per interaction event, and the copies had drifted. Divine Smite, Twinned Spell,
   Counterspell and Shield existed only in the "clicked at thin air" chain, so those four items *did

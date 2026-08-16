@@ -49,6 +49,7 @@ public class JsonContentSelfTest {
 		checkSpellTargeting();
 		checkInitiatorGoesFirst();
 		checkCover();
+		checkMonsterAttacksUseTargetState();
 		checkDefaultsRefresh();
 		checkTabTextures();
 		checkInteractHandlers();
@@ -1316,6 +1317,28 @@ public class JsonContentSelfTest {
 			"la tabla debería depender de la fracción tapada, no del número de rayos");
 
 		System.out.println("checkCover: OK, la tabla de cobertura y sus bonificadores son los del SRD.");
+	}
+
+	/**
+	 * <p>Que un monstruo atacando use la ventaja/desventaja del objetivo. Iba con un {@code NORMAL} fijo, y
+	 * eso se comía la mitad de lo que hacen las condiciones: "los ataques contra ti tienen ventaja" es
+	 * media definición de derribado, apresado, paralizado, cegado e inconsciente.</p>
+	 */
+	private static void checkMonsterAttacksUseTargetState() throws Exception {
+		String fuente = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "MonsterActionManager.java"));
+		int desde = fuente.indexOf("private static void resolveAttack(");
+		assertTrue(desde > 0, "no encontré resolveAttack en MonsterActionManager");
+		String resolveAttack = fuente.substring(desde, fuente.indexOf("\n\t}", desde));
+
+		assertTrue(resolveAttack.contains("advantageAgainst("),
+			"un monstruo tiene que atacar con la ventaja/desventaja que dé el estado del objetivo, no plano");
+		assertTrue(resolveAttack.contains("Cover.between("),
+			"y con la cobertura del objetivo: sin esto, un parapeto solo sirve para que los monstruos se "
+				+ "escondan de los jugadores y nunca al revés");
+		assertTrue(resolveAttack.contains("TurnActionManager.isDodging("),
+			"y respetando Esquivar, que es una acción del objetivo y no una condición suya");
+
+		System.out.println("checkMonsterAttacksUseTargetState: OK, un monstruo ataca contando el estado, el parapeto y el esquive del objetivo.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

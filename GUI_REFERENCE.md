@@ -418,6 +418,23 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 | Botón "Elige un hechizo / Lanzar: X (nv. N)" | Button | (width-220)/2 | fila anterior + 20 + SPACING | 220 | 20 | inactivo hasta seleccionar hechizo; manda `SpellCastMessage(id, nivelElegido)`. El nivel del rótulo es el ELEGIDO, no el propio del hechizo: enseñando el suyo, este botón contradecía al de arriba ("Lanzar: Bola de Fuego (nv. 3)" bajo "Espacio: nv. 5") y el número equivocado estaba en el botón que actúa. Es el mismo que sale luego en el chat |
 | Mensaje "No conoces ningún hechizo..." | `emptyMessage()` | — | — | — | — | solo si no hay hechizos conocidos |
 
+## TurnActionScreen
+
+- **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/TurnActionScreen.java`
+- **Tipo:** extiende `ModalDialogScreen` (mismo patron exacto que `RestChoiceScreen`: tres `addModalButton` y un titulo dibujado en `render`)
+- **Como se abre:** `ScreenActionMessage.Action.TURN_ACTION_OPEN`, que manda el servidor al usar el item "Acciones de Turno" (ver `TurnActionManager.tryUse`)
+- **Textura de fondo:** ninguna - panel de `ModalDialogScreen`
+- **Tamano del panel:** 260x104
+
+| Widget | Tipo | X | Y | Ancho | Alto | Notas |
+|---|---|---|---|---|---|---|
+| Titulo "Gasta tu accion de este turno en:" | drawCenteredString | width/2 | dialogTop()+8 | - | - | color `0xFFFFFF` |
+| "Esquivar - te atacan con desventaja" | `addModalButton` | 20 | 30 | 220 | 20 | manda `TurnActionMessage(DODGE)` |
+| "Correr - el doble de movimiento" | `addModalButton` | 20 | 54 | 220 | 20 | manda `TurnActionMessage(DASH)` |
+| "Desengancharse - alejarte no provoca ataques" | `addModalButton` | 20 | 78 | 220 | 20 | manda `TurnActionMessage(DISENGAGE)` |
+
+El rotulo dice lo que HACE cada accion y no solo como se llama: "Esquivar" a secas no le dice nada a quien nunca jugo a D&D, y este mod se juega sobre todo con gente que no lo ha jugado.
+
 ## SheetAdjustScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/SheetAdjustScreen.java`
