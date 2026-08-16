@@ -500,6 +500,11 @@ public class SheetLoader {
 		sheet.addProperty("characterName", characterName);
 		sheet.addProperty("ownerUuid", playerUuid);
 		sheet.addProperty("active", false);
+		//Nivel 1 EXPLÍCITO. Sin él, characterLevelOf cae al nivel de XP de Minecraft de quien lo crea, que
+		//es del JUGADOR y no del personaje: un personaje recién hecho nacía de nivel 12 por haber picado
+		//piedra, con los PG, la competencia y los espacios de conjuro de un nivel 12, y todos los personajes
+		//de la misma persona salían iguales entre sí. Reportado tal cual jugando.
+		sheet.addProperty("characterLevel", 1);
 		validateSheet(sheet);
 		sheets.put(characterId, sheet);
 		saveCharacter(characterId, sheet);
@@ -590,6 +595,7 @@ public class SheetLoader {
 		sheet.addProperty("characterName", characterName);
 		sheet.addProperty("ownerUuid", ""); //Vacío, no ausente: "de nadie" tiene que distinguirse de "hoja legacy".
 		sheet.addProperty("active", false);
+		sheet.addProperty("characterLevel", 1); //Igual que un PJ: nace de nivel 1, no del XP de nadie.
 		validateSheet(sheet);
 		sheets.put(characterId, sheet);
 		saveCharacter(characterId, sheet);
@@ -618,6 +624,16 @@ public class SheetLoader {
 			saveCharacter(owned, sheet);
 		}
 		activeCharacter.put(playerUuid, characterId);
+
+		//Migración de una hoja anterior a los personajes: se le estampa el nivel que TENÍA en este momento
+		//(el del XP, si nunca se le fijó uno) para que a partir de ahora sea suyo y no del jugador. Sin esto,
+		//dos personajes de la misma persona compartían nivel para siempre, porque los dos lo sacaban del
+		//mismo sitio. Se congela en su valor actual en vez de ponerlo a 1: bajarle el nivel a alguien que
+		//lleva jugando con él sería destruir su personaje para arreglar una inconsistencia.
+		if (!target.has("characterLevel")) {
+			target.addProperty("characterLevel", Math.max(1, characterLevelOf(target, player)));
+			saveCharacter(characterId, target);
+		}
 
 		//El personaje nuevo tiene sus propios PG máximos (clase, nivel, Constitución) y su propia hoja en el
 		//cliente: sin estas dos líneas, cambiar de personaje dejaba al jugador con el cuerpo del anterior.

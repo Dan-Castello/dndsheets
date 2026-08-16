@@ -56,6 +56,7 @@ public class JsonContentSelfTest {
 		checkIncapacitatedCannotAct();
 		checkCharacterLookup();
 		checkCharacterAfterDelete();
+		checkCharacterLevelIsPerCharacter();
 		checkAttackPathsShareRules();
 		checkDefaultsRefresh();
 		checkTabTextures();
@@ -1706,6 +1707,39 @@ public class JsonContentSelfTest {
 			"si nada de lo suyo existe ya, se queda sin ninguno");
 
 		System.out.println("checkCharacterAfterDelete: OK, tras borrar se elige un personaje que existe de verdad, o ninguno.");
+	}
+
+	/**
+	 * <p>Que el nivel sea del PERSONAJE y no del jugador. Reportado jugando: un personaje recién creado
+	 * nacía con el nivel de XP de Minecraft de quien lo creaba —PG, competencia y espacios de conjuro de
+	 * nivel 12 por haber picado piedra— y todos los personajes de la misma persona salían iguales, porque
+	 * los tres sacaban el número del mismo sitio.</p>
+	 */
+	private static void checkCharacterLevelIsPerCharacter() throws Exception {
+		//Lo que se puede comprobar sin juego: la creación estampa un nivel explícito, y con él la regla pura
+		//devuelve 1 en vez de caer al XP de nadie.
+		String loader = readSource("SheetLoader.java");
+		for (String creator : List.of("public static String createCharacter(", "public static String createNpc(")) {
+			int from = loader.indexOf(creator);
+			assertTrue(from > 0, "no encontré " + creator);
+			String body = loader.substring(from, loader.indexOf("\n\t}", from));
+			assertTrue(body.contains("\"characterLevel\""),
+				creator + " debería dejar un nivel explícito: sin él, el personaje nace con el nivel de XP de quien lo crea");
+		}
+
+		JsonObject recienCreado = new JsonObject();
+		recienCreado.addProperty("characterLevel", 1);
+		assertTrue(CharacterRules.levelOf(recienCreado) == 1, "un personaje nuevo es de nivel 1");
+		assertTrue(LevelUpManager.improvementsBetween(CharacterRules.levelOf(recienCreado), 4) == 1,
+			"y sube desde el 1, así que la primera Mejora le toca al llegar al 4");
+
+		//Y que ponerse una hoja vieja le congele SU nivel, para que dejen de compartirlo.
+		int from = loader.indexOf("public static boolean switchCharacter(");
+		String switchBody = loader.substring(from, loader.indexOf("\n\t}", from));
+		assertTrue(switchBody.contains("characterLevel"),
+			"al ponerse un personaje sin nivel propio hay que estampárselo, o dos personajes lo comparten para siempre");
+
+		System.out.println("checkCharacterLevelIsPerCharacter: OK, el nivel es del personaje y no del XP de quien lo lleva.");
 	}
 
 	private static JsonObject named(String characterName) {

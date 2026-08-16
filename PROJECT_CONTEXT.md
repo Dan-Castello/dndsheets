@@ -979,6 +979,29 @@ dependencies, not preference.
       player-editable keys, so none of these flags could ever be wiped by a client saving a stale
       sheet. That defence is why this was only an invisibility bug and not a data-loss one.
 
+  34. **A new character was born at the creator's Minecraft XP level.** Reported from play: "creating
+      a character does not reset stats like levels, and levels are not adjusted between characters,
+      so the HUD does not update either."
+
+      All three symptoms are one cause, and it is the fallback from item 22 that **I explicitly
+      judged harmless there**. `characterLevelOf(sheet, player)` falls back to the player's XP level
+      when a sheet has no `characterLevel`, and a freshly created character has none. So a new
+      character was level 12 because you had been mining — with the hit points, proficiency and spell
+      slots of a level 12 — and *every* character of the same person read the same number, because
+      all of them took it from the same place: the player.
+
+      I was wrong in item 22 to call that fallback fine for scaling. It is fine while a player has
+      exactly one sheet. Fase 1 made characters independent of players, and from that moment a
+      per-*player* value standing in for a per-*character* one is not a graceful default, it is a
+      shared variable.
+
+      - **Creation now stamps level 1 explicitly** — a character is born at 1 regardless of who made
+        it.
+      - **Wearing a sheet that has no level stamps the one it had at that moment**, rather than
+        resetting it to 1. Demoting a character somebody has been playing, in order to fix a
+        consistency bug, would be destroying their character to tidy the data. From then on it is
+        theirs and diverges correctly.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.
