@@ -73,6 +73,10 @@ public class MonsterRegistry {
 	 * de compatibilidad, un PNJ genérico o un pack escrito antes de que el campo existiera).</p>
 	 */
 	public static CreatureType typeOf(Entity entity) {
+		//Un jugador es humanoide, y esto no es un detalle: sin ello, Inmovilizar Persona no funcionaría
+		//sobre un PJ —el caso más común del conjuro en la mesa— porque un jugador no tiene bloque de
+		//estadísticas del que sacar el tipo. Todas las razas jugables del SRD son humanoides.
+		if (entity instanceof Player) return CreatureType.HUMANOID;
 		MonsterStatBlock block = statBlockOf(entity);
 		return block != null ? block.type() : CreatureType.UNKNOWN;
 	}

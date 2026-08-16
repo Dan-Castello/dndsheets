@@ -130,6 +130,12 @@ public class SpellCastManager {
 		} else if (isAoe) {
 			impactPoint = findImpactPoint(caster);
 			aoeTargets = findAoeTargets(caster, impactPoint, spell.aoeRadius(), spell.aoeShape());
+			//En un área, a quien el conjuro no puede afectar simplemente se le cae de la lista: la explosión
+			//pasa por encima de él. No se rechaza el lanzado, que es lo que sí pasa con un objetivo único.
+			//Copia local porque "spell" se reasigna más abajo al subirlo de nivel, y una lambda no puede
+			//capturar una variable que cambia.
+			SpellRegistry.Spell cast = spell;
+			aoeTargets.removeIf(entity -> !cast.affects(MonsterRegistry.typeOf(entity)));
 			if (aoeTargets.isEmpty()) {
 				caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_aoe_targets").withStyle(ChatFormatting.GRAY));
 				return;
@@ -145,6 +151,15 @@ public class SpellCastManager {
 					caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_target").withStyle(ChatFormatting.GRAY));
 					return;
 				}
+			}
+			//Objetivo del tipo equivocado: se avisa y NO se cobra el espacio, igual que cuando no hay nadie
+			//delante. Cobrarlo castigaría por una regla que el mod conoce y el jugador no puede ver: en la
+			//mesa, el DM diría "eso no es un humanoide" antes de que gastes nada.
+			CreatureType targetType = MonsterRegistry.typeOf(target);
+			if (!spell.affects(targetType)) {
+				caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.wrong_target_type",
+					spell.name(), nameOf(target), targetType.label()).withStyle(ChatFormatting.GRAY));
+				return;
 			}
 		}
 

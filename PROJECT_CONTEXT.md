@@ -482,9 +482,24 @@ dependencies, not preference.
      a fiend, a will-o'-wisp is undead, and a lycanthrope is humanoid *even in animal form* — the one
      case where classifying by the shape gives the opposite of the right answer.
 
-     **What this unlocks next:** the type-gated spells. Hold Person and Charm Person only affect
-     humanoids, Dominate Beast only beasts, Blight does nothing to undead and constructs. All of them
-     currently affect anything; now there is something to ask.
+  8. **Type-gated spell targeting (`affectsTypes` / `immuneTypes`).** The rule item 7 unlocked. Ten
+     shipped spells restrict who they touch; before this they all had the name of the rule without
+     the rule — Hold Person worked on a skeleton, Blight killed undead.
+
+     - **Two fields, not one.** Both shapes exist in the SRD and each written as the other is
+       unreadable: Hold Person is "a humanoid" (a whitelist of one), Hold Monster is "any creature
+       except an undead" (a blacklist of one, which as a whitelist would be thirteen).
+     - **A player counts as humanoid** in `MonsterRegistry.typeOf`. Without it Hold Person would not
+       work on a PC — the spell's most common use at a table — because a player has no stat block to
+       read a type from. Every playable SRD race is humanoid.
+     - **An unknown type is never filtered out.** The restriction applies only when the type is
+       actually known, so a mob from another mod keeps behaving as it always did instead of turning
+       immune to half the spell list for want of a label. Same rule as item 7 in the other direction:
+       nothing fires — or gets blocked — on a guess.
+     - **A wrong-type target costs no slot**, like having no target at all. Charging for it would
+       punish the player for a rule the mod knows and the screen never showed; at a table the DM says
+       "that isn't a humanoid" before anything is spent. In an *area*, the immune creature is simply
+       dropped from the list and the blast rolls on.
 
   **Found while doing item 4:** the bulk content packs existed **twice** — once under
   `test/dndsheets/<type>/` and once in `src/main/resources/dndsheets/defaults/` — and the self-test

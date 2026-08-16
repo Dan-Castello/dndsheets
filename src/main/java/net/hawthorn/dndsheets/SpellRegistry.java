@@ -29,7 +29,8 @@ public class SpellRegistry {
 		String id, String name, int level, String mode,
 		String castingAbility, String saveAbility, String dice, boolean halfOnSave, String damageType,
 		boolean concentration, int aoeRadius, String aoeShape, String summonEntityId, boolean followsCasterFlag,
-		String effectName, String effectDice, int effectTurns, String upcastDice
+		String effectName, String effectDice, int effectTurns, String upcastDice,
+		java.util.Set<CreatureType> affectsTypes, java.util.Set<CreatureType> immuneTypes
 	) {
 		/**
 		 * <p>Forma del área: {@code sphere} (por defecto), {@code line} o {@code cone}. La diferencia no es
@@ -68,6 +69,22 @@ public class SpellRegistry {
 		//pierde la concentración — antes eso no existía, "perder concentración" solo tiraba el dado.
 		public boolean appliesEffect() { return effectName != null; }
 
+		/**
+		 * <p>¿Le hace algo este conjuro a una criatura de este tipo? Inmovilizar Persona solo afecta a
+		 * humanoides; Marchitar no le hace nada a no-muertos ni autómatas. Hasta ahora los dos afectaban a
+		 * cualquier cosa, que es la diferencia entre un conjuro y su nombre.</p>
+		 *
+		 * <p><b>Un tipo desconocido nunca se filtra.</b> La restricción solo se aplica cuando de verdad se
+		 * sabe qué hay delante: un mob de otro mod sin bloque de estadísticas se sigue comportando como
+		 * siempre, en vez de volverse inmune a media lista de conjuros por no estar clasificado. Es la misma
+		 * regla que en {@link CreatureType}: nada se dispara —ni se bloquea— por adivinar.</p>
+		 */
+		public boolean affects(CreatureType type) {
+			if (type == CreatureType.UNKNOWN) return true;
+			if (!affectsTypes.isEmpty() && !affectsTypes.contains(type)) return false;
+			return !immuneTypes.contains(type);
+		}
+
 		/** ¿Gana algo por lanzarlo con un espacio superior? Ver {@link #upcastTo}. */
 		public boolean scalesWithSlot() { return upcastDice != null && !upcastDice.isEmpty(); }
 
@@ -104,7 +121,7 @@ public class SpellRegistry {
 
 			return new Spell(id, name, level, mode, castingAbility, saveAbility, repeatDice(dice, dice5eCount),
 				halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId, followsCasterFlag,
-				effectName, effectDice, effectTurns, upcastDice);
+				effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes);
 		}
 
 		public Spell upcastTo(int slotLevel) {
@@ -117,7 +134,7 @@ public class SpellRegistry {
 			String scaled = "0".equals(dice.trim()) ? added : dice + " + " + added;
 			return new Spell(id, name + " (nv. " + slotLevel + ")", level, mode, castingAbility, saveAbility,
 				scaled, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId,
-				followsCasterFlag, effectName, effectDice, effectTurns, upcastDice);
+				followsCasterFlag, effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes);
 		}
 	}
 
@@ -223,8 +240,15 @@ public class SpellRegistry {
 		//Enjambre de Meteoros no ganan nada por gastar un espacio más alto, y fingir que sí los rompería.
 		String upcastDice = json.has("upcastDice") ? json.get("upcastDice").getAsString() : null;
 
+		//A quién puede afectar. Vacíos = a todo el mundo, que es como se comportaban todos los conjuros
+		//hasta ahora. Son dos campos y no uno porque las dos formas existen en el SRD y cada una escrita
+		//con la otra queda ilegible: Inmovilizar Persona es "solo humanoides" (uno), e Inmovilizar Monstruo
+		//es "todo menos no-muertos" (uno también, pero al revés — como lista blanca serían trece).
+		java.util.Set<CreatureType> affectsTypes = CreatureType.parseAll(json.has("affectsTypes") ? json.getAsJsonArray("affectsTypes") : null);
+		java.util.Set<CreatureType> immuneTypes = CreatureType.parseAll(json.has("immuneTypes") ? json.getAsJsonArray("immuneTypes") : null);
+
 		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId, followsCaster,
-			effectName, effectDice, effectTurns, upcastDice);
+			effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes);
 	}
 
 	//--- Báculo de lanzado rápido: cualquier ítem etiquetado {dndsheets:{quickSpell:"id"}} (mismo patrón que las armas personalizadas) ---

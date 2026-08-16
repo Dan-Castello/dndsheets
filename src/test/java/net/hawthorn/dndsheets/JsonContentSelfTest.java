@@ -46,6 +46,7 @@ public class JsonContentSelfTest {
 		checkCharacterRules();
 		checkSpellSlots();
 		checkUpcasting();
+		checkSpellTargeting();
 		checkDefaultsRefresh();
 		checkTabTextures();
 		checkInteractHandlers();
@@ -1155,6 +1156,38 @@ public class JsonContentSelfTest {
 		assertTrue("0".equals(sinDados.atCasterLevel(20).dice()), "un truco sin daño se queda sin daño");
 
 		System.out.println("checkUpcasting: OK, los dados extra por nivel de espacio y los trucos por nivel de personaje salen donde deben.");
+	}
+
+	/**
+	 * <p>A quién puede afectar un conjuro. Inmovilizar Persona sobre un esqueleto y Marchitar sobre un
+	 * no-muerto funcionaban igual que sobre cualquier otra cosa: el conjuro tenía el nombre de la regla
+	 * pero no la regla.</p>
+	 */
+	private static void checkSpellTargeting() throws Exception {
+		SpellRegistry.Spell holdPerson = spellFromPack("dndsheets:hold_person");
+		assertTrue(holdPerson.affects(CreatureType.HUMANOID), "Inmovilizar Persona sí afecta a un humanoide");
+		assertTrue(!holdPerson.affects(CreatureType.UNDEAD), "pero no a un esqueleto");
+		assertTrue(!holdPerson.affects(CreatureType.BEAST), "ni a un lobo");
+
+		//La lista negra es la otra mitad, y no se puede escribir con la blanca sin listar trece tipos.
+		SpellRegistry.Spell blight = spellFromPack("dndsheets:blight");
+		assertTrue(blight.affects(CreatureType.HUMANOID) && blight.affects(CreatureType.DRAGON),
+			"Marchitar afecta a casi todo");
+		assertTrue(!blight.affects(CreatureType.UNDEAD) && !blight.affects(CreatureType.CONSTRUCT),
+			"salvo a no-muertos y autómatas, que es lo que dice el SRD");
+
+		//Un conjuro sin restricción afecta a todo, que es como se comportaban TODOS hasta ahora.
+		SpellRegistry.Spell fireball = spellFromPack("dndsheets:fireball");
+		for (CreatureType type : CreatureType.values()) {
+			assertTrue(fireball.affects(type), "Bola de Fuego no debería excluir a nadie, y excluye a " + type);
+		}
+
+		//Un tipo desconocido NUNCA se filtra: un mob de otro mod sin bloque de estadísticas se comporta
+		//como siempre en vez de volverse inmune a media lista de conjuros por no estar clasificado.
+		assertTrue(holdPerson.affects(CreatureType.UNKNOWN) && blight.affects(CreatureType.UNKNOWN),
+			"sin saber qué hay delante, la restricción no se aplica");
+
+		System.out.println("checkSpellTargeting: OK, los conjuros con objetivo restringido distinguen a quién afectan.");
 	}
 
 	/**

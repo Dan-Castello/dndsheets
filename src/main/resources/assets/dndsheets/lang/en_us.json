@@ -61,6 +61,7 @@
   "chat.dndsheets.spell.counterspelled": "%s tries to cast %s, but %s counters it with Counterspell.",
   "chat.dndsheets.spell.no_aoe_targets": "There's nothing in the area of effect.",
   "chat.dndsheets.spell.no_slots": "You have no spell slots left.",
+  "chat.dndsheets.spell.wrong_target_type": "%1$s has no effect on %2$s: it is a %3$s.",
   "chat.dndsheets.spell.no_target": "There's no target in sight.",
   "chat.dndsheets.spell.save_fail": "Fails the save",
   "chat.dndsheets.spell.save_half": "Half save",

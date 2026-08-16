@@ -61,6 +61,7 @@
   "chat.dndsheets.spell.counterspelled": "%s intenta lanzar %s, pero %s lo contrarresta con Contrahechizo.",
   "chat.dndsheets.spell.no_aoe_targets": "No hay nada en el área de efecto.",
   "chat.dndsheets.spell.no_slots": "No te quedan espacios de conjuro.",
+  "chat.dndsheets.spell.wrong_target_type": "%1$s no afecta a %2$s: es %3$s.",
   "chat.dndsheets.spell.no_target": "No hay ningún objetivo a la vista.",
   "chat.dndsheets.spell.save_fail": "Falla la salvación",
   "chat.dndsheets.spell.save_half": "Salva a medias",

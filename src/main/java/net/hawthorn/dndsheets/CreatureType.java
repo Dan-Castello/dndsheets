@@ -59,6 +59,21 @@ public enum CreatureType {
 	}
 
 	/**
+	 * <p>Lee una lista de tipos del JSON (p. ej. {@code ["no-muerto", "autómata"]}). Los que no se
+	 * reconozcan se descartan: una palabra mal escrita se lleva por delante su propia entrada, no la lista
+	 * entera ni el conjuro.</p>
+	 */
+	public static java.util.Set<CreatureType> parseAll(com.google.gson.JsonArray raw) {
+		java.util.Set<CreatureType> types = java.util.EnumSet.noneOf(CreatureType.class);
+		if (raw == null) return types;
+		for (com.google.gson.JsonElement element : raw) {
+			CreatureType type = parse(element.getAsString());
+			if (type != UNKNOWN) types.add(type);
+		}
+		return types;
+	}
+
+	/**
 	 * <p>Lee un tipo del JSON. Devuelve {@link #UNKNOWN} para null, vacío o cualquier cosa que no case:
 	 * un tipo mal escrito deja al monstruo sin tipo, que es como estaban todos hasta ahora, en vez de
 	 * tumbar la carga del pack entero por una palabra.</p>
