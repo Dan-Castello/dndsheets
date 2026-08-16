@@ -90,6 +90,7 @@
   "chat.dndsheets.turn.joins_combat": "%s joins the fight.",
   "chat.dndsheets.turn.no_movement_left": "No movement left this turn.",
   "chat.dndsheets.turn.not_your_turn": "It's not your turn — it's %s's turn.",
+  "chat.dndsheets.turn.initiator_first": "%1$s strikes first: that attack opens the fight.",
   "chat.dndsheets.turn.order_announce": "Turn mode! Order: %s",
   "chat.dndsheets.turn.other_combatant": "another combatant",
   "chat.dndsheets.turn.round_header": "Round %s — turn of ",

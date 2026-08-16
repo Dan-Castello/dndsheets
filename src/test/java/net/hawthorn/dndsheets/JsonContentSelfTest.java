@@ -47,6 +47,7 @@ public class JsonContentSelfTest {
 		checkSpellSlots();
 		checkUpcasting();
 		checkSpellTargeting();
+		checkInitiatorGoesFirst();
 		checkDefaultsRefresh();
 		checkTabTextures();
 		checkInteractHandlers();
@@ -1255,6 +1256,36 @@ public class JsonContentSelfTest {
 		}
 
 		System.out.println("checkDefaultsRefresh: OK, un mundo ya existente recibe el contenido nuevo sin pisar lo del DM.");
+	}
+
+	/**
+	 * <p>El que ataca abre el orden de turnos. Sin ello, el golpe que arranca el combate se perdía: se
+	 * creaba el encuentro, se tiraba iniciativa, y si el atacante no ganaba su propia tirada su ataque se
+	 * rechazaba por "no es tu turno" — el mismo clic funcionaba o desaparecía según un d20 que nadie había
+	 * pedido tirar.</p>
+	 */
+	private static void checkInitiatorGoesFirst() {
+		List<Integer> orden = new java.util.ArrayList<>(List.of(50, 40, 30, 20, 10));
+
+		TurnManager.moveToFront(orden, id -> id, 30);
+		assertTrue(orden.equals(List.of(30, 50, 40, 20, 10)),
+			"el iniciador debería ir primero y el resto conservar su orden, y quedó " + orden);
+
+		//La mitad importante: intercambiar con el primero —la implementación que sale sola— mandaría al 50
+		//al puesto del 30 y desordenaría la iniciativa de los demás, que sí es sagrada.
+		TurnManager.moveToFront(orden, id -> id, 10);
+		assertTrue(orden.equals(List.of(10, 30, 50, 40, 20)), "y otra vez, sin barajar a los demás: " + orden);
+
+		//Ya primero: no debería moverse nada.
+		TurnManager.moveToFront(orden, id -> id, 10);
+		assertTrue(orden.equals(List.of(10, 30, 50, 40, 20)), "mover al que ya era primero no debería cambiar nada");
+
+		//Un iniciador que no está en la lista (fuera del radio del encuentro) deja el orden intacto en vez
+		//de reventar el arranque del combate.
+		TurnManager.moveToFront(orden, id -> id, 999);
+		assertTrue(orden.equals(List.of(10, 30, 50, 40, 20)), "un iniciador que no está en el orden no debería tocarlo");
+
+		System.out.println("checkInitiatorGoesFirst: OK, quien ataca abre el orden y no desordena al resto.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

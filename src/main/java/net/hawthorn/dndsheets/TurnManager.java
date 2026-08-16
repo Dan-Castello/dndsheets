@@ -212,7 +212,10 @@ public class TurnManager {
 		Entity attacker = event.getSource().getEntity();
 		if (attacker == null || !isMonster(attacker) || !(attacker.level() instanceof ServerLevel level)) return;
 
-		if (!active) startAt(level, player.position(), DEFAULT_RADIUS);
+		//El monstruo que embosca también abre el orden: es el mismo caso que un jugador atacando primero,
+		//visto desde el otro lado. Su golpe ya ha caído cuando llegamos aquí, así que dejarlo en mitad del
+		//orden significaría que pega, y además vuelve a pegar en cuanto le toque.
+		if (!active) startAt(level, player.position(), DEFAULT_RADIUS, attacker);
 		if (active && !isInOrder(attacker.getId())) addLateMonster(level, attacker, nameOf(attacker));
 	}
 
@@ -401,6 +404,27 @@ public class TurnManager {
 	//antes en TurnCommand, invirtiendo la dependencia (lógica de dominio llamando a la capa de comandos),
 	//ver AUDIT_TECHNICAL.md M-ARQ-1.
 	public static int startAt(ServerLevel level, Vec3 pos, double radius) {
+		return startAt(level, pos, radius, null);
+	}
+
+	/**
+	 * <p>Igual, pero sabiendo <b>quién disparó el combate</b>: el que atacó abre el orden de turnos, por
+	 * encima de lo que digan los dados de iniciativa.</p>
+	 *
+	 * <p>Sin esto, el golpe que arranca el encuentro se perdía. El combate se creaba, se tiraba iniciativa,
+	 * y si el atacante no ganaba su propia tirada su ataque quedaba rechazado por "no es tu turno": el
+	 * jugador pegaba y no pasaba nada. Peor aún, el mismo clic funcionaba o desaparecía según un d20 que
+	 * nadie había pedido tirar. Antes de que existiera el arranque automático ese golpe se resolvía entero,
+	 * así que la comodidad de no escribir {@code /dndturns start} estaba costando una acción.</p>
+	 *
+	 * <p>Que abra el orden y no que se resuelva "gratis" fuera de él es lo que mantiene el resto de reglas
+	 * en pie: su acción se gasta, su turno se acaba y nadie pega dos veces. Quien ataca primero <i>ha</i>
+	 * actuado primero, que es justo lo que la iniciativa intenta medir.</p>
+	 *
+	 * @param initiator quien empieza el combate atacando, o {@code null} si lo arranca el DM a mano
+	 *                  ({@code /dndturns start}), donde mandan los dados y nada más.
+	 */
+	public static int startAt(ServerLevel level, Vec3 pos, double radius, Entity initiator) {
 		//ponytail: solo se admite un combate a la vez en todo el servidor (ver el comentario de más abajo
 		//sobre debounce/guardado global) — antes, si dos grupos jugaban en zonas distintas del mapa, el
 		//segundo /dndturns start (o el primer golpe que dispara autoStartCombatIfNeeded) pisaba el
@@ -427,6 +451,10 @@ public class TurnManager {
 		}
 		rolled.sort((a, b) -> b.score() - a.score());
 
+		//Quien disparó el combate va primero pase lo que pase con su dado. Se mueve después de ordenar, no
+		//falseando su tirada: la puntuación que se anuncia sigue siendo la que sacó de verdad.
+		if (initiator != null) moveToFront(rolled, Rolled::entityId, initiator.getId());
+
 		List<TurnEntry> combatants = new ArrayList<>();
 		for (Rolled r : rolled) combatants.add(new TurnEntry(r.entityId(), r.name() + " (" + r.score() + ")", r.isMonster(), r.playerUuid()));
 
@@ -441,6 +469,11 @@ public class TurnManager {
 			combatOrigin = pos;
 			combatRadius = radius;
 			if (!wasActive) scheduleLateMonsterScan(level);
+			//Se explica en el chat porque, si no, alguien con un 7 de iniciativa apareciendo el primero se
+			//lee como un error de orden y no como la regla que es.
+			if (initiator != null) {
+				broadcast(level, Component.translatable("chat.dndsheets.turn.initiator_first", nameOf(initiator)).withStyle(ChatFormatting.GOLD));
+			}
 		}
 		return combatants.size();
 	}
@@ -462,6 +495,23 @@ public class TurnManager {
 	private static boolean isInOrder(int entityId) {
 		for (TurnEntry entry : order) if (entry.entityId() == entityId) return true;
 		return false;
+	}
+
+	/**
+	 * <p>Mueve al iniciador al frente <b>conservando el orden relativo del resto</b>. Package-private y
+	 * genérica para poder comprobarla sin un servidor detrás.</p>
+	 *
+	 * <p>Que el resto conserve su orden es la mitad importante: intercambiar el iniciador con quien estaba
+	 * primero —la implementación que sale sola— manda a ese primero al puesto que ocupaba el iniciador y
+	 * desordena la iniciativa de todos los demás, que sí es sagrada.</p>
+	 */
+	static <T> void moveToFront(List<T> entries, java.util.function.ToIntFunction<T> idOf, int id) {
+		for (int i = 0; i < entries.size(); i++) {
+			if (idOf.applyAsInt(entries.get(i)) == id) {
+				entries.add(0, entries.remove(i));
+				return;
+			}
+		}
 	}
 
 	private static int rollInitiative(Entity entity) {

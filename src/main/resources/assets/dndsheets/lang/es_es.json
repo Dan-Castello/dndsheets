@@ -90,6 +90,7 @@
   "chat.dndsheets.turn.joins_combat": "%s se suma al combate.",
   "chat.dndsheets.turn.no_movement_left": "Sin movimiento restante este turno.",
   "chat.dndsheets.turn.not_your_turn": "No es tu turno — le toca a %s.",
+  "chat.dndsheets.turn.initiator_first": "%1$s ataca primero: su golpe abre el combate.",
   "chat.dndsheets.turn.order_announce": "¡Modo turnos! Orden: %s",
   "chat.dndsheets.turn.other_combatant": "otro combatiente",
   "chat.dndsheets.turn.round_header": "Ronda %s — turno de ",

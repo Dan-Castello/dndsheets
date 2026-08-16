@@ -122,18 +122,20 @@ public class CombatManager {
 
 	//Sin nadie llevando la partida en vivo, nadie va a escribir /dndturns start (ni sumar a mano a quien
 	//llega tarde): el primer golpe de un jugador a un monstruo arranca el combate si no había uno activo,
-	//mismo punto de entrada que ya usa el Panel de DM (TurnManager.startAt). Si el jugador no gana la
-	//iniciativa contra el propio monstruo, este golpe queda bloqueado igual que cualquier otro fuera de
-	//turno (el tryAct de justo abajo) — no hay "golpe gratis" por haber sido quien disparó el encuentro.
+	//mismo punto de entrada que ya usa el Panel de DM (TurnManager.startAt). Quien da ese golpe entra como
+	//INICIADOR y abre el orden de turnos: antes no, y el resultado era que su ataque se perdía si no ganaba
+	//su propia tirada de iniciativa — el mismo clic funcionaba o desaparecía según un d20 que nadie había
+	//pedido tirar (ver TurnManager.startAt con iniciador).
 	//Si el combate YA estaba activo pero este jugador nunca entró al orden (llegó después de que
-	//arrancara), se suma ahora mismo — sin esto se quedaba sin poder actuar nunca en ese encuentro.
+	//arrancara), se suma ahora mismo — sin esto se quedaba sin poder actuar nunca en ese encuentro. Ahí NO
+	//es iniciador: el encuentro ya existía y llegar tarde no da derecho a colarse el primero.
 	//Público: también lo usa SpellCastManager, para que atacar con un hechizo arranque el combate solo
 	//igual que ya hace un golpe con arma — antes un hechizo de ataque/salvación se resolvía "gratis", sin
 	//turno ni congelamiento para nadie, porque nada lo llamaba desde ese lado.
 	public static void autoStartCombatIfNeeded(Entity target, Player attacker) {
 		if (!(target.level() instanceof ServerLevel level)) return;
 		if (!TurnManager.isActive()) {
-			TurnManager.startAt(level, target.position(), TurnManager.DEFAULT_RADIUS);
+			TurnManager.startAt(level, target.position(), TurnManager.DEFAULT_RADIUS, attacker);
 			return;
 		}
 		if (attacker instanceof ServerPlayer serverPlayer) TurnManager.addLatePlayerIfMissing(level, serverPlayer);

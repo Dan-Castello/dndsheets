@@ -512,6 +512,26 @@ dependencies, not preference.
      undead with few HP while sparing a weak one with many — the threshold would be measuring
      something else. It needs a new field, not an approximation.
 
+  10. **The attack that starts combat no longer vanishes.** Reported from play: "attacks start turn
+      mode, but the opening damage is lost." Auto-start created the encounter, rolled initiative, and
+      then `tryAct` rejected the very attack that triggered it whenever the attacker did not win
+      their own roll. The same click either worked or disappeared depending on a d20 nobody had asked
+      to roll — and before auto-start existed that swing resolved in full, so the convenience of not
+      typing `/dndturns start` was quietly costing an action.
+
+      The attacker now **opens the turn order** (`startAt(..., initiator)`). Opening it rather than
+      resolving "for free" outside it is what keeps every other rule standing: the action is spent,
+      the turn ends, nobody swings twice. Whoever attacked first *did* act first, which is what
+      initiative is trying to measure. The die is not faked — the announced score is the one actually
+      rolled, the entry is just moved — and a chat line says who opened, because otherwise someone
+      appearing first with a 7 reads as a broken sort. `/dndturns start` passes no initiator, so a
+      DM-run encounter is pure initiative exactly as before. The mirror case is wired too: a monster
+      that ambushes a player opens the order, since its blow has already landed by then.
+
+      `moveToFront` is extracted and package-private so the ordering is checkable without a server.
+      The half that matters is that **everyone else keeps their relative order** — swapping with the
+      current first, the implementation that writes itself, scrambles the initiative of the rest.
+
   **Found while wiring item 9:** `AbilityItemDispatcher` had the same if/else chain **copied three
   times**, one per interaction event, and the copies had drifted. Divine Smite, Twinned Spell,
   Counterspell and Shield existed only in the "clicked at thin air" chain, so those four items *did
