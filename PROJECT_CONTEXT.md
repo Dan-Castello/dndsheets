@@ -460,9 +460,31 @@ dependencies, not preference.
      The two level tables live in `CharacterRules` next to `proficiencyBonusFor`, which is where
      level-driven numbers belong and the reason they are testable without touching Minecraft.
 
-     **Still missing:** Divine Smite's extra +1d8 against undead and fiends. Monsters here have no
-     creature type, so there is nothing to check — guessing from the name would get the skeleton
-     right and everything else wrong.
+  7. **Creature types (`CreatureType`).** The blocker named in item 6, removed: all 330 shipped
+     monsters now declare one of 5e's fourteen types, and Divine Smite's +1d8 against undead and
+     fiends works.
+
+     - **An enum, not a free string.** The set has been closed since 2014 and nobody extends it; with
+       a string, a DM writing `"no muerto"` without the hyphen would silently invent a fifteenth type
+       that matches no rule. `parse` normalizes accents, case, hyphens and the English names, because
+       someone writing `"Undead"` means the same thing.
+     - **An unknown type is not an error.** A mob from another mod, a generic NPC or a pack written
+       before the field keep working exactly as before; all they lose is access to type-gated rules,
+       which is correct — no rule should fire on a guess. The self-test still *requires* a type on
+       every shipped monster, because the realistic failure is forgetting one while extending the
+       bestiary, not misspelling it.
+     - **The smite's extra die is added after the 5d8 cap**, deliberately: in 5e that cap belongs to
+       the slot-level scaling and the undead die is separate, so 6d8 is right, not an overflow.
+
+     The classification was checked by what a human would get wrong, not by what is obvious: a blink
+     dog is fey, an azer and a gargoyle are elementals, a flesh golem is a construct and not undead,
+     an otyugh is an aberration, a centaur is a monstrosity, a green hag is fey while a night hag is
+     a fiend, a will-o'-wisp is undead, and a lycanthrope is humanoid *even in animal form* — the one
+     case where classifying by the shape gives the opposite of the right answer.
+
+     **What this unlocks next:** the type-gated spells. Hold Person and Charm Person only affect
+     humanoids, Dominate Beast only beasts, Blight does nothing to undead and constructs. All of them
+     currently affect anything; now there is something to ask.
 
   **Found while doing item 4:** the bulk content packs existed **twice** — once under
   `test/dndsheets/<type>/` and once in `src/main/resources/dndsheets/defaults/` — and the self-test

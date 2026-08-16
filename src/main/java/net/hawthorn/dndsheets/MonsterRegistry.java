@@ -59,12 +59,22 @@ public class MonsterRegistry {
 		String id, String name, String baseEntityId, int ac, int maxHp,
 		Map<String, Integer> abilities, int proficiencyBonus,
 		List<MonsterAttack> attacks, List<MonsterSpell> spells,
-		Map<String, String> damageAffinities, Map<String, String> nonmagicalAffinities
+		Map<String, String> damageAffinities, Map<String, String> nonmagicalAffinities,
+		CreatureType type
 	) {
 		public int abilityModifier(String key) {
 			Integer score = abilities.get(key.toLowerCase(Locale.ROOT));
 			return score == null ? 0 : Math.floorDiv(score - 10, 2);
 		}
+	}
+
+	/**
+	 * <p>Tipo de criatura de un monstruo del mundo, o {@link CreatureType#UNKNOWN} si no lo tiene (un mob
+	 * de compatibilidad, un PNJ genérico o un pack escrito antes de que el campo existiera).</p>
+	 */
+	public static CreatureType typeOf(Entity entity) {
+		MonsterStatBlock block = statBlockOf(entity);
+		return block != null ? block.type() : CreatureType.UNKNOWN;
 	}
 
 	private static final NamedRegistry<MonsterStatBlock> REGISTRY = new NamedRegistry<>("monstruo", MonsterStatBlock::id);
@@ -140,7 +150,11 @@ public class MonsterRegistry {
 		Map<String, String> damageAffinities = readAffinities(json, "damageAffinities");
 		Map<String, String> nonmagicalAffinities = readAffinities(json, "nonmagicalAffinities");
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities);
+		//Opcional tambien: un pack escrito antes de que existiera el campo carga igual, con UNKNOWN, y lo
+		//unico que pierde es acceso a las reglas que preguntan por el tipo.
+		CreatureType type = CreatureType.parse(json.has("type") ? json.get("type").getAsString() : null);
+
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type);
 	}
 
 	private static Map<String, String> readAffinities(JsonObject json, String field) {
@@ -177,6 +191,7 @@ public class MonsterRegistry {
 		JsonObject json = new JsonObject();
 		json.addProperty("id", block.id());
 		json.addProperty("name", block.name());
+		if (block.type() != CreatureType.UNKNOWN) json.addProperty("type", block.type().label());
 		json.addProperty("baseEntity", block.baseEntityId());
 		json.addProperty("ac", block.ac());
 		json.addProperty("hp", block.maxHp());
@@ -365,7 +380,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		for (String key : new String[]{"str", "dex", "con", "int", "wis", "cha"}) abilities.put(key, 10);
 
-		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>()));
+		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN));
 		return spawnAt(level, x, y, z, id);
 	}
 

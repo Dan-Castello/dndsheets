@@ -1,6 +1,6 @@
 [
   {
-    "id": "dndsheets:goblin", "name": "Goblin", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:goblin", "name": "Goblin", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 15, "hp": 7,
     "abilities": { "str": 8, "dex": 14, "con": 10, "int": 10, "wis": 8, "cha": 8 },
     "proficiencyBonus": 2,
@@ -9,7 +9,7 @@
     ]
   },
   {
-    "id": "dndsheets:orc", "name": "Orco", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:orc", "name": "Orco", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 13, "hp": 15,
     "abilities": { "str": 16, "dex": 12, "con": 16, "int": 7, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
@@ -18,7 +18,7 @@
     ]
   },
   {
-    "id": "dndsheets:fire_mage", "name": "Mago de Fuego", "baseEntity": "minecraft:skeleton",
+    "id": "dndsheets:fire_mage", "name": "Mago de Fuego", "type": "humanoide", "baseEntity": "minecraft:skeleton",
     "ac": 12, "hp": 20,
     "abilities": { "str": 8, "dex": 12, "con": 12, "int": 16, "wis": 12, "cha": 10 },
     "proficiencyBonus": 3,
@@ -31,7 +31,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_spider", "name": "Araña Gigante", "baseEntity": "minecraft:spider",
+    "id": "dndsheets:giant_spider", "name": "Araña Gigante", "type": "bestia", "baseEntity": "minecraft:spider",
     "ac": 14, "hp": 26,
     "abilities": { "str": 14, "dex": 16, "con": 12, "int": 2, "wis": 11, "cha": 4 },
     "proficiencyBonus": 2,

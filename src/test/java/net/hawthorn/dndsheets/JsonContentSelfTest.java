@@ -385,6 +385,12 @@ public class JsonContentSelfTest {
 			assertTrue(!block.attacks().isEmpty(), id + " no tiene ningún ataque");
 			assertTrue(block.maxHp() > 0 && block.ac() > 0, id + " debería tener PG y CA positivos");
 
+			//Un tipo de criatura mal escrito tampoco falla en ningún sitio: cae a UNKNOWN en silencio y el
+			//monstruo se queda fuera de toda regla que pregunte por el tipo (el Castigo Divino no le suma su
+			//dado, y mañana Inmovilizar Persona le afectará sin ser humanoide). Se exige que TODOS lo tengan
+			//porque el fallo natural aquí es olvidar uno al ampliar el bestiario, no escribirlo mal.
+			assertTrue(block.type() != CreatureType.UNKNOWN, id + " no tiene tipo de criatura, o está mal escrito");
+
 			//Un tipo de daño mal escrito no falla en ningún sitio: simplemente deja de coincidir con las
 			//resistencias, y el monstruo recibe daño completo de algo a lo que debería ser inmune.
 			for (MonsterRegistry.MonsterAttack attack : block.attacks()) {
@@ -401,6 +407,42 @@ public class JsonContentSelfTest {
 			}
 		}
 		assertTrue(bestiary.size() >= 330, "monsters.json debería traer al menos los 330 de los lotes 3 y 4 del SRD, trae " + bestiary.size());
+
+		//Muestras de tipo elegidas por lo que se equivocaría un humano clasificando a ojo, no por lo obvio.
+		assertTypeOf("dndsheets:skeleton", CreatureType.UNDEAD);
+		assertTypeOf("dndsheets:will_o_wisp", CreatureType.UNDEAD);         //Parece un elemental de luz.
+		assertTypeOf("dndsheets:ogre_zombie", CreatureType.UNDEAD);         //Y no gigante, pese al ogro.
+		assertTypeOf("dndsheets:night_hag", CreatureType.FIEND);
+		assertTypeOf("dndsheets:green_hag", CreatureType.FEY);              //La otra bruja NO es inmunda.
+		assertTypeOf("dndsheets:blink_dog", CreatureType.FEY);              //Parece una bestia.
+		assertTypeOf("dndsheets:unicorn", CreatureType.CELESTIAL);          //También parece una bestia.
+		assertTypeOf("dndsheets:pegasus", CreatureType.CELESTIAL);
+		assertTypeOf("dndsheets:centaur", CreatureType.MONSTROSITY);        //No humanoide.
+		assertTypeOf("dndsheets:otyugh", CreatureType.ABERRATION);          //No monstruosidad.
+		assertTypeOf("dndsheets:azer", CreatureType.ELEMENTAL);             //Parece un enano.
+		assertTypeOf("dndsheets:gargoyle", CreatureType.ELEMENTAL);         //Parece un autómata de piedra.
+		assertTypeOf("dndsheets:flesh_golem", CreatureType.CONSTRUCT);      //Y este parece un no-muerto.
+		assertTypeOf("dndsheets:wyvern", CreatureType.DRAGON);
+		assertTypeOf("dndsheets:half_red_dragon_veteran", CreatureType.HUMANOID);  //"dragón" en el nombre.
+		//Un licántropo es humanoide en 5e SIEMPRE, también en su forma animal — es el caso donde clasificar
+		//por la forma en vez de por la criatura da la respuesta contraria.
+		assertTypeOf("dndsheets:werewolf_wolf", CreatureType.HUMANOID);
+
+		//El parser tiene que aguantar lo que escribe una persona: acentos, mayúsculas, guiones o inglés.
+		assertTrue(CreatureType.parse("no-muerto") == CreatureType.UNDEAD
+			&& CreatureType.parse("No Muerto") == CreatureType.UNDEAD
+			&& CreatureType.parse("undead") == CreatureType.UNDEAD, "\"no-muerto\" se escribe de varias formas");
+		assertTrue(CreatureType.parse("aberración") == CreatureType.ABERRATION
+			&& CreatureType.parse("aberracion") == CreatureType.ABERRATION, "con acento y sin él es lo mismo");
+		//Y lo que no reconoce cae a UNKNOWN en vez de tumbar la carga del pack por una palabra.
+		assertTrue(CreatureType.parse("gelatina") == CreatureType.UNKNOWN
+			&& CreatureType.parse(null) == CreatureType.UNKNOWN
+			&& CreatureType.parse("") == CreatureType.UNKNOWN, "un tipo que no existe deja al monstruo sin tipo, sin más");
+		//Ida y vuelta: lo que escribe toJson lo tiene que volver a leer parse, o guardar una plantilla desde
+		//el juego perdería el tipo del monstruo capturado.
+		for (CreatureType type : CreatureType.values()) {
+			assertTrue(CreatureType.parse(type.label()) == type, "el tipo " + type + " no sobrevive a guardar y volver a leer");
+		}
 
 		//Resistencia condicional: el hombre rata es inmune al daño físico NO mágico, y normal frente al
 		//mágico. Es la mitad del bestiario de VD medio, así que conviene fijar que las dos ramas difieren
@@ -852,7 +894,8 @@ public class JsonContentSelfTest {
 			Map.of("str", 10, "dex", 10, "con", 10, "int", 10, "wis", 10, "cha", 10), 2,
 			List.of(), List.of(),
 			Map.of("fuego", "vulnerable"),          //Incondicional.
-			Map.of("cortante", "immune"));          //Solo frente a armas no mágicas.
+			Map.of("cortante", "immune"),           //Solo frente a armas no mágicas.
+			CreatureType.HUMANOID);                 //Un licántropo es humanoide en 5e, también en forma de bestia.
 		Combatant beast = new Combatant.MonsterCombatant(null, conditional);
 		assertTrue(beast.damageMultiplier("cortante", false) == 0.0, "cortante no mágico debería rebotar en el licántropo");
 		assertTrue(beast.damageMultiplier("cortante", true) == 1.0, "cortante mágico debería atravesarlo entero");
@@ -1157,6 +1200,12 @@ public class JsonContentSelfTest {
 		System.out.println("checkDefaultsRefresh: OK, un mundo ya existente recibe el contenido nuevo sin pisar lo del DM.");
 	}
 
+	private static void assertTypeOf(String monsterId, CreatureType expected) {
+		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(monsterId);
+		assertTrue(block != null, "no está en el bestiario: " + monsterId);
+		assertTrue(block.type() == expected, monsterId + " debería ser " + expected + " y es " + block.type());
+	}
+
 	private static SpellRegistry.Spell spellFromPack(String id) throws Exception {
 		//Se lee del pack en vez de SpellRegistry.get() porque ejemplo.json y spells.json comparten ids, y el
 		//que queda registrado es el primero: la subida de nivel hay que comprobarla sobre el pack grande.
@@ -1296,10 +1345,22 @@ public class JsonContentSelfTest {
 		assertTrue("1d12".equals(CharacterRules.bardicInspirationDieFor(20)), "y no hay un d20 al llegar arriba");
 
 		//Castigo Divino: crece con el espacio que se gasta de verdad, con tope en 5d8.
-		assertTrue("2d8".equals(PaladinSmiteManager.diceForSlot(1)), "un espacio de nivel 1 son 2d8");
-		assertTrue("4d8".equals(PaladinSmiteManager.diceForSlot(3)), "uno de nivel 3, 4d8");
-		assertTrue("5d8".equals(PaladinSmiteManager.diceForSlot(4)) && "5d8".equals(PaladinSmiteManager.diceForSlot(9)),
+		CreatureType nadie = CreatureType.UNKNOWN;
+		assertTrue("2d8".equals(PaladinSmiteManager.diceForSlot(1, nadie)), "un espacio de nivel 1 son 2d8");
+		assertTrue("4d8".equals(PaladinSmiteManager.diceForSlot(3, nadie)), "uno de nivel 3, 4d8");
+		assertTrue("5d8".equals(PaladinSmiteManager.diceForSlot(4, nadie)) && "5d8".equals(PaladinSmiteManager.diceForSlot(9, nadie)),
 			"y el tope del SRD son 5d8, por alto que sea el espacio");
+
+		//Y un dado más contra no-muertos e inmundos, que va APARTE del tope: 5d8 topados + 1 son 6d8, no 5d8.
+		assertTrue("3d8".equals(PaladinSmiteManager.diceForSlot(1, CreatureType.UNDEAD)), "contra un no-muerto, 3d8 con un espacio de 1º");
+		assertTrue("3d8".equals(PaladinSmiteManager.diceForSlot(1, CreatureType.FIEND)), "y lo mismo contra un inmundo");
+		assertTrue("6d8".equals(PaladinSmiteManager.diceForSlot(9, CreatureType.UNDEAD)),
+			"el tope de 5d8 es el de la subida por espacio; el dado contra no-muertos se suma encima");
+		assertTrue("2d8".equals(PaladinSmiteManager.diceForSlot(1, CreatureType.BEAST)),
+			"un lobo no es un no-muerto por mucho que muerda");
+		//Un objetivo sin tipo (mob de otro mod, PNJ genérico) NO se lleva el extra: ninguna regla debería
+		//dispararse por adivinar.
+		assertTrue("2d8".equals(PaladinSmiteManager.diceForSlot(1, CreatureType.UNKNOWN)), "sin tipo, sin dado extra");
 
 		System.out.println("checkCharacterRules: OK, personajes múltiples, PNJ, hojas antiguas, PG, competencia, Furia, Inspiración y Castigo por nivel se comportan.");
 	}

@@ -572,7 +572,7 @@ public class CombatManager {
 		//dentro de consumeIfPending, así que si no queda ninguno simplemente no aporta nada (y el flag ya
 		//se limpió, no se queda pendiente para el siguiente golpe).
 		if (target != null && !UNARMED_ID.equals(weapon.id())) {
-			String smiteDice = PaladinSmiteManager.consumeIfPending(sheet);
+			String smiteDice = PaladinSmiteManager.consumeIfPending(sheet, target);
 			if (smiteDice != null) {
 				DiceManager.DamageResult smite = DiceManager.rollDamage(sheet, smiteDice, critical);
 				if (smite.formatted() != null) {

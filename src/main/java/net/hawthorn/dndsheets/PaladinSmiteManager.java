@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -21,14 +22,24 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
  * cuando al paladín ya no le quedan espacios baratos — que es exactamente cuando en la mesa se gasta uno
  * caro.</p>
  *
- * <p><b>Lo que sigue faltando</b>: el +1d8 extra contra no-muertos e inmundos. Un monstruo de este mod no
- * tiene tipo de criatura, así que no hay nada que consultar — inventarlo por el nombre acertaría con el
- * esqueleto y fallaría con todo lo demás.</p>
+ * <p>Y suma <b>otro d8 contra no-muertos e inmundos</b>, que es lo que hace del paladín un cazador de
+ * muertos vivientes y no un guerrero con dados de más. Esta parte estuvo sin escribir mientras un monstruo
+ * no tuvo tipo de criatura: no había nada que consultar, y deducirlo del nombre habría acertado con el
+ * esqueleto y fallado con todo lo demás. Ver {@link CreatureType}.</p>
  */
 public class PaladinSmiteManager {
-	/** Dados del castigo con un espacio del nivel dado: 2d8 de base, +1d8 por nivel, tope 5d8 (SRD). */
-	static String diceForSlot(int slotLevel) {
-		return Math.min(5, 1 + Math.max(1, slotLevel)) + "d8";
+	/**
+	 * <p>Dados del castigo: 2d8 de base, +1d8 por cada nivel de espacio por encima del 1º con tope en 5d8,
+	 * y +1d8 más si la víctima es no-muerta o inmunda.</p>
+	 *
+	 * <p>El extra se suma <b>después</b> del tope a propósito: en 5e el límite de 5d8 es el de la subida
+	 * por espacio, y el dado contra no-muertos va aparte — un castigo de 6d8 con un espacio de 4º sobre un
+	 * esqueleto es la cifra correcta, no un desbordamiento.</p>
+	 */
+	static String diceForSlot(int slotLevel, CreatureType targetType) {
+		int dice = Math.min(5, 1 + Math.max(1, slotLevel));
+		if (targetType.isSmiteFavoredTarget()) dice++;
+		return dice + "d8";
 	}
 
 	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta — ver
@@ -46,7 +57,8 @@ public class PaladinSmiteManager {
 
 	//Público: CombatManager lo consume justo después de confirmar un golpe (no antes: fallar el ataque no
 	//debería gastar el espacio). Devuelve null si no había flag pendiente O no quedaban espacios que gastar.
-	public static String consumeIfPending(JsonObject sheet) {
+	//El objetivo entra porque el dado depende de contra QUÉ se castiga, no solo de con qué se paga.
+	public static String consumeIfPending(JsonObject sheet, Entity target) {
 		if (sheet == null || !sheet.has("smitePending") || !sheet.get("smitePending").getAsBoolean()) return null;
 		sheet.remove("smitePending");
 
@@ -54,7 +66,7 @@ public class PaladinSmiteManager {
 		//spend() dice haber gastado, no del que se pidió: si los de nivel 1 estaban agotados, el castigo
 		//salió con uno más alto y pega más.
 		if (!SpellSlots.hasSlotFor(sheet, 1)) return null;
-		return diceForSlot(SpellSlots.spend(sheet, 1));
+		return diceForSlot(SpellSlots.spend(sheet, 1), MonsterRegistry.typeOf(target));
 	}
 
 	public static ItemStack buildDivineSmiteStack() {

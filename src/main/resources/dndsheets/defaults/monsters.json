@@ -1,6 +1,6 @@
 [
   {
-    "id": "dndsheets:goblin", "name": "Goblin", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:goblin", "name": "Goblin", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 15, "hp": 7,
     "abilities": { "str": 8, "dex": 14, "con": 10, "int": 10, "wis": 8, "cha": 8 },
     "proficiencyBonus": 2,
@@ -9,7 +9,7 @@
     ]
   },
   {
-    "id": "dndsheets:orc", "name": "Orco", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:orc", "name": "Orco", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 13, "hp": 15,
     "abilities": { "str": 16, "dex": 12, "con": 16, "int": 7, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
@@ -18,7 +18,7 @@
     ]
   },
   {
-    "id": "dndsheets:fire_mage", "name": "Mago de Fuego", "baseEntity": "minecraft:skeleton",
+    "id": "dndsheets:fire_mage", "name": "Mago de Fuego", "type": "humanoide", "baseEntity": "minecraft:skeleton",
     "ac": 12, "hp": 20,
     "abilities": { "str": 8, "dex": 12, "con": 12, "int": 16, "wis": 12, "cha": 10 },
     "proficiencyBonus": 3,
@@ -31,7 +31,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_spider", "name": "Araña Gigante", "baseEntity": "minecraft:spider",
+    "id": "dndsheets:giant_spider", "name": "Araña Gigante", "type": "bestia", "baseEntity": "minecraft:spider",
     "ac": 14, "hp": 26,
     "abilities": { "str": 14, "dex": 16, "con": 12, "int": 2, "wis": 11, "cha": 4 },
     "proficiencyBonus": 2,
@@ -43,7 +43,7 @@
     ]
   },
   {
-    "id": "dndsheets:kobold", "name": "Kobold", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:kobold", "name": "Kobold", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 12, "hp": 5,
     "abilities": { "str": 7, "dex": 15, "con": 9, "int": 8, "wis": 7, "cha": 8 },
     "proficiencyBonus": 2,
@@ -52,7 +52,7 @@
     ]
   },
   {
-    "id": "dndsheets:ogre", "name": "Ogro", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:ogre", "name": "Ogro", "type": "gigante", "baseEntity": "minecraft:zombie",
     "ac": 11, "hp": 59,
     "abilities": { "str": 19, "dex": 8, "con": 16, "int": 5, "wis": 7, "cha": 7 },
     "proficiencyBonus": 2,
@@ -61,7 +61,7 @@
     ]
   },
   {
-    "id": "dndsheets:troll", "name": "Trol", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:troll", "name": "Trol", "type": "gigante", "baseEntity": "minecraft:zombie",
     "ac": 15, "hp": 84,
     "abilities": { "str": 18, "dex": 13, "con": 20, "int": 7, "wis": 9, "cha": 7 },
     "proficiencyBonus": 3,
@@ -71,7 +71,7 @@
     ]
   },
   {
-    "id": "dndsheets:zombie", "name": "Zombi", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:zombie", "name": "Zombi", "type": "no-muerto", "baseEntity": "minecraft:zombie",
     "ac": 8, "hp": 22,
     "abilities": { "str": 13, "dex": 6, "con": 16, "int": 3, "wis": 6, "cha": 5 },
     "proficiencyBonus": 2,
@@ -81,7 +81,7 @@
     ]
   },
   {
-    "id": "dndsheets:skeleton", "name": "Esqueleto", "baseEntity": "minecraft:skeleton",
+    "id": "dndsheets:skeleton", "name": "Esqueleto", "type": "no-muerto", "baseEntity": "minecraft:skeleton",
     "ac": 13, "hp": 13,
     "abilities": { "str": 10, "dex": 14, "con": 15, "int": 6, "wis": 8, "cha": 5 },
     "proficiencyBonus": 2,
@@ -91,7 +91,7 @@
     ]
   },
   {
-    "id": "dndsheets:bandit", "name": "Bandido", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:bandit", "name": "Bandido", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 12, "hp": 11,
     "abilities": { "str": 11, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 10 },
     "proficiencyBonus": 2,
@@ -100,7 +100,7 @@
     ]
   },
   {
-    "id": "dndsheets:owlbear", "name": "Osobúho", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:owlbear", "name": "Osobúho", "type": "monstruosidad", "baseEntity": "minecraft:zombie",
     "ac": 13, "hp": 59,
     "abilities": { "str": 20, "dex": 12, "con": 17, "int": 3, "wis": 12, "cha": 7 },
     "proficiencyBonus": 3,
@@ -110,7 +110,7 @@
     ]
   },
   {
-    "id": "dndsheets:wight", "name": "Espectro", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:wight", "name": "Espectro", "type": "no-muerto", "baseEntity": "minecraft:zombie",
     "ac": 14, "hp": 45,
     "abilities": { "str": 15, "dex": 14, "con": 16, "int": 10, "wis": 13, "cha": 15 },
     "proficiencyBonus": 3,
@@ -123,7 +123,7 @@
     ]
   },
   {
-    "id": "dndsheets:young_red_dragon", "name": "Dragón Rojo Joven", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:young_red_dragon", "name": "Dragón Rojo Joven", "type": "dragón", "baseEntity": "minecraft:zombie",
     "ac": 18, "hp": 178,
     "abilities": { "str": 23, "dex": 10, "con": 21, "int": 14, "wis": 11, "cha": 19 },
     "proficiencyBonus": 4,
@@ -137,7 +137,7 @@
     ]
   },
   {
-    "id": "dndsheets:acolyte", "name": "Acolito", "baseEntity": "minecraft:villager",
+    "id": "dndsheets:acolyte", "name": "Acolito", "type": "humanoide", "baseEntity": "minecraft:villager",
     "ac": 10, "hp": 9,
     "abilities": { "str": 10, "dex": 10, "con": 10, "int": 10, "wis": 14, "cha": 11 },
     "proficiencyBonus": 2,
@@ -146,7 +146,7 @@
     ]
   },
   {
-    "id": "dndsheets:animated_armor", "name": "Armadura Animada", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:animated_armor", "name": "Armadura Animada", "type": "autómata", "baseEntity": "minecraft:iron_golem",
     "ac": 18, "hp": 33,
     "abilities": { "str": 14, "dex": 11, "con": 13, "int": 1, "wis": 3, "cha": 1 },
     "proficiencyBonus": 2,
@@ -156,7 +156,7 @@
     ]
   },
   {
-    "id": "dndsheets:ankheg", "name": "Ankheg", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:ankheg", "name": "Ankheg", "type": "monstruosidad", "baseEntity": "minecraft:frog",
     "ac": 14, "hp": 39,
     "abilities": { "str": 17, "dex": 11, "con": 13, "int": 1, "wis": 13, "cha": 6 },
     "proficiencyBonus": 2,
@@ -165,7 +165,7 @@
     ]
   },
   {
-    "id": "dndsheets:ape", "name": "Simio", "baseEntity": "minecraft:polar_bear",
+    "id": "dndsheets:ape", "name": "Simio", "type": "bestia", "baseEntity": "minecraft:polar_bear",
     "ac": 12, "hp": 19,
     "abilities": { "str": 16, "dex": 14, "con": 14, "int": 6, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -175,7 +175,7 @@
     ]
   },
   {
-    "id": "dndsheets:awakened_shrub", "name": "Arbusto Despierto", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:awakened_shrub", "name": "Arbusto Despierto", "type": "planta", "baseEntity": "minecraft:zombie",
     "ac": 9, "hp": 10,
     "abilities": { "str": 3, "dex": 8, "con": 11, "int": 10, "wis": 10, "cha": 6 },
     "proficiencyBonus": 2,
@@ -185,7 +185,7 @@
     ]
   },
   {
-    "id": "dndsheets:awakened_tree", "name": "Arbol Despierto", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:awakened_tree", "name": "Arbol Despierto", "type": "planta", "baseEntity": "minecraft:iron_golem",
     "ac": 13, "hp": 59,
     "abilities": { "str": 19, "dex": 6, "con": 15, "int": 10, "wis": 10, "cha": 7 },
     "proficiencyBonus": 2,
@@ -195,7 +195,7 @@
     ]
   },
   {
-    "id": "dndsheets:axe_beak", "name": "Pico Hacha", "baseEntity": "minecraft:goat",
+    "id": "dndsheets:axe_beak", "name": "Pico Hacha", "type": "bestia", "baseEntity": "minecraft:goat",
     "ac": 11, "hp": 19,
     "abilities": { "str": 14, "dex": 12, "con": 12, "int": 2, "wis": 10, "cha": 5 },
     "proficiencyBonus": 2,
@@ -204,7 +204,7 @@
     ]
   },
   {
-    "id": "dndsheets:azer", "name": "Azer", "baseEntity": "minecraft:blaze",
+    "id": "dndsheets:azer", "name": "Azer", "type": "elemental", "baseEntity": "minecraft:blaze",
     "ac": 15, "hp": 39,
     "abilities": { "str": 17, "dex": 12, "con": 15, "int": 12, "wis": 13, "cha": 10 },
     "proficiencyBonus": 2,
@@ -214,7 +214,7 @@
     ]
   },
   {
-    "id": "dndsheets:baboon", "name": "Babuino", "baseEntity": "minecraft:polar_bear",
+    "id": "dndsheets:baboon", "name": "Babuino", "type": "bestia", "baseEntity": "minecraft:polar_bear",
     "ac": 12, "hp": 3,
     "abilities": { "str": 8, "dex": 14, "con": 11, "int": 4, "wis": 12, "cha": 6 },
     "proficiencyBonus": 2,
@@ -223,7 +223,7 @@
     ]
   },
   {
-    "id": "dndsheets:badger", "name": "Tejon", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:badger", "name": "Tejon", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 10, "hp": 3,
     "abilities": { "str": 4, "dex": 11, "con": 12, "int": 2, "wis": 12, "cha": 5 },
     "proficiencyBonus": 2,
@@ -232,7 +232,7 @@
     ]
   },
   {
-    "id": "dndsheets:bandit_captain", "name": "Capitan Bandido", "baseEntity": "minecraft:vindicator",
+    "id": "dndsheets:bandit_captain", "name": "Capitan Bandido", "type": "humanoide", "baseEntity": "minecraft:vindicator",
     "ac": 15, "hp": 65,
     "abilities": { "str": 15, "dex": 16, "con": 14, "int": 14, "wis": 11, "cha": 14 },
     "proficiencyBonus": 2,
@@ -242,7 +242,7 @@
     ]
   },
   {
-    "id": "dndsheets:bat", "name": "Murcielago", "baseEntity": "minecraft:bat",
+    "id": "dndsheets:bat", "name": "Murcielago", "type": "bestia", "baseEntity": "minecraft:bat",
     "ac": 12, "hp": 1,
     "abilities": { "str": 2, "dex": 15, "con": 8, "int": 2, "wis": 12, "cha": 4 },
     "proficiencyBonus": 2,
@@ -251,7 +251,7 @@
     ]
   },
   {
-    "id": "dndsheets:berserker", "name": "Berserker", "baseEntity": "minecraft:vindicator",
+    "id": "dndsheets:berserker", "name": "Berserker", "type": "humanoide", "baseEntity": "minecraft:vindicator",
     "ac": 13, "hp": 67,
     "abilities": { "str": 16, "dex": 12, "con": 17, "int": 9, "wis": 11, "cha": 9 },
     "proficiencyBonus": 2,
@@ -260,7 +260,7 @@
     ]
   },
   {
-    "id": "dndsheets:black_bear", "name": "Oso Negro", "baseEntity": "minecraft:polar_bear",
+    "id": "dndsheets:black_bear", "name": "Oso Negro", "type": "bestia", "baseEntity": "minecraft:polar_bear",
     "ac": 11, "hp": 19,
     "abilities": { "str": 15, "dex": 10, "con": 14, "int": 2, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -270,7 +270,7 @@
     ]
   },
   {
-    "id": "dndsheets:black_dragon_wyrmling", "name": "Cria de Dragon Negro", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:black_dragon_wyrmling", "name": "Cria de Dragon Negro", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 33,
     "abilities": { "str": 15, "dex": 14, "con": 13, "int": 10, "wis": 11, "cha": 13 },
     "proficiencyBonus": 2,
@@ -280,7 +280,7 @@
     ]
   },
   {
-    "id": "dndsheets:blink_dog", "name": "Perro Parpadeante", "baseEntity": "minecraft:wolf",
+    "id": "dndsheets:blink_dog", "name": "Perro Parpadeante", "type": "hada", "baseEntity": "minecraft:wolf",
     "ac": 13, "hp": 22,
     "abilities": { "str": 12, "dex": 17, "con": 12, "int": 10, "wis": 13, "cha": 11 },
     "proficiencyBonus": 2,
@@ -289,7 +289,7 @@
     ]
   },
   {
-    "id": "dndsheets:blood_hawk", "name": "Halcon Sanguinario", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:blood_hawk", "name": "Halcon Sanguinario", "type": "bestia", "baseEntity": "minecraft:parrot",
     "ac": 12, "hp": 7,
     "abilities": { "str": 6, "dex": 14, "con": 10, "int": 3, "wis": 14, "cha": 5 },
     "proficiencyBonus": 2,
@@ -298,7 +298,7 @@
     ]
   },
   {
-    "id": "dndsheets:boar", "name": "Jabali", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:boar", "name": "Jabali", "type": "bestia", "baseEntity": "minecraft:hoglin",
     "ac": 11, "hp": 11,
     "abilities": { "str": 13, "dex": 11, "con": 12, "int": 2, "wis": 9, "cha": 5 },
     "proficiencyBonus": 2,
@@ -307,7 +307,7 @@
     ]
   },
   {
-    "id": "dndsheets:brass_dragon_wyrmling", "name": "Cria de Dragon de Laton", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:brass_dragon_wyrmling", "name": "Cria de Dragon de Laton", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 16, "hp": 16,
     "abilities": { "str": 15, "dex": 10, "con": 13, "int": 10, "wis": 11, "cha": 13 },
     "proficiencyBonus": 2,
@@ -317,7 +317,7 @@
     ]
   },
   {
-    "id": "dndsheets:bronze_dragon_wyrmling", "name": "Cria de Dragon de Bronce", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:bronze_dragon_wyrmling", "name": "Cria de Dragon de Bronce", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 32,
     "abilities": { "str": 17, "dex": 10, "con": 15, "int": 12, "wis": 11, "cha": 15 },
     "proficiencyBonus": 2,
@@ -327,7 +327,7 @@
     ]
   },
   {
-    "id": "dndsheets:brown_bear", "name": "Oso Pardo", "baseEntity": "minecraft:polar_bear",
+    "id": "dndsheets:brown_bear", "name": "Oso Pardo", "type": "bestia", "baseEntity": "minecraft:polar_bear",
     "ac": 11, "hp": 34,
     "abilities": { "str": 19, "dex": 10, "con": 16, "int": 2, "wis": 13, "cha": 7 },
     "proficiencyBonus": 2,
@@ -337,7 +337,7 @@
     ]
   },
   {
-    "id": "dndsheets:bugbear", "name": "Osgo", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:bugbear", "name": "Osgo", "type": "humanoide", "baseEntity": "minecraft:piglin_brute",
     "ac": 16, "hp": 27,
     "abilities": { "str": 15, "dex": 14, "con": 13, "int": 8, "wis": 11, "cha": 9 },
     "proficiencyBonus": 2,
@@ -347,7 +347,7 @@
     ]
   },
   {
-    "id": "dndsheets:camel", "name": "Camello", "baseEntity": "minecraft:camel",
+    "id": "dndsheets:camel", "name": "Camello", "type": "bestia", "baseEntity": "minecraft:camel",
     "ac": 9, "hp": 15,
     "abilities": { "str": 16, "dex": 8, "con": 14, "int": 2, "wis": 8, "cha": 5 },
     "proficiencyBonus": 2,
@@ -356,7 +356,7 @@
     ]
   },
   {
-    "id": "dndsheets:cat", "name": "Gato", "baseEntity": "minecraft:cat",
+    "id": "dndsheets:cat", "name": "Gato", "type": "bestia", "baseEntity": "minecraft:cat",
     "ac": 12, "hp": 2,
     "abilities": { "str": 3, "dex": 15, "con": 10, "int": 3, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -365,7 +365,7 @@
     ]
   },
   {
-    "id": "dndsheets:centaur", "name": "Centauro", "baseEntity": "minecraft:horse",
+    "id": "dndsheets:centaur", "name": "Centauro", "type": "monstruosidad", "baseEntity": "minecraft:horse",
     "ac": 12, "hp": 45,
     "abilities": { "str": 18, "dex": 14, "con": 14, "int": 9, "wis": 13, "cha": 11 },
     "proficiencyBonus": 2,
@@ -376,7 +376,7 @@
     ]
   },
   {
-    "id": "dndsheets:cockatrice", "name": "Cocatriz", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:cockatrice", "name": "Cocatriz", "type": "monstruosidad", "baseEntity": "minecraft:parrot",
     "ac": 11, "hp": 27,
     "abilities": { "str": 6, "dex": 12, "con": 12, "int": 2, "wis": 13, "cha": 5 },
     "proficiencyBonus": 2,
@@ -385,7 +385,7 @@
     ]
   },
   {
-    "id": "dndsheets:commoner", "name": "Plebeyo", "baseEntity": "minecraft:villager",
+    "id": "dndsheets:commoner", "name": "Plebeyo", "type": "humanoide", "baseEntity": "minecraft:villager",
     "ac": 10, "hp": 4,
     "abilities": { "str": 10, "dex": 10, "con": 10, "int": 10, "wis": 10, "cha": 10 },
     "proficiencyBonus": 2,
@@ -394,7 +394,7 @@
     ]
   },
   {
-    "id": "dndsheets:constrictor_snake", "name": "Serpiente Constrictora", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:constrictor_snake", "name": "Serpiente Constrictora", "type": "bestia", "baseEntity": "minecraft:frog",
     "ac": 12, "hp": 13,
     "abilities": { "str": 15, "dex": 14, "con": 12, "int": 1, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -404,7 +404,7 @@
     ]
   },
   {
-    "id": "dndsheets:copper_dragon_wyrmling", "name": "Cria de Dragon de Cobre", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:copper_dragon_wyrmling", "name": "Cria de Dragon de Cobre", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 16, "hp": 22,
     "abilities": { "str": 15, "dex": 12, "con": 13, "int": 14, "wis": 11, "cha": 13 },
     "proficiencyBonus": 2,
@@ -414,7 +414,7 @@
     ]
   },
   {
-    "id": "dndsheets:crab", "name": "Cangrejo", "baseEntity": "minecraft:turtle",
+    "id": "dndsheets:crab", "name": "Cangrejo", "type": "bestia", "baseEntity": "minecraft:turtle",
     "ac": 11, "hp": 2,
     "abilities": { "str": 2, "dex": 11, "con": 10, "int": 1, "wis": 8, "cha": 2 },
     "proficiencyBonus": 2,
@@ -423,7 +423,7 @@
     ]
   },
   {
-    "id": "dndsheets:crocodile", "name": "Cocodrilo", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:crocodile", "name": "Cocodrilo", "type": "bestia", "baseEntity": "minecraft:frog",
     "ac": 12, "hp": 19,
     "abilities": { "str": 15, "dex": 10, "con": 13, "int": 2, "wis": 10, "cha": 5 },
     "proficiencyBonus": 2,
@@ -432,7 +432,7 @@
     ]
   },
   {
-    "id": "dndsheets:cult_fanatic", "name": "Fanatico de Culto", "baseEntity": "minecraft:witch",
+    "id": "dndsheets:cult_fanatic", "name": "Fanatico de Culto", "type": "humanoide", "baseEntity": "minecraft:witch",
     "ac": 13, "hp": 22,
     "abilities": { "str": 11, "dex": 14, "con": 12, "int": 10, "wis": 13, "cha": 14 },
     "proficiencyBonus": 2,
@@ -441,7 +441,7 @@
     ]
   },
   {
-    "id": "dndsheets:cultist", "name": "Cultista", "baseEntity": "minecraft:pillager",
+    "id": "dndsheets:cultist", "name": "Cultista", "type": "humanoide", "baseEntity": "minecraft:pillager",
     "ac": 12, "hp": 9,
     "abilities": { "str": 11, "dex": 12, "con": 10, "int": 10, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
@@ -450,7 +450,7 @@
     ]
   },
   {
-    "id": "dndsheets:darkmantle", "name": "Manto Oscuro", "baseEntity": "minecraft:bat",
+    "id": "dndsheets:darkmantle", "name": "Manto Oscuro", "type": "monstruosidad", "baseEntity": "minecraft:bat",
     "ac": 11, "hp": 22,
     "abilities": { "str": 16, "dex": 12, "con": 13, "int": 2, "wis": 10, "cha": 5 },
     "proficiencyBonus": 2,
@@ -459,7 +459,7 @@
     ]
   },
   {
-    "id": "dndsheets:death_dog", "name": "Perro de la Muerte", "baseEntity": "minecraft:wolf",
+    "id": "dndsheets:death_dog", "name": "Perro de la Muerte", "type": "monstruosidad", "baseEntity": "minecraft:wolf",
     "ac": 12, "hp": 39,
     "abilities": { "str": 15, "dex": 14, "con": 14, "int": 3, "wis": 13, "cha": 6 },
     "proficiencyBonus": 2,
@@ -468,7 +468,7 @@
     ]
   },
   {
-    "id": "dndsheets:deep_gnome_svirfneblin", "name": "Gnomo de las Profundidades", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:deep_gnome_svirfneblin", "name": "Gnomo de las Profundidades", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 15, "hp": 16,
     "abilities": { "str": 15, "dex": 14, "con": 14, "int": 12, "wis": 10, "cha": 9 },
     "proficiencyBonus": 2,
@@ -478,7 +478,7 @@
     ]
   },
   {
-    "id": "dndsheets:deer", "name": "Ciervo", "baseEntity": "minecraft:goat",
+    "id": "dndsheets:deer", "name": "Ciervo", "type": "bestia", "baseEntity": "minecraft:goat",
     "ac": 13, "hp": 4,
     "abilities": { "str": 11, "dex": 16, "con": 11, "int": 2, "wis": 14, "cha": 5 },
     "proficiencyBonus": 2,
@@ -487,7 +487,7 @@
     ]
   },
   {
-    "id": "dndsheets:dire_wolf", "name": "Lobo Terrible", "baseEntity": "minecraft:wolf",
+    "id": "dndsheets:dire_wolf", "name": "Lobo Terrible", "type": "bestia", "baseEntity": "minecraft:wolf",
     "ac": 14, "hp": 37,
     "abilities": { "str": 17, "dex": 15, "con": 15, "int": 3, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -496,7 +496,7 @@
     ]
   },
   {
-    "id": "dndsheets:draft_horse", "name": "Caballo de Tiro", "baseEntity": "minecraft:horse",
+    "id": "dndsheets:draft_horse", "name": "Caballo de Tiro", "type": "bestia", "baseEntity": "minecraft:horse",
     "ac": 10, "hp": 19,
     "abilities": { "str": 18, "dex": 10, "con": 12, "int": 2, "wis": 11, "cha": 7 },
     "proficiencyBonus": 2,
@@ -505,7 +505,7 @@
     ]
   },
   {
-    "id": "dndsheets:dretch", "name": "Dretch", "baseEntity": "minecraft:zoglin",
+    "id": "dndsheets:dretch", "name": "Dretch", "type": "inmundo", "baseEntity": "minecraft:zoglin",
     "ac": 11, "hp": 18,
     "abilities": { "str": 11, "dex": 11, "con": 12, "int": 5, "wis": 8, "cha": 3 },
     "proficiencyBonus": 2,
@@ -516,7 +516,7 @@
     ]
   },
   {
-    "id": "dndsheets:drow", "name": "Drow", "baseEntity": "minecraft:pillager",
+    "id": "dndsheets:drow", "name": "Drow", "type": "humanoide", "baseEntity": "minecraft:pillager",
     "ac": 15, "hp": 13,
     "abilities": { "str": 10, "dex": 14, "con": 10, "int": 11, "wis": 11, "cha": 12 },
     "proficiencyBonus": 2,
@@ -526,7 +526,7 @@
     ]
   },
   {
-    "id": "dndsheets:druid", "name": "Druida", "baseEntity": "minecraft:witch",
+    "id": "dndsheets:druid", "name": "Druida", "type": "humanoide", "baseEntity": "minecraft:witch",
     "ac": 11, "hp": 27,
     "abilities": { "str": 10, "dex": 12, "con": 13, "int": 12, "wis": 15, "cha": 11 },
     "proficiencyBonus": 2,
@@ -535,7 +535,7 @@
     ]
   },
   {
-    "id": "dndsheets:dryad", "name": "Driade", "baseEntity": "minecraft:allay",
+    "id": "dndsheets:dryad", "name": "Driade", "type": "hada", "baseEntity": "minecraft:allay",
     "ac": 11, "hp": 22,
     "abilities": { "str": 10, "dex": 12, "con": 11, "int": 14, "wis": 15, "cha": 18 },
     "proficiencyBonus": 2,
@@ -544,7 +544,7 @@
     ]
   },
   {
-    "id": "dndsheets:duergar", "name": "Duergar", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:duergar", "name": "Duergar", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 16, "hp": 26,
     "abilities": { "str": 14, "dex": 11, "con": 14, "int": 11, "wis": 10, "cha": 9 },
     "proficiencyBonus": 2,
@@ -555,7 +555,7 @@
     ]
   },
   {
-    "id": "dndsheets:dust_mephit", "name": "Mefito de Polvo", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:dust_mephit", "name": "Mefito de Polvo", "type": "elemental", "baseEntity": "minecraft:vex",
     "ac": 12, "hp": 17,
     "abilities": { "str": 5, "dex": 14, "con": 10, "int": 9, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
@@ -565,7 +565,7 @@
     ]
   },
   {
-    "id": "dndsheets:eagle", "name": "Aguila", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:eagle", "name": "Aguila", "type": "bestia", "baseEntity": "minecraft:parrot",
     "ac": 12, "hp": 3,
     "abilities": { "str": 6, "dex": 15, "con": 10, "int": 2, "wis": 14, "cha": 7 },
     "proficiencyBonus": 2,
@@ -574,7 +574,7 @@
     ]
   },
   {
-    "id": "dndsheets:elk", "name": "Alce", "baseEntity": "minecraft:goat",
+    "id": "dndsheets:elk", "name": "Alce", "type": "bestia", "baseEntity": "minecraft:goat",
     "ac": 10, "hp": 13,
     "abilities": { "str": 16, "dex": 10, "con": 12, "int": 2, "wis": 10, "cha": 6 },
     "proficiencyBonus": 2,
@@ -584,7 +584,7 @@
     ]
   },
   {
-    "id": "dndsheets:ettercap", "name": "Ettercap", "baseEntity": "minecraft:spider",
+    "id": "dndsheets:ettercap", "name": "Ettercap", "type": "monstruosidad", "baseEntity": "minecraft:spider",
     "ac": 13, "hp": 44,
     "abilities": { "str": 14, "dex": 15, "con": 13, "int": 7, "wis": 12, "cha": 8 },
     "proficiencyBonus": 2,
@@ -594,7 +594,7 @@
     ]
   },
   {
-    "id": "dndsheets:flying_snake", "name": "Serpiente Voladora", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:flying_snake", "name": "Serpiente Voladora", "type": "bestia", "baseEntity": "minecraft:parrot",
     "ac": 14, "hp": 5,
     "abilities": { "str": 4, "dex": 18, "con": 11, "int": 2, "wis": 12, "cha": 5 },
     "proficiencyBonus": 2,
@@ -603,7 +603,7 @@
     ]
   },
   {
-    "id": "dndsheets:flying_sword", "name": "Espada Voladora", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:flying_sword", "name": "Espada Voladora", "type": "autómata", "baseEntity": "minecraft:vex",
     "ac": 17, "hp": 17,
     "abilities": { "str": 12, "dex": 15, "con": 11, "int": 1, "wis": 5, "cha": 1 },
     "proficiencyBonus": 2,
@@ -613,7 +613,7 @@
     ]
   },
   {
-    "id": "dndsheets:gargoyle", "name": "Gargola", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:gargoyle", "name": "Gargola", "type": "elemental", "baseEntity": "minecraft:iron_golem",
     "ac": 15, "hp": 52,
     "abilities": { "str": 15, "dex": 11, "con": 16, "int": 6, "wis": 11, "cha": 7 },
     "proficiencyBonus": 2,
@@ -625,7 +625,7 @@
     ]
   },
   {
-    "id": "dndsheets:gelatinous_cube", "name": "Cubo Gelatinoso", "baseEntity": "minecraft:slime",
+    "id": "dndsheets:gelatinous_cube", "name": "Cubo Gelatinoso", "type": "cieno", "baseEntity": "minecraft:slime",
     "ac": 6, "hp": 84,
     "abilities": { "str": 14, "dex": 3, "con": 20, "int": 1, "wis": 6, "cha": 1 },
     "proficiencyBonus": 2,
@@ -634,7 +634,7 @@
     ]
   },
   {
-    "id": "dndsheets:ghast", "name": "Ghast", "baseEntity": "minecraft:husk",
+    "id": "dndsheets:ghast", "name": "Ghast", "type": "no-muerto", "baseEntity": "minecraft:husk",
     "ac": 13, "hp": 36,
     "abilities": { "str": 16, "dex": 17, "con": 10, "int": 11, "wis": 10, "cha": 8 },
     "proficiencyBonus": 2,
@@ -645,7 +645,7 @@
     ]
   },
   {
-    "id": "dndsheets:ghoul", "name": "Ghoul", "baseEntity": "minecraft:husk",
+    "id": "dndsheets:ghoul", "name": "Ghoul", "type": "no-muerto", "baseEntity": "minecraft:husk",
     "ac": 12, "hp": 22,
     "abilities": { "str": 13, "dex": 15, "con": 10, "int": 7, "wis": 10, "cha": 6 },
     "proficiencyBonus": 2,
@@ -656,7 +656,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_badger", "name": "Tejon Gigante", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:giant_badger", "name": "Tejon Gigante", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 10, "hp": 13,
     "abilities": { "str": 13, "dex": 10, "con": 15, "int": 2, "wis": 12, "cha": 5 },
     "proficiencyBonus": 2,
@@ -666,7 +666,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_bat", "name": "Murcielago Gigante", "baseEntity": "minecraft:bat",
+    "id": "dndsheets:giant_bat", "name": "Murcielago Gigante", "type": "bestia", "baseEntity": "minecraft:bat",
     "ac": 13, "hp": 22,
     "abilities": { "str": 15, "dex": 16, "con": 11, "int": 2, "wis": 12, "cha": 6 },
     "proficiencyBonus": 2,
@@ -675,7 +675,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_boar", "name": "Jabali Gigante", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:giant_boar", "name": "Jabali Gigante", "type": "bestia", "baseEntity": "minecraft:hoglin",
     "ac": 12, "hp": 42,
     "abilities": { "str": 17, "dex": 10, "con": 16, "int": 2, "wis": 7, "cha": 5 },
     "proficiencyBonus": 2,
@@ -684,7 +684,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_centipede", "name": "Ciempies Gigante", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:giant_centipede", "name": "Ciempies Gigante", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 13, "hp": 4,
     "abilities": { "str": 5, "dex": 14, "con": 12, "int": 1, "wis": 7, "cha": 3 },
     "proficiencyBonus": 2,
@@ -693,7 +693,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_constrictor_snake", "name": "Serpiente Constrictora Gigante", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:giant_constrictor_snake", "name": "Serpiente Constrictora Gigante", "type": "bestia", "baseEntity": "minecraft:frog",
     "ac": 12, "hp": 60,
     "abilities": { "str": 19, "dex": 14, "con": 12, "int": 1, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -703,7 +703,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_crab", "name": "Cangrejo Gigante", "baseEntity": "minecraft:turtle",
+    "id": "dndsheets:giant_crab", "name": "Cangrejo Gigante", "type": "bestia", "baseEntity": "minecraft:turtle",
     "ac": 15, "hp": 13,
     "abilities": { "str": 13, "dex": 15, "con": 11, "int": 1, "wis": 9, "cha": 3 },
     "proficiencyBonus": 2,
@@ -712,7 +712,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_eagle", "name": "Aguila Gigante", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:giant_eagle", "name": "Aguila Gigante", "type": "bestia", "baseEntity": "minecraft:parrot",
     "ac": 13, "hp": 26,
     "abilities": { "str": 16, "dex": 17, "con": 13, "int": 8, "wis": 14, "cha": 10 },
     "proficiencyBonus": 2,
@@ -722,7 +722,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_elk", "name": "Alce Gigante", "baseEntity": "minecraft:goat",
+    "id": "dndsheets:giant_elk", "name": "Alce Gigante", "type": "bestia", "baseEntity": "minecraft:goat",
     "ac": 14, "hp": 42,
     "abilities": { "str": 19, "dex": 16, "con": 14, "int": 7, "wis": 14, "cha": 10 },
     "proficiencyBonus": 2,
@@ -732,7 +732,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_fire_beetle", "name": "Escarabajo de Fuego Gigante", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:giant_fire_beetle", "name": "Escarabajo de Fuego Gigante", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 13, "hp": 4,
     "abilities": { "str": 8, "dex": 10, "con": 12, "int": 1, "wis": 7, "cha": 3 },
     "proficiencyBonus": 2,
@@ -741,7 +741,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_frog", "name": "Rana Gigante", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:giant_frog", "name": "Rana Gigante", "type": "bestia", "baseEntity": "minecraft:frog",
     "ac": 11, "hp": 18,
     "abilities": { "str": 12, "dex": 13, "con": 11, "int": 2, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -750,7 +750,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_goat", "name": "Cabra Gigante", "baseEntity": "minecraft:goat",
+    "id": "dndsheets:giant_goat", "name": "Cabra Gigante", "type": "bestia", "baseEntity": "minecraft:goat",
     "ac": 11, "hp": 19,
     "abilities": { "str": 17, "dex": 11, "con": 12, "int": 3, "wis": 12, "cha": 6 },
     "proficiencyBonus": 2,
@@ -759,7 +759,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_hyena", "name": "Hiena Gigante", "baseEntity": "minecraft:wolf",
+    "id": "dndsheets:giant_hyena", "name": "Hiena Gigante", "type": "bestia", "baseEntity": "minecraft:wolf",
     "ac": 12, "hp": 45,
     "abilities": { "str": 16, "dex": 14, "con": 14, "int": 2, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -768,7 +768,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_lizard", "name": "Lagarto Gigante", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:giant_lizard", "name": "Lagarto Gigante", "type": "bestia", "baseEntity": "minecraft:frog",
     "ac": 12, "hp": 19,
     "abilities": { "str": 15, "dex": 12, "con": 13, "int": 2, "wis": 10, "cha": 5 },
     "proficiencyBonus": 2,
@@ -777,7 +777,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_octopus", "name": "Pulpo Gigante", "baseEntity": "minecraft:glow_squid",
+    "id": "dndsheets:giant_octopus", "name": "Pulpo Gigante", "type": "bestia", "baseEntity": "minecraft:glow_squid",
     "ac": 11, "hp": 52,
     "abilities": { "str": 17, "dex": 13, "con": 13, "int": 4, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -786,7 +786,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_owl", "name": "Buho Gigante", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:giant_owl", "name": "Buho Gigante", "type": "bestia", "baseEntity": "minecraft:parrot",
     "ac": 12, "hp": 19,
     "abilities": { "str": 13, "dex": 15, "con": 12, "int": 8, "wis": 13, "cha": 10 },
     "proficiencyBonus": 2,
@@ -795,7 +795,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_poisonous_snake", "name": "Serpiente Venenosa Gigante", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:giant_poisonous_snake", "name": "Serpiente Venenosa Gigante", "type": "bestia", "baseEntity": "minecraft:frog",
     "ac": 14, "hp": 11,
     "abilities": { "str": 10, "dex": 18, "con": 13, "int": 2, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -804,7 +804,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_rat", "name": "Rata Gigante", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:giant_rat", "name": "Rata Gigante", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 12, "hp": 7,
     "abilities": { "str": 7, "dex": 15, "con": 11, "int": 2, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -813,7 +813,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_rat_diseased", "name": "Rata Gigante Enferma", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:giant_rat_diseased", "name": "Rata Gigante Enferma", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 12, "hp": 7,
     "abilities": { "str": 7, "dex": 15, "con": 11, "int": 2, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -822,7 +822,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_sea_horse", "name": "Caballito de Mar Gigante", "baseEntity": "minecraft:cod",
+    "id": "dndsheets:giant_sea_horse", "name": "Caballito de Mar Gigante", "type": "bestia", "baseEntity": "minecraft:cod",
     "ac": 13, "hp": 16,
     "abilities": { "str": 12, "dex": 15, "con": 11, "int": 2, "wis": 12, "cha": 5 },
     "proficiencyBonus": 2,
@@ -831,7 +831,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_toad", "name": "Sapo Gigante", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:giant_toad", "name": "Sapo Gigante", "type": "bestia", "baseEntity": "minecraft:frog",
     "ac": 11, "hp": 39,
     "abilities": { "str": 15, "dex": 13, "con": 13, "int": 2, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -840,7 +840,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_vulture", "name": "Buitre Gigante", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:giant_vulture", "name": "Buitre Gigante", "type": "bestia", "baseEntity": "minecraft:parrot",
     "ac": 10, "hp": 22,
     "abilities": { "str": 15, "dex": 10, "con": 15, "int": 6, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -850,7 +850,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_wasp", "name": "Avispa Gigante", "baseEntity": "minecraft:bee",
+    "id": "dndsheets:giant_wasp", "name": "Avispa Gigante", "type": "bestia", "baseEntity": "minecraft:bee",
     "ac": 12, "hp": 13,
     "abilities": { "str": 10, "dex": 14, "con": 10, "int": 1, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -859,7 +859,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_weasel", "name": "Comadreja Gigante", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:giant_weasel", "name": "Comadreja Gigante", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 13, "hp": 9,
     "abilities": { "str": 11, "dex": 16, "con": 10, "int": 4, "wis": 12, "cha": 5 },
     "proficiencyBonus": 2,
@@ -868,7 +868,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_wolf_spider", "name": "Arana Lobo Gigante", "baseEntity": "minecraft:spider",
+    "id": "dndsheets:giant_wolf_spider", "name": "Arana Lobo Gigante", "type": "bestia", "baseEntity": "minecraft:spider",
     "ac": 13, "hp": 11,
     "abilities": { "str": 12, "dex": 16, "con": 13, "int": 3, "wis": 12, "cha": 4 },
     "proficiencyBonus": 2,
@@ -877,7 +877,7 @@
     ]
   },
   {
-    "id": "dndsheets:gibbering_mouther", "name": "Farfullador", "baseEntity": "minecraft:slime",
+    "id": "dndsheets:gibbering_mouther", "name": "Farfullador", "type": "aberración", "baseEntity": "minecraft:slime",
     "ac": 9, "hp": 67,
     "abilities": { "str": 10, "dex": 8, "con": 16, "int": 3, "wis": 10, "cha": 6 },
     "proficiencyBonus": 2,
@@ -886,7 +886,7 @@
     ]
   },
   {
-    "id": "dndsheets:gnoll", "name": "Gnoll", "baseEntity": "minecraft:piglin",
+    "id": "dndsheets:gnoll", "name": "Gnoll", "type": "humanoide", "baseEntity": "minecraft:piglin",
     "ac": 15, "hp": 22,
     "abilities": { "str": 14, "dex": 12, "con": 11, "int": 6, "wis": 10, "cha": 7 },
     "proficiencyBonus": 2,
@@ -897,7 +897,7 @@
     ]
   },
   {
-    "id": "dndsheets:goat", "name": "Cabra", "baseEntity": "minecraft:goat",
+    "id": "dndsheets:goat", "name": "Cabra", "type": "bestia", "baseEntity": "minecraft:goat",
     "ac": 10, "hp": 4,
     "abilities": { "str": 12, "dex": 10, "con": 11, "int": 2, "wis": 10, "cha": 5 },
     "proficiencyBonus": 2,
@@ -906,7 +906,7 @@
     ]
   },
   {
-    "id": "dndsheets:gray_ooze", "name": "Cieno Gris", "baseEntity": "minecraft:slime",
+    "id": "dndsheets:gray_ooze", "name": "Cieno Gris", "type": "cieno", "baseEntity": "minecraft:slime",
     "ac": 8, "hp": 22,
     "abilities": { "str": 12, "dex": 6, "con": 16, "int": 1, "wis": 6, "cha": 2 },
     "proficiencyBonus": 2,
@@ -916,7 +916,7 @@
     ]
   },
   {
-    "id": "dndsheets:green_dragon_wyrmling", "name": "Cria de Dragon Verde", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:green_dragon_wyrmling", "name": "Cria de Dragon Verde", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 38,
     "abilities": { "str": 15, "dex": 12, "con": 13, "int": 14, "wis": 11, "cha": 13 },
     "proficiencyBonus": 2,
@@ -926,7 +926,7 @@
     ]
   },
   {
-    "id": "dndsheets:grick", "name": "Grick", "baseEntity": "minecraft:cave_spider",
+    "id": "dndsheets:grick", "name": "Grick", "type": "monstruosidad", "baseEntity": "minecraft:cave_spider",
     "ac": 14, "hp": 27,
     "abilities": { "str": 14, "dex": 14, "con": 11, "int": 3, "wis": 14, "cha": 5 },
     "proficiencyBonus": 2,
@@ -937,7 +937,7 @@
     ]
   },
   {
-    "id": "dndsheets:griffon", "name": "Grifo", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:griffon", "name": "Grifo", "type": "monstruosidad", "baseEntity": "minecraft:parrot",
     "ac": 12, "hp": 59,
     "abilities": { "str": 18, "dex": 15, "con": 16, "int": 2, "wis": 13, "cha": 8 },
     "proficiencyBonus": 2,
@@ -947,7 +947,7 @@
     ]
   },
   {
-    "id": "dndsheets:grimlock", "name": "Grimlock", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:grimlock", "name": "Grimlock", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 11, "hp": 11,
     "abilities": { "str": 16, "dex": 12, "con": 12, "int": 9, "wis": 8, "cha": 6 },
     "proficiencyBonus": 2,
@@ -956,7 +956,7 @@
     ]
   },
   {
-    "id": "dndsheets:guard", "name": "Guardia", "baseEntity": "minecraft:villager",
+    "id": "dndsheets:guard", "name": "Guardia", "type": "humanoide", "baseEntity": "minecraft:villager",
     "ac": 16, "hp": 11,
     "abilities": { "str": 13, "dex": 12, "con": 12, "int": 10, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
@@ -965,7 +965,7 @@
     ]
   },
   {
-    "id": "dndsheets:harpy", "name": "Arpia", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:harpy", "name": "Arpia", "type": "monstruosidad", "baseEntity": "minecraft:parrot",
     "ac": 11, "hp": 38,
     "abilities": { "str": 12, "dex": 13, "con": 12, "int": 7, "wis": 10, "cha": 13 },
     "proficiencyBonus": 2,
@@ -975,7 +975,7 @@
     ]
   },
   {
-    "id": "dndsheets:hawk", "name": "Halcon", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:hawk", "name": "Halcon", "type": "bestia", "baseEntity": "minecraft:parrot",
     "ac": 13, "hp": 1,
     "abilities": { "str": 5, "dex": 16, "con": 8, "int": 2, "wis": 14, "cha": 6 },
     "proficiencyBonus": 2,
@@ -984,7 +984,7 @@
     ]
   },
   {
-    "id": "dndsheets:hippogriff", "name": "Hipogrifo", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:hippogriff", "name": "Hipogrifo", "type": "monstruosidad", "baseEntity": "minecraft:parrot",
     "ac": 11, "hp": 19,
     "abilities": { "str": 17, "dex": 13, "con": 13, "int": 2, "wis": 12, "cha": 8 },
     "proficiencyBonus": 2,
@@ -994,7 +994,7 @@
     ]
   },
   {
-    "id": "dndsheets:hobgoblin", "name": "Hobgoblin", "baseEntity": "minecraft:piglin",
+    "id": "dndsheets:hobgoblin", "name": "Hobgoblin", "type": "humanoide", "baseEntity": "minecraft:piglin",
     "ac": 18, "hp": 11,
     "abilities": { "str": 13, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 9 },
     "proficiencyBonus": 2,
@@ -1004,7 +1004,7 @@
     ]
   },
   {
-    "id": "dndsheets:homunculus", "name": "Homunculo", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:homunculus", "name": "Homunculo", "type": "autómata", "baseEntity": "minecraft:vex",
     "ac": 13, "hp": 5,
     "abilities": { "str": 4, "dex": 15, "con": 11, "int": 10, "wis": 10, "cha": 7 },
     "proficiencyBonus": 2,
@@ -1014,7 +1014,7 @@
     ]
   },
   {
-    "id": "dndsheets:hunter_shark", "name": "Tiburon Cazador", "baseEntity": "minecraft:dolphin",
+    "id": "dndsheets:hunter_shark", "name": "Tiburon Cazador", "type": "bestia", "baseEntity": "minecraft:dolphin",
     "ac": 12, "hp": 45,
     "abilities": { "str": 18, "dex": 13, "con": 15, "int": 1, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -1023,7 +1023,7 @@
     ]
   },
   {
-    "id": "dndsheets:hyena", "name": "Hiena", "baseEntity": "minecraft:wolf",
+    "id": "dndsheets:hyena", "name": "Hiena", "type": "bestia", "baseEntity": "minecraft:wolf",
     "ac": 11, "hp": 5,
     "abilities": { "str": 11, "dex": 13, "con": 12, "int": 2, "wis": 12, "cha": 5 },
     "proficiencyBonus": 2,
@@ -1032,7 +1032,7 @@
     ]
   },
   {
-    "id": "dndsheets:ice_mephit", "name": "Mefito de Hielo", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:ice_mephit", "name": "Mefito de Hielo", "type": "elemental", "baseEntity": "minecraft:vex",
     "ac": 11, "hp": 21,
     "abilities": { "str": 7, "dex": 13, "con": 10, "int": 9, "wis": 11, "cha": 12 },
     "proficiencyBonus": 2,
@@ -1042,7 +1042,7 @@
     ]
   },
   {
-    "id": "dndsheets:imp", "name": "Diablillo", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:imp", "name": "Diablillo", "type": "inmundo", "baseEntity": "minecraft:vex",
     "ac": 13, "hp": 10,
     "abilities": { "str": 6, "dex": 17, "con": 13, "int": 11, "wis": 12, "cha": 14 },
     "proficiencyBonus": 2,
@@ -1053,7 +1053,7 @@
     ]
   },
   {
-    "id": "dndsheets:jackal", "name": "Chacal", "baseEntity": "minecraft:wolf",
+    "id": "dndsheets:jackal", "name": "Chacal", "type": "bestia", "baseEntity": "minecraft:wolf",
     "ac": 12, "hp": 3,
     "abilities": { "str": 8, "dex": 15, "con": 11, "int": 3, "wis": 12, "cha": 6 },
     "proficiencyBonus": 2,
@@ -1062,7 +1062,7 @@
     ]
   },
   {
-    "id": "dndsheets:lemure", "name": "Lemur", "baseEntity": "minecraft:zombified_piglin",
+    "id": "dndsheets:lemure", "name": "Lemur", "type": "inmundo", "baseEntity": "minecraft:zombified_piglin",
     "ac": 7, "hp": 13,
     "abilities": { "str": 10, "dex": 5, "con": 11, "int": 1, "wis": 11, "cha": 3 },
     "proficiencyBonus": 2,
@@ -1072,7 +1072,7 @@
     ]
   },
   {
-    "id": "dndsheets:lion", "name": "Leon", "baseEntity": "minecraft:cat",
+    "id": "dndsheets:lion", "name": "Leon", "type": "bestia", "baseEntity": "minecraft:cat",
     "ac": 12, "hp": 26,
     "abilities": { "str": 17, "dex": 15, "con": 13, "int": 3, "wis": 12, "cha": 8 },
     "proficiencyBonus": 2,
@@ -1082,7 +1082,7 @@
     ]
   },
   {
-    "id": "dndsheets:lizard", "name": "Lagarto", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:lizard", "name": "Lagarto", "type": "bestia", "baseEntity": "minecraft:frog",
     "ac": 10, "hp": 2,
     "abilities": { "str": 2, "dex": 11, "con": 10, "int": 1, "wis": 8, "cha": 3 },
     "proficiencyBonus": 2,
@@ -1091,7 +1091,7 @@
     ]
   },
   {
-    "id": "dndsheets:lizardfolk", "name": "Hombre Lagarto", "baseEntity": "minecraft:drowned",
+    "id": "dndsheets:lizardfolk", "name": "Hombre Lagarto", "type": "humanoide", "baseEntity": "minecraft:drowned",
     "ac": 13, "hp": 22,
     "abilities": { "str": 15, "dex": 10, "con": 13, "int": 7, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -1103,7 +1103,7 @@
     ]
   },
   {
-    "id": "dndsheets:magma_mephit", "name": "Mefito de Magma", "baseEntity": "minecraft:blaze",
+    "id": "dndsheets:magma_mephit", "name": "Mefito de Magma", "type": "elemental", "baseEntity": "minecraft:blaze",
     "ac": 11, "hp": 22,
     "abilities": { "str": 8, "dex": 12, "con": 12, "int": 7, "wis": 10, "cha": 10 },
     "proficiencyBonus": 2,
@@ -1113,7 +1113,7 @@
     ]
   },
   {
-    "id": "dndsheets:magmin", "name": "Magmin", "baseEntity": "minecraft:blaze",
+    "id": "dndsheets:magmin", "name": "Magmin", "type": "elemental", "baseEntity": "minecraft:blaze",
     "ac": 14, "hp": 9,
     "abilities": { "str": 7, "dex": 15, "con": 12, "int": 8, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
@@ -1124,7 +1124,7 @@
     ]
   },
   {
-    "id": "dndsheets:mastiff", "name": "Mastin", "baseEntity": "minecraft:wolf",
+    "id": "dndsheets:mastiff", "name": "Mastin", "type": "bestia", "baseEntity": "minecraft:wolf",
     "ac": 12, "hp": 5,
     "abilities": { "str": 13, "dex": 14, "con": 12, "int": 3, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -1133,7 +1133,7 @@
     ]
   },
   {
-    "id": "dndsheets:merfolk", "name": "Traton", "baseEntity": "minecraft:drowned",
+    "id": "dndsheets:merfolk", "name": "Traton", "type": "humanoide", "baseEntity": "minecraft:drowned",
     "ac": 11, "hp": 11,
     "abilities": { "str": 10, "dex": 13, "con": 12, "int": 11, "wis": 11, "cha": 12 },
     "proficiencyBonus": 2,
@@ -1142,7 +1142,7 @@
     ]
   },
   {
-    "id": "dndsheets:merrow", "name": "Merrow", "baseEntity": "minecraft:drowned",
+    "id": "dndsheets:merrow", "name": "Merrow", "type": "monstruosidad", "baseEntity": "minecraft:drowned",
     "ac": 13, "hp": 45,
     "abilities": { "str": 18, "dex": 10, "con": 15, "int": 8, "wis": 10, "cha": 9 },
     "proficiencyBonus": 2,
@@ -1153,7 +1153,7 @@
     ]
   },
   {
-    "id": "dndsheets:mimic", "name": "Mimico", "baseEntity": "minecraft:slime",
+    "id": "dndsheets:mimic", "name": "Mimico", "type": "monstruosidad", "baseEntity": "minecraft:slime",
     "ac": 12, "hp": 58,
     "abilities": { "str": 17, "dex": 12, "con": 15, "int": 5, "wis": 13, "cha": 8 },
     "proficiencyBonus": 2,
@@ -1164,7 +1164,7 @@
     ]
   },
   {
-    "id": "dndsheets:minotaur_skeleton", "name": "Esqueleto de Minotauro", "baseEntity": "minecraft:wither_skeleton",
+    "id": "dndsheets:minotaur_skeleton", "name": "Esqueleto de Minotauro", "type": "no-muerto", "baseEntity": "minecraft:wither_skeleton",
     "ac": 12, "hp": 67,
     "abilities": { "str": 18, "dex": 11, "con": 15, "int": 6, "wis": 8, "cha": 5 },
     "proficiencyBonus": 2,
@@ -1175,7 +1175,7 @@
     ]
   },
   {
-    "id": "dndsheets:mule", "name": "Mula", "baseEntity": "minecraft:donkey",
+    "id": "dndsheets:mule", "name": "Mula", "type": "bestia", "baseEntity": "minecraft:donkey",
     "ac": 10, "hp": 11,
     "abilities": { "str": 14, "dex": 10, "con": 13, "int": 2, "wis": 10, "cha": 5 },
     "proficiencyBonus": 2,
@@ -1184,7 +1184,7 @@
     ]
   },
   {
-    "id": "dndsheets:noble", "name": "Noble", "baseEntity": "minecraft:villager",
+    "id": "dndsheets:noble", "name": "Noble", "type": "humanoide", "baseEntity": "minecraft:villager",
     "ac": 15, "hp": 9,
     "abilities": { "str": 11, "dex": 12, "con": 11, "int": 12, "wis": 14, "cha": 16 },
     "proficiencyBonus": 2,
@@ -1193,7 +1193,7 @@
     ]
   },
   {
-    "id": "dndsheets:ochre_jelly", "name": "Gelatina Ocre", "baseEntity": "minecraft:slime",
+    "id": "dndsheets:ochre_jelly", "name": "Gelatina Ocre", "type": "cieno", "baseEntity": "minecraft:slime",
     "ac": 8, "hp": 45,
     "abilities": { "str": 15, "dex": 6, "con": 14, "int": 2, "wis": 6, "cha": 1 },
     "proficiencyBonus": 2,
@@ -1203,7 +1203,7 @@
     ]
   },
   {
-    "id": "dndsheets:octopus", "name": "Pulpo", "baseEntity": "minecraft:squid",
+    "id": "dndsheets:octopus", "name": "Pulpo", "type": "bestia", "baseEntity": "minecraft:squid",
     "ac": 12, "hp": 3,
     "abilities": { "str": 4, "dex": 15, "con": 11, "int": 3, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -1212,7 +1212,7 @@
     ]
   },
   {
-    "id": "dndsheets:ogre_zombie", "name": "Ogro Zombi", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:ogre_zombie", "name": "Ogro Zombi", "type": "no-muerto", "baseEntity": "minecraft:zombie",
     "ac": 8, "hp": 85,
     "abilities": { "str": 19, "dex": 6, "con": 18, "int": 3, "wis": 6, "cha": 5 },
     "proficiencyBonus": 2,
@@ -1222,7 +1222,7 @@
     ]
   },
   {
-    "id": "dndsheets:owl", "name": "Buho", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:owl", "name": "Buho", "type": "bestia", "baseEntity": "minecraft:parrot",
     "ac": 11, "hp": 1,
     "abilities": { "str": 3, "dex": 13, "con": 8, "int": 2, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -1231,7 +1231,7 @@
     ]
   },
   {
-    "id": "dndsheets:panther", "name": "Pantera", "baseEntity": "minecraft:cat",
+    "id": "dndsheets:panther", "name": "Pantera", "type": "bestia", "baseEntity": "minecraft:cat",
     "ac": 12, "hp": 13,
     "abilities": { "str": 14, "dex": 15, "con": 10, "int": 3, "wis": 14, "cha": 7 },
     "proficiencyBonus": 2,
@@ -1241,7 +1241,7 @@
     ]
   },
   {
-    "id": "dndsheets:pegasus", "name": "Pegaso", "baseEntity": "minecraft:horse",
+    "id": "dndsheets:pegasus", "name": "Pegaso", "type": "celestial", "baseEntity": "minecraft:horse",
     "ac": 12, "hp": 59,
     "abilities": { "str": 18, "dex": 15, "con": 16, "int": 10, "wis": 15, "cha": 13 },
     "proficiencyBonus": 2,
@@ -1250,7 +1250,7 @@
     ]
   },
   {
-    "id": "dndsheets:plesiosaurus", "name": "Plesiosaurio", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:plesiosaurus", "name": "Plesiosaurio", "type": "bestia", "baseEntity": "minecraft:frog",
     "ac": 13, "hp": 68,
     "abilities": { "str": 18, "dex": 15, "con": 16, "int": 2, "wis": 12, "cha": 5 },
     "proficiencyBonus": 2,
@@ -1259,7 +1259,7 @@
     ]
   },
   {
-    "id": "dndsheets:poisonous_snake", "name": "Serpiente Venenosa", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:poisonous_snake", "name": "Serpiente Venenosa", "type": "bestia", "baseEntity": "minecraft:frog",
     "ac": 13, "hp": 2,
     "abilities": { "str": 2, "dex": 16, "con": 11, "int": 1, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -1268,7 +1268,7 @@
     ]
   },
   {
-    "id": "dndsheets:polar_bear", "name": "Oso Polar", "baseEntity": "minecraft:polar_bear",
+    "id": "dndsheets:polar_bear", "name": "Oso Polar", "type": "bestia", "baseEntity": "minecraft:polar_bear",
     "ac": 12, "hp": 42,
     "abilities": { "str": 20, "dex": 10, "con": 16, "int": 2, "wis": 13, "cha": 7 },
     "proficiencyBonus": 2,
@@ -1278,7 +1278,7 @@
     ]
   },
   {
-    "id": "dndsheets:pony", "name": "Poni", "baseEntity": "minecraft:horse",
+    "id": "dndsheets:pony", "name": "Poni", "type": "bestia", "baseEntity": "minecraft:horse",
     "ac": 10, "hp": 11,
     "abilities": { "str": 15, "dex": 10, "con": 13, "int": 2, "wis": 11, "cha": 7 },
     "proficiencyBonus": 2,
@@ -1287,7 +1287,7 @@
     ]
   },
   {
-    "id": "dndsheets:priest", "name": "Sacerdote", "baseEntity": "minecraft:villager",
+    "id": "dndsheets:priest", "name": "Sacerdote", "type": "humanoide", "baseEntity": "minecraft:villager",
     "ac": 13, "hp": 27,
     "abilities": { "str": 10, "dex": 10, "con": 12, "int": 13, "wis": 16, "cha": 13 },
     "proficiencyBonus": 2,
@@ -1296,7 +1296,7 @@
     ]
   },
   {
-    "id": "dndsheets:pseudodragon", "name": "Seudodragon", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:pseudodragon", "name": "Seudodragon", "type": "dragón", "baseEntity": "minecraft:vex",
     "ac": 13, "hp": 7,
     "abilities": { "str": 6, "dex": 15, "con": 13, "int": 10, "wis": 12, "cha": 10 },
     "proficiencyBonus": 2,
@@ -1306,7 +1306,7 @@
     ]
   },
   {
-    "id": "dndsheets:quasit", "name": "Quasit", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:quasit", "name": "Quasit", "type": "inmundo", "baseEntity": "minecraft:vex",
     "ac": 13, "hp": 7,
     "abilities": { "str": 5, "dex": 17, "con": 10, "int": 7, "wis": 10, "cha": 10 },
     "proficiencyBonus": 2,
@@ -1317,7 +1317,7 @@
     ]
   },
   {
-    "id": "dndsheets:quipper", "name": "Quipper", "baseEntity": "minecraft:cod",
+    "id": "dndsheets:quipper", "name": "Quipper", "type": "bestia", "baseEntity": "minecraft:cod",
     "ac": 13, "hp": 1,
     "abilities": { "str": 2, "dex": 16, "con": 9, "int": 1, "wis": 7, "cha": 2 },
     "proficiencyBonus": 2,
@@ -1326,7 +1326,7 @@
     ]
   },
   {
-    "id": "dndsheets:rat", "name": "Rata", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:rat", "name": "Rata", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 10, "hp": 1,
     "abilities": { "str": 2, "dex": 11, "con": 9, "int": 2, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -1335,7 +1335,7 @@
     ]
   },
   {
-    "id": "dndsheets:raven", "name": "Cuervo", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:raven", "name": "Cuervo", "type": "bestia", "baseEntity": "minecraft:parrot",
     "ac": 12, "hp": 1,
     "abilities": { "str": 2, "dex": 14, "con": 8, "int": 2, "wis": 12, "cha": 6 },
     "proficiencyBonus": 2,
@@ -1344,7 +1344,7 @@
     ]
   },
   {
-    "id": "dndsheets:reef_shark", "name": "Tiburon de Arrecife", "baseEntity": "minecraft:dolphin",
+    "id": "dndsheets:reef_shark", "name": "Tiburon de Arrecife", "type": "bestia", "baseEntity": "minecraft:dolphin",
     "ac": 12, "hp": 22,
     "abilities": { "str": 14, "dex": 13, "con": 13, "int": 1, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -1353,7 +1353,7 @@
     ]
   },
   {
-    "id": "dndsheets:rhinoceros", "name": "Rinoceronte", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:rhinoceros", "name": "Rinoceronte", "type": "bestia", "baseEntity": "minecraft:hoglin",
     "ac": 11, "hp": 45,
     "abilities": { "str": 21, "dex": 8, "con": 15, "int": 2, "wis": 12, "cha": 6 },
     "proficiencyBonus": 2,
@@ -1362,7 +1362,7 @@
     ]
   },
   {
-    "id": "dndsheets:riding_horse", "name": "Caballo de Monta", "baseEntity": "minecraft:horse",
+    "id": "dndsheets:riding_horse", "name": "Caballo de Monta", "type": "bestia", "baseEntity": "minecraft:horse",
     "ac": 10, "hp": 13,
     "abilities": { "str": 16, "dex": 10, "con": 12, "int": 2, "wis": 11, "cha": 7 },
     "proficiencyBonus": 2,
@@ -1371,7 +1371,7 @@
     ]
   },
   {
-    "id": "dndsheets:rust_monster", "name": "Monstruo Oxidador", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:rust_monster", "name": "Monstruo Oxidador", "type": "monstruosidad", "baseEntity": "minecraft:silverfish",
     "ac": 14, "hp": 27,
     "abilities": { "str": 13, "dex": 12, "con": 13, "int": 2, "wis": 13, "cha": 6 },
     "proficiencyBonus": 2,
@@ -1380,7 +1380,7 @@
     ]
   },
   {
-    "id": "dndsheets:saber_toothed_tiger", "name": "Tigre Dientes de Sable", "baseEntity": "minecraft:cat",
+    "id": "dndsheets:saber_toothed_tiger", "name": "Tigre Dientes de Sable", "type": "bestia", "baseEntity": "minecraft:cat",
     "ac": 12, "hp": 52,
     "abilities": { "str": 18, "dex": 14, "con": 15, "int": 3, "wis": 12, "cha": 8 },
     "proficiencyBonus": 2,
@@ -1390,7 +1390,7 @@
     ]
   },
   {
-    "id": "dndsheets:sahuagin", "name": "Sahuagin", "baseEntity": "minecraft:drowned",
+    "id": "dndsheets:sahuagin", "name": "Sahuagin", "type": "humanoide", "baseEntity": "minecraft:drowned",
     "ac": 12, "hp": 22,
     "abilities": { "str": 13, "dex": 11, "con": 12, "int": 12, "wis": 13, "cha": 9 },
     "proficiencyBonus": 2,
@@ -1401,7 +1401,7 @@
     ]
   },
   {
-    "id": "dndsheets:satyr", "name": "Satiro", "baseEntity": "minecraft:piglin",
+    "id": "dndsheets:satyr", "name": "Satiro", "type": "hada", "baseEntity": "minecraft:piglin",
     "ac": 14, "hp": 31,
     "abilities": { "str": 12, "dex": 16, "con": 11, "int": 12, "wis": 10, "cha": 14 },
     "proficiencyBonus": 2,
@@ -1412,7 +1412,7 @@
     ]
   },
   {
-    "id": "dndsheets:scorpion", "name": "Escorpion", "baseEntity": "minecraft:turtle",
+    "id": "dndsheets:scorpion", "name": "Escorpion", "type": "bestia", "baseEntity": "minecraft:turtle",
     "ac": 11, "hp": 1,
     "abilities": { "str": 2, "dex": 11, "con": 8, "int": 1, "wis": 8, "cha": 2 },
     "proficiencyBonus": 2,
@@ -1421,7 +1421,7 @@
     ]
   },
   {
-    "id": "dndsheets:scout", "name": "Explorador", "baseEntity": "minecraft:pillager",
+    "id": "dndsheets:scout", "name": "Explorador", "type": "humanoide", "baseEntity": "minecraft:pillager",
     "ac": 13, "hp": 16,
     "abilities": { "str": 11, "dex": 14, "con": 12, "int": 11, "wis": 13, "cha": 11 },
     "proficiencyBonus": 2,
@@ -1431,7 +1431,7 @@
     ]
   },
   {
-    "id": "dndsheets:sea_hag", "name": "Bruja Marina", "baseEntity": "minecraft:witch",
+    "id": "dndsheets:sea_hag", "name": "Bruja Marina", "type": "hada", "baseEntity": "minecraft:witch",
     "ac": 14, "hp": 52,
     "abilities": { "str": 16, "dex": 13, "con": 16, "int": 12, "wis": 12, "cha": 13 },
     "proficiencyBonus": 2,
@@ -1440,7 +1440,7 @@
     ]
   },
   {
-    "id": "dndsheets:shadow", "name": "Sombra", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:shadow", "name": "Sombra", "type": "no-muerto", "baseEntity": "minecraft:vex",
     "ac": 12, "hp": 16,
     "abilities": { "str": 6, "dex": 14, "con": 13, "int": 6, "wis": 10, "cha": 8 },
     "proficiencyBonus": 2,
@@ -1451,7 +1451,7 @@
     ]
   },
   {
-    "id": "dndsheets:silver_dragon_wyrmling", "name": "Cria de Dragon de Plata", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:silver_dragon_wyrmling", "name": "Cria de Dragon de Plata", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 45,
     "abilities": { "str": 19, "dex": 10, "con": 17, "int": 12, "wis": 11, "cha": 15 },
     "proficiencyBonus": 2,
@@ -1461,7 +1461,7 @@
     ]
   },
   {
-    "id": "dndsheets:specter", "name": "Espectro", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:specter", "name": "Espectro", "type": "no-muerto", "baseEntity": "minecraft:vex",
     "ac": 12, "hp": 22,
     "abilities": { "str": 1, "dex": 14, "con": 11, "int": 10, "wis": 10, "cha": 11 },
     "proficiencyBonus": 2,
@@ -1472,7 +1472,7 @@
     ]
   },
   {
-    "id": "dndsheets:spider", "name": "Arana", "baseEntity": "minecraft:cave_spider",
+    "id": "dndsheets:spider", "name": "Arana", "type": "bestia", "baseEntity": "minecraft:cave_spider",
     "ac": 12, "hp": 1,
     "abilities": { "str": 2, "dex": 14, "con": 8, "int": 1, "wis": 10, "cha": 2 },
     "proficiencyBonus": 2,
@@ -1481,7 +1481,7 @@
     ]
   },
   {
-    "id": "dndsheets:sprite", "name": "Duendecillo", "baseEntity": "minecraft:allay",
+    "id": "dndsheets:sprite", "name": "Duendecillo", "type": "hada", "baseEntity": "minecraft:allay",
     "ac": 15, "hp": 2,
     "abilities": { "str": 3, "dex": 18, "con": 10, "int": 14, "wis": 13, "cha": 11 },
     "proficiencyBonus": 2,
@@ -1491,7 +1491,7 @@
     ]
   },
   {
-    "id": "dndsheets:spy", "name": "Espia", "baseEntity": "minecraft:pillager",
+    "id": "dndsheets:spy", "name": "Espia", "type": "humanoide", "baseEntity": "minecraft:pillager",
     "ac": 12, "hp": 27,
     "abilities": { "str": 10, "dex": 15, "con": 10, "int": 12, "wis": 14, "cha": 16 },
     "proficiencyBonus": 2,
@@ -1501,7 +1501,7 @@
     ]
   },
   {
-    "id": "dndsheets:steam_mephit", "name": "Mefito de Vapor", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:steam_mephit", "name": "Mefito de Vapor", "type": "elemental", "baseEntity": "minecraft:vex",
     "ac": 10, "hp": 21,
     "abilities": { "str": 5, "dex": 11, "con": 10, "int": 11, "wis": 10, "cha": 12 },
     "proficiencyBonus": 2,
@@ -1511,7 +1511,7 @@
     ]
   },
   {
-    "id": "dndsheets:stirge", "name": "Estirge", "baseEntity": "minecraft:bat",
+    "id": "dndsheets:stirge", "name": "Estirge", "type": "bestia", "baseEntity": "minecraft:bat",
     "ac": 14, "hp": 2,
     "abilities": { "str": 4, "dex": 16, "con": 11, "int": 2, "wis": 8, "cha": 6 },
     "proficiencyBonus": 2,
@@ -1520,7 +1520,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_bats", "name": "Enjambre de Murcielagos", "baseEntity": "minecraft:bat",
+    "id": "dndsheets:swarm_of_bats", "name": "Enjambre de Murcielagos", "type": "bestia", "baseEntity": "minecraft:bat",
     "ac": 12, "hp": 22,
     "abilities": { "str": 5, "dex": 15, "con": 10, "int": 2, "wis": 12, "cha": 4 },
     "proficiencyBonus": 2,
@@ -1530,7 +1530,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_beetles", "name": "Enjambre de Escarabajos", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:swarm_of_beetles", "name": "Enjambre de Escarabajos", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 12, "hp": 22,
     "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
     "proficiencyBonus": 2,
@@ -1540,7 +1540,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_centipedes", "name": "Enjambre de Ciempies", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:swarm_of_centipedes", "name": "Enjambre de Ciempies", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 12, "hp": 22,
     "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
     "proficiencyBonus": 2,
@@ -1550,7 +1550,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_insects", "name": "Enjambre de Insectos", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:swarm_of_insects", "name": "Enjambre de Insectos", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 12, "hp": 22,
     "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
     "proficiencyBonus": 2,
@@ -1560,7 +1560,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_poisonous_snakes", "name": "Enjambre de Serpientes Venenosas", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:swarm_of_poisonous_snakes", "name": "Enjambre de Serpientes Venenosas", "type": "bestia", "baseEntity": "minecraft:frog",
     "ac": 14, "hp": 36,
     "abilities": { "str": 8, "dex": 18, "con": 11, "int": 1, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -1570,7 +1570,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_quippers", "name": "Enjambre de Quippers", "baseEntity": "minecraft:cod",
+    "id": "dndsheets:swarm_of_quippers", "name": "Enjambre de Quippers", "type": "bestia", "baseEntity": "minecraft:cod",
     "ac": 13, "hp": 28,
     "abilities": { "str": 13, "dex": 16, "con": 9, "int": 1, "wis": 7, "cha": 2 },
     "proficiencyBonus": 2,
@@ -1580,7 +1580,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_rats", "name": "Enjambre de Ratas", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:swarm_of_rats", "name": "Enjambre de Ratas", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 10, "hp": 24,
     "abilities": { "str": 9, "dex": 11, "con": 9, "int": 2, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -1590,7 +1590,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_ravens", "name": "Enjambre de Cuervos", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:swarm_of_ravens", "name": "Enjambre de Cuervos", "type": "bestia", "baseEntity": "minecraft:parrot",
     "ac": 12, "hp": 24,
     "abilities": { "str": 6, "dex": 14, "con": 8, "int": 3, "wis": 12, "cha": 6 },
     "proficiencyBonus": 2,
@@ -1600,7 +1600,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_spiders", "name": "Enjambre de Aranas", "baseEntity": "minecraft:cave_spider",
+    "id": "dndsheets:swarm_of_spiders", "name": "Enjambre de Aranas", "type": "bestia", "baseEntity": "minecraft:cave_spider",
     "ac": 12, "hp": 22,
     "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
     "proficiencyBonus": 2,
@@ -1610,7 +1610,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_wasps", "name": "Enjambre de Avispas", "baseEntity": "minecraft:bee",
+    "id": "dndsheets:swarm_of_wasps", "name": "Enjambre de Avispas", "type": "bestia", "baseEntity": "minecraft:bee",
     "ac": 12, "hp": 22,
     "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
     "proficiencyBonus": 2,
@@ -1620,7 +1620,7 @@
     ]
   },
   {
-    "id": "dndsheets:thug", "name": "Maton", "baseEntity": "minecraft:vindicator",
+    "id": "dndsheets:thug", "name": "Maton", "type": "humanoide", "baseEntity": "minecraft:vindicator",
     "ac": 11, "hp": 32,
     "abilities": { "str": 15, "dex": 11, "con": 14, "int": 10, "wis": 10, "cha": 11 },
     "proficiencyBonus": 2,
@@ -1630,7 +1630,7 @@
     ]
   },
   {
-    "id": "dndsheets:tiger", "name": "Tigre", "baseEntity": "minecraft:cat",
+    "id": "dndsheets:tiger", "name": "Tigre", "type": "bestia", "baseEntity": "minecraft:cat",
     "ac": 12, "hp": 37,
     "abilities": { "str": 17, "dex": 15, "con": 14, "int": 3, "wis": 12, "cha": 8 },
     "proficiencyBonus": 2,
@@ -1640,7 +1640,7 @@
     ]
   },
   {
-    "id": "dndsheets:tribal_warrior", "name": "Guerrero Tribal", "baseEntity": "minecraft:pillager",
+    "id": "dndsheets:tribal_warrior", "name": "Guerrero Tribal", "type": "humanoide", "baseEntity": "minecraft:pillager",
     "ac": 12, "hp": 11,
     "abilities": { "str": 13, "dex": 11, "con": 12, "int": 8, "wis": 11, "cha": 8 },
     "proficiencyBonus": 2,
@@ -1649,7 +1649,7 @@
     ]
   },
   {
-    "id": "dndsheets:violet_fungus", "name": "Hongo Violeta", "baseEntity": "minecraft:slime",
+    "id": "dndsheets:violet_fungus", "name": "Hongo Violeta", "type": "planta", "baseEntity": "minecraft:slime",
     "ac": 5, "hp": 18,
     "abilities": { "str": 3, "dex": 1, "con": 10, "int": 1, "wis": 3, "cha": 1 },
     "proficiencyBonus": 2,
@@ -1658,7 +1658,7 @@
     ]
   },
   {
-    "id": "dndsheets:vulture", "name": "Buitre", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:vulture", "name": "Buitre", "type": "bestia", "baseEntity": "minecraft:parrot",
     "ac": 10, "hp": 5,
     "abilities": { "str": 7, "dex": 10, "con": 13, "int": 2, "wis": 12, "cha": 4 },
     "proficiencyBonus": 2,
@@ -1667,7 +1667,7 @@
     ]
   },
   {
-    "id": "dndsheets:warhorse", "name": "Caballo de Guerra", "baseEntity": "minecraft:horse",
+    "id": "dndsheets:warhorse", "name": "Caballo de Guerra", "type": "bestia", "baseEntity": "minecraft:horse",
     "ac": 11, "hp": 19,
     "abilities": { "str": 18, "dex": 12, "con": 13, "int": 2, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -1676,7 +1676,7 @@
     ]
   },
   {
-    "id": "dndsheets:warhorse_skeleton", "name": "Esqueleto de Caballo de Guerra", "baseEntity": "minecraft:skeleton",
+    "id": "dndsheets:warhorse_skeleton", "name": "Esqueleto de Caballo de Guerra", "type": "no-muerto", "baseEntity": "minecraft:skeleton",
     "ac": 13, "hp": 22,
     "abilities": { "str": 18, "dex": 12, "con": 15, "int": 2, "wis": 8, "cha": 5 },
     "proficiencyBonus": 2,
@@ -1686,7 +1686,7 @@
     ]
   },
   {
-    "id": "dndsheets:weasel", "name": "Comadreja", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:weasel", "name": "Comadreja", "type": "bestia", "baseEntity": "minecraft:silverfish",
     "ac": 13, "hp": 1,
     "abilities": { "str": 3, "dex": 16, "con": 8, "int": 2, "wis": 12, "cha": 3 },
     "proficiencyBonus": 2,
@@ -1695,7 +1695,7 @@
     ]
   },
   {
-    "id": "dndsheets:wererat_human", "name": "Hombre Rata (forma humana)", "baseEntity": "minecraft:villager",
+    "id": "dndsheets:wererat_human", "name": "Hombre Rata (forma humana)", "type": "humanoide", "baseEntity": "minecraft:villager",
     "ac": 12, "hp": 33,
     "abilities": { "str": 10, "dex": 15, "con": 12, "int": 11, "wis": 10, "cha": 8 },
     "proficiencyBonus": 2,
@@ -1706,7 +1706,7 @@
     ]
   },
   {
-    "id": "dndsheets:wererat_hybrid", "name": "Hombre Rata (forma hibrida)", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:wererat_hybrid", "name": "Hombre Rata (forma hibrida)", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 12, "hp": 33,
     "abilities": { "str": 10, "dex": 15, "con": 12, "int": 11, "wis": 10, "cha": 8 },
     "proficiencyBonus": 2,
@@ -1718,7 +1718,7 @@
     ]
   },
   {
-    "id": "dndsheets:wererat_rat", "name": "Hombre Rata (forma de rata)", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:wererat_rat", "name": "Hombre Rata (forma de rata)", "type": "humanoide", "baseEntity": "minecraft:silverfish",
     "ac": 12, "hp": 33,
     "abilities": { "str": 10, "dex": 15, "con": 12, "int": 11, "wis": 10, "cha": 8 },
     "proficiencyBonus": 2,
@@ -1728,7 +1728,7 @@
     ]
   },
   {
-    "id": "dndsheets:white_dragon_wyrmling", "name": "Cria de Dragon Blanco", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:white_dragon_wyrmling", "name": "Cria de Dragon Blanco", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 16, "hp": 32,
     "abilities": { "str": 14, "dex": 10, "con": 14, "int": 5, "wis": 10, "cha": 11 },
     "proficiencyBonus": 2,
@@ -1738,7 +1738,7 @@
     ]
   },
   {
-    "id": "dndsheets:will_o_wisp", "name": "Fuego Fatuo", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:will_o_wisp", "name": "Fuego Fatuo", "type": "no-muerto", "baseEntity": "minecraft:vex",
     "ac": 19, "hp": 22,
     "abilities": { "str": 1, "dex": 28, "con": 10, "int": 13, "wis": 14, "cha": 11 },
     "proficiencyBonus": 2,
@@ -1749,7 +1749,7 @@
     ]
   },
   {
-    "id": "dndsheets:wolf", "name": "Lobo", "baseEntity": "minecraft:wolf",
+    "id": "dndsheets:wolf", "name": "Lobo", "type": "bestia", "baseEntity": "minecraft:wolf",
     "ac": 13, "hp": 11,
     "abilities": { "str": 12, "dex": 15, "con": 12, "int": 3, "wis": 12, "cha": 6 },
     "proficiencyBonus": 2,
@@ -1758,7 +1758,7 @@
     ]
   },
   {
-    "id": "dndsheets:worg", "name": "Worg", "baseEntity": "minecraft:wolf",
+    "id": "dndsheets:worg", "name": "Worg", "type": "monstruosidad", "baseEntity": "minecraft:wolf",
     "ac": 13, "hp": 26,
     "abilities": { "str": 16, "dex": 13, "con": 13, "int": 7, "wis": 11, "cha": 8 },
     "proficiencyBonus": 2,
@@ -1767,7 +1767,7 @@
     ]
   },
   {
-    "id": "dndsheets:aboleth", "name": "Aboleth", "baseEntity": "minecraft:guardian",
+    "id": "dndsheets:aboleth", "name": "Aboleth", "type": "aberración", "baseEntity": "minecraft:guardian",
     "ac": 17, "hp": 135,
     "abilities": { "str": 21, "dex": 9, "con": 15, "int": 18, "wis": 15, "cha": 18 },
     "proficiencyBonus": 4,
@@ -1777,7 +1777,7 @@
     ]
   },
   {
-    "id": "dndsheets:adult_black_dragon", "name": "Dragon Negro Adulto", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:adult_black_dragon", "name": "Dragon Negro Adulto", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 19, "hp": 195,
     "abilities": { "str": 23, "dex": 14, "con": 21, "int": 14, "wis": 13, "cha": 17 },
     "proficiencyBonus": 5,
@@ -1789,7 +1789,7 @@
     ]
   },
   {
-    "id": "dndsheets:adult_blue_dragon", "name": "Dragon Azul Adulto", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:adult_blue_dragon", "name": "Dragon Azul Adulto", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 19, "hp": 225,
     "abilities": { "str": 25, "dex": 10, "con": 23, "int": 16, "wis": 15, "cha": 19 },
     "proficiencyBonus": 5,
@@ -1801,7 +1801,7 @@
     ]
   },
   {
-    "id": "dndsheets:adult_brass_dragon", "name": "Dragon de Laton Adulto", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:adult_brass_dragon", "name": "Dragon de Laton Adulto", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 18, "hp": 172,
     "abilities": { "str": 23, "dex": 10, "con": 21, "int": 14, "wis": 13, "cha": 17 },
     "proficiencyBonus": 5,
@@ -1813,7 +1813,7 @@
     ]
   },
   {
-    "id": "dndsheets:adult_bronze_dragon", "name": "Dragon de Bronce Adulto", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:adult_bronze_dragon", "name": "Dragon de Bronce Adulto", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 19, "hp": 212,
     "abilities": { "str": 25, "dex": 10, "con": 23, "int": 16, "wis": 15, "cha": 19 },
     "proficiencyBonus": 5,
@@ -1825,7 +1825,7 @@
     ]
   },
   {
-    "id": "dndsheets:adult_copper_dragon", "name": "Dragon de Cobre Adulto", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:adult_copper_dragon", "name": "Dragon de Cobre Adulto", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 18, "hp": 184,
     "abilities": { "str": 23, "dex": 12, "con": 21, "int": 18, "wis": 15, "cha": 17 },
     "proficiencyBonus": 5,
@@ -1837,7 +1837,7 @@
     ]
   },
   {
-    "id": "dndsheets:adult_gold_dragon", "name": "Dragon de Oro Adulto", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:adult_gold_dragon", "name": "Dragon de Oro Adulto", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 19, "hp": 256,
     "abilities": { "str": 27, "dex": 14, "con": 25, "int": 16, "wis": 15, "cha": 24 },
     "proficiencyBonus": 6,
@@ -1849,7 +1849,7 @@
     ]
   },
   {
-    "id": "dndsheets:adult_green_dragon", "name": "Dragon Verde Adulto", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:adult_green_dragon", "name": "Dragon Verde Adulto", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 19, "hp": 207,
     "abilities": { "str": 23, "dex": 12, "con": 21, "int": 18, "wis": 15, "cha": 17 },
     "proficiencyBonus": 5,
@@ -1861,7 +1861,7 @@
     ]
   },
   {
-    "id": "dndsheets:adult_red_dragon", "name": "Dragon Rojo Adulto", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:adult_red_dragon", "name": "Dragon Rojo Adulto", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 19, "hp": 256,
     "abilities": { "str": 27, "dex": 10, "con": 25, "int": 16, "wis": 13, "cha": 21 },
     "proficiencyBonus": 6,
@@ -1873,7 +1873,7 @@
     ]
   },
   {
-    "id": "dndsheets:adult_silver_dragon", "name": "Dragon de Plata Adulto", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:adult_silver_dragon", "name": "Dragon de Plata Adulto", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 19, "hp": 243,
     "abilities": { "str": 27, "dex": 10, "con": 25, "int": 16, "wis": 13, "cha": 21 },
     "proficiencyBonus": 5,
@@ -1885,7 +1885,7 @@
     ]
   },
   {
-    "id": "dndsheets:adult_white_dragon", "name": "Dragon Blanco Adulto", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:adult_white_dragon", "name": "Dragon Blanco Adulto", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 18, "hp": 200,
     "abilities": { "str": 22, "dex": 10, "con": 22, "int": 8, "wis": 12, "cha": 12 },
     "proficiencyBonus": 5,
@@ -1897,7 +1897,7 @@
     ]
   },
   {
-    "id": "dndsheets:air_elemental", "name": "Elemental de Aire", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:air_elemental", "name": "Elemental de Aire", "type": "elemental", "baseEntity": "minecraft:vex",
     "ac": 15, "hp": 90,
     "abilities": { "str": 14, "dex": 20, "con": 14, "int": 6, "wis": 10, "cha": 6 },
     "proficiencyBonus": 3,
@@ -1908,7 +1908,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_black_dragon", "name": "Dragon Negro Anciano", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_black_dragon", "name": "Dragon Negro Anciano", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 22, "hp": 367,
     "abilities": { "str": 27, "dex": 14, "con": 25, "int": 16, "wis": 15, "cha": 19 },
     "proficiencyBonus": 7,
@@ -1920,7 +1920,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_blue_dragon", "name": "Dragon Azul Anciano", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_blue_dragon", "name": "Dragon Azul Anciano", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 22, "hp": 481,
     "abilities": { "str": 29, "dex": 10, "con": 27, "int": 18, "wis": 17, "cha": 21 },
     "proficiencyBonus": 7,
@@ -1932,7 +1932,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_brass_dragon", "name": "Dragon de Laton Anciano", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_brass_dragon", "name": "Dragon de Laton Anciano", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 20, "hp": 297,
     "abilities": { "str": 27, "dex": 10, "con": 25, "int": 16, "wis": 15, "cha": 19 },
     "proficiencyBonus": 6,
@@ -1944,7 +1944,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_bronze_dragon", "name": "Dragon de Bronce Anciano", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_bronze_dragon", "name": "Dragon de Bronce Anciano", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 22, "hp": 444,
     "abilities": { "str": 29, "dex": 10, "con": 27, "int": 18, "wis": 17, "cha": 21 },
     "proficiencyBonus": 7,
@@ -1956,7 +1956,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_copper_dragon", "name": "Dragon de Cobre Anciano", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_copper_dragon", "name": "Dragon de Cobre Anciano", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 21, "hp": 350,
     "abilities": { "str": 27, "dex": 12, "con": 25, "int": 20, "wis": 17, "cha": 19 },
     "proficiencyBonus": 7,
@@ -1968,7 +1968,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_gold_dragon", "name": "Dragon de Oro Anciano", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_gold_dragon", "name": "Dragon de Oro Anciano", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 22, "hp": 546,
     "abilities": { "str": 30, "dex": 14, "con": 29, "int": 18, "wis": 17, "cha": 28 },
     "proficiencyBonus": 7,
@@ -1980,7 +1980,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_green_dragon", "name": "Dragon Verde Anciano", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_green_dragon", "name": "Dragon Verde Anciano", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 21, "hp": 385,
     "abilities": { "str": 27, "dex": 12, "con": 25, "int": 20, "wis": 17, "cha": 19 },
     "proficiencyBonus": 7,
@@ -1992,7 +1992,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_red_dragon", "name": "Dragon Rojo Anciano", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_red_dragon", "name": "Dragon Rojo Anciano", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 22, "hp": 546,
     "abilities": { "str": 30, "dex": 10, "con": 29, "int": 18, "wis": 15, "cha": 23 },
     "proficiencyBonus": 7,
@@ -2004,7 +2004,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_silver_dragon", "name": "Dragon de Plata Anciano", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_silver_dragon", "name": "Dragon de Plata Anciano", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 22, "hp": 487,
     "abilities": { "str": 30, "dex": 10, "con": 29, "int": 18, "wis": 15, "cha": 23 },
     "proficiencyBonus": 7,
@@ -2016,7 +2016,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_white_dragon", "name": "Dragon Blanco Anciano", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_white_dragon", "name": "Dragon Blanco Anciano", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 20, "hp": 333,
     "abilities": { "str": 26, "dex": 10, "con": 26, "int": 10, "wis": 13, "cha": 14 },
     "proficiencyBonus": 6,
@@ -2028,7 +2028,7 @@
     ]
   },
   {
-    "id": "dndsheets:androsphinx", "name": "Androesfinge", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:androsphinx", "name": "Androesfinge", "type": "monstruosidad", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 199,
     "abilities": { "str": 22, "dex": 10, "con": 20, "int": 16, "wis": 18, "cha": 23 },
     "proficiencyBonus": 6,
@@ -2039,7 +2039,7 @@
     ]
   },
   {
-    "id": "dndsheets:archmage", "name": "Archimago", "baseEntity": "minecraft:witch",
+    "id": "dndsheets:archmage", "name": "Archimago", "type": "humanoide", "baseEntity": "minecraft:witch",
     "ac": 12, "hp": 99,
     "abilities": { "str": 10, "dex": 14, "con": 12, "int": 20, "wis": 15, "cha": 16 },
     "proficiencyBonus": 4,
@@ -2049,7 +2049,7 @@
     ]
   },
   {
-    "id": "dndsheets:assassin", "name": "Asesino", "baseEntity": "minecraft:pillager",
+    "id": "dndsheets:assassin", "name": "Asesino", "type": "humanoide", "baseEntity": "minecraft:pillager",
     "ac": 15, "hp": 78,
     "abilities": { "str": 11, "dex": 16, "con": 14, "int": 13, "wis": 11, "cha": 10 },
     "proficiencyBonus": 3,
@@ -2060,7 +2060,7 @@
     ]
   },
   {
-    "id": "dndsheets:balor", "name": "Balor", "baseEntity": "minecraft:wither_skeleton",
+    "id": "dndsheets:balor", "name": "Balor", "type": "inmundo", "baseEntity": "minecraft:wither_skeleton",
     "ac": 19, "hp": 262,
     "abilities": { "str": 26, "dex": 15, "con": 22, "int": 20, "wis": 16, "cha": 22 },
     "proficiencyBonus": 6,
@@ -2072,7 +2072,7 @@
     ]
   },
   {
-    "id": "dndsheets:barbed_devil", "name": "Diablo Espinoso", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:barbed_devil", "name": "Diablo Espinoso", "type": "inmundo", "baseEntity": "minecraft:piglin_brute",
     "ac": 15, "hp": 110,
     "abilities": { "str": 16, "dex": 17, "con": 18, "int": 12, "wis": 14, "cha": 14 },
     "proficiencyBonus": 3,
@@ -2085,7 +2085,7 @@
     ]
   },
   {
-    "id": "dndsheets:basilisk", "name": "Basilisco", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:basilisk", "name": "Basilisco", "type": "monstruosidad", "baseEntity": "minecraft:ravager",
     "ac": 12, "hp": 52,
     "abilities": { "str": 16, "dex": 8, "con": 15, "int": 2, "wis": 8, "cha": 7 },
     "proficiencyBonus": 2,
@@ -2094,7 +2094,7 @@
     ]
   },
   {
-    "id": "dndsheets:bearded_devil", "name": "Diablo Barbado", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:bearded_devil", "name": "Diablo Barbado", "type": "inmundo", "baseEntity": "minecraft:piglin_brute",
     "ac": 13, "hp": 52,
     "abilities": { "str": 16, "dex": 15, "con": 15, "int": 9, "wis": 11, "cha": 11 },
     "proficiencyBonus": 2,
@@ -2106,7 +2106,7 @@
     ]
   },
   {
-    "id": "dndsheets:behir", "name": "Behir", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:behir", "name": "Behir", "type": "monstruosidad", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 168,
     "abilities": { "str": 23, "dex": 16, "con": 18, "int": 7, "wis": 14, "cha": 12 },
     "proficiencyBonus": 4,
@@ -2117,7 +2117,7 @@
     ]
   },
   {
-    "id": "dndsheets:black_pudding", "name": "Pudin Negro", "baseEntity": "minecraft:slime",
+    "id": "dndsheets:black_pudding", "name": "Pudin Negro", "type": "cieno", "baseEntity": "minecraft:slime",
     "ac": 7, "hp": 85,
     "abilities": { "str": 16, "dex": 5, "con": 16, "int": 1, "wis": 6, "cha": 1 },
     "proficiencyBonus": 2,
@@ -2127,7 +2127,7 @@
     ]
   },
   {
-    "id": "dndsheets:blue_dragon_wyrmling", "name": "Cria de Dragon Azul", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:blue_dragon_wyrmling", "name": "Cria de Dragon Azul", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 52,
     "abilities": { "str": 17, "dex": 10, "con": 15, "int": 12, "wis": 11, "cha": 15 },
     "proficiencyBonus": 2,
@@ -2137,7 +2137,7 @@
     ]
   },
   {
-    "id": "dndsheets:bone_devil", "name": "Diablo Oseo", "baseEntity": "minecraft:wither_skeleton",
+    "id": "dndsheets:bone_devil", "name": "Diablo Oseo", "type": "inmundo", "baseEntity": "minecraft:wither_skeleton",
     "ac": 19, "hp": 142,
     "abilities": { "str": 18, "dex": 16, "con": 18, "int": 13, "wis": 14, "cha": 16 },
     "proficiencyBonus": 4,
@@ -2149,7 +2149,7 @@
     ]
   },
   {
-    "id": "dndsheets:bulette", "name": "Bulette", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:bulette", "name": "Bulette", "type": "monstruosidad", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 94,
     "abilities": { "str": 19, "dex": 11, "con": 21, "int": 2, "wis": 10, "cha": 5 },
     "proficiencyBonus": 3,
@@ -2158,7 +2158,7 @@
     ]
   },
   {
-    "id": "dndsheets:chain_devil", "name": "Diablo Encadenado", "baseEntity": "minecraft:wither_skeleton",
+    "id": "dndsheets:chain_devil", "name": "Diablo Encadenado", "type": "inmundo", "baseEntity": "minecraft:wither_skeleton",
     "ac": 16, "hp": 85,
     "abilities": { "str": 18, "dex": 15, "con": 18, "int": 11, "wis": 12, "cha": 14 },
     "proficiencyBonus": 3,
@@ -2169,7 +2169,7 @@
     ]
   },
   {
-    "id": "dndsheets:chimera", "name": "Quimera", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:chimera", "name": "Quimera", "type": "monstruosidad", "baseEntity": "minecraft:ravager",
     "ac": 14, "hp": 114,
     "abilities": { "str": 19, "dex": 11, "con": 19, "int": 3, "wis": 14, "cha": 10 },
     "proficiencyBonus": 3,
@@ -2180,7 +2180,7 @@
     ]
   },
   {
-    "id": "dndsheets:chuul", "name": "Chuul", "baseEntity": "minecraft:guardian",
+    "id": "dndsheets:chuul", "name": "Chuul", "type": "aberración", "baseEntity": "minecraft:guardian",
     "ac": 16, "hp": 93,
     "abilities": { "str": 19, "dex": 10, "con": 16, "int": 5, "wis": 11, "cha": 5 },
     "proficiencyBonus": 2,
@@ -2190,7 +2190,7 @@
     ]
   },
   {
-    "id": "dndsheets:clay_golem", "name": "Golem de Arcilla", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:clay_golem", "name": "Golem de Arcilla", "type": "autómata", "baseEntity": "minecraft:iron_golem",
     "ac": 14, "hp": 133,
     "abilities": { "str": 20, "dex": 9, "con": 18, "int": 3, "wis": 8, "cha": 1 },
     "proficiencyBonus": 4,
@@ -2201,7 +2201,7 @@
     ]
   },
   {
-    "id": "dndsheets:cloaker", "name": "Cloaker", "baseEntity": "minecraft:phantom",
+    "id": "dndsheets:cloaker", "name": "Cloaker", "type": "aberración", "baseEntity": "minecraft:phantom",
     "ac": 14, "hp": 78,
     "abilities": { "str": 17, "dex": 15, "con": 12, "int": 13, "wis": 12, "cha": 14 },
     "proficiencyBonus": 3,
@@ -2211,7 +2211,7 @@
     ]
   },
   {
-    "id": "dndsheets:cloud_giant", "name": "Gigante de las Nubes", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:cloud_giant", "name": "Gigante de las Nubes", "type": "gigante", "baseEntity": "minecraft:iron_golem",
     "ac": 14, "hp": 200,
     "abilities": { "str": 27, "dex": 10, "con": 22, "int": 12, "wis": 16, "cha": 16 },
     "proficiencyBonus": 4,
@@ -2221,7 +2221,7 @@
     ]
   },
   {
-    "id": "dndsheets:couatl", "name": "Couatl", "baseEntity": "minecraft:allay",
+    "id": "dndsheets:couatl", "name": "Couatl", "type": "celestial", "baseEntity": "minecraft:allay",
     "ac": 19, "hp": 97,
     "abilities": { "str": 16, "dex": 20, "con": 17, "int": 18, "wis": 20, "cha": 18 },
     "proficiencyBonus": 2,
@@ -2233,7 +2233,7 @@
     ]
   },
   {
-    "id": "dndsheets:deva", "name": "Deva", "baseEntity": "minecraft:allay",
+    "id": "dndsheets:deva", "name": "Deva", "type": "celestial", "baseEntity": "minecraft:allay",
     "ac": 17, "hp": 136,
     "abilities": { "str": 18, "dex": 18, "con": 18, "int": 17, "wis": 20, "cha": 20 },
     "proficiencyBonus": 4,
@@ -2244,7 +2244,7 @@
     ]
   },
   {
-    "id": "dndsheets:djinni", "name": "Djinn", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:djinni", "name": "Djinn", "type": "elemental", "baseEntity": "minecraft:vex",
     "ac": 17, "hp": 161,
     "abilities": { "str": 21, "dex": 15, "con": 22, "int": 15, "wis": 16, "cha": 20 },
     "proficiencyBonus": 4,
@@ -2254,7 +2254,7 @@
     ]
   },
   {
-    "id": "dndsheets:doppelganger", "name": "Doppelganger", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:doppelganger", "name": "Doppelganger", "type": "monstruosidad", "baseEntity": "minecraft:zombie",
     "ac": 14, "hp": 52,
     "abilities": { "str": 11, "dex": 18, "con": 14, "int": 11, "wis": 12, "cha": 14 },
     "proficiencyBonus": 2,
@@ -2263,7 +2263,7 @@
     ]
   },
   {
-    "id": "dndsheets:dragon_turtle", "name": "Tortuga Dragon", "baseEntity": "minecraft:turtle",
+    "id": "dndsheets:dragon_turtle", "name": "Tortuga Dragon", "type": "dragón", "baseEntity": "minecraft:turtle",
     "ac": 20, "hp": 341,
     "abilities": { "str": 25, "dex": 10, "con": 20, "int": 10, "wis": 12, "cha": 12 },
     "proficiencyBonus": 6,
@@ -2275,7 +2275,7 @@
     ]
   },
   {
-    "id": "dndsheets:drider", "name": "Drider", "baseEntity": "minecraft:spider",
+    "id": "dndsheets:drider", "name": "Drider", "type": "monstruosidad", "baseEntity": "minecraft:spider",
     "ac": 19, "hp": 123,
     "abilities": { "str": 16, "dex": 16, "con": 18, "int": 13, "wis": 14, "cha": 12 },
     "proficiencyBonus": 3,
@@ -2286,7 +2286,7 @@
     ]
   },
   {
-    "id": "dndsheets:earth_elemental", "name": "Elemental de Tierra", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:earth_elemental", "name": "Elemental de Tierra", "type": "elemental", "baseEntity": "minecraft:iron_golem",
     "ac": 17, "hp": 126,
     "abilities": { "str": 20, "dex": 8, "con": 20, "int": 5, "wis": 10, "cha": 5 },
     "proficiencyBonus": 3,
@@ -2297,7 +2297,7 @@
     ]
   },
   {
-    "id": "dndsheets:efreeti", "name": "Efreeti", "baseEntity": "minecraft:blaze",
+    "id": "dndsheets:efreeti", "name": "Efreeti", "type": "elemental", "baseEntity": "minecraft:blaze",
     "ac": 17, "hp": 200,
     "abilities": { "str": 22, "dex": 12, "con": 24, "int": 16, "wis": 15, "cha": 16 },
     "proficiencyBonus": 4,
@@ -2308,7 +2308,7 @@
     ]
   },
   {
-    "id": "dndsheets:elephant", "name": "Elefante", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:elephant", "name": "Elefante", "type": "bestia", "baseEntity": "minecraft:hoglin",
     "ac": 12, "hp": 76,
     "abilities": { "str": 22, "dex": 9, "con": 17, "int": 3, "wis": 11, "cha": 6 },
     "proficiencyBonus": 2,
@@ -2318,7 +2318,7 @@
     ]
   },
   {
-    "id": "dndsheets:erinyes", "name": "Erinia", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:erinyes", "name": "Erinia", "type": "inmundo", "baseEntity": "minecraft:piglin_brute",
     "ac": 18, "hp": 153,
     "abilities": { "str": 18, "dex": 16, "con": 18, "int": 14, "wis": 14, "cha": 18 },
     "proficiencyBonus": 4,
@@ -2330,7 +2330,7 @@
     ]
   },
   {
-    "id": "dndsheets:ettin", "name": "Ettin", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:ettin", "name": "Ettin", "type": "gigante", "baseEntity": "minecraft:iron_golem",
     "ac": 12, "hp": 85,
     "abilities": { "str": 21, "dex": 8, "con": 17, "int": 6, "wis": 10, "cha": 8 },
     "proficiencyBonus": 2,
@@ -2340,7 +2340,7 @@
     ]
   },
   {
-    "id": "dndsheets:fire_elemental", "name": "Elemental de Fuego", "baseEntity": "minecraft:blaze",
+    "id": "dndsheets:fire_elemental", "name": "Elemental de Fuego", "type": "elemental", "baseEntity": "minecraft:blaze",
     "ac": 13, "hp": 102,
     "abilities": { "str": 10, "dex": 17, "con": 16, "int": 6, "wis": 10, "cha": 7 },
     "proficiencyBonus": 3,
@@ -2351,7 +2351,7 @@
     ]
   },
   {
-    "id": "dndsheets:fire_giant", "name": "Gigante de Fuego", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:fire_giant", "name": "Gigante de Fuego", "type": "gigante", "baseEntity": "minecraft:iron_golem",
     "ac": 18, "hp": 162,
     "abilities": { "str": 25, "dex": 9, "con": 23, "int": 10, "wis": 14, "cha": 13 },
     "proficiencyBonus": 4,
@@ -2362,7 +2362,7 @@
     ]
   },
   {
-    "id": "dndsheets:flesh_golem", "name": "Golem de Carne", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:flesh_golem", "name": "Golem de Carne", "type": "autómata", "baseEntity": "minecraft:iron_golem",
     "ac": 9, "hp": 93,
     "abilities": { "str": 19, "dex": 9, "con": 18, "int": 6, "wis": 10, "cha": 5 },
     "proficiencyBonus": 3,
@@ -2373,7 +2373,7 @@
     ]
   },
   {
-    "id": "dndsheets:frost_giant", "name": "Gigante de Hielo", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:frost_giant", "name": "Gigante de Hielo", "type": "gigante", "baseEntity": "minecraft:iron_golem",
     "ac": 15, "hp": 138,
     "abilities": { "str": 23, "dex": 9, "con": 21, "int": 9, "wis": 10, "cha": 12 },
     "proficiencyBonus": 3,
@@ -2384,7 +2384,7 @@
     ]
   },
   {
-    "id": "dndsheets:ghost", "name": "Fantasma", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:ghost", "name": "Fantasma", "type": "no-muerto", "baseEntity": "minecraft:vex",
     "ac": 11, "hp": 45,
     "abilities": { "str": 7, "dex": 13, "con": 10, "int": 10, "wis": 12, "cha": 17 },
     "proficiencyBonus": 2,
@@ -2395,7 +2395,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_ape", "name": "Simio Gigante", "baseEntity": "minecraft:polar_bear",
+    "id": "dndsheets:giant_ape", "name": "Simio Gigante", "type": "bestia", "baseEntity": "minecraft:polar_bear",
     "ac": 12, "hp": 157,
     "abilities": { "str": 23, "dex": 14, "con": 18, "int": 7, "wis": 12, "cha": 7 },
     "proficiencyBonus": 3,
@@ -2405,7 +2405,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_crocodile", "name": "Cocodrilo Gigante", "baseEntity": "minecraft:frog",
+    "id": "dndsheets:giant_crocodile", "name": "Cocodrilo Gigante", "type": "bestia", "baseEntity": "minecraft:frog",
     "ac": 14, "hp": 85,
     "abilities": { "str": 21, "dex": 9, "con": 17, "int": 2, "wis": 10, "cha": 7 },
     "proficiencyBonus": 3,
@@ -2415,7 +2415,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_scorpion", "name": "Escorpion Gigante", "baseEntity": "minecraft:turtle",
+    "id": "dndsheets:giant_scorpion", "name": "Escorpion Gigante", "type": "bestia", "baseEntity": "minecraft:turtle",
     "ac": 15, "hp": 52,
     "abilities": { "str": 15, "dex": 13, "con": 15, "int": 1, "wis": 9, "cha": 3 },
     "proficiencyBonus": 2,
@@ -2425,7 +2425,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_shark", "name": "Tiburon Gigante", "baseEntity": "minecraft:dolphin",
+    "id": "dndsheets:giant_shark", "name": "Tiburon Gigante", "type": "bestia", "baseEntity": "minecraft:dolphin",
     "ac": 13, "hp": 126,
     "abilities": { "str": 23, "dex": 11, "con": 21, "int": 1, "wis": 10, "cha": 5 },
     "proficiencyBonus": 3,
@@ -2434,7 +2434,7 @@
     ]
   },
   {
-    "id": "dndsheets:glabrezu", "name": "Glabrezu", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:glabrezu", "name": "Glabrezu", "type": "inmundo", "baseEntity": "minecraft:hoglin",
     "ac": 17, "hp": 157,
     "abilities": { "str": 20, "dex": 15, "con": 21, "int": 19, "wis": 17, "cha": 16 },
     "proficiencyBonus": 4,
@@ -2446,7 +2446,7 @@
     ]
   },
   {
-    "id": "dndsheets:gladiator", "name": "Gladiador", "baseEntity": "minecraft:vindicator",
+    "id": "dndsheets:gladiator", "name": "Gladiador", "type": "humanoide", "baseEntity": "minecraft:vindicator",
     "ac": 16, "hp": 112,
     "abilities": { "str": 18, "dex": 15, "con": 16, "int": 10, "wis": 12, "cha": 15 },
     "proficiencyBonus": 3,
@@ -2456,7 +2456,7 @@
     ]
   },
   {
-    "id": "dndsheets:gold_dragon_wyrmling", "name": "Cria de Dragon de Oro", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:gold_dragon_wyrmling", "name": "Cria de Dragon de Oro", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 60,
     "abilities": { "str": 19, "dex": 14, "con": 17, "int": 14, "wis": 11, "cha": 16 },
     "proficiencyBonus": 2,
@@ -2466,7 +2466,7 @@
     ]
   },
   {
-    "id": "dndsheets:gorgon", "name": "Gorgona", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:gorgon", "name": "Gorgona", "type": "monstruosidad", "baseEntity": "minecraft:ravager",
     "ac": 19, "hp": 114,
     "abilities": { "str": 20, "dex": 11, "con": 18, "int": 2, "wis": 12, "cha": 7 },
     "proficiencyBonus": 3,
@@ -2476,7 +2476,7 @@
     ]
   },
   {
-    "id": "dndsheets:green_hag", "name": "Bruja Verde", "baseEntity": "minecraft:witch",
+    "id": "dndsheets:green_hag", "name": "Bruja Verde", "type": "hada", "baseEntity": "minecraft:witch",
     "ac": 17, "hp": 82,
     "abilities": { "str": 18, "dex": 12, "con": 16, "int": 13, "wis": 14, "cha": 14 },
     "proficiencyBonus": 2,
@@ -2485,7 +2485,7 @@
     ]
   },
   {
-    "id": "dndsheets:guardian_naga", "name": "Naga Guardiana", "baseEntity": "minecraft:guardian",
+    "id": "dndsheets:guardian_naga", "name": "Naga Guardiana", "type": "monstruosidad", "baseEntity": "minecraft:guardian",
     "ac": 18, "hp": 127,
     "abilities": { "str": 19, "dex": 18, "con": 16, "int": 16, "wis": 19, "cha": 18 },
     "proficiencyBonus": 4,
@@ -2495,7 +2495,7 @@
     ]
   },
   {
-    "id": "dndsheets:gynosphinx", "name": "Ginoesfinge", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:gynosphinx", "name": "Ginoesfinge", "type": "monstruosidad", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 136,
     "abilities": { "str": 18, "dex": 15, "con": 16, "int": 18, "wis": 18, "cha": 18 },
     "proficiencyBonus": 4,
@@ -2506,7 +2506,7 @@
     ]
   },
   {
-    "id": "dndsheets:half_red_dragon_veteran", "name": "Veterano Semidragon Rojo", "baseEntity": "minecraft:vindicator",
+    "id": "dndsheets:half_red_dragon_veteran", "name": "Veterano Semidragon Rojo", "type": "humanoide", "baseEntity": "minecraft:vindicator",
     "ac": 18, "hp": 65,
     "abilities": { "str": 16, "dex": 13, "con": 14, "int": 10, "wis": 11, "cha": 10 },
     "proficiencyBonus": 3,
@@ -2518,7 +2518,7 @@
     ]
   },
   {
-    "id": "dndsheets:hell_hound", "name": "Sabueso Infernal", "baseEntity": "minecraft:wolf",
+    "id": "dndsheets:hell_hound", "name": "Sabueso Infernal", "type": "inmundo", "baseEntity": "minecraft:wolf",
     "ac": 15, "hp": 45,
     "abilities": { "str": 17, "dex": 12, "con": 14, "int": 6, "wis": 13, "cha": 6 },
     "proficiencyBonus": 2,
@@ -2528,7 +2528,7 @@
     ]
   },
   {
-    "id": "dndsheets:hezrou", "name": "Hezrou", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:hezrou", "name": "Hezrou", "type": "inmundo", "baseEntity": "minecraft:hoglin",
     "ac": 16, "hp": 136,
     "abilities": { "str": 19, "dex": 17, "con": 20, "int": 5, "wis": 12, "cha": 13 },
     "proficiencyBonus": 3,
@@ -2540,7 +2540,7 @@
     ]
   },
   {
-    "id": "dndsheets:hill_giant", "name": "Gigante de las Colinas", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:hill_giant", "name": "Gigante de las Colinas", "type": "gigante", "baseEntity": "minecraft:iron_golem",
     "ac": 13, "hp": 105,
     "abilities": { "str": 21, "dex": 8, "con": 19, "int": 5, "wis": 9, "cha": 6 },
     "proficiencyBonus": 3,
@@ -2550,7 +2550,7 @@
     ]
   },
   {
-    "id": "dndsheets:horned_devil", "name": "Diablo Cornudo", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:horned_devil", "name": "Diablo Cornudo", "type": "inmundo", "baseEntity": "minecraft:piglin_brute",
     "ac": 18, "hp": 178,
     "abilities": { "str": 22, "dex": 17, "con": 21, "int": 12, "wis": 16, "cha": 17 },
     "proficiencyBonus": 4,
@@ -2563,7 +2563,7 @@
     ]
   },
   {
-    "id": "dndsheets:hydra", "name": "Hidra", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:hydra", "name": "Hidra", "type": "monstruosidad", "baseEntity": "minecraft:ravager",
     "ac": 15, "hp": 172,
     "abilities": { "str": 20, "dex": 12, "con": 20, "int": 2, "wis": 10, "cha": 7 },
     "proficiencyBonus": 3,
@@ -2572,7 +2572,7 @@
     ]
   },
   {
-    "id": "dndsheets:ice_devil", "name": "Diablo de Hielo", "baseEntity": "minecraft:wither_skeleton",
+    "id": "dndsheets:ice_devil", "name": "Diablo de Hielo", "type": "inmundo", "baseEntity": "minecraft:wither_skeleton",
     "ac": 18, "hp": 180,
     "abilities": { "str": 21, "dex": 14, "con": 18, "int": 18, "wis": 15, "cha": 18 },
     "proficiencyBonus": 5,
@@ -2585,7 +2585,7 @@
     ]
   },
   {
-    "id": "dndsheets:invisible_stalker", "name": "Acechador Invisible", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:invisible_stalker", "name": "Acechador Invisible", "type": "elemental", "baseEntity": "minecraft:vex",
     "ac": 14, "hp": 104,
     "abilities": { "str": 16, "dex": 19, "con": 14, "int": 10, "wis": 15, "cha": 11 },
     "proficiencyBonus": 3,
@@ -2596,7 +2596,7 @@
     ]
   },
   {
-    "id": "dndsheets:iron_golem", "name": "Golem de Hierro", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:iron_golem", "name": "Golem de Hierro", "type": "autómata", "baseEntity": "minecraft:iron_golem",
     "ac": 20, "hp": 210,
     "abilities": { "str": 24, "dex": 9, "con": 20, "int": 3, "wis": 11, "cha": 1 },
     "proficiencyBonus": 5,
@@ -2608,7 +2608,7 @@
     ]
   },
   {
-    "id": "dndsheets:killer_whale", "name": "Orca", "baseEntity": "minecraft:dolphin",
+    "id": "dndsheets:killer_whale", "name": "Orca", "type": "bestia", "baseEntity": "minecraft:dolphin",
     "ac": 12, "hp": 90,
     "abilities": { "str": 19, "dex": 10, "con": 13, "int": 3, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -2617,7 +2617,7 @@
     ]
   },
   {
-    "id": "dndsheets:knight", "name": "Caballero", "baseEntity": "minecraft:vindicator",
+    "id": "dndsheets:knight", "name": "Caballero", "type": "humanoide", "baseEntity": "minecraft:vindicator",
     "ac": 18, "hp": 52,
     "abilities": { "str": 16, "dex": 11, "con": 14, "int": 11, "wis": 11, "cha": 15 },
     "proficiencyBonus": 2,
@@ -2627,7 +2627,7 @@
     ]
   },
   {
-    "id": "dndsheets:kraken", "name": "Kraken", "baseEntity": "minecraft:glow_squid",
+    "id": "dndsheets:kraken", "name": "Kraken", "type": "monstruosidad", "baseEntity": "minecraft:glow_squid",
     "ac": 18, "hp": 472,
     "abilities": { "str": 30, "dex": 11, "con": 25, "int": 22, "wis": 18, "cha": 20 },
     "proficiencyBonus": 7,
@@ -2639,7 +2639,7 @@
     ]
   },
   {
-    "id": "dndsheets:lamia", "name": "Lamia", "baseEntity": "minecraft:witch",
+    "id": "dndsheets:lamia", "name": "Lamia", "type": "monstruosidad", "baseEntity": "minecraft:witch",
     "ac": 13, "hp": 97,
     "abilities": { "str": 16, "dex": 13, "con": 15, "int": 14, "wis": 15, "cha": 16 },
     "proficiencyBonus": 2,
@@ -2649,7 +2649,7 @@
     ]
   },
   {
-    "id": "dndsheets:lich", "name": "Liche", "baseEntity": "minecraft:skeleton",
+    "id": "dndsheets:lich", "name": "Liche", "type": "no-muerto", "baseEntity": "minecraft:skeleton",
     "ac": 17, "hp": 135,
     "abilities": { "str": 11, "dex": 16, "con": 16, "int": 20, "wis": 14, "cha": 16 },
     "proficiencyBonus": 7,
@@ -2660,7 +2660,7 @@
     ]
   },
   {
-    "id": "dndsheets:mage", "name": "Mago", "baseEntity": "minecraft:witch",
+    "id": "dndsheets:mage", "name": "Mago", "type": "humanoide", "baseEntity": "minecraft:witch",
     "ac": 12, "hp": 40,
     "abilities": { "str": 9, "dex": 14, "con": 11, "int": 17, "wis": 12, "cha": 11 },
     "proficiencyBonus": 3,
@@ -2669,7 +2669,7 @@
     ]
   },
   {
-    "id": "dndsheets:mammoth", "name": "Mamut", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:mammoth", "name": "Mamut", "type": "bestia", "baseEntity": "minecraft:hoglin",
     "ac": 13, "hp": 126,
     "abilities": { "str": 24, "dex": 9, "con": 21, "int": 3, "wis": 11, "cha": 6 },
     "proficiencyBonus": 3,
@@ -2679,7 +2679,7 @@
     ]
   },
   {
-    "id": "dndsheets:manticore", "name": "Manticora", "baseEntity": "minecraft:phantom",
+    "id": "dndsheets:manticore", "name": "Manticora", "type": "monstruosidad", "baseEntity": "minecraft:phantom",
     "ac": 14, "hp": 68,
     "abilities": { "str": 17, "dex": 16, "con": 17, "int": 7, "wis": 12, "cha": 8 },
     "proficiencyBonus": 2,
@@ -2690,7 +2690,7 @@
     ]
   },
   {
-    "id": "dndsheets:marilith", "name": "Marilith", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:marilith", "name": "Marilith", "type": "inmundo", "baseEntity": "minecraft:piglin_brute",
     "ac": 18, "hp": 189,
     "abilities": { "str": 18, "dex": 20, "con": 20, "int": 18, "wis": 16, "cha": 20 },
     "proficiencyBonus": 5,
@@ -2702,7 +2702,7 @@
     ]
   },
   {
-    "id": "dndsheets:medusa", "name": "Medusa", "baseEntity": "minecraft:witch",
+    "id": "dndsheets:medusa", "name": "Medusa", "type": "monstruosidad", "baseEntity": "minecraft:witch",
     "ac": 15, "hp": 127,
     "abilities": { "str": 10, "dex": 15, "con": 16, "int": 12, "wis": 13, "cha": 15 },
     "proficiencyBonus": 3,
@@ -2713,7 +2713,7 @@
     ]
   },
   {
-    "id": "dndsheets:minotaur", "name": "Minotauro", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:minotaur", "name": "Minotauro", "type": "monstruosidad", "baseEntity": "minecraft:ravager",
     "ac": 14, "hp": 76,
     "abilities": { "str": 18, "dex": 11, "con": 16, "int": 6, "wis": 16, "cha": 9 },
     "proficiencyBonus": 2,
@@ -2723,7 +2723,7 @@
     ]
   },
   {
-    "id": "dndsheets:mummy", "name": "Momia", "baseEntity": "minecraft:husk",
+    "id": "dndsheets:mummy", "name": "Momia", "type": "no-muerto", "baseEntity": "minecraft:husk",
     "ac": 11, "hp": 58,
     "abilities": { "str": 16, "dex": 8, "con": 15, "int": 6, "wis": 10, "cha": 12 },
     "proficiencyBonus": 2,
@@ -2734,7 +2734,7 @@
     ]
   },
   {
-    "id": "dndsheets:mummy_lord", "name": "Senor Momia", "baseEntity": "minecraft:husk",
+    "id": "dndsheets:mummy_lord", "name": "Senor Momia", "type": "no-muerto", "baseEntity": "minecraft:husk",
     "ac": 17, "hp": 97,
     "abilities": { "str": 18, "dex": 10, "con": 17, "int": 11, "wis": 18, "cha": 16 },
     "proficiencyBonus": 5,
@@ -2745,7 +2745,7 @@
     ]
   },
   {
-    "id": "dndsheets:nalfeshnee", "name": "Nalfeshnee", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:nalfeshnee", "name": "Nalfeshnee", "type": "inmundo", "baseEntity": "minecraft:hoglin",
     "ac": 18, "hp": 184,
     "abilities": { "str": 21, "dex": 10, "con": 22, "int": 19, "wis": 12, "cha": 15 },
     "proficiencyBonus": 5,
@@ -2757,7 +2757,7 @@
     ]
   },
   {
-    "id": "dndsheets:night_hag", "name": "Bruja Nocturna", "baseEntity": "minecraft:witch",
+    "id": "dndsheets:night_hag", "name": "Bruja Nocturna", "type": "inmundo", "baseEntity": "minecraft:witch",
     "ac": 17, "hp": 112,
     "abilities": { "str": 18, "dex": 15, "con": 16, "int": 16, "wis": 14, "cha": 16 },
     "proficiencyBonus": 3,
@@ -2768,7 +2768,7 @@
     ]
   },
   {
-    "id": "dndsheets:nightmare", "name": "Corcel Nocturno", "baseEntity": "minecraft:horse",
+    "id": "dndsheets:nightmare", "name": "Corcel Nocturno", "type": "inmundo", "baseEntity": "minecraft:horse",
     "ac": 13, "hp": 68,
     "abilities": { "str": 18, "dex": 15, "con": 16, "int": 10, "wis": 13, "cha": 15 },
     "proficiencyBonus": 2,
@@ -2778,7 +2778,7 @@
     ]
   },
   {
-    "id": "dndsheets:oni", "name": "Oni", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:oni", "name": "Oni", "type": "gigante", "baseEntity": "minecraft:piglin_brute",
     "ac": 16, "hp": 110,
     "abilities": { "str": 19, "dex": 11, "con": 16, "int": 14, "wis": 12, "cha": 15 },
     "proficiencyBonus": 3,
@@ -2788,7 +2788,7 @@
     ]
   },
   {
-    "id": "dndsheets:otyugh", "name": "Otyugh", "baseEntity": "minecraft:slime",
+    "id": "dndsheets:otyugh", "name": "Otyugh", "type": "aberración", "baseEntity": "minecraft:slime",
     "ac": 14, "hp": 114,
     "abilities": { "str": 16, "dex": 11, "con": 19, "int": 6, "wis": 13, "cha": 6 },
     "proficiencyBonus": 3,
@@ -2798,7 +2798,7 @@
     ]
   },
   {
-    "id": "dndsheets:phase_spider", "name": "Arana Fasica", "baseEntity": "minecraft:spider",
+    "id": "dndsheets:phase_spider", "name": "Arana Fasica", "type": "monstruosidad", "baseEntity": "minecraft:spider",
     "ac": 13, "hp": 32,
     "abilities": { "str": 15, "dex": 15, "con": 12, "int": 6, "wis": 10, "cha": 6 },
     "proficiencyBonus": 2,
@@ -2807,7 +2807,7 @@
     ]
   },
   {
-    "id": "dndsheets:pit_fiend", "name": "Diablo Mayor", "baseEntity": "minecraft:wither_skeleton",
+    "id": "dndsheets:pit_fiend", "name": "Diablo Mayor", "type": "inmundo", "baseEntity": "minecraft:wither_skeleton",
     "ac": 19, "hp": 300,
     "abilities": { "str": 26, "dex": 14, "con": 24, "int": 22, "wis": 18, "cha": 24 },
     "proficiencyBonus": 6,
@@ -2821,7 +2821,7 @@
     ]
   },
   {
-    "id": "dndsheets:planetar", "name": "Planetar", "baseEntity": "minecraft:allay",
+    "id": "dndsheets:planetar", "name": "Planetar", "type": "celestial", "baseEntity": "minecraft:allay",
     "ac": 19, "hp": 200,
     "abilities": { "str": 24, "dex": 20, "con": 24, "int": 19, "wis": 22, "cha": 25 },
     "proficiencyBonus": 5,
@@ -2832,7 +2832,7 @@
     ]
   },
   {
-    "id": "dndsheets:purple_worm", "name": "Gusano Purpura", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:purple_worm", "name": "Gusano Purpura", "type": "monstruosidad", "baseEntity": "minecraft:ravager",
     "ac": 18, "hp": 247,
     "abilities": { "str": 28, "dex": 7, "con": 22, "int": 1, "wis": 8, "cha": 4 },
     "proficiencyBonus": 5,
@@ -2842,7 +2842,7 @@
     ]
   },
   {
-    "id": "dndsheets:rakshasa", "name": "Rakshasa", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:rakshasa", "name": "Rakshasa", "type": "inmundo", "baseEntity": "minecraft:piglin_brute",
     "ac": 16, "hp": 110,
     "abilities": { "str": 14, "dex": 17, "con": 18, "int": 13, "wis": 16, "cha": 20 },
     "proficiencyBonus": 5,
@@ -2852,7 +2852,7 @@
     ]
   },
   {
-    "id": "dndsheets:red_dragon_wyrmling", "name": "Cria de Dragon Rojo", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:red_dragon_wyrmling", "name": "Cria de Dragon Rojo", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 75,
     "abilities": { "str": 19, "dex": 10, "con": 17, "int": 12, "wis": 11, "cha": 15 },
     "proficiencyBonus": 2,
@@ -2862,7 +2862,7 @@
     ]
   },
   {
-    "id": "dndsheets:remorhaz", "name": "Remorhaz", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:remorhaz", "name": "Remorhaz", "type": "monstruosidad", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 195,
     "abilities": { "str": 24, "dex": 13, "con": 21, "int": 4, "wis": 10, "cha": 5 },
     "proficiencyBonus": 4,
@@ -2872,7 +2872,7 @@
     ]
   },
   {
-    "id": "dndsheets:roc", "name": "Roc", "baseEntity": "minecraft:phantom",
+    "id": "dndsheets:roc", "name": "Roc", "type": "monstruosidad", "baseEntity": "minecraft:phantom",
     "ac": 15, "hp": 248,
     "abilities": { "str": 28, "dex": 10, "con": 20, "int": 3, "wis": 10, "cha": 9 },
     "proficiencyBonus": 4,
@@ -2882,7 +2882,7 @@
     ]
   },
   {
-    "id": "dndsheets:roper", "name": "Roper", "baseEntity": "minecraft:slime",
+    "id": "dndsheets:roper", "name": "Roper", "type": "monstruosidad", "baseEntity": "minecraft:slime",
     "ac": 20, "hp": 93,
     "abilities": { "str": 18, "dex": 8, "con": 17, "int": 7, "wis": 16, "cha": 6 },
     "proficiencyBonus": 3,
@@ -2891,7 +2891,7 @@
     ]
   },
   {
-    "id": "dndsheets:salamander", "name": "Salamandra", "baseEntity": "minecraft:blaze",
+    "id": "dndsheets:salamander", "name": "Salamandra", "type": "elemental", "baseEntity": "minecraft:blaze",
     "ac": 15, "hp": 90,
     "abilities": { "str": 18, "dex": 14, "con": 15, "int": 11, "wis": 10, "cha": 12 },
     "proficiencyBonus": 3,
@@ -2903,7 +2903,7 @@
     ]
   },
   {
-    "id": "dndsheets:shambling_mound", "name": "Monticulo Andante", "baseEntity": "minecraft:slime",
+    "id": "dndsheets:shambling_mound", "name": "Monticulo Andante", "type": "planta", "baseEntity": "minecraft:slime",
     "ac": 15, "hp": 136,
     "abilities": { "str": 18, "dex": 8, "con": 16, "int": 5, "wis": 10, "cha": 5 },
     "proficiencyBonus": 3,
@@ -2913,7 +2913,7 @@
     ]
   },
   {
-    "id": "dndsheets:shield_guardian", "name": "Guardian Escudo", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:shield_guardian", "name": "Guardian Escudo", "type": "autómata", "baseEntity": "minecraft:iron_golem",
     "ac": 17, "hp": 142,
     "abilities": { "str": 18, "dex": 8, "con": 18, "int": 7, "wis": 10, "cha": 3 },
     "proficiencyBonus": 3,
@@ -2923,7 +2923,7 @@
     ]
   },
   {
-    "id": "dndsheets:solar", "name": "Solar", "baseEntity": "minecraft:allay",
+    "id": "dndsheets:solar", "name": "Solar", "type": "celestial", "baseEntity": "minecraft:allay",
     "ac": 21, "hp": 243,
     "abilities": { "str": 26, "dex": 22, "con": 26, "int": 25, "wis": 25, "cha": 30 },
     "proficiencyBonus": 7,
@@ -2935,7 +2935,7 @@
     ]
   },
   {
-    "id": "dndsheets:spirit_naga", "name": "Naga Espiritual", "baseEntity": "minecraft:guardian",
+    "id": "dndsheets:spirit_naga", "name": "Naga Espiritual", "type": "monstruosidad", "baseEntity": "minecraft:guardian",
     "ac": 15, "hp": 75,
     "abilities": { "str": 18, "dex": 17, "con": 14, "int": 16, "wis": 15, "cha": 16 },
     "proficiencyBonus": 3,
@@ -2945,7 +2945,7 @@
     ]
   },
   {
-    "id": "dndsheets:stone_giant", "name": "Gigante de Piedra", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:stone_giant", "name": "Gigante de Piedra", "type": "gigante", "baseEntity": "minecraft:iron_golem",
     "ac": 17, "hp": 126,
     "abilities": { "str": 23, "dex": 15, "con": 20, "int": 10, "wis": 12, "cha": 9 },
     "proficiencyBonus": 3,
@@ -2955,7 +2955,7 @@
     ]
   },
   {
-    "id": "dndsheets:stone_golem", "name": "Golem de Piedra", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:stone_golem", "name": "Golem de Piedra", "type": "autómata", "baseEntity": "minecraft:iron_golem",
     "ac": 17, "hp": 178,
     "abilities": { "str": 22, "dex": 9, "con": 20, "int": 3, "wis": 11, "cha": 1 },
     "proficiencyBonus": 4,
@@ -2966,7 +2966,7 @@
     ]
   },
   {
-    "id": "dndsheets:storm_giant", "name": "Gigante de las Tormentas", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:storm_giant", "name": "Gigante de las Tormentas", "type": "gigante", "baseEntity": "minecraft:iron_golem",
     "ac": 16, "hp": 230,
     "abilities": { "str": 29, "dex": 14, "con": 20, "int": 16, "wis": 18, "cha": 18 },
     "proficiencyBonus": 5,
@@ -2977,7 +2977,7 @@
     ]
   },
   {
-    "id": "dndsheets:succubus_incubus", "name": "Succubo o Incubo", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:succubus_incubus", "name": "Succubo o Incubo", "type": "inmundo", "baseEntity": "minecraft:vex",
     "ac": 15, "hp": 66,
     "abilities": { "str": 8, "dex": 17, "con": 13, "int": 15, "wis": 12, "cha": 20 },
     "proficiencyBonus": 2,
@@ -2988,7 +2988,7 @@
     ]
   },
   {
-    "id": "dndsheets:tarrasque", "name": "Tarrasca", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:tarrasque", "name": "Tarrasca", "type": "monstruosidad", "baseEntity": "minecraft:ravager",
     "ac": 25, "hp": 676,
     "abilities": { "str": 30, "dex": 11, "con": 30, "int": 3, "wis": 11, "cha": 11 },
     "proficiencyBonus": 9,
@@ -3002,7 +3002,7 @@
     ]
   },
   {
-    "id": "dndsheets:treant", "name": "Ent", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:treant", "name": "Ent", "type": "planta", "baseEntity": "minecraft:iron_golem",
     "ac": 16, "hp": 138,
     "abilities": { "str": 23, "dex": 8, "con": 21, "int": 12, "wis": 16, "cha": 12 },
     "proficiencyBonus": 4,
@@ -3013,7 +3013,7 @@
     ]
   },
   {
-    "id": "dndsheets:triceratops", "name": "Triceratops", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:triceratops", "name": "Triceratops", "type": "bestia", "baseEntity": "minecraft:hoglin",
     "ac": 13, "hp": 95,
     "abilities": { "str": 22, "dex": 9, "con": 17, "int": 2, "wis": 11, "cha": 5 },
     "proficiencyBonus": 3,
@@ -3023,7 +3023,7 @@
     ]
   },
   {
-    "id": "dndsheets:tyrannosaurus_rex", "name": "Tiranosaurio Rex", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:tyrannosaurus_rex", "name": "Tiranosaurio Rex", "type": "bestia", "baseEntity": "minecraft:ravager",
     "ac": 13, "hp": 136,
     "abilities": { "str": 25, "dex": 10, "con": 19, "int": 2, "wis": 12, "cha": 9 },
     "proficiencyBonus": 3,
@@ -3033,7 +3033,7 @@
     ]
   },
   {
-    "id": "dndsheets:unicorn", "name": "Unicornio", "baseEntity": "minecraft:horse",
+    "id": "dndsheets:unicorn", "name": "Unicornio", "type": "celestial", "baseEntity": "minecraft:horse",
     "ac": 12, "hp": 67,
     "abilities": { "str": 18, "dex": 14, "con": 15, "int": 11, "wis": 17, "cha": 16 },
     "proficiencyBonus": 3,
@@ -3044,7 +3044,7 @@
     ]
   },
   {
-    "id": "dndsheets:vampire_bat", "name": "Vampiro (forma de murcielago)", "baseEntity": "minecraft:bat",
+    "id": "dndsheets:vampire_bat", "name": "Vampiro (forma de murcielago)", "type": "no-muerto", "baseEntity": "minecraft:bat",
     "ac": 16, "hp": 144,
     "abilities": { "str": 18, "dex": 18, "con": 18, "int": 17, "wis": 15, "cha": 18 },
     "proficiencyBonus": 5,
@@ -3055,7 +3055,7 @@
     ]
   },
   {
-    "id": "dndsheets:vampire_spawn", "name": "Engendro Vampirico", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:vampire_spawn", "name": "Engendro Vampirico", "type": "no-muerto", "baseEntity": "minecraft:zombie",
     "ac": 15, "hp": 82,
     "abilities": { "str": 16, "dex": 16, "con": 16, "int": 11, "wis": 10, "cha": 12 },
     "proficiencyBonus": 3,
@@ -3067,7 +3067,7 @@
     ]
   },
   {
-    "id": "dndsheets:vampire_vampire", "name": "Vampiro", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:vampire_vampire", "name": "Vampiro", "type": "no-muerto", "baseEntity": "minecraft:zombie",
     "ac": 16, "hp": 144,
     "abilities": { "str": 18, "dex": 18, "con": 18, "int": 17, "wis": 15, "cha": 18 },
     "proficiencyBonus": 5,
@@ -3079,7 +3079,7 @@
     ]
   },
   {
-    "id": "dndsheets:veteran", "name": "Veterano", "baseEntity": "minecraft:vindicator",
+    "id": "dndsheets:veteran", "name": "Veterano", "type": "humanoide", "baseEntity": "minecraft:vindicator",
     "ac": 17, "hp": 58,
     "abilities": { "str": 16, "dex": 13, "con": 14, "int": 10, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
@@ -3090,7 +3090,7 @@
     ]
   },
   {
-    "id": "dndsheets:vrock", "name": "Vrock", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:vrock", "name": "Vrock", "type": "inmundo", "baseEntity": "minecraft:piglin_brute",
     "ac": 15, "hp": 104,
     "abilities": { "str": 17, "dex": 15, "con": 18, "int": 8, "wis": 13, "cha": 8 },
     "proficiencyBonus": 3,
@@ -3102,7 +3102,7 @@
     ]
   },
   {
-    "id": "dndsheets:water_elemental", "name": "Elemental de Agua", "baseEntity": "minecraft:drowned",
+    "id": "dndsheets:water_elemental", "name": "Elemental de Agua", "type": "elemental", "baseEntity": "minecraft:drowned",
     "ac": 14, "hp": 114,
     "abilities": { "str": 18, "dex": 14, "con": 18, "int": 5, "wis": 10, "cha": 8 },
     "proficiencyBonus": 3,
@@ -3113,7 +3113,7 @@
     ]
   },
   {
-    "id": "dndsheets:werebear_bear", "name": "Hombre Oso (forma de oso)", "baseEntity": "minecraft:polar_bear",
+    "id": "dndsheets:werebear_bear", "name": "Hombre Oso (forma de oso)", "type": "humanoide", "baseEntity": "minecraft:polar_bear",
     "ac": 11, "hp": 135,
     "abilities": { "str": 19, "dex": 10, "con": 17, "int": 11, "wis": 12, "cha": 12 },
     "proficiencyBonus": 3,
@@ -3124,7 +3124,7 @@
     ]
   },
   {
-    "id": "dndsheets:werebear_human", "name": "Hombre Oso (forma humana)", "baseEntity": "minecraft:villager",
+    "id": "dndsheets:werebear_human", "name": "Hombre Oso (forma humana)", "type": "humanoide", "baseEntity": "minecraft:villager",
     "ac": 10, "hp": 135,
     "abilities": { "str": 19, "dex": 10, "con": 17, "int": 11, "wis": 12, "cha": 12 },
     "proficiencyBonus": 3,
@@ -3134,7 +3134,7 @@
     ]
   },
   {
-    "id": "dndsheets:werebear_hybrid", "name": "Hombre Oso (forma hibrida)", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:werebear_hybrid", "name": "Hombre Oso (forma hibrida)", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 11, "hp": 135,
     "abilities": { "str": 19, "dex": 10, "con": 17, "int": 11, "wis": 12, "cha": 12 },
     "proficiencyBonus": 3,
@@ -3146,7 +3146,7 @@
     ]
   },
   {
-    "id": "dndsheets:wereboar_boar", "name": "Hombre Jabali (forma de jabali)", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:wereboar_boar", "name": "Hombre Jabali (forma de jabali)", "type": "humanoide", "baseEntity": "minecraft:hoglin",
     "ac": 11, "hp": 78,
     "abilities": { "str": 17, "dex": 10, "con": 15, "int": 10, "wis": 11, "cha": 8 },
     "proficiencyBonus": 2,
@@ -3156,7 +3156,7 @@
     ]
   },
   {
-    "id": "dndsheets:wereboar_human", "name": "Hombre Jabali (forma humana)", "baseEntity": "minecraft:villager",
+    "id": "dndsheets:wereboar_human", "name": "Hombre Jabali (forma humana)", "type": "humanoide", "baseEntity": "minecraft:villager",
     "ac": 10, "hp": 78,
     "abilities": { "str": 17, "dex": 10, "con": 15, "int": 10, "wis": 11, "cha": 8 },
     "proficiencyBonus": 2,
@@ -3166,7 +3166,7 @@
     ]
   },
   {
-    "id": "dndsheets:wereboar_hybrid", "name": "Hombre Jabali (forma hibrida)", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:wereboar_hybrid", "name": "Hombre Jabali (forma hibrida)", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 11, "hp": 78,
     "abilities": { "str": 17, "dex": 10, "con": 15, "int": 10, "wis": 11, "cha": 8 },
     "proficiencyBonus": 2,
@@ -3177,7 +3177,7 @@
     ]
   },
   {
-    "id": "dndsheets:weretiger_human", "name": "Hombre Tigre (forma humana)", "baseEntity": "minecraft:villager",
+    "id": "dndsheets:weretiger_human", "name": "Hombre Tigre (forma humana)", "type": "humanoide", "baseEntity": "minecraft:villager",
     "ac": 12, "hp": 120,
     "abilities": { "str": 17, "dex": 15, "con": 16, "int": 10, "wis": 13, "cha": 11 },
     "proficiencyBonus": 2,
@@ -3188,7 +3188,7 @@
     ]
   },
   {
-    "id": "dndsheets:weretiger_hybrid", "name": "Hombre Tigre (forma hibrida)", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:weretiger_hybrid", "name": "Hombre Tigre (forma hibrida)", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 12, "hp": 120,
     "abilities": { "str": 17, "dex": 15, "con": 16, "int": 10, "wis": 13, "cha": 11 },
     "proficiencyBonus": 2,
@@ -3201,7 +3201,7 @@
     ]
   },
   {
-    "id": "dndsheets:weretiger_tiger", "name": "Hombre Tigre (forma de tigre)", "baseEntity": "minecraft:cat",
+    "id": "dndsheets:weretiger_tiger", "name": "Hombre Tigre (forma de tigre)", "type": "humanoide", "baseEntity": "minecraft:cat",
     "ac": 12, "hp": 120,
     "abilities": { "str": 17, "dex": 15, "con": 16, "int": 10, "wis": 13, "cha": 11 },
     "proficiencyBonus": 2,
@@ -3212,7 +3212,7 @@
     ]
   },
   {
-    "id": "dndsheets:werewolf_human", "name": "Hombre Lobo (forma humana)", "baseEntity": "minecraft:villager",
+    "id": "dndsheets:werewolf_human", "name": "Hombre Lobo (forma humana)", "type": "humanoide", "baseEntity": "minecraft:villager",
     "ac": 11, "hp": 58,
     "abilities": { "str": 15, "dex": 13, "con": 14, "int": 10, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
@@ -3222,7 +3222,7 @@
     ]
   },
   {
-    "id": "dndsheets:werewolf_hybrid", "name": "Hombre Lobo (forma hibrida)", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:werewolf_hybrid", "name": "Hombre Lobo (forma hibrida)", "type": "humanoide", "baseEntity": "minecraft:zombie",
     "ac": 12, "hp": 58,
     "abilities": { "str": 15, "dex": 13, "con": 14, "int": 10, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
@@ -3233,7 +3233,7 @@
     ]
   },
   {
-    "id": "dndsheets:werewolf_wolf", "name": "Hombre Lobo (forma de lobo)", "baseEntity": "minecraft:wolf",
+    "id": "dndsheets:werewolf_wolf", "name": "Hombre Lobo (forma de lobo)", "type": "humanoide", "baseEntity": "minecraft:wolf",
     "ac": 12, "hp": 58,
     "abilities": { "str": 15, "dex": 13, "con": 14, "int": 10, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
@@ -3243,7 +3243,7 @@
     ]
   },
   {
-    "id": "dndsheets:winter_wolf", "name": "Lobo Invernal", "baseEntity": "minecraft:wolf",
+    "id": "dndsheets:winter_wolf", "name": "Lobo Invernal", "type": "monstruosidad", "baseEntity": "minecraft:wolf",
     "ac": 13, "hp": 75,
     "abilities": { "str": 18, "dex": 13, "con": 14, "int": 7, "wis": 12, "cha": 8 },
     "proficiencyBonus": 2,
@@ -3253,7 +3253,7 @@
     ]
   },
   {
-    "id": "dndsheets:wraith", "name": "Espectro Maligno", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:wraith", "name": "Espectro Maligno", "type": "no-muerto", "baseEntity": "minecraft:vex",
     "ac": 13, "hp": 67,
     "abilities": { "str": 6, "dex": 16, "con": 16, "int": 12, "wis": 14, "cha": 15 },
     "proficiencyBonus": 3,
@@ -3264,7 +3264,7 @@
     ]
   },
   {
-    "id": "dndsheets:wyvern", "name": "Guiverno", "baseEntity": "minecraft:phantom",
+    "id": "dndsheets:wyvern", "name": "Guiverno", "type": "dragón", "baseEntity": "minecraft:phantom",
     "ac": 13, "hp": 110,
     "abilities": { "str": 19, "dex": 10, "con": 16, "int": 5, "wis": 12, "cha": 6 },
     "proficiencyBonus": 3,
@@ -3275,7 +3275,7 @@
     ]
   },
   {
-    "id": "dndsheets:xorn", "name": "Xorn", "baseEntity": "minecraft:iron_golem",
+    "id": "dndsheets:xorn", "name": "Xorn", "type": "elemental", "baseEntity": "minecraft:iron_golem",
     "ac": 19, "hp": 73,
     "abilities": { "str": 17, "dex": 10, "con": 22, "int": 11, "wis": 10, "cha": 11 },
     "proficiencyBonus": 3,
@@ -3286,7 +3286,7 @@
     ]
   },
   {
-    "id": "dndsheets:young_black_dragon", "name": "Dragon Negro Joven", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:young_black_dragon", "name": "Dragon Negro Joven", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 18, "hp": 127,
     "abilities": { "str": 19, "dex": 14, "con": 17, "int": 12, "wis": 11, "cha": 15 },
     "proficiencyBonus": 3,
@@ -3297,7 +3297,7 @@
     ]
   },
   {
-    "id": "dndsheets:young_blue_dragon", "name": "Dragon Azul Joven", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:young_blue_dragon", "name": "Dragon Azul Joven", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 18, "hp": 152,
     "abilities": { "str": 21, "dex": 10, "con": 19, "int": 14, "wis": 13, "cha": 17 },
     "proficiencyBonus": 4,
@@ -3308,7 +3308,7 @@
     ]
   },
   {
-    "id": "dndsheets:young_brass_dragon", "name": "Dragon de Laton Joven", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:young_brass_dragon", "name": "Dragon de Laton Joven", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 110,
     "abilities": { "str": 19, "dex": 10, "con": 17, "int": 12, "wis": 11, "cha": 15 },
     "proficiencyBonus": 3,
@@ -3319,7 +3319,7 @@
     ]
   },
   {
-    "id": "dndsheets:young_bronze_dragon", "name": "Dragon de Bronce Joven", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:young_bronze_dragon", "name": "Dragon de Bronce Joven", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 18, "hp": 142,
     "abilities": { "str": 21, "dex": 10, "con": 19, "int": 14, "wis": 13, "cha": 17 },
     "proficiencyBonus": 3,
@@ -3330,7 +3330,7 @@
     ]
   },
   {
-    "id": "dndsheets:young_copper_dragon", "name": "Dragon de Cobre Joven", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:young_copper_dragon", "name": "Dragon de Cobre Joven", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 119,
     "abilities": { "str": 19, "dex": 12, "con": 17, "int": 16, "wis": 13, "cha": 15 },
     "proficiencyBonus": 3,
@@ -3341,7 +3341,7 @@
     ]
   },
   {
-    "id": "dndsheets:young_gold_dragon", "name": "Dragon de Oro Joven", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:young_gold_dragon", "name": "Dragon de Oro Joven", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 18, "hp": 178,
     "abilities": { "str": 23, "dex": 14, "con": 21, "int": 16, "wis": 13, "cha": 20 },
     "proficiencyBonus": 4,
@@ -3352,7 +3352,7 @@
     ]
   },
   {
-    "id": "dndsheets:young_green_dragon", "name": "Dragon Verde Joven", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:young_green_dragon", "name": "Dragon Verde Joven", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 18, "hp": 136,
     "abilities": { "str": 19, "dex": 12, "con": 17, "int": 16, "wis": 13, "cha": 15 },
     "proficiencyBonus": 3,
@@ -3363,7 +3363,7 @@
     ]
   },
   {
-    "id": "dndsheets:young_silver_dragon", "name": "Dragon de Plata Joven", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:young_silver_dragon", "name": "Dragon de Plata Joven", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 18, "hp": 168,
     "abilities": { "str": 23, "dex": 10, "con": 21, "int": 14, "wis": 11, "cha": 19 },
     "proficiencyBonus": 4,
@@ -3374,7 +3374,7 @@
     ]
   },
   {
-    "id": "dndsheets:young_white_dragon", "name": "Dragon Blanco Joven", "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:young_white_dragon", "name": "Dragon Blanco Joven", "type": "dragón", "baseEntity": "minecraft:ravager",
     "ac": 17, "hp": 133,
     "abilities": { "str": 18, "dex": 10, "con": 18, "int": 6, "wis": 11, "cha": 12 },
     "proficiencyBonus": 3,
