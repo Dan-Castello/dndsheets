@@ -45,6 +45,11 @@ public class LegendaryActionManager {
 
 			Entity boss = level.getEntity(entry.entityId());
 			if (boss == null || !boss.isAlive()) continue;
+			//Un jefe paralizado, aturdido o inconsciente no toma acciones legendarias: en 5e lo dice la propia
+			//regla ("no puede usarlas mientras esté incapacitado"), y sin esto un dragón dormido seguía
+			//repartiendo tres ataques por asalto. Se comprueba ANTES de gastar, para no cobrarle un uso por
+			//una acción que no llega a ocurrir.
+			if (TurnManager.isIncapacitated(boss)) continue;
 			if (!spendAction(boss)) continue;
 
 			Player target = level.getNearestPlayer(boss, TARGET_RANGE);

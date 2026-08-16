@@ -909,6 +909,23 @@ dependencies, not preference.
       set it in JSON. Same reasoning as item 28 — falling short costs a monster some threat, inventing
       gives it threat it does not have, and the second is worse.
 
+  30. **"Incapacitated" only worked one way out of three.** Found by reviewing the interactions of
+      the last few features rather than from a report — the question was "what can a legendary
+      creature do that it should not?", and the answer turned out to be older and wider than the
+      boss work.
+
+      5e says an incapacitated creature can take **no actions and no reactions**. The check lived in
+      `tryAct` alone. There are three ways to do something here — action, reaction, legendary action —
+      and the other two behaved as though the rule did not exist: a **paralysed monster still made
+      opportunity attacks**, a **stunned player could still cast Shield and Counterspell**, and a
+      sleeping dragon would still have handed out three attacks a round. That is half of what
+      paralysed, stunned, petrified and unconscious *mean*.
+
+      One `isIncapacitated` now answers for all three. The check pins both halves: which conditions
+      count (paralysed/stunned/petrified/unconscious yes; poisoned, prone and blinded no — confusing
+      those turns a hard condition into an inconvenience or the reverse), and structurally that all
+      three gates consult it, since the paths themselves need world entities.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

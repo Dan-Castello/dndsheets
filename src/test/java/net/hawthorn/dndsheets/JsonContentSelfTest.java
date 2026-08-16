@@ -53,6 +53,7 @@ public class JsonContentSelfTest {
 		checkLanguageFiles();
 		checkNetworkShape();
 		checkSheetCoordinateSpaces();
+		checkIncapacitatedCannotAct();
 		checkCharacterLookup();
 		checkCharacterAfterDelete();
 		checkAttackPathsShareRules();
@@ -1779,6 +1780,45 @@ public class JsonContentSelfTest {
 		}
 
 		System.out.println("checkSheetCoordinateSpaces: OK, la retícula de la hoja solo se usa donde está trasladada.");
+	}
+
+	/**
+	 * <p>"Una criatura incapacitada no puede realizar acciones ni reacciones" (5e). Hay <b>tres</b> formas de
+	 * hacer algo en este mod —acción, reacción y acción legendaria— y la regla estaba escrita en una sola,
+	 * así que un monstruo paralizado seguía haciendo ataques de oportunidad y un dragón dormido seguía
+	 * repartiendo tres ataques por asalto.</p>
+	 *
+	 * <p>Se sostiene por estructura porque las tres rutas necesitan entidades de un mundo. Lo que sí se puede
+	 * comprobar sin juego es la parte pura: qué condiciones cuentan como incapacitar.</p>
+	 */
+	private static void checkIncapacitatedCannotAct() throws Exception {
+		//La lista de 5e: paralizado, aturdido, petrificado e inconsciente incapacitan; envenenado o
+		//derribado, no. Confundirlas convierte una condición dura en una molestia o al revés.
+		for (Condition blocking : List.of(Condition.PARALIZADO, Condition.ATURDIDO, Condition.PETRIFICADO,
+				Condition.INCONSCIENTE, Condition.INCAPACITADO)) {
+			FakeCombatant victim = new FakeCombatant(0);
+			victim.addCondition(blocking);
+			assertTrue(victim.cannotAct(), blocking + " debería impedir actuar");
+		}
+		for (Condition harmless : List.of(Condition.ENVENENADO, Condition.DERRIBADO, Condition.CEGADO)) {
+			FakeCombatant victim = new FakeCombatant(0);
+			victim.addCondition(harmless);
+			assertTrue(!victim.cannotAct(), harmless + " estorba, pero no impide actuar");
+		}
+
+		//Y que las tres puertas pregunten. tryAct ya lo hacía; tryReact y las acciones legendarias no.
+		String turnManager = readSource("TurnManager.java");
+		for (String method : List.of("public static boolean tryAct(", "public static boolean tryReact(")) {
+			int from = turnManager.indexOf(method);
+			assertTrue(from > 0, "no encontré " + method);
+			String body = turnManager.substring(from, turnManager.indexOf("\n\t}", from));
+			assertTrue(body.contains("isIncapacitated("),
+				method + " debería rechazar a quien está incapacitado: en 5e no puede ni actuar ni reaccionar");
+		}
+		assertTrue(readSource("LegendaryActionManager.java").contains("isIncapacitated("),
+			"un jefe incapacitado no puede tomar acciones legendarias, y la regla lo dice explícitamente");
+
+		System.out.println("checkIncapacitatedCannotAct: OK, las tres formas de actuar respetan la incapacitación.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

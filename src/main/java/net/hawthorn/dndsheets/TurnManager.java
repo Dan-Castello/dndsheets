@@ -305,8 +305,24 @@ public class TurnManager {
 	//(dentro del tick de quien se mueve). Mismo "una vez y se acabó" que tryAct, pero sin exigir que sea
 	//el turno del que reacciona.
 	public static boolean tryReact(Entity actor) {
+		//"Una criatura incapacitada no puede realizar acciones NI REACCIONES". Estaba solo en tryAct, así que
+		//un monstruo paralizado seguía haciendo ataques de oportunidad y un jugador aturdido seguía pudiendo
+		//usar Escudo y Contrahechizo — media docena de condiciones que dejaban de significar la mitad de lo
+		//que significan. Va antes que el modo turnos, igual que en tryAct: incapacitado lo estás también
+		//fuera de iniciativa.
+		if (isIncapacitated(actor)) return false;
 		if (!active) return true;
 		return reactionUsed.add(actor.getId());
+	}
+
+	/**
+	 * <p>Las TRES formas de hacer algo —acción, reacción y acción legendaria— pasan por aquí para preguntar
+	 * lo mismo. Estaba escrito solo en {@link #tryAct}, y las otras dos se comportaban como si la regla no
+	 * existiera.</p>
+	 */
+	static boolean isIncapacitated(Entity actor) {
+		Combatant combatant = Combatant.of(actor);
+		return combatant != null && combatant.cannotAct();
 	}
 
 	public static boolean isActive() {
@@ -330,8 +346,7 @@ public class TurnManager {
 		//(paralizado, aturdido, petrificado, inconsciente) impide actuar aunque no haya iniciativa activa.
 		//Aquí y no en cada llamador porque TODA ruta de ataque —cuerpo a cuerpo, proyectil, PvP, hechizo—
 		//pasa ya por este mismo punto.
-		Combatant combatant = Combatant.of(actor);
-		if (combatant != null && combatant.cannotAct()) return false;
+		if (isIncapacitated(actor)) return false;
 		if (!active) return true;
 		TurnEntry currentEntry = current();
 		if (currentEntry == null || currentEntry.entityId() != actor.getId()) return false;
