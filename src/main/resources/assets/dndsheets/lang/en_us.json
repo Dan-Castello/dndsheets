@@ -6,6 +6,7 @@
   "chat.dndsheets.combat.hits_with": " hits with %s: ",
   "chat.dndsheets.combat.hp_suffix": " (%s/%s HP)",
   "chat.dndsheets.combat.inspiration_note": " (+%s Bardic Insp.)",
+  "chat.dndsheets.combat.cover_note": " (%1$s, +%2$s)",
   "chat.dndsheets.combat.miss": "Miss",
   "chat.dndsheets.combat.needs_both_hands": "That weapon needs both hands free to attack.",
   "chat.dndsheets.combat.with_weapon_vs_ac": " with %s: %s vs AC %s → ",

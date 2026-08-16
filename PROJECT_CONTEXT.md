@@ -532,6 +532,31 @@ dependencies, not preference.
       The half that matters is that **everyone else keeps their relative order** — swapping with the
       current first, the implementation that writes itself, scrambles the initiative of the rest.
 
+  11. **Cover (`Cover`).** The rule this mod was best placed in the world to have and did not have.
+      Roll20 and Foundry compute visibility with polygons and fog layers *in order to simulate* a 3D
+      space; here the 3D space is the game. The half-height stone wall is already there with its real
+      geometry — and until now shooting someone crouched behind it cost exactly what shooting someone
+      standing in the open cost. Half cover is +2, three-quarters +5, total cover cannot be targeted.
+
+      - **Five rays, five points inside the body.** Points are inset from the bounding box rather than
+        placed at its corners, so the floor under the target's feet does not count as a parapet.
+      - **The two side points are perpendicular to the line of fire**, not on world axes. With
+        axis-aligned corners, shooting diagonally measures the wrong width, and a wall corner grants
+        half cover or none depending on which way the map happens to face.
+      - **Applies to weapon attacks, spell attacks, and Dexterity saves only** — a parapet helps you
+        dodge, it does not help you resist a poison or a suggestion. On saves it is subtracted from
+        the DC rather than added to the roll: same margin, and the target may have no sheet to write
+        a bonus on.
+      - **Shield still decides on its own number**: cover is subtracted from the attack roll passed to
+        `reactiveArmorClass` instead of added to the AC, so the reaction never learns about parapets.
+      - **`TOTAL.bonus()` is 5, not infinity.** One route reaches it anyway — an arrow that *already*
+        hit — and adding an infinity there would make impossible a blow the world just permitted.
+
+      The threshold table is pure and pinned in the self-test. Worth noting how: the `<=`→`<`
+      mutation survived the five-sample cases and was caught only by the four-sample one, which is
+      the case that proves the rule is written in *fractions of the body* rather than in a count of
+      rays.
+
   **Found while wiring item 9:** `AbilityItemDispatcher` had the same if/else chain **copied three
   times**, one per interaction event, and the copies had drifted. Divine Smite, Twinned Spell,
   Counterspell and Shield existed only in the "clicked at thin air" chain, so those four items *did

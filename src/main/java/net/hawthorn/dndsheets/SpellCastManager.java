@@ -416,8 +416,7 @@ public class SpellCastManager {
 	//cálculo de cobertura parcial — alcanza para "un muro entero bloquea, un hueco en la pared no", que es
 	//lo que pedía AUDIT.md; una esquina asomando por el borde de una pared puede dar un falso negativo.
 	private static boolean hasClearPath(ServerPlayer caster, Vec3 from, Vec3 to) {
-		BlockHitResult hit = caster.level().clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, caster));
-		return hit.getType() == HitResult.Type.MISS;
+		return !Cover.isBlocked(caster.level(), from, to, caster);
 	}
 
 	//Mismo raycast que usa Minecraft internamente para saber a qué le pegó una flecha, reutilizado para
@@ -442,11 +441,13 @@ public class SpellCastManager {
 		if (attackRoll.outcome().result() == null) return;
 		if (casterSheet != null) sendAdvantageAndInspirationUpdate(caster);
 
-		int targetAc = armorClassOfEntity(target);
+		//Un conjuro de ataque apunta igual que una flecha, así que el parapeto cuenta igual (ver Cover).
+		Cover cover = Cover.between(caster, target);
+		int targetAc = armorClassOfEntity(target) + cover.bonus();
 		String targetName = nameOf(target);
 
 		if (attackRoll.criticalMiss() || (!attackRoll.criticalHit() && attackRoll.outcome().result().getValue() < targetAc)) {
-			ChatFeedback.broadcast(caster, ChatFeedback.attackResult(casterName, targetName, spell.name(), attackRoll.outcome().formatted(), targetAc, false, null, inspiration));
+			ChatFeedback.broadcast(caster, ChatFeedback.withCover(ChatFeedback.attackResult(casterName, targetName, spell.name(), attackRoll.outcome().formatted(), targetAc, false, null, inspiration), cover));
 			return;
 		}
 
@@ -455,13 +456,17 @@ public class SpellCastManager {
 
 		applyDamage(target, damageRoll.amount(), spell.damageType());
 		CombatFx.hit(target, attackRoll.criticalHit(), spell.damageType());
-		ChatFeedback.broadcast(caster, ChatFeedback.attackResult(casterName, targetName, spell.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted(), inspiration));
+		ChatFeedback.broadcast(caster, ChatFeedback.withCover(ChatFeedback.attackResult(casterName, targetName, spell.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted(), inspiration), cover));
 		applySpellEffect(caster, spell, target);
 	}
 
 	private static void castSaveSpell(ServerPlayer caster, String casterName, SpellRegistry.Spell spell, Entity target, int proficiency, int abilityMod) {
 		if (TurnManager.isMonster(target)) MonsterRegistry.faceTarget(target, caster);
-		int saveDc = 8 + proficiency + abilityMod;
+		//La cobertura suma a las salvaciones de DESTREZA y solo a esas: es esquivar lo que el parapeto ayuda
+		//a hacer, no aguantar un veneno ni resistir una sugestión. Se le resta a la CD en vez de sumarse a la
+		//tirada porque es el mismo margen y el objetivo puede no tener hoja donde apuntar un bono.
+		Cover cover = "dex".equals(spell.saveAbility()) ? Cover.between(caster, target) : Cover.NONE;
+		int saveDc = 8 + proficiency + abilityMod - cover.bonus();
 		String targetName = nameOf(target);
 
 		DiceManager.RollOutcome damageRoll = DiceManager.roll(new JsonObject(), spell.dice());
@@ -475,8 +480,8 @@ public class SpellCastManager {
 		Component outcomeLabel = Component.translatable(saved ? (spell.halfOnSave() ? "chat.dndsheets.spell.save_half" : "chat.dndsheets.spell.save_none") : "chat.dndsheets.spell.save_fail");
 
 		CombatFx.spellImpact(target, saved, spell.damageType());
-		ChatFeedback.broadcast(caster, ChatFeedback.saveResult(casterName, targetName, spell.name(), saveRoll.formatted(), saveDc, saved, outcomeLabel,
-			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null));
+		ChatFeedback.broadcast(caster, ChatFeedback.withCover(ChatFeedback.saveResult(casterName, targetName, spell.name(), saveRoll.formatted(), saveDc, saved, outcomeLabel,
+			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null), cover));
 
 		if (finalDamage > 0) applyDamage(target, finalDamage, spell.damageType());
 		//El efecto depende de la SALVACIÓN, no del daño: en 5e que una condición prenda lo decide si el

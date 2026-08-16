@@ -141,6 +141,16 @@ public class ChatFeedback {
 		return msg;
 	}
 
+	/**
+	 * <p>Pega una nota de cobertura a la MISMA línea del ataque, igual que hace la de Inspiración. Sin ella,
+	 * un fallo contra una CA más alta de lo que dice la hoja del monstruo se lee como un error del mod y no
+	 * como el parapeto que es.</p>
+	 */
+	public static MutableComponent withCover(MutableComponent msg, Cover cover) {
+		if (cover == Cover.NONE) return msg;
+		return msg.append(dim(Component.translatable("chat.dndsheets.combat.cover_note", cover.label(), cover.bonus())));
+	}
+
 	//[Magia] Fulano cura a Mengano con Curar Heridas: 8=8[1d8]+3 PG
 	public static MutableComponent healResult(String casterName, String targetName, String spellName, String healText) {
 		return tag("chat.dndsheets.tag.magic", MAGIC_TAG)

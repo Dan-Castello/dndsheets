@@ -6,6 +6,7 @@
   "chat.dndsheets.combat.hits_with": " golpea con %s: ",
   "chat.dndsheets.combat.hp_suffix": " (%s/%s PG)",
   "chat.dndsheets.combat.inspiration_note": " (+%s Insp. Bardo)",
+  "chat.dndsheets.combat.cover_note": " (%1$s, +%2$s)",
   "chat.dndsheets.combat.miss": "Falla",
   "chat.dndsheets.combat.needs_both_hands": "Esa arma necesita las dos manos libres para atacar.",
   "chat.dndsheets.combat.with_weapon_vs_ac": " con %s: %s vs CA %s → ",

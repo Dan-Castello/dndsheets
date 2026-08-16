@@ -48,6 +48,7 @@ public class JsonContentSelfTest {
 		checkUpcasting();
 		checkSpellTargeting();
 		checkInitiatorGoesFirst();
+		checkCover();
 		checkDefaultsRefresh();
 		checkTabTextures();
 		checkInteractHandlers();
@@ -1286,6 +1287,35 @@ public class JsonContentSelfTest {
 		assertTrue(orden.equals(List.of(10, 30, 50, 40, 20)), "un iniciador que no está en el orden no debería tocarlo");
 
 		System.out.println("checkInitiatorGoesFirst: OK, quien ataca abre el orden y no desordena al resto.");
+	}
+
+	/**
+	 * <p>La tabla de cobertura. Es la mitad de la regla que se puede equivocar en silencio: un umbral
+	 * corrido convierte un parapeto en una pared, o deja a alguien tapado hasta el cuello sin más CA que
+	 * si estuviera en campo abierto.</p>
+	 */
+	private static void checkCover() {
+		assertTrue(Cover.fromBlocked(0, 5) == Cover.NONE, "sin nada tapado no hay cobertura");
+		assertTrue(Cover.fromBlocked(1, 5) == Cover.HALF, "un poco tapado es media cobertura");
+		assertTrue(Cover.fromBlocked(2, 5) == Cover.HALF, "hasta la mitad, sigue siendo media");
+		assertTrue(Cover.fromBlocked(3, 5) == Cover.THREE_QUARTERS, "pasada la mitad, tres cuartos");
+		assertTrue(Cover.fromBlocked(4, 5) == Cover.THREE_QUARTERS, "casi todo tapado, tres cuartos");
+		assertTrue(Cover.fromBlocked(5, 5) == Cover.TOTAL, "tapado del todo es cobertura total");
+
+		//Los bonificadores son los del SRD, y son la mitad que de verdad se nota en la mesa.
+		assertTrue(Cover.NONE.bonus() == 0 && Cover.HALF.bonus() == 2 && Cover.THREE_QUARTERS.bonus() == 5,
+			"media cobertura da +2 y tres cuartos +5");
+		//La total no vale infinito: hay una ruta donde llega igual (una flecha que YA impactó), y sumar un
+		//infinito a la CA haría imposible un golpe que el mundo acaba de permitir.
+		assertTrue(Cover.TOTAL.bonus() == 5 && Cover.TOTAL.blocksTargeting(),
+			"la cobertura total impide apuntar, pero su bono tiene que ser un número usable");
+
+		//La regla se compara en fracciones, no en un número fijo de rayos: cambiar el muestreo no debería
+		//reescribirla. Con 4 muestras el umbral sigue cayendo en la mitad.
+		assertTrue(Cover.fromBlocked(2, 4) == Cover.HALF && Cover.fromBlocked(3, 4) == Cover.THREE_QUARTERS,
+			"la tabla debería depender de la fracción tapada, no del número de rayos");
+
+		System.out.println("checkCover: OK, la tabla de cobertura y sus bonificadores son los del SRD.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

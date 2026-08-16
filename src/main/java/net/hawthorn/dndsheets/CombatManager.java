@@ -299,16 +299,23 @@ public class CombatManager {
 		sendSheetUpdate(attacker);
 
 		String attackerName = SheetLoader.characterNameOf(attackerSheet, attacker);
-		int targetAc = target.armorClass();
+		//Cobertura del terreno (ver Cover): parapetarse detrás de un bloque sube la CA, +2 o +5. Es la regla
+		//que este mod estaba en mejor posición para tener y no tenía — el muro de piedra ya está ahí, con su
+		//geometría real, y hasta ahora disparar a alguien agachado tras él costaba lo mismo que a alguien de
+		//pie en campo abierto.
+		Cover cover = Cover.between(attacker, target.entity());
+		int targetAc = target.armorClass() + cover.bonus();
 		//Reacciones defensivas (Escudo): solo tiene sentido comprobarlas si el golpe de verdad depende de la
-		//CA — un crítico siempre acierta y un pifia siempre falla, con o sin Escudo.
+		//CA — un crítico siempre acierta y un pifia siempre falla, con o sin Escudo. Se le descuenta la
+		//cobertura a la tirada en vez de sumársela a su CA: es el mismo margen, y así Escudo sigue decidiendo
+		//sobre su propio número sin saber nada de parapetos.
 		if (!attackRoll.criticalHit() && !attackRoll.criticalMiss()) {
-			targetAc = target.reactiveArmorClass(attackRoll.outcome().result().getValue());
+			targetAc = target.reactiveArmorClass(attackRoll.outcome().result().getValue() - cover.bonus()) + cover.bonus();
 		}
 
 		if (attackRoll.criticalMiss() || (!attackRoll.criticalHit() && attackRoll.outcome().result().getValue() < targetAc)) {
-			return new AttackOutcome(false, 0, ChatFeedback.attackResult(attackerName, target.name(), weapon.name(),
-				attackRoll.outcome().formatted(), targetAc, false, null, inspiration));
+			return new AttackOutcome(false, 0, ChatFeedback.withCover(ChatFeedback.attackResult(attackerName, target.name(), weapon.name(),
+				attackRoll.outcome().formatted(), targetAc, false, null, inspiration), cover));
 		}
 
 		//Crítico automático de 5e: cualquier impacto cuerpo a cuerpo contra un objetivo paralizado o
@@ -323,8 +330,8 @@ public class CombatManager {
 		boolean magical = weapon.enchantBonus() != 0;
 		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), target.effectiveDamageMultiplier(damageType, magical));
 		CombatFx.hit(target.entity(), critical, damageType);
-		return new AttackOutcome(true, finalAmount, ChatFeedback.attackResult(attackerName, target.name(), weapon.name(),
-			attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted(), inspiration));
+		return new AttackOutcome(true, finalAmount, ChatFeedback.withCover(ChatFeedback.attackResult(attackerName, target.name(), weapon.name(),
+			attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted(), inspiration), cover));
 	}
 
 	//Jugador ataca a un monstruo invocado por /dndmonsters spawn: mismo ataque-vs-CA que en PvP, pero el
