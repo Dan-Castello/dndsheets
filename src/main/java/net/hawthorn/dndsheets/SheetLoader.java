@@ -484,6 +484,70 @@ public class SheetLoader {
 		return characterId;
 	}
 
+	/** Sufijo de la copia que queda al borrar un personaje. No termina en .json: no se vuelve a cargar. */
+	public static final String DELETED_SUFFIX = ".json.deleted";
+
+	/**
+	 * <p>Borra un personaje. Devuelve {@code null} si salió bien, o el motivo por el que no se pudo.</p>
+	 *
+	 * <p><b>No borra el archivo: lo renombra</b> a {@code <id>.json.deleted}. Borrar un personaje es la única
+	 * acción del mod que destruye horas de partida y no tiene deshacer, y una copia que el DM puede volver a
+	 * poner en su sitio a mano cuesta una línea. Deja de terminar en {@code .json}, así que no se vuelve a
+	 * cargar al arrancar.</p>
+	 *
+	 * <p><b>Nunca deja a nadie sin personaje.</b> Si el borrado era el que llevaba puesto, se le pone otro
+	 * suyo; y si no le quedaba ninguno, se le crea una hoja en blanco en el acto. Esa rama es justo la que
+	 * convierte "borrar" en "reiniciar" para quien solo tiene un personaje, sin necesitar dos conceptos: sin
+	 * ella, quedarse a cero deja al jugador con {@code getServerSheet} devolviendo null hasta que se
+	 * reconecte, y media docena de rutas de combate se saltan al que no tiene hoja en silencio.</p>
+	 *
+	 * @param isDm si quien lo pide puede borrar fichas que no son suyas (PNJ del DM).
+	 */
+	public static String deleteCharacter(ServerPlayer requester, String characterId, boolean isDm) {
+		JsonObject sheet = sheets.get(characterId);
+		if (sheet == null) return "no_existe";
+
+		String owner = ownerOf(characterId, sheet);
+		String requesterUuid = requester.getStringUUID();
+		boolean own = requesterUuid.equals(owner);
+		//Un PNJ (sin dueño) es del DM; el personaje de OTRO jugador no lo borra nadie, ni el DM: eso sería
+		//tirar la hoja de alguien que no está delante para decir que no.
+		if (!own && !(owner == null && isDm)) return "no_es_tuyo";
+
+		sheets.remove(characterId);
+		activeCharacter.remove(requesterUuid, characterId);
+		Path file = SHEETS_DIR.resolve(characterId + ".json").toAbsolutePath();
+		try {
+			Files.move(file, SHEETS_DIR.resolve(characterId + DELETED_SUFFIX).toAbsolutePath(),
+				java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			//La hoja ya está fuera de memoria, así que el borrado vale igual; solo se pierde la copia.
+			DndsheetsMod.LOGGER.warn("No pude apartar la copia del personaje borrado {}: {}", characterId, e.getMessage());
+		}
+
+		if (own) ensureHasCharacter(requester);
+		return null;
+	}
+
+	/**
+	 * <p>Deja al jugador con un personaje puesto sí o sí: otro suyo si le queda alguno, o una hoja en blanco
+	 * si se quedó a cero. Mismo camino que la primera conexión, que ya crea una hoja para quien no tenía.</p>
+	 */
+	private static void ensureHasCharacter(ServerPlayer player) {
+		String playerUuid = player.getStringUUID();
+		if (getServerSheet(playerUuid) != null) return;
+
+		List<String> remaining = charactersOf(playerUuid);
+		if (!remaining.isEmpty()) {
+			switchCharacter(player, remaining.get(0));
+			return;
+		}
+		makeNew("New Sheet", playerUuid);
+		JsonObject fresh = getServerSheet(playerUuid);
+		applyClassHitPoints(player, fresh);
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(fresh.toString().getBytes()));
+	}
+
 	/**
 	 * <p>Hoja de PNJ: un personaje sin dueño, que nadie lleva puesto. Es lo que permite que el DM tenga
 	 * fichas de aliados y secundarios con las mismas reglas que un PJ, en vez de tener que convertirlos en

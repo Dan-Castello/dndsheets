@@ -34,10 +34,10 @@ import java.util.function.Supplier;
 public class BrowseActionMessage {
 
 	//Al final, nunca en medio: writeEnum viaja por ordinal (ver la invariante 2 de PROJECT_CONTEXT.md).
-	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL, JOURNAL_DETAIL }
+	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL, JOURNAL_DETAIL, DELETE }
 
 	final Action action;
-	final String characterId; //Solo lo usa SWITCH; las otras dos lo mandan vacío.
+	final String characterId; //Lo usan SWITCH y DELETE; las demás lo mandan vacío.
 
 	public BrowseActionMessage(Action action) {
 		this(action, "");
@@ -75,6 +75,17 @@ public class BrowseActionMessage {
 				case LIST_CONTENT -> CompendiumQuery.sendList(sender, message.characterId);
 				case CONTENT_DETAIL -> CompendiumQuery.sendDetail(sender, message.characterId);
 				case JOURNAL_DETAIL -> sendJournalEntry(sender, message.characterId);
+				case DELETE -> {
+					//El permiso solo abre la puerta a los PNJ del DM; el propio SheetLoader sigue negándose a
+					//borrar el personaje de otro jugador, tenga el permiso que tenga quien lo pida.
+					String error = SheetLoader.deleteCharacter(sender, message.characterId, sender.hasPermissions(2));
+					if (error == null) {
+						sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.deleted", message.characterId).withStyle(ChatFormatting.GREEN));
+						sendOwnCharacters(sender);
+					} else {
+						sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.delete_failed").withStyle(ChatFormatting.RED));
+					}
+				}
 				case SWITCH -> {
 					if (SheetLoader.switchCharacter(sender, message.characterId)) {
 						JsonObject sheet = SheetLoader.getCharacterSheet(message.characterId);

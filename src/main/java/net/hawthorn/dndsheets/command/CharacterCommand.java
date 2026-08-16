@@ -15,6 +15,7 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,6 +55,12 @@ public class CharacterCommand {
 			//así que abrir la pantalla no concede nada por sí solo.
 			.then(Commands.literal("mejora")
 				.executes(CharacterCommand::openImprovement))
+			//Borrar es sobre lo tuyo, así que tampoco pide permiso; el permiso solo entra para los PNJ del
+			//DM, y lo comprueba SheetLoader.deleteCharacter, no esta rama.
+			.then(Commands.literal("delete")
+				.then(Commands.argument("id", StringArgumentType.word())
+					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(deletableIds(ctx), builder))
+					.executes(CharacterCommand::delete)))
 			.then(Commands.literal("npc")
 				.requires(source -> source.hasPermission(2))
 				.then(Commands.argument("nombre", StringArgumentType.greedyString())
@@ -95,6 +102,32 @@ public class CharacterCommand {
 		}
 		net.hawthorn.dndsheets.LevelUpManager.openImprovementScreen(player, pending);
 		return pending;
+	}
+
+	private static int delete(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		String characterId = StringArgumentType.getString(ctx, "id");
+		String error = SheetLoader.deleteCharacter(player, characterId, ctx.getSource().hasPermission(2));
+		if (error != null) {
+			ctx.getSource().sendFailure(Component.literal("No se pudo borrar: ese personaje no existe o no es tuyo."));
+			return 0;
+		}
+		ctx.getSource().sendSuccess(() -> Component.literal("Personaje \"" + characterId + "\" borrado. Queda una copia en charactersheets/"
+			+ characterId + SheetLoader.DELETED_SUFFIX + " por si te arrepientes.").withStyle(ChatFormatting.GREEN), false);
+		return 1;
+	}
+
+	//Lo tuyo, más los PNJ si eres DM: exactamente lo mismo que deleteCharacter va a aceptar, para no
+	//sugerir un id que después se rechaza.
+	private static List<String> deletableIds(CommandContext<CommandSourceStack> ctx) {
+		List<String> ids = new ArrayList<>();
+		try {
+			ids.addAll(SheetLoader.charactersOf(ctx.getSource().getPlayerOrException().getStringUUID()));
+		} catch (CommandSyntaxException ignored) {
+			//Consola: no tiene personajes propios, solo puede tocar PNJ.
+		}
+		if (ctx.getSource().hasPermission(2)) ids.addAll(SheetLoader.npcIds());
+		return ids;
 	}
 
 	private static int list(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

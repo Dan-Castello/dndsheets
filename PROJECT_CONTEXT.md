@@ -652,6 +652,29 @@ dependencies, not preference.
       is not made on the ability's name: it is made on whether the modifier crosses an even number,
       and 15→16 does while 16→17 does not.
 
+  17. **Deleting a character.** Found in play: there was no way to remove or reset one, so a testing
+      session left characters that could only be switched between. `/dndchar delete <id>`, plus a
+      "Borrar un personaje..." toggle on the character screen so it does not require knowing an id.
+
+      - **It renames rather than deletes.** The file becomes `<id>.json.deleted` — no longer ending
+        in `.json`, so it is never loaded again, but recoverable by hand. Deleting a character is the
+        only action in the mod that destroys hours of play with no undo, and a copy costs one line.
+        That is also why the screen guards it with a mode toggle rather than a per-row dialog: the
+        protection needed is against a stray click, not a question answered yes without reading.
+      - **Nobody is ever left with zero characters.** If the deleted one was active, another of
+        theirs is put on; if none remain, a blank sheet is created immediately. That branch is what
+        makes "delete" also mean "reset" for someone with a single character, without needing two
+        concepts — and without it, hitting zero leaves `getServerSheet` returning null until the
+        player reconnects, which half a dozen combat paths skip over in silence.
+      - **A DM can delete NPC sheets, never another player's character.** Permission opens the door
+        to ownerless sheets only.
+
+  **Found by breaking it:** adding the chat strings for this, I put unescaped quotes inside a
+  translation (`"Personaje "%1$s" borrado"`) and **the build stayed green**. Nothing reads the
+  language files until the game starts, and then the failure is not an error but raw keys on screen —
+  and a key present in one language and missing in the other fails the same silent way for half the
+  users. `checkLanguageFiles` now parses every language file and asserts they carry the same key set.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

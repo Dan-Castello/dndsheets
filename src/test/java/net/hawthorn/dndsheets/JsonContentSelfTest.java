@@ -50,6 +50,7 @@ public class JsonContentSelfTest {
 		checkInitiatorGoesFirst();
 		checkCover();
 		checkAbilityImprovements();
+		checkLanguageFiles();
 		checkAttackPathsShareRules();
 		checkDefaultsRefresh();
 		checkTabTextures();
@@ -1464,6 +1465,53 @@ public class JsonContentSelfTest {
 		assertTrue(LevelUpManager.pendingOf(hoja) == 2, "dos saltos deberían dejar dos mejoras pendientes");
 
 		System.out.println("checkAbilityImprovements: OK, las mejoras se conceden en los niveles del SRD y no se pierden al saltar varios.");
+	}
+
+	/**
+	 * <p>Que los archivos de idioma parseen y digan las dos lo mismo.</p>
+	 *
+	 * <p>Esta comprobación existe porque acabo de romper {@code es_es.json} metiendo comillas sin escapar
+	 * dentro de un texto ({@code "Personaje "%1$s" borrado"}) y <b>el build siguió en verde</b>: nada lee
+	 * estos archivos hasta que el juego arranca, y entonces lo que se ve no es un error sino la clave cruda
+	 * en pantalla. Una clave que existe en un idioma y no en el otro falla igual de silenciosamente, solo
+	 * que para la mitad de la gente.</p>
+	 */
+	private static void checkLanguageFiles() throws Exception {
+		Path dir = Path.of("src", "main", "resources", "assets", "dndsheets", "lang");
+		Map<String, Set<String>> keysByLang = new java.util.LinkedHashMap<>();
+
+		try (Stream<Path> files = Files.list(dir)) {
+			for (Path file : files.filter(f -> f.toString().endsWith(".json")).sorted().toList()) {
+				String name = file.getFileName().toString();
+				JsonObject json;
+				try {
+					json = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+				} catch (RuntimeException e) {
+					throw new AssertionError(name + " no es JSON válido: " + e.getMessage());
+				}
+				keysByLang.put(name, json.keySet());
+			}
+		}
+		assertTrue(keysByLang.size() >= 2, "esperaba al menos dos idiomas y encontré " + keysByLang.size());
+
+		//Todas contra la primera: con dos idiomas es lo mismo que compararlas entre sí, y con cinco sigue
+		//dando un mensaje que dice qué falta y dónde.
+		String reference = keysByLang.keySet().iterator().next();
+		Set<String> referenceKeys = keysByLang.get(reference);
+		for (Map.Entry<String, Set<String>> entry : keysByLang.entrySet()) {
+			if (entry.getKey().equals(reference)) continue;
+			for (String key : referenceKeys) {
+				assertTrue(entry.getValue().contains(key),
+					entry.getKey() + " no tiene la clave \"" + key + "\", que sí está en " + reference
+						+ ": quien juegue en ese idioma verá la clave cruda en pantalla");
+			}
+			for (String key : entry.getValue()) {
+				assertTrue(referenceKeys.contains(key), reference + " no tiene la clave \"" + key + "\", que sí está en " + entry.getKey());
+			}
+		}
+
+		System.out.println("checkLanguageFiles: OK, " + keysByLang.size() + " idiomas con las mismas "
+			+ referenceKeys.size() + " claves y JSON válido.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {
