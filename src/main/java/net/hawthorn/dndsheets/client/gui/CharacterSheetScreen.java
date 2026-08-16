@@ -19,6 +19,7 @@ import net.hawthorn.dndsheets.network.PresetListRequestMessage;
 import net.hawthorn.dndsheets.network.RollEditorOpenMessage;
 import net.hawthorn.dndsheets.client.procedures.CharacterSheetSaveProcedure;
 import net.minecraft.client.gui.components.*;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
@@ -398,6 +399,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	//Todos los campos de la hoja, para enmarcarlos de una pasada. Salen del guistate, que ya los tiene
 	//todos: registrarlos a mano en los trece sitios que los crean es justo como se olvida uno.
 	private final java.util.List<EditBox> sheetFields = new ArrayList<>();
+	//Los widgets del panel principal, para ocultarlos al cambiar de pestaña. Ver initMainPanel().
+	private final java.util.List<AbstractWidget> mainPanelWidgets = new ArrayList<>();
 
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
@@ -919,11 +922,12 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		//encima de Skills/Attacks en su misma posición de pantalla — la UI superpuesta reportada en
 		//AUDIT_UX.md. EditBox.visible arranca en true y nunca se apagaba.
 		isActive = panelActive == PanelStatus.MAIN;
-		setActiveVisible(isActive, hitPoints, hitPointsTemp, hitPointsMax, armorClass, characterRace,
-			characterClass, background, speed, proficiency, hitDice, hitDiceTypes, grimoireButton, presetsButton);
+		for (AbstractWidget widget : mainPanelWidgets) setActiveVisible(isActive, widget);
 
-		setActiveVisible(panelActive == PanelStatus.MAIN && !editMode, initiativeButton);
-		setActiveVisible(panelActive == PanelStatus.MAIN && editMode, initiativeEditButton);
+		//Los dos de iniciativa comparten sitio y se turnan según el modo edición, así que van DESPUÉS del
+		//bucle de arriba: este los afina, aquel los pone a todos por igual.
+		setActiveVisible(isActive && !editMode, initiativeButton);
+		setActiveVisible(isActive && editMode, initiativeEditButton);
 
 		//Skill Tab
 		boolean skillsActive = panelActive == PanelStatus.SKILLS && !editMode;
@@ -1171,11 +1175,26 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	}
 
 	private void initMainPanel() {
+		//Todo lo que se cree aquí dentro pertenece al panel principal, y updateTabs() lo oculta al cambiar
+		//de pestaña. Se captura por diferencia sobre children() en vez de listarlo a mano en updateTabs.
+		//
+		//La lista a mano ya falló dos veces, y siempre igual: alguien añade un campo, no se acuerda de
+		//apuntarlo en el sitio lejano donde se oculta, y el campo se queda dibujado encima de Habilidades y
+		//Ataques — sin rótulo, sin hacer nada y sin que falle nada. Le pasó primero a la tanda entera
+		//(AUDIT_UX.md) y después a Nivel, Hambre y el botón de Guía. Capturado así, un campo nuevo entra
+		//solo por existir.
+		int before = this.children().size();
+
 		initVitalsBoxes();
 		initOptionPickerFields();
 		initHitDiceFields();
 		initInitiativeButtons();
 		initBottomButtons();
+
+		mainPanelWidgets.clear();
+		for (GuiEventListener child : this.children().subList(before, this.children().size())) {
+			if (child instanceof AbstractWidget widget) mainPanelWidgets.add(widget);
+		}
 	}
 
 	private void initVitalsBoxes() {

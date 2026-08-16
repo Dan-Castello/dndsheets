@@ -772,3 +772,20 @@ pantalla. Y **avisa en vez de reventar**: un rótulo recortado por una traducci�
 cosmético, no motivo para dejar sin hoja a quien juega.
 
 Los límites salen de las constantes de la retícula, así que siguen a la maquetación solos.
+
+### Qué se oculta al cambiar de pestaña
+
+Los widgets del panel principal se capturan **por diferencia** sobre `children()` dentro de
+`initMainPanel()`: todo lo que se cree ahí dentro se oculta solo al cambiar de pestaña.
+
+No es una florituría. La lista escrita a mano en `updateTabs` falló **dos veces**, y las dos igual:
+alguien añade un campo, no se acuerda de apuntarlo en el sitio lejano donde se oculta, y el campo se queda
+dibujado encima de Habilidades y Ataques — sin rótulo, sin hacer nada y sin que falle nada. Le pasó
+primero a la tanda entera (`AUDIT_UX.md`) y después a **Nivel, Hambre y el botón de Guía**, que se veían
+como dos recuadros vacíos junto al `+` de Ataques.
+
+Las otras dos pestañas no tienen este problema porque sus listas (`skillButtons`, `skillEditButtons`) las
+rellena `makeRollButton` sola, y Ataques solo tiene dos widgets.
+
+Los dos botones de iniciativa se afinan **después** del bucle: comparten sitio y se turnan según el modo
+edición, así que el bucle los pone a todos por igual y esas dos líneas los ajustan.
