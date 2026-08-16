@@ -122,7 +122,7 @@
   "gui.dndsheets.character_sheet.intelligence": "10",
   "gui.dndsheets.character_sheet.label_armor_class_ac": "CA",
   "gui.dndsheets.character_sheet.label_background": "Trasfondo",
-  "gui.dndsheets.character_sheet.label_class": "Clase y Nivel",
+  "gui.dndsheets.character_sheet.label_class": "Clase",
   "gui.dndsheets.character_sheet.label_hit_points": "PG",
   "gui.dndsheets.character_sheet.label_hit_points_max": "PG Máx",
   "gui.dndsheets.character_sheet.label_hit_points_temp": "PG Temp",

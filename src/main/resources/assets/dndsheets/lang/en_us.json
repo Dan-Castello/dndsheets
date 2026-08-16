@@ -122,7 +122,7 @@
   "gui.dndsheets.character_sheet.intelligence": "10",
   "gui.dndsheets.character_sheet.label_armor_class_ac": "AC",
   "gui.dndsheets.character_sheet.label_background": "Background",
-  "gui.dndsheets.character_sheet.label_class": "Class & Level",
+  "gui.dndsheets.character_sheet.label_class": "Class",
   "gui.dndsheets.character_sheet.label_hit_points": "HP",
   "gui.dndsheets.character_sheet.label_hit_points_max": "Max HP",
   "gui.dndsheets.character_sheet.label_hit_points_temp": "Temp HP",

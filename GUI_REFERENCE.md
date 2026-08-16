@@ -685,3 +685,33 @@ Un bloque `static` comprueba al cargar la clase que la retícula cabe en el pane
 de compilación: salta al abrir la hoja. Se puso porque el desbordamiento pasó al escribir esta retícula
 (los botones caían en y=246 sobre un panel de 240) y ya había pasado antes (y=228 sobre un fondo de 200),
 y en los dos casos no rompe nada, no avisa y solo se ve mirando.
+
+### Los campos: marco de latón encima del anillo gris
+
+Vanilla pinta cada `EditBox` como un **anillo gris de un píxel** (blanco al tener el foco) alrededor de un
+**relleno negro**, y los dos colores están fijos dentro de `EditBox.renderWidget`. Sobre el pergamino eso
+se leía como widgets prestados de otra interfaz: la hoja parecía dos diseños a la vez.
+
+`setBordered(false)` **no** sirve como arreglo. Quita el borde, sí, pero también el relleno negro, y además
+mueve el texto: de estar centrado con margen pasa a pegarse a la esquina superior izquierda. Y sin fondo
+oscuro detrás, el texto tendría que ser tinta sobre pergamino — que con la sombra fija de Minecraft se ve
+duplicado (ver la sección de sombras más arriba).
+
+Así que el anillo no se quita: **se repinta encima**. Ocupa exactamente un píxel por fuera de la caja, o
+sea que taparlo no toca ni el texto ni el interior. `CharacterSheetScreen.frameField` dibuja latón apagado,
+latón encendido con el foco (conservando la señal que daba el blanco de vanilla) y una línea oscura por
+fuera arriba y a la izquierda, que es lo que hace que el campo se lea hundido en la hoja.
+
+Los campos se recogen del `guistate` al final de `init()`, no se registran a mano en los trece sitios que
+los crean. **Ojo:** los campos de nombre de la pestaña de Ataques se crean dentro de `RollScrollWidget` y
+no pasan por `guistate`, así que esos siguen con el anillo gris.
+
+### Bandas de sección
+
+Cada sección de la pestaña principal se dibuja sobre un rectángulo apenas más oscuro que el pergamino, con
+luz arriba y sombra abajo. Un título y un filete solos dejan la sección sin superficie y la hoja entera se
+lee plana.
+
+Van en `renderBg` y no en `renderLabels` porque `renderLabels` corre **después** de los widgets: dibujadas
+allí taparían los propios campos que envuelven. Sus coordenadas salen de las constantes de la retícula, así
+que no pueden desalinearse de las filas al cambiar `ROW_STEP`.

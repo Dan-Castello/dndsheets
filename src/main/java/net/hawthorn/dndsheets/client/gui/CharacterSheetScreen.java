@@ -227,6 +227,15 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private static final int TAB_TEXT_CLOSED = 0xCBBA97;
 	/** Cabeceras de sección: tinta aguada, para que titulen sin competir con los rótulos de los campos. */
 	private static final int SECTION_COLOR = 0x6B5636;
+	/** Marco de los campos: latón apagado, y encendido al tener el foco (ver frameField). */
+	private static final int FIELD_RING = 0xFF6B5636;
+	private static final int FIELD_RING_FOCUSED = 0xFFC9A227;
+	private static final int FIELD_SHADOW = 0xFF8A7B5E;
+	//Bandas de sección: negro y blanco a muy poca opacidad, no colores propios. Así se oscurecen y aclaran
+	//el pergamino que tengan detrás sin pelearse con él si algún día cambia de tono.
+	private static final int BAND_FILL = 0x12000000;
+	private static final int BAND_LIGHT = 0x20FFFFFF;
+	private static final int BAND_SHADOW = 0x22000000;
 	//Ámbar quemado para lo que se rellena solo. El ámbar claro de antes (0xFFD37F) estaba pensado para un
 	//fondo oscuro; sobre pergamino no tenía contraste suficiente para leerse.
 	private static final int AUTO_FIELD_COLOR = 0x8A5A12;
@@ -317,6 +326,10 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private static final Component LABEL_SECTION_RESOURCES = Component.translatable("gui.dndsheets.character_sheet.section_resources");
 	private static final Component LABEL_SKILL_PERSUASION = Component.translatable("gui.dndsheets.character_sheet.label_skill_persuasion");
 
+	//Todos los campos de la hoja, para enmarcarlos de una pasada. Salen del guistate, que ya los tiene
+	//todos: registrarlos a mano en los trece sitios que los crean es justo como se olvida uno.
+	private final java.util.List<EditBox> sheetFields = new ArrayList<>();
+
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics);
@@ -353,6 +366,11 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				break;
 		}
 
+		//Después de que los campos se hayan dibujado: el marco tapa el anillo gris que cada uno se pinta solo.
+		for (EditBox field : sheetFields) {
+			if (field.visible) frameField(guiGraphics, field);
+		}
+
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}
 
@@ -372,6 +390,14 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			case ATTACKS:
 				guiGraphics.blit(BG_ATTACKS, this.leftPos - 24, this.topPos - 24, 0, 0, 398, 288, 398, 288);
 				break;
+		}
+
+		//Bandas de sección, solo en la pestaña principal. Va aquí y no en renderLabels porque renderLabels
+		//corre DESPUÉS de los widgets: dibujadas allí taparían los propios campos que enmarcan.
+		if (panelActive == PanelStatus.MAIN) {
+			sectionBand(guiGraphics, SEC1_Y, ROW1_Y);
+			sectionBand(guiGraphics, SEC2_Y, ROW3_Y);
+			sectionBand(guiGraphics, SEC3_Y, ROW4_Y);
 		}
 
 		guiGraphics.blit(ICON_STR, this.leftPos + ABILITY_OFFSET_X + 25, this.topPos + ABILITY_OFFSET_Y, 0, 0, 16, 16, 16, 16);
@@ -517,6 +543,63 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	 * desde {@code renderLabels}, que ya corre con la traslación de {@code leftPos}/{@code topPos} aplicada,
 	 * así que las coordenadas son las mismas de la retícula.</p>
 	 */
+	/**
+	 * <p>Marco de latón sobre el anillo gris que {@link EditBox} se dibuja solo.</p>
+	 *
+	 * <p>Vanilla pinta cada campo como un anillo gris de un píxel (blanco al tener el foco) alrededor de un
+	 * relleno negro, y los dos colores están fijos en {@code EditBox.renderWidget}. Sobre el pergamino eso
+	 * se leía como widgets prestados de otra interfaz: la pantalla parecía dos diseños a la vez.</p>
+	 *
+	 * <p>Apagar el borde con {@code setBordered(false)} no vale: quita también el relleno negro Y cambia
+	 * dónde se dibuja el texto (pasa de estar centrado con margen a pegarse a la esquina superior
+	 * izquierda), y sin relleno oscuro detrás el texto tendría que ser tinta sobre pergamino — que con la
+	 * sombra fija de Minecraft se ve duplicado, el problema que ya arreglamos en los rótulos.</p>
+	 *
+	 * <p>Así que el anillo no se quita: se repinta encima. Ocupa exactamente un píxel por fuera de la caja,
+	 * o sea que taparlo no toca ni el texto ni el interior. Se conserva la señal de foco (latón encendido
+	 * en vez de blanco) y se añade una línea oscura por fuera, que es lo que hace que el campo se lea
+	 * hundido en la hoja en vez de pegado encima.</p>
+	 */
+	private void frameField(GuiGraphics guiGraphics, EditBox box) {
+		int left = box.getX() - 1;
+		int top = box.getY() - 1;
+		int right = box.getX() + box.getWidth() + 1;
+		int bottom = box.getY() + box.getHeight() + 1;
+		int ring = box.isFocused() ? FIELD_RING_FOCUSED : FIELD_RING;
+
+		guiGraphics.fill(left, top, right, top + 1, ring);
+		guiGraphics.fill(left, bottom - 1, right, bottom, ring);
+		guiGraphics.fill(left, top, left + 1, bottom, ring);
+		guiGraphics.fill(right - 1, top, right, bottom, ring);
+
+		//Sombra por fuera, solo arriba y a la izquierda: es de donde vendría la luz en el biselado de
+		//Minecraft, así que el hueco parece excavado en el pergamino.
+		guiGraphics.fill(left - 1, top - 1, right, top, FIELD_SHADOW);
+		guiGraphics.fill(left - 1, top - 1, left, bottom, FIELD_SHADOW);
+	}
+
+	/**
+	 * <p>Banda de una sección: un rectángulo apenas más oscuro que el pergamino, con luz arriba y sombra
+	 * abajo. Da cuerpo al grupo — un título y un filete solos dejan la sección sin superficie, y la hoja
+	 * entera se lee plana.</p>
+	 *
+	 * <p>Se calcula desde las constantes de la retícula, no a mano contra la textura: por eso no puede
+	 * desalinearse de las filas que envuelve cuando se cambie {@code ROW_STEP}.</p>
+	 *
+	 * @param headingY  la {@code SEC*_Y} de la sección
+	 * @param lastRowY  la {@code ROW*_Y} de su ÚLTIMA fila de campos
+	 */
+	private void sectionBand(GuiGraphics guiGraphics, int headingY, int lastRowY) {
+		int left = this.leftPos + PANEL_X - 8;
+		int right = this.leftPos + PANEL_RIGHT + 4;
+		int top = this.topPos + headingY - 5;
+		int bottom = this.topPos + lastRowY + FIELD_H + 7;
+
+		guiGraphics.fill(left, top, right, bottom, BAND_FILL);
+		guiGraphics.fill(left, top, right, top + 1, BAND_LIGHT);
+		guiGraphics.fill(left, bottom - 1, right, bottom, BAND_SHADOW);
+	}
+
 	private void section(GuiGraphics guiGraphics, Component title, int y) {
 		guiGraphics.drawString(this.font, title, PANEL_X, y, SECTION_COLOR, false);
 		//El filete arranca donde acaba el título, no debajo: así la cabecera ocupa una sola línea y las tres
@@ -1202,6 +1285,13 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		initAttackPanel();
 		initMainPanel();
 		initSkillPanel();
+
+		//Se vacía antes de rellenar: init() se vuelve a ejecutar al cambiar el tamaño de la ventana, y
+		//guistate es estático (lo comparte el menú), así que sin esto la lista crecería en cada reajuste.
+		sheetFields.clear();
+		for (Object widget : guistate.values()) {
+			if (widget instanceof EditBox field) sheetFields.add(field);
+		}
 
 		updateTabs();
 		CharacterSheetLoadProcedure.execute(guistate, this);
