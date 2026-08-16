@@ -173,6 +173,12 @@ final class CharacterRules {
 			if (id.equals(needle)) return id;
 		}
 
+		//"Nombre [id]": lo que sugiere el autocompletado cuando DOS personajes se llaman igual, y la única
+		//forma honesta de elegir entre ellos. Un personaje que de verdad se llame "Bruno [el Bravo]" no
+		//coincide con ningún id, así que cae al emparejado normal de abajo sin hacer nada raro.
+		String bracketed = idInsideBrackets(candidateIds, needle);
+		if (bracketed != null) return bracketed;
+
 		String exact = null;
 		int exactCount = 0;
 		String prefix = null;
@@ -191,6 +197,35 @@ final class CharacterRules {
 		if (exactCount == 1) return exact;
 		if (exactCount > 1) return null;
 		return prefixCount == 1 ? prefix : null;
+	}
+
+	private static String idInsideBrackets(List<String> candidateIds, String needle) {
+		int open = needle.lastIndexOf('[');
+		if (open <= 0 || !needle.endsWith("]")) return null;
+		String inner = needle.substring(open + 1, needle.length() - 1).trim();
+		for (String id : candidateIds) {
+			if (id.equals(inner)) return id;
+		}
+		return null;
+	}
+
+	/**
+	 * <p>Cómo se le ofrece un personaje al jugador: su nombre a secas, o {@code Nombre [id]} si <b>otro</b>
+	 * de los candidatos se llama igual.</p>
+	 *
+	 * <p>El id solo aparece donde de verdad hace falta. Antes se sugería siempre el nombre, y dos personajes
+	 * llamados igual daban dos sugerencias idénticas que además no se podían resolver: el autocompletado
+	 * ofrecía una opción que el propio comando rechazaba después por ambigua. Una sugerencia que no funciona
+	 * es peor que no sugerir nada.</p>
+	 */
+	static String suggestionLabelFor(Map<String, JsonObject> sheets, List<String> candidateIds, String characterId) {
+		String name = nameOf(sheets.get(characterId));
+		if (name == null || name.isBlank()) return characterId;
+		for (String other : candidateIds) {
+			if (other.equals(characterId)) continue;
+			if (name.equalsIgnoreCase(nameOf(sheets.get(other)))) return name + " [" + characterId + "]";
+		}
+		return name;
 	}
 
 	/** Nombre de una hoja, o null si no tiene: no todas lo llevan, y comparar contra null es peor que saltarla. */

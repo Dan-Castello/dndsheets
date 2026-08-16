@@ -342,6 +342,14 @@ public class SheetLoader {
 		return CharacterRules.resolveCharacter(sheets, candidateIds, query);
 	}
 
+	/**
+	 * <p>Cómo ofrecer ese personaje en una lista: el nombre, o {@code Nombre [id]} si otro de la lista se
+	 * llama igual. Ver {@link CharacterRules#suggestionLabelFor}.</p>
+	 */
+	public static String suggestionLabelFor(List<String> candidateIds, String characterId) {
+		return CharacterRules.suggestionLabelFor(sheets, candidateIds, characterId);
+	}
+
 	/** Nombre de un personaje por su id, o el propio id si no tiene nombre: sirve para menús y mensajes. */
 	public static String nameOfCharacter(String characterId) {
 		String name = CharacterRules.nameOf(sheets.get(characterId));

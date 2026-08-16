@@ -92,9 +92,12 @@ public class CharacterCommand {
 			com.mojang.brigadier.suggestion.SuggestionsBuilder builder, List<String> ids) {
 		String written = builder.getRemaining().toLowerCase(java.util.Locale.ROOT);
 		for (String id : ids) {
-			String name = SheetLoader.nameOfCharacter(id);
-			if (!name.toLowerCase(java.util.Locale.ROOT).startsWith(written)) continue;
-			builder.suggest(name, Component.literal(id));
+			//El rótulo lleva el id SOLO si otro personaje se llama igual: así cada sugerencia es distinta de
+			//las demás y, sobre todo, resoluble. Sugiriendo el nombre a secas, dos personajes llamados igual
+			//daban dos opciones idénticas que el comando rechazaba después por ambiguas.
+			String label = SheetLoader.suggestionLabelFor(ids, id);
+			if (!label.toLowerCase(java.util.Locale.ROOT).startsWith(written)) continue;
+			builder.suggest(label, Component.literal(id));
 		}
 		return builder.buildFuture();
 	}
@@ -173,7 +176,11 @@ public class CharacterCommand {
 			JsonObject sheet = SheetLoader.getCharacterSheet(characterId);
 			String name = sheet != null && sheet.has("characterName") ? sheet.get("characterName").getAsString() : "(sin nombre)";
 			boolean isActive = characterId.equals(activeId);
-			ctx.getSource().sendSuccess(() -> Component.literal((isActive ? " ▶ " : "   ") + name + "  [" + characterId + "]")
+			//Mismo texto que sugiere el autocompletado, para que lo que se lee aquí sea literalmente lo que hay
+			//que escribir. El id solo sale cuando dos personajes comparten nombre, que es cuando importa.
+			String label = SheetLoader.suggestionLabelFor(owned, characterId);
+			String suffix = label.equals(name) ? "  [" + characterId + "]" : "";
+			ctx.getSource().sendSuccess(() -> Component.literal((isActive ? " ▶ " : "   ") + label + suffix)
 				.withStyle(isActive ? ChatFormatting.GREEN : ChatFormatting.GRAY), false);
 		}
 		return owned.size();

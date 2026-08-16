@@ -701,6 +701,25 @@ dependencies, not preference.
       error. Ambiguous is treated as "no": choosing for the player would choose wrong half the time.
       The rule is pure and lives in `CharacterRules`, so all of that is checkable without a game.
 
+  20. **Two characters with the same name were unreachable.** Reported from play with two sheets both
+      called "Test": the completion offered "Test" twice — two identical entries — and picking either
+      failed with "the name matches several". **The autocomplete was offering an option the command
+      then refused.** A suggestion that does not work is worse than no suggestion.
+
+      Rejecting ambiguity is still right; the mistake was leaving no way *out* of it. Suggestions now
+      carry the id **only when another candidate shares the name** (`Test [380df…-2]`), so every
+      suggestion is distinct and resolvable, and the id stays out of sight the rest of the time. The
+      resolver accepts that form, and a character genuinely named `Bruno [el Bravo]` still matches by
+      name because the bracket content has to be a real id.
+
+      The check that matters is the round trip: for every candidate, resolving its own suggestion
+      label must return that candidate. That is the whole bug in one assertion. `/dndchar list` and
+      the character screen use the same label, so what you read is exactly what you type.
+
+      Worth recording what was *not* wrong: the deleted character had not come back. The `.deleted`
+      file was on disk as intended, and the second sheet was the blank one that deletion creates so
+      nobody is left with zero — it just happened to get renamed "Test" too.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

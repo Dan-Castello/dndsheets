@@ -135,12 +135,16 @@ public class BrowseActionMessage {
 		List<String> ids = new ArrayList<>();
 		List<String> labels = new ArrayList<>();
 
-		for (String characterId : SheetLoader.charactersOf(player.getStringUUID())) {
+		List<String> owned = SheetLoader.charactersOf(player.getStringUUID());
+		for (String characterId : owned) {
 			JsonObject sheet = SheetLoader.getCharacterSheet(characterId);
-			String name = sheet != null && sheet.has("characterName") ? sheet.get("characterName").getAsString() : characterId;
+			//Con el id detrás solo si otro se llama igual (ver CharacterRules.suggestionLabelFor): pulsar una
+			//fila manda el id exacto, así que aquí no había ambigüedad que resolver — pero dos filas idénticas
+			//obligan a elegir a ciegas cuál es cuál.
+			String label = SheetLoader.suggestionLabelFor(owned, characterId);
 			String characterClass = sheet != null && sheet.has("characterClass") ? sheet.get("characterClass").getAsString() : "";
 			ids.add(characterId);
-			labels.add((characterId.equals(activeId) ? "▶ " : "   ") + name + (characterClass.isBlank() ? "" : " · " + characterClass));
+			labels.add((characterId.equals(activeId) ? "▶ " : "   ") + label + (characterClass.isBlank() ? "" : " · " + characterClass));
 		}
 
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),

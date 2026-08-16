@@ -1559,7 +1559,30 @@ public class JsonContentSelfTest {
 		assertTrue(CharacterRules.resolveCharacter(repes, List.of("a", "b"), "Bruno") == null,
 			"dos personajes con el mismo nombre no se pueden distinguir por nombre");
 
-		System.out.println("checkCharacterLookup: OK, los personajes se encuentran por nombre y lo ambiguo se rechaza.");
+		//Reportado jugando: dos personajes llamados "Test" daban dos sugerencias IDÉNTICAS que el comando
+		//rechazaba después por ambiguas — el autocompletado ofrecía una opción que no funcionaba. El rótulo
+		//lleva el id solo cuando hace falta, y con él la elección vuelve a ser posible.
+		assertTrue("Borin".equals(CharacterRules.suggestionLabelFor(sheets, ids, "uuid-3")),
+			"un nombre único se ofrece a secas, sin id que nadie necesita leer");
+		assertTrue("Bruno [a]".equals(CharacterRules.suggestionLabelFor(repes, List.of("a", "b"), "a")),
+			"dos nombres iguales se distinguen con el id, y solo entonces");
+		assertTrue(!CharacterRules.suggestionLabelFor(repes, List.of("a", "b"), "a")
+				.equals(CharacterRules.suggestionLabelFor(repes, List.of("a", "b"), "b")),
+			"y las dos sugerencias tienen que ser distintas entre sí");
+
+		//Y lo que se sugiere tiene que poder resolverse: es el fallo entero en una línea.
+		for (String id : List.of("a", "b")) {
+			String label = CharacterRules.suggestionLabelFor(repes, List.of("a", "b"), id);
+			assertTrue(id.equals(CharacterRules.resolveCharacter(repes, List.of("a", "b"), label)),
+				"la sugerencia \"" + label + "\" debería resolver al personaje que la generó");
+		}
+		//Un nombre que de verdad lleva corchetes no se confunde con la forma "Nombre [id]".
+		Map<String, JsonObject> corchetes = new java.util.LinkedHashMap<>();
+		corchetes.put("x", named("Bruno [el Bravo]"));
+		assertTrue("x".equals(CharacterRules.resolveCharacter(corchetes, List.of("x"), "Bruno [el Bravo]")),
+			"un nombre con corchetes debería seguir encontrándose por su nombre");
+
+		System.out.println("checkCharacterLookup: OK, los personajes se encuentran por nombre, lo ambiguo se distingue con el id y lo que se sugiere se puede elegir.");
 	}
 
 	private static JsonObject named(String characterName) {
