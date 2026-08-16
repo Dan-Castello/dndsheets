@@ -1840,7 +1840,17 @@ public class JsonContentSelfTest {
 		assertTrue(readSource("MonsterActionManager.java").contains("ownAttackAdvantage()"),
 			"un monstruo debería atacar con la ventaja que le den sus propias condiciones, no solo con la del objetivo");
 
-		System.out.println("checkIncapacitatedCannotAct: OK, actuar, reaccionar, moverse y atacar respetan las condiciones en las dos direcciones.");
+		//Y que quien las sufre pueda VERLAS. Media docena de reglas del motor cuelgan de las condiciones, y
+		//estaban solo en el Panel de DM: un jugador paralizado veía sus clics no hacer nada, que se lee como
+		//un mod roto y no como la regla que es. El punto único de escritura tiene que avisar al cliente.
+		String combatant = readSource("Combatant.java");
+		int from = combatant.indexOf("default void setConditionSources(");
+		assertTrue(from > 0, "no encontré el punto de escritura de condiciones");
+		String writePoint = combatant.substring(from, combatant.indexOf("\n\t\t}", from));
+		assertTrue(writePoint.contains("sendSheetFieldUpdate("),
+			"cambiar las condiciones de un jugador debería avisarle: si no, su copia se queda con las de antes");
+
+		System.out.println("checkIncapacitatedCannotAct: OK, actuar, reaccionar, moverse y atacar respetan las condiciones, y quien las sufre las ve.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

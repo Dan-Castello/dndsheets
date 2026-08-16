@@ -942,6 +942,24 @@ dependencies, not preference.
       asymmetry as `AttackRules` fixed for the *target*, one step earlier in the same roll: this one
       is about the attacker.
 
+  32. **A player could not see their own conditions.** Asked the next question of the same shape —
+      not "is the rule applied everywhere", but "**can the person it happens to see it?**" — and this
+      one had been true since conditions were added.
+
+      Conditions were visible **only through the DM Panel**. Half a dozen engine rules hang off them:
+      paralysed means your clicks do nothing, restrained means you cannot walk, frightened means
+      disadvantage you never see rolled. From the player's chair that is indistinguishable from a
+      broken mod — which is, word for word, several of the reports that arrived during this work.
+
+      They now show on the HUD, in red, above everything else. Two halves: the client's copy had to
+      *arrive*, so the single write point (`SheetBacked.setConditionSources`, already documented as
+      the only one) now sends a short patch to the player, and the HUD strips the `@id` that carries
+      each condition's source — the person suffering it cares that they are frightened, not about the
+      entity number that frightened them.
+
+      This is the same class as items 18 and 21, one layer up: not stale client state, but state that
+      was never shown at all. A rule the player cannot see is a rule they will report as a bug.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

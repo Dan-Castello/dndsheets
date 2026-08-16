@@ -40,8 +40,35 @@ public class ResourceHudOverlay {
 			y += lineHeight;
 		}
 
+		//Las condiciones activas, en rojo y arriba del todo de lo demás. Estaban SOLO en el Panel de DM, así
+		//que un jugador paralizado no tenía forma de saberlo: sus clics dejaban de hacer nada y eso se lee
+		//como que el mod está roto, no como la regla que es. Media docena de reglas del motor dependen de
+		//condiciones y ninguna se veía desde el lado de quien las sufre.
+		String conditions = activeConditionLabels(sheet);
+		if (!conditions.isEmpty()) {
+			guiGraphics.drawString(font, conditions, x, y, 0xFF5555);
+			y += lineHeight;
+		}
+
 		if (sheet.has("gold")) {
 			guiGraphics.drawString(font, "Oro: " + sheet.get("gold").getAsInt(), x, y, 0xFFD700);
 		}
+	}
+
+	/**
+	 * <p>Etiquetas de las condiciones activas, separadas por coma. Se le quita el "@id" con el que viaja la
+	 * fuente de cada una (ver {@code Combatant.formatEntry}): a quien la sufre le importa que está asustado,
+	 * no el número de entidad que lo asustó.</p>
+	 */
+	private static String activeConditionLabels(JsonObject sheet) {
+		if (!sheet.has("conditions")) return "";
+		StringBuilder labels = new StringBuilder();
+		for (var element : sheet.getAsJsonArray("conditions")) {
+			String entry = element.getAsString();
+			int at = entry.indexOf('@');
+			if (labels.length() > 0) labels.append(", ");
+			labels.append(at < 0 ? entry : entry.substring(0, at));
+		}
+		return labels.length() == 0 ? "" : "Estados: " + labels;
 	}
 }

@@ -407,6 +407,15 @@ public interface Combatant {
 			//A disco de inmediato, sin confiar en el autoguardado de 5 minutos: mismo fallo que ya costó
 			//perder cambios de oro/espacios hechos por el DM (ver PROJECT_CONTEXT.md, bug #5).
 			SheetLoader.saveServer(sheet(), saveId());
+
+			//Y al cliente. Este es el ÚNICO punto de escritura de condiciones, así que es el único sitio
+			//donde hace falta: sin él, la copia del jugador se quedaba con las de hace un rato y el HUD no
+			//podía enseñar nada fiable. Un parche corto, no la hoja entera — llega a mitad de combate.
+			if (entity() instanceof net.minecraft.server.level.ServerPlayer player) {
+				JsonObject patch = new JsonObject();
+				patch.add("conditions", array);
+				DndsheetsMod.sendSheetFieldUpdate(player, patch);
+			}
 		}
 	}
 
