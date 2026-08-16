@@ -1338,7 +1338,19 @@ public class JsonContentSelfTest {
 		assertTrue(resolveAttack.contains("TurnActionManager.isDodging("),
 			"y respetando Esquivar, que es una acción del objetivo y no una condición suya");
 
-		System.out.println("checkMonsterAttacksUseTargetState: OK, un monstruo ataca contando el estado, el parapeto y el esquive del objetivo.");
+		//Lo mismo para el conjuro de un monstruo: parapetarse del aliento de un dragón es EL caso de manual
+		//de la cobertura, y estuvo implementado solo del lado del jugador que lanza.
+		int desdeSpell = fuente.indexOf("private static void resolveSpell(");
+		assertTrue(desdeSpell > 0, "no encontré resolveSpell en MonsterActionManager");
+		String resolveSpell = fuente.substring(desdeSpell, fuente.indexOf("\n\t}", desdeSpell));
+		assertTrue(resolveSpell.contains("Cover.between("),
+			"la salvación de Destreza contra el conjuro de un monstruo también debería contar la cobertura");
+		//Se comprueba que USE el nombre del personaje, en vez de que no aparezca el otro: la primera versión
+		//buscaba la ausencia de "target.getName()" y saltaba por el comentario que explica justo eso.
+		assertTrue(resolveSpell.contains("targetCombatant.name()"),
+			"debería anunciar el nombre del personaje, no el de la cuenta de Minecraft");
+
+		System.out.println("checkMonsterAttacksUseTargetState: OK, un monstruo ataca y lanza contando el estado, el parapeto y el esquive del objetivo.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

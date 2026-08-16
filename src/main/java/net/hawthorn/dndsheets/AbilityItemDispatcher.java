@@ -40,6 +40,7 @@ public class AbilityItemDispatcher {
 		//reparto común porque este evento es el único donde su clic significa algo.
 		if (dndTag.getBoolean("hunterMark")) RangerHunterMarkManager.tryUse(event);
 		else if (dndTag.getBoolean("bardicInspiration")) BardInspirationManager.tryUse(event);
+		else if (dndTag.getBoolean("helpAction")) HelpActionManager.tryUse(event);
 		else dispatch(event, dndTag);
 	}
 

@@ -571,8 +571,23 @@ dependencies, not preference.
       creature's next turn, which is literally what Dodge says in 5e — so separate sets would only be
       three things to remember to clear instead of one.
 
-      **Missing: Help**, the fourth. It grants advantage to an ally, so it needs someone to point at,
-      exactly like Bardic Inspiration — it belongs on an entity-interact item, not in this menu.
+  13. **Help (`HelpActionManager`), the fourth action.** Right-click an ally: their next attack has
+      advantage, and it costs your action like the other three. It lives apart from the other three
+      precisely because it is the only one that needs someone to *point at*, so its home is an
+      entity-interact item rather than a menu row — the same shape of problem Bardic Inspiration has
+      and already solved that way.
+
+      No new mechanism: the advantage is written to `nextAttackAdvantage`, the one-shot sheet flag
+      `CombatManager.consumeAdvantage` has always spent on the next attack roll — weapon, spell, or
+      the sheet's own button. What was needed was using the flag `/dndsheet advantage` had been using
+      all along, and patching it to the client so the ally sees it without reopening the sheet.
+
+  **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
+  sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
+  caster. And two chat lines announced the target by Minecraft account name instead of character name.
+  Both fixed; the source-scan check now covers `resolveSpell` too. Worth recording how the check
+  first failed: it asserted the *absence* of `target.getName()` and tripped over the comment
+  explaining that very fix, so it now asserts the presence of the right call instead.
 
   **Found while wiring item 12 — and bigger than it:** monster attacks rolled with a hardcoded
   `Advantage.NORMAL`. That silently discarded **half of what conditions do in 5e**: "attacks against

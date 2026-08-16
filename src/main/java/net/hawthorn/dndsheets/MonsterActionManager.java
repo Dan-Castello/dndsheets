@@ -366,7 +366,11 @@ public class MonsterActionManager {
 	//Deja el efecto listo para que TurnManager lo vaya aplicando al empezar cada uno de los turnos del objetivo.
 	private static void applyEffectFromHit(Entity target, String name, String dice, int turns, Entity source) {
 		TurnManager.applyEffect(target, name, dice, turns, source);
-		ChatFeedback.broadcast(target, net.minecraft.network.chat.Component.translatable("chat.dndsheets.monster.effect_applied", target.getName().getString(), name, turns).withStyle(ChatFormatting.DARK_PURPLE));
+		//Nombre del personaje, no el de la cuenta de Minecraft: es el mismo criterio que el resto de líneas
+		//de combate, y aquí se colaba el otro. Sin Combatant (un mob de compatibilidad) queda el de siempre.
+		Combatant combatant = Combatant.of(target);
+		String targetName = combatant != null ? combatant.name() : target.getName().getString();
+		ChatFeedback.broadcast(target, net.minecraft.network.chat.Component.translatable("chat.dndsheets.monster.effect_applied", targetName, name, turns).withStyle(ChatFormatting.DARK_PURPLE));
 	}
 
 	private static void resolveSpell(MonsterRegistry.MonsterStatBlock block, Entity monsterEntity, MonsterRegistry.MonsterSpell spell, Player target) {
@@ -384,17 +388,25 @@ public class MonsterActionManager {
 		Combatant.SaveRoll saveRoll = targetCombatant.rollSave(spell.saveAbility());
 		if (saveRoll.formatted() == null) return;
 
+		//La cobertura sube las salvaciones de DESTREZA, también contra el conjuro de un monstruo: parapetarse
+		//del aliento de un dragón es el caso de manual, y solo estaba implementado del lado del jugador que
+		//lanza. Se le resta a la CD, igual que en SpellCastManager.
+		Cover cover = "dex".equals(spell.saveAbility()) ? Cover.between(monsterEntity, target) : Cover.NONE;
+		int saveDc = spell.saveDc() - cover.bonus();
+
 		DiceManager.RollOutcome damageRoll = DiceManager.roll(new JsonObject(), spell.dice());
 		if (damageRoll.result() == null) return;
 
-		boolean saved = saveRoll.succeeds(spell.saveDc());
+		boolean saved = saveRoll.succeeds(saveDc);
 		int finalDamage = saved ? (spell.halfOnSave() ? damageRoll.result().getValue() / 2 : 0) : damageRoll.result().getValue();
 		Component outcomeLabel = Component.translatable(saved ? (spell.halfOnSave() ? "chat.dndsheets.spell.save_half" : "chat.dndsheets.spell.save_none") : "chat.dndsheets.spell.save_fail");
 
 		CombatFx.spellCast(monsterEntity);
 		CombatFx.spellImpact(target, saved, spell.damageType());
-		ChatFeedback.broadcast(monsterEntity, ChatFeedback.saveResult(block.name(), target.getName().getString(), spell.name(), saveRoll.formatted(), spell.saveDc(), saved, outcomeLabel,
-			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null));
+		//targetCombatant.name() y no target.getName(): el resto del mod anuncia el nombre del PERSONAJE, y
+		//aquí se colaba el de la cuenta de Minecraft.
+		ChatFeedback.broadcast(monsterEntity, ChatFeedback.withCover(ChatFeedback.saveResult(block.name(), targetCombatant.name(), spell.name(), saveRoll.formatted(), saveDc, saved, outcomeLabel,
+			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null), cover));
 
 		if (finalDamage > 0) {
 			double affinity = targetCombatant.effectiveDamageMultiplier(spell.damageType(), true); //Un conjuro siempre es mágico. Incluye además la resistencia de petrificado, ver Combatant.
