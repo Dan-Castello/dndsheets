@@ -68,7 +68,10 @@ public class DndsheetsMod {
 	//Sube a "4": se registra TurnActionMessage y ScreenActionMessage.Action gana TURN_ACTION_OPEN. Lo
 	//segundo es lo peligroso de verdad: un cliente antiguo leeria ese ordinal como una accion que no
 	//conoce en vez de fallar limpio al conectar.
-	private static final String PROTOCOL_VERSION = "4";
+	//Sube a "5": se registra AbilityImprovementMessage y ScreenActionMessage.Action gana
+	//ABILITY_IMPROVEMENT_OPEN. Lo segundo es lo peligroso: un cliente antiguo leeria ese ordinal como una
+	//accion que no conoce en vez de fallar limpio al conectar.
+	private static final String PROTOCOL_VERSION = "5";
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 
@@ -134,6 +137,8 @@ public class DndsheetsMod {
 		addNetworkMessage(SpellCastMessage.class, SpellCastMessage::buffer, SpellCastMessage::new, SpellCastMessage::handler);
 		addNetworkMessage(net.hawthorn.dndsheets.network.TurnActionMessage.class, net.hawthorn.dndsheets.network.TurnActionMessage::buffer,
 			net.hawthorn.dndsheets.network.TurnActionMessage::new, net.hawthorn.dndsheets.network.TurnActionMessage::handler);
+		addNetworkMessage(net.hawthorn.dndsheets.network.AbilityImprovementMessage.class, net.hawthorn.dndsheets.network.AbilityImprovementMessage::buffer,
+			net.hawthorn.dndsheets.network.AbilityImprovementMessage::new, net.hawthorn.dndsheets.network.AbilityImprovementMessage::handler);
 		addNetworkMessage(SpellGiveMessage.class, SpellGiveMessage::buffer, SpellGiveMessage::new, SpellGiveMessage::handler);
 		addNetworkMessage(TraitGrantMessage.class, TraitGrantMessage::buffer, TraitGrantMessage::new, TraitGrantMessage::handler);
 		addNetworkMessage(TraitListMessage.class, TraitListMessage::buffer, TraitListMessage::new, TraitListMessage::handler);

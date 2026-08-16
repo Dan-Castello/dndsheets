@@ -49,6 +49,7 @@ public class JsonContentSelfTest {
 		checkSpellTargeting();
 		checkInitiatorGoesFirst();
 		checkCover();
+		checkAbilityImprovements();
 		checkAttackPathsShareRules();
 		checkDefaultsRefresh();
 		checkTabTextures();
@@ -1424,6 +1425,45 @@ public class JsonContentSelfTest {
 		assertTrue(declaracion.find(), "no encontré la declaración de " + signature);
 		//El final del método: la primera llave de cierre a ese mismo nivel de sangría.
 		return source.substring(declaracion.start(), source.indexOf("\n\t}", declaracion.start()));
+	}
+
+	/**
+	 * <p>La Mejora de Puntuación de Característica: los niveles que la conceden y cuántas toca al saltar
+	 * varios de golpe. Es lo único que un nivel NO puede derivar, porque es una decisión, y por eso también
+	 * lo único que se puede perder sin que nada falle.</p>
+	 */
+	private static void checkAbilityImprovements() {
+		//Los cinco niveles del SRD, y los bordes de cada uno: el fallo natural aquí es una lista mal copiada.
+		for (int level = 1; level <= 20; level++) {
+			boolean esperado = level == 4 || level == 8 || level == 12 || level == 16 || level == 19;
+			assertTrue(LevelUpManager.isImprovementLevel(level) == esperado,
+				"nivel " + level + ": mejora esperada=" + esperado + " y dice " + LevelUpManager.isImprovementLevel(level));
+		}
+		//El 20 NO da mejora en 5e, y es el error más fácil de cometer ("el último nivel dará algo").
+		assertTrue(!LevelUpManager.isImprovementLevel(20), "el nivel 20 no concede mejora en 5e");
+
+		//Subir de uno en uno y de golpe tienen que dar lo mismo: un DM que pone /dndsheet setlevel 8 sobre un
+		//personaje de nivel 1 no debería costarle al jugador la mejora del 4.
+		assertTrue(LevelUpManager.improvementsBetween(1, 8) == 2, "del 1 al 8 son dos mejoras: la del 4 y la del 8");
+		assertTrue(LevelUpManager.improvementsBetween(1, 20) == 5, "del 1 al 20 son las cinco");
+		int unaAUna = 0;
+		for (int level = 1; level < 20; level++) unaAUna += LevelUpManager.improvementsBetween(level, level + 1);
+		assertTrue(unaAUna == LevelUpManager.improvementsBetween(1, 20),
+			"subir de uno en uno debería dar lo mismo que subir de golpe, y da " + unaAUna);
+
+		//Ni el nivel de llegada ni el de salida se cuentan dos veces.
+		assertTrue(LevelUpManager.improvementsBetween(4, 8) == 1, "del 4 al 8 solo cuenta la del 8: la del 4 ya se dio");
+		assertTrue(LevelUpManager.improvementsBetween(8, 8) == 0, "quedarse igual no concede nada");
+		//Bajar de nivel no las quita ni las da: quitarlas obligaría a deshacer puntos ya gastados.
+		assertTrue(LevelUpManager.improvementsBetween(12, 3) == 0, "bajar de nivel no debería conceder ni quitar");
+
+		//Se anotan en la hoja y se acumulan, para que sobrevivan a cerrar la pantalla o desconectarse.
+		JsonObject hoja = new JsonObject();
+		LevelUpManager.grantImprovementsFor(hoja, 1, 4);
+		LevelUpManager.grantImprovementsFor(hoja, 4, 8);
+		assertTrue(LevelUpManager.pendingOf(hoja) == 2, "dos saltos deberían dejar dos mejoras pendientes");
+
+		System.out.println("checkAbilityImprovements: OK, las mejoras se conceden en los niveles del SRD y no se pierden al saltar varios.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

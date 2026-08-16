@@ -9,6 +9,7 @@ import net.hawthorn.dndsheets.BarbarianRageManager;
 import net.hawthorn.dndsheets.BardInspirationManager;
 import net.hawthorn.dndsheets.CounterspellManager;
 import net.hawthorn.dndsheets.DiceManager;
+import net.hawthorn.dndsheets.LevelUpManager;
 import net.hawthorn.dndsheets.SpellSlots;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.DruidWildShapeManager;
@@ -125,6 +126,9 @@ public class SheetCommand {
 						.then(Commands.argument("pacto", StringArgumentType.word())
 							.suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(new String[]{"cadena", "hoja", "vara"}, builder))
 							.executes(SheetCommand::setPact))))
+				.then(Commands.literal("levelup")
+					.then(Commands.argument("jugadores", EntityArgument.players())
+						.executes(SheetCommand::levelUp)))
 				.then(Commands.literal("setlevel")
 					.then(Commands.argument("jugadores", EntityArgument.players())
 						.then(Commands.argument("nivel", IntegerArgumentType.integer(1, 20))
@@ -309,10 +313,23 @@ public class SheetCommand {
 		return targets.size();
 	}
 
+	//Subir UN nivel contándolo, frente a setlevel, que pone un número. Lo dispara el DM porque en una mesa
+	//quien reparte los niveles es quien lleva la partida.
+	private static int levelUp(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		for (ServerPlayer target : targets) LevelUpManager.levelUp(target);
+		ctx.getSource().sendSuccess(() -> Component.literal("Subido de nivel a " + targets.size() + " jugador(es)."), true);
+		return targets.size();
+	}
+
 	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage).
 	public static void applyLevel(ServerPlayer target, int nivel) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;
+		//Las Mejoras de Puntuacion de Caracteristica se conceden AQUI, el unico punto por el que pasa un
+		//cambio de nivel (comando y Panel de DM). Se cuentan por los niveles cruzados, asi que saltar del 1
+		//al 8 concede las dos que tocan en vez de perder una — ver LevelUpManager.
+		LevelUpManager.grantImprovementsFor(sheet, SheetLoader.characterLevelOf(sheet, target), nivel);
 		sheet.addProperty("characterLevel", nivel);
 		//Sin esto, el PG máximo (que depende del nivel) se quedaba con el valor viejo hasta la próxima
 		//reconexión — SheetLoader.applyClassHitPoints solo se llamaba antes en EntityJoinLevelEvent.

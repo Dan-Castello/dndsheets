@@ -626,6 +626,32 @@ dependencies, not preference.
       targets a player, so that branch was unreachable and the behaviour was identical. The rule is
       unified anyway — but the comment now says what is true rather than what made a better story.
 
+  16. **Levelling up (`LevelUpManager`).** Almost everything a level grants was already *derived*
+      from `characterLevel` — max hit points, proficiency, spell slots, the Sneak Attack and Martial
+      Arts dice. What was missing was the one thing that cannot be derived because it is a
+      **decision**: the Ability Score Improvement at 4, 8, 12, 16 and 19. Without it a level-20
+      character fought with a level-1 character's ability scores, which is the most visible number
+      there is.
+
+      And it was missing the *telling*. `/dndsheet setlevel 5` moved half the sheet in silence.
+      Levelling is one of the few moments a table celebrates and it was the least visible one; now
+      `/dndsheet levelup` announces the level and only the lines that actually changed — a list where
+      three of four rows say "unchanged" buries the one that did.
+
+      - **Pending improvements live on the sheet**, not in memory, so they survive closing the
+        screen, disconnecting and a server restart — and so jumping from level 1 to 8 grants the two
+        that are due instead of losing one. It is also what makes the client screen safe: the server
+        applies an improvement only if one was actually owed.
+      - **Granted from the single choke point** that changes level (`SheetCommand.applyLevel`), so
+        the command and the DM Panel both grant them without a second copy of the rule.
+      - **The DM levels you up; the player spends the improvement.** Whose decision each one is.
+      - **Constitution re-derives max HP.** Without it, raising CON gave the new modifier to
+        everything except the thing Constitution exists to give.
+
+      The screen shows each ability's current score *and* what it would become, because the decision
+      is not made on the ability's name: it is made on whether the modifier crosses an even number,
+      and 15→16 does while 16→17 does not.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

@@ -435,6 +435,22 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 
 El rotulo dice lo que HACE cada accion y no solo como se llama: "Esquivar" a secas no le dice nada a quien nunca jugo a D&D, y este mod se juega sobre todo con gente que no lo ha jugado.
 
+## AbilityImprovementScreen
+
+- **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/AbilityImprovementScreen.java`
+- **Tipo:** extiende `ModalDialogScreen`
+- **Como se abre:** `ScreenActionMessage.Action.ABILITY_IMPROVEMENT_OPEN`, que manda el servidor al conceder una Mejora de Puntuacion de Caracteristica (nivel 4, 8, 12, 16 o 19), y tambien con `/dndchar mejora` si quedo alguna sin gastar
+- **Tamano del panel:** 280x152
+
+| Widget | Tipo | X | Y | Ancho | Alto | Notas |
+|---|---|---|---|---|---|---|
+| Titulo (cambia con el estado) | drawCenteredString | width/2 | dialogTop()+8 | - | - | "Elige: +2 a una..." / "Ahora elige la segunda..." |
+| "El maximo de una caracteristica es 20." | drawCenteredString | width/2 | dialogTop()+20 | - | - | `GuiStyle.MUTED_COLOR` |
+| Seis botones de caracteristica | `addModalButton` | 16 / 142 | 34 + fila*24 | 122 | 20 | rotulo "Fuerza 15 -> 17"; inactivo si ya esta en 20; ">" marca la elegida |
+| "Confirmar +2 a la elegida" | `addModalButton` | 16 | 116 | 248 | 20 | inactivo hasta elegir una |
+
+Cada boton ensena la puntuacion actual Y a cuanto subiria: la decision no se toma sobre el nombre de la caracteristica sino sobre si el modificador cruza un numero par (15->16 da +1 al modificador, 16->17 no da nada), y eso no se ve si el boton solo dice "Destreza". Volver a pulsar la caracteristica ya elegida la deselecciona, que es la salida obvia de "me equivoque".
+
 ## SheetAdjustScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/SheetAdjustScreen.java`

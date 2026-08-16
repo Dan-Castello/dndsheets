@@ -49,6 +49,11 @@ public class CharacterCommand {
 				.then(Commands.argument("id", StringArgumentType.word())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(ownedIds(ctx), builder))
 					.executes(CharacterCommand::switchTo)))
+			//Sin permiso: la Mejora de Característica la elige QUIEN lleva el personaje, no el DM. El servidor
+			//solo la deja gastar si de verdad quedaba alguna pendiente (ver LevelUpManager.applyImprovement),
+			//así que abrir la pantalla no concede nada por sí solo.
+			.then(Commands.literal("mejora")
+				.executes(CharacterCommand::openImprovement))
 			.then(Commands.literal("npc")
 				.requires(source -> source.hasPermission(2))
 				.then(Commands.argument("nombre", StringArgumentType.greedyString())
@@ -79,6 +84,17 @@ public class CharacterCommand {
 	private static int openScreen(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		net.hawthorn.dndsheets.network.BrowseActionMessage.sendOwnCharacters(ctx.getSource().getPlayerOrException());
 		return 1;
+	}
+
+	private static int openImprovement(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		int pending = net.hawthorn.dndsheets.LevelUpManager.pendingOf(SheetLoader.getServerSheet(player.getStringUUID()));
+		if (pending <= 0) {
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.levelup.none_pending"));
+			return 0;
+		}
+		net.hawthorn.dndsheets.LevelUpManager.openImprovementScreen(player, pending);
+		return pending;
 	}
 
 	private static int list(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
