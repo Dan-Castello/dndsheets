@@ -52,6 +52,7 @@ public class JsonContentSelfTest {
 		checkAbilityImprovements();
 		checkLanguageFiles();
 		checkCharacterLookup();
+		checkCharacterAfterDelete();
 		checkAttackPathsShareRules();
 		checkDefaultsRefresh();
 		checkTabTextures();
@@ -1583,6 +1584,39 @@ public class JsonContentSelfTest {
 			"un nombre con corchetes debería seguir encontrándose por su nombre");
 
 		System.out.println("checkCharacterLookup: OK, los personajes se encuentran por nombre, lo ambiguo se distingue con el id y lo que se sugiere se puede elegir.");
+	}
+
+	/**
+	 * <p>Qué personaje queda puesto después de borrar uno. Reportado jugando: borrar el personaje que
+	 * llevabas puesto no limpiaba nada, así que la hoja abierta con H seguía siendo la del borrado y al
+	 * guardar volvía a escribirse en disco — el personaje resucitaba.</p>
+	 *
+	 * <p>La causa era la pregunta, no el borrado: {@code activeCharacterOf} cae al propio UUID del jugador
+	 * cuando no lleva ninguno puesto (es lo que hace que sigan funcionando las hojas anteriores a los
+	 * personajes), así que preguntarle "¿le queda personaje?" contestaba que sí en cuanto existiera un
+	 * archivo con ese id, aunque no estuviera puesto.</p>
+	 */
+	private static void checkCharacterAfterDelete() {
+		Set<String> existing = Set.of("uuid", "uuid-2", "uuid-3");
+
+		assertTrue("uuid-2".equals(CharacterRules.characterToWearAfter(existing, "uuid-2", List.of("uuid", "uuid-2"))),
+			"si el que llevaba puesto sigue existiendo, se queda con él");
+		assertTrue("uuid".equals(CharacterRules.characterToWearAfter(existing, "uuid-9", List.of("uuid", "uuid-2"))),
+			"si el que llevaba ya no existe, se le pone el primero que le quede");
+
+		//EL FALLO: sin binding, no hay personaje puesto. Contestar "uuid" porque exista un archivo con el id
+		//del jugador es justo lo que dejaba al cliente con la hoja borrada en la mano.
+		assertTrue("uuid".equals(CharacterRules.characterToWearAfter(existing, null, List.of("uuid", "uuid-2"))),
+			"sin binding hay que ELEGIRLE uno de los suyos, no dar por hecho que ya lleva alguno");
+		assertTrue(CharacterRules.characterToWearAfter(existing, null, List.of()) == null,
+			"y si no le queda ninguno, hay que decirlo para crearle una hoja en blanco");
+		//Un id que ya no está en disco no vale como respuesta ni aunque siga en su lista.
+		assertTrue("uuid-3".equals(CharacterRules.characterToWearAfter(existing, null, List.of("borrado", "uuid-3"))),
+			"un personaje que ya no existe no puede ser el que se le ponga");
+		assertTrue(CharacterRules.characterToWearAfter(Set.of(), null, List.of("borrado")) == null,
+			"si nada de lo suyo existe ya, se queda sin ninguno");
+
+		System.out.println("checkCharacterAfterDelete: OK, tras borrar se elige un personaje que existe de verdad, o ninguno.");
 	}
 
 	private static JsonObject named(String characterName) {

@@ -234,6 +234,26 @@ final class CharacterRules {
 	}
 
 	/**
+	 * <p>Qué personaje debería llevar puesto un jugador cuando el que llevaba deja de existir: el mismo si
+	 * sigue estando, si no el primero que le quede, y {@code null} si se quedó sin ninguno.</p>
+	 *
+	 * <p>Existe como función aparte por el fallo que costó: {@code activeCharacterOf} <b>no distingue</b>
+	 * "lleva puesto este" de "no lleva ninguno", porque sin binding devuelve el propio UUID del jugador — el
+	 * id de la hoja de antes de que existieran los personajes. Preguntarle a esa función si el jugador sigue
+	 * teniendo personaje contestaba que sí en cuanto existiera un archivo con ese id, aunque no estuviera
+	 * puesto. La pregunta correcta se hace sobre el binding explícito, y ahora se puede comprobar sin juego.</p>
+	 *
+	 * @param boundId el personaje registrado como activo, o {@code null} si no hay ninguno registrado.
+	 */
+	static String characterToWearAfter(Set<String> existingIds, String boundId, List<String> ownedIds) {
+		if (boundId != null && existingIds.contains(boundId)) return boundId;
+		for (String id : ownedIds) {
+			if (existingIds.contains(id)) return id;
+		}
+		return null;
+	}
+
+	/**
 	 * Id para un personaje más de ese jugador. Derivado de su UUID, así que es único entre jugadores sin
 	 * necesitar un contador global, y sigue siendo un nombre de archivo válido en cualquier sistema.
 	 */

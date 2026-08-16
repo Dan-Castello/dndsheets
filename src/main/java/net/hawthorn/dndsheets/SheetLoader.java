@@ -547,6 +547,8 @@ public class SheetLoader {
 			DndsheetsMod.LOGGER.warn("No pude apartar la copia del personaje borrado {}: {}", characterId, e.getMessage());
 		}
 
+		//Siempre, no solo si borró el que llevaba puesto: al cliente hay que dejarle una hoja que exista,
+		//y comprobar "¿era el activo?" aquí sería una tercera copia de esa pregunta.
 		if (own) ensureHasCharacter(requester);
 		return null;
 	}
@@ -557,11 +559,17 @@ public class SheetLoader {
 	 */
 	private static void ensureHasCharacter(ServerPlayer player) {
 		String playerUuid = player.getStringUUID();
-		if (getServerSheet(playerUuid) != null) return;
-
-		List<String> remaining = charactersOf(playerUuid);
-		if (!remaining.isEmpty()) {
-			switchCharacter(player, remaining.get(0));
+		//Se pregunta por el binding EXPLÍCITO, no por getServerSheet: esa función cae al propio UUID del
+		//jugador cuando no hay ninguno puesto (compatibilidad con las hojas anteriores a los personajes), así
+		//que contestaba "sí tiene personaje" en cuanto existiera un archivo con ese id. El resultado era que
+		//borrar el personaje que llevabas puesto no avisaba al cliente, la hoja abierta con H seguía siendo
+		//la del borrado, y al guardar se escribía otra vez en disco — el personaje "resucitaba".
+		String wear = CharacterRules.characterToWearAfter(sheets.keySet(), activeCharacter.get(playerUuid), charactersOf(playerUuid));
+		if (wear != null) {
+			//switchCharacter aunque ya fuera el que llevaba: deja el flag "active" coherente en disco y, sobre
+			//todo, le manda la hoja al cliente. Un cliente que se queda con una hoja borrada la reescribe en
+			//cuanto toque cualquier cosa de la pantalla.
+			switchCharacter(player, wear);
 			return;
 		}
 		makeNew("New Sheet", playerUuid);

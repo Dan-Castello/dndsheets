@@ -720,6 +720,26 @@ dependencies, not preference.
       file was on disk as intended, and the second sheet was the blank one that deletion creates so
       nobody is left with zero — it just happened to get renamed "Test" too.
 
+  21. **Deleting the character you were wearing resurrected it.** Reported from play: "deleting a
+      character does not clear the sheet, so it gets recreated automatically when you press H."
+
+      The delete was fine; **the question afterwards was wrong**. `ensureHasCharacter` asked
+      `getServerSheet(uuid) != null`, and `activeCharacterOf` *falls back to the player's own UUID*
+      when nothing is bound — that fallback exists so sheets written before characters existed keep
+      working. So the check answered "yes, they still have a character" merely because a file with
+      that id existed, even with nothing worn. Nothing was sent to the client, the sheet still open
+      on H was the deleted one, and the next save wrote it back to disk under the fallback id. The
+      character came back.
+
+      The question is now asked against the **explicit binding** and pinned in `CharacterRules`, and
+      the player is re-bound (which also pushes the sheet) rather than merely checked. Together with
+      item 18's `refreshIfOpen`, the open screen repaints instead of holding a sheet that no longer
+      exists — the two halves of the same failure, one on each side of the wire.
+
+      The lesson worth keeping: a **compatibility fallback that invents a plausible answer** is fine
+      for reading and dangerous for deciding. `activeCharacterOf` cannot distinguish "wearing this
+      one" from "wearing none", so nothing that branches on existence may call it.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.
