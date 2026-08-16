@@ -191,6 +191,40 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private final int GUIDE_OFFSET_X = 225;
 	private final int GUIDE_OFFSET_Y = BOTTOM_ROW_Y;
 
+	/*
+		RETÍCULA DE LA PESTAÑA DE HABILIDADES
+
+		Las dieciocho habilidades se agrupan por característica, que es como funcionan en 5e y como se
+		imprimen en una hoja de verdad. Esa agrupación ya estaba en el código, pero solo como comentarios
+		(//STR, //DEX, //INT...): en pantalla eran dos columnas de nueve filas seguidas, sin decir de qué
+		característica tira cada una.
+
+		Los rótulos de cabecera NO son claves nuevas: son los mismos LABEL_ABILITY_* que ya usan las
+		tiradas de característica del panel lateral, así que traducir uno traduce los dos sitios.
+	 */
+	private static final int SKILL_TOP = 10;
+	private static final int SKILL_ROW = 20;          //De una habilidad a la siguiente.
+	private static final int SKILL_GROUP_STEP = 14;   //Lo que ocupa una cabecera de grupo.
+	private static final int SKILL_LABEL_GAP = 18;    //Del botón de tirada a su rótulo.
+
+	//Columna 1 en x=116 (el filete del fondo cae en 114) y columna 2 en 224. La segunda va más a la derecha
+	//de lo que parecería simétrico a propósito: sus rótulos son los largos ("Trato con Animales" mide 108
+	//px), y con las columnas a la misma anchura ese se salía del panel — llegaba a x=363 sobre un ancho de
+	//350. Es un desbordamiento que solo aparecía en español.
+	private static final int SKILL_COL1_X = 114;
+	private static final int SKILL_COL2_X = 230;
+	//El pergamino llega hasta x=364, así que el filete de las cabeceras se corta en 358 para dejar margen.
+	//Las columnas van tan justas porque los rótulos en español casi llenan el ancho: entre "Juego de Manos"
+	//(84 px) en la primera y "Trato con Animales" (108) en la segunda, más los botones de tirada, se comen
+	//228 de los 244 disponibles. Por eso la columna 1 arranca pegada al borde del panel lateral — en esta
+	//pestaña no hay filete vertical de fondo (solo lo lleva character_sheet.png, la principal).
+	private static final int SKILL_RIGHT = 358;
+
+	//Cuántas habilidades cuelgan de cada característica, en orden. Columna 1: Fuerza (1), Destreza (3),
+	//Inteligencia (5). Columna 2: Sabiduría (5), Carisma (4).
+	private static final int[] SKILL_COL1_GROUPS = {1, 3, 5};
+	private static final int[] SKILL_COL2_GROUPS = {5, 4};
+
 	static {
 		//La retícula se sale del panel con demasiada facilidad: pasó al escribirla (los botones de página
 		//caían en y=246 sobre un panel de 240) y ya había pasado antes (y=228 sobre un fondo de 200). No
@@ -206,18 +240,25 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			throw new IllegalStateException("La fila de identidad llega a x=" + rightmost
 				+ " y el panel acaba en " + PANEL_RIGHT + ".");
 		}
+
+		//Las dos columnas de habilidades reparten NUEVE huecos cada una. Si alguien cambia los tamaños de
+		//grupo y dejan de sumar nueve, skillRowY revienta al pedir un hueco que no existe — pero solo al
+		//abrir esa pestaña y solo en la fila concreta que falte. Mejor que salte entero y aquí.
+		for (int[] groups : new int[][] {SKILL_COL1_GROUPS, SKILL_COL2_GROUPS}) {
+			int slots = 0;
+			for (int size : groups) slots += size;
+			if (slots != 9) {
+				throw new IllegalStateException("Una columna de habilidades reparte " + slots
+					+ " huecos y tienen que ser 9 (18 habilidades en dos columnas).");
+			}
+			int height = skillGroupY(groups, groups.length - 1)
+				+ SKILL_GROUP_STEP + groups[groups.length - 1] * SKILL_ROW;
+			if (height > SHEET_HEIGHT) {
+				throw new IllegalStateException("Una columna de habilidades llega a y=" + height
+					+ " y el panel mide " + SHEET_HEIGHT + ".");
+			}
+		}
 	}
-
-	/*
-		SKILLS PANEL OFFSETS
-	 */
-	private final int SKILL_SEPARATION = 20;
-
-	private final int SKILL_LIST1_OFFSET_X = 135;
-	private final int SKILL_LIST1_OFFSET_Y = 15;
-
-	private final int SKILL_LIST2_OFFSET_X = 255;
-	private final int SKILL_LIST2_OFFSET_Y = 15;
 
 	//Color del texto de los campos que se rellenan solos (PG, CA, nivel, hambre, competencia): ámbar, para
 	//distinguirlos de un vistazo de los campos en blanco normal que sí se pueden escribir a mano.
@@ -601,10 +642,41 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	}
 
 	private void section(GuiGraphics guiGraphics, Component title, int y) {
-		guiGraphics.drawString(this.font, title, PANEL_X, y, SECTION_COLOR, false);
-		//El filete arranca donde acaba el título, no debajo: así la cabecera ocupa una sola línea y las tres
+		section(guiGraphics, title, y, PANEL_X, PANEL_RIGHT);
+	}
+
+	private void section(GuiGraphics guiGraphics, Component title, int y, int left, int right) {
+		guiGraphics.drawString(this.font, title, left, y, SECTION_COLOR, false);
+		//El filete arranca donde acaba el título, no debajo: así la cabecera ocupa una sola línea y las
 		//secciones caben en el alto del panel, que es justo lo que no pasaba con el filete en su propia fila.
-		GuiStyle.rule(guiGraphics, PANEL_X + this.font.width(title) + 6, PANEL_RIGHT, y + 3);
+		GuiStyle.rule(guiGraphics, left + this.font.width(title) + 6, right, y + 3);
+	}
+
+	/**
+	 * <p>Coordenada del hueco {@code index} (0..8) de una columna de habilidades, contando lo que ocupan
+	 * las cabeceras de grupo que quedan por encima.</p>
+	 *
+	 * <p>Se calcula en vez de escribirse porque los grupos no son del mismo tamaño (Fuerza tiene una
+	 * habilidad e Inteligencia cinco): con posiciones a mano, añadir o mover una obliga a recolocar todas
+	 * las de debajo. Devuelve la y del RÓTULO; el botón de tirada se centra sobre ella.</p>
+	 */
+	private static int skillRowY(int[] groups, int index) {
+		int y = SKILL_TOP;
+		int seen = 0;
+		for (int size : groups) {
+			y += SKILL_GROUP_STEP;
+			if (index < seen + size) return y + (index - seen) * SKILL_ROW;
+			y += size * SKILL_ROW;
+			seen += size;
+		}
+		throw new IllegalArgumentException("Hueco " + index + " fuera de una columna de " + seen + " habilidades");
+	}
+
+	/** Coordenada de la cabecera del grupo {@code group} de una columna. */
+	private static int skillGroupY(int[] groups, int group) {
+		int y = SKILL_TOP;
+		for (int i = 0; i < group; i++) y += SKILL_GROUP_STEP + groups[i] * SKILL_ROW;
+		return y;
 	}
 
 	@Override
@@ -654,33 +726,45 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				guiGraphics.drawString(this.font, LABEL_HITDICE, HITDICE_OFFSET_X, HITDICE_OFFSET_Y - LABEL_GAP, lightColor, false);
 				break;
 			case SKILLS:
+				//Cabeceras de grupo: dicen de qué característica tira cada bloque, que es la mitad de la
+				//información de una lista de habilidades y en pantalla no aparecía por ningún lado — la
+				//agrupación existía solo como comentarios en el código. Reutilizan los rótulos de
+				//característica del panel lateral, así que no hay claves de traducción nuevas.
+				//Aquí no hay bandas como en la pestaña principal: cinco bandas en dos columnas se leen como
+				//rayas, y las cabeceras con filete ya separan los grupos de sobra.
+				section(guiGraphics, LABEL_ABILITY_STR, skillGroupY(SKILL_COL1_GROUPS, 0), SKILL_COL1_X, SKILL_COL2_X - 8);
+				section(guiGraphics, LABEL_ABILITY_DEX, skillGroupY(SKILL_COL1_GROUPS, 1), SKILL_COL1_X, SKILL_COL2_X - 8);
+				section(guiGraphics, LABEL_ABILITY_INT, skillGroupY(SKILL_COL1_GROUPS, 2), SKILL_COL1_X, SKILL_COL2_X - 8);
+				section(guiGraphics, LABEL_ABILITY_WIS, skillGroupY(SKILL_COL2_GROUPS, 0), SKILL_COL2_X, SKILL_RIGHT);
+				section(guiGraphics, LABEL_ABILITY_CHA, skillGroupY(SKILL_COL2_GROUPS, 1), SKILL_COL2_X, SKILL_RIGHT);
+
 				//STRENGTH
-				guiGraphics.drawString(this.font, LABEL_SKILL_ATHLETICS, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_ATHLETICS, SKILL_COL1_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL1_GROUPS, 0), lightColor, false);
 
 				//DEXTERITY
-				guiGraphics.drawString(this.font, LABEL_SKILL_ACROBATICS, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION, darkColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_SLEIGHTOFHAND, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*2, darkColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_STEALTH, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*3, darkColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_ACROBATICS, SKILL_COL1_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL1_GROUPS, 1), darkColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_SLEIGHTOFHAND, SKILL_COL1_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL1_GROUPS, 2), darkColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_STEALTH, SKILL_COL1_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL1_GROUPS, 3), darkColor, false);
 
 				//INTELLIGENCE
-				guiGraphics.drawString(this.font, LABEL_SKILL_ARCANA, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*4, lightColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_HISTORY, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*5, lightColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_INVESTIGATION, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*6, lightColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_NATURE, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*7, lightColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_RELIGION, SKILL_LIST1_OFFSET_X, SKILL_LIST1_OFFSET_Y + SKILL_SEPARATION*8, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_ARCANA, SKILL_COL1_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL1_GROUPS, 4), lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_HISTORY, SKILL_COL1_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL1_GROUPS, 5), lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_INVESTIGATION, SKILL_COL1_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL1_GROUPS, 6), lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_NATURE, SKILL_COL1_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL1_GROUPS, 7), lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_RELIGION, SKILL_COL1_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL1_GROUPS, 8), lightColor, false);
 
 				//WISDOM
-				guiGraphics.drawString(this.font, LABEL_SKILL_ANIMALHANDLING, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y, lightColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_INSIGHT, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION, lightColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_MEDICINE, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*2, lightColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_PERCEPTION, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*3, lightColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_SURVIVAL, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*4, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_ANIMALHANDLING, SKILL_COL2_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL2_GROUPS, 0), lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_INSIGHT, SKILL_COL2_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL2_GROUPS, 1), lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_MEDICINE, SKILL_COL2_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL2_GROUPS, 2), lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_PERCEPTION, SKILL_COL2_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL2_GROUPS, 3), lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_SURVIVAL, SKILL_COL2_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL2_GROUPS, 4), lightColor, false);
 
 				//CHARISMA
-				guiGraphics.drawString(this.font, LABEL_SKILL_DECEPTION, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*5, lightColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_INTIMIDATION, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*6, lightColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_PERFORMANCE, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*7, lightColor, false);
-				guiGraphics.drawString(this.font, LABEL_SKILL_PERSUASION, SKILL_LIST2_OFFSET_X, SKILL_LIST2_OFFSET_Y + SKILL_SEPARATION*8, lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_DECEPTION, SKILL_COL2_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL2_GROUPS, 5), lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_INTIMIDATION, SKILL_COL2_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL2_GROUPS, 6), lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_PERFORMANCE, SKILL_COL2_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL2_GROUPS, 7), lightColor, false);
+				guiGraphics.drawString(this.font, LABEL_SKILL_PERSUASION, SKILL_COL2_X + SKILL_LABEL_GAP, skillRowY(SKILL_COL2_GROUPS, 8), lightColor, false);
 				break;
 		}
 
@@ -1167,36 +1251,33 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			SKILL ROLL BUTTONS
 		 */
 
-		int skillBtnOffsetX = -20;
-		int skillBtnOffsetY = -5;
-
 		//STR
-		makeRollButton("button:roll_athletics", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y, 2, 0, false, skillButtons, skillEditButtons, LABEL_SKILL_ATHLETICS);
+		makeRollButton("button:roll_athletics", SKILL_COL1_X, skillRowY(SKILL_COL1_GROUPS, 0) - 4, 2, 0, false, skillButtons, skillEditButtons, LABEL_SKILL_ATHLETICS);
 
 		//DEX
-		makeRollButton("button:roll_acrobatics", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION, 2, 1, false, skillButtons, skillEditButtons, LABEL_SKILL_ACROBATICS);
-		makeRollButton("button:roll_sleightofhand", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*2, 2, 2, false, skillButtons, skillEditButtons, LABEL_SKILL_SLEIGHTOFHAND);
-		makeRollButton("button:roll_stealth", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*3, 2, 3, false, skillButtons, skillEditButtons, LABEL_SKILL_STEALTH);
+		makeRollButton("button:roll_acrobatics", SKILL_COL1_X, skillRowY(SKILL_COL1_GROUPS, 1) - 4, 2, 1, false, skillButtons, skillEditButtons, LABEL_SKILL_ACROBATICS);
+		makeRollButton("button:roll_sleightofhand", SKILL_COL1_X, skillRowY(SKILL_COL1_GROUPS, 2) - 4, 2, 2, false, skillButtons, skillEditButtons, LABEL_SKILL_SLEIGHTOFHAND);
+		makeRollButton("button:roll_stealth", SKILL_COL1_X, skillRowY(SKILL_COL1_GROUPS, 3) - 4, 2, 3, false, skillButtons, skillEditButtons, LABEL_SKILL_STEALTH);
 
 		//INT
-		makeRollButton("button:roll_arcana", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*4, 2, 4, false, skillButtons, skillEditButtons, LABEL_SKILL_ARCANA);
-		makeRollButton("button:roll_history", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*5, 2, 5, false, skillButtons, skillEditButtons, LABEL_SKILL_HISTORY);
-		makeRollButton("button:roll_investigation", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*6, 2, 6, false, skillButtons, skillEditButtons, LABEL_SKILL_INVESTIGATION);
-		makeRollButton("button:roll_nature", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*7, 2, 7, false, skillButtons, skillEditButtons, LABEL_SKILL_NATURE);
-		makeRollButton("button:roll_religion", SKILL_LIST1_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST1_OFFSET_Y+SKILL_SEPARATION*8, 2, 8, false, skillButtons, skillEditButtons, LABEL_SKILL_RELIGION);
+		makeRollButton("button:roll_arcana", SKILL_COL1_X, skillRowY(SKILL_COL1_GROUPS, 4) - 4, 2, 4, false, skillButtons, skillEditButtons, LABEL_SKILL_ARCANA);
+		makeRollButton("button:roll_history", SKILL_COL1_X, skillRowY(SKILL_COL1_GROUPS, 5) - 4, 2, 5, false, skillButtons, skillEditButtons, LABEL_SKILL_HISTORY);
+		makeRollButton("button:roll_investigation", SKILL_COL1_X, skillRowY(SKILL_COL1_GROUPS, 6) - 4, 2, 6, false, skillButtons, skillEditButtons, LABEL_SKILL_INVESTIGATION);
+		makeRollButton("button:roll_nature", SKILL_COL1_X, skillRowY(SKILL_COL1_GROUPS, 7) - 4, 2, 7, false, skillButtons, skillEditButtons, LABEL_SKILL_NATURE);
+		makeRollButton("button:roll_religion", SKILL_COL1_X, skillRowY(SKILL_COL1_GROUPS, 8) - 4, 2, 8, false, skillButtons, skillEditButtons, LABEL_SKILL_RELIGION);
 
 		//WIS
-		makeRollButton("button:roll_animalhandling", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y, 2, 9, false, skillButtons, skillEditButtons, LABEL_SKILL_ANIMALHANDLING);
-		makeRollButton("button:roll_insight", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION, 2, 10, false, skillButtons, skillEditButtons, LABEL_SKILL_INSIGHT);
-		makeRollButton("button:roll_medicine", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*2, 2, 11, false, skillButtons, skillEditButtons, LABEL_SKILL_MEDICINE);
-		makeRollButton("button:roll_perception", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*3, 2, 12, false, skillButtons, skillEditButtons, LABEL_SKILL_PERCEPTION);
-		makeRollButton("button:roll_survival", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*4, 2, 13, false, skillButtons, skillEditButtons, LABEL_SKILL_SURVIVAL);
+		makeRollButton("button:roll_animalhandling", SKILL_COL2_X, skillRowY(SKILL_COL2_GROUPS, 0) - 4, 2, 9, false, skillButtons, skillEditButtons, LABEL_SKILL_ANIMALHANDLING);
+		makeRollButton("button:roll_insight", SKILL_COL2_X, skillRowY(SKILL_COL2_GROUPS, 1) - 4, 2, 10, false, skillButtons, skillEditButtons, LABEL_SKILL_INSIGHT);
+		makeRollButton("button:roll_medicine", SKILL_COL2_X, skillRowY(SKILL_COL2_GROUPS, 2) - 4, 2, 11, false, skillButtons, skillEditButtons, LABEL_SKILL_MEDICINE);
+		makeRollButton("button:roll_perception", SKILL_COL2_X, skillRowY(SKILL_COL2_GROUPS, 3) - 4, 2, 12, false, skillButtons, skillEditButtons, LABEL_SKILL_PERCEPTION);
+		makeRollButton("button:roll_survival", SKILL_COL2_X, skillRowY(SKILL_COL2_GROUPS, 4) - 4, 2, 13, false, skillButtons, skillEditButtons, LABEL_SKILL_SURVIVAL);
 
 		//CHA
-		makeRollButton("button:roll_deception", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*5, 2, 14, false, skillButtons, skillEditButtons, LABEL_SKILL_DECEPTION);
-		makeRollButton("button:roll_intimidation", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*6, 2, 15, false, skillButtons, skillEditButtons, LABEL_SKILL_INTIMIDATION);
-		makeRollButton("button:roll_performance", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*7, 2, 16, false, skillButtons, skillEditButtons, LABEL_SKILL_PERFORMANCE);
-		makeRollButton("button:roll_persuasion", SKILL_LIST2_OFFSET_X+skillBtnOffsetX, skillBtnOffsetY+SKILL_LIST2_OFFSET_Y+SKILL_SEPARATION*8, 2, 17, false, skillButtons, skillEditButtons, LABEL_SKILL_PERSUASION);
+		makeRollButton("button:roll_deception", SKILL_COL2_X, skillRowY(SKILL_COL2_GROUPS, 5) - 4, 2, 14, false, skillButtons, skillEditButtons, LABEL_SKILL_DECEPTION);
+		makeRollButton("button:roll_intimidation", SKILL_COL2_X, skillRowY(SKILL_COL2_GROUPS, 6) - 4, 2, 15, false, skillButtons, skillEditButtons, LABEL_SKILL_INTIMIDATION);
+		makeRollButton("button:roll_performance", SKILL_COL2_X, skillRowY(SKILL_COL2_GROUPS, 7) - 4, 2, 16, false, skillButtons, skillEditButtons, LABEL_SKILL_PERFORMANCE);
+		makeRollButton("button:roll_persuasion", SKILL_COL2_X, skillRowY(SKILL_COL2_GROUPS, 8) - 4, 2, 17, false, skillButtons, skillEditButtons, LABEL_SKILL_PERSUASION);
 
 	}
 

@@ -715,3 +715,30 @@ lee plana.
 Van en `renderBg` y no en `renderLabels` porque `renderLabels` corre **después** de los widgets: dibujadas
 allí taparían los propios campos que envuelven. Sus coordenadas salen de las constantes de la retícula, así
 que no pueden desalinearse de las filas al cambiar `ROW_STEP`.
+
+### Retícula de la pestaña de Habilidades
+
+Las dieciocho habilidades se agrupan por característica —como en 5e y como se imprimen en una hoja de
+verdad—, con cabecera y filete por grupo. Esa agrupación **ya estaba en el código, pero solo como
+comentarios** (`//STR`, `//DEX`, `//INT`…): en pantalla eran dos columnas de nueve filas seguidas, sin
+decir de qué característica tira cada una, que es la mitad de la información de una lista de habilidades.
+
+Las cabeceras reutilizan los `LABEL_ABILITY_*` que ya usaban las tiradas de característica del panel
+lateral, así que no hay claves de traducción nuevas y traducir una traduce los dos sitios.
+
+Las posiciones **se calculan**, no se escriben: `skillRowY(grupos, hueco)` cuenta las cabeceras que quedan
+por encima. Los grupos no son del mismo tamaño (Fuerza tiene una habilidad e Inteligencia cinco), así que
+con posiciones a mano, mover una obliga a recolocar todas las de debajo.
+
+Aquí no hay bandas como en la pestaña principal: cinco bandas en dos columnas se leen como rayas, y las
+cabeceras con filete ya separan los grupos.
+
+**Las columnas van muy justas, y es inevitable.** Los rótulos en español casi llenan el ancho: entre
+`Juego de Manos` (84 px) en la primera columna y `Trato con Animales` (108) en la segunda, más los botones
+de tirada, se comen 228 de los 244 disponibles. Con las columnas a la misma anchura, `Trato con Animales`
+llegaba a x=363 sobre un ancho de 350 — otro desbordamiento que solo aparecía en español, igual que el de
+`Velocidad` en la pestaña principal. Por eso la columna 2 arranca más a la derecha de lo que parecería
+simétrico, y la 1 pegada al borde del panel lateral (en esta pestaña no hay filete vertical de fondo: solo
+lo lleva `character_sheet.png`, la principal).
+
+El bloque `static` comprueba que cada columna reparte nueve huecos y que cabe en el alto del panel.
