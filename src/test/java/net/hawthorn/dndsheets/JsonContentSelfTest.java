@@ -1739,7 +1739,14 @@ public class JsonContentSelfTest {
 		assertTrue(switchBody.contains("characterLevel"),
 			"al ponerse un personaje sin nivel propio hay que estampárselo, o dos personajes lo comparten para siempre");
 
-		System.out.println("checkCharacterLevelIsPerCharacter: OK, el nivel es del personaje y no del XP de quien lo lleva.");
+		//Y la VIDA ACTUAL, por lo mismo: vivía solo en la salud de la entidad, que es del jugador. Cambiar de
+		//personaje te dejaba con las heridas del anterior y volver te encontraba las del nuevo.
+		assertTrue(switchBody.contains("hitPoints"),
+			"cambiar de personaje debería guardar la vida del que se quita y devolverle la suya al que entra");
+		assertTrue(loader.contains("restoreHitPoints("),
+			"y restaurarla DESPUÉS de fijar el máximo, o quedaría acotada contra el máximo del personaje anterior");
+
+		System.out.println("checkCharacterLevelIsPerCharacter: OK, el nivel y la vida son del personaje, no del jugador que lo lleva.");
 	}
 
 	private static JsonObject named(String characterName) {

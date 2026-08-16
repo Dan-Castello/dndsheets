@@ -611,6 +611,16 @@ public class SheetLoader {
 		JsonObject target = sheets.get(characterId);
 		if (target == null || !playerUuid.equals(ownerOf(characterId, target))) return false;
 
+		//La vida ACTUAL es del personaje, no del cuerpo que lo lleva. Vivía solo en la salud de la entidad
+		//—que es del jugador— así que cambiar de personaje te dejaba con las heridas del anterior, y volver
+		//al anterior te encontrabas las del nuevo. Se guarda la del que se quita ANTES de tocar nada.
+		String previousId = activeCharacter.get(playerUuid);
+		JsonObject previous = previousId == null ? null : sheets.get(previousId);
+		if (previous != null && previous != target) {
+			previous.addProperty("hitPoints", String.valueOf((int) Math.ceil(player.getHealth())));
+			saveCharacter(previousId, previous);
+		}
+
 		//Se desmarca el anterior y se marca el nuevo, para que rebuildActiveCharacters() reconstruya
 		//exactamente este mismo estado tras un reinicio.
 		for (String owned : charactersOf(playerUuid)) {
@@ -638,6 +648,7 @@ public class SheetLoader {
 		//El personaje nuevo tiene sus propios PG máximos (clase, nivel, Constitución) y su propia hoja en el
 		//cliente: sin estas dos líneas, cambiar de personaje dejaba al jugador con el cuerpo del anterior.
 		applyClassHitPoints(player, target);
+		restoreHitPoints(player, target);
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(target.toString().getBytes()));
 		return true;
 	}
@@ -677,6 +688,28 @@ public class SheetLoader {
 		//quedaría plantado sin poder actuar durante todo el encuentro.
 		TurnManager.addLateMonster(level, entity, name);
 		return entity;
+	}
+
+	/**
+	 * <p>Le devuelve al personaje que entra la vida que tenía cuando se lo quitaron. Sin hoja previa (recién
+	 * creado) entra a tope, que es lo que se espera de un personaje nuevo.</p>
+	 *
+	 * <p>Va DESPUÉS de {@code applyClassHitPoints}: ese fija el máximo según clase y nivel, y restaurar antes
+	 * dejaría la vida acotada contra el máximo del personaje ANTERIOR.</p>
+	 */
+	private static void restoreHitPoints(ServerPlayer player, JsonObject sheet) {
+		float max = player.getMaxHealth();
+		float restored = max;
+		if (sheet.has("hitPoints")) {
+			try {
+				restored = Float.parseFloat(sheet.get("hitPoints").getAsString());
+			} catch (RuntimeException e) {
+				restored = max; //Hoja vieja con cualquier cosa en el campo: entra a tope en vez de morirse.
+			}
+		}
+		//Nunca por debajo de 1: un personaje caído se queda congelado en 1 PG (ver DeathSaveManager), así que
+		//un 0 guardado solo puede venir de una hoja rara, y devolverlo mataría al jugador al cambiar.
+		player.setHealth(Math.max(1f, Math.min(max, restored)));
 	}
 
 	//Mismo cuerpo que saveServer pero sin resolver el id: aquí ya se sabe sobre qué personaje se escribe, y
