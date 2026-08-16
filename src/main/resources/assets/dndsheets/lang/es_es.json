@@ -100,6 +100,7 @@
   "chat.dndsheets.levelup.none_pending": "No tienes ninguna Mejora de Característica pendiente.",
   "chat.dndsheets.character.created": "Personaje %1$s creado. Elígelo en la lista para llevarlo puesto.",
   "chat.dndsheets.character.needs_name": "Un personaje necesita un nombre.",
+  "chat.dndsheets.monster.legendary_resistance": " ¡Resistencia Legendaria! (le quedan %1$s)",
   "chat.dndsheets.character.deleted": "Personaje %1$s borrado. Queda una copia .json.deleted por si te arrepientes.",
   "chat.dndsheets.character.delete_failed": "No se pudo borrar: ese personaje no existe o no es tuyo.",
   "chat.dndsheets.action.dodge": "%1$s esquiva: hasta su próximo turno, le atacan con desventaja.",

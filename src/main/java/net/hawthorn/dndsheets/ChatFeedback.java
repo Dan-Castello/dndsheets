@@ -142,6 +142,17 @@ public class ChatFeedback {
 	}
 
 	/**
+	 * <p>Nota de Resistencia Legendaria en la misma línea de la salvación. Sin decirlo, un jefe que falla la
+	 * tirada y no recibe daño se lee como un fallo del mod, no como el recurso que acaba de gastar — y el
+	 * grupo necesita saber que le queda uno menos, que es justo la información que hace interesante la regla.</p>
+	 */
+	public static MutableComponent withLegendaryResistance(MutableComponent msg, boolean used, int left) {
+		if (!used) return msg;
+		return msg.append(Component.translatable("chat.dndsheets.monster.legendary_resistance", left)
+			.withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE, net.minecraft.ChatFormatting.BOLD));
+	}
+
+	/**
 	 * <p>Pega una nota de cobertura a la MISMA línea del ataque, igual que hace la de Inspiración. Sin ella,
 	 * un fallo contra una CA más alta de lo que dice la hoja del monstruo se lee como un error del mod y no
 	 * como el parapeto que es.</p>

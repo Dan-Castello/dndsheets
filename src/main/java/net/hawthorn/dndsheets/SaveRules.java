@@ -32,7 +32,7 @@ final class SaveRules {
 	 * @param finalDamage lo que hay que aplicar: entero, mitad, o nada.
 	 */
 	record Outcome(Cover cover, int dc, Combatant.SaveRoll roll, boolean saved, int finalDamage,
-			String damageFormatted, Component label) {}
+			String damageFormatted, Component label, boolean legendaryResistance) {}
 
 	private SaveRules() {
 	}
@@ -58,6 +58,16 @@ final class SaveRules {
 		if (saveRoll == null || saveRoll.formatted() == null) return null;
 
 		boolean saved = saveRoll.succeeds(dc);
+		//Resistencia Legendaria: un jefe que falla puede decidir que no. Se resuelve AQUÍ, después de tirar y
+		//antes de contar el daño, porque es exactamente eso — convertir un fallo en un éxito— y porque este
+		//es el único sitio del mod donde se decide si una salvación se supera. Antes de unificar las dos
+		//rutas habría habido que escribirlo dos veces, y la del monstruo se habría quedado atrás como se
+		//quedó todo lo demás.
+		boolean legendary = false;
+		if (!saved && MonsterRegistry.spendLegendaryResistance(target)) {
+			saved = true;
+			legendary = true;
+		}
 		int rolled = damageRoll.result().getValue();
 		int finalDamage = saved ? (halfOnSave ? rolled / 2 : 0) : rolled;
 		Component label = Component.translatable(saved
@@ -65,7 +75,7 @@ final class SaveRules {
 			: "chat.dndsheets.spell.save_fail");
 
 		return new Outcome(cover, dc, saveRoll, saved, finalDamage,
-			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null, label);
+			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null, label, legendary);
 	}
 
 	private static Combatant.SaveRoll rollSave(Entity target, String saveAbility) {

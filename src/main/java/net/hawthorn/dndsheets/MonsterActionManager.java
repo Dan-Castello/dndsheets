@@ -390,8 +390,10 @@ public class MonsterActionManager {
 		CombatFx.spellImpact(target, saved, spell.damageType());
 		//targetCombatant.name() y no target.getName(): el resto del mod anuncia el nombre del PERSONAJE, y
 		//aquí se colaba el de la cuenta de Minecraft.
-		ChatFeedback.broadcast(monsterEntity, ChatFeedback.withCover(ChatFeedback.saveResult(block.name(), targetCombatant.name(), spell.name(),
-			save.roll().formatted(), save.dc(), saved, save.label(), save.damageFormatted()), save.cover()));
+		ChatFeedback.broadcast(monsterEntity, ChatFeedback.withLegendaryResistance(
+			ChatFeedback.withCover(ChatFeedback.saveResult(block.name(), targetCombatant.name(), spell.name(),
+				save.roll().formatted(), save.dc(), saved, save.label(), save.damageFormatted()), save.cover()),
+			save.legendaryResistance(), MonsterRegistry.legendaryResistancesLeft(target)));
 
 		//Una sola implementación de "aplicar daño de conjuro": afinidades, PG temporales, concentración y
 		//muerte. Un conjuro siempre cuenta como mágico.

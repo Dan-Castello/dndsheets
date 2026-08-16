@@ -60,7 +60,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities, int proficiencyBonus,
 		List<MonsterAttack> attacks, List<MonsterSpell> spells,
 		Map<String, String> damageAffinities, Map<String, String> nonmagicalAffinities,
-		CreatureType type
+		CreatureType type, int legendaryResistances
 	) {
 		public int abilityModifier(String key) {
 			Integer score = abilities.get(key.toLowerCase(Locale.ROOT));
@@ -72,6 +72,35 @@ public class MonsterRegistry {
 	 * <p>Tipo de criatura de un monstruo del mundo, o {@link CreatureType#UNKNOWN} si no lo tiene (un mob
 	 * de compatibilidad, un PNJ genérico o un pack escrito antes de que el campo existiera).</p>
 	 */
+	//--- Resistencia Legendaria: usos que le quedan a ESTE monstruo concreto, no a su especie. Van en su
+	//etiqueta NBT junto a los PG, igual que todo lo demás que es de la instancia: dos dragones del mismo id
+	//gastan las suyas por separado, y Minecraft ya guarda y carga ese compartimento solo.
+
+	private static final String LEGENDARY_LEFT = "legendaryLeft";
+
+	/**
+	 * <p>Usos de Resistencia Legendaria que le quedan. Sin la etiqueta puesta todavía (un monstruo invocado
+	 * antes de que existiera la regla, o recién aparecido) devuelve los de su bloque: el valor por defecto
+	 * es "las tiene todas", no "no tiene ninguna".</p>
+	 */
+	public static int legendaryResistancesLeft(Entity entity) {
+		MonsterStatBlock block = statBlockOf(entity);
+		if (block == null || block.legendaryResistances() <= 0) return 0;
+		CompoundTag tag = entity.getPersistentData().getCompound("dndsheets");
+		return tag.contains(LEGENDARY_LEFT) ? Math.max(0, tag.getInt(LEGENDARY_LEFT)) : block.legendaryResistances();
+	}
+
+	/** Gasta una. Devuelve false si no le quedaba ninguna. */
+	public static boolean spendLegendaryResistance(Entity entity) {
+		int left = legendaryResistancesLeft(entity);
+		if (left <= 0) return false;
+		CompoundTag data = entity.getPersistentData();
+		CompoundTag tag = data.getCompound("dndsheets");
+		tag.putInt(LEGENDARY_LEFT, left - 1);
+		data.put("dndsheets", tag);
+		return true;
+	}
+
 	public static CreatureType typeOf(Entity entity) {
 		//Un jugador es humanoide, y esto no es un detalle: sin ello, Inmovilizar Persona no funcionaría
 		//sobre un PJ —el caso más común del conjuro en la mesa— porque un jugador no tiene bloque de
@@ -157,8 +186,11 @@ public class MonsterRegistry {
 		//Opcional tambien: un pack escrito antes de que existiera el campo carga igual, con UNKNOWN, y lo
 		//unico que pierde es acceso a las reglas que preguntan por el tipo.
 		CreatureType type = CreatureType.parse(json.has("type") ? json.get("type").getAsString() : null);
+		//Ausente = 0 = no es un jefe. Es lo correcto por defecto: la Resistencia Legendaria la tiene una
+		//docena larga de criaturas del SRD, no el bestiario entero.
+		int legendaryResistances = json.has("legendaryResistances") ? Math.max(0, json.get("legendaryResistances").getAsInt()) : 0;
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type);
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances);
 	}
 
 	private static Map<String, String> readAffinities(JsonObject json, String field) {
@@ -196,6 +228,7 @@ public class MonsterRegistry {
 		json.addProperty("id", block.id());
 		json.addProperty("name", block.name());
 		if (block.type() != CreatureType.UNKNOWN) json.addProperty("type", block.type().label());
+		if (block.legendaryResistances() > 0) json.addProperty("legendaryResistances", block.legendaryResistances());
 		json.addProperty("baseEntity", block.baseEntityId());
 		json.addProperty("ac", block.ac());
 		json.addProperty("hp", block.maxHp());
@@ -384,7 +417,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		for (String key : new String[]{"str", "dex", "con", "int", "wis", "cha"}) abilities.put(key, 10);
 
-		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN));
+		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0));
 		return spawnAt(level, x, y, z, id);
 	}
 

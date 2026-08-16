@@ -461,6 +461,21 @@ public class JsonContentSelfTest {
 		//por la forma en vez de por la criatura da la respuesta contraria.
 		assertTypeOf("dndsheets:werewolf_wolf", CreatureType.HUMANOID);
 
+		//Resistencia Legendaria: la tienen los adultos y los ancianos de cada dragón, y una docena de jefes
+		//sueltos. Los JÓVENES y las crías NO — es el error fácil de cometer al anotar 43 dragones, y el que
+		//convierte un encuentro de nivel medio en una pared.
+		assertTrue(MonsterRegistry.get("dndsheets:adult_red_dragon").legendaryResistances() == 3,
+			"un dragón rojo adulto tiene 3 Resistencias Legendarias");
+		assertTrue(MonsterRegistry.get("dndsheets:ancient_white_dragon").legendaryResistances() == 3,
+			"y un anciano también");
+		assertTrue(MonsterRegistry.get("dndsheets:young_red_dragon").legendaryResistances() == 0,
+			"pero un dragón JOVEN no tiene ninguna");
+		assertTrue(MonsterRegistry.get("dndsheets:red_dragon_wyrmling").legendaryResistances() == 0,
+			"ni una cría");
+		assertTrue(MonsterRegistry.get("dndsheets:lich").legendaryResistances() == 3, "el lich sí");
+		assertTrue(MonsterRegistry.get("dndsheets:goblin").legendaryResistances() == 0,
+			"y un goblin desde luego que no");
+
 		//El parser tiene que aguantar lo que escribe una persona: acentos, mayúsculas, guiones o inglés.
 		assertTrue(CreatureType.parse("no-muerto") == CreatureType.UNDEAD
 			&& CreatureType.parse("No Muerto") == CreatureType.UNDEAD
@@ -928,7 +943,7 @@ public class JsonContentSelfTest {
 			List.of(), List.of(),
 			Map.of("fuego", "vulnerable"),          //Incondicional.
 			Map.of("cortante", "immune"),           //Solo frente a armas no mágicas.
-			CreatureType.HUMANOID);                 //Un licántropo es humanoide en 5e, también en forma de bestia.
+			CreatureType.HUMANOID, 0);              //Un licántropo es humanoide en 5e, también en forma de bestia.
 		Combatant beast = new Combatant.MonsterCombatant(null, conditional);
 		assertTrue(beast.damageMultiplier("cortante", false) == 0.0, "cortante no mágico debería rebotar en el licántropo");
 		assertTrue(beast.damageMultiplier("cortante", true) == 1.0, "cortante mágico debería atravesarlo entero");

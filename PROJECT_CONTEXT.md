@@ -790,6 +790,29 @@ dependencies, not preference.
   instead of forgotten. Invariants 1 and 2 are the two that have cost the most debugging here, and
   both fail in total silence: everything compiles, the handshake passes, the desync comes later.
 
+  24. **Legendary Resistance.** The first rule that the `SaveRules` unification paid for directly: a
+      boss that fails a save may decide it did not, three times a day. It is one hook in the single
+      place that decides whether a save succeeds — before the unification it would have been written
+      twice, and the monster path would have been the one left behind, as everything else was.
+
+      - **The uses belong to the individual, not the species**, so they live in the entity's own NBT
+        beside its hit points; two adult dragons of the same id spend theirs separately.
+      - **An untagged monster reports its full count**, not zero: the default for a boss summoned
+        before the rule existed is "has them all", not "has none".
+      - **The chat says it and says how many are left.** A boss that fails and takes nothing reads as
+        a bug otherwise, and the count is exactly what makes the rule interesting to play against —
+        the party is spending the saves as a resource.
+
+      Annotated on the 30 SRD creatures that have it: every adult and ancient dragon, plus lich,
+      tarrasque, mummy lord, both sphinxes, kraken, solar, planetar, balor and pit fiend. **Young
+      dragons and wyrmlings do not have it**, which is the mistake to make when annotating 43 dragons
+      and the one that turns a mid-level encounter into a wall; it is asserted in both directions.
+
+      **Honest note on that check:** the first mutation run reported green because the edit never
+      applied — it missed the accent in "Dragón". Re-run with the right text, it fails as it should.
+      The runtime hook itself (spending a use) has no self-test: it needs a world entity. Only the
+      data and the stat-block plumbing are covered.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

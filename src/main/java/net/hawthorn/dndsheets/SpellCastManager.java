@@ -470,8 +470,10 @@ public class SpellCastManager {
 		boolean saved = save.saved();
 
 		CombatFx.spellImpact(target, saved, spell.damageType());
-		ChatFeedback.broadcast(caster, ChatFeedback.withCover(ChatFeedback.saveResult(casterName, nameOf(target), spell.name(),
-			save.roll().formatted(), save.dc(), saved, save.label(), save.damageFormatted()), save.cover()));
+		ChatFeedback.broadcast(caster, ChatFeedback.withLegendaryResistance(
+			ChatFeedback.withCover(ChatFeedback.saveResult(casterName, nameOf(target), spell.name(),
+				save.roll().formatted(), save.dc(), saved, save.label(), save.damageFormatted()), save.cover()),
+			save.legendaryResistance(), MonsterRegistry.legendaryResistancesLeft(target)));
 
 		if (save.finalDamage() > 0) applyDamage(target, save.finalDamage(), spell.damageType());
 		//El efecto depende de la SALVACIÓN, no del daño: en 5e que una condición prenda lo decide si el
