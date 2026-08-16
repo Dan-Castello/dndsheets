@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.client.gui.components.TomeButton;
+import net.hawthorn.dndsheets.client.gui.components.TomeField;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -225,6 +226,16 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private static final int[] SKILL_COL1_GROUPS = {1, 3, 5};
 	private static final int[] SKILL_COL2_GROUPS = {5, 4};
 
+	/*
+		RETÍCULA DE LA PESTAÑA DE ATAQUES
+
+		La lista se alineaba con sus propios números (x=125, ancho 210) en vez de con el panel, así que
+		quedaba unos píxeles descuadrada respecto a las otras dos pestañas. Ahora usa las mismas columnas.
+		El alto deja sitio debajo para el botón de añadir.
+	 */
+	private static final int ATTACK_TOP = ROW1_Y;
+	private static final int ATTACK_HEIGHT = 160;
+
 	static {
 		//La retícula se sale del panel con demasiada facilidad: pasó al escribirla (los botones de página
 		//caían en y=246 sobre un panel de 240) y ya había pasado antes (y=228 sobre un fondo de 200). No
@@ -239,6 +250,12 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		if (rightmost > PANEL_RIGHT) {
 			throw new IllegalStateException("La fila de identidad llega a x=" + rightmost
 				+ " y el panel acaba en " + PANEL_RIGHT + ".");
+		}
+
+		int attackBottom = ATTACK_TOP + ATTACK_HEIGHT + 8 + 16;  //+8 de hueco, +16 del botón de añadir
+		if (attackBottom > SHEET_HEIGHT) {
+			throw new IllegalStateException("La lista de ataques y su botón llegan a y=" + attackBottom
+				+ " y el panel mide " + SHEET_HEIGHT + ".");
 		}
 
 		//Las dos columnas de habilidades reparten NUEVE huecos cada una. Si alguien cambia los tamaños de
@@ -268,10 +285,6 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private static final int TAB_TEXT_CLOSED = 0xCBBA97;
 	/** Cabeceras de sección: tinta aguada, para que titulen sin competir con los rótulos de los campos. */
 	private static final int SECTION_COLOR = 0x6B5636;
-	/** Marco de los campos: latón apagado, y encendido al tener el foco (ver frameField). */
-	private static final int FIELD_RING = 0xFF6B5636;
-	private static final int FIELD_RING_FOCUSED = 0xFFC9A227;
-	private static final int FIELD_SHADOW = 0xFF8A7B5E;
 	//Bandas de sección: negro y blanco a muy poca opacidad, no colores propios. Así se oscurecen y aclaran
 	//el pergamino que tengan detrás sin pelearse con él si algún día cambia de tono.
 	private static final int BAND_FILL = 0x12000000;
@@ -362,10 +375,25 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private static final Component LABEL_SKILL_DECEPTION = Component.translatable("gui.dndsheets.character_sheet.label_skill_deception");
 	private static final Component LABEL_SKILL_INTIMIDATION = Component.translatable("gui.dndsheets.character_sheet.label_skill_intimidation");
 	private static final Component LABEL_SKILL_PERFORMANCE = Component.translatable("gui.dndsheets.character_sheet.label_skill_performance");
+	/** Cabecera de la pestaña de Ataques: el mismo rótulo que lleva su pestaña, sin clave nueva. */
+	private static final Component LABEL_ATTACKS_TAB = Component.translatable("gui.dndsheets.character_sheet.attacks_tab");
+	private static final Component LABEL_ATTACKS_EMPTY = Component.translatable("gui.dndsheets.character_sheet.attacks_empty");
 	private static final Component LABEL_SECTION_IDENTITY = Component.translatable("gui.dndsheets.character_sheet.section_identity");
 	private static final Component LABEL_SECTION_COMBAT = Component.translatable("gui.dndsheets.character_sheet.section_combat");
 	private static final Component LABEL_SECTION_RESOURCES = Component.translatable("gui.dndsheets.character_sheet.section_resources");
 	private static final Component LABEL_SKILL_PERSUASION = Component.translatable("gui.dndsheets.character_sheet.label_skill_persuasion");
+
+	//Las 18 habilidades en el mismo orden en que se colocan, para poder recorrerlas (ver
+	//warnIfLabelsOverflow). Antes solo existían sueltas, nombradas una a una en renderLabels.
+	private static final Component[] SKILL_LABELS_COL1 = {
+		LABEL_SKILL_ATHLETICS, LABEL_SKILL_ACROBATICS, LABEL_SKILL_SLEIGHTOFHAND, LABEL_SKILL_STEALTH,
+		LABEL_SKILL_ARCANA, LABEL_SKILL_HISTORY, LABEL_SKILL_INVESTIGATION, LABEL_SKILL_NATURE, LABEL_SKILL_RELIGION,
+	};
+	private static final Component[] SKILL_LABELS_COL2 = {
+		LABEL_SKILL_ANIMALHANDLING, LABEL_SKILL_INSIGHT, LABEL_SKILL_MEDICINE, LABEL_SKILL_PERCEPTION,
+		LABEL_SKILL_SURVIVAL, LABEL_SKILL_DECEPTION, LABEL_SKILL_INTIMIDATION, LABEL_SKILL_PERFORMANCE,
+		LABEL_SKILL_PERSUASION,
+	};
 
 	//Todos los campos de la hoja, para enmarcarlos de una pasada. Salen del guistate, que ya los tiene
 	//todos: registrarlos a mano en los trece sitios que los crean es justo como se olvida uno.
@@ -404,6 +432,14 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			case SKILLS:
 				break;
 			case ATTACKS:
+				section(guiGraphics, LABEL_ATTACKS_TAB, SEC1_Y);
+				//Sin ataques, la lista es un hueco oscuro que no dice qué hacer con él. El botón de añadir
+				//está justo debajo pero es un icono de 16 px sin rótulo.
+				if (attackRolls.getListSize() == 0) {
+					guiGraphics.drawString(this.font, LABEL_ATTACKS_EMPTY,
+						PANEL_X + (PANEL_RIGHT - PANEL_X - this.font.width(LABEL_ATTACKS_EMPTY)) / 2,
+						ATTACK_TOP + ATTACK_HEIGHT / 2 - 4, GuiStyle.MUTED_COLOR, false);
+				}
 				break;
 		}
 
@@ -601,22 +637,56 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	 * en vez de blanco) y se añade una línea oscura por fuera, que es lo que hace que el campo se lea
 	 * hundido en la hoja en vez de pegado encima.</p>
 	 */
+	/**
+	 * <p>Avisa por el log si algún rótulo se sale de su hueco. Cuatro veces en un mismo rediseño se coló un
+	 * rótulo más ancho que su columna —{@code Velocidad}, {@code Bono de Competencia},
+	 * {@code Trato con Animales} y el mensaje de "sin ataques"— y las cuatro <b>solo en español</b>: los
+	 * huecos se ajustan mirando la pantalla en un idioma y el desbordamiento aparece en otro.</p>
+	 *
+	 * <p>Va aquí y no en el bloque {@code static} porque necesita {@code this.font}, que no existe hasta
+	 * que hay pantalla. Y avisa en vez de reventar: un rótulo recortado por una traducción larga es un
+	 * defecto cosmético, no motivo para dejar sin hoja a quien juega. Quien lo tiene que ver es quien
+	 * desarrolla, y para eso basta el log.</p>
+	 */
+	private void warnIfLabelsOverflow() {
+		//{rótulo, x donde empieza, x donde NO puede llegar}. Los límites salen de la retícula, así que
+		//siguen a las constantes solos.
+		Object[][] slots = {
+			{LABEL_RACE, RACE_OFFSET_X, CLASS_OFFSET_X},
+			{LABEL_CLASS, CLASS_OFFSET_X, BACKG_OFFSET_X},
+			{LABEL_BACKGROUND, BACKG_OFFSET_X, PANEL_RIGHT},
+			{LABEL_ARMOR_CLASS_AC, ACHP_OFFSET_X, ACHP_OFFSET_X + ACHP_SEPARATION},
+			{LABEL_HIT_POINTS, ACHP_OFFSET_X + ACHP_SEPARATION, ACHP_OFFSET_X + ACHP_SEPARATION * 2},
+			{LABEL_HIT_POINTS_MAX, ACHP_OFFSET_X + ACHP_SEPARATION * 2, ACHP_OFFSET_X + ACHP_SEPARATION * 3},
+			{LABEL_HIT_POINTS_TEMP, ACHP_OFFSET_X + ACHP_SEPARATION * 3, PANEL_RIGHT},
+			{LABEL_SPEED, SPEED_OFFSET_X, PROF_OFFSET_X},
+			{LABEL_PROFICIENCY_BONUS, PROF_OFFSET_X, INITIATIVE_OFFSET_X},
+			{LABEL_INITIATIVE, INITIATIVE_OFFSET_X, PANEL_RIGHT},
+			{LABEL_LEVEL, LEVEL_OFFSET_X, HUNGER_OFFSET_X},
+			{LABEL_HUNGER, HUNGER_OFFSET_X, HITDICE_OFFSET_X},
+			{LABEL_HITDICE, HITDICE_OFFSET_X, PANEL_RIGHT},
+			{LABEL_ATTACKS_EMPTY, PANEL_X, PANEL_RIGHT},
+		};
+		for (Object[] slot : slots) {
+			checkLabelFits((Component) slot[0], (Integer) slot[1], (Integer) slot[2]);
+		}
+		//Las habilidades: el rótulo va tras el botón de tirada, y la columna 1 no puede invadir la 2.
+		for (int i = 0; i < 9; i++) {
+			checkLabelFits(SKILL_LABELS_COL1[i], SKILL_COL1_X + SKILL_LABEL_GAP, SKILL_COL2_X - 4);
+			checkLabelFits(SKILL_LABELS_COL2[i], SKILL_COL2_X + SKILL_LABEL_GAP, SKILL_RIGHT);
+		}
+	}
+
+	private void checkLabelFits(Component label, int left, int limit) {
+		int end = left + this.font.width(label);
+		if (end > limit) {
+			DndsheetsMod.LOGGER.error("Hoja de personaje: el rótulo \"{}\" llega a x={} y su hueco acaba en {}"
+				+ " — se verá recortado o encima de lo de al lado.", label.getString(), end, limit);
+		}
+	}
+
 	private void frameField(GuiGraphics guiGraphics, EditBox box) {
-		int left = box.getX() - 1;
-		int top = box.getY() - 1;
-		int right = box.getX() + box.getWidth() + 1;
-		int bottom = box.getY() + box.getHeight() + 1;
-		int ring = box.isFocused() ? FIELD_RING_FOCUSED : FIELD_RING;
-
-		guiGraphics.fill(left, top, right, top + 1, ring);
-		guiGraphics.fill(left, bottom - 1, right, bottom, ring);
-		guiGraphics.fill(left, top, left + 1, bottom, ring);
-		guiGraphics.fill(right - 1, top, right, bottom, ring);
-
-		//Sombra por fuera, solo arriba y a la izquierda: es de donde vendría la luz en el biselado de
-		//Minecraft, así que el hueco parece excavado en el pergamino.
-		guiGraphics.fill(left - 1, top - 1, right, top, FIELD_SHADOW);
-		guiGraphics.fill(left - 1, top - 1, left, bottom, FIELD_SHADOW);
+		TomeField.frameWidget(guiGraphics, box.getX(), box.getY(), box.getWidth(), box.getHeight(), box.isFocused());
 	}
 
 	/**
@@ -1283,7 +1353,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 	private void initAttackPanel() {
 
-		attackRolls = makeScrollList("scrolllist:attack_rolls", this.leftPos + 125, this.topPos + 12, 210, 151);
+		attackRolls = makeScrollList("scrolllist:attack_rolls", this.leftPos + PANEL_X, this.topPos + ATTACK_TOP,
+			PANEL_RIGHT - PANEL_X, ATTACK_HEIGHT);
 		//now that it exists, CharacterSheetLoadProcedure is responsible for populating the attackRolls list using addToScrollList().
 
 		addButton = new ImageButton(attackRolls.getX(), attackRolls.getY() + attackRolls.getHeight() + 8, 16, 16, 0, 0, 16, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_add.png"), 16, 32, e -> {
@@ -1375,6 +1446,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		}
 
 		updateTabs();
+		warnIfLabelsOverflow();
 		CharacterSheetLoadProcedure.execute(guistate, this);
 	}
 }

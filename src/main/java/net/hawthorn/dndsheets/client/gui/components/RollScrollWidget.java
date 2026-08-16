@@ -55,6 +55,20 @@ public class RollScrollWidget extends AbstractScrollWidget {
         }
     }
 
+    /**
+     * <p>Fondo del tomo en vez del de vanilla. {@code AbstractScrollWidget.renderBorder} rellena todo el
+     * rectángulo de gris y mete un negro un píxel por dentro, con los dos colores fijos — sobre el
+     * pergamino de la hoja eso es un ladrillo gris y negro, el widget más grande de la pestaña y el que
+     * más desentonaba.</p>
+     *
+     * <p>Se conserva la señal de foco que daba el blanco de vanilla: el marco se enciende igual.</p>
+     */
+    @Override
+    protected void renderBackground(GuiGraphics guiGraphics) {
+        guiGraphics.fill(this.getX(), this.getY(), this.getX() + this.width, this.getY() + this.height, TomeField.WELL_FILL);
+        TomeField.frameWidget(guiGraphics, this.getX(), this.getY(), this.width, this.height, this.isFocused());
+    }
+
     @Override
     protected int getInnerHeight() {
         int innerHeight = this.getHeight();
@@ -253,7 +267,14 @@ public class RollScrollWidget extends AbstractScrollWidget {
             item.nameBox.setX(this.getX() + 16);
             item.nameBox.setY(this.getY() + separation*(i) - (int)this.scrollAmount() + 4);
             isActive = (item.nameBox.getY() >= this.getY() - 16) && (item.nameBox.getY() <= this.getY() + 16 + this.getHeight());
-            if (isActive) item.nameBox.render(guiGraphics, mouseX, mouseY, partialTicks);
+            if (isActive) {
+                item.nameBox.render(guiGraphics, mouseX, mouseY, partialTicks);
+                //Después de render(): el marco tapa el anillo gris que el EditBox se pinta solo. Los campos
+                //de la pestaña principal se enmarcan desde CharacterSheetScreen recorriendo el guistate,
+                //pero estos se crean aquí dentro y no pasan por ahí, así que se quedaban sin marco.
+                TomeField.frameWidget(guiGraphics, item.nameBox.getX(), item.nameBox.getY(),
+                    item.nameBox.getWidth(), item.nameBox.getHeight(), item.nameBox.isFocused());
+            }
             item.nameBox.active = isActive;
             item.nameBox.visible = isActive;
         }

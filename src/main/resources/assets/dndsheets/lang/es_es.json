@@ -104,6 +104,7 @@
   "gui.dndsheets.character_sheet.ability_str": "Fuerza",
   "gui.dndsheets.character_sheet.ability_wis": "Sabiduría",
   "gui.dndsheets.character_sheet.armorclass": "15",
+  "gui.dndsheets.character_sheet.attacks_empty": "Sin ataques. Pulsa + abajo.",
   "gui.dndsheets.character_sheet.attacks_tab": "Ataques",
   "gui.dndsheets.character_sheet.background": "Soldado",
   "gui.dndsheets.character_sheet.characterclass": "Guerrero 1",

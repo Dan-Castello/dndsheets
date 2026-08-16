@@ -742,3 +742,33 @@ simétrico, y la 1 pegada al borde del panel lateral (en esta pestaña no hay fi
 lo lleva `character_sheet.png`, la principal).
 
 El bloque `static` comprueba que cada columna reparte nueve huecos y que cabe en el alto del panel.
+
+### Pestaña de Ataques
+
+La lista se alineaba con sus propios números (x=125, ancho 210) en vez de con el panel, así que quedaba
+unos píxeles descuadrada respecto a las otras dos pestañas. Ahora usa las mismas columnas (`PANEL_X` a
+`PANEL_RIGHT`) y abre con cabecera, como las otras dos.
+
+`AbstractScrollWidget` pinta su fondo igual que `EditBox` —gris de un píxel, negro por dentro, colores
+fijos— así que era el widget más grande de la pestaña y el que más desentonaba. `RollScrollWidget` ahora
+sobreescribe `renderBackground` con cuero y marco de latón, y enmarca el nombre de cada fila.
+
+Ese marco vive en `components/TomeField` y no junto a `GuiStyle` porque lo usan los dos paquetes: la
+pantalla de la hoja para sus campos y `RollScrollWidget` para la lista. Desde `components` no se ve
+`GuiStyle`.
+
+Sin ataques, la lista era un hueco oscuro sin decir qué hacer con él (el botón de añadir está debajo, pero
+es un icono de 16 px sin rótulo). Ahora lleva mensaje de estado vacío.
+
+### Rótulos que no caben: `warnIfLabelsOverflow`
+
+En un solo rediseño se colaron **cuatro** rótulos más anchos que su hueco —`Velocidad`,
+`Bono de Competencia`, `Trato con Animales` y el mensaje de "sin ataques"— y los cuatro **solo en
+español**: los huecos se ajustan mirando la pantalla en un idioma y el desbordamiento aparece en otro.
+
+`CharacterSheetScreen.warnIfLabelsOverflow` recorre cada rótulo con su hueco y avisa por el log si se
+pasa. Va en `init()` y no en el bloque `static` porque necesita `this.font`, que no existe hasta que hay
+pantalla. Y **avisa en vez de reventar**: un rótulo recortado por una traducción larga es un defecto
+cosmético, no motivo para dejar sin hoja a quien juega.
+
+Los límites salen de las constantes de la retícula, así que siguen a la maquetación solos.
