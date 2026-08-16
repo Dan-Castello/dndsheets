@@ -339,6 +339,29 @@ dependencies, not preference.
   widened) already had the right shape — "show me a list only the server knows" — and now carries the
   roster, the compendium and the journal.
 
+- **Fase 4 — progression fidelity. Started.** With the roadmap through Fase 3 closed, the remaining
+  gaps are no longer missing features but numbers that never scaled. Two were found by tracing what
+  `characterLevel` actually drives, and both were live:
+
+  1. **Proficiency bonus was frozen at +2.** Hit points scaled with level (`maxHitPointsFor`) but
+     nothing ever computed proficiency: the sheet defaulted it to the string `"2"` and it stayed there,
+     so a level-20 character attacked with a level-1 bonus. It feeds every attack roll, every save DC
+     and every proficient check. The tell was in the GUI: the sheet already painted that field amber and
+     non-editable — marked as *derived* — while promising a calculation that did not exist. It is now
+     `CharacterRules.proficiencyBonusFor` (2/3/4/5/6 by tier), written where max HP is already derived
+     because that is the one place that resolves the effective level.
+  2. **Cantrips consumed a spell slot.** `Spell.level()` existed from the first import and
+     `SpellCastManager` never read it, so a cantrip both required and spent a slot — meaning a caster
+     who ran dry lost their *at-will* attack, which is the one thing a cantrip cannot do. 11 of the 87
+     imported spells are cantrips, so this was live content, not a hypothetical. All casting routes
+     (Grimoire, wands, magic items via `QuickSpellManager`) funnel through one `handleCastRequest`, so
+     there was exactly one gate to fix.
+
+  **Known simplification, deliberately left:** slots are a single pool, not the 5e per-spell-level
+  table, so a 3rd-level spell costs the same as a 1st. Fixing it is not a bigger table — it changes
+  what "a slot" means for casting, rests, Counterspell, Smite, Shield, Pact Magic and the HUD at once.
+  Worth doing, worth doing as its own piece.
+
 **What already beats the competition and should be leaned on, not rebuilt:** the 3D map, real
 line of sight, real lighting and real movement are *native*. That is literally what Roll20 and
 Foundry emulate with polygons and fog layers. Do not build a fog-of-war system; do not build a

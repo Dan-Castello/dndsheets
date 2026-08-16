@@ -993,7 +993,21 @@ public class JsonContentSelfTest {
 		leveled.addProperty("characterLevel", 7);
 		assertTrue(CharacterRules.levelOf(leveled) == 7, "debería respetar el nivel fijado por el DM");
 
-		System.out.println("checkCharacterRules: OK, personajes múltiples, PNJ, hojas antiguas y PG por nivel se comportan.");
+		//Tabla de competencia de 5e: +2 (1-4), +3 (5-8), +4 (9-12), +5 (13-16), +6 (17-20). Entra en toda
+		//tirada de ataque y en toda CD de salvación, así que un escalón mal puesto desajusta el juego
+		//entero sin que falle nada. Antes esto no lo calculaba nadie: la hoja se quedaba en "2" para
+		//siempre pese a pintar el campo como automático.
+		int[] esperado = {2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6};
+		for (int level = 1; level <= 20; level++) {
+			assertTrue(CharacterRules.proficiencyBonusFor(level) == esperado[level],
+				"competencia de nivel " + level + ": " + CharacterRules.proficiencyBonusFor(level)
+					+ ", se esperaba " + esperado[level]);
+		}
+		//Fuera de rango no debe salirse de la tabla: una hoja corrupta con nivel 0 o 99 sigue jugando.
+		assertTrue(CharacterRules.proficiencyBonusFor(0) == 2, "nivel 0 debería caer en el escalón más bajo");
+		assertTrue(CharacterRules.proficiencyBonusFor(99) == 6, "un nivel disparatado debería topar en +6");
+
+		System.out.println("checkCharacterRules: OK, personajes múltiples, PNJ, hojas antiguas, PG y competencia por nivel se comportan.");
 	}
 
 	private static void require(JsonObject obj, String... fields) {

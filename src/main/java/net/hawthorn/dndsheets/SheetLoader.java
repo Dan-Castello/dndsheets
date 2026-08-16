@@ -203,7 +203,12 @@ public class SheetLoader {
 		//la hoja, pero en cuanto el DM fija un nivel de personaje con /dndsheet setlevel (characterLevel),
 		//el PG máximo debe escalar con ESE nivel — si no, "desacoplar el nivel del XP" no desacoplaba nada
 		//para el PG máximo, justo la razón más obvia de tener un nivel de personaje en 5e.
-		int maxHp = maxHitPointsFor(sheet, Math.max(1, characterLevelOf(sheet, entity)));
+		int level = Math.max(1, characterLevelOf(sheet, entity));
+		int maxHp = maxHitPointsFor(sheet, level);
+
+		//El bono de competencia sale del mismo nivel, y aquí porque este es el único sitio que ya lo
+		//resuelve. Se guarda como texto porque así lo lee la hoja y así lo escribe su campo.
+		sheet.addProperty("proficiencyBonus", String.valueOf(CharacterRules.proficiencyBonusFor(level)));
 
 		maxHealthAttr.removeModifier(CLASS_HP_MODIFIER_ID);
 		maxHealthAttr.addPermanentModifier(new AttributeModifier(CLASS_HP_MODIFIER_ID, "dndsheets class hit points", maxHp - maxHealthAttr.getBaseValue(), AttributeModifier.Operation.ADDITION));

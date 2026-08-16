@@ -82,8 +82,15 @@ public class SpellCastManager {
 		JsonObject casterSheet = SheetLoader.getServerSheet(caster.getStringUUID());
 		if (casterSheet == null) return;
 
+		//Los trucos (nivel 0) son a voluntad en 5e: ni piden espacio ni lo gastan. Spell.level() existía
+		//desde el principio y aquí no se miraba, así que un truco consumía espacio como cualquier otro Y
+		//quedaba bloqueado al quedarse a cero — o sea que al lanzador se le acababa su ataque básico, que
+		//es justo lo que un truco NO puede hacer. Se calcula una vez y se usa en los tres sitios que
+		//tocaban el contador.
+		boolean needsSlot = spell.level() > 0;
+
 		int slotsCurrent = casterSheet.has("spellSlotsCurrent") ? casterSheet.get("spellSlotsCurrent").getAsInt() : 0;
-		if (slotsCurrent <= 0) {
+		if (needsSlot && slotsCurrent <= 0) {
 			caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_slots").withStyle(ChatFormatting.RED));
 			return;
 		}
@@ -144,8 +151,12 @@ public class SpellCastManager {
 		//concentración ni segundo objetivo gemelado.
 		String counterer = CounterspellManager.findCounterer(caster.level(), caster.position(), caster);
 		if (counterer != null) {
-			casterSheet.addProperty("spellSlotsCurrent", slotsCurrent - 1);
-			sendSlotsUpdate(caster, slotsCurrent - 1);
+			//El espacio se gasta igual aunque lo anulen (en 5e el hechizo se considera usado), pero un truco
+			//no tiene espacio que gastar.
+			if (needsSlot) {
+				casterSheet.addProperty("spellSlotsCurrent", slotsCurrent - 1);
+				sendSlotsUpdate(caster, slotsCurrent - 1);
+			}
 			ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.counterspelled", casterName, spell.name(), counterer).withStyle(ChatFormatting.DARK_PURPLE));
 			return;
 		}
@@ -154,8 +165,10 @@ public class SpellCastManager {
 		int abilityMod = CombatManager.abilityModifier(casterSheet, ABILITY_SHEET_KEY.getOrDefault(spell.castingAbility(), "intelligence"));
 
 		CombatFx.spellCast(caster);
-		casterSheet.addProperty("spellSlotsCurrent", slotsCurrent - 1);
-		sendSlotsUpdate(caster, slotsCurrent - 1);
+		if (needsSlot) {
+			casterSheet.addProperty("spellSlotsCurrent", slotsCurrent - 1);
+			sendSlotsUpdate(caster, slotsCurrent - 1);
+		}
 
 		if (spell.concentration()) ConcentrationManager.startConcentrating(caster, spell.name());
 

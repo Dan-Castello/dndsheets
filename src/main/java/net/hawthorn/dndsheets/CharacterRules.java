@@ -46,6 +46,20 @@ final class CharacterRules {
 	 * Minecraft cuando el DM no fijó un nivel; una ficha de PNJ no tiene XP del que caer, así que empieza en
 	 * 1 — en 5e ningún personaje es de nivel 0.</p>
 	 */
+	/**
+	 * <p>Bono de competencia por nivel: +2 del 1 al 4, +3 del 5 al 8, +4 del 9 al 12, +5 del 13 al 16 y +6
+	 * del 17 al 20. Es la tabla de 5e, y no es un detalle menor — entra en toda tirada de ataque, toda CD
+	 * de salvación y toda prueba con competencia.</p>
+	 *
+	 * <p>Antes no lo calculaba nadie: la hoja arrancaba con "2" fijo y ahí se quedaba, así que un
+	 * personaje de nivel 20 atacaba con el bono de uno de nivel 1. La hoja además ya pintaba el campo en
+	 * ámbar y sin poder editarlo, o sea marcado como "se rellena solo" — prometía un cálculo que no
+	 * existía.</p>
+	 */
+	static int proficiencyBonusFor(int level) {
+		return 2 + (Math.min(20, Math.max(1, level)) - 1) / 4;
+	}
+
 	static int levelOf(JsonObject sheet) {
 		if (sheet != null && sheet.has("characterLevel")) return Math.max(1, sheet.get("characterLevel").getAsInt());
 		return 1;
