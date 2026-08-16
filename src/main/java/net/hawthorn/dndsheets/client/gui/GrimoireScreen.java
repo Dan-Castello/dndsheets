@@ -6,6 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
+import net.hawthorn.dndsheets.SpellSlots;
 import net.hawthorn.dndsheets.network.SpellCastMessage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -27,11 +28,18 @@ import java.util.List;
  */
 public class GrimoireScreen extends ListPickerScreen {
 	private static final int SUBTITLE_Y = 30;
+	/** Dos filas: los niveles de espacio arriba, cuántos quedan de cada uno debajo. */
+	private static final int SLOT_ROW_STEP = 10;
+	/** Ancho de cada columna de la tabla de espacios: cabe "9/9" y los nueve niveles caben en el panel. */
+	private static final int SLOT_COL_WIDTH = 24;
 
-	private record KnownSpell(String id, String label) {}
+	private record KnownSpell(String id, String label, int level) {}
 
 	private KnownSpell selected;
 	private Button castButton;
+	private Button slotLevelButton;
+	/** Nivel de espacio elegido para el hechizo seleccionado; 0 = el más bajo que sirva. */
+	private int chosenSlotLevel;
 
 	protected GrimoireScreen(Screen parent) {
 		super(Component.literal("Grimorio"), parent);
@@ -44,13 +52,14 @@ public class GrimoireScreen extends ListPickerScreen {
 
 	@Override
 	protected int listTop() {
-		return SUBTITLE_Y + 14;
+		return SUBTITLE_Y + SLOT_ROW_STEP + 14;
 	}
 
-	//Deja hueco fijo bajo la lista para el botón de lanzar, que no se desplaza con los hechizos.
+	//Deja hueco fijo bajo la lista para las dos filas que no se desplazan con los hechizos: elegir nivel de
+	//espacio y lanzar.
 	@Override
 	protected int listHeight() {
-		return super.listHeight() - BUTTON_HEIGHT - SPACING;
+		return super.listHeight() - 2 * (BUTTON_HEIGHT + SPACING);
 	}
 
 	@Override
@@ -58,16 +67,25 @@ public class GrimoireScreen extends ListPickerScreen {
 		super.init();
 
 		int left = (this.width - buttonWidth()) / 2;
-		int castY = listTop() + listHeight() + SPACING;
+		int slotY = listTop() + listHeight() + SPACING;
+		int castY = slotY + BUTTON_HEIGHT + SPACING;
+
+		//Lanzar a nivel superior es una DECISIÓN, no algo que el servidor pueda adivinar: gastar un espacio
+		//de 5º en una Bola de Fuego a cambio de más dados solo lo sabe quien lanza. Un botón que cicla en vez
+		//de un desplegable porque los niveles posibles son pocos y contiguos.
+		slotLevelButton = this.addRenderableWidget(TomeButton.of(Component.literal("Nivel del espacio"), button -> {
+			chosenSlotLevel = nextUsableLevel();
+			updateButtons();
+		}, left, slotY, buttonWidth(), BUTTON_HEIGHT));
 
 		//Lanzar ya no pasa por un solo clic sobre el hechizo: un jugador que clica para leer qué hay en la
 		//lista no quiere gastar un espacio de conjuro real por curiosidad (ver AUDIT_UX.md, Jugador #2).
 		//Elegir un hechizo solo lo selecciona; este botón aparte es el que de verdad lo lanza.
 		castButton = this.addRenderableWidget(TomeButton.of(Component.literal("Elige un hechizo para lanzarlo"), button -> {
 			if (selected == null) return;
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new SpellCastMessage(selected.id()));
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new SpellCastMessage(selected.id(), chosenSlotLevel));
 		}, left, castY, buttonWidth(), BUTTON_HEIGHT));
-		castButton.active = false;
+		updateButtons();
 	}
 
 	@Override
@@ -75,10 +93,43 @@ public class GrimoireScreen extends ListPickerScreen {
 		for (KnownSpell spell : knownSpells()) {
 			addRow(Component.literal(spell.label()), b -> {
 				selected = spell;
-				castButton.active = true;
-				castButton.setMessage(Component.literal("Lanzar: " + spell.label()));
+				//El nivel elegido se reinicia al del propio hechizo: heredar el "nv. 5" de la selección
+				//anterior gastaría un espacio caro en el hechizo equivocado sin que nadie lo pidiera.
+				chosenSlotLevel = spell.level();
+				updateButtons();
 			});
 		}
+	}
+
+	private void updateButtons() {
+		castButton.active = selected != null;
+		castButton.setMessage(Component.literal(selected == null ? "Elige un hechizo para lanzarlo" : "Lanzar: " + selected.label()));
+
+		//Un truco no gasta espacio, así que no hay nivel que elegir; y si no tienes ningún espacio por
+		//encima del suyo, el botón no tiene a dónde ciclar.
+		boolean canChoose = selected != null && selected.level() > 0 && nextUsableLevel() != chosenSlotLevel;
+		slotLevelButton.active = canChoose;
+		slotLevelButton.setMessage(Component.literal(
+			selected == null ? "—"
+			: selected.level() == 0 ? "Truco: a voluntad, sin espacio"
+			: "Espacio: nv. " + chosenSlotLevel + (canChoose ? "  (clic para subirlo)" : "")));
+	}
+
+	/**
+	 * <p>Siguiente nivel de espacio con el que se puede lanzar el hechizo elegido, dando la vuelta al suyo
+	 * al llegar arriba. Solo cuenta los que le QUEDAN al personaje: ofrecer un nivel vacío sería un clic que
+	 * lleva a un lanzado que el servidor va a resolver con otro espacio distinto del que se ve en pantalla.</p>
+	 */
+	private int nextUsableLevel() {
+		if (selected == null || selected.level() <= 0) return 0;
+		JsonObject sheet = SheetLoader.getClientSheet();
+		int[] current = sheet != null ? SpellSlots.currentSlots(sheet) : new int[SpellSlots.MAX_SPELL_LEVEL + 1];
+		for (int step = 1; step <= SpellSlots.MAX_SPELL_LEVEL; step++) {
+			//Recorre en círculo desde el nivel actual hasta volver a él, saltándose los agotados.
+			int level = selected.level() + ((chosenSlotLevel - selected.level() + step) % (SpellSlots.MAX_SPELL_LEVEL + 1 - selected.level()));
+			if (current[level] > 0) return level;
+		}
+		return chosenSlotLevel;
 	}
 
 	@Override
@@ -95,11 +146,43 @@ public class GrimoireScreen extends ListPickerScreen {
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
+		renderSlotTable(guiGraphics);
+	}
 
+	/**
+	 * <p>Los espacios por nivel, en columnas: el número de nivel arriba y cuántos quedan debajo.</p>
+	 *
+	 * <p>Aquí ponía un total plano ("Espacios: 5/9"), que desde que los espacios son por nivel de conjuro
+	 * ya no responde a la pregunta que se hace quien mira esta pantalla. Un mago con 5 espacios sueltos no
+	 * sabe si puede lanzar su Bola de Fuego: eso depende de si le queda alguno de 3º o más, y el total
+	 * dice exactamente lo mismo tanto si le quedan cinco de nivel 1 como si le queda uno de nivel 5.</p>
+	 */
+	private void renderSlotTable(GuiGraphics guiGraphics) {
 		JsonObject sheet = SheetLoader.getClientSheet();
-		int current = sheet != null && sheet.has("spellSlotsCurrent") ? sheet.get("spellSlotsCurrent").getAsInt() : 0;
-		int max = sheet != null && sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
-		guiGraphics.drawCenteredString(this.font, Component.literal("Espacios de conjuro: " + current + "/" + max), this.width / 2, SUBTITLE_Y, GuiStyle.SUBTITLE_COLOR);
+		if (sheet == null) return;
+
+		int[] max = SpellSlots.maxSlotsOf(sheet);
+		int[] current = SpellSlots.currentSlots(sheet);
+
+		List<Integer> levels = new ArrayList<>();
+		for (int level = 1; level <= SpellSlots.MAX_SPELL_LEVEL; level++) {
+			if (max[level] > 0) levels.add(level);
+		}
+		if (levels.isEmpty()) {
+			guiGraphics.drawCenteredString(this.font, Component.literal("Sin espacios de conjuro"), this.width / 2, SUBTITLE_Y, GuiStyle.MUTED_COLOR);
+			return;
+		}
+
+		int firstColumnCenter = (this.width - levels.size() * SLOT_COL_WIDTH) / 2 + SLOT_COL_WIDTH / 2;
+		for (int i = 0; i < levels.size(); i++) {
+			int level = levels.get(i);
+			int x = firstColumnCenter + i * SLOT_COL_WIDTH;
+			guiGraphics.drawCenteredString(this.font, Component.literal(level + "º"), x, SUBTITLE_Y, GuiStyle.MUTED_COLOR);
+			//Un nivel agotado se apaga en vez de desaparecer: sigue ocupando su columna, así la tabla no se
+			//reordena bajo el ratón cada vez que se gasta el último de un nivel.
+			int color = current[level] > 0 ? GuiStyle.SUBTITLE_COLOR : GuiStyle.MUTED_COLOR;
+			guiGraphics.drawCenteredString(this.font, Component.literal(current[level] + "/" + max[level]), x, SUBTITLE_Y + SLOT_ROW_STEP, color);
+		}
 	}
 
 	private static List<KnownSpell> knownSpells() {
@@ -113,7 +196,7 @@ public class GrimoireScreen extends ListPickerScreen {
 			String id = entry.has("id") ? entry.get("id").getAsString() : "";
 			String name = entry.has("name") ? entry.get("name").getAsString() : id;
 			int level = entry.has("level") ? entry.get("level").getAsInt() : 0;
-			result.add(new KnownSpell(id, name + " (nv. " + level + ")"));
+			result.add(new KnownSpell(id, name + " (nv. " + level + ")", level));
 		}
 		return result;
 	}

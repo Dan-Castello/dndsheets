@@ -404,7 +404,7 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 ## GrimoireScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/GrimoireScreen.java`
-- **Tipo:** extiende `ListPickerScreen` (ver esa sección); sobrescribe `buttonWidth()` (220), `listTop()` (deja hueco al subtítulo) y `listHeight()` (deja hueco al botón de lanzar), más `init()`/`render()` para el botón y el subtítulo
+- **Tipo:** extiende `ListPickerScreen` (ver esa sección); sobrescribe `buttonWidth()` (220), `listTop()` (deja hueco a la tabla de espacios, que ocupa dos filas) y `listHeight()` (deja hueco a los DOS botones fijos de abajo: nivel de espacio y lanzar), más `init()`/`render()` para esos botones y la tabla
 - **Cómo se abre:** sin `open()` estático; instanciado directo con `new GrimoireScreen(this)` desde el botón `grimoireButton` de `CharacterSheetScreen` — `this` (la hoja) es el `parent`, así que "&lt; Atrás"/Escape vuelven a ella
 - **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `ListPickerScreen`
 - **Tamaño del panel:** full-screen centrado; ancho fijo 220 (vía `buttonWidth()`)
@@ -412,9 +412,10 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 | Widget | Tipo | X | Y | Ancho | Alto | Notas |
 |---|---|---|---|---|---|---|
 | Título "Grimorio" | `ListPickerScreen` (base) | width/2 | 16 | — | — | color `GuiStyle.TITLE_COLOR` |
-| "Espacios de conjuro: n/max" | drawCenteredString | width/2 | SUBTITLE_Y=30 | — | — | color `GuiStyle.SUBTITLE_COLOR` |
-| Lista de hechizos | fila de `ListPickerScreen` | (width-220)/2 | listTop()=44 | 220 | listHeight() | scrollable |
-| Botón "Elige un hechizo / Lanzar: X" | Button | (width-220)/2 | listTop()+listHeight()+SPACING | 220 | 20 | inactivo hasta seleccionar hechizo |
+| Tabla de espacios por nivel | `renderSlotTable` | centrada, `SLOT_COL_WIDTH=24` por columna | SUBTITLE_Y=30 (nivel) y +`SLOT_ROW_STEP=10` (quedan/máx) | — | — | una columna por nivel con máximo > 0; nivel agotado en `MUTED_COLOR`, con espacios en `SUBTITLE_COLOR`. Sustituye al total plano "Espacios: n/max", que desde que los espacios son por nivel ya no dice si puedes lanzar tu Bola de Fuego |
+| Lista de hechizos | fila de `ListPickerScreen` | (width-220)/2 | listTop()=54 | 220 | listHeight() | scrollable |
+| Botón "Espacio: nv. N" | Button | (width-220)/2 | listTop()+listHeight()+SPACING | 220 | 20 | cicla el nivel de espacio (lanzar a nivel superior); solo entre los niveles que le QUEDAN al personaje, dando la vuelta al del propio hechizo. Inactivo para trucos y si no hay ningún nivel superior con espacios |
+| Botón "Elige un hechizo / Lanzar: X" | Button | (width-220)/2 | fila anterior + 20 + SPACING | 220 | 20 | inactivo hasta seleccionar hechizo; manda `SpellCastMessage(id, nivelElegido)` |
 | Mensaje "No conoces ningún hechizo..." | `emptyMessage()` | — | — | — | — | solo si no hay hechizos conocidos |
 
 ## SheetAdjustScreen

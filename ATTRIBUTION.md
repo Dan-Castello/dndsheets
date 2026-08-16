@@ -25,7 +25,6 @@ solo puede llevar material redistribuible.
 
 - `src/main/resources/dndsheets/defaults/spells.json`
 - `src/main/resources/dndsheets/defaults/monsters.json`
-- `test/dndsheets/spells/spells.json`
-- `test/dndsheets/monsters/*.json`
+- `test/dndsheets/*/ejemplo.json`
 
 Cualquier ampliación futura de estos packs desde el SRD queda cubierta por esta misma atribución.

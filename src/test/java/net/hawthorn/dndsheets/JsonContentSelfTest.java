@@ -44,6 +44,7 @@ public class JsonContentSelfTest {
 		checkCombatantRules();
 		checkCharacterRules();
 		checkSpellSlots();
+		checkUpcasting();
 		checkTabTextures();
 		checkInteractHandlers();
 		checkParchmentTextHasNoShadow();
@@ -210,8 +211,22 @@ public class JsonContentSelfTest {
 			name + ": la fila de pestaña seleccionada (la tercera) está transparente");
 	}
 
+	/** Fixture pequeño y escrito a mano: el ejemplo mínimo de cada esquema, en {@code test/dndsheets/}. */
 	private static JsonArray readArray(String... pathParts) throws Exception {
 		String json = Files.readString(Path.of("test", "dndsheets", pathParts[0], pathParts[1]));
+		return JsonParser.parseString(json).getAsJsonArray();
+	}
+
+	/**
+	 * <p>El pack grande <b>que se envía de verdad</b> ({@code src/main/resources/dndsheets/defaults/}), que
+	 * es el que {@code DndPaths} siembra en cada mundo nuevo.</p>
+	 *
+	 * <p>Antes esto leía una segunda copia bajo {@code test/dndsheets/}, y las dos ya se habían separado sin
+	 * que nadie se enterara: el self-test daba el visto bueno a un archivo que ningún jugador llega a cargar.
+	 * Se descubrió justo así — añadir un campo al pack enviado no cambió nada en la comprobación.</p>
+	 */
+	private static JsonArray readShippedPack(String fileName) throws Exception {
+		String json = Files.readString(Path.of("src", "main", "resources", "dndsheets", "defaults", fileName));
 		return JsonParser.parseString(json).getAsJsonArray();
 	}
 
@@ -254,7 +269,7 @@ public class JsonContentSelfTest {
 
 		//El pack masivo, no solo el de ejemplo: es el que trae el contenido importado del SRD, y el que de
 		//verdad hay que validar contra el parser real cada vez que crece un lote.
-		JsonArray bulk = readArray("spells", "spells.json");
+		JsonArray bulk = readShippedPack("spells.json");
 		java.util.Set<String> ids = new java.util.HashSet<>();
 		for (JsonElement el : bulk) {
 			JsonObject json = el.getAsJsonObject();
@@ -353,7 +368,7 @@ public class JsonContentSelfTest {
 		assertTrue(spider.damageAffinities().isEmpty(), "un monstruo sin damageAffinities debería quedar con el mapa vacío, no null");
 
 		//El bestiario masivo importado del SRD, con el parser real. Es donde de verdad entra el contenido.
-		JsonArray bestiary = readArray("monsters", "monsters.json");
+		JsonArray bestiary = readShippedPack("monsters.json");
 		java.util.Set<String> monsterIds = new java.util.HashSet<>();
 		java.util.Set<String> damageTypes = java.util.Set.of("fisico", "cortante", "perforante", "contundente",
 			"fuego", "frio", "rayo", "acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno");
@@ -401,7 +416,7 @@ public class JsonContentSelfTest {
 	 * simplemente deja de dar el bonificador que su descripción promete.</p>
 	 */
 	private static void checkMagicItems() throws Exception {
-		JsonArray items = readArray("items", "items.json");
+		JsonArray items = readShippedPack("items.json");
 		java.util.Set<String> ids = new java.util.HashSet<>();
 		java.util.Set<String> damageTypes = java.util.Set.of("fisico", "cortante", "perforante", "contundente",
 			"fuego", "frio", "rayo", "acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno");
@@ -959,21 +974,21 @@ public class JsonContentSelfTest {
 		//Gastar coge el espacio MÁS BAJO que sirva: quemar uno alto pudiendo usar uno bajo tira el recurso caro.
 		JsonObject sheet = new JsonObject();
 		SpellSlots.applyProgression(sheet, "Mago", 5);      //4/3/2
-		assertTrue(SpellSlots.spend(sheet, 1), "un mago de nivel 5 debería poder lanzar de nivel 1");
+		assertTrue(SpellSlots.spend(sheet, 1) == 1, "un mago de nivel 5 debería gastar el espacio de nivel 1");
 		assertTrue(SpellSlots.currentSlots(sheet)[1] == 3 && SpellSlots.currentSlots(sheet)[3] == 2,
 			"debería haber gastado del nivel 1, no de otro");
 
 		//Sin espacios de nivel 1, un conjuro de nivel 1 sube al siguiente que quede.
 		SpellSlots.spend(sheet, 1); SpellSlots.spend(sheet, 1); SpellSlots.spend(sheet, 1);
 		assertTrue(SpellSlots.currentSlots(sheet)[1] == 0, "los cuatro de nivel 1 deberían estar gastados");
-		assertTrue(SpellSlots.spend(sheet, 1), "debería poder lanzarlo con un espacio superior");
+		assertTrue(SpellSlots.spend(sheet, 1) == 2, "debería lanzarlo con un espacio superior y decir cuál");
 		assertTrue(SpellSlots.currentSlots(sheet)[2] == 2, "debería haber subido al nivel 2");
 
 		//Un truco nunca gasta nada, ni siquiera sin espacios.
 		JsonObject sinEspacios = new JsonObject();
 		SpellSlots.applyProgression(sinEspacios, "Guerrero", 20);
-		assertTrue(SpellSlots.hasSlotFor(sinEspacios, 0) && SpellSlots.spend(sinEspacios, 0),
-			"un truco debería lanzarse siempre, también sin espacios");
+		assertTrue(SpellSlots.hasSlotFor(sinEspacios, 0) && SpellSlots.spend(sinEspacios, 0) == 0,
+			"un truco debería lanzarse siempre, también sin espacios, y no gastar nivel ninguno");
 		assertTrue(!SpellSlots.hasSlotFor(sinEspacios, 1), "un guerrero no debería tener espacios de nivel 1");
 
 		//Los totales antiguos siguen siendo la suma: el HUD y el Grimorio los leen sin cambiar.
@@ -1015,7 +1030,66 @@ public class JsonContentSelfTest {
 		assertTrue(SpellSlots.currentSlots(topado)[2] == 3 && SpellSlots.currentSlots(topado)[1] == 3,
 			"con presupuesto 9 y tope 2: tres de nivel 2 (6) y tres de nivel 1 (3)");
 
-		System.out.println("checkSpellSlots: OK, tablas de 5e, gasto por nivel, progresión y recuperación se comportan.");
+		//Lanzar a nivel superior a propósito: el nivel pedido manda sobre "el más bajo que sirva".
+		JsonObject sube3 = new JsonObject();
+		SpellSlots.applyProgression(sube3, "Mago", 9);              //4/3/3/3/1
+		assertTrue(SpellSlots.spend(sube3, 1, 3) == 3, "pedir un espacio de 3º para un conjuro de 1º debería gastar el de 3º");
+		assertTrue(SpellSlots.currentSlots(sube3)[1] == 4, "y no debería haber tocado los de nivel 1");
+
+		//Pedir un nivel agotado sube al siguiente en vez de negar el lanzado por un tecnicismo.
+		while (SpellSlots.currentSlots(sube3)[3] > 0) SpellSlots.spend(sube3, 3);
+		assertTrue(SpellSlots.spend(sube3, 1, 3) == 4, "con el 3º agotado debería subir al 4º, no fallar");
+
+		//Un nivel pedido POR DEBAJO del conjuro no lo abarata: sigue costando el suyo.
+		JsonObject barato = new JsonObject();
+		SpellSlots.applyProgression(barato, "Mago", 5);            //4/3/2
+		assertTrue(SpellSlots.spend(barato, 3, 1) == 3, "un conjuro de 3º no se puede lanzar con un espacio de 1º");
+
+		System.out.println("checkSpellSlots: OK, tablas de 5e, gasto por nivel, subida de nivel, progresión y recuperación se comportan.");
+	}
+
+	/**
+	 * <p>Lanzar a nivel superior: los dados extra que suma un espacio más alto. Va aparte de
+	 * {@link #checkSpells()} porque no comprueba el contenido del pack, sino la aritmética de
+	 * {@code Spell.upcastTo} — que es la que decide cuánto daño hace de verdad una Bola de Fuego de 5º.</p>
+	 */
+	private static void checkUpcasting() throws Exception {
+		SpellRegistry.Spell fireball = spellFromPack("dndsheets:fireball");
+		assertTrue("8d6".equals(fireball.upcastTo(3).dice()), "a su propio nivel no debería cambiar nada");
+		assertTrue("8d6".equals(fireball.upcastTo(2).dice()), "un nivel por debajo tampoco: no existe lanzarlo rebajado");
+		assertTrue("8d6 + 2d6".equals(fireball.upcastTo(5).dice()),
+			"Bola de Fuego con un espacio de 5º debería sumar 2d6, no " + fireball.upcastTo(5).dice());
+		assertTrue(fireball.upcastTo(5).name().contains("nv. 5"),
+			"el chat tiene que decir con qué nivel salió, o dos daños distintos se leen como un fallo");
+
+		//Los dados iguales se juntan en uno: "1d6" tres veces es "3d6" y no tres sumandos.
+		assertTrue("6d6".equals(SpellRegistry.repeatDice("2d6", 3)), "2d6 x3 debería ser 6d6");
+		assertTrue("1d6".equals(SpellRegistry.repeatDice("1d6", 1)), "sin repetir debería quedarse igual");
+		//Lo que no es un dado suelto se repite tal cual: Misil Mágico sube un dardo entero por nivel.
+		assertTrue("1d4 + 1 + 1d4 + 1".equals(SpellRegistry.repeatDice("1d4 + 1", 2)),
+			"un dardo con bonificador se repite entero, no se multiplica");
+
+		//Un conjuro que no escala no cambia por gastar un espacio caro (y hay muchos así en el SRD).
+		SpellRegistry.Spell meteor = spellFromPack("dndsheets:meteor_swarm");
+		assertTrue(!meteor.scalesWithSlot() && meteor.upcastTo(9).dice().equals(meteor.dice()),
+			"Enjambre de Meteoros no gana nada por subirlo de nivel");
+
+		//Un conjuro sin daño que SÍ escalase no debe quedar con un "0 +" delante en el chat.
+		SpellRegistry.Spell sinDano = SpellRegistry.parse(com.google.gson.JsonParser.parseString(
+			"{\"id\":\"x\",\"level\":1,\"dice\":\"0\",\"upcastDice\":\"1d8\"}").getAsJsonObject());
+		assertTrue("2d8".equals(sinDano.upcastTo(3).dice()), "sin daño base debería quedar solo lo añadido, no \"0 + 2d8\"");
+
+		System.out.println("checkUpcasting: OK, los dados extra por nivel de espacio salen donde deben.");
+	}
+
+	private static SpellRegistry.Spell spellFromPack(String id) throws Exception {
+		//Se lee del pack en vez de SpellRegistry.get() porque ejemplo.json y spells.json comparten ids, y el
+		//que queda registrado es el primero: la subida de nivel hay que comprobarla sobre el pack grande.
+		for (JsonElement element : readShippedPack("spells.json")) {
+			JsonObject json = element.getAsJsonObject();
+			if (id.equals(json.get("id").getAsString())) return SpellRegistry.parse(json);
+		}
+		throw new AssertionError("no está en el pack: " + id);
 	}
 
 	private static void assertSlots(SpellSlots.Caster caster, int level, int[] expected) {

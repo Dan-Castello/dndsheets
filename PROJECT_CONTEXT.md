@@ -77,8 +77,13 @@ src/main/resources/
   dndsheets/defaults/        Default content packs seeded into a fresh world's dndsheets/
                              folder on first server start (see DndPaths.seedDefaultsIfEmpty).
 
-test/dndsheets/              Ready-to-copy sample content packs (weapons/spells/monsters/
-                             presets/traits), one "ejemplo.json" + one bulk file per type.
+test/dndsheets/              One hand-written "ejemplo.json" per content type: the minimal
+                             example of each schema, and the fixture JsonContentSelfTest
+                             parses. The bulk packs used to be duplicated here as well, and
+                             the two copies had already drifted — the self-test was blessing
+                             a file no player ever loads. There is now one copy of each bulk
+                             pack, the shipped one under resources/dndsheets/defaults/, and
+                             the self-test reads that.
 templates/                   Starter files for mod-pack authors extending content by hand
                              (not loaded by the mod itself).
 datapacks/dndsheets_loot/    A loot-table datapack bundled with the mod (separate from the
@@ -382,9 +387,39 @@ dependencies, not preference.
      rows — the first version spot-checked four levels and a deliberately moved digit at an unchecked
      level slipped straight through.
 
-  **Known simplification, deliberately left:** casting at a higher level than the spell's own (more
-  damage dice for a higher slot) is not implemented; a higher slot is spent when no lower one is left,
-  but the spell resolves at its base level.
+  4. **Upcasting (`upcastDice`).** The gap left open by item 3: a higher slot was spent when no lower
+     one was left, but the spell still resolved at its base level, so the expensive slot bought
+     nothing. A spell now declares what it gains per level above its own, and 40 of the 87 shipped
+     spells scale.
+
+     Three things worth keeping:
+
+     - **The level is chosen on the client, in the message.** Spending a 5th-level slot on Fireball
+       for two extra dice is exactly the trade the server cannot infer. `SpellCastMessage` carries the
+       chosen level; `0` still means "the lowest that works", which is what every other casting route
+       (wands, magic items) sends.
+     - **`SpellSlots.spend` returns the level it spent**, and that return is what makes the rule
+       writable: the caster asked for a 3rd, but if 3rds were dry it went out on a 4th, and the spell
+       has to scale with the slot that was *actually* spent, not the one requested.
+     - **`Spell.upcastTo` returns a copy of the spell, not a dice string.** `dice` is read from eight
+       places (attack, save, heal, temp HP, weapon buff, zone, summon, twinned), so a new parameter
+       would have been eight signatures changed for one idea. Upcasting therefore works in every mode,
+       including ones not written yet. The copy also carries the level in its name, because that name
+       goes straight to chat — without it, two Fireballs rolling different damage read as a bug.
+
+     Half of the SRD does not scale at all (Meteor Swarm, Finger of Death, Power Word): `upcastDice`
+     is absent there, and pretending otherwise would break them.
+
+     **Still simplified:** scaling is linear per level. Spiritual Weapon (+1d8 every *two* levels)
+     therefore ships without upcasting rather than with the wrong number.
+
+  **Found while doing item 4:** the bulk content packs existed **twice** — once under
+  `test/dndsheets/<type>/` and once in `src/main/resources/dndsheets/defaults/` — and the self-test
+  read the `test/` copy. The two had already drifted (five monsters had `damageAffinities` only in the
+  shipped copy), so the suite was blessing a file no player ever loads. It surfaced because adding
+  `upcastDice` to the shipped `spells.json` changed nothing in the check. The duplicates are deleted;
+  `test/dndsheets/` now holds only the one hand-written `ejemplo.json` per type, and the self-test
+  reads the shipped packs.
 
 **What already beats the competition and should be leaned on, not rebuilt:** the 3D map, real
 line of sight, real lighting and real movement are *native*. That is literally what Roll20 and

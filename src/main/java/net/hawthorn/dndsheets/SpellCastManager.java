@@ -72,16 +72,23 @@ public class SpellCastManager {
 	}
 
 	/**
-	 * <p>Gasta el espacio y avisa al cliente. Coge el más bajo que sirva para ese nivel de conjuro: en 5e
-	 * se puede lanzar con un espacio superior, pero quemar uno alto pudiendo usar uno bajo es tirar el
-	 * recurso caro.</p>
+	 * <p>Gasta el espacio y avisa al cliente. Sin nivel pedido coge el más bajo que sirva (quemar uno alto
+	 * pudiendo usar uno bajo es tirar el recurso caro); con {@code minSlotLevel} respeta la elección del
+	 * jugador de subir el conjuro de nivel. Devuelve el nivel realmente gastado.</p>
 	 */
-	private static void spendSlot(ServerPlayer caster, JsonObject casterSheet, int spellLevel) {
-		SpellSlots.spend(casterSheet, spellLevel);
+	private static int spendSlot(ServerPlayer caster, JsonObject casterSheet, int spellLevel, int minSlotLevel) {
+		int spent = SpellSlots.spend(casterSheet, spellLevel, minSlotLevel);
 		sendSlotsUpdate(caster, casterSheet.get("spellSlotsCurrent").getAsInt());
+		return spent;
 	}
 
+	/** Lanzado sin elegir nivel: el báculo de lanzado rápido y cualquier otra vía que no pregunte. */
 	public static void handleCastRequest(ServerPlayer caster, String spellId) {
+		handleCastRequest(caster, spellId, 0);
+	}
+
+	/** @param slotLevel nivel de espacio elegido por el jugador, o 0 para el más bajo que sirva. */
+	public static void handleCastRequest(ServerPlayer caster, String spellId, int slotLevel) {
 		long now = caster.level().getGameTime();
 		Long last = lastCastTick.put(caster.getUUID(), now);
 		if (last != null && last == now) return;
@@ -99,9 +106,13 @@ public class SpellCastManager {
 		//tocaban el contador.
 		boolean needsSlot = spell.level() > 0;
 
+		//Un truco no se puede subir de nivel (no gasta espacio ninguno), así que la elección se ignora en
+		//vez de convertirse en un gasto que la regla no permite.
+		int requestedLevel = needsSlot ? Math.max(spell.level(), Math.min(slotLevel, SpellSlots.MAX_SPELL_LEVEL)) : 0;
+
 		//Se comprueba aquí sin gastar, y se gasta más abajo: si el hechizo se rechaza por falta de objetivo
 		//o porque no es tu turno, no se puede haber cobrado ya el espacio.
-		if (!SpellSlots.hasSlotFor(casterSheet, spell.level())) {
+		if (!SpellSlots.hasSlotFor(casterSheet, requestedLevel)) {
 			caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_slots").withStyle(ChatFormatting.RED));
 			return;
 		}
@@ -163,8 +174,8 @@ public class SpellCastManager {
 		String counterer = CounterspellManager.findCounterer(caster.level(), caster.position(), caster);
 		if (counterer != null) {
 			//El espacio se gasta igual aunque lo anulen (en 5e el hechizo se considera usado), pero un truco
-			//no tiene espacio que gastar.
-			if (needsSlot) spendSlot(caster, casterSheet, spell.level());
+			//no tiene espacio que gastar. Se gasta el que se pidió: contrarrestarlo no te devuelve el de 5º.
+			if (needsSlot) spendSlot(caster, casterSheet, spell.level(), requestedLevel);
 			ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.counterspelled", casterName, spell.name(), counterer).withStyle(ChatFormatting.DARK_PURPLE));
 			return;
 		}
@@ -173,7 +184,10 @@ public class SpellCastManager {
 		int abilityMod = CombatManager.abilityModifier(casterSheet, ABILITY_SHEET_KEY.getOrDefault(spell.castingAbility(), "intelligence"));
 
 		CombatFx.spellCast(caster);
-		if (needsSlot) spendSlot(caster, casterSheet, spell.level());
+		//El nivel del espacio no se sabe hasta gastarlo: se pidió uno de 3º, pero si estaban agotados salió
+		//por uno de 4º y el conjuro sube con él. De ahí que la subida de nivel se aplique DESPUÉS de gastar
+		//y no antes, con el nivel real y no con el pedido.
+		if (needsSlot) spell = spell.upcastTo(spendSlot(caster, casterSheet, spell.level(), requestedLevel));
 
 		if (spell.concentration()) ConcentrationManager.startConcentrating(caster, spell.name());
 

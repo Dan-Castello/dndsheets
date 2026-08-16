@@ -29,7 +29,7 @@ public class SpellRegistry {
 		String id, String name, int level, String mode,
 		String castingAbility, String saveAbility, String dice, boolean halfOnSave, String damageType,
 		boolean concentration, int aoeRadius, String aoeShape, String summonEntityId, boolean followsCasterFlag,
-		String effectName, String effectDice, int effectTurns
+		String effectName, String effectDice, int effectTurns, String upcastDice
 	) {
 		/**
 		 * <p>Forma del área: {@code sphere} (por defecto), {@code line} o {@code cone}. La diferencia no es
@@ -67,6 +67,51 @@ public class SpellRegistry {
 		//la concentración (ver ConcentrationManager/TurnManager.applyEffect), que se revierte solo si se
 		//pierde la concentración — antes eso no existía, "perder concentración" solo tiraba el dado.
 		public boolean appliesEffect() { return effectName != null; }
+
+		/** ¿Gana algo por lanzarlo con un espacio superior? Ver {@link #upcastTo}. */
+		public boolean scalesWithSlot() { return upcastDice != null && !upcastDice.isEmpty(); }
+
+		/**
+		 * <p><b>Lanzar a nivel superior.</b> Devuelve el mismo conjuro resuelto con un espacio de nivel
+		 * {@code slotLevel}: {@code upcastDice} extra por cada nivel por encima del suyo (Bola de Fuego,
+		 * 8d6 de base y +1d6 por nivel, sale a 10d6 con un espacio de 5º).</p>
+		 *
+		 * <p>Devuelve una COPIA en vez de un dado suelto a propósito: {@code dice} se lee desde ocho sitios
+		 * distintos (ataque, salvación, curación, PG temporales, mejora de arma, zona, invocación y el
+		 * gemelado), y pasarles a todos un parámetro nuevo habría sido ocho firmas cambiadas para la misma
+		 * idea. Así la subida de nivel vale para todos los modos de golpe, incluidos los que aún no existen.</p>
+		 *
+		 * <p>El nombre lleva el nivel usado porque va derecho al chat: sin eso, dos Bolas de Fuego con daños
+		 * distintos se leen como un fallo del mod y no como la decisión que fue.</p>
+		 */
+		public Spell upcastTo(int slotLevel) {
+			int extraLevels = slotLevel - level;
+			if (extraLevels <= 0 || !scalesWithSlot()) return this;
+
+			String added = repeatDice(upcastDice, extraLevels);
+			//"0" es el dado por defecto de un conjuro que no hace daño ninguno; sumarle nada delante deja
+			//un "0 + 2d6" que se tira igual pero se lee en el chat como un error de escritura.
+			String scaled = "0".equals(dice.trim()) ? added : dice + " + " + added;
+			return new Spell(id, name + " (nv. " + slotLevel + ")", level, mode, castingAbility, saveAbility,
+				scaled, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId,
+				followsCasterFlag, effectName, effectDice, effectTurns, upcastDice);
+		}
+	}
+
+	//Un "1d6" repetido 3 veces se junta en "3d6" en vez de encadenarse: se tira igual, pero el chat enseña
+	//una tirada y no tres sumandos del mismo dado. Lo que no encaje en NdM (Proyectil Mágico sube "1d4 + 1"
+	//por nivel, dardo a dardo) se repite tal cual, que sigue siendo correcto aunque se lea más largo.
+	private static final java.util.regex.Pattern SIMPLE_DICE = java.util.regex.Pattern.compile("(\\d*)d(\\d+)");
+
+	static String repeatDice(String dice, int times) {
+		java.util.regex.Matcher m = SIMPLE_DICE.matcher(dice.trim());
+		if (m.matches()) {
+			int count = m.group(1).isEmpty() ? 1 : Integer.parseInt(m.group(1));
+			return (count * times) + "d" + m.group(2);
+		}
+		StringBuilder sb = new StringBuilder(dice);
+		for (int i = 1; i < times; i++) sb.append(" + ").append(dice);
+		return sb.toString();
 	}
 
 	private static final NamedRegistry<Spell> REGISTRY = new NamedRegistry<>("hechizo", Spell::id);
@@ -150,8 +195,13 @@ public class SpellRegistry {
 		String effectDice = effect != null ? effect.get("dice").getAsString() : null;
 		int effectTurns = effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0;
 
+		//Lo que se suma por cada nivel de espacio por encima del suyo (ver Spell.upcastTo). Ausente = el
+		//conjuro no mejora al subirlo de nivel, que en el SRD es la mitad de ellos: Palabra de Poder o
+		//Enjambre de Meteoros no ganan nada por gastar un espacio más alto, y fingir que sí los rompería.
+		String upcastDice = json.has("upcastDice") ? json.get("upcastDice").getAsString() : null;
+
 		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId, followsCaster,
-			effectName, effectDice, effectTurns);
+			effectName, effectDice, effectTurns, upcastDice);
 	}
 
 	//--- Báculo de lanzado rápido: cualquier ítem etiquetado {dndsheets:{quickSpell:"id"}} (mismo patrón que las armas personalizadas) ---

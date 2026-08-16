@@ -93,24 +93,37 @@ public final class SpellSlots {
 
 	/**
 	 * <p>Gasta un espacio para un conjuro de nivel {@code spellLevel}, cogiendo <b>el más bajo que sirva</b>.
-	 * Devuelve false si no queda ninguno.</p>
+	 * Devuelve el nivel del espacio gastado, 0 si era un truco (no gasta nada) y -1 si no quedaba ninguno.</p>
 	 *
 	 * <p>El más bajo y no el exacto porque en 5e se puede lanzar con un espacio superior, y gastar el más
-	 * alto disponible pudiendo usar uno bajo es tirar el recurso caro. Que se pueda subir de nivel el
-	 * conjuro al hacerlo (más dados de daño) es otra regla y no está aquí.</p>
+	 * alto disponible pudiendo usar uno bajo es tirar el recurso caro.</p>
 	 */
-	public static boolean spend(JsonObject sheet, int spellLevel) {
-		if (spellLevel <= 0) return true; //Truco: a voluntad, no gasta nada.
+	public static int spend(JsonObject sheet, int spellLevel) {
+		return spend(sheet, spellLevel, 0);
+	}
+
+	/**
+	 * <p>Igual, pero sin bajar de {@code minSlotLevel}: es lo que permite <b>lanzar a nivel superior</b> a
+	 * propósito (Bola de Fuego con un espacio de 5º hace más daño, ver {@code Spell.upcastTo}). Devolver el
+	 * nivel gastado y no un booleano es justo lo que hace posible esa regla: quien lanza necesita saber con
+	 * qué espacio salió de verdad, no solo que salió.</p>
+	 *
+	 * <p>Si el nivel pedido está agotado sigue subiendo en vez de fallar. Es la lectura amable: quien pide
+	 * "gástame uno de 3º" está pidiendo <i>al menos</i> 3º, y negarle el lanzado teniendo uno de 4º libre
+	 * sería un no por un tecnicismo.</p>
+	 */
+	public static int spend(JsonObject sheet, int spellLevel, int minSlotLevel) {
+		if (spellLevel <= 0) return 0; //Truco: a voluntad, no gasta nada.
 		int[] current = currentSlots(sheet);
-		for (int level = spellLevel; level <= MAX_SPELL_LEVEL; level++) {
+		for (int level = Math.max(spellLevel, minSlotLevel); level <= MAX_SPELL_LEVEL; level++) {
 			if (current[level] > 0) {
 				current[level]--;
 				writeSlots(sheet, "spellSlotsByLevel", current);
 				syncTotals(sheet);
-				return true;
+				return level;
 			}
 		}
-		return false;
+		return -1;
 	}
 
 	/** ¿Queda algún espacio con el que lanzar esto? Misma regla que {@link #spend}, sin gastar. */
