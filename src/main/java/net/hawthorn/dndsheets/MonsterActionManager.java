@@ -284,6 +284,13 @@ public class MonsterActionManager {
 	//ponytail: línea recta en el plano horizontal, sin pathfinding real (no esquiva obstáculos, no rodea
 	//paredes) — sigue siendo NoAI de verdad, esto es solo simular "se acercó", no IA de movimiento real.
 	private static void moveTowardIfNeeded(Entity monster, Entity target) {
+		//Velocidad 0: agarrado, apresado, paralizado, petrificado o inconsciente. Se comprobaba solo en
+		//MovementAnchorTracker, que gobierna a los jugadores y a los mobs de compatibilidad — los monstruos
+		//propios se mueven por AQUÍ, con un teleport, así que la regla no les llegaba. Un monstruo dentro de
+		//un Enmarañar salía andando de él, que es exactamente lo que ese conjuro existe para impedir.
+		Combatant combatant = Combatant.of(monster);
+		if (combatant != null && combatant.cannotMove()) return;
+
 		Vec3 from = monster.position();
 		Vec3 to = target.position();
 		double dx = to.x - from.x;
@@ -355,8 +362,13 @@ public class MonsterActionManager {
 		boolean melee = true;
 		//Un monstruo no trae ventaja propia todavía (no tiene hoja ni flags), así que solo pasa lo del
 		//objetivo. El día que la traiga, entra por el mismo sitio y se combina con todo lo demás de una vez.
+		//Las condiciones del PROPIO monstruo también cuentan: invisible ataca con ventaja, asustado con
+		//desventaja. Esto solo se pasaba desde el lado del jugador, así que un monstruo invisible atacaba
+		//plano — la misma asimetría de siempre, en la fuente en vez de en el objetivo.
+		Combatant attackerCombatant = Combatant.of(monsterEntity);
 		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(new JsonObject(), "1d20 + " + toHitMod,
-			AttackRules.advantageAgainst(targetCombatant, melee));
+			AttackRules.advantageAgainst(targetCombatant, melee,
+				attackerCombatant != null ? attackerCombatant.ownAttackAdvantage() : DiceManager.Advantage.NORMAL));
 		if (attackRoll.outcome().result() == null) return;
 		CombatFx.diceTick(monsterEntity);
 

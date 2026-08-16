@@ -1818,7 +1818,29 @@ public class JsonContentSelfTest {
 		assertTrue(readSource("LegendaryActionManager.java").contains("isIncapacitated("),
 			"un jefe incapacitado no puede tomar acciones legendarias, y la regla lo dice explícitamente");
 
-		System.out.println("checkIncapacitatedCannotAct: OK, las tres formas de actuar respetan la incapacitación.");
+		//Lo mismo para MOVERSE. Los jugadores y los mobs de compatibilidad pasan por MovementAnchorTracker,
+		//pero los monstruos propios se mueven con un teleport en MonsterActionManager, así que la regla no les
+		//llegaba: un monstruo dentro de un Enmarañar salía andando, que es lo que ese conjuro existe para
+		//impedir. Se comprueba qué condiciones paran (agarrado y apresado paran sin incapacitar, que es
+		//justo el par que distingue "no puedo moverme" de "no puedo actuar").
+		for (Condition stopping : List.of(Condition.AGARRADO, Condition.APRESADO, Condition.PARALIZADO,
+				Condition.PETRIFICADO, Condition.INCONSCIENTE)) {
+			FakeCombatant stuck = new FakeCombatant(0);
+			stuck.addCondition(stopping);
+			assertTrue(stuck.cannotMove(), stopping + " debería dejar la velocidad a 0");
+		}
+		FakeCombatant grappled = new FakeCombatant(0);
+		grappled.addCondition(Condition.AGARRADO);
+		assertTrue(grappled.cannotMove() && !grappled.cannotAct(),
+			"agarrado para el movimiento pero NO la acción: son dos reglas distintas y por eso hacen falta dos comprobaciones");
+
+		assertTrue(readSource("MonsterActionManager.java").contains("cannotMove()"),
+			"el movimiento de un monstruo propio debería respetar la velocidad 0, no solo el de jugadores y mobs vanilla");
+		//Y que un monstruo ataque con SUS propias condiciones: invisible con ventaja, asustado con desventaja.
+		assertTrue(readSource("MonsterActionManager.java").contains("ownAttackAdvantage()"),
+			"un monstruo debería atacar con la ventaja que le den sus propias condiciones, no solo con la del objetivo");
+
+		System.out.println("checkIncapacitatedCannotAct: OK, actuar, reaccionar, moverse y atacar respetan las condiciones en las dos direcciones.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

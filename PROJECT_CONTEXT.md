@@ -926,6 +926,22 @@ dependencies, not preference.
       those turns a hard condition into an inconvenience or the reverse), and structurally that all
       three gates consult it, since the paths themselves need world entities.
 
+  31. **Two more from the same question**, asked of the other consequences a condition has. Both are
+      the mod's own monsters missing a rule that players already obeyed.
+
+      **A restrained monster walked out of the spell restraining it.** `cannotMove` was checked only
+      in `MovementAnchorTracker`, which governs players and other mods' mobs. This mod's own monsters
+      move somewhere else entirely — a teleport in `MonsterActionManager` — so the rule never reached
+      them, and a monster inside an Entangle simply strolled off. That is precisely what the spell
+      exists to prevent. It is worth noting *why* this one survived the previous sweep: grappled and
+      restrained stop movement **without** incapacitating, so fixing "incapacitated can't act" left
+      them untouched. Two rules that look like one.
+
+      **A monster attacked without its own conditions.** `ownAttackAdvantage` — invisible attacks
+      with advantage, frightened with disadvantage — was passed only from the player's side. Same
+      asymmetry as `AttackRules` fixed for the *target*, one step earlier in the same roll: this one
+      is about the attacker.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.
