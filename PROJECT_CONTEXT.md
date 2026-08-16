@@ -868,6 +868,27 @@ dependencies, not preference.
       item 18 the open sheet repaints itself, so the message was asking for a step that no longer
       exists.
 
+  28. **Correcting my own boss data.** Two problems with the annotation from items 24 and 26, both
+      found by re-reading it rather than by a report.
+
+      **Legendary Actions had no data at all.** The field, the budget, the turn hook and the chat
+      line all shipped, and not one monster declared the number — a feature that could not fire.
+      Annotated on the 28 that have it.
+
+      **Legendary Resistance was over-applied.** I had put it on the balor, the pit fiend, the
+      planetar and the solar. Those have **Magic Resistance** — advantage on saves against spells —
+      which is a different rule that this mod does not implement. Removed, leaving 26.
+
+      The two lists are *not* the same list, and treating them as one is exactly the mistake I made:
+      the **vampire has legendary actions and no legendary resistance**, and the solar the same. The
+      check now asserts both directions of that mismatch, because a list that agrees with itself is
+      indistinguishable from a list copied from the other one.
+
+      Honest caveat: this is recall, not transcription. The dragons, lich, tarrasque, mummy lord,
+      sphinxes and kraken I am confident about; anyone who cares about exactness should diff the
+      annotated set against the SRD document. The field is optional and defaults to 0, so being
+      conservative costs a boss some teeth rather than inventing rules it does not have.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

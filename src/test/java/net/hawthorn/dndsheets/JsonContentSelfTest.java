@@ -477,6 +477,20 @@ public class JsonContentSelfTest {
 		assertTrue(MonsterRegistry.get("dndsheets:goblin").legendaryResistances() == 0,
 			"y un goblin desde luego que no");
 
+		//Acciones legendarias: la lista NO es la misma que la de Resistencia Legendaria, y tratarlas como si
+		//lo fueran fue exactamente el error de la primera pasada. Se comprueban las dos direcciones del
+		//desajuste, que es lo único que distingue una lista copiada de una escrita.
+		assertTrue(MonsterRegistry.get("dndsheets:adult_red_dragon").legendaryActions() == 3,
+			"un dragón adulto tiene 3 acciones legendarias");
+		assertTrue(MonsterRegistry.get("dndsheets:vampire_vampire").legendaryActions() == 3
+				&& MonsterRegistry.get("dndsheets:vampire_vampire").legendaryResistances() == 0,
+			"el vampiro tiene acciones legendarias pero NO Resistencia Legendaria");
+		assertTrue(MonsterRegistry.get("dndsheets:balor").legendaryResistances() == 0
+				&& MonsterRegistry.get("dndsheets:balor").legendaryActions() == 0,
+			"el balor no tiene ninguna de las dos: lo que tiene es Resistencia a la Magia, que es otra cosa");
+		assertTrue(MonsterRegistry.get("dndsheets:young_red_dragon").legendaryActions() == 0,
+			"y un dragón joven tampoco tiene acciones legendarias");
+
 		//El parser tiene que aguantar lo que escribe una persona: acentos, mayúsculas, guiones o inglés.
 		assertTrue(CreatureType.parse("no-muerto") == CreatureType.UNDEAD
 			&& CreatureType.parse("No Muerto") == CreatureType.UNDEAD
