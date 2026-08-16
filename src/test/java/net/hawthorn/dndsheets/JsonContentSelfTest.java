@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * <p>Comprobación mínima (sin JUnit, sin fixtures) de que los JSON de ejemplo en {@code test/dndsheets/}
@@ -45,6 +46,7 @@ public class JsonContentSelfTest {
 		checkCharacterRules();
 		checkSpellSlots();
 		checkUpcasting();
+		checkDefaultsRefresh();
 		checkTabTextures();
 		checkInteractHandlers();
 		checkParchmentTextHasNoShadow();
@@ -1040,6 +1042,18 @@ public class JsonContentSelfTest {
 		while (SpellSlots.currentSlots(sube3)[3] > 0) SpellSlots.spend(sube3, 3);
 		assertTrue(SpellSlots.spend(sube3, 1, 3) == 4, "con el 3º agotado debería subir al 4º, no fallar");
 
+		//El parche que va al cliente tiene que llevar la TABLA, no solo el total. Mandando solo el total, el
+		//Grimorio se quedaba con columnas viejas y ofrecía niveles ya gastados: se veía como que subir el
+		//nivel "no se reflejaba en ningún sitio".
+		JsonObject patch = SpellSlots.clientPatch(sube3);
+		assertTrue(patch.has("spellSlotsByLevel") && patch.has("spellSlotsCurrent"),
+			"el parche de espacios debería llevar la tabla por nivel y el total, no solo el total");
+		assertTrue(patch.get("spellSlotsByLevel").toString().equals(sube3.get("spellSlotsByLevel").toString()),
+			"y la tabla del parche debería ser la de la hoja tras gastar");
+		//Un campo ausente se omite: en un parche, un nulo significa "borra esta clave" en la hoja del cliente.
+		assertTrue(SpellSlots.clientPatch(new JsonObject()).size() == 0,
+			"sin espacios en la hoja, el parche debería ir vacío y no borrar nada en el cliente");
+
 		//Un nivel pedido POR DEBAJO del conjuro no lo abarata: sigue costando el suyo.
 		JsonObject barato = new JsonObject();
 		SpellSlots.applyProgression(barato, "Mago", 5);            //4/3/2
@@ -1080,6 +1094,49 @@ public class JsonContentSelfTest {
 		assertTrue("2d8".equals(sinDano.upcastTo(3).dice()), "sin daño base debería quedar solo lo añadido, no \"0 + 2d8\"");
 
 		System.out.println("checkUpcasting: OK, los dados extra por nivel de espacio salen donde deben.");
+	}
+
+	/**
+	 * <p>El contenido del mod tiene que llegar a un mundo que YA EXISTE. Antes se sembraba una sola vez y
+	 * solo en una carpeta vacía, así que la copia del mundo se quedaba congelada en la versión del día que
+	 * se creó la partida: hechizos nuevos, resistencias añadidas a un monstruo o el escalado por nivel de
+	 * espacio no llegaban nunca. Fue justo el síntoma reportado — subir el nivel del conjuro no hacía nada
+	 * en una partida en curso porque el servidor cargaba un pack anterior a la regla.</p>
+	 */
+	private static void checkDefaultsRefresh() throws Exception {
+		Path dir = Files.createTempDirectory("dndsheets-defaults");
+		try {
+			//Un mundo de la versión anterior: el pack sembrado con el nombre viejo, sin escalado por nivel.
+			Path legacy = dir.resolve("spells.json");
+			Files.writeString(legacy, "[ { \"id\": \"dndsheets:fireball\", \"level\": 3, \"dice\": \"8d6\" } ]");
+
+			Path retired = ContentDefaults.refresh(dir, "spells.json");
+
+			assertTrue(retired != null && Files.exists(retired), "el pack antiguo debería quedar apartado, no borrado");
+			assertTrue(!Files.exists(legacy), "y no debería seguir autocargándose con su nombre original");
+			assertTrue(!retired.getFileName().toString().endsWith(".json"),
+				"apartado tiene que dejar de terminar en .json o autoLoadAll lo seguiría cargando");
+			String fresh = Files.readString(dir.resolve(ContentDefaults.FILE));
+			assertTrue(fresh.contains("upcastDice"), "el pack al día debería traer el escalado por nivel de espacio");
+
+			//Segunda pasada. El pack del mod se deja como lo habría dejado una versión anterior: si no se
+			//reescribe, se queda ahí para siempre, que es exactamente el defecto que esto viene a cerrar.
+			Files.writeString(dir.resolve(ContentDefaults.FILE), "[ ]");
+			//Y un archivo del DM con el nombre que usaba la siembra vieja: pasada la migración ya no se toca.
+			Files.writeString(legacy, "[ ]");
+
+			assertTrue(ContentDefaults.refresh(dir, "spells.json") == null,
+				"tras la migración, un archivo con ese nombre es del DM y no se aparta");
+			assertTrue(Files.exists(legacy), "y tiene que seguir donde estaba");
+			assertTrue(Files.readString(dir.resolve(ContentDefaults.FILE)).contains("upcastDice"),
+				"el pack del mod debería reescribirse en cada arranque, no sembrarse una sola vez");
+		} finally {
+			try (Stream<Path> files = Files.walk(dir)) {
+				files.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
+			}
+		}
+
+		System.out.println("checkDefaultsRefresh: OK, un mundo ya existente recibe el contenido nuevo sin pisar lo del DM.");
 	}
 
 	private static SpellRegistry.Spell spellFromPack(String id) throws Exception {

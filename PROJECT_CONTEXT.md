@@ -74,8 +74,8 @@ src/main/java/net/hawthorn/dndsheets/
 src/main/resources/
   assets/dndsheets/lang/     en_us.json, es_es.json — includes the in-game Guide book's page text.
   assets/dndsheets/textures/ screens/ (GUI backgrounds+atlas), sounds, etc.
-  dndsheets/defaults/        Default content packs seeded into a fresh world's dndsheets/
-                             folder on first server start (see DndPaths.seedDefaultsIfEmpty).
+  dndsheets/defaults/        The mod's own content packs. Written to <world>/dndsheets/<type>/
+                             mod_defaults.json on EVERY server start (see ContentDefaults).
 
 test/dndsheets/              One hand-written "ejemplo.json" per content type: the minimal
                              example of each schema, and the fixture JsonContentSelfTest
@@ -171,7 +171,7 @@ mirror-image reason.
 
 **Content registries** (weapons, spells, monsters, presets, traits) all follow the same shape: an in-memory map (`NamedRegistry<T>`, generic — `register`/`get`/`ids`/`remove`), loaded from a JSON array file via `JsonRegistryLoader<T>` (per-element error isolation: one malformed entry warns and gets skipped, doesn't abort the whole file). `Config` (weapons) predates this shared pattern and still hand-rolls its own two maps instead of using `NamedRegistry` — a known inconsistency, not worth unifying unless you're already touching weapon loading for another reason. Race/background/class options (`CharacterOptionsRegistry`) are the odd one out: `loadFile` *replaces* the whole category rather than merging by id, because there's no id, just a flat string list — this distinction has caused real bugs (see the content-creator design below) and is worth remembering before assuming all five content types behave identically.
 
-**`DndPaths`** owns every `<world>/dndsheets/<type>/` folder, creates them on server start, seeds `test/dndsheets`-equivalent defaults into empty ones, and auto-loads every `.json` file found — no command needed for the common case, the `/dnd... load` commands exist for *hot*-reloading a single file without a restart.
+**`DndPaths`** owns every `<world>/dndsheets/<type>/` folder, creates them on server start, refreshes the mod's own pack (`ContentDefaults`), and auto-loads every `.json` file found — no command needed for the common case, the `/dnd... load` commands exist for *hot*-reloading a single file without a restart. **Load order is `mod_defaults.json` first, then everything else by name**, and `NamedRegistry.register` overwrites by id, so whatever the DM writes wins over what the mod ships. That order is what makes rewriting `mod_defaults.json` on every start safe.
 
 **The in-game content creator** (`ContentType` enum + `ContentPackFile` + `ContentFormScreen`) is the newest major piece and worth understanding before extending it. `ContentType` has one constant per id-keyed content type (WEAPON/SPELL/PRESET/TRAIT/MONSTER), each wrapping that type's `load`/`remove`. `ContentPackFile.upsert`/`removeById` read-modify-write a dedicated `dm_created.json` per type (kept separate from hand-authored packs so the tool never overwrites a file a DM manages by hand), then the caller re-invokes the type's normal `loadFile` to hot-register — there is no separate persistence layer, it's the exact same pipeline as a hand-dropped file, just automated. `ContentFormScreen` is a **generic** data-driven form (`FieldSpec` list → `SmallFormScreen`) for the three flat-schema types (weapons/spells/presets); traits (nested level→dice tables) and monsters (attack lists, created by capturing a live-configured NPC instead of a from-scratch form) don't fit that shape and get bespoke screens (`TraitEditScreen`, `MonsterTemplateSaveScreen`). Race/background/class options use a separate `OptionsManageScreen`/`OptionsSaveMessage` pair because of the replace-not-merge semantics mentioned above — trying to fold them into the `ContentType` abstraction would be forcing two genuinely different mechanics into one shape.
 
@@ -412,6 +412,22 @@ dependencies, not preference.
 
      **Still simplified:** scaling is linear per level. Spiritual Weapon (+1d8 every *two* levels)
      therefore ships without upcasting rather than with the wrong number.
+
+     **Reported broken after shipping, and the two causes were both bigger than the feature:**
+
+     - **The world's content pack was frozen forever.** Defaults were seeded *once*, and only into an
+       empty folder, so the copy in a world froze at the version it was created with. New spells,
+       the resistances added to five monsters, and now upcasting never reached an existing game —
+       the symptom was that raising the slot level changed nothing, because the server was still
+       loading a pack written before the rule existed. The mod's pack now has a reserved name
+       (`mod_defaults.json`, `ContentDefaults`) and is rewritten every start; DM files load after it
+       and override by id, which is what makes rewriting safe. The old seeded `<type>.json` is
+       renamed to `.old` once, never deleted.
+     - **The slot patch only carried the total.** `sendSlotsUpdate` patched `spellSlotsCurrent`
+       alone, so the client kept a stale `spellSlotsByLevel`: the Grimoire's per-level columns never
+       moved and the level picker offered slots already spent. A short patch has to carry
+       *everything* that changed, and since slots became per-level that is two fields
+       (`SpellSlots.clientPatch`).
 
   **Found while doing item 4:** the bulk content packs existed **twice** — once under
   `test/dndsheets/<type>/` and once in `src/main/resources/dndsheets/defaults/` — and the self-test

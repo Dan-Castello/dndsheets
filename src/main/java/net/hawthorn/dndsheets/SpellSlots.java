@@ -126,6 +126,24 @@ public final class SpellSlots {
 		return -1;
 	}
 
+	/**
+	 * <p>Parche mínimo para el cliente después de tocar los espacios: <b>la tabla por nivel y el total que
+	 * sale de ella</b>.</p>
+	 *
+	 * <p>Existe porque mandar solo el total dejaba al cliente con una tabla vieja: el Grimorio enseña una
+	 * columna por nivel y decide con ellas qué niveles se pueden elegir, así que con solo el total las
+	 * columnas se quedaban clavadas y el selector ofrecía niveles ya gastados. Quien manda un parche corto
+	 * tiene que mandar TODO lo que cambió, y desde que los espacios son por nivel eso son dos campos.</p>
+	 */
+	public static JsonObject clientPatch(JsonObject sheet) {
+		JsonObject patch = new JsonObject();
+		//Con cuidado: en un parche, un valor nulo significa "borra esta clave" en la hoja del cliente (ver
+		//SheetLoader.applyClientDelta), así que un campo ausente se omite en vez de mandarse vacío.
+		if (sheet.has("spellSlotsByLevel")) patch.add("spellSlotsByLevel", sheet.get("spellSlotsByLevel"));
+		if (sheet.has("spellSlotsCurrent")) patch.add("spellSlotsCurrent", sheet.get("spellSlotsCurrent"));
+		return patch;
+	}
+
 	/** ¿Queda algún espacio con el que lanzar esto? Misma regla que {@link #spend}, sin gastar. */
 	public static boolean hasSlotFor(JsonObject sheet, int spellLevel) {
 		if (spellLevel <= 0) return true;

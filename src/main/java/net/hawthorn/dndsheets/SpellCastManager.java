@@ -78,7 +78,7 @@ public class SpellCastManager {
 	 */
 	private static int spendSlot(ServerPlayer caster, JsonObject casterSheet, int spellLevel, int minSlotLevel) {
 		int spent = SpellSlots.spend(casterSheet, spellLevel, minSlotLevel);
-		sendSlotsUpdate(caster, casterSheet.get("spellSlotsCurrent").getAsInt());
+		sendSlotsUpdate(caster, casterSheet);
 		return spent;
 	}
 
@@ -534,12 +534,12 @@ public class SpellCastManager {
 		}
 	}
 
-	//Antes reenviaban la hoja completa en cada hechizo lanzado — ahora solo el campo que de verdad cambió.
-	//Ver AUDIT_TECHNICAL.md M-NET-1.
-	private static void sendSlotsUpdate(ServerPlayer player, int slotsCurrent) {
-		JsonObject patch = new JsonObject();
-		patch.addProperty("spellSlotsCurrent", slotsCurrent);
-		DndsheetsMod.sendSheetFieldUpdate(player, patch);
+	//Antes reenviaban la hoja completa en cada hechizo lanzado — ahora solo los campos que de verdad
+	//cambiaron. Ver AUDIT_TECHNICAL.md M-NET-1. Son DOS, no uno: la tabla por nivel y el total que sale de
+	//ella (ver SpellSlots.clientPatch); mandando solo el total, el Grimorio se quedaba enseñando columnas
+	//viejas y ofreciendo niveles ya gastados.
+	private static void sendSlotsUpdate(ServerPlayer player, JsonObject sheet) {
+		DndsheetsMod.sendSheetFieldUpdate(player, SpellSlots.clientPatch(sheet));
 	}
 
 	//Llamado justo después de CombatManager.consumeAdvantage/BardInspirationManager.consumeAttackBonus:

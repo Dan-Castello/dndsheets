@@ -5,7 +5,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -49,15 +48,15 @@ public class DndPaths {
 		createIfMissing(CLASSES_DIR);
 
 		//Contenido por defecto: para que un jugador nuevo no tenga que escribir armas/hechizos/monstruos/
-		//presets/rasgos desde cero antes de poder jugar (ver test/dndsheets/*.json, el mismo pack
-		//empaquetado dentro del mod). Razas/trasfondos/clases no lo necesitan: CharacterOptionsRegistry ya
-		//trae una lista por defecto en código, sin JSON de por medio.
-		seedDefaultsIfEmpty(WEAPONS_DIR, "weapons.json");
-		seedDefaultsIfEmpty(SPELLS_DIR, "spells.json");
-		seedDefaultsIfEmpty(ITEMS_DIR, "items.json");
-		seedDefaultsIfEmpty(MONSTERS_DIR, "monsters.json");
-		seedDefaultsIfEmpty(TRAITS_DIR, "traits.json");
-		seedDefaultsIfEmpty(PRESETS_DIR, "presets.json");
+		//presets/rasgos desde cero antes de poder jugar (el mismo pack empaquetado dentro del mod).
+		//Razas/trasfondos/clases no lo necesitan: CharacterOptionsRegistry ya trae una lista por defecto en
+		//código, sin JSON de por medio.
+		refreshDefaultsLogging(WEAPONS_DIR, "weapons.json");
+		refreshDefaultsLogging(SPELLS_DIR, "spells.json");
+		refreshDefaultsLogging(ITEMS_DIR, "items.json");
+		refreshDefaultsLogging(MONSTERS_DIR, "monsters.json");
+		refreshDefaultsLogging(TRAITS_DIR, "traits.json");
+		refreshDefaultsLogging(PRESETS_DIR, "presets.json");
 
 		autoLoadAll(WEAPONS_DIR, Config::loadFile, "armas");
 		autoLoadAll(SPELLS_DIR, SpellRegistry::loadFile, "hechizos");
@@ -103,17 +102,17 @@ public class DndPaths {
 		}
 	}
 
-	//Copia el .json empaquetado en el jar (src/main/resources/dndsheets/defaults/) a la carpeta real SOLO
-	//si está vacía todavía — así nunca pisa contenido que el DM ya haya puesto a mano, y solo pasa una vez
-	//por instancia (la próxima vez que arranque el servidor, la carpeta ya no está vacía).
-	private static void seedDefaultsIfEmpty(Path dir, String resourceFileName) {
-		if (!jsonFileNames(dir).isEmpty()) return;
-		try (InputStream in = DndPaths.class.getResourceAsStream("/dndsheets/defaults/" + resourceFileName)) {
-			if (in == null) return;
-			Files.copy(in, dir.resolve(resourceFileName));
-			DndsheetsMod.LOGGER.info("dndsheets: sembrado {} con el contenido por defecto del mod.", dir.resolve(resourceFileName));
+	/** {@link ContentDefaults#refresh} con el aviso al log, que es lo único que no se puede comprobar en el self-test. */
+	private static void refreshDefaultsLogging(Path dir, String resourceFileName) {
+		try {
+			Path retired = ContentDefaults.refresh(dir, resourceFileName);
+			if (retired == null) return;
+			DndsheetsMod.LOGGER.warn("dndsheets: {} era el pack por defecto de una versión anterior y se ha apartado como {}. "
+				+ "El contenido del mod vive ahora en {}, que se actualiza solo en cada arranque. Si lo habías editado a mano, "
+				+ "renómbralo a algo propio (p. ej. mis_{}) y volverá a cargarse, pisando lo del mod por id.",
+				dir.resolve(resourceFileName), retired.getFileName(), ContentDefaults.FILE, resourceFileName);
 		} catch (IOException e) {
-			DndsheetsMod.LOGGER.warn("dndsheets: no pude sembrar {} con el contenido por defecto: {}", resourceFileName, e.getMessage());
+			DndsheetsMod.LOGGER.warn("dndsheets: no pude actualizar el contenido por defecto de {}: {}", dir, e.getMessage());
 		}
 	}
 
@@ -121,7 +120,14 @@ public class DndPaths {
 		int filesLoaded = 0;
 		int itemsLoaded = 0;
 		try (Stream<Path> files = Files.list(dir)) {
-			for (Path file : files.filter(p -> p.toString().endsWith(".json")).toList()) {
+			//El pack del mod SIEMPRE primero, y el resto detrás por nombre: NamedRegistry.register pisa por
+			//id, así que quien carga el último gana. Ese orden es lo que convierte "reescribimos el pack del
+			//mod en cada arranque" en algo seguro — lo que el DM escriba en su propio archivo sigue mandando.
+			//Sin ordenar, el orden lo decidía el sistema de archivos y quién ganaba era cuestión de suerte.
+			for (Path file : files.filter(p -> p.toString().endsWith(".json"))
+					.sorted(java.util.Comparator.comparing((Path p) -> ContentDefaults.FILE.equals(p.getFileName().toString()) ? 0 : 1)
+						.thenComparing(p -> p.getFileName().toString()))
+					.toList()) {
 				try {
 					itemsLoaded += loader.load(file);
 					filesLoaded++;
