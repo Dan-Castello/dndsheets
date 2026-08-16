@@ -19,10 +19,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * "usado/no usado" que un descanso resetea, así que no necesita nada de {@link TurnManager}.</p>
  */
 public class FighterSecondWindManager {
-	private static final Set<UUID> used = ConcurrentHashMap.newKeySet();
+	//El "ya usado" vive en la HOJA, no en un conjunto por jugador: es del personaje (con dos personajes,
+	//gastarlo con uno se lo gastaba al otro) y sobrevive a un reinicio del servidor, que antes se lo
+	//devolvía a todo el mundo sin haber descansado. Ver RestResource.
 
 	public static void use(ServerPlayer player) {
-		if (!used.add(player.getUUID())) {
+		if (!RestResource.spend(player, RestResource.SECOND_WIND)) {
 			player.sendSystemMessage(Component.literal("Ya usaste Segundo Aliento. Recupéralo descansando.").withStyle(ChatFormatting.GRAY));
 			return;
 		}
@@ -40,7 +42,7 @@ public class FighterSecondWindManager {
 	//Público: RestManager lo llama para los dos tipos de descanso, corto y largo — 5e recupera este
 	//recurso con cualquiera de los dos, a diferencia de los espacios de conjuro (solo descanso largo).
 	public static void resetOnRest(ServerPlayer player) {
-		used.remove(player.getUUID());
+		RestResource.restore(player, RestResource.SECOND_WIND);
 	}
 
 	//--- Ítem de Segundo Aliento: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3

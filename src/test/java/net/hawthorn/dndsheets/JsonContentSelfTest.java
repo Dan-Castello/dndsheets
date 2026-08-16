@@ -1746,7 +1746,24 @@ public class JsonContentSelfTest {
 		assertTrue(loader.contains("restoreHitPoints("),
 			"y restaurarla DESPUÉS de fijar el máximo, o quedaría acotada contra el máximo del personaje anterior");
 
-		System.out.println("checkCharacterLevelIsPerCharacter: OK, el nivel y la vida son del personaje, no del jugador que lo lleva.");
+		//Y los recursos de una vez por descanso. Vivían en un Set<UUID> por jugador, así que gastar el Segundo
+		//Aliento con un personaje se lo gastaba al otro, y un reinicio del servidor se los devolvía a todos
+		//sin haber descansado. Es la misma familia: un valor del JUGADOR haciendo de valor del PERSONAJE.
+		JsonObject hoja = new JsonObject();
+		assertTrue(!RestResource.isSpent(hoja, RestResource.SECOND_WIND), "una hoja nueva no tiene nada gastado");
+		hoja.addProperty(RestResource.SECOND_WIND, true);
+		assertTrue(RestResource.isSpent(hoja, RestResource.SECOND_WIND), "y una vez gastado, lo recuerda");
+		//Cada recurso es su propia clave: si compartieran una, descansar devolvería tres cosas de golpe.
+		assertTrue(!RestResource.isSpent(hoja, RestResource.CHANNEL_DIVINITY)
+				&& !RestResource.isSpent(hoja, RestResource.ARCANE_RECOVERY),
+			"gastar uno no debería gastar los otros dos");
+		for (String manager : List.of("FighterSecondWindManager.java", "ClericTurnUndeadManager.java",
+				"WizardArcaneRecoveryManager.java")) {
+			assertTrue(!readSource(manager).contains("Set<UUID>"),
+				manager + " guarda un recurso por descanso por JUGADOR: con dos personajes se comparte, y un reinicio lo devuelve gratis");
+		}
+
+		System.out.println("checkCharacterLevelIsPerCharacter: OK, nivel, vida y recursos por descanso son del personaje, no del jugador.");
 	}
 
 	private static JsonObject named(String characterName) {

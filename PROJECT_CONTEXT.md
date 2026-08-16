@@ -1002,6 +1002,28 @@ dependencies, not preference.
         consistency bug, would be destroying their character to tidy the data. From then on it is
         theirs and diverges correctly.
 
+  35. **Current hit points and once-per-rest resources were the player's, not the character's.**
+      Following the thread from item 34 rather than waiting for a report: *what else is per-player
+      that should be per-character?*
+
+      **Current HP** lived only in the entity's health, which belongs to the body. Switching
+      characters left you carrying the previous one's wounds, and switching back handed them the new
+      one's. Now the outgoing character's health is written to its sheet before anything else moves,
+      and the incoming one's is restored **after** `applyClassHitPoints` — restoring first would clamp
+      it against the *previous* character's maximum. Never below 1, because a downed character is
+      frozen at 1 HP, so a stored 0 could only come from a strange sheet and returning it would kill
+      the player on switch.
+
+      **Second Wind, Channel Divinity and Arcane Recovery** lived in a `Set<UUID>` keyed by player.
+      Two distinct bugs in one shape: spending Second Wind with one character spent it for all of
+      them, and because the set is in memory, **restarting the server refunded everyone's resources
+      without a rest**. On the sheet both disappear at once, and they land where the armed Smite and
+      the Inspiration die already were — those were right from the start.
+
+      The pattern is now explicit enough to state: **anything a character owns belongs on the sheet.**
+      A static map keyed by player UUID is per-*player* state, and the only things that legitimately
+      are, are the body and the inventory.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

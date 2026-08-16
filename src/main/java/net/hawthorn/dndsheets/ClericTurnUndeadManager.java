@@ -39,11 +39,11 @@ public class ClericTurnUndeadManager {
 	private static final String CONDITION = "asustado";
 
 	//Mismo "usado/no usado" que Segundo Aliento, y por lo mismo: Canalizar Divinidad no tiene duración que
-	//contar, solo se gasta y se recupera al descansar.
-	private static final Set<UUID> used = ConcurrentHashMap.newKeySet();
+	//contar, solo se gasta y se recupera al descansar. En la hoja, para que sea del personaje y sobreviva a
+	//un reinicio — ver RestResource.
 
 	public static void use(ServerPlayer cleric) {
-		if (!used.add(cleric.getUUID())) {
+		if (!RestResource.spend(cleric, RestResource.CHANNEL_DIVINITY)) {
 			cleric.sendSystemMessage(Component.literal("Ya usaste Canalizar Divinidad. Recupéralo descansando.").withStyle(ChatFormatting.GRAY));
 			return;
 		}
@@ -102,7 +102,7 @@ public class ClericTurnUndeadManager {
 	//Público: RestManager lo llama para los dos tipos de descanso — en 5e Canalizar Divinidad se recupera
 	//con un descanso corto, igual que Segundo Aliento.
 	public static void resetOnRest(ServerPlayer player) {
-		used.remove(player.getUUID());
+		RestResource.restore(player, RestResource.CHANNEL_DIVINITY);
 	}
 
 	//Se activa desde AbilityItemDispatcher en vez de suscribirse a los eventos de interacción por su cuenta

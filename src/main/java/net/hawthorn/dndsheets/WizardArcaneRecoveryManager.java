@@ -22,7 +22,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * pasa solo al descansar.</p>
  */
 public class WizardArcaneRecoveryManager {
-	private static final Set<UUID> usedSinceLongRest = ConcurrentHashMap.newKeySet();
+	//En la hoja y no en un conjunto por jugador: es del personaje, y sobrevive a un reinicio del servidor
+	//(antes, reiniciar le devolvía la Recuperación Arcana a todo el mundo sin descanso largo). Ver
+	//RestResource.
 	/** La Recuperación Arcana no devuelve espacios de nivel 6 o superior. */
 	private static final int MAX_RECOVERED_LEVEL = 5;
 
@@ -30,7 +32,7 @@ public class WizardArcaneRecoveryManager {
 	//guardar/enviar, para que el ajuste de espacios de conjuro viaje en el mismo SheetClientMessage.
 	public static void onShortRest(ServerPlayer player, JsonObject sheet) {
 		if (!isWizard(sheet)) return;
-		if (!usedSinceLongRest.add(player.getUUID())) return; //Ya usada desde el último descanso largo.
+		if (!RestResource.spend(player, RestResource.ARCANE_RECOVERY)) return; //Ya usada desde el último descanso largo.
 
 		//La regla de 5e es un presupuesto de NIVELES SUMADOS (la mitad del nivel de mago, ninguno por
 		//encima del 5º), no un número de espacios sueltos. Antes se contaban espacios porque con la bolsa
@@ -44,7 +46,7 @@ public class WizardArcaneRecoveryManager {
 
 	//Público: RestManager lo llama en cada descanso LARGO.
 	public static void resetOnLongRest(ServerPlayer player) {
-		usedSinceLongRest.remove(player.getUUID());
+		RestResource.restore(player, RestResource.ARCANE_RECOVERY);
 	}
 
 	private static boolean isWizard(JsonObject sheet) {
