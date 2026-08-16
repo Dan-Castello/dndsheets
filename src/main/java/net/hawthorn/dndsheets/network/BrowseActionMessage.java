@@ -34,10 +34,12 @@ import java.util.function.Supplier;
 public class BrowseActionMessage {
 
 	//Al final, nunca en medio: writeEnum viaja por ordinal (ver la invariante 2 de PROJECT_CONTEXT.md).
-	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL, JOURNAL_DETAIL, DELETE }
+	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL, JOURNAL_DETAIL, DELETE, CREATE }
 
 	final Action action;
-	final String characterId; //Lo usan SWITCH y DELETE; las demás lo mandan vacío.
+	//Lo usan SWITCH y DELETE (un id) y CREATE (el nombre del personaje nuevo); las demás lo mandan vacío.
+	//El campo es un texto libre, así que CREATE cabe aquí sin registrar un mensaje más — invariante 3.
+	final String characterId;
 
 	public BrowseActionMessage(Action action) {
 		this(action, "");
@@ -75,6 +77,21 @@ public class BrowseActionMessage {
 				case LIST_CONTENT -> CompendiumQuery.sendList(sender, message.characterId);
 				case CONTENT_DETAIL -> CompendiumQuery.sendDetail(sender, message.characterId);
 				case JOURNAL_DETAIL -> sendJournalEntry(sender, message.characterId);
+				case CREATE -> {
+					String name = message.characterId.trim();
+					//Se valida en el servidor aunque la pantalla ya lo haga: un cliente puede mandar lo que
+					//quiera, y un personaje sin nombre no se puede ni elegir después por nombre.
+					if (name.isEmpty()) {
+						sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.needs_name").withStyle(ChatFormatting.RED));
+						return;
+					}
+					String created = SheetLoader.createCharacter(sender.getStringUUID(), name);
+					//Creado pero NO puesto: ponérselo es una acción aparte y deliberada (ver
+					//SheetLoader.createCharacter). Se dice, porque si no parece que no ha pasado nada.
+					sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.created", name).withStyle(ChatFormatting.GREEN));
+					sendOwnCharacters(sender); //Reabre la lista ya con el nuevo dentro.
+					DndsheetsMod.LOGGER.info("dndsheets: personaje {} creado para {}", created, sender.getName().getString());
+				}
 				case DELETE -> {
 					//El permiso solo abre la puerta a los PNJ del DM; el propio SheetLoader sigue negándose a
 					//borrar el personaje de otro jugador, tenga el permiso que tenga quien lo pida.

@@ -451,6 +451,17 @@ El rotulo dice lo que HACE cada accion y no solo como se llama: "Esquivar" a sec
 
 Cada boton ensena la puntuacion actual Y a cuanto subiria: la decision no se toma sobre el nombre de la caracteristica sino sobre si el modificador cruza un numero par (15->16 da +1 al modificador, 16->17 no da nada), y eso no se ve si el boton solo dice "Destreza". Volver a pulsar la caracteristica ya elegida la deselecciona, que es la salida obvia de "me equivoque".
 
+## NewCharacterScreen
+
+- **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/NewCharacterScreen.java`
+- **Tipo:** extiende `SmallFormScreen` (un solo campo)
+- **Como se abre:** boton "+ Personaje nuevo..." de `CharacterListScreen`; vuelve a ella al confirmar o cancelar
+- **Campos:** "Nombre del personaje" (vacio por defecto, max 40)
+
+Manda `BrowseActionMessage(CREATE, nombre)` — el campo de texto del mensaje es libre, asi que crear cabe sin registrar un mensaje mas (invariante 3). Solo pide el nombre: clase y caracteristicas salen del preset que se elija despues desde la hoja, y preguntarlo aqui seria preguntar dos veces por lo mismo con peor informacion.
+
+Un nombre vacio no se manda: el servidor lo rechazaria igual, y un viaje de ida y vuelta para que no pase nada se lee como que el boton esta roto.
+
 ## SheetAdjustScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/SheetAdjustScreen.java`

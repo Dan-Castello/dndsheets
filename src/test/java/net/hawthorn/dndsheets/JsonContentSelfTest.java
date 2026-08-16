@@ -51,6 +51,7 @@ public class JsonContentSelfTest {
 		checkCover();
 		checkAbilityImprovements();
 		checkLanguageFiles();
+		checkNetworkShape();
 		checkCharacterLookup();
 		checkCharacterAfterDelete();
 		checkAttackPathsShareRules();
@@ -1648,6 +1649,46 @@ public class JsonContentSelfTest {
 		JsonObject sheet = new JsonObject();
 		sheet.addProperty("characterName", characterName);
 		return sheet;
+	}
+
+	/**
+	 * <p>Cable trampa para las dos invariantes que más caras salen en este proyecto: el id de un mensaje de
+	 * red es su orden de registro, y los enums que cruzan el cable viajan por ordinal. Las dos fallan en
+	 * <b>silencio</b> — todo compila, cliente y servidor se dan la mano igual, y se desalinean después.</p>
+	 *
+	 * <p>Cuenta las piezas que cruzan el cable y las compara con el número anotado a mano junto a
+	 * {@code PROTOCOL_VERSION}. No impide el error: obliga a que subir (o no subir) la versión sea una
+	 * decisión y no un olvido. Existe porque ya pasó: {@code BrowseActionMessage.Action} ganó {@code DELETE}
+	 * y la versión de protocolo se quedó donde estaba, sin que nada se quejara.</p>
+	 */
+	private static void checkNetworkShape() throws Exception {
+		String mod = readSource("DndsheetsMod.java");
+		int messages = mod.split("addNetworkMessage" + java.util.regex.Pattern.quote("("), -1).length - 1;
+
+		int enumConstants = 0;
+		StringBuilder detail = new StringBuilder();
+		Path networkDir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "network");
+		try (Stream<Path> files = Files.list(networkDir)) {
+			for (Path file : files.filter(f -> f.toString().endsWith(".java")).sorted().toList()) {
+				java.util.regex.Matcher enums = java.util.regex.Pattern
+					.compile("enum\\s+(\\w+)\\s*[{]([^}]*)[}]").matcher(Files.readString(file));
+				while (enums.find()) {
+					int count = enums.group(2).split(",").length;
+					enumConstants += count;
+					detail.append("\n    ").append(file.getFileName()).append(' ').append(enums.group(1)).append(": ").append(count);
+				}
+			}
+		}
+
+		int shape = messages + enumConstants;
+		assertTrue(shape == DndsheetsMod.NETWORK_SHAPE,
+			"la forma de la red cambió (" + messages + " mensajes + " + enumConstants + " constantes = " + shape
+				+ ", anotado " + DndsheetsMod.NETWORK_SHAPE + ")." + detail
+				+ "\n  Si añadiste un mensaje o una constante de enum que cruza el cable: añádelo al FINAL,"
+				+ " sube PROTOCOL_VERSION y actualiza NETWORK_SHAPE. Si no subes la versión, un cliente nuevo"
+				+ " y un servidor viejo se dan la mano y se desalinean después, en silencio.");
+
+		System.out.println("checkNetworkShape: OK, " + messages + " mensajes y " + enumConstants + " constantes de enum en el cable.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

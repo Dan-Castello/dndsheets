@@ -71,7 +71,23 @@ public class DndsheetsMod {
 	//Sube a "5": se registra AbilityImprovementMessage y ScreenActionMessage.Action gana
 	//ABILITY_IMPROVEMENT_OPEN. Lo segundo es lo peligroso: un cliente antiguo leeria ese ordinal como una
 	//accion que no conoce en vez de fallar limpio al conectar.
-	private static final String PROTOCOL_VERSION = "5";
+	//Sube a "6": BrowseActionMessage.Action gana DELETE y CREATE. Añadir al FINAL de un enum no renumera
+	//nada, pero un cliente nuevo mandandole ese ordinal a un servidor viejo revienta al leerlo — que es
+	//exactamente lo que el handshake debe impedir. DELETE se colo sin subir la version: por eso existe
+	//ahora NETWORK_SHAPE, que hace fallar el build cuando la forma de la red cambia y esta linea no.
+	private static final String PROTOCOL_VERSION = "6";
+
+	/**
+	 * <p>Cuántas piezas cruzan el cable: mensajes registrados más constantes de los enums que viajan por
+	 * ordinal. <b>No lo usa el juego</b>: existe para que {@code JsonContentSelfTest} pueda comparar contra
+	 * la forma real y tumbar el build cuando alguien añade una y no toca {@link #PROTOCOL_VERSION}.</p>
+	 *
+	 * <p>Las invariantes 1 y 2 de PROJECT_CONTEXT.md son las dos que más veces han costado una sesión de
+	 * depuración, y las dos fallan en silencio: nada se rompe al compilar, y el cliente y el servidor se dan
+	 * la mano igual para desalinearse después. Un número que hay que tocar a mano no impide el error, pero
+	 * lo convierte en una decisión en vez de un olvido.</p>
+	 */
+	public static final int NETWORK_SHAPE = 90;
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 

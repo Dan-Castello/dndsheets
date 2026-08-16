@@ -773,6 +773,23 @@ dependencies, not preference.
       from the self-test, hold it structurally — `checkAbilityImprovements` asserts neither decision
       site calls the XP-shaped overload, because the behavioural assertions pass with the bad version.
 
+  23. **Creating a character from the screen** — the last piece of character management that still
+      required knowing a command. `CharacterListScreen` grows a "+ Personaje nuevo..." row above the
+      delete toggle (the common action nearest to hand, the destructive one further away), opening a
+      one-field form. It asks only for the name: class and abilities come from the preset chosen
+      afterwards from the sheet, and asking here would ask twice for the same thing with worse
+      information. No new message — `BrowseActionMessage`'s text field carries the name (invariant 3).
+
+  **Found while doing it, and it was my own miss:** `BrowseActionMessage.Action` gained `DELETE` two
+  commits earlier and `PROTOCOL_VERSION` was never bumped. Appending to an enum does not renumber the
+  existing constants, but a *new* client sending that ordinal to an old server crashes on read — which
+  is precisely what the handshake exists to prevent. Version bumped to 6 (covering `DELETE` and
+  `CREATE`), and `checkNetworkShape` now counts the registered messages plus every constant of every
+  enum that crosses the wire and compares it against a number written by hand next to
+  `PROTOCOL_VERSION`. It cannot stop the mistake; it makes bumping — or deciding not to — deliberate
+  instead of forgotten. Invariants 1 and 2 are the two that have cost the most debugging here, and
+  both fail in total silence: everything compiles, the handshake passes, the desync comes later.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

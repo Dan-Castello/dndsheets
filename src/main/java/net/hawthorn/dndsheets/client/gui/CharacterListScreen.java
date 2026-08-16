@@ -40,10 +40,10 @@ public class CharacterListScreen extends ListPickerScreen {
 		Minecraft.getInstance().setScreen(new CharacterListScreen(ids, labels));
 	}
 
-	//Deja sitio bajo la lista para el interruptor de borrar, que no se desplaza con los personajes.
+	//Deja sitio bajo la lista para las dos filas fijas: crear y borrar.
 	@Override
 	protected int listHeight() {
-		return super.listHeight() - BUTTON_HEIGHT - SPACING;
+		return super.listHeight() - 2 * (BUTTON_HEIGHT + SPACING);
 	}
 
 	@Override
@@ -51,6 +51,12 @@ public class CharacterListScreen extends ListPickerScreen {
 		super.init();
 		int left = (this.width - buttonWidth()) / 2;
 		int y = listTop() + listHeight() + SPACING;
+		//Crear va ARRIBA de borrar y con el mismo aspecto que una fila normal: es la acción que más se usa
+		//de las dos, y la destructiva no debería ser la que queda más a mano.
+		this.addRenderableWidget(net.hawthorn.dndsheets.client.gui.components.TomeButton.of(
+			Component.literal("+ Personaje nuevo..."), button -> NewCharacterScreen.open(),
+			left, y, buttonWidth(), BUTTON_HEIGHT));
+		y += BUTTON_HEIGHT + SPACING;
 		net.minecraft.client.gui.components.Button toggle = this.addRenderableWidget(
 			net.hawthorn.dndsheets.client.gui.components.TomeButton.of(deleteLabel(), button -> {
 				deleteMode = !deleteMode;
