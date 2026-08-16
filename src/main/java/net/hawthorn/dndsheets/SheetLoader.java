@@ -621,6 +621,10 @@ public class SheetLoader {
 			saveCharacter(previousId, previous);
 		}
 
+		//Y el inventario, que también es del personaje: el bastón del mago no viaja al guerrero. Va aquí,
+		//antes de mover el binding, para que la hoja del que se quita se guarde con su equipo dentro.
+		CharacterInventory.swap(player, previousId, previous, target);
+
 		//Se desmarca el anterior y se marca el nuevo, para que rebuildActiveCharacters() reconstruya
 		//exactamente este mismo estado tras un reinicio.
 		for (String owned : charactersOf(playerUuid)) {
@@ -710,6 +714,16 @@ public class SheetLoader {
 		//Nunca por debajo de 1: un personaje caído se queda congelado en 1 PG (ver DeathSaveManager), así que
 		//un 0 guardado solo puede venir de una hoja rara, y devolverlo mataría al jugador al cambiar.
 		player.setHealth(Math.max(1f, Math.min(max, restored)));
+	}
+
+	/**
+	 * <p>Guarda la hoja de un personaje CONCRETO, sin pasar por el binding de jugador activo. Lo necesita
+	 * {@link CharacterInventory} para persistir la del personaje que se quita antes de vaciarle el
+	 * inventario al cuerpo: en ese instante el activo ya es el otro, y {@code saveServer} escribiría encima
+	 * de la hoja equivocada.</p>
+	 */
+	static void saveCharacterSheet(String characterId, JsonObject sheet) {
+		saveCharacter(characterId, sheet);
 	}
 
 	//Mismo cuerpo que saveServer pero sin resolver el id: aquí ya se sabe sobre qué personaje se escribe, y

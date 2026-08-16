@@ -103,6 +103,7 @@
   "chat.dndsheets.character.needs_name": "Un personaje necesita un nombre.",
   "chat.dndsheets.monster.legendary_action": "¡Acción legendaria! %1$s ataca a %2$s fuera de su turno.",
   "chat.dndsheets.monster.legendary_resistance": " ¡Resistencia Legendaria! (le quedan %1$s)",
+  "chat.dndsheets.character.inventory_swapped": "Cada personaje lleva su propio equipo: lo que tenías sigue guardado con el anterior.",
   "chat.dndsheets.character.deleted": "Personaje %1$s borrado. Queda una copia .json.deleted por si te arrepientes.",
   "chat.dndsheets.character.delete_failed": "No se pudo borrar: ese personaje no existe o no es tuyo.",
   "chat.dndsheets.action.dodge": "%1$s esquiva: hasta su próximo turno, le atacan con desventaja.",

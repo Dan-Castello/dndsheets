@@ -1763,7 +1763,23 @@ public class JsonContentSelfTest {
 				manager + " guarda un recurso por descanso por JUGADOR: con dos personajes se comparte, y un reinicio lo devuelve gratis");
 		}
 
-		System.out.println("checkCharacterLevelIsPerCharacter: OK, nivel, vida y recursos por descanso son del personaje, no del jugador.");
+		//Y el inventario. Aquí lo que se fija es el ORDEN, no la existencia: guardar-y-persistir ANTES de
+		//vaciar es la diferencia entre "te has quedado con el equipo del otro personaje" (molesto, y
+		//reversible cambiando otra vez) y "se han borrado tus objetos" (irreversible). Invertir esas dos
+		//líneas compila igual de bien y no falla en ninguna otra comprobación.
+		String inventory = readSource("CharacterInventory.java");
+		int saved = inventory.indexOf("saveCharacterSheet(");
+		int cleared = inventory.indexOf("clearContent()");
+		assertTrue(saved > 0 && cleared > 0, "no encontré el guardado y el vaciado del inventario");
+		assertTrue(saved < cleared,
+			"hay que PERSISTIR el inventario del personaje que sale antes de vaciarle las manos al cuerpo: "
+				+ "al revés, un fallo a mitad borra los objetos en vez de dejarlos donde estaban");
+		//Y vaciar antes de restaurar: load() escribe encima de las ranuras que trae, no vacía las demás, así
+		//que sin el clear el personaje nuevo heredaría las ranuras que él no usa.
+		assertTrue(cleared < inventory.indexOf("restore(player,"),
+			"hay que vaciar antes de restaurar, o las ranuras que el personaje nuevo no use conservan las del viejo");
+
+		System.out.println("checkCharacterLevelIsPerCharacter: OK, nivel, vida, recursos y equipo son del personaje, no del jugador.");
 	}
 
 	private static JsonObject named(String characterName) {

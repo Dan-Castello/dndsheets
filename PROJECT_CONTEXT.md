@@ -1021,8 +1021,29 @@ dependencies, not preference.
       the Inspiration die already were — those were right from the start.
 
       The pattern is now explicit enough to state: **anything a character owns belongs on the sheet.**
-      A static map keyed by player UUID is per-*player* state, and the only things that legitimately
-      are, are the body and the inventory.
+      A static map keyed by player UUID is per-*player* state — and see item 36 for the one thing this
+      entry got wrong about what legitimately is.
+
+  36. **The inventory too — and item 35 was wrong to say otherwise.** That entry closed by listing
+      "the body and the inventory" as legitimately per-player. Reported immediately: the inventory is
+      still shared. It is right; if characters are separate people, so is their gear. The wizard's
+      staff should not walk over to the fighter.
+
+      Switching now saves the outgoing character's inventory into its sheet and loads the incoming
+      one's. Stored as SNBT inside the sheet rather than a second file per character, because the
+      sheet is already saved atomically on every switch and a second file is one more thing that can
+      fall out of sync with the first.
+
+      **This is the riskiest change in the project so far — getting it wrong deletes items, with no
+      undo.** So the order is fixed and pinned by a check: *persist first, empty second*. Inverted,
+      a failure halfway through destroys the gear; in the right order the worst case is keeping the
+      previous character's inventory, which is annoying and fixed by switching again. That inversion
+      compiles perfectly and breaks no other assertion, which is exactly why it needed its own.
+
+      **A character with nothing stored starts empty**, and says so in chat. It is not loss — what
+      you were carrying was just written to the sheet of the character you took off, and comes back
+      whole when you put them on. The alternative, keeping what you hold, would duplicate every item
+      on every switch.
 
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
