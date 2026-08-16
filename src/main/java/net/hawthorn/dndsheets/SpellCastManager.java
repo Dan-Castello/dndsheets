@@ -113,7 +113,11 @@ public class SpellCastManager {
 		//Se comprueba aquí sin gastar, y se gasta más abajo: si el hechizo se rechaza por falta de objetivo
 		//o porque no es tu turno, no se puede haber cobrado ya el espacio.
 		if (!SpellSlots.hasSlotFor(casterSheet, requestedLevel)) {
-			caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_slots").withStyle(ChatFormatting.RED));
+			//El nivel, no "no te quedan espacios" a secas: con 4 espacios de nivel 1 y ninguno de nivel 2, el
+			//mensaje viejo se contradecía con el HUD, que enseñaba 4 disponibles. Lo que falta es de NIVEL 2
+			//o superior, y decirlo es la diferencia entre una regla y un fallo aparente.
+			caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_slots_of_level", requestedLevel)
+				.withStyle(ChatFormatting.RED));
 			return;
 		}
 

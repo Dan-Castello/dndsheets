@@ -944,7 +944,7 @@ public class JsonContentSelfTest {
 			List.of(), List.of(),
 			Map.of("fuego", "vulnerable"),          //Incondicional.
 			Map.of("cortante", "immune"),           //Solo frente a armas no mágicas.
-			CreatureType.HUMANOID, 0);              //Un licántropo es humanoide en 5e, también en forma de bestia.
+			CreatureType.HUMANOID, 0, 0);           //Un licántropo es humanoide en 5e, también en forma de bestia.
 		Combatant beast = new Combatant.MonsterCombatant(null, conditional);
 		assertTrue(beast.damageMultiplier("cortante", false) == 0.0, "cortante no mágico debería rebotar en el licántropo");
 		assertTrue(beast.damageMultiplier("cortante", true) == 1.0, "cortante mágico debería atravesarlo entero");
@@ -1145,6 +1145,21 @@ public class JsonContentSelfTest {
 		//Un campo ausente se omite: en un parche, un nulo significa "borra esta clave" en la hoja del cliente.
 		assertTrue(SpellSlots.clientPatch(new JsonObject()).size() == 0,
 			"sin espacios en la hoja, el parche debería ir vacío y no borrar nada en el cliente");
+
+		//Y el MÁXIMO también. Es un valor derivado (clase y nivel) que el servidor recalcula al guardar la
+		//hoja, sin que el cliente se entere: mandando solo el actual, el cliente se quedaba con un máximo
+		//viejo para siempre y el HUD acababa enseñando más espacios de los que caben — reportado jugando
+		//como "Conjuros: 4/2".
+		assertTrue(patch.has("spellSlotsMax") && patch.has("spellSlotsMaxByLevel"),
+			"el parche debería llevar también el máximo, que cambia solo y el cliente no puede recalcular");
+		for (String field : List.of("spellSlotsByLevel", "spellSlotsMaxByLevel", "spellSlotsCurrent", "spellSlotsMax")) {
+			assertTrue(patch.get(field).toString().equals(sube3.get(field).toString()),
+				"el parche debería mandar " + field + " tal y como quedó en la hoja");
+		}
+		//La comprobación que de verdad cierra el fallo: lo que el cliente reconstruye con el parche no puede
+		//quedar en un estado imposible.
+		assertTrue(patch.get("spellSlotsCurrent").getAsInt() <= patch.get("spellSlotsMax").getAsInt(),
+			"el cliente nunca debería poder enseñar más espacios disponibles que el máximo");
 
 		//Un nivel pedido POR DEBAJO del conjuro no lo abarata: sigue costando el suyo.
 		JsonObject barato = new JsonObject();

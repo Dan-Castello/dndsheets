@@ -139,8 +139,14 @@ public final class SpellSlots {
 		JsonObject patch = new JsonObject();
 		//Con cuidado: en un parche, un valor nulo significa "borra esta clave" en la hoja del cliente (ver
 		//SheetLoader.applyClientDelta), así que un campo ausente se omite en vez de mandarse vacío.
-		if (sheet.has("spellSlotsByLevel")) patch.add("spellSlotsByLevel", sheet.get("spellSlotsByLevel"));
-		if (sheet.has("spellSlotsCurrent")) patch.add("spellSlotsCurrent", sheet.get("spellSlotsCurrent"));
+		//Los CUATRO campos, no solo los que cambian al gastar. El máximo es DERIVADO (clase y nivel, ver
+		//applyProgression) y se recalcula en el servidor cada vez que se guarda la hoja, sin que el cliente
+		//se entere: mandando solo el actual, el cliente se quedaba con un máximo viejo para siempre y el HUD
+		//acababa enseñando "Conjuros: 4/2" —más de los que caben— mientras el servidor tenía 4/7. Reportado
+		//tal cual jugando.
+		for (String field : new String[]{"spellSlotsByLevel", "spellSlotsMaxByLevel", "spellSlotsCurrent", "spellSlotsMax"}) {
+			if (sheet.has(field)) patch.add(field, sheet.get(field));
+		}
 		return patch;
 	}
 

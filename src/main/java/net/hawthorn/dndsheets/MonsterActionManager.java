@@ -295,6 +295,15 @@ public class MonsterActionManager {
 	//cuerpo de un monstruo sin haber usado ya su reacción esta ronda (ver OpportunityAttackTracker.checkOpportunityAttacks).
 	//Usa un ataque real al azar entre los disponibles (de especie o personalizado), sin pasar por
 	//resolveAction: esto es una reacción del monstruo, no su acción del turno, así que no toca TurnManager.tryAct.
+	/**
+	 * <p>Un ataque de acción legendaria: mismo camino que el de oportunidad —una de sus armas, resuelta con
+	 * las reglas de siempre— con su propio aviso, porque en el chat hay que poder distinguir por qué el jefe
+	 * acaba de pegar fuera de su turno.</p>
+	 */
+	public static void resolveLegendaryAttack(Entity monsterEntity, Player target) {
+		attackOutsideOwnTurn(monsterEntity, target, "chat.dndsheets.monster.legendary_action");
+	}
+
 	public static void resolveOpportunityAttack(Entity monsterEntity, Player mover) {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monsterEntity);
 		if (block == null) return;
@@ -303,8 +312,23 @@ public class MonsterActionManager {
 		attacks.addAll(MonsterRegistry.customAttacksOf(monsterEntity));
 		if (attacks.isEmpty()) return;
 
-		ChatFeedback.broadcast(monsterEntity, Component.translatable("chat.dndsheets.monster.opportunity_attack", block.name(), mover.getName().getString()).withStyle(ChatFormatting.DARK_PURPLE));
-		resolveAttack(block, monsterEntity, randomOf(attacks), mover);
+		attackOutsideOwnTurn(monsterEntity, mover, "chat.dndsheets.monster.opportunity_attack");
+	}
+
+	//Cuerpo común de los dos ataques fuera de turno: la única diferencia real entre un ataque de oportunidad
+	//y uno legendario es qué dice el chat, y tenerlo escrito dos veces era pedir que se separaran.
+	private static void attackOutsideOwnTurn(Entity monsterEntity, Player target, String messageKey) {
+		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monsterEntity);
+		if (block == null) return;
+
+		List<MonsterRegistry.MonsterAttack> attacks = new ArrayList<>(block.attacks());
+		attacks.addAll(MonsterRegistry.customAttacksOf(monsterEntity));
+		if (attacks.isEmpty()) return;
+
+		Combatant combatant = Combatant.of(target);
+		String targetName = combatant != null ? combatant.name() : target.getName().getString();
+		ChatFeedback.broadcast(monsterEntity, Component.translatable(messageKey, block.name(), targetName).withStyle(ChatFormatting.DARK_PURPLE));
+		resolveAttack(block, monsterEntity, randomOf(attacks), target);
 	}
 
 	/**

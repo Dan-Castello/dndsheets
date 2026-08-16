@@ -754,6 +754,9 @@ public class TurnManager {
 	private static void advance(ServerLevel level) {
 		turnToken++; //Cualquier auto-avance encolado antes de este avance real queda invalidado.
 		TurnEntry finishing = current();
+		//Acciones legendarias: en 5e un jefe actúa AL TERMINAR el turno de otro, y este es ese momento
+		//exacto. Va antes de mover el índice para que "el que acaba de jugar" siga siendo quien es.
+		LegendaryActionManager.onTurnEnded(level, finishing, order);
 		if (finishing != null) freeze(level, finishing); //Se ancla donde termine su turno.
 		currentIndex++;
 		if (currentIndex >= order.size()) {
@@ -829,6 +832,8 @@ public class TurnManager {
 			return;
 		}
 
+		//Un jefe recupera sus acciones legendarias al empezar su turno, que es como se recargan en 5e.
+		LegendaryActionManager.onOwnTurnStart(entity);
 		tickEffects(level, entity, entry);
 		//Muros persistentes: 5e los resuelve justo aquí, al empezar el turno de quien está dentro.
 		ZoneManager.onTurnStart(level, entity);

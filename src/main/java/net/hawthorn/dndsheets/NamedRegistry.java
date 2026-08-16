@@ -26,6 +26,17 @@ public class NamedRegistry<T> {
 		items.put(id, item);
 	}
 
+	/**
+	 * <p>Igual, pero sin avisar de que pisa lo anterior. Para quien reescribe una entrada <b>a propósito y
+	 * en cada uso</b>: el bloque de una invocación se regenera en cada lanzado para recoger los cambios del
+	 * JSON del conjuro (ver {@code SummonManager}), así que el aviso salía una vez por Esfera Flamígera
+	 * lanzada — un WARN por algo que funciona como debe, que es la clase de ruido que hace que se dejen de
+	 * leer los avisos de verdad.</p>
+	 */
+	public void replace(T item) {
+		items.put(idOf.apply(item), item);
+	}
+
 	public T get(String id) {
 		return items.get(id);
 	}

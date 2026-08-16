@@ -60,7 +60,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities, int proficiencyBonus,
 		List<MonsterAttack> attacks, List<MonsterSpell> spells,
 		Map<String, String> damageAffinities, Map<String, String> nonmagicalAffinities,
-		CreatureType type, int legendaryResistances
+		CreatureType type, int legendaryResistances, int legendaryActions
 	) {
 		public int abilityModifier(String key) {
 			Integer score = abilities.get(key.toLowerCase(Locale.ROOT));
@@ -114,6 +114,11 @@ public class MonsterRegistry {
 
 	public static void register(MonsterStatBlock block) {
 		REGISTRY.register(block);
+	}
+
+	/** Reescribe sin avisar: ver {@link NamedRegistry#replace}. Lo usa SummonManager en cada invocación. */
+	public static void replace(MonsterStatBlock block) {
+		REGISTRY.replace(block);
 	}
 
 	public static MonsterStatBlock get(String id) {
@@ -189,8 +194,11 @@ public class MonsterRegistry {
 		//Ausente = 0 = no es un jefe. Es lo correcto por defecto: la Resistencia Legendaria la tiene una
 		//docena larga de criaturas del SRD, no el bestiario entero.
 		int legendaryResistances = json.has("legendaryResistances") ? Math.max(0, json.get("legendaryResistances").getAsInt()) : 0;
+		//Cuántas acciones legendarias puede gastar por asalto (3 en casi todo el SRD). Ausente = 0 = actúa
+		//solo en su turno, como cualquier otro monstruo.
+		int legendaryActions = json.has("legendaryActions") ? Math.max(0, json.get("legendaryActions").getAsInt()) : 0;
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances);
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions);
 	}
 
 	private static Map<String, String> readAffinities(JsonObject json, String field) {
@@ -229,6 +237,7 @@ public class MonsterRegistry {
 		json.addProperty("name", block.name());
 		if (block.type() != CreatureType.UNKNOWN) json.addProperty("type", block.type().label());
 		if (block.legendaryResistances() > 0) json.addProperty("legendaryResistances", block.legendaryResistances());
+		if (block.legendaryActions() > 0) json.addProperty("legendaryActions", block.legendaryActions());
 		json.addProperty("baseEntity", block.baseEntityId());
 		json.addProperty("ac", block.ac());
 		json.addProperty("hp", block.maxHp());
@@ -417,7 +426,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		for (String key : new String[]{"str", "dex", "con", "int", "wis", "cha"}) abilities.put(key, 10);
 
-		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0));
+		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0));
 		return spawnAt(level, x, y, z, id);
 	}
 

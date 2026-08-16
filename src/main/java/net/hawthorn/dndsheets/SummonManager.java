@@ -50,7 +50,7 @@ public class SummonManager {
 		String monsterId = "dndsheets:summon_" + spell.id().replace(':', '_');
 		//El bloque se re-registra en cada invocación a propósito: así un cambio en el JSON del hechizo se
 		//nota en la siguiente sin recargar nada, y no hay que mantener un registro paralelo de invocables.
-		MonsterRegistry.register(new MonsterRegistry.MonsterStatBlock(
+		MonsterRegistry.replace(new MonsterRegistry.MonsterStatBlock(
 			monsterId, spell.name(), spell.summonEntityId(), SUMMON_AC, SUMMON_HP,
 			//Las características se fijan para que abilityModifier devuelva exactamente el modificador del
 			//invocador: 10 + 2*mod da ese mod, y así el ataque sale con los números del lanzador sin
@@ -64,7 +64,7 @@ public class SummonManager {
 			//Un arma espiritual o una esfera de fuego son autómatas: no son criaturas vivas, son magia con
 			//forma. Importa poco hoy, pero dejarlo en UNKNOWN sería decir "no lo sé" de algo que sí se sabe.
 			//Una invocación no es un jefe: sin Resistencia Legendaria.
-			CreatureType.CONSTRUCT, 0));
+			CreatureType.CONSTRUCT, 0, 0));
 
 		//Delante del lanzador, no encima: invocarlo dentro de su propia hitbox lo dejaría empujándolo.
 		Vec3 spot = caster.position().add(caster.getViewVector(1.0f).scale(2.0));

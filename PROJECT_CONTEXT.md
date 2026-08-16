@@ -832,6 +832,42 @@ dependencies, not preference.
       step 86, ending exactly on `PANEL_RIGHT`), and the list is where you can *see* which character
       you are wearing — half the decision when switching.
 
+  26. **Legendary Actions.** The other half of the boss rules, and the one that changes how a fight
+      *feels*: a legendary creature acts at the **end of another creature's turn**, so a dragon
+      against four players stops being an exchange where the party swings four times per one of its.
+      Hooked into `advance` at the exact moment 5e names, before the index moves so "whoever just
+      played" is still who it is; the budget refills at the start of its own turn.
+
+      **Deliberately reduced to "one attack".** In the SRD each boss has its own list with different
+      costs (Attack for 1, Wing Attack for 2, Detect for 1). Here a legendary action is *one of its
+      own attacks*, cost 1, until the round's budget runs out — the one nearly all of them share and
+      the one that decides the fight. The exotic ones have nothing to point at in this mod anyway
+      (move without provoking, detect, reshape terrain). If nobody is in range the use is **refunded**
+      rather than burnt: spending it on nobody would punish the boss for where the party stands.
+
+  27. **Three defects from one play log**, and the first was mine from two days earlier.
+
+      **The HUD showed "Conjuros: 4/2"** — more available than the maximum. `SpellSlots.clientPatch`
+      sent the per-level table and the current total but **not the maximum**, and the maximum is
+      *derived* (class and level, recomputed server-side every time the sheet is saved). So it moved
+      behind the client's back and the client kept a stale one forever. The patch now carries all
+      four fields, and the check asserts current ≤ max on what the client rebuilds — the impossible
+      state is the thing worth pinning, not the field list.
+
+      **"You have no spell slots left" while holding four.** True and useless: they were level-1
+      slots and Flaming Sphere is level 2. The rule worked exactly right; the message contradicted
+      the HUD. It now names the level required.
+
+      **A WARN per summon.** Re-registering the summon's stat block on every cast is deliberate — it
+      picks up edits to the spell's JSON — but it went through the path that warns about a collision,
+      so every Flaming Sphere logged a warning about something working correctly. `NamedRegistry`
+      grows a `replace` for overwriting on purpose. Noise in a log is not free: it is how real
+      warnings stop being read.
+
+      And a fourth, cosmetic: applying a preset no longer says "close and reopen your sheet". Since
+      item 18 the open sheet repaints itself, so the message was asking for a step that no longer
+      exists.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

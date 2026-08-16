@@ -62,7 +62,9 @@ public class PresetManager {
 		}
 
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes()));
-		player.sendSystemMessage(Component.literal("Preset \"" + preset.name() + "\" aplicado. Cierra y vuelve a abrir tu hoja para verlo.").withStyle(ChatFeedback.RESOURCE));
+		//Ya no hace falta cerrar y reabrir: la hoja abierta se repinta sola al llegar la hoja completa (ver
+		//CharacterSheetScreen.refreshIfOpen). El aviso viejo pedía un paso que ya no existe.
+		player.sendSystemMessage(Component.literal("Preset \"" + preset.name() + "\" aplicado.").withStyle(ChatFeedback.RESOURCE));
 	}
 
 	//El preset solo rellena la hoja (clase/características/rasgos); sin esto, el ítem que activa el
