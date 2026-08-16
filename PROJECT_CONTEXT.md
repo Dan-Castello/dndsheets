@@ -675,6 +675,32 @@ dependencies, not preference.
   and a key present in one language and missing in the other fails the same silent way for half the
   users. `checkLanguageFiles` now parses every language file and asserts they carry the same key set.
 
+  18. **Switching characters left the open sheet showing the old one — and then overwrote the new
+      one with it.** Reported from play. The sheet screen fills its widgets in `init()` only, and
+      `SheetClientMessage` did nothing but replace the cached JSON, so a full sheet arriving while
+      the screen was open never reached the fields. That alone is a refresh bug; the damage is worse,
+      because almost every interaction on that screen calls `CharacterSheetSaveProcedure`, so the
+      first roll or tab click after switching wrote the *previous* character's values on top of the
+      new one. It was data loss wearing a refresh bug's clothes.
+
+      `CharacterSheetScreen.refreshIfOpen()` now runs whenever a **full** sheet arrives — switching,
+      resting, applying a preset, spending an improvement. Single-field patches
+      (`SheetFieldUpdateMessage`) deliberately do *not* trigger it: those land mid-combat and would
+      repaint over whatever the player is typing.
+
+  19. **Commands take names, not ids.** Character ids are derived from the player's UUID
+      (`380df991-…-2`), so asking someone to type one to switch character is asking them to copy a
+      string that means nothing to them. `/dndchar switch` and `/dndchar delete` now take a name
+      (`greedyString`, so spaces need no quotes) and autocomplete by name with the id as the
+      suggestion tooltip — suggesting ids was autocompleting the one thing the player does not
+      recognise.
+
+      The resolution order is deliberate and pinned: **exact id, exact name, then unique prefix**. A
+      character named after another's id must still be reachable, and an exact name can never lose to
+      someone else's prefix — typing "Ana" with an Ana and an Anabel present is Ana, not an ambiguity
+      error. Ambiguous is treated as "no": choosing for the player would choose wrong half the time.
+      The rule is pure and lives in `CharacterRules`, so all of that is checkable without a game.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

@@ -46,9 +46,12 @@ public class CharacterCommand {
 			.then(Commands.literal("new")
 				.then(Commands.argument("nombre", StringArgumentType.greedyString())
 					.executes(CharacterCommand::create)))
+			//greedyString y no word(): los personajes se llaman "Elara la Gris", no "elara2". Pedir un id
+			//derivado del UUID para cambiar de personaje es pedir que se copie una cadena que no significa
+			//nada — se acepta el nombre, y el id sigue valiendo porque es lo que sale en los mensajes.
 			.then(Commands.literal("switch")
-				.then(Commands.argument("id", StringArgumentType.word())
-					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(ownedIds(ctx), builder))
+				.then(Commands.argument("personaje", StringArgumentType.greedyString())
+					.suggests((ctx, builder) -> suggestCharacters(builder, ownedIds(ctx)))
 					.executes(CharacterCommand::switchTo)))
 			//Sin permiso: la Mejora de Característica la elige QUIEN lleva el personaje, no el DM. El servidor
 			//solo la deja gastar si de verdad quedaba alguna pendiente (ver LevelUpManager.applyImprovement),
@@ -58,8 +61,8 @@ public class CharacterCommand {
 			//Borrar es sobre lo tuyo, así que tampoco pide permiso; el permiso solo entra para los PNJ del
 			//DM, y lo comprueba SheetLoader.deleteCharacter, no esta rama.
 			.then(Commands.literal("delete")
-				.then(Commands.argument("id", StringArgumentType.word())
-					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(deletableIds(ctx), builder))
+				.then(Commands.argument("personaje", StringArgumentType.greedyString())
+					.suggests((ctx, builder) -> suggestCharacters(builder, deletableIds(ctx)))
 					.executes(CharacterCommand::delete)))
 			.then(Commands.literal("npc")
 				.requires(source -> source.hasPermission(2))
@@ -78,6 +81,24 @@ public class CharacterCommand {
 
 	//Sugerencias de tab con los ids propios: sin esto habría que copiarlos a mano del /dndchar list, y son
 	//UUID con un sufijo — exactamente el tipo de cadena que nadie teclea bien a la primera.
+	/**
+	 * <p>Autocompleta con los NOMBRES, y deja el id como pista al lado. Sugerir ids sería autocompletar con
+	 * lo único que el jugador no reconoce.</p>
+	 *
+	 * <p>Un nombre con espacios se sugiere tal cual, sin comillas, porque el argumento es greedyString: lo
+	 * que se ve en la lista es exactamente lo que hay que escribir.</p>
+	 */
+	private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestCharacters(
+			com.mojang.brigadier.suggestion.SuggestionsBuilder builder, List<String> ids) {
+		String written = builder.getRemaining().toLowerCase(java.util.Locale.ROOT);
+		for (String id : ids) {
+			String name = SheetLoader.nameOfCharacter(id);
+			if (!name.toLowerCase(java.util.Locale.ROOT).startsWith(written)) continue;
+			builder.suggest(name, Component.literal(id));
+		}
+		return builder.buildFuture();
+	}
+
 	private static List<String> ownedIds(CommandContext<CommandSourceStack> ctx) {
 		try {
 			return SheetLoader.charactersOf(ctx.getSource().getPlayerOrException().getStringUUID());
@@ -106,13 +127,20 @@ public class CharacterCommand {
 
 	private static int delete(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
-		String characterId = StringArgumentType.getString(ctx, "id");
+		String query = StringArgumentType.getString(ctx, "personaje");
+		String characterId = SheetLoader.resolveCharacter(deletableIds(ctx), query);
+		if (characterId == null) {
+			ctx.getSource().sendFailure(Component.literal("No encuentro \"" + query + "\", o el nombre vale para varios. Mira /dndchar list."));
+			return 0;
+		}
+		//El nombre se lee ANTES de borrar: después, la hoja ya no está en memoria y el mensaje diría el id.
+		String name = SheetLoader.nameOfCharacter(characterId);
 		String error = SheetLoader.deleteCharacter(player, characterId, ctx.getSource().hasPermission(2));
 		if (error != null) {
 			ctx.getSource().sendFailure(Component.literal("No se pudo borrar: ese personaje no existe o no es tuyo."));
 			return 0;
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Personaje \"" + characterId + "\" borrado. Queda una copia en charactersheets/"
+		ctx.getSource().sendSuccess(() -> Component.literal("Personaje \"" + name + "\" borrado. Queda una copia en charactersheets/"
 			+ characterId + SheetLoader.DELETED_SUFFIX + " por si te arrepientes.").withStyle(ChatFormatting.GREEN), false);
 		return 1;
 	}
@@ -164,9 +192,10 @@ public class CharacterCommand {
 
 	private static int switchTo(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
-		String characterId = StringArgumentType.getString(ctx, "id");
-		if (!SheetLoader.switchCharacter(player, characterId)) {
-			ctx.getSource().sendFailure(Component.literal("Ese personaje no existe o no es tuyo. Mira /dndchar list."));
+		String query = StringArgumentType.getString(ctx, "personaje");
+		String characterId = SheetLoader.resolveCharacter(SheetLoader.charactersOf(player.getStringUUID()), query);
+		if (characterId == null || !SheetLoader.switchCharacter(player, characterId)) {
+			ctx.getSource().sendFailure(Component.literal("No encuentro \"" + query + "\" entre tus personajes, o el nombre vale para varios. Mira /dndchar list."));
 			return 0;
 		}
 		JsonObject sheet = SheetLoader.getCharacterSheet(characterId);

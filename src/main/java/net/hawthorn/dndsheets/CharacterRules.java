@@ -149,6 +149,56 @@ final class CharacterRules {
 	}
 
 	/**
+	 * <p>Resuelve lo que el jugador escribió —un <b>nombre</b> o un id— al id del personaje.</p>
+	 *
+	 * <p>Los ids son derivados del UUID ({@code 380df991-...-2}), o sea que pedirle a alguien que escriba
+	 * uno para cambiar de personaje es pedirle que copie una cadena que no significa nada. El nombre es lo
+	 * que la persona sabe, así que es lo que se acepta; el id sigue valiendo porque es lo que sale en los
+	 * mensajes y en el nombre del archivo.</p>
+	 *
+	 * <p>Orden deliberado: <b>id exacto, nombre exacto, y solo entonces prefijo único</b>. Un personaje que
+	 * se llame igual que el id de otro tiene que poder elegirse, y un prefijo no puede ganarle nunca a una
+	 * coincidencia exacta — escribir "Ana" con una Ana y una Anabel delante debe dar Ana, no un error de
+	 * ambigüedad.</p>
+	 *
+	 * @return el id, o {@code null} si no se reconoce o si hay más de un candidato (ambiguo es tan "no" como
+	 *         no encontrarlo: elegir por él sería elegir mal la mitad de las veces).
+	 */
+	static String resolveCharacter(Map<String, JsonObject> sheets, List<String> candidateIds, String query) {
+		if (query == null) return null;
+		String needle = query.trim();
+		if (needle.isEmpty()) return null;
+
+		for (String id : candidateIds) {
+			if (id.equals(needle)) return id;
+		}
+
+		String exact = null;
+		int exactCount = 0;
+		String prefix = null;
+		int prefixCount = 0;
+		for (String id : candidateIds) {
+			String name = nameOf(sheets.get(id));
+			if (name == null) continue;
+			if (name.equalsIgnoreCase(needle)) {
+				exact = id;
+				exactCount++;
+			} else if (name.toLowerCase(Locale.ROOT).startsWith(needle.toLowerCase(Locale.ROOT))) {
+				prefix = id;
+				prefixCount++;
+			}
+		}
+		if (exactCount == 1) return exact;
+		if (exactCount > 1) return null;
+		return prefixCount == 1 ? prefix : null;
+	}
+
+	/** Nombre de una hoja, o null si no tiene: no todas lo llevan, y comparar contra null es peor que saltarla. */
+	static String nameOf(JsonObject sheet) {
+		return sheet != null && sheet.has("characterName") ? sheet.get("characterName").getAsString() : null;
+	}
+
+	/**
 	 * Id para un personaje más de ese jugador. Derivado de su UUID, así que es único entre jugadores sin
 	 * necesitar un contador global, y sigue siendo un nombre de archivo válido en cualquier sistema.
 	 */

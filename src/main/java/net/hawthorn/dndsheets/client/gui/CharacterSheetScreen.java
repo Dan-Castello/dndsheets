@@ -867,6 +867,20 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	}
 
 	/**
+	 * <p>Vuelve a rellenar los campos desde la hoja del cliente, si esta pantalla es la que está abierta.</p>
+	 *
+	 * <p>La llama {@code SheetClientMessage} cada vez que llega una hoja COMPLETA del servidor: cambiar de
+	 * personaje, descansar, aplicar un preset, gastar una Mejora de Característica. Los parches de un solo
+	 * campo ({@code SheetFieldUpdateMessage}) no pasan por aquí a propósito — llegan a mitad de combate y
+	 * repintarían encima de lo que el jugador esté escribiendo.</p>
+	 */
+	public static void refreshIfOpen() {
+		if (net.minecraft.client.Minecraft.getInstance().screen instanceof CharacterSheetScreen screen) {
+			CharacterSheetLoadProcedure.execute(guistate, screen);
+		}
+	}
+
+	/**
 	 * <p>This sends a packet to the server with the roll expression it wants to roll.</p>
 	 * @param category
 	 * @param index

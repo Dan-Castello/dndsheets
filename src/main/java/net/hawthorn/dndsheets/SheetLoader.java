@@ -334,6 +334,20 @@ public class SheetLoader {
 		return CharacterRules.ownedBy(sheets, playerUuid);
 	}
 
+	/**
+	 * <p>Resuelve un NOMBRE (o un id) al id del personaje, entre los que se le pasen. Ver
+	 * {@link CharacterRules#resolveCharacter} — la regla vive ahí para poder comprobarse fuera del juego.</p>
+	 */
+	public static String resolveCharacter(List<String> candidateIds, String query) {
+		return CharacterRules.resolveCharacter(sheets, candidateIds, query);
+	}
+
+	/** Nombre de un personaje por su id, o el propio id si no tiene nombre: sirve para menús y mensajes. */
+	public static String nameOfCharacter(String characterId) {
+		String name = CharacterRules.nameOf(sheets.get(characterId));
+		return name != null && !name.isBlank() ? name : characterId;
+	}
+
 	/** Ver {@link CharacterRules#ownerOf} — la regla vive ahí para poder comprobarse fuera del juego. */
 	public static String ownerOf(String characterId, JsonObject sheet) {
 		return CharacterRules.ownerOf(characterId, sheet);

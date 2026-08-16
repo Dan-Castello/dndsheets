@@ -51,6 +51,7 @@ public class JsonContentSelfTest {
 		checkCover();
 		checkAbilityImprovements();
 		checkLanguageFiles();
+		checkCharacterLookup();
 		checkAttackPathsShareRules();
 		checkDefaultsRefresh();
 		checkTabTextures();
@@ -1512,6 +1513,59 @@ public class JsonContentSelfTest {
 
 		System.out.println("checkLanguageFiles: OK, " + keysByLang.size() + " idiomas con las mismas "
 			+ referenceKeys.size() + " claves y JSON válido.");
+	}
+
+	/**
+	 * <p>Resolver un personaje por su NOMBRE. Los ids salen del UUID del jugador, así que pedir uno para
+	 * cambiar de personaje es pedir que se copie una cadena que no significa nada; el nombre es lo que la
+	 * persona sabe.</p>
+	 */
+	private static void checkCharacterLookup() {
+		Map<String, JsonObject> sheets = new java.util.LinkedHashMap<>();
+		sheets.put("uuid-1", named("Elara la Gris"));
+		sheets.put("uuid-2", named("Elandra"));
+		sheets.put("uuid-3", named("Borin"));
+		sheets.put("uuid-4", named("uuid-2")); //Un personaje llamado igual que el id de otro.
+		List<String> ids = List.of("uuid-1", "uuid-2", "uuid-3", "uuid-4");
+
+		assertTrue("uuid-3".equals(CharacterRules.resolveCharacter(sheets, ids, "Borin")), "un nombre exacto debería bastar");
+		assertTrue("uuid-3".equals(CharacterRules.resolveCharacter(sheets, ids, "borin")), "y sin importar mayúsculas");
+		assertTrue("uuid-3".equals(CharacterRules.resolveCharacter(sheets, ids, "  Borin ")), "ni espacios de sobra");
+		assertTrue("uuid-1".equals(CharacterRules.resolveCharacter(sheets, ids, "Elara la Gris")), "un nombre con espacios también");
+		assertTrue("uuid-1".equals(CharacterRules.resolveCharacter(sheets, ids, "Elara")), "un prefijo único debería valer");
+
+		//Prefijo ambiguo: "Ela" vale para Elara y Elandra. Ambiguo es tan "no" como no encontrarlo — elegir
+		//por el jugador sería elegir mal la mitad de las veces.
+		assertTrue(CharacterRules.resolveCharacter(sheets, ids, "Ela") == null, "un prefijo que vale para dos no debería elegir uno");
+		assertTrue(CharacterRules.resolveCharacter(sheets, ids, "Nadie") == null, "lo que no existe no resuelve");
+		assertTrue(CharacterRules.resolveCharacter(sheets, ids, "  ") == null, "ni una cadena vacía");
+		assertTrue(CharacterRules.resolveCharacter(sheets, ids, null) == null, "ni null");
+
+		//El id exacto manda sobre todo: si no, un personaje llamado como el id de otro se lo quedaría.
+		assertTrue("uuid-2".equals(CharacterRules.resolveCharacter(sheets, ids, "uuid-2")),
+			"un id exacto debería ganar al personaje que se llama así");
+
+		//Y un nombre exacto gana a un prefijo: con "Ana" y "Anabel" delante, "Ana" es Ana.
+		Map<String, JsonObject> dos = new java.util.LinkedHashMap<>();
+		dos.put("a", named("Ana"));
+		dos.put("b", named("Anabel"));
+		assertTrue("a".equals(CharacterRules.resolveCharacter(dos, List.of("a", "b"), "Ana")),
+			"un nombre exacto no debería perder contra el prefijo de otro");
+
+		//Dos personajes con el MISMO nombre: no hay forma honesta de elegir, así que no se elige.
+		Map<String, JsonObject> repes = new java.util.LinkedHashMap<>();
+		repes.put("a", named("Bruno"));
+		repes.put("b", named("Bruno"));
+		assertTrue(CharacterRules.resolveCharacter(repes, List.of("a", "b"), "Bruno") == null,
+			"dos personajes con el mismo nombre no se pueden distinguir por nombre");
+
+		System.out.println("checkCharacterLookup: OK, los personajes se encuentran por nombre y lo ambiguo se rechaza.");
+	}
+
+	private static JsonObject named(String characterName) {
+		JsonObject sheet = new JsonObject();
+		sheet.addProperty("characterName", characterName);
+		return sheet;
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {
