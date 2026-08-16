@@ -220,7 +220,7 @@ dependencies, not preference.
 
 - **Fase 0 — `Combatant` + conditions. DONE.** Without it every rule is written three times
   (player / monster / armor stand). See the rules-core section above.
-- **Fase 1 — character identity. DONE except its GUI.** Characters keyed independently of players;
+- **Fase 1 — character identity. DONE, GUI included.** Characters keyed independently of players;
   `/dndchar list|new|switch|npc|spawn`. NPC sheets get a body via `SheetLoader.spawnNpc`, are tagged
   onto the entity's NBT (`dndsheets.character`) and resolve through `Combatant.of` as
   `NpcCombatant` — a character with no one sitting behind it, playing by the full PC rules rather
@@ -888,6 +888,26 @@ dependencies, not preference.
       sphinxes and kraken I am confident about; anyone who cares about exactness should diff the
       annotated set against the SRD document. The field is optional and defaults to 0, so being
       conservative costs a boss some teeth rather than inventing rules it does not have.
+
+  29. **Multiattack.** An adult dragon made **one** attack per turn where 5e gives it three (bite and
+      two claws) — a third of its threat, and the gap that made the boss work of items 24 and 26 land
+      softer than it should. One integer on the stat block, defaulting to 1, which is exactly how the
+      whole bestiary behaved before.
+
+      - **The attack is picked at random per swing**, so a monster with a bite and a claw does not
+        repeat the same one three times.
+      - **Checked between swings**: if the first blow kills the target, the rest do not happen. A
+        corpse does not take two more attacks, and the chat would have announced them.
+      - **Clamped to 6.** Not a 5e rule — a firebreak: an absurd number in a DM's JSON turns one turn
+        into an unreadable burst of chat lines.
+      - It is a **third axis**, independent of the two legendary ones: a young dragon multiattacks and
+        is not legendary, which is the case the check uses, because a test where all three flags move
+        together cannot tell them apart.
+
+      Annotated only where the number is unambiguous and I am confident: adult and ancient dragons at
+      3, young dragons, owlbear, ettin and hill giant at 2. Everything else stays at 1 and a DM can
+      set it in JSON. Same reasoning as item 28 — falling short costs a monster some threat, inventing
+      gives it threat it does not have, and the second is worse.
 
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the

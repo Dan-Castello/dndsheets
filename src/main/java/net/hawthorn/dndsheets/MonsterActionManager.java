@@ -251,7 +251,15 @@ public class MonsterActionManager {
 		List<MonsterRegistry.MonsterAttack> attacks = new ArrayList<>(block.attacks());
 		attacks.addAll(MonsterRegistry.customAttacksOf(monsterEntity));
 		if (!attacks.isEmpty()) {
-			resolveAttack(block, monsterEntity, randomOf(attacks), target);
+			//Multiataque: un dragón adulto hace tres ataques por turno en 5e (mordisco y dos garras) y aquí
+			//hacía UNO, o sea un tercio de su amenaza. Se eligen al azar de los suyos, uno por golpe, para que
+			//un monstruo con mordisco y garra no repita el mismo tres veces.
+			for (int i = 0; i < block.attacksPerTurn(); i++) {
+				//Se comprueba entre golpe y golpe: si el primero mata al objetivo, los demás no ocurren. Un
+				//muerto no recibe dos ataques más, y sin esto el chat anunciaba golpes contra un cadáver.
+				if (!monsterEntity.isAlive() || !target.isAlive()) break;
+				resolveAttack(block, monsterEntity, randomOf(attacks), target);
+			}
 			return;
 		}
 		//Los hechizos de monstruo siguen exigiendo un jugador: su resolución lee la hoja del objetivo.

@@ -491,6 +491,23 @@ public class JsonContentSelfTest {
 		assertTrue(MonsterRegistry.get("dndsheets:young_red_dragon").legendaryActions() == 0,
 			"y un dragón joven tampoco tiene acciones legendarias");
 
+		//Multiataque: cuántos ataques hace en su turno. Un dragón adulto hacía UNO, o sea un tercio de su
+		//amenaza. Es un eje distinto de los dos legendarios —un dragón joven multiataca y no es legendario—
+		//y por eso se comprueba con un caso que los separa.
+		assertTrue(MonsterRegistry.get("dndsheets:adult_red_dragon").attacksPerTurn() == 3,
+			"un dragón adulto hace tres ataques por turno: mordisco y dos garras");
+		assertTrue(MonsterRegistry.get("dndsheets:young_red_dragon").attacksPerTurn() == 2
+				&& MonsterRegistry.get("dndsheets:young_red_dragon").legendaryActions() == 0,
+			"un dragón joven multiataca sin ser legendario: son dos ejes distintos");
+		assertTrue(MonsterRegistry.get("dndsheets:goblin").attacksPerTurn() == 1,
+			"y lo que no lo declara hace uno, que es como se comportaba el bestiario entero");
+		//El tope existe para que un número absurdo en un JSON no convierta un turno en una ráfaga ilegible.
+		for (JsonElement el : readShippedPack("monsters.json")) {
+			MonsterRegistry.MonsterStatBlock parsed = MonsterRegistry.parse(el.getAsJsonObject());
+			assertTrue(parsed.attacksPerTurn() >= 1 && parsed.attacksPerTurn() <= 6,
+				parsed.id() + " declara " + parsed.attacksPerTurn() + " ataques por turno, fuera de rango");
+		}
+
 		//El parser tiene que aguantar lo que escribe una persona: acentos, mayúsculas, guiones o inglés.
 		assertTrue(CreatureType.parse("no-muerto") == CreatureType.UNDEAD
 			&& CreatureType.parse("No Muerto") == CreatureType.UNDEAD
@@ -958,7 +975,7 @@ public class JsonContentSelfTest {
 			List.of(), List.of(),
 			Map.of("fuego", "vulnerable"),          //Incondicional.
 			Map.of("cortante", "immune"),           //Solo frente a armas no mágicas.
-			CreatureType.HUMANOID, 0, 0);           //Un licántropo es humanoide en 5e, también en forma de bestia.
+			CreatureType.HUMANOID, 0, 0, 1);        //Un licántropo es humanoide en 5e, también en forma de bestia.
 		Combatant beast = new Combatant.MonsterCombatant(null, conditional);
 		assertTrue(beast.damageMultiplier("cortante", false) == 0.0, "cortante no mágico debería rebotar en el licántropo");
 		assertTrue(beast.damageMultiplier("cortante", true) == 1.0, "cortante mágico debería atravesarlo entero");

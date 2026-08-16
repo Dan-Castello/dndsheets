@@ -60,7 +60,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities, int proficiencyBonus,
 		List<MonsterAttack> attacks, List<MonsterSpell> spells,
 		Map<String, String> damageAffinities, Map<String, String> nonmagicalAffinities,
-		CreatureType type, int legendaryResistances, int legendaryActions
+		CreatureType type, int legendaryResistances, int legendaryActions, int attacksPerTurn
 	) {
 		public int abilityModifier(String key) {
 			Integer score = abilities.get(key.toLowerCase(Locale.ROOT));
@@ -197,8 +197,12 @@ public class MonsterRegistry {
 		//Cuántas acciones legendarias puede gastar por asalto (3 en casi todo el SRD). Ausente = 0 = actúa
 		//solo en su turno, como cualquier otro monstruo.
 		int legendaryActions = json.has("legendaryActions") ? Math.max(0, json.get("legendaryActions").getAsInt()) : 0;
+		//Multiataque: cuántos ataques hace en SU turno. 1 por defecto, que es como se comportaba todo el
+		//bestiario. El tope de 6 no es una regla de 5e, es un cortafuegos: un número absurdo en un JSON (a
+		//propósito o por un dedo) convierte un turno en una ráfaga de mensajes de chat imposible de leer.
+		int attacksPerTurn = json.has("multiattack") ? Math.max(1, Math.min(6, json.get("multiattack").getAsInt())) : 1;
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions);
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn);
 	}
 
 	private static Map<String, String> readAffinities(JsonObject json, String field) {
@@ -238,6 +242,7 @@ public class MonsterRegistry {
 		if (block.type() != CreatureType.UNKNOWN) json.addProperty("type", block.type().label());
 		if (block.legendaryResistances() > 0) json.addProperty("legendaryResistances", block.legendaryResistances());
 		if (block.legendaryActions() > 0) json.addProperty("legendaryActions", block.legendaryActions());
+		if (block.attacksPerTurn() > 1) json.addProperty("multiattack", block.attacksPerTurn());
 		json.addProperty("baseEntity", block.baseEntityId());
 		json.addProperty("ac", block.ac());
 		json.addProperty("hp", block.maxHp());
@@ -426,7 +431,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		for (String key : new String[]{"str", "dex", "con", "int", "wis", "cha"}) abilities.put(key, 10);
 
-		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0));
+		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0, 1));
 		return spawnAt(level, x, y, z, id);
 	}
 

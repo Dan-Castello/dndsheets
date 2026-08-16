@@ -64,7 +64,7 @@ public class SummonManager {
 			//Un arma espiritual o una esfera de fuego son autómatas: no son criaturas vivas, son magia con
 			//forma. Importa poco hoy, pero dejarlo en UNKNOWN sería decir "no lo sé" de algo que sí se sabe.
 			//Una invocación no es un jefe: sin Resistencia Legendaria.
-			CreatureType.CONSTRUCT, 0, 0));
+			CreatureType.CONSTRUCT, 0, 0, 1));
 
 		//Delante del lanzador, no encima: invocarlo dentro de su propia hitbox lo dejaría empujándolo.
 		Vec3 spot = caster.position().add(caster.getViewVector(1.0f).scale(2.0));
