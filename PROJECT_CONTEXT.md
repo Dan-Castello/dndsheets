@@ -582,6 +582,33 @@ dependencies, not preference.
       the sheet's own button. What was needed was using the flag `/dndsheet advantage` had been using
       all along, and patching it to the client so the ally sees it without reopening the sheet.
 
+  14. **One attack resolution instead of two (`AttackRules`).** The three defects above were all the
+      same defect: the hit-resolution logic was written *twice*, once for "a player attacks" and once
+      for "a monster attacks", and the copies drifted — always in the same direction, with the new
+      rule landing on the player path. Fixing them one at a time is exactly the signal that the fix
+      was not that. `AttackRules` now owns advantage-from-target, cover, effective AC after defensive
+      reactions, hit, and auto-crit; both paths call it. The next rule reaches both by construction.
+
+      What deliberately stays split is what genuinely differs: how the roll is assembled (a player
+      adds ability and proficiency from a sheet, a monster a fixed modifier) and how damage is built
+      (weapons, sneak attack, smite, buffs vs. one stat-block die). Those are real differences, not
+      duplication.
+
+      **The refactor nearly introduced a rules bug, and it is worth recording.** `combineAdvantage`
+      collapses "at least one advantage and at least one disadvantage" to normal — correct 5e, and
+      exactly why it **cannot be nested**: a normal produced by two sources cancelling is
+      indistinguishable from no source at all, so a later combination lets the attacker's advantage
+      win alone. Target prone (advantage in melee) *and* dodging (disadvantage), attacked by someone
+      with pending advantage: the answer is normal, and the first version of the extraction returned
+      advantage. So the attacker's sources are passed *into* `advantageAgainst` as varargs and pooled
+      in a single call.
+
+      That near-miss also produced the sharper check. Three behavioural assertions were written
+      first, and re-nesting the combination **passed all three** — the case that breaks needs both
+      cancelling sources on the *target* side, which needs turn state that does not exist outside the
+      game. So the invariant is now held structurally: `advantageAgainst` must contain exactly one
+      `combineAdvantage(` call.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

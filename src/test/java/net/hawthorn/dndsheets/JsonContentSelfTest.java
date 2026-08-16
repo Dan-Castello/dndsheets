@@ -49,7 +49,7 @@ public class JsonContentSelfTest {
 		checkSpellTargeting();
 		checkInitiatorGoesFirst();
 		checkCover();
-		checkMonsterAttacksUseTargetState();
+		checkAttackPathsShareRules();
 		checkDefaultsRefresh();
 		checkTabTextures();
 		checkInteractHandlers();
@@ -1320,29 +1320,36 @@ public class JsonContentSelfTest {
 	}
 
 	/**
-	 * <p>Que un monstruo atacando use la ventaja/desventaja del objetivo. Iba con un {@code NORMAL} fijo, y
-	 * eso se comía la mitad de lo que hacen las condiciones: "los ataques contra ti tienen ventaja" es
-	 * media definición de derribado, apresado, paralizado, cegado e inconsciente.</p>
+	 * <p>Que las DOS rutas de ataque —un jugador ataca, un monstruo ataca— resuelvan por el mismo sitio.</p>
+	 *
+	 * <p>Esta comprobación existe porque la divergencia ya pasó tres veces seguidas, siempre en la misma
+	 * dirección: la regla nueva se escribía donde ataca el jugador y la del monstruo se quedaba atrás. Un
+	 * monstruo tiraba plano contra un objetivo derribado (media definición de cinco condiciones), la
+	 * cobertura solo valía cuando atacaba un jugador, y Esquivar iba a repetir la historia. Fijar cada
+	 * llamada por separado, que es lo que hacía la primera versión de esto, es fijar los síntomas: lo que
+	 * hay que sostener es que no haya dos copias de la regla.</p>
 	 */
-	private static void checkMonsterAttacksUseTargetState() throws Exception {
-		String fuente = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "MonsterActionManager.java"));
-		int desde = fuente.indexOf("private static void resolveAttack(");
-		assertTrue(desde > 0, "no encontré resolveAttack en MonsterActionManager");
-		String resolveAttack = fuente.substring(desde, fuente.indexOf("\n\t}", desde));
+	private static void checkAttackPathsShareRules() throws Exception {
+		Path dir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets");
 
-		assertTrue(resolveAttack.contains("advantageAgainst("),
-			"un monstruo tiene que atacar con la ventaja/desventaja que dé el estado del objetivo, no plano");
-		assertTrue(resolveAttack.contains("Cover.between("),
-			"y con la cobertura del objetivo: sin esto, un parapeto solo sirve para que los monstruos se "
-				+ "escondan de los jugadores y nunca al revés");
-		assertTrue(resolveAttack.contains("TurnActionManager.isDodging("),
-			"y respetando Esquivar, que es una acción del objetivo y no una condición suya");
+		for (String archivo : List.of("CombatManager.java", "MonsterActionManager.java")) {
+			String cuerpo = methodBody(Files.readString(dir.resolve(archivo)), "resolveAttack(");
+			assertTrue(cuerpo.contains("AttackRules.against("),
+				archivo + ": resolveAttack debería resolver cobertura, CA, acierto y crítico por AttackRules");
+			assertTrue(cuerpo.contains("AttackRules.advantageAgainst("),
+				archivo + ": resolveAttack debería sacar la ventaja del objetivo de AttackRules");
+		}
 
-		//Lo mismo para el conjuro de un monstruo: parapetarse del aliento de un dragón es EL caso de manual
-		//de la cobertura, y estuvo implementado solo del lado del jugador que lanza.
-		int desdeSpell = fuente.indexOf("private static void resolveSpell(");
-		assertTrue(desdeSpell > 0, "no encontré resolveSpell en MonsterActionManager");
-		String resolveSpell = fuente.substring(desdeSpell, fuente.indexOf("\n\t}", desdeSpell));
+		//Y que AttackRules siga teniendo las tres reglas dentro, no solo que la llamen.
+		String reglas = Files.readString(dir.resolve("AttackRules.java"));
+		for (String regla : List.of("advantageAgainst(", "Cover.between(", "isDodging(", "reactiveArmorClass(", "autoCritInMelee(")) {
+			assertTrue(reglas.contains(regla), "AttackRules debería aplicar " + regla + " y no lo hace");
+		}
+
+		//El conjuro de un monstruo va por su propio camino (una salvación, no una tirada de ataque), así que
+		//su cobertura se comprueba aparte: parapetarse del aliento de un dragón es EL caso de manual, y
+		//estuvo implementado solo del lado del jugador que lanza.
+		String resolveSpell = methodBody(Files.readString(dir.resolve("MonsterActionManager.java")), "resolveSpell(");
 		assertTrue(resolveSpell.contains("Cover.between("),
 			"la salvación de Destreza contra el conjuro de un monstruo también debería contar la cobertura");
 		//Se comprueba que USE el nombre del personaje, en vez de que no aparezca el otro: la primera versión
@@ -1350,7 +1357,67 @@ public class JsonContentSelfTest {
 		assertTrue(resolveSpell.contains("targetCombatant.name()"),
 			"debería anunciar el nombre del personaje, no el de la cuenta de Minecraft");
 
-		System.out.println("checkMonsterAttacksUseTargetState: OK, un monstruo ataca y lanza contando el estado, el parapeto y el esquive del objetivo.");
+		checkAdvantageSourcesArePooled();
+		System.out.println("checkAttackPathsShareRules: OK, jugador y monstruo resuelven el ataque con las mismas reglas y el mismo código.");
+	}
+
+	/**
+	 * <p>Que TODAS las fuentes de ventaja se junten de una vez y no por partes.</p>
+	 *
+	 * <p>Casi se cuela al unificar las dos rutas: {@code combineAdvantage} colapsa a "normal" cuando hay
+	 * ventaja y desventaja a la vez, que es la regla correcta de 5e, pero por eso mismo <b>no se puede
+	 * anidar</b> — un "normal" que salió de dos fuentes anulándose es indistinguible de "ninguna fuente", y
+	 * la siguiente combinación deja ganar sola a la ventaja del atacante.</p>
+	 */
+	private static void checkAdvantageSourcesArePooled() throws Exception {
+		//Objetivo derribado: ventaja de cerca, desventaja de lejos (Combatant.advantageAgainst). Se reusa el
+		//FakeCombatant de checkCombatantRules, que existe justo para probar esto sin un mundo detrás.
+		Combatant derribado = new FakeCombatant(0);
+		derribado.addCondition(Condition.DERRIBADO);
+
+		//A distancia, un derribado da DESVENTAJA. Con un atacante que trae VENTAJA, las dos fuentes se
+		//anulan: la respuesta de 5e es normal, "sin importar cuántas haya de cada".
+		assertTrue(AttackRules.advantageAgainst(derribado, false, DiceManager.Advantage.ADVANTAGE) == DiceManager.Advantage.NORMAL,
+			"ventaja del atacante contra la desventaja de disparar a alguien derribado debería anularse");
+		//Y de cerca, las dos son ventaja: no hay nada que anular.
+		assertTrue(AttackRules.advantageAgainst(derribado, true, DiceManager.Advantage.ADVANTAGE) == DiceManager.Advantage.ADVANTAGE,
+			"de cerca, un derribado da ventaja y se suma a la del atacante");
+		//Sin nada del atacante, manda el estado del objetivo tal cual.
+		assertTrue(AttackRules.advantageAgainst(derribado, true) == DiceManager.Advantage.ADVANTAGE,
+			"sin fuentes del atacante debería quedar lo que dé el objetivo");
+
+		//Y la propiedad que las tres afirmaciones de arriba NO pueden ver: que las fuentes entren en UNA
+		//sola combinación. El caso que se rompe al anidar es que la ventaja y la desventaja que se anulan
+		//caigan las dos del mismo lado (objetivo derribado que además Esquiva, atacado con ventaja), y ese
+		//depende de estado de turno que no existe fuera del juego. Se sostiene por estructura: probé a
+		//anidar la combinación y ninguna de las tres afirmaciones se enteró.
+		String cuerpo = methodBody(readSource("AttackRules.java"), "advantageAgainst(");
+		int combinaciones = cuerpo.split("combineAdvantage\\(", -1).length - 1;
+		assertTrue(combinaciones == 1,
+			"advantageAgainst debería combinar TODAS las fuentes de una vez y hace " + combinaciones
+				+ " combinaciones: anidarlas convierte una ventaja y una desventaja que se anulaban en un "
+				+ "\"normal\" indistinguible de \"ninguna fuente\"");
+	}
+
+	private static String readSource(String fileName) throws Exception {
+		return Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", fileName));
+	}
+
+	/**
+	 * <p>Cuerpo de un método, buscando su DECLARACIÓN y no la primera vez que aparece su nombre: en
+	 * {@code CombatManager} hay una llamada a {@code resolveAttack(...)} antes de declararlo, y cortar
+	 * desde ahí devolvía el método equivocado — la comprobación fallaba dando a entender que faltaba una
+	 * llamada que sí estaba.</p>
+	 */
+	private static String methodBody(String source, String signature) {
+		//Una declaración empieza en una línea con UN tabulador; una llamada al mismo método siempre está más
+		//adentro. Es lo que distingue las dos sin escribir un parser de Java.
+		java.util.regex.Matcher declaracion = java.util.regex.Pattern
+			.compile("(?m)^\\t[\\w .<>\\[\\],]*\\b" + java.util.regex.Pattern.quote(signature))
+			.matcher(source);
+		assertTrue(declaracion.find(), "no encontré la declaración de " + signature);
+		//El final del método: la primera llave de cierre a ese mismo nivel de sangría.
+		return source.substring(declaracion.start(), source.indexOf("\n\t}", declaracion.start()));
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

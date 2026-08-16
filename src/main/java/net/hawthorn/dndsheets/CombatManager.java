@@ -285,13 +285,10 @@ public class CombatManager {
 	 */
 	private static AttackOutcome resolveAttack(Player attacker, JsonObject attackerSheet, Combatant target,
 			IdentifiedWeapon weapon, String ability, String damageType, boolean melee) {
-		DiceManager.Advantage advantage = DiceManager.combineAdvantage(
+		//Todas las fuentes en UNA sola llamada, nunca combinadas por partes: ver AttackRules.advantageAgainst.
+		DiceManager.Advantage advantage = AttackRules.advantageAgainst(target, melee,
 			consumeAdvantage(attackerSheet),
-			new Combatant.PlayerCombatant(attacker, attackerSheet).ownAttackAdvantage(),
-			target.advantageAgainst(melee),
-			//Esquivar: se resuelve aquí y no dentro de advantageAgainst porque no es una condición del
-			//objetivo, es una acción que gastó este asalto — Combatant no sabe de turnos ni debería.
-			TurnActionManager.isDodging(target.entity()) ? DiceManager.Advantage.DISADVANTAGE : DiceManager.Advantage.NORMAL);
+			new Combatant.PlayerCombatant(attacker, attackerSheet).ownAttackAdvantage());
 
 		String expression = "1d20 + $" + ability + " + $prof";
 		int inspiration = BardInspirationManager.consumeAttackBonus(attackerSheet);
@@ -302,28 +299,18 @@ public class CombatManager {
 		sendSheetUpdate(attacker);
 
 		String attackerName = SheetLoader.characterNameOf(attackerSheet, attacker);
-		//Cobertura del terreno (ver Cover): parapetarse detrás de un bloque sube la CA, +2 o +5. Es la regla
-		//que este mod estaba en mejor posición para tener y no tenía — el muro de piedra ya está ahí, con su
-		//geometría real, y hasta ahora disparar a alguien agachado tras él costaba lo mismo que a alguien de
-		//pie en campo abierto.
-		Cover cover = Cover.between(attacker, target.entity());
-		int targetAc = target.armorClass() + cover.bonus();
-		//Reacciones defensivas (Escudo): solo tiene sentido comprobarlas si el golpe de verdad depende de la
-		//CA — un crítico siempre acierta y un pifia siempre falla, con o sin Escudo. Se le descuenta la
-		//cobertura a la tirada en vez de sumársela a su CA: es el mismo margen, y así Escudo sigue decidiendo
-		//sobre su propio número sin saber nada de parapetos.
-		if (!attackRoll.criticalHit() && !attackRoll.criticalMiss()) {
-			targetAc = target.reactiveArmorClass(attackRoll.outcome().result().getValue() - cover.bonus()) + cover.bonus();
-		}
+		//Cobertura, CA efectiva, acierto y crítico: mismas reglas, y mismo código, que cuando ataca un
+		//monstruo. Ver AttackRules — estar escrito dos veces es lo que dejó a los monstruos ignorando media
+		//docena de reglas, cada una descubierta por separado.
+		AttackRules.Against result = AttackRules.against(attacker, target, attackRoll, melee);
+		int targetAc = result.targetAc();
 
-		if (attackRoll.criticalMiss() || (!attackRoll.criticalHit() && attackRoll.outcome().result().getValue() < targetAc)) {
+		if (!result.hit()) {
 			return new AttackOutcome(false, 0, ChatFeedback.withCover(ChatFeedback.attackResult(attackerName, target.name(), weapon.name(),
-				attackRoll.outcome().formatted(), targetAc, false, null, inspiration), cover));
+				attackRoll.outcome().formatted(), targetAc, false, null, inspiration), result.cover()));
 		}
 
-		//Crítico automático de 5e: cualquier impacto cuerpo a cuerpo contra un objetivo paralizado o
-		//inconsciente es crítico, aunque el d20 no haya sacado un 20.
-		boolean critical = attackRoll.criticalHit() || (melee && target.autoCritInMelee());
+		boolean critical = result.critical();
 		Roll damageRoll = computeDamageRoll(attacker, weapon, critical, advantage, ability, target.entity());
 		if (damageRoll == null) return null;
 
@@ -334,7 +321,7 @@ public class CombatManager {
 		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), target.effectiveDamageMultiplier(damageType, magical));
 		CombatFx.hit(target.entity(), critical, damageType);
 		return new AttackOutcome(true, finalAmount, ChatFeedback.withCover(ChatFeedback.attackResult(attackerName, target.name(), weapon.name(),
-			attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted(), inspiration), cover));
+			attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted(), inspiration), result.cover()));
 	}
 
 	//Jugador ataca a un monstruo invocado por /dndmonsters spawn: mismo ataque-vs-CA que en PvP, pero el
