@@ -106,6 +106,13 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private final int ABILITY_SIZE_Y = 18;
 	private final int ABILITY_SEPARATION = 22;
 
+	//Borde derecho del panel lateral: los iconos de característica acaban en 98 y el filete del fondo cae
+	//en 114.
+	private static final int SIDE_PANEL_RIGHT = 104;
+	//Modo edición, justo debajo de la última característica. Estaba en x = leftPos - 6, o sea FUERA del
+	//panel, sobre el margen del pergamino: se veía como un icono suelto sin relación con nada.
+	private static final int EDIT_TOGGLE_Y = 192;
+
 	private final int NAME_OFFSET_X = 15;
 	private final int NAME_OFFSET_Y = 20;
 
@@ -379,6 +386,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	/** Cabecera de la pestaña de Ataques: el mismo rótulo que lleva su pestaña, sin clave nueva. */
 	private static final Component LABEL_ATTACKS_TAB = Component.translatable("gui.dndsheets.character_sheet.attacks_tab");
 	private static final Component LABEL_ATTACKS_EMPTY = Component.translatable("gui.dndsheets.character_sheet.attacks_empty");
+	private static final Component LABEL_SECTION_ABILITIES = Component.translatable("gui.dndsheets.character_sheet.section_abilities");
 	private static final Component LABEL_SECTION_IDENTITY = Component.translatable("gui.dndsheets.character_sheet.section_identity");
 	private static final Component LABEL_SECTION_COMBAT = Component.translatable("gui.dndsheets.character_sheet.section_combat");
 	private static final Component LABEL_SECTION_RESOURCES = Component.translatable("gui.dndsheets.character_sheet.section_resources");
@@ -669,6 +677,9 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			{LABEL_HUNGER, HUNGER_OFFSET_X, HITDICE_OFFSET_X},
 			{LABEL_HITDICE, HITDICE_OFFSET_X, PANEL_RIGHT},
 			{LABEL_ATTACKS_EMPTY, PANEL_X, PANEL_RIGHT},
+			//El panel lateral: su límite real es el filete vertical del fondo, no el borde del bloque.
+			{LABEL_NAME, NAME_OFFSET_X, PANEL_X - 8},
+			{LABEL_SECTION_ABILITIES, NAME_OFFSET_X, PANEL_X - 8},
 		};
 		for (Object[] slot : slots) {
 			checkLabelFits((Component) slot[0], (Integer) slot[1], (Integer) slot[2]);
@@ -722,7 +733,11 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		guiGraphics.drawString(this.font, title, left, y, SECTION_COLOR, false);
 		//El filete arranca donde acaba el título, no debajo: así la cabecera ocupa una sola línea y las
 		//secciones caben en el alto del panel, que es justo lo que no pasaba con el filete en su propia fila.
-		GuiStyle.rule(guiGraphics, left + this.font.width(title) + 6, right, y + 3);
+		//Y solo si queda sitio: GuiGraphics.fill con el borde izquierdo pasado del derecho no deja de
+		//dibujar, dibuja el rectángulo al revés. En el panel lateral el título casi llena el ancho, y en
+		//español lo llena del todo.
+		int ruleLeft = left + this.font.width(title) + 6;
+		if (right - ruleLeft >= 6) GuiStyle.rule(guiGraphics, ruleLeft, right, y + 3);
 	}
 
 	/**
@@ -761,6 +776,9 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		final int lightColor = INK_COLOR;
 		final int darkColor = INK_COLOR;
 		guiGraphics.drawString(this.font, LABEL_NAME, NAME_OFFSET_X, NAME_OFFSET_Y - 10, lightColor, false);
+		//El panel lateral era lo único de la hoja sin cabecera, y se ve en las tres pestañas. Va fuera del
+		//switch por eso mismo.
+		section(guiGraphics, LABEL_SECTION_ABILITIES, ABILITY_OFFSET_Y - 13, NAME_OFFSET_X, SIDE_PANEL_RIGHT);
 
 		switch (panelActive) {
 			case MAIN:
@@ -1444,7 +1462,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		}, Component.translatable("gui.dndsheets.character_sheet.attacks_tab"));
 		this.addRenderableWidget(attacksTab);
 
-		ImageButton editToggle = new ImageButton(this.leftPos - 6, this.topPos + 192, 16, 16, 0, 0, 16, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_editmode.png"), 16, 32, e -> {
+		ImageButton editToggle = new ImageButton(this.leftPos + NAME_OFFSET_X, this.topPos + EDIT_TOGGLE_Y, 16, 16, 0, 0, 16, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_editmode.png"), 16, 32, e -> {
 			editMode = !editMode;
 			updateTabs();
 		});

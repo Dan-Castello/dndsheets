@@ -157,6 +157,7 @@
   "gui.dndsheets.character_sheet.main_tab": "Principal",
   "gui.dndsheets.character_sheet.presets": "Presets",
   "gui.dndsheets.character_sheet.proficiency": "2",
+  "gui.dndsheets.character_sheet.section_abilities": "CARACTERÍSTICAS",
   "gui.dndsheets.character_sheet.section_combat": "COMBATE",
   "gui.dndsheets.character_sheet.section_identity": "IDENTIDAD",
   "gui.dndsheets.character_sheet.section_resources": "RECURSOS",

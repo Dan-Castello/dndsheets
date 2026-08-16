@@ -789,3 +789,23 @@ rellena `makeRollButton` sola, y Ataques solo tiene dos widgets.
 
 Los dos botones de iniciativa se afinan **después** del bucle: comparten sitio y se turnan según el modo
 edición, así que el bucle los pone a todos por igual y esas dos líneas los ajustan.
+
+### Panel lateral
+
+Era lo único de la hoja sin cabecera, y se ve en las tres pestañas — por eso su `section()` se dibuja
+fuera del `switch` de `renderLabels`.
+
+El botón de modo edición estaba en `x = leftPos - 6`: **fuera del panel**, sobre el margen del pergamino,
+donde se leía como un icono suelto sin relación con nada. Ahora va alineado con la columna del nombre y de
+los dados de característica, justo debajo de la última.
+
+`section()` **solo dibuja el filete si queda sitio**. `GuiGraphics.fill` con el borde izquierdo pasado del
+derecho no deja de dibujar: pinta el rectángulo al revés. En el panel lateral el título casi llena el
+ancho (`CARACTERÍSTICAS` mide 90 px de los 89 disponibles hasta el borde del bloque), así que en español
+la cabecera va sin filete y en inglés con él.
+
+### Estado del rediseño
+
+Todas las pantallas están cubiertas. `GuideBook` es la única que usa una pantalla de vanilla
+(`BookViewScreen`) y es deliberado: un libro escrito ya se lee como un tomo, y de paso sale gratis la
+paginación.
