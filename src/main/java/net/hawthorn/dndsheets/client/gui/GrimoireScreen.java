@@ -33,7 +33,12 @@ public class GrimoireScreen extends ListPickerScreen {
 	/** Ancho de cada columna de la tabla de espacios: cabe "9/9" y los nueve niveles caben en el panel. */
 	private static final int SLOT_COL_WIDTH = 24;
 
-	private record KnownSpell(String id, String label, int level) {}
+	/**
+	 * <p>{@code label} es como sale en la LISTA —con el nivel propio del hechizo, que es lo que ordena y
+	 * distingue las filas— y {@code name} a secas es lo que va en el botón de lanzar, donde el nivel que
+	 * importa es el del espacio elegido y no el suyo.</p>
+	 */
+	private record KnownSpell(String id, String name, String label, int level) {}
 
 	private KnownSpell selected;
 	private Button castButton;
@@ -103,7 +108,12 @@ public class GrimoireScreen extends ListPickerScreen {
 
 	private void updateButtons() {
 		castButton.active = selected != null;
-		castButton.setMessage(Component.literal(selected == null ? "Elige un hechizo para lanzarlo" : "Lanzar: " + selected.label()));
+		//El nivel que se enseña aquí es el ELEGIDO, no el propio del hechizo. Enseñando el suyo, el botón
+		//decía "Lanzar: Bola de Fuego (nv. 3)" justo debajo de "Espacio: nv. 5": dos números pegados que se
+		//contradicen, y el equivocado en el botón que de verdad hace algo. Es además el mismo número que
+		//sale luego en el chat, así que lo que se lee antes de pulsar y lo que se lee después coinciden.
+		castButton.setMessage(Component.literal(selected == null ? "Elige un hechizo para lanzarlo"
+			: "Lanzar: " + selected.name() + (selected.level() == 0 ? " (truco)" : " (nv. " + chosenSlotLevel + ")")));
 
 		//Un truco no gasta espacio, así que no hay nivel que elegir; y si no tienes ningún espacio por
 		//encima del suyo, el botón no tiene a dónde ciclar.
@@ -112,7 +122,9 @@ public class GrimoireScreen extends ListPickerScreen {
 		slotLevelButton.setMessage(Component.literal(
 			selected == null ? "—"
 			: selected.level() == 0 ? "Truco: a voluntad, sin espacio"
-			: "Espacio: nv. " + chosenSlotLevel + (canChoose ? "  (clic para subirlo)" : "")));
+			//"cambiar" y no "subir": el ciclo vuelve al nivel del hechizo al llegar arriba, y en el nivel
+			//más alto disponible el único clic posible es precisamente el que baja.
+			: "Espacio: nv. " + chosenSlotLevel + (canChoose ? "  (clic para cambiar)" : "")));
 	}
 
 	/**
@@ -196,7 +208,7 @@ public class GrimoireScreen extends ListPickerScreen {
 			String id = entry.has("id") ? entry.get("id").getAsString() : "";
 			String name = entry.has("name") ? entry.get("name").getAsString() : id;
 			int level = entry.has("level") ? entry.get("level").getAsInt() : 0;
-			result.add(new KnownSpell(id, name + " (nv. " + level + ")", level));
+			result.add(new KnownSpell(id, name, name + " (nv. " + level + ")", level));
 		}
 		return result;
 	}

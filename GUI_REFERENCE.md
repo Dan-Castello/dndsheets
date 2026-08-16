@@ -415,7 +415,7 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 | Tabla de espacios por nivel | `renderSlotTable` | centrada, `SLOT_COL_WIDTH=24` por columna | SUBTITLE_Y=30 (nivel) y +`SLOT_ROW_STEP=10` (quedan/máx) | — | — | una columna por nivel con máximo > 0; nivel agotado en `MUTED_COLOR`, con espacios en `SUBTITLE_COLOR`. Sustituye al total plano "Espacios: n/max", que desde que los espacios son por nivel ya no dice si puedes lanzar tu Bola de Fuego |
 | Lista de hechizos | fila de `ListPickerScreen` | (width-220)/2 | listTop()=54 | 220 | listHeight() | scrollable |
 | Botón "Espacio: nv. N" | Button | (width-220)/2 | listTop()+listHeight()+SPACING | 220 | 20 | cicla el nivel de espacio (lanzar a nivel superior); solo entre los niveles que le QUEDAN al personaje, dando la vuelta al del propio hechizo. Inactivo para trucos y si no hay ningún nivel superior con espacios |
-| Botón "Elige un hechizo / Lanzar: X" | Button | (width-220)/2 | fila anterior + 20 + SPACING | 220 | 20 | inactivo hasta seleccionar hechizo; manda `SpellCastMessage(id, nivelElegido)` |
+| Botón "Elige un hechizo / Lanzar: X (nv. N)" | Button | (width-220)/2 | fila anterior + 20 + SPACING | 220 | 20 | inactivo hasta seleccionar hechizo; manda `SpellCastMessage(id, nivelElegido)`. El nivel del rótulo es el ELEGIDO, no el propio del hechizo: enseñando el suyo, este botón contradecía al de arriba ("Lanzar: Bola de Fuego (nv. 3)" bajo "Espacio: nv. 5") y el número equivocado estaba en el botón que actúa. Es el mismo que sale luego en el chat |
 | Mensaje "No conoces ningún hechizo..." | `emptyMessage()` | — | — | — | — | solo si no hay hechizos conocidos |
 
 ## SheetAdjustScreen
