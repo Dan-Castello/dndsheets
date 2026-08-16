@@ -119,6 +119,46 @@ public class JsonContentSelfTest {
 		//Alto de fila declarado en CharacterSheetScreen (yDiffTex) para cada textura.
 		assertTabRows("imagebutton_tabbutton.png", 15);
 		assertTabRows("imagebutton_tabbutton_active.png", 20);
+		checkIconButtons();
+	}
+
+	/**
+	 * <p>Los iconos de la hoja ({@code tools/make_icon_buttons.py}) llevan dos filas de estado: normal
+	 * arriba, ratón encima abajo. Aquí basta con dos —y no tres como las pestañas— porque
+	 * {@code setActiveVisible} y {@code RollScrollWidget.setInactive} apagan siempre {@code active} y
+	 * {@code visible} a la vez, así que un icono deshabilitado no llega a dibujarse.</p>
+	 *
+	 * <p>Lo que sí se comprueba es que las dos filas sean <b>distintas</b>. La primera versión de las
+	 * variantes "_edit" usaba pergamino en los dos estados: el botón se veía idéntico apuntado y sin
+	 * apuntar, o sea que no respondía a nada. Eso no rompe nada, no avisa, y solo se nota pasando el ratón
+	 * por encima en el juego.</p>
+	 */
+	private static void checkIconButtons() throws Exception {
+		Path dir = Path.of("src", "main", "resources", "assets", "dndsheets", "textures", "screens", "atlas");
+		try (java.util.stream.Stream<Path> files = Files.list(dir)) {
+			for (Path file : files.filter(f -> f.getFileName().toString().startsWith("imagebutton_")
+					&& !f.getFileName().toString().contains("tabbutton")).toList()) {
+				String name = file.getFileName().toString();
+				java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(file.toFile());
+				int size = image.getWidth();
+				assertTrue(image.getHeight() == size * 2,
+					name + ": " + size + "x" + image.getHeight() + ", se esperaban dos filas de " + size);
+
+				boolean differs = false;
+				boolean anyOpaque = false;
+				for (int x = 0; x < size && !differs; x++) {
+					for (int y = 0; y < size; y++) {
+						int normal = image.getRGB(x, y);
+						int hovered = image.getRGB(x, y + size);
+						if ((normal >>> 24) != 0) anyOpaque = true;
+						if (normal != hovered) { differs = true; break; }
+					}
+				}
+				assertTrue(anyOpaque, name + ": la fila normal está entera transparente");
+				assertTrue(differs, name + ": las filas de reposo y de ratón encima son idénticas, "
+					+ "así que el botón no responde visualmente al apuntarlo");
+			}
+		}
 	}
 
 	private static void assertTabRows(String name, int rowHeight) throws Exception {

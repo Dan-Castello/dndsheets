@@ -622,3 +622,33 @@ Sobre pergamino hay que **centrar a mano** (`x - font.width(texto) / 2`) y usar 
 lo comprueba en cada build sobre los dos ficheros que pintan encima del pergamino.
 
 Los `EditBox` no entran aquí: pintan su propio fondo negro, así que su texto claro con sombra es correcto.
+
+### Iconos de la hoja (`tools/make_icon_buttons.py`)
+
+Los once iconos de 16×16 (tirar, salvación, ataque, daño, añadir, borrar, modo edición) se generan en
+latón y tinta con la paleta de `GuiStyle`. Los de MCreator eran d20 magenta, una cruz verde y un
+engranaje gris.
+
+Se dibujan **directamente a 16×16, sin supersampling**: a ese tamaño el suavizado emborrona una silueta
+que solo tiene 16 píxeles de ancho. Los polígonos de PIL son de borde duro, que es justo lo que se quiere
+(al revés que los fondos, que sí se dibujan a 4× porque Minecraft los reduce).
+
+Llevan **dos** filas de estado, no tres como las pestañas, porque `setActiveVisible` y
+`RollScrollWidget.setInactive` apagan siempre `active` y `visible` a la vez: un icono deshabilitado no
+llega a dibujarse. Si algún día se apaga solo `active`, hay que añadir la tercera fila.
+
+Cada icono debe **cambiar** entre reposo y ratón encima. Las variantes `_edit` salieron primero con
+pergamino en los dos estados y el botón se veía idéntico apuntado y sin apuntar: no rompe nada, no avisa
+y solo se nota pasando el ratón en el juego. `JsonContentSelfTest.checkIconButtons` lo comprueba.
+
+Las `_edit` comparten silueta con su versión normal y se distinguen por ser huecas más la plumilla: son
+el mismo botón en el mismo sitio alternando con el modo edición, así que tienen que decir "esto edita lo
+de siempre", no parecer otra cosa.
+
+### Los editores de tirada ya no traen PNG
+
+`RollEditorScreen` y `AdvancedRollEditorScreen` usaban `roll_editor.png` y `advanced_roll_editor.png`
+—el panel azul marino con remaches rojos de MCreator— y ahora llaman a `GuiStyle.panel()` sobre el mismo
+rectángulo, como las otras cuarenta pantallas. Los dos PNG están borrados. Ningún offset cambió: el panel
+se dibuja en `(leftPos, topPos)`–`(leftPos + imageWidth, topPos + imageHeight)`, exactamente donde iba el
+blit.

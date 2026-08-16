@@ -11,7 +11,6 @@ import net.hawthorn.dndsheets.client.procedures.CharacterSheetSaveProcedure;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.components.EditBox;
@@ -53,7 +52,6 @@ public class RollEditorScreen extends AbstractContainerScreen<RollEditorMenu> {
 		this.imageHeight = 175;
 	}
 
-	private static final ResourceLocation texture = new ResourceLocation("dndsheets:textures/screens/roll_editor.png");
 
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
@@ -65,11 +63,11 @@ public class RollEditorScreen extends AbstractContainerScreen<RollEditorMenu> {
 
 	@Override
 	protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int gx, int gy) {
-		RenderSystem.setShaderColor(1, 1, 1, 1);
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		guiGraphics.blit(texture, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight, this.imageWidth, this.imageHeight);
-		RenderSystem.disableBlend();
+		//Panel procedural en vez de un PNG. El que había era el azul marino con remaches rojos que trae
+		//MCreator por defecto: no era del mod, y encima ataba el tamaño de la pantalla al tamaño de una
+		//imagen. GuiStyle.panel es lo que ya pinta las otras cuarenta pantallas, así que estas dos dejan de
+		//poder desincronizarse del resto — y se dibuja en el mismo rectángulo, así que ningún offset cambia.
+		GuiStyle.panel(guiGraphics, this.leftPos, this.topPos, this.leftPos + this.imageWidth, this.topPos + this.imageHeight);
 	}
 
 	@Override
@@ -92,9 +90,9 @@ public class RollEditorScreen extends AbstractContainerScreen<RollEditorMenu> {
 
 	@Override
 	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-		final int txtColor = 0xFFFFFF;
-		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.roll_editor.label_roll_expression"), X_OFFSET, EXPRESSION_Y - 10, 0xFFFFFF, false);
-		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.roll_editor.label_insert_modifiers"), X_OFFSET, BUTTONS_Y - 10, 0xFFFFFF, false);
+		final int txtColor = GuiStyle.TITLE_COLOR;
+		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.roll_editor.label_roll_expression"), X_OFFSET, EXPRESSION_Y - 10, txtColor, false);
+		guiGraphics.drawString(this.font, Component.translatable("gui.dndsheets.roll_editor.label_insert_modifiers"), X_OFFSET, BUTTONS_Y - 10, txtColor, false);
 	}
 
 	@Override

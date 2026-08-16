@@ -17,7 +17,6 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -56,7 +55,6 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 		this.imageHeight = 224;
 	}
 
-	private static final ResourceLocation texture = new ResourceLocation("dndsheets:textures/screens/advanced_roll_editor.png");
 
 	//renderLabels corre cada frame: estos Component (texto estático, nunca cambia) se cachean una sola
 	//vez en vez de construirse de nuevo en cada uno.
@@ -79,11 +77,11 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 
 	@Override
 	protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int gx, int gy) {
-		RenderSystem.setShaderColor(1, 1, 1, 1);
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		guiGraphics.blit(texture, this.leftPos, this.topPos, 0, 0, this.imageWidth, this.imageHeight, this.imageWidth, this.imageHeight);
-		RenderSystem.disableBlend();
+		//Panel procedural en vez de un PNG. El que había era el azul marino con remaches rojos que trae
+		//MCreator por defecto: no era del mod, y encima ataba el tamaño de la pantalla al tamaño de una
+		//imagen. GuiStyle.panel es lo que ya pinta las otras cuarenta pantallas, así que estas dos dejan de
+		//poder desincronizarse del resto — y se dibuja en el mismo rectángulo, así que ningún offset cambia.
+		GuiStyle.panel(guiGraphics, this.leftPos, this.topPos, this.leftPos + this.imageWidth, this.topPos + this.imageHeight);
 	}
 
 	@Override
@@ -118,7 +116,7 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 
 	@Override
 	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-		final int txtColor = 0xFFFFFF;
+		final int txtColor = GuiStyle.TITLE_COLOR;
 		guiGraphics.drawString(this.font, LABEL_ROLL_EDITOR_1, FIRSTROLL_X, 26, txtColor, false);
 		guiGraphics.drawString(this.font, LABEL_ROLL_EDITOR_2, SECONDROLL_X, 26, txtColor, false);
 		guiGraphics.drawString(this.font, LABEL_ROLL_CONTEXT, FIRSTROLL_X, CONTEXT_Y - 10, txtColor, false);
