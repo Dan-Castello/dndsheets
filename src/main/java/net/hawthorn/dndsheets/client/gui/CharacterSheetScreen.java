@@ -66,7 +66,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	EditBox level;          // Sincronizado en vivo desde entity.experienceLevel (XP real de Minecraft)
 	EditBox hunger;         // Sincronizado en vivo desde entity.getFoodData().getFoodLevel()
 	Button grimoireButton;  // Abre el Grimorio (ver GrimoireScreen), sin tocar la hoja
-	Button presetsButton;   // Pide la lista de presets de clase al servidor (ver PresetScreen)
+	Button presetsButton;
+	Button charactersButton; // Pide al servidor la lista de personajes (ver CharacterListScreen): cambiar, crear y borrar
 	Button guideButton;     // Abre la guía del mod (ver GuideBook), páginas de DM incluidas si el cliente es op
 
 	EditBox hitDice;
@@ -190,14 +191,19 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 	//Botones de página (Grimorio, Presets, Guía): centrados en el ancho completo, no en el panel derecho,
 	//porque son acciones de la hoja entera y no de una sección. 80*3 + 10*2 = 260, (350-260)/2 = 45.
-	private static final int BOTTOM_BUTTON_WIDTH = 80;
+	//72 y no 80: la fila de abajo pasa de tres botones a cuatro al entrar "Personajes", y cuatro de 80 no
+	//caben en los 350 de la hoja. Con 72 y 86 de paso, el último acaba en 340, justo en PANEL_RIGHT.
+	private static final int BOTTOM_BUTTON_WIDTH = 72;
+	private static final int BOTTOM_BUTTON_STEP = 86;
 	private static final int BOTTOM_BUTTON_HEIGHT = 16;
 	private static final int BOTTOM_ROW_Y = ROW4_Y + FIELD_H + 12;
-	private final int GRIMOIRE_OFFSET_X = 45;
+	private final int GRIMOIRE_OFFSET_X = 10;
 	private final int GRIMOIRE_OFFSET_Y = BOTTOM_ROW_Y;
-	private final int PRESETS_OFFSET_X = 135;
+	private final int PRESETS_OFFSET_X = GRIMOIRE_OFFSET_X + BOTTOM_BUTTON_STEP;
 	private final int PRESETS_OFFSET_Y = BOTTOM_ROW_Y;
-	private final int GUIDE_OFFSET_X = 225;
+	private final int CHARACTERS_OFFSET_X = PRESETS_OFFSET_X + BOTTOM_BUTTON_STEP;
+	private final int CHARACTERS_OFFSET_Y = BOTTOM_ROW_Y;
+	private final int GUIDE_OFFSET_X = CHARACTERS_OFFSET_X + BOTTOM_BUTTON_STEP;
 	private final int GUIDE_OFFSET_Y = BOTTOM_ROW_Y;
 
 	/*
@@ -443,14 +449,10 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			case SKILLS:
 				break;
 			case ATTACKS:
-				section(guiGraphics, LABEL_ATTACKS_TAB, SEC1_Y);
-				//Sin ataques, la lista es un hueco oscuro que no dice qué hacer con él. El botón de añadir
-				//está justo debajo pero es un icono de 16 px sin rótulo.
-				if (attackRolls.getListSize() == 0) {
-					guiGraphics.drawString(this.font, LABEL_ATTACKS_EMPTY,
-						PANEL_X + (PANEL_RIGHT - PANEL_X - this.font.width(LABEL_ATTACKS_EMPTY)) / 2,
-						ATTACK_TOP + ATTACK_HEIGHT / 2 - 4, GuiStyle.MUTED_COLOR, false);
-				}
+				//La cabecera y el aviso de lista vacía se dibujan en renderLabels, no aquí: este método corre
+				//en coordenadas de PANTALLA y las constantes de la retícula son de la HOJA, así que sin la
+				//traslación de leftPos/topPos el texto aterrizaba en la esquina superior izquierda, encima
+				//del panel lateral de características.
 				break;
 		}
 
@@ -781,6 +783,16 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		section(guiGraphics, LABEL_SECTION_ABILITIES, ABILITY_OFFSET_Y - 13, NAME_OFFSET_X, SIDE_PANEL_RIGHT);
 
 		switch (panelActive) {
+			case ATTACKS:
+				section(guiGraphics, LABEL_ATTACKS_TAB, SEC1_Y);
+				//Sin ataques, la lista es un hueco oscuro que no dice qué hacer con él. El botón de añadir
+				//está justo debajo pero es un icono de 16 px sin rótulo.
+				if (attackRolls.getListSize() == 0) {
+					guiGraphics.drawString(this.font, LABEL_ATTACKS_EMPTY,
+						PANEL_X + (PANEL_RIGHT - PANEL_X - this.font.width(LABEL_ATTACKS_EMPTY)) / 2,
+						ATTACK_TOP + ATTACK_HEIGHT / 2 - 4, GuiStyle.MUTED_COLOR, false);
+				}
+				break;
 			case MAIN:
 				//Cabeceras de sección: son lo que convierte doce rótulos sueltos sobre un pergamino en blanco
 				//en tres grupos que se encuentran de un vistazo. El filete es el mismo recurso que usa
@@ -1360,6 +1372,16 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		}, this.leftPos + PRESETS_OFFSET_X, this.topPos + PRESETS_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
 		guistate.put("button:presets", presetsButton);
 		this.addRenderableWidget(presetsButton);
+
+		//Cambiar, crear y borrar personaje viven los tres en CharacterListScreen, así que aquí basta UNA
+		//puerta: tres botones más en una fila que ya iba justa costarían el ancho de los que ya están, y la
+		//lista es donde se ve cuál llevas puesto —que es la mitad de la decisión al cambiar—.
+		charactersButton = TomeButton.of(Component.translatable("gui.dndsheets.character_sheet.characters"), b -> {
+			CharacterSheetSaveProcedure.execute(guistate); //Como con Presets: no perder lo escrito al navegar fuera.
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new net.hawthorn.dndsheets.network.BrowseActionMessage(
+				net.hawthorn.dndsheets.network.BrowseActionMessage.Action.LIST_MINE));
+		}, this.leftPos + CHARACTERS_OFFSET_X, this.topPos + CHARACTERS_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
+		this.addRenderableWidget(charactersButton);
 
 		boolean isDm = this.minecraft.player != null && this.minecraft.player.hasPermissions(2);
 		guideButton = TomeButton.of(Component.translatable("gui.dndsheets.guide.button"), b -> GuideBook.open(isDm), this.leftPos + GUIDE_OFFSET_X, this.topPos + GUIDE_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);

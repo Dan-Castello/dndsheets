@@ -140,7 +140,8 @@ Dos cosas que el fondo **ya no lleva**, y no es un olvido:
 | level | EditBox | LEVEL_OFFSET_X=125 | LEVEL_OFFSET_Y=205 | — | — | ámbar; sin hueco dedicado en la textura todavía, colocado en margen inferior |
 | hunger | EditBox | HUNGER_OFFSET_X=220 | HUNGER_OFFSET_Y=205 | — | — | ámbar |
 | initiativeButton / initiativeEditButton | ImageButton | INITIATIVE_OFFSET_X=304 | INITIATIVE_OFFSET_Y=165 | 16 | 16 | |
-| grimoireButton | Button | GRIMOIRE_OFFSET_X=90 | GRIMOIRE_OFFSET_Y=228 | BOTTOM_BUTTON_WIDTH=80 | BOTTOM_BUTTON_HEIGHT=16 | abre `GrimoireScreen` |
+| grimoireButton | Button | GRIMOIRE_OFFSET_X=10 | BOTTOM_ROW_Y | BOTTOM_BUTTON_WIDTH=72 | BOTTOM_BUTTON_HEIGHT=16 | abre `GrimoireScreen` |
+| charactersButton | Button | +BOTTOM_BUTTON_STEP=86 por botón | BOTTOM_ROW_Y | 72 | 16 | pide `BrowseActionMessage(LIST_MINE)`: abre `CharacterListScreen`, donde se cambia, se crea y se borra |
 | presetsButton | Button | PRESETS_OFFSET_X=180 | PRESETS_OFFSET_Y=228 | 80 | 16 | abre `PresetScreen` |
 | checkButtons/saveButtons (modo lectura) o checkEditButtons/saveEditButtons (modo edición) | ImageButton (d20) | — | — | 16 | 16 | `imagebutton_d20*.png`; visibilidad exclusiva según `editMode` |
 

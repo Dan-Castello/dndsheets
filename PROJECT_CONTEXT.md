@@ -813,6 +813,25 @@ dependencies, not preference.
       The runtime hook itself (spending a use) has no self-test: it needs a world entity. Only the
       data and the stat-block plumbing are covered.
 
+  25. **Two reports from play, both on the character sheet.**
+
+      **The empty-attacks notice was drawn over the ability scores.** The `case ATTACKS` block sat in
+      `render()`, which runs in *screen* coordinates, while every grid constant it used
+      (`PANEL_X`, `ATTACK_TOP`, `SEC1_Y`) is in *sheet* coordinates. Without the `leftPos`/`topPos`
+      translation the text landed in the screen's top-left corner — on top of the side panel. The
+      sheet draws in two coordinate spaces and nothing marked the boundary; `renderLabels` already
+      runs translated, which is where it belongs and where it now is.
+
+      `checkSheetCoordinateSpaces` asserts `render()` never names a grid constant. This bug is
+      invisible to the compiler and leaves no trace in the log — it can only be *seen*, which is
+      exactly the kind that needs a mechanical guard.
+
+      **Characters are reachable from the sheet.** A "Personajes" button opens `CharacterListScreen`,
+      which is where switching, creating and deleting already live. One door rather than three
+      buttons: the bottom row was already full at three, four fit only by narrowing them (80 → 72,
+      step 86, ending exactly on `PANEL_RIGHT`), and the list is where you can *see* which character
+      you are wearing — half the decision when switching.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

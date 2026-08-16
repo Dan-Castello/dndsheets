@@ -52,6 +52,7 @@ public class JsonContentSelfTest {
 		checkAbilityImprovements();
 		checkLanguageFiles();
 		checkNetworkShape();
+		checkSheetCoordinateSpaces();
 		checkCharacterLookup();
 		checkCharacterAfterDelete();
 		checkAttackPathsShareRules();
@@ -1704,6 +1705,34 @@ public class JsonContentSelfTest {
 				+ " y un servidor viejo se dan la mano y se desalinean después, en silencio.");
 
 		System.out.println("checkNetworkShape: OK, " + messages + " mensajes y " + enumConstants + " constantes de enum en el cable.");
+	}
+
+	/**
+	 * <p>La hoja de personaje dibuja en DOS espacios de coordenadas: {@code renderLabels} corre ya trasladado
+	 * a la esquina de la hoja, y {@code render} corre en coordenadas de pantalla. Las constantes de la
+	 * retícula ({@code PANEL_X}, {@code ATTACK_TOP}...) son de la hoja, así que usarlas desde {@code render}
+	 * pinta el texto en la esquina de la pantalla, encima del panel lateral de características.</p>
+	 *
+	 * <p>Reportado jugando exactamente así: el aviso de "sin ataques" salía superpuesto a las
+	 * características, ilegible. No falla al compilar ni deja rastro en el log — solo se ve.</p>
+	 */
+	private static void checkSheetCoordinateSpaces() throws Exception {
+		String source = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
+			"client", "gui", "CharacterSheetScreen.java"));
+		int from = source.indexOf("public void render(GuiGraphics");
+		assertTrue(from > 0, "no encontré render(GuiGraphics...) en CharacterSheetScreen");
+		String render = source.substring(from, source.indexOf("\n\t}", from));
+
+		//Dibujar texto de la retícula desde render() es el error; los widgets se colocan con leftPos/topPos
+		//al construirlos y se pintan solos, así que render() no debería nombrar la retícula en absoluto.
+		for (String grid : List.of("PANEL_X", "PANEL_RIGHT", "ATTACK_TOP", "SEC1_Y", "section(guiGraphics")) {
+			assertTrue(!render.contains(grid),
+				"render() usa \"" + grid + "\", que es una coordenada de la HOJA: sin la traslación de "
+					+ "leftPos/topPos eso se dibuja en la esquina de la pantalla, encima del panel lateral. "
+					+ "Va en renderLabels, que ya corre trasladado.");
+		}
+
+		System.out.println("checkSheetCoordinateSpaces: OK, la retícula de la hoja solo se usa donde está trasladada.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {
