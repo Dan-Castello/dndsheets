@@ -1346,19 +1346,25 @@ public class JsonContentSelfTest {
 			assertTrue(reglas.contains(regla), "AttackRules debería aplicar " + regla + " y no lo hace");
 		}
 
-		//El conjuro de un monstruo va por su propio camino (una salvación, no una tirada de ataque), así que
-		//su cobertura se comprueba aparte: parapetarse del aliento de un dragón es EL caso de manual, y
-		//estuvo implementado solo del lado del jugador que lanza.
-		String resolveSpell = methodBody(Files.readString(dir.resolve("MonsterActionManager.java")), "resolveSpell(");
-		assertTrue(resolveSpell.contains("Cover.between("),
-			"la salvación de Destreza contra el conjuro de un monstruo también debería contar la cobertura");
+		//Las salvaciones son la otra mitad, y tenían la misma duplicación: quien lanza es distinto, la regla
+		//no. Se comprueba igual, contra SaveRules.
+		String castSaveSpell = methodBody(readSource("SpellCastManager.java"), "castSaveSpell(");
+		String resolveSpell = methodBody(readSource("MonsterActionManager.java"), "resolveSpell(");
+		for (String cuerpo : List.of(castSaveSpell, resolveSpell)) {
+			assertTrue(cuerpo.contains("SaveRules.resolve("),
+				"la salvación debería resolverse por SaveRules: cobertura, CD real, éxito y daño final");
+		}
+		String reglasSalvacion = readSource("SaveRules.java");
+		for (String regla : List.of("Cover.between(", "rollSave(", "halfOnSave")) {
+			assertTrue(reglasSalvacion.contains(regla), "SaveRules debería aplicar " + regla + " y no lo hace");
+		}
 		//Se comprueba que USE el nombre del personaje, en vez de que no aparezca el otro: la primera versión
 		//buscaba la ausencia de "target.getName()" y saltaba por el comentario que explica justo eso.
 		assertTrue(resolveSpell.contains("targetCombatant.name()"),
 			"debería anunciar el nombre del personaje, no el de la cuenta de Minecraft");
 
 		checkAdvantageSourcesArePooled();
-		System.out.println("checkAttackPathsShareRules: OK, jugador y monstruo resuelven el ataque con las mismas reglas y el mismo código.");
+		System.out.println("checkAttackPathsShareRules: OK, jugador y monstruo resuelven ataques y salvaciones con las mismas reglas y el mismo código.");
 	}
 
 	/**

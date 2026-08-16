@@ -609,6 +609,23 @@ dependencies, not preference.
       game. So the invariant is now held structurally: `advantageAgainst` must contain exactly one
       `combineAdvantage(` call.
 
+  15. **And one save resolution instead of two (`SaveRules`).** The other half of item 14, done for
+      the same reason and before it could cost another bug: cover, the real DC, whether the save
+      succeeds, and the final damage were written once for "a player casts" and once for "a monster
+      casts". They had already drifted — cover counted only on the player side, so sheltering from a
+      dragon's breath did nothing. What stays split is what genuinely differs: where the DC comes
+      from (a monster carries it in its stat block, a player computes it from a sheet), how it is
+      announced, and which condition hangs off a failure.
+
+      Both paths now also apply spell damage through one implementation, so affinities, temporary hit
+      points, concentration and death are resolved in a single place.
+
+      One claim in the first draft of that class was **wrong and got corrected before committing**:
+      it said the monster path made a mod's mob immune to monster spells because the tolerant "roll a
+      bare d20" branch existed only on the player side. Tracing it, a monster's spell only ever
+      targets a player, so that branch was unreachable and the behaviour was identical. The rule is
+      unified anyway — but the comment now says what is true rather than what made a better story.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

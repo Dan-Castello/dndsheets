@@ -377,34 +377,25 @@ public class MonsterActionManager {
 
 		Combatant targetCombatant = Combatant.of(target);
 		if (targetCombatant == null) return;
-		Combatant.SaveRoll saveRoll = targetCombatant.rollSave(spell.saveAbility());
-		if (saveRoll.formatted() == null) return;
 
-		//La cobertura sube las salvaciones de DESTREZA, también contra el conjuro de un monstruo: parapetarse
-		//del aliento de un dragón es el caso de manual, y solo estaba implementado del lado del jugador que
-		//lanza. Se le resta a la CD, igual que en SpellCastManager.
-		Cover cover = "dex".equals(spell.saveAbility()) ? Cover.between(monsterEntity, target) : Cover.NONE;
-		int saveDc = spell.saveDc() - cover.bonus();
-
-		DiceManager.RollOutcome damageRoll = DiceManager.roll(new JsonObject(), spell.dice());
-		if (damageRoll.result() == null) return;
-
-		boolean saved = saveRoll.succeeds(saveDc);
-		int finalDamage = saved ? (spell.halfOnSave() ? damageRoll.result().getValue() / 2 : 0) : damageRoll.result().getValue();
-		Component outcomeLabel = Component.translatable(saved ? (spell.halfOnSave() ? "chat.dndsheets.spell.save_half" : "chat.dndsheets.spell.save_none") : "chat.dndsheets.spell.save_fail");
+		//Cobertura, CD real, salvación y daño final: mismas reglas, y mismo código, que cuando el que lanza
+		//es un jugador (ver SaveRules). La CD sí sale de sitios distintos — el monstruo la trae escrita en su
+		//bloque y el jugador la calcula de su hoja — y esa diferencia es real, no duplicación.
+		SaveRules.Outcome save = SaveRules.resolve(monsterEntity, target, spell.saveAbility(),
+			spell.saveDc(), spell.dice(), spell.halfOnSave());
+		if (save == null) return;
+		boolean saved = save.saved();
 
 		CombatFx.spellCast(monsterEntity);
 		CombatFx.spellImpact(target, saved, spell.damageType());
 		//targetCombatant.name() y no target.getName(): el resto del mod anuncia el nombre del PERSONAJE, y
 		//aquí se colaba el de la cuenta de Minecraft.
-		ChatFeedback.broadcast(monsterEntity, ChatFeedback.withCover(ChatFeedback.saveResult(block.name(), targetCombatant.name(), spell.name(), saveRoll.formatted(), saveDc, saved, outcomeLabel,
-			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null), cover));
+		ChatFeedback.broadcast(monsterEntity, ChatFeedback.withCover(ChatFeedback.saveResult(block.name(), targetCombatant.name(), spell.name(),
+			save.roll().formatted(), save.dc(), saved, save.label(), save.damageFormatted()), save.cover()));
 
-		if (finalDamage > 0) {
-			double affinity = targetCombatant.effectiveDamageMultiplier(spell.damageType(), true); //Un conjuro siempre es mágico. Incluye además la resistencia de petrificado, ver Combatant.
-			int appliedAmount = DamageTypes.applyMultiplier(finalDamage, affinity);
-			targetCombatant.takeDamage(appliedAmount);
-		}
+		//Una sola implementación de "aplicar daño de conjuro": afinidades, PG temporales, concentración y
+		//muerte. Un conjuro siempre cuenta como mágico.
+		if (save.finalDamage() > 0) SpellCastManager.applyDamage(target, save.finalDamage(), spell.damageType());
 		//Mismo criterio que SpellCastManager.castSaveSpell: la condición la decide la salvación, no el daño.
 		//Un aliento paralizante que no hace daño debe paralizar igual, y uno que sí lo hace no debe imponer
 		//su condición a quien superó la tirada.

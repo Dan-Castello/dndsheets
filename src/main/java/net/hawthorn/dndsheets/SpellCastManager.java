@@ -462,28 +462,18 @@ public class SpellCastManager {
 
 	private static void castSaveSpell(ServerPlayer caster, String casterName, SpellRegistry.Spell spell, Entity target, int proficiency, int abilityMod) {
 		if (TurnManager.isMonster(target)) MonsterRegistry.faceTarget(target, caster);
-		//La cobertura suma a las salvaciones de DESTREZA y solo a esas: es esquivar lo que el parapeto ayuda
-		//a hacer, no aguantar un veneno ni resistir una sugestión. Se le resta a la CD en vez de sumarse a la
-		//tirada porque es el mismo margen y el objetivo puede no tener hoja donde apuntar un bono.
-		Cover cover = "dex".equals(spell.saveAbility()) ? Cover.between(caster, target) : Cover.NONE;
-		int saveDc = 8 + proficiency + abilityMod - cover.bonus();
-		String targetName = nameOf(target);
-
-		DiceManager.RollOutcome damageRoll = DiceManager.roll(new JsonObject(), spell.dice());
-		if (damageRoll.result() == null) return;
-
-		Combatant.SaveRoll saveRoll = rollTargetSave(target, spell.saveAbility());
-		if (saveRoll == null || saveRoll.formatted() == null) return;
-
-		boolean saved = saveRoll.succeeds(saveDc);
-		int finalDamage = saved ? (spell.halfOnSave() ? damageRoll.result().getValue() / 2 : 0) : damageRoll.result().getValue();
-		Component outcomeLabel = Component.translatable(saved ? (spell.halfOnSave() ? "chat.dndsheets.spell.save_half" : "chat.dndsheets.spell.save_none") : "chat.dndsheets.spell.save_fail");
+		//Cobertura, CD real, salvación y daño final: mismas reglas, y mismo código, que cuando el que lanza
+		//es un monstruo (ver SaveRules).
+		SaveRules.Outcome save = SaveRules.resolve(caster, target, spell.saveAbility(),
+			8 + proficiency + abilityMod, spell.dice(), spell.halfOnSave());
+		if (save == null) return;
+		boolean saved = save.saved();
 
 		CombatFx.spellImpact(target, saved, spell.damageType());
-		ChatFeedback.broadcast(caster, ChatFeedback.withCover(ChatFeedback.saveResult(casterName, targetName, spell.name(), saveRoll.formatted(), saveDc, saved, outcomeLabel,
-			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null), cover));
+		ChatFeedback.broadcast(caster, ChatFeedback.withCover(ChatFeedback.saveResult(casterName, nameOf(target), spell.name(),
+			save.roll().formatted(), save.dc(), saved, save.label(), save.damageFormatted()), save.cover()));
 
-		if (finalDamage > 0) applyDamage(target, finalDamage, spell.damageType());
+		if (save.finalDamage() > 0) applyDamage(target, save.finalDamage(), spell.damageType());
 		//El efecto depende de la SALVACIÓN, no del daño: en 5e que una condición prenda lo decide si el
 		//objetivo superó la tirada, y hay hechizos enteros que no hacen daño ninguno (Inmovilizar Persona,
 		//Dormir). Antes esto colgaba de "finalDamage > 0", así que un hechizo de solo condición no aplicaba
@@ -500,17 +490,6 @@ public class SpellCastManager {
 		TurnManager.applyEffect(target, spell.effectName(), spell.effectDice(), spell.effectTurns(), caster);
 		ChatFeedback.broadcast(target, Component.translatable("chat.dndsheets.monster.effect_applied", nameOf(target), spell.effectName(), spell.effectTurns()).withStyle(ChatFormatting.DARK_PURPLE));
 		if (spell.concentration()) ConcentrationManager.attachEffect(caster, target.getId(), spell.effectName());
-	}
-
-	private static Combatant.SaveRoll rollTargetSave(Entity target, String saveAbility) {
-		Combatant combatant = Combatant.of(target);
-		if (combatant != null) return combatant.rollSave(saveAbility);
-		//Jugador sin hoja cargada: no se resuelve nada, igual que antes — mejor no hacer daño que hacerlo
-		//con características inventadas.
-		if (target instanceof Player) return null;
-		//Mob de otro mod sin bloque de estadísticas (ver TurnManager.isMonster): no hay características que
-		//consultar, así que tira el d20 pelado, exactamente como hacía antes con modificador 0.
-		return new Combatant.SaveRoll(DiceManager.roll(new JsonObject(), "1d20"), null);
 	}
 
 	//Público: también lo usa TurnManager para el daño de efectos de estado (veneno, etc.) al inicio del turno.
