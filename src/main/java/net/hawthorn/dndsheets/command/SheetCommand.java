@@ -9,6 +9,7 @@ import net.hawthorn.dndsheets.BarbarianRageManager;
 import net.hawthorn.dndsheets.BardInspirationManager;
 import net.hawthorn.dndsheets.CounterspellManager;
 import net.hawthorn.dndsheets.DiceManager;
+import net.hawthorn.dndsheets.SpellSlots;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.DruidWildShapeManager;
 import net.hawthorn.dndsheets.FighterSecondWindManager;
@@ -477,8 +478,10 @@ public class SheetCommand {
 		current = Math.max(0, Math.min(current, 99));
 
 		SheetLoader.validateSheet(sheet);
-		sheet.addProperty("spellSlotsMax", max);
-		sheet.addProperty("spellSlotsCurrent", Math.min(current, max));
+		//Un comando de un solo número no puede decir de qué nivel son, así que van como espacios de nivel 1
+		//—lo más conservador— y de paso quedan en la tabla: escribir solo el total dejaría al personaje sin
+		//poder lanzar nada, porque lanzar mira la tabla.
+		SpellSlots.setFlat(sheet, max, current);
 		sendSheetUpdate(target, sheet);
 	}
 

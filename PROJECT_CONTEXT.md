@@ -357,10 +357,34 @@ dependencies, not preference.
      (Grimoire, wands, magic items via `QuickSpellManager`) funnel through one `handleCastRequest`, so
      there was exactly one gate to fix.
 
-  **Known simplification, deliberately left:** slots are a single pool, not the 5e per-spell-level
-  table, so a 3rd-level spell costs the same as a 1st. Fixing it is not a bigger table — it changes
-  what "a slot" means for casting, rests, Counterspell, Smite, Shield, Pact Magic and the HUD at once.
-  Worth doing, worth doing as its own piece.
+  3. **Slots became per spell level (`SpellSlots`).** They were a single pool fixed once by the class
+     preset, which broke two rules at once: a 3rd-level spell cost the same as a 1st, and a level-10
+     wizard had a level-1 wizard's slots. Now the class decides the whole table and the character level
+     scales it — full casters, half casters and Pact Magic each get their own progression.
+
+     Three things worth keeping:
+
+     - **The old scalar fields are still maintained** as the sum of the table. Everything that only
+       shows "how many do I have left" — HUD, Grimoire, sheet summary, `/dndsheet` — keeps reading them
+       unchanged. Changing those too would have doubled the size of the change without improving
+       anything anyone sees.
+     - **Half casters are the full table at `ceil(level/2)`**, verified level by level against the SRD
+       before relying on it: rounding the other way shifts the whole progression by one level and
+       nothing fails.
+     - **Spending takes the lowest slot that works.** 5e lets you cast with a higher slot, but burning
+       an expensive one while a cheap one would do is throwing the resource away.
+
+     It also unlocked a rule that could not be written before: **Arcane Recovery** is a budget of
+     *summed levels*, not a count of slots. With one pool there was no "which level" to give back, so
+     it counted slots; now it restores the most expensive slots the budget affords, capped at 5th.
+
+     Both tables are asserted at **every one of the 20 levels** in the self-test, not just at sample
+     rows — the first version spot-checked four levels and a deliberately moved digit at an unchecked
+     level slipped straight through.
+
+  **Known simplification, deliberately left:** casting at a higher level than the spell's own (more
+  damage dice for a higher slot) is not implemented; a higher slot is spent when no lower one is left,
+  but the spell resolves at its base level.
 
 **What already beats the competition and should be leaned on, not rebuilt:** the 3D map, real
 line of sight, real lighting and real movement are *native*. That is literally what Roll20 and

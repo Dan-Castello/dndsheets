@@ -210,6 +210,12 @@ public class SheetLoader {
 		//resuelve. Se guarda como texto porque así lo lee la hoja y así lo escribe su campo.
 		sheet.addProperty("proficiencyBonus", String.valueOf(CharacterRules.proficiencyBonusFor(level)));
 
+		//Y los espacios de conjuro, por el mismo motivo. Es idempotente: si la clase y el nivel no han
+		//cambiado no toca lo que quede gastado, y en una hoja que viene de la bolsa única rellena la tabla
+		//nueva la primera vez.
+		String characterClass = sheet.has("characterClass") ? sheet.get("characterClass").getAsString() : "";
+		SpellSlots.applyProgression(sheet, characterClass, level);
+
 		maxHealthAttr.removeModifier(CLASS_HP_MODIFIER_ID);
 		maxHealthAttr.addPermanentModifier(new AttributeModifier(CLASS_HP_MODIFIER_ID, "dndsheets class hit points", maxHp - maxHealthAttr.getBaseValue(), AttributeModifier.Operation.ADDITION));
 

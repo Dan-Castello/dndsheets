@@ -23,6 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class WizardArcaneRecoveryManager {
 	private static final Set<UUID> usedSinceLongRest = ConcurrentHashMap.newKeySet();
+	/** La Recuperación Arcana no devuelve espacios de nivel 6 o superior. */
+	private static final int MAX_RECOVERED_LEVEL = 5;
 
 	//Público: RestManager lo llama en cada descanso CORTO, con la MISMA hoja que ya está a punto de
 	//guardar/enviar, para que el ajuste de espacios de conjuro viaje en el mismo SheetClientMessage.
@@ -30,12 +32,13 @@ public class WizardArcaneRecoveryManager {
 		if (!isWizard(sheet)) return;
 		if (!usedSinceLongRest.add(player.getUUID())) return; //Ya usada desde el último descanso largo.
 
-		int max = sheet.get("spellSlotsMax").getAsInt();
-		int current = sheet.get("spellSlotsCurrent").getAsInt();
-		int recovered = Math.min(max - current, (int) Math.ceil(SheetLoader.characterLevelOf(sheet, player) / 2.0));
+		//La regla de 5e es un presupuesto de NIVELES SUMADOS (la mitad del nivel de mago, ninguno por
+		//encima del 5º), no un número de espacios sueltos. Antes se contaban espacios porque con la bolsa
+		//única no había "de qué nivel" que recuperar; con la tabla por niveles ya se puede aplicar tal cual.
+		int budget = (int) Math.ceil(SheetLoader.characterLevelOf(sheet, player) / 2.0);
+		int recovered = SpellSlots.restoreBudget(sheet, budget, MAX_RECOVERED_LEVEL);
 		if (recovered <= 0) return;
 
-		sheet.addProperty("spellSlotsCurrent", current + recovered);
 		player.sendSystemMessage(Component.literal("Recuperación Arcana: recuperas " + recovered + " espacio(s) de conjuro.").withStyle(ChatFormatting.LIGHT_PURPLE));
 	}
 

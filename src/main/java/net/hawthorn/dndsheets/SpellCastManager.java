@@ -71,6 +71,16 @@ public class SpellCastManager {
 		CombatFx.aoeRing(caster.level(), findImpactPoint(caster), spell.aoeRadius());
 	}
 
+	/**
+	 * <p>Gasta el espacio y avisa al cliente. Coge el más bajo que sirva para ese nivel de conjuro: en 5e
+	 * se puede lanzar con un espacio superior, pero quemar uno alto pudiendo usar uno bajo es tirar el
+	 * recurso caro.</p>
+	 */
+	private static void spendSlot(ServerPlayer caster, JsonObject casterSheet, int spellLevel) {
+		SpellSlots.spend(casterSheet, spellLevel);
+		sendSlotsUpdate(caster, casterSheet.get("spellSlotsCurrent").getAsInt());
+	}
+
 	public static void handleCastRequest(ServerPlayer caster, String spellId) {
 		long now = caster.level().getGameTime();
 		Long last = lastCastTick.put(caster.getUUID(), now);
@@ -89,8 +99,9 @@ public class SpellCastManager {
 		//tocaban el contador.
 		boolean needsSlot = spell.level() > 0;
 
-		int slotsCurrent = casterSheet.has("spellSlotsCurrent") ? casterSheet.get("spellSlotsCurrent").getAsInt() : 0;
-		if (needsSlot && slotsCurrent <= 0) {
+		//Se comprueba aquí sin gastar, y se gasta más abajo: si el hechizo se rechaza por falta de objetivo
+		//o porque no es tu turno, no se puede haber cobrado ya el espacio.
+		if (!SpellSlots.hasSlotFor(casterSheet, spell.level())) {
 			caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_slots").withStyle(ChatFormatting.RED));
 			return;
 		}
@@ -153,10 +164,7 @@ public class SpellCastManager {
 		if (counterer != null) {
 			//El espacio se gasta igual aunque lo anulen (en 5e el hechizo se considera usado), pero un truco
 			//no tiene espacio que gastar.
-			if (needsSlot) {
-				casterSheet.addProperty("spellSlotsCurrent", slotsCurrent - 1);
-				sendSlotsUpdate(caster, slotsCurrent - 1);
-			}
+			if (needsSlot) spendSlot(caster, casterSheet, spell.level());
 			ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.counterspelled", casterName, spell.name(), counterer).withStyle(ChatFormatting.DARK_PURPLE));
 			return;
 		}
@@ -165,10 +173,7 @@ public class SpellCastManager {
 		int abilityMod = CombatManager.abilityModifier(casterSheet, ABILITY_SHEET_KEY.getOrDefault(spell.castingAbility(), "intelligence"));
 
 		CombatFx.spellCast(caster);
-		if (needsSlot) {
-			casterSheet.addProperty("spellSlotsCurrent", slotsCurrent - 1);
-			sendSlotsUpdate(caster, slotsCurrent - 1);
-		}
+		if (needsSlot) spendSlot(caster, casterSheet, spell.level());
 
 		if (spell.concentration()) ConcentrationManager.startConcentrating(caster, spell.name());
 

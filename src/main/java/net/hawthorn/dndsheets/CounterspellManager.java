@@ -27,6 +27,9 @@ import net.minecraftforge.network.PacketDistributor;
  * listo con un espacio disponible anula cualquier hechizo, sin tirada de por medio.</p>
  */
 public class CounterspellManager {
+
+	//Contrahechizo es un conjuro de nivel 3 en 5e.
+	private static final int LEVEL = 3;
 	private static final double RANGE = 30.0;
 
 	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta — ver
@@ -60,10 +63,11 @@ public class CounterspellManager {
 			JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 			if (sheet == null || !sheet.has("counterspellReady") || !sheet.get("counterspellReady").getAsBoolean()) continue;
 
-			int slots = sheet.has("spellSlotsCurrent") ? sheet.get("spellSlotsCurrent").getAsInt() : 0;
-			if (slots <= 0 || !TurnManager.tryReact(player)) continue;
+			//Contrahechizo es un conjuro de NIVEL 3, así que pide un espacio de nivel 3 o superior. Con la
+			//bolsa única bastaba tener "un espacio", y un mago de nivel 1 podía contrarrestar.
+			if (!SpellSlots.hasSlotFor(sheet, LEVEL) || !TurnManager.tryReact(player)) continue;
 
-			sheet.addProperty("spellSlotsCurrent", slots - 1);
+			SpellSlots.spend(sheet, LEVEL);
 			//Se consume al dispararse, igual que cualquier otro recurso de un solo uso — sin esto se quedaba
 			//"listo" para siempre y anulaba cualquier hechizo enemigo que pasara cerca en cualquier ronda
 			//futura sin que el jugador tuviera que volver a prepararlo (se podía "spamear" pasivamente).

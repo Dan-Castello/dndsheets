@@ -219,7 +219,7 @@ public class RestManager {
 		if (type == RestType.LONG) {
 			player.setHealth(player.getMaxHealth());
 			int max = sheet.get("spellSlotsMax").getAsInt();
-			sheet.addProperty("spellSlotsCurrent", max);
+			SpellSlots.restoreAll(sheet);
 			WizardArcaneRecoveryManager.resetOnLongRest(player);
 		} else {
 			float missing = player.getMaxHealth() - player.getHealth();

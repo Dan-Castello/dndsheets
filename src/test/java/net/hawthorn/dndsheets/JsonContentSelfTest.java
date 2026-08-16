@@ -43,6 +43,7 @@ public class JsonContentSelfTest {
 		checkAoeShapes();
 		checkCombatantRules();
 		checkCharacterRules();
+		checkSpellSlots();
 		checkTabTextures();
 		checkInteractHandlers();
 		checkParchmentTextHasNoShadow();
@@ -904,6 +905,128 @@ public class JsonContentSelfTest {
 	 * existieran los personajes no tiene {@code ownerUuid} ni {@code active}, y si dejara de reconocerse
 	 * como suya, un jugador perdería su personaje de siempre sin que fallara nada visible.</p>
 	 */
+	/**
+	 * <p>Tablas de espacios de conjuro de 5e. Un escalón mal puesto no rompe nada y no avisa: simplemente
+	 * un personaje lanza de más o de menos durante toda la campaña.</p>
+	 */
+	private static void checkSpellSlots() {
+		//Lanzador completo, filas de referencia del SRD.
+		assertSlots(SpellSlots.Caster.FULL, 1, new int[] {2});
+		assertSlots(SpellSlots.Caster.FULL, 5, new int[] {4, 3, 2});
+		assertSlots(SpellSlots.Caster.FULL, 11, new int[] {4, 3, 3, 3, 2, 1});
+		assertSlots(SpellSlots.Caster.FULL, 20, new int[] {4, 3, 3, 3, 3, 2, 2, 1, 1});
+
+		//Semilanzador: no lanza a nivel 1, y a partir de ahí es el completo a la mitad redondeando ARRIBA.
+		//Con el redondeo al revés toda la progresión se desplaza un nivel sin que nada falle.
+		assertSlots(SpellSlots.Caster.HALF, 1, new int[] {});
+		assertSlots(SpellSlots.Caster.HALF, 2, new int[] {2});
+		assertSlots(SpellSlots.Caster.HALF, 5, new int[] {4, 2});
+		assertSlots(SpellSlots.Caster.HALF, 20, new int[] {4, 3, 3, 3, 2});
+
+		//Total por nivel del lanzador completo, los veinte. Las cuatro filas de arriba comprueban el
+		//REPARTO; esto comprueba que no falte ni sobre ningún espacio en las dieciséis que no se detallan.
+		//Hace falta: al probar estas comprobaciones, romper un escalón de una fila no comprobada no saltaba.
+		int[] totalPorNivel = {0, 2, 3, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 21, 22};
+		for (int level = 1; level <= 20; level++) {
+			int total = SpellSlots.total(SpellSlots.maxSlots(SpellSlots.Caster.FULL, level));
+			assertTrue(total == totalPorNivel[level], "lanzador completo de nivel " + level + ": "
+				+ total + " espacios en total, se esperaban " + totalPorNivel[level]);
+		}
+
+		//Magia de Pacto: pocos espacios y TODOS del mismo nivel — no es "menos espacios", es otro recurso.
+		//Los veinte niveles, porque la tabla es corta y sus escalones (2, 3, 5, 7, 9, 11 y 17) son justo
+		//donde un dígito movido pasa inadvertido.
+		int[] pactCount = {0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4};
+		int[] pactLevel = {0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
+		for (int level = 1; level <= 20; level++) {
+			int[] slots = SpellSlots.maxSlots(SpellSlots.Caster.PACT, level);
+			assertTrue(SpellSlots.total(slots) == pactCount[level], "brujo de nivel " + level + ": "
+				+ SpellSlots.total(slots) + " espacios, se esperaban " + pactCount[level]);
+			assertTrue(slots[pactLevel[level]] == pactCount[level], "brujo de nivel " + level
+				+ ": sus espacios deberían ser todos de nivel de conjuro " + pactLevel[level]);
+		}
+
+		assertSlots(SpellSlots.Caster.NONE, 20, new int[] {});
+
+		//Las clases se reconocen por su nombre mostrado, que es lo que guarda la hoja ("Mago", no "wizard").
+		assertTrue(SpellSlots.casterFor("Mago") == SpellSlots.Caster.FULL, "Mago debería ser lanzador completo");
+		assertTrue(SpellSlots.casterFor("Explorador") == SpellSlots.Caster.HALF, "Explorador debería ser semilanzador");
+		assertTrue(SpellSlots.casterFor("Brujo") == SpellSlots.Caster.PACT, "Brujo debería usar Magia de Pacto");
+		assertTrue(SpellSlots.casterFor("Guerrero") == SpellSlots.Caster.NONE, "Guerrero no lanza conjuros");
+		assertTrue(SpellSlots.casterFor("wizard") == SpellSlots.Caster.FULL, "el id inglés también debería valer");
+		assertTrue(SpellSlots.casterFor(null) == SpellSlots.Caster.NONE, "una clase sin fijar no debería reventar");
+
+		//Gastar coge el espacio MÁS BAJO que sirva: quemar uno alto pudiendo usar uno bajo tira el recurso caro.
+		JsonObject sheet = new JsonObject();
+		SpellSlots.applyProgression(sheet, "Mago", 5);      //4/3/2
+		assertTrue(SpellSlots.spend(sheet, 1), "un mago de nivel 5 debería poder lanzar de nivel 1");
+		assertTrue(SpellSlots.currentSlots(sheet)[1] == 3 && SpellSlots.currentSlots(sheet)[3] == 2,
+			"debería haber gastado del nivel 1, no de otro");
+
+		//Sin espacios de nivel 1, un conjuro de nivel 1 sube al siguiente que quede.
+		SpellSlots.spend(sheet, 1); SpellSlots.spend(sheet, 1); SpellSlots.spend(sheet, 1);
+		assertTrue(SpellSlots.currentSlots(sheet)[1] == 0, "los cuatro de nivel 1 deberían estar gastados");
+		assertTrue(SpellSlots.spend(sheet, 1), "debería poder lanzarlo con un espacio superior");
+		assertTrue(SpellSlots.currentSlots(sheet)[2] == 2, "debería haber subido al nivel 2");
+
+		//Un truco nunca gasta nada, ni siquiera sin espacios.
+		JsonObject sinEspacios = new JsonObject();
+		SpellSlots.applyProgression(sinEspacios, "Guerrero", 20);
+		assertTrue(SpellSlots.hasSlotFor(sinEspacios, 0) && SpellSlots.spend(sinEspacios, 0),
+			"un truco debería lanzarse siempre, también sin espacios");
+		assertTrue(!SpellSlots.hasSlotFor(sinEspacios, 1), "un guerrero no debería tener espacios de nivel 1");
+
+		//Los totales antiguos siguen siendo la suma: el HUD y el Grimorio los leen sin cambiar.
+		JsonObject mago = new JsonObject();
+		SpellSlots.applyProgression(mago, "Mago", 20);
+		assertTrue(mago.get("spellSlotsMax").getAsInt() == 22,
+			"un mago de nivel 20 tiene 22 espacios en total, no " + mago.get("spellSlotsMax").getAsInt());
+
+		//Subir de nivel entrega LLENOS los espacios nuevos y respeta los ya gastados.
+		JsonObject sube = new JsonObject();
+		SpellSlots.applyProgression(sube, "Mago", 1);       //2 de nivel 1
+		SpellSlots.spend(sube, 1);
+		SpellSlots.applyProgression(sube, "Mago", 3);       //pasa a 4/2
+		assertTrue(SpellSlots.currentSlots(sube)[1] == 3,
+			"debería conservar el gastado y sumar los dos nuevos, no rellenar del todo");
+		assertTrue(SpellSlots.currentSlots(sube)[2] == 2, "el nivel 2 nuevo debería entrar lleno");
+
+		//Recuperación Arcana: presupuesto de NIVELES SUMADOS, no de espacios. Un mago de nivel 10 tiene un
+		//presupuesto de 5, así que gastándolo todo debería recuperar un espacio de nivel 5 (el más caro que
+		//cabe) y no cinco de nivel 1 — con el mismo presupuesto, lo alto vale más.
+		JsonObject arcano = new JsonObject();
+		SpellSlots.applyProgression(arcano, "Mago", 10);           //4/3/3/3/2
+		for (int level = 1; level <= 5; level++) {
+			while (SpellSlots.currentSlots(arcano)[level] > 0) SpellSlots.spend(arcano, level);
+		}
+		assertTrue(SpellSlots.total(SpellSlots.currentSlots(arcano)) == 0, "debería haber gastado todo");
+		assertTrue(SpellSlots.restoreBudget(arcano, 5, 5) == 1, "con presupuesto 5 debería devolver UN espacio");
+		assertTrue(SpellSlots.currentSlots(arcano)[5] == 1, "y debería ser el de nivel 5, no varios bajos");
+
+		//El tope de nivel se respeta: con presupuesto de sobra pero tope 2, nada por encima del 2.
+		JsonObject topado = new JsonObject();
+		SpellSlots.applyProgression(topado, "Mago", 10);
+		for (int level = 1; level <= 5; level++) {
+			while (SpellSlots.currentSlots(topado)[level] > 0) SpellSlots.spend(topado, level);
+		}
+		SpellSlots.restoreBudget(topado, 9, 2);
+		assertTrue(SpellSlots.currentSlots(topado)[3] == 0 && SpellSlots.currentSlots(topado)[4] == 0,
+			"no debería devolver espacios por encima del tope");
+		assertTrue(SpellSlots.currentSlots(topado)[2] == 3 && SpellSlots.currentSlots(topado)[1] == 3,
+			"con presupuesto 9 y tope 2: tres de nivel 2 (6) y tres de nivel 1 (3)");
+
+		System.out.println("checkSpellSlots: OK, tablas de 5e, gasto por nivel, progresión y recuperación se comportan.");
+	}
+
+	private static void assertSlots(SpellSlots.Caster caster, int level, int[] expected) {
+		int[] actual = SpellSlots.maxSlots(caster, level);
+		for (int spellLevel = 1; spellLevel <= SpellSlots.MAX_SPELL_LEVEL; spellLevel++) {
+			int want = spellLevel <= expected.length ? expected[spellLevel - 1] : 0;
+			assertTrue(actual[spellLevel] == want, caster + " nivel " + level + ", espacios de conjuro nivel "
+				+ spellLevel + ": " + actual[spellLevel] + ", se esperaban " + want);
+		}
+	}
+
 	private static void checkCharacterRules() {
 		String alice = "11111111-1111-1111-1111-111111111111";
 		String bob = "22222222-2222-2222-2222-222222222222";

@@ -20,6 +20,9 @@ import net.minecraftforge.network.PacketDistributor;
  * formas incluso con Escudo, no se gasta nada y el flag sigue listo para el siguiente ataque de la ronda.</p>
  */
 public class ShieldManager {
+
+	//Escudo es un conjuro de nivel 1 en 5e.
+	private static final int LEVEL = 1;
 	private static final int AC_BONUS = 5;
 
 	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta — ver
@@ -44,10 +47,10 @@ public class ShieldManager {
 		JsonObject sheet = SheetLoader.getServerSheet(victim.getStringUUID());
 		if (sheet == null || !sheet.has("shieldReady") || !sheet.get("shieldReady").getAsBoolean()) return normalAc;
 
-		int slots = sheet.has("spellSlotsCurrent") ? sheet.get("spellSlotsCurrent").getAsInt() : 0;
-		if (slots <= 0 || !TurnManager.tryReact(victim)) return normalAc;
+		//Escudo es un conjuro de NIVEL 1: le sirve cualquier espacio, pero gasta el más bajo que tenga.
+		if (!SpellSlots.hasSlotFor(sheet, LEVEL) || !TurnManager.tryReact(victim)) return normalAc;
 
-		sheet.addProperty("spellSlotsCurrent", slots - 1);
+		SpellSlots.spend(sheet, LEVEL);
 		sendSheetUpdate(victim, sheet);
 		victim.sendSystemMessage(Component.literal("¡Escudo! Tu CA sube a " + (normalAc + AC_BONUS) + " y el golpe falla.").withStyle(ChatFormatting.AQUA));
 		return normalAc + AC_BONUS;

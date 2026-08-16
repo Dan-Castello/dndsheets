@@ -41,9 +41,10 @@ public class PaladinSmiteManager {
 		if (sheet == null || !sheet.has("smitePending") || !sheet.get("smitePending").getAsBoolean()) return null;
 		sheet.remove("smitePending");
 
-		int slotsCurrent = sheet.has("spellSlotsCurrent") ? sheet.get("spellSlotsCurrent").getAsInt() : 0;
-		if (slotsCurrent <= 0) return null;
-		sheet.addProperty("spellSlotsCurrent", slotsCurrent - 1);
+		//Cualquier espacio de nivel 1 o superior sirve; se gasta el más bajo. Que el daño suba al usar uno
+		//alto es otra regla y no está implementada.
+		if (!SpellSlots.hasSlotFor(sheet, 1)) return null;
+		SpellSlots.spend(sheet, 1);
 		return DICE;
 	}
 

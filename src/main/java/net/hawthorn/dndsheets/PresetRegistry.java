@@ -95,8 +95,9 @@ public class PresetRegistry {
 		sheet.addProperty("wisdom", String.valueOf(preset.ability("wis")));
 		sheet.addProperty("charisma", String.valueOf(preset.ability("cha")));
 		if (preset.spellSlotsMax() > 0) {
-			sheet.addProperty("spellSlotsMax", preset.spellSlotsMax());
-			sheet.addProperty("spellSlotsCurrent", preset.spellSlotsMax());
+			//spellSlotsMax del preset era el total de un personaje de NIVEL 1 y no escalaba nunca. Ahora la
+			//clase decide la tabla entera; el campo se conserva solo como marca de "esta clase lanza".
+			SpellSlots.applyProgression(sheet, preset.name(), CharacterRules.levelOf(sheet));
 		}
 		for (String traitId : preset.traits()) TraitRegistry.grant(sheet, traitId);
 		//Rasgo icónico de un preset caster: sin esto el Grimorio se quedaba vacío pese a tener espacios de

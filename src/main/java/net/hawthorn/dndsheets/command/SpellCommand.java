@@ -8,6 +8,7 @@ import net.hawthorn.dndsheets.DndPaths;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.SpellRegistry;
+import net.hawthorn.dndsheets.SpellSlots;
 import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -123,11 +124,11 @@ public class SpellCommand {
 		//siempre (un descanso no crea espacios de la nada, solo rellena los que ya existían) y sin
 		//nada en el inventario para lanzarlo: había que acordarse de /dndsheet setslots Y /dndspells
 		//staff aparte. Si el DM ya configuró espacios a mano, esto no los toca.
+		//Aprender un conjuro sin tener espacios dejaba al jugador con 0/0 para siempre (un descanso rellena
+		//los que ya hay, no crea ninguno). Con la progresión por clase, una clase lanzadora ya trae los
+		//suyos; esto solo cubre al que NO lanza y a quien el DM le enseña un conjuro igualmente.
 		int slotsMax = sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
-		if (slotsMax <= 0) {
-			sheet.addProperty("spellSlotsMax", 1);
-			sheet.addProperty("spellSlotsCurrent", 1);
-		}
+		if (slotsMax <= 0) SpellSlots.setFlat(sheet, 1, 1);
 		if (!alreadyKnown) {
 			target.getInventory().add(buildStaffStack(spellId, spell, "minecraft:blaze_rod"));
 		}

@@ -29,7 +29,7 @@ public class WarlockPactMagicManager {
 		int current = sheet.get("spellSlotsCurrent").getAsInt();
 		if (current >= max) return;
 
-		sheet.addProperty("spellSlotsCurrent", max);
+		SpellSlots.restoreAll(sheet);
 		player.sendSystemMessage(Component.literal("Magia de Pacto: recuperas todos tus espacios de conjuro.").withStyle(ChatFormatting.DARK_PURPLE));
 	}
 
