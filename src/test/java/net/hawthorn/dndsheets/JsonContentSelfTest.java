@@ -1779,7 +1779,17 @@ public class JsonContentSelfTest {
 		assertTrue(cleared < inventory.indexOf("restore(player,"),
 			"hay que vaciar antes de restaurar, o las ranuras que el personaje nuevo no use conservan las del viejo");
 
-		System.out.println("checkCharacterLevelIsPerCharacter: OK, nivel, vida, recursos y equipo son del personaje, no del jugador.");
+		//Y lo que el personaje anterior estaba HACIENDO se acaba con él. Estos cuatro viven indexados por
+		//jugador porque son estados vivos y no datos de hoja, así que sin cortarlos el personaje nuevo
+		//heredaba la concentración, la furia, la forma salvaje y la marca: seguía enfurecido sin haber
+		//entrado en furia.
+		for (String manager : List.of("ConcentrationManager", "BarbarianRageManager", "DruidWildShapeManager",
+				"RangerHunterMarkManager")) {
+			assertTrue(switchBody.contains(manager + "."),
+				"cambiar de personaje debería cortar lo que el anterior tenía en marcha en " + manager);
+		}
+
+		System.out.println("checkCharacterLevelIsPerCharacter: OK, nivel, vida, recursos, equipo y efectos vivos son del personaje.");
 	}
 
 	private static JsonObject named(String characterName) {

@@ -1045,6 +1045,19 @@ dependencies, not preference.
       whole when you put them on. The alternative, keeping what you hold, would duplicate every item
       on every switch.
 
+  37. **What the previous character was *doing* ends with them.** The last loose end of the family:
+      concentration, rage, wild shape and Hunter's Mark are keyed by player because they are live
+      states rather than sheet data — so switching characters inherited all four. You could come out
+      of the switch still raging without ever having raged.
+
+      All four are cut on switch. Concentration goes first because it cascades: it also takes down
+      persistent zones, weapon buffs and summons.
+
+      With this, the family is closed. **Per-character:** level, hit points, once-per-rest resources,
+      inventory, conditions, spell slots, gold, and the live effects above. **Per-player, correctly:**
+      the body's position, XP and hunger — the things that belong to the person at the keyboard rather
+      than to the character they are playing.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

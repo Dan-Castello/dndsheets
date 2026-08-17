@@ -32,6 +32,11 @@ public class RangerHunterMarkManager {
 
 	private static final Map<UUID, Integer> markedEntityIdByRanger = new ConcurrentHashMap<>();
 
+	/** Olvida a quién tenía marcado: la usa el cambio de personaje. Ver SheetLoader. */
+	public static void clearFor(ServerPlayer ranger) {
+		markedEntityIdByRanger.remove(ranger.getUUID());
+	}
+
 	public static boolean isMarked(ServerPlayer ranger, Entity target) {
 		Integer markedId = markedEntityIdByRanger.get(ranger.getUUID());
 		return markedId != null && markedId == target.getId();

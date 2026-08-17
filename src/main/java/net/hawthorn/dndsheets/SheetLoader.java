@@ -625,6 +625,18 @@ public class SheetLoader {
 		//antes de mover el binding, para que la hoja del que se quita se guarde con su equipo dentro.
 		CharacterInventory.swap(player, previousId, previous, target);
 
+		//Lo que el personaje anterior estaba HACIENDO se acaba con él. Todos estos viven indexados por
+		//jugador (son estados vivos, no datos de hoja), así que sin cortarlos el personaje nuevo heredaba la
+		//concentración, la furia, la forma salvaje y la marca del anterior: seguía enfurecido sin haber
+		//entrado en furia. La concentración va primero porque además arrastra zonas, mejoras de arma e
+		//invocaciones (ver ConcentrationManager.stopConcentrating).
+		if (previous != null && previous != target) {
+			ConcentrationManager.stopConcentrating(player);
+			BarbarianRageManager.clearFor(player);
+			DruidWildShapeManager.clearFor(player);
+			RangerHunterMarkManager.clearFor(player);
+		}
+
 		//Se desmarca el anterior y se marca el nuevo, para que rebuildActiveCharacters() reconstruya
 		//exactamente este mismo estado tras un reinicio.
 		for (String owned : charactersOf(playerUuid)) {

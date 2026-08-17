@@ -47,6 +47,11 @@ public class BarbarianRageManager {
 
 	private static final Set<UUID> raging = ConcurrentHashMap.newKeySet();
 
+	/** Corta la furia sin avisar ni devolver nada: la usa el cambio de personaje. Ver SheetLoader. */
+	public static void clearFor(ServerPlayer player) {
+		raging.remove(player.getUUID());
+	}
+
 	public static boolean isRaging(ServerPlayer player) {
 		return raging.contains(player.getUUID());
 	}

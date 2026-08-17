@@ -35,6 +35,11 @@ public class DruidWildShapeManager {
 
 	private static final Set<UUID> shifted = ConcurrentHashMap.newKeySet();
 
+	/** Devuelve al druida a su forma sin avisar: la usa el cambio de personaje. Ver SheetLoader. */
+	public static void clearFor(ServerPlayer player) {
+		shifted.remove(player.getUUID());
+	}
+
 	public static boolean isShifted(ServerPlayer player) {
 		return shifted.contains(player.getUUID());
 	}
