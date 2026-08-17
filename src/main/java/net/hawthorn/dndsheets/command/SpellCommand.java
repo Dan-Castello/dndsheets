@@ -161,9 +161,13 @@ public class SpellCommand {
 	public static ItemStack buildStaffStack(String spellId, SpellRegistry.Spell spell, String itemId) {
 		ResourceLocation itemLoc = ResourceLocation.tryParse(itemId);
 		Item baseItem = itemLoc != null ? ForgeRegistries.ITEMS.getValue(itemLoc) : null;
-		if (baseItem == null) baseItem = Items.BLAZE_ROD;
+		//Sin ítem configurado, el báculo del mod con su textura. Con uno configurado, el que diga el DM:
+		//quien pone "minecraft:trident" quiere ver un tridente, no nuestro icono encima.
+		boolean ownStaff = baseItem == null;
+		if (ownStaff) baseItem = net.hawthorn.dndsheets.init.DndsheetsModItems.TOKEN.get();
 
 		ItemStack stack = new ItemStack(baseItem);
+		if (ownStaff) net.hawthorn.dndsheets.ItemLook.STAFF.applyTo(stack);
 		CompoundTag dndTag = new CompoundTag();
 		dndTag.putString("quickSpell", spellId);
 		stack.getOrCreateTag().put("dndsheets", dndTag);

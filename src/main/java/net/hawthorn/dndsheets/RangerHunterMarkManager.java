@@ -70,7 +70,7 @@ public class RangerHunterMarkManager {
 	}
 
 	public static ItemStack buildHunterMarkStack() {
-		return AbilityItem.build(Items.SPYGLASS, "hunterMark", Component.literal("Marca del Cazador"),
+		return AbilityItem.build(ItemLook.HUNTERS_MARK, "hunterMark", Component.literal("Marca del Cazador"),
 			Component.literal("Clic derecho en un objetivo: +1d6 de daño al golpearlo con armas.").withStyle(ChatFormatting.GRAY));
 	}
 }

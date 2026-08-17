@@ -80,7 +80,7 @@ public class DruidWildShapeManager {
 	}
 
 	public static ItemStack buildWildShapeStack() {
-		return AbilityItem.build(Items.RABBIT_FOOT, "wildShape", Component.literal("Forma Salvaje"),
+		return AbilityItem.build(ItemLook.WILD_SHAPE, "wildShape", Component.literal("Forma Salvaje"),
 			Component.literal("Clic derecho: golpes a mano desnuda pegan como un animal " + DURATION_ROUNDS + " asaltos.").withStyle(ChatFormatting.GRAY));
 	}
 }

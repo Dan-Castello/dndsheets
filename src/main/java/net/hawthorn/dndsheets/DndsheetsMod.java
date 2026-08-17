@@ -45,6 +45,7 @@ public class DndsheetsMod {
 	public DndsheetsMod() {
 		MinecraftForge.EVENT_BUS.register(this);
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
+		net.hawthorn.dndsheets.init.DndsheetsModItems.REGISTRY.register(bus);
 		DndsheetsModSounds.REGISTRY.register(bus);
 
 		DndsheetsModMenus.REGISTRY.register(bus);

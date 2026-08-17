@@ -260,6 +260,7 @@
   "gui.dndsheets.sheet_adjust.pact_tome": "Tome",
   "gui.dndsheets.sheet_adjust.resistant": "Resistant",
   "gui.dndsheets.sheet_adjust.vulnerable": "Vulnerable",
+  "item.dndsheets.token": "D&D Token",
   "itemGroup.dndsheets.dnd_tab": "D&D Sheets",
   "key.categories.dndsheets": "D&D Sheets",
   "key.dndsheets.character": "Open Character Sheet",

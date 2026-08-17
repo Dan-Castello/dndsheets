@@ -115,7 +115,7 @@ public class BardInspirationManager {
 	}
 
 	public static ItemStack buildInspirationStack() {
-		return AbilityItem.build(Items.GOAT_HORN, "bardicInspiration", Component.literal("Cuerno de Inspiración"),
+		return AbilityItem.build(ItemLook.INSPIRATION, "bardicInspiration", Component.literal("Cuerno de Inspiración"),
 			Component.literal("Clic derecho en OTRO jugador: le da un dado de inspiración.").withStyle(ChatFormatting.GRAY));
 	}
 }

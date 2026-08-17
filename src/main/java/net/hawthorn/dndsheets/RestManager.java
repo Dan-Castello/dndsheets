@@ -73,7 +73,7 @@ public class RestManager {
 	//Reloj en vez de un ítem de bloque (como la fogata): un ítem de bloque dispara RightClickBlock en vez
 	//de RightClickItem en cuanto miras a algo colocable, lo que complicaba detectar el clic de forma fiable.
 	public static ItemStack buildRestKitStack() {
-		return AbilityItem.build(Items.CLOCK, "restKit", Component.translatable("chat.dndsheets.rest.item_name"),
+		return AbilityItem.build(ItemLook.REST_KIT, "restKit", Component.translatable("chat.dndsheets.rest.item_name"),
 			Component.translatable("chat.dndsheets.rest.lore_use").withStyle(ChatFormatting.GRAY),
 			Component.translatable("chat.dndsheets.rest.lore_requires_all").withStyle(ChatFormatting.DARK_GRAY));
 	}

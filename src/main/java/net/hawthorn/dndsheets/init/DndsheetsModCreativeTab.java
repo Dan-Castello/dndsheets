@@ -46,7 +46,7 @@ public class DndsheetsModCreativeTab {
 
 	public static final RegistryObject<CreativeModeTab> DND_TAB = REGISTRY.register("dnd_tab", () -> CreativeModeTab.builder()
 		.title(Component.translatable("itemGroup.dndsheets.dnd_tab"))
-		.icon(() -> new ItemStack(Items.BLAZE_ROD))
+		.icon(() -> new ItemStack(DndsheetsModItems.TOKEN.get()))
 		.displayItems((params, output) -> {
 			safeAccept(output, MonsterCommand.buildDmToolStack());
 			safeAccept(output, MonsterCommand.buildMoveToolStack());

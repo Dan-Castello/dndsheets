@@ -45,7 +45,7 @@ public class SorcererMetamagicManager {
 	}
 
 	public static ItemStack buildTwinnedSpellStack() {
-		return AbilityItem.build(Items.AMETHYST_SHARD, "twinnedSpell", Component.literal("Metamagia: Hechizo Gemelo"),
+		return AbilityItem.build(ItemLook.TWINNED, "twinnedSpell", Component.literal("Metamagia: Hechizo Gemelo"),
 			Component.literal("Clic derecho: tu próximo hechizo alcanza a un segundo objetivo cercano.").withStyle(ChatFormatting.GRAY));
 	}
 }

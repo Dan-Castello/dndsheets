@@ -39,12 +39,12 @@ public class TurnItemManager {
 	}
 
 	public static ItemStack buildNextTurnStack() {
-		return AbilityItem.build(Items.COMPASS, "turnNext", Component.literal("Fin de Turno"),
+		return AbilityItem.build(ItemLook.TURN_NEXT, "turnNext", Component.literal("Fin de Turno"),
 			Component.literal("Clic derecho en tu turno: pasa al siguiente combatiente.").withStyle(ChatFormatting.GRAY));
 	}
 
 	public static ItemStack buildUndoTurnStack() {
-		return AbilityItem.build(Items.ECHO_SHARD, "turnUndo", Component.literal("Deshacer Turno"),
+		return AbilityItem.build(ItemLook.TURN_UNDO, "turnUndo", Component.literal("Deshacer Turno"),
 			Component.literal("Clic derecho en tu turno: deshace tu acción y elige de nuevo.").withStyle(ChatFormatting.GRAY));
 	}
 }

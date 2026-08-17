@@ -60,7 +60,7 @@ public class HelpActionManager {
 	}
 
 	public static ItemStack buildHelpStack() {
-		return AbilityItem.build(Items.LEAD, "helpAction", Component.literal("Ayudar"),
+		return AbilityItem.build(ItemLook.HELP, "helpAction", Component.literal("Ayudar"),
 			Component.literal("Clic derecho en OTRO jugador: su próximo ataque tiene ventaja. Gasta tu acción.").withStyle(ChatFormatting.GRAY));
 	}
 }

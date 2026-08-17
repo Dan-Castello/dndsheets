@@ -117,7 +117,7 @@ public class TurnActionManager {
 	}
 
 	public static ItemStack buildTurnActionStack() {
-		return AbilityItem.build(Items.FEATHER, "turnActions", Component.literal("Acciones de Turno"),
+		return AbilityItem.build(ItemLook.TURN_ACTIONS, "turnActions", Component.literal("Acciones de Turno"),
 			Component.literal("Clic derecho: esquivar, correr o desengancharse.").withStyle(ChatFormatting.GRAY));
 	}
 }

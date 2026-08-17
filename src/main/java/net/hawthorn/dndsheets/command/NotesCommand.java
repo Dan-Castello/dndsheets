@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets.command;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.hawthorn.dndsheets.AbilityItem;
+import net.hawthorn.dndsheets.ItemLook;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -46,7 +47,7 @@ public class NotesCommand {
 
 	//Público: también lo usa la pestaña creativa (DndsheetsModCreativeTab).
 	public static ItemStack buildNotebookStack() {
-		return AbilityItem.build(Items.WRITABLE_BOOK, "dmNotebook",
+		return AbilityItem.build(net.minecraft.world.item.Items.WRITABLE_BOOK, "dmNotebook",
 			Component.translatable("chat.dndsheets.notebook.item_name"),
 			Component.translatable("chat.dndsheets.notebook.item_lore").withStyle(ChatFormatting.GRAY));
 	}

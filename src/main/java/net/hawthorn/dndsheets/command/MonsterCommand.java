@@ -229,7 +229,8 @@ public class MonsterCommand {
 
 	//Público: también lo usa la pestaña creativa (DndsheetsModCreativeTab).
 	public static ItemStack buildDmToolStack() {
-		ItemStack stack = new ItemStack(Items.STICK);
+		ItemStack stack = net.hawthorn.dndsheets.ItemLook.DM_WAND.applyTo(
+			new ItemStack(net.hawthorn.dndsheets.init.DndsheetsModItems.TOKEN.get()));
 		CompoundTag dndTag = new CompoundTag();
 		dndTag.putBoolean("dmtool", true);
 		stack.getOrCreateTag().put("dndsheets", dndTag);
@@ -258,7 +259,8 @@ public class MonsterCommand {
 
 	//Público: también lo usa la pestaña creativa (DndsheetsModCreativeTab).
 	public static ItemStack buildMoveToolStack() {
-		ItemStack stack = new ItemStack(Items.STICK);
+		ItemStack stack = net.hawthorn.dndsheets.ItemLook.MOVE_WAND.applyTo(
+			new ItemStack(net.hawthorn.dndsheets.init.DndsheetsModItems.TOKEN.get()));
 		CompoundTag dndTag = new CompoundTag();
 		dndTag.putBoolean("movetool", true);
 		stack.getOrCreateTag().put("dndsheets", dndTag);

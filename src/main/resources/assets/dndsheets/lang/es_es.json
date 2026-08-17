@@ -260,6 +260,7 @@
   "gui.dndsheets.sheet_adjust.pact_tome": "Vara",
   "gui.dndsheets.sheet_adjust.resistant": "Resistente",
   "gui.dndsheets.sheet_adjust.vulnerable": "Vulnerable",
+  "item.dndsheets.token": "Ficha de D&D",
   "itemGroup.dndsheets.dnd_tab": "D&D Sheets",
   "key.categories.dndsheets": "D&D Sheets",
   "key.dndsheets.character": "Abrir Hoja de Personaje",

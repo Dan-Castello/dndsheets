@@ -75,7 +75,7 @@ public class PaladinSmiteManager {
 	}
 
 	public static ItemStack buildDivineSmiteStack() {
-		return AbilityItem.build(Items.GLOWSTONE_DUST, "divineSmite", Component.literal("Castigo Divino"),
+		return AbilityItem.build(ItemLook.SMITE, "divineSmite", Component.literal("Castigo Divino"),
 			Component.literal("Clic derecho: tu próximo golpe gasta un espacio y suma de 2d8 a 5d8 radiante, según el espacio.").withStyle(ChatFormatting.GRAY));
 	}
 }

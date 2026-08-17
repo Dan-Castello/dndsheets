@@ -37,6 +37,7 @@ public class JsonContentSelfTest {
 		checkMonsters();
 		checkMonsterAppearance();
 		checkMonsterSkins();
+		checkItemLooks();
 		checkMagicItems();
 		checkTraits(); //Antes de checkPresets(): el preset de monje concede este rasgo por id.
 		checkPresets();
@@ -609,6 +610,42 @@ public class JsonContentSelfTest {
 	 * <p>La otra comprobación es la lista {@code SHIPPED}: un pack añadido a los recursos y olvidado en la
 	 * lista no se carga <b>nunca</b>, y no hay ningún síntoma que lo delate.</p>
 	 */
+	/**
+	 * <p>Los iconos propios de los ítems del mod ({@link ItemLook}). Tres piezas tienen que coincidir y
+	 * ninguna avisa cuando dejan de hacerlo: la constante del enum, el PNG y el modelo JSON. Si falta la
+	 * textura, Minecraft pinta el cuadrado negro y morado; si falta el override en {@code token.json}, el
+	 * ítem sale con el icono por defecto y parece que el aspecto "no se aplicó".</p>
+	 *
+	 * <p>Y lo que de verdad hace daño: el {@code CustomModelData} es la <b>posición</b> en el enum y queda
+	 * escrito dentro de cada ItemStack ya repartido. Insertar una constante en medio le cambiaría el icono
+	 * a todo lo que haya en el mundo de alguien, en silencio. Aquí se fija el orden.</p>
+	 */
+	private static void checkItemLooks() throws Exception {
+		Path textures = Path.of("src", "main", "resources", "assets", "dndsheets", "textures", "item");
+		Path models = Path.of("src", "main", "resources", "assets", "dndsheets", "models", "item");
+		String token = Files.readString(models.resolve("token.json"));
+
+		for (ItemLook look : ItemLook.values()) {
+			String name = look.textureName();
+			assertTrue(Files.exists(textures.resolve(name + ".png")), "falta la textura de " + look + " (" + name + ".png)");
+			assertTrue(Files.exists(models.resolve(name + ".json")), "falta el modelo de " + look);
+			assertTrue(token.contains("\"custom_model_data\": " + look.customModelData() + " }, \"model\": \"dndsheets:item/" + name + "\""),
+				"token.json no manda el custom_model_data " + look.customModelData() + " al modelo de " + look);
+		}
+		//La textura por defecto: la que se ve si un ItemStack viejo no trae CustomModelData.
+		assertTrue(Files.exists(textures.resolve("token.png")), "falta el icono base de la ficha");
+
+		//El orden, clavado. Cambiarlo es cambiarle el icono a lo ya repartido.
+		assertTrue(ItemLook.DM_WAND.customModelData() == 1 && ItemLook.RAGE.customModelData() == 7
+				&& ItemLook.SUMMON_CARD.customModelData() == 19,
+			"el orden de ItemLook ha cambiado: los ítems que ya estén en el mundo de alguien cambiarían de icono");
+
+		//Ningún ítem del mod debería seguir siendo un ítem de vanilla renombrado: era justo el problema.
+		String abilityItem = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "AbilityItem.java"));
+		assertTrue(abilityItem.contains("look.applyTo"), "AbilityItem debería construir sobre la ficha del mod, con su aspecto");
+		System.out.println("checkItemLooks: OK, " + ItemLook.values().length + " ítems con textura y modelo propios.");
+	}
+
 	private static void checkMonsterSkins() throws Exception {
 		java.util.Set<String> bestiary = new java.util.HashSet<>();
 		for (JsonElement el : readShippedPack("monsters.json")) bestiary.add(el.getAsJsonObject().get("id").getAsString());

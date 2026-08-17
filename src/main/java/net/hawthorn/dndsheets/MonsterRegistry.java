@@ -497,7 +497,8 @@ public class MonsterRegistry {
 	//Para la pestaña creativa (DndsheetsModCreativeTab): un huevo de spawn reetiquetado por monstruo cargado.
 	public static ItemStack buildSpawnCard(String monsterId) {
 		MonsterStatBlock block = get(monsterId);
-		ItemStack stack = new ItemStack(net.minecraft.world.item.Items.ZOMBIE_SPAWN_EGG);
+		ItemStack stack = ItemLook.SUMMON_CARD.applyTo(
+			new ItemStack(net.hawthorn.dndsheets.init.DndsheetsModItems.TOKEN.get()));
 		CompoundTag dndTag = new CompoundTag();
 		dndTag.putString("monsterSpawn", monsterId);
 		stack.getOrCreateTag().put("dndsheets", dndTag);
