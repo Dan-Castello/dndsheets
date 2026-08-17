@@ -36,28 +36,46 @@ That is the whole integration. dndsheets loads it on world load and on `/reload`
 A working example lives in `src/test/resources/addon_example/` — copy that folder into a
 `datapacks/` directory of any world to see it load.
 
-### Why this is the recommended path
+### Example: a monster that looks like something
 
-- **No compile-time dependency.** You never import a dndsheets class, so a signature change here
-  cannot break your addon.
-- **No load-order problem.** You are not racing anyone's setup event.
-- **Datapack authors can do it too.** Adding a bestiary does not require being a modder.
-- **One file, one entry** is the datapack convention and is supported; an array of entries also works,
-  which is how the mod's own packs are written.
+`baseEntity` accepts **any registered entity id, including one from another mod**. That is the single
+most important sentence in this file. dndsheets ships no models of its own and never will — what it
+does is let you point a stat block at whatever is installed:
 
-### Rules of the road
+```json
+{
+  "id": "miaddon:frost_knight",
+  "name": "Caballero de Escarcha",
+  "type": "no-muerto",
+  "baseEntity": "iceandfire:deathworm",
+  "ac": 18, "hp": 90,
+  "abilities": { "str": 18, "dex": 11, "con": 16, "int": 8, "wis": 12, "cha": 9 },
+  "proficiencyBonus": 3,
+  "attacks": [
+    { "name": "Espada larga", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "cortante" }
+  ],
+  "appearance": { "mainHand": "minecraft:iron_sword", "helmet": "minecraft:iron_helmet", "glowing": true }
+}
+```
 
-- **Namespace your ids** (`miaddon:something`). Ids are global; two addons claiming the same id is a
-  real collision, and the loader warns naming both files.
-- **A DM's hand-written files win.** Datapacks load before the world's `dndsheets/` folder, so
-  whoever runs the game has the last word over your content. That is deliberate.
-- **A broken file skips itself**, not the rest — per entry, and per file. Check your server log.
-- **Fields you omit take a default.** Adding a field to a schema is safe for you; the mod never makes
-  an existing field mandatory (invariant 8).
+If that entity is not installed, the monster **still spawns** — as a zombie, with a warning in the
+log. It is never silently missing. So a bestiary pack can recommend a creature mod without requiring it.
 
-The schemas are documented in `.claude/agents/srd-content-builder.md` and, authoritatively, in the
-parsers themselves: `SpellRegistry.parse`, `MonsterRegistry.parse`, `PresetRegistry.parse`,
-`TraitRegistry.parse`, `MagicItemRegistry.parse` and `Config.registerWeapon`.
+`appearance` is optional, and so is every field inside it: `mainHand`, `offHand`, `helmet`,
+`chestplate`, `leggings`, `boots` (item ids), plus `baby` and `glowing` (booleans). Equipment is never
+dropped on death — it is a visual decision, not loot the DM did not hand out.
+
+Two warnings that save wasted work:
+
+- **Not every model draws equipment.** Villager, iron golem, ravager, vex, allay, slime, phantom,
+  guardian and witch ignore it. The mod's self-test enforces this against its own bestiary.
+- **Pick models that do not act on their own.** The warden applies Darkness within 20 blocks, the
+  elder guardian Mining Fatigue within 50, the enderman teleports away when hit by a projectile, and
+  the snow golem melts in a desert. All four were rejected from the shipped bestiary for that reason:
+  at a table the DM decides what happens, not the model.
+
+**This is the mod's answer to the Roll20 or Foundry token catalogue.** Not an art library of its own —
+Minecraft's creature-mod ecosystem already *is* that library, and here you only have to write its id.
 
 ---
 

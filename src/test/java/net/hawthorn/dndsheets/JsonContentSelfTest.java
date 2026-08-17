@@ -35,6 +35,7 @@ public class JsonContentSelfTest {
 		checkWeapons();
 		checkSpells();
 		checkMonsters();
+		checkMonsterAppearance();
 		checkMagicItems();
 		checkTraits(); //Antes de checkPresets(): el preset de monje concede este rasgo por id.
 		checkPresets();
@@ -542,6 +543,67 @@ public class JsonContentSelfTest {
 	 * motor aplica y los que narra el DM: un objeto con mecánicas escritas mal no falla en ningún sitio,
 	 * simplemente deja de dar el bonificador que su descripción promete.</p>
 	 */
+	private static void checkMonsterAppearance() throws Exception {
+		//Las que lee MonsterRegistry.parseAppearance. Escribir "mainhand" o "head" no rompe nada: el
+		//monstruo sale sin arma y nadie se entera hasta verlo en la mesa.
+		java.util.Set<String> keys = java.util.Set.of("mainHand", "offHand", "helmet", "chestplate",
+			"leggings", "boots", "baby", "glowing");
+		//Modelos que NO dibujan equipo. Vestir uno es tirar el trabajo: un aldeano con espada se ve igual
+		//que uno sin ella. Fue el primer intento con el Guardia, y por eso está aquí.
+		java.util.Set<String> noEquipment = java.util.Set.of("minecraft:villager", "minecraft:wandering_trader",
+			"minecraft:iron_golem", "minecraft:ravager", "minecraft:vex", "minecraft:allay", "minecraft:slime",
+			"minecraft:phantom", "minecraft:shulker", "minecraft:guardian", "minecraft:blaze", "minecraft:bat");
+
+		JsonArray bestiary = readShippedPack("monsters.json");
+		java.util.Set<String> models = new java.util.HashSet<>();
+		int dressed = 0;
+		for (JsonElement el : bestiary) {
+			JsonObject json = el.getAsJsonObject();
+			String id = json.get("id").getAsString();
+			models.add(json.get("baseEntity").getAsString());
+			if (!json.has("appearance")) continue;
+			dressed++;
+
+			JsonObject look = json.getAsJsonObject("appearance");
+			boolean hasEquipment = false;
+			for (String key : look.keySet()) {
+				assertTrue(keys.contains(key), "\"" + key + "\" no es una clave de appearance (en " + id + ")");
+				if (key.equals("baby") || key.equals("glowing")) continue;
+				hasEquipment = true;
+				assertTrue(look.get(key).getAsString().contains(":"),
+					"el objeto de " + key + " en " + id + " necesita espacio de nombres (minecraft:...)");
+			}
+			assertTrue(!hasEquipment || !noEquipment.contains(json.get("baseEntity").getAsString()),
+				id + " lleva equipo sobre un modelo que no lo dibuja (" + json.get("baseEntity").getAsString() + ")");
+
+			//Ida y vuelta. Guardar una plantilla desde el juego pasa por toJson; si no escribe el aspecto, la
+			//plantilla vuelve desnuda y el DM pierde justo lo que acaba de configurar.
+			MonsterRegistry.MonsterStatBlock parsed = MonsterRegistry.parse(json);
+			JsonObject again = MonsterRegistry.toJson(parsed);
+			assertTrue(again.has("appearance") && again.getAsJsonObject("appearance").equals(look),
+				"el aspecto de " + id + " no sobrevive a guardar y volver a leer");
+		}
+
+		//Las crías de dragón son Medianas y el resto Grandes o más. Es el único eje que separa a los 43
+		//dragones, que comparten modelo porque vanilla solo tiene uno con esa forma.
+		assertTrue(MonsterRegistry.parse(monsterJson(bestiary, "dndsheets:red_dragon_wyrmling")).appearance().baby(),
+			"una cría de dragón debería salir como cría");
+		assertTrue(!MonsterRegistry.parse(monsterJson(bestiary, "dndsheets:adult_red_dragon")).appearance().baby(),
+			"y un adulto desde luego que no");
+
+		//Tripwire de variedad: los números de partida eran 41 modelos y 0 vestidos.
+		assertTrue(models.size() >= 55, "el bestiario debería usar al menos 55 modelos distintos, usa " + models.size());
+		assertTrue(dressed >= 50, "al menos 50 monstruos deberían tener aspecto propio, lo tienen " + dressed);
+		System.out.println("checkMonsterAppearance: OK, " + models.size() + " modelos y " + dressed + " monstruos con aspecto propio.");
+	}
+
+	private static JsonObject monsterJson(JsonArray bestiary, String id) {
+		for (JsonElement el : bestiary) {
+			if (id.equals(el.getAsJsonObject().get("id").getAsString())) return el.getAsJsonObject();
+		}
+		throw new AssertionError("no está en el bestiario: " + id);
+	}
+
 	private static void checkMagicItems() throws Exception {
 		JsonArray items = readShippedPack("items.json");
 		java.util.Set<String> ids = new java.util.HashSet<>();
@@ -978,7 +1040,7 @@ public class JsonContentSelfTest {
 			List.of(), List.of(),
 			Map.of("fuego", "vulnerable"),          //Incondicional.
 			Map.of("cortante", "immune"),           //Solo frente a armas no mágicas.
-			CreatureType.HUMANOID, 0, 0, 1);        //Un licántropo es humanoide en 5e, también en forma de bestia.
+			CreatureType.HUMANOID, 0, 0, 1, null);  //Un licántropo es humanoide en 5e, también en forma de bestia.
 		Combatant beast = new Combatant.MonsterCombatant(null, conditional);
 		assertTrue(beast.damageMultiplier("cortante", false) == 0.0, "cortante no mágico debería rebotar en el licántropo");
 		assertTrue(beast.damageMultiplier("cortante", true) == 1.0, "cortante mágico debería atravesarlo entero");

@@ -1167,3 +1167,9 @@ token layer. Compete where Minecraft already wins.
 - Adding a content type or command → check whether it fits the `ContentType`/`NamedRegistry`/`JsonRegistryLoader` pattern before writing a parallel one.
 - Touching dungeons → read `DUNGEON_GUIDE.md`'s "regla de oro" and bugs #7-#11 above before assuming `/reload` or a captured piece is trustworthy without checking.
 - Anything DM-facing that hands out an item/teaches a spell/spawns a monster → there's almost certainly an existing `GiveableItem`-style pattern or DM Panel row to extend rather than a new one-off.
+- Cómo se VE un monstruo → `MonsterRegistry.Appearance` (equipo, cría, brillo) y `baseEntity`, que
+  acepta la entidad de cualquier mod instalado. El mod no trae ni traerá modelos propios: la biblioteca
+  de fichas que tienen Roll20 o Foundry aquí es el ecosistema de mods de criaturas. Antes de elegir un
+  modelo nuevo, comprobar dos cosas que el JSON no dice: si dibuja el equipo (el aldeano no) y si actúa
+  por su cuenta (warden, guardián anciano, enderman y gólem de nieve se descartaron por eso).
+  Comprobado en `checkMonsterAppearance`, documentado para addons en `ADDONS.md`.

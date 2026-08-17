@@ -36,6 +36,34 @@ import java.util.Set;
 //y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
 //expone a que cambien de firma sin aviso.
 public class MonsterRegistry {
+	/**
+	 * <p>Cómo se VE un monstruo, con piezas de Minecraft y sin traer ningún modelo nuevo.</p>
+	 *
+	 * <p>El bestiario usa 41 modelos vanilla para 330 monstruos, y muy mal repartidos: 52 criaturas son un
+	 * devastador, los 43 dragones entre ellas. Para quien juega, eso es "todo es lo mismo con otro nombre" —
+	 * y es la ventaja más clara que le sacan los VTT con bibliotecas de fichas y arte.</p>
+	 *
+	 * <p>Sin poder enviar arte de terceros (licencias) ni inventar modelos, lo que sí se puede hacer es
+	 * usar las piezas que Minecraft ya tiene: <b>equipo visible</b> (un esqueleto con yelmo de hierro y
+	 * espada no se lee como el mismo bicho que uno pelado), <b>tamaño de cría</b> y <b>brillo</b>. Es
+	 * gratis, no pesa nada, y diferencia sobre todo a los 51 humanoides, que es donde más se notaba.</p>
+	 *
+	 * <p>La respuesta de fondo, la que da un ecosistema de verdad, está en {@code baseEntity}: acepta
+	 * CUALQUIER entidad registrada, también la de otro mod. Un addon con dragones de verdad se enchufa
+	 * escribiendo su id ahí, sin tocar este mod. Ver ADDONS.md.</p>
+	 */
+	public record Appearance(String mainHand, String offHand, String helmet, String chestplate, String leggings,
+			String boots, boolean baby, boolean glowing) {
+
+		static final Appearance DEFAULT = new Appearance(null, null, null, null, null, null, false, false);
+		static final Appearance GLOWING = new Appearance(null, null, null, null, null, null, false, true);
+
+		public boolean isDefault() {
+			return this == DEFAULT || (mainHand == null && offHand == null && helmet == null && chestplate == null
+				&& leggings == null && boots == null && !baby && !glowing);
+		}
+	}
+
 	public record MonsterAttack(String name, String toHitAbility, String dice, String damageAbility, String damageType, String effectName, String effectDice, int effectTurns) {
 		public boolean appliesEffect() { return effectName != null; }
 	}
@@ -60,7 +88,8 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities, int proficiencyBonus,
 		List<MonsterAttack> attacks, List<MonsterSpell> spells,
 		Map<String, String> damageAffinities, Map<String, String> nonmagicalAffinities,
-		CreatureType type, int legendaryResistances, int legendaryActions, int attacksPerTurn
+		CreatureType type, int legendaryResistances, int legendaryActions, int attacksPerTurn,
+		Appearance appearance
 	) {
 		public int abilityModifier(String key) {
 			Integer score = abilities.get(key.toLowerCase(Locale.ROOT));
@@ -149,6 +178,19 @@ public class MonsterRegistry {
 		return LOADER.loadFile(file);
 	}
 
+	private static Appearance parseAppearance(JsonObject json) {
+		if (json == null) return Appearance.DEFAULT;
+		return new Appearance(
+			str(json, "mainHand"), str(json, "offHand"), str(json, "helmet"), str(json, "chestplate"),
+			str(json, "leggings"), str(json, "boots"),
+			json.has("baby") && json.get("baby").getAsBoolean(),
+			json.has("glowing") && json.get("glowing").getAsBoolean());
+	}
+
+	private static String str(JsonObject json, String key) {
+		return json.has(key) ? json.get(key).getAsString() : null;
+	}
+
 	public static MonsterStatBlock parse(JsonObject json) {
 		String id = json.get("id").getAsString();
 		String name = json.has("name") ? json.get("name").getAsString() : id;
@@ -206,8 +248,9 @@ public class MonsterRegistry {
 		//bestiario. El tope de 6 no es una regla de 5e, es un cortafuegos: un número absurdo en un JSON (a
 		//propósito o por un dedo) convierte un turno en una ráfaga de mensajes de chat imposible de leer.
 		int attacksPerTurn = json.has("multiattack") ? Math.max(1, Math.min(6, json.get("multiattack").getAsInt())) : 1;
+		Appearance appearance = parseAppearance(json.has("appearance") ? json.getAsJsonObject("appearance") : null);
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn);
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, appearance);
 	}
 
 	private static Map<String, String> readAffinities(JsonObject json, String field) {
@@ -267,6 +310,7 @@ public class MonsterRegistry {
 		//parse() ya trata "sin campo" y "vacío" igual.
 		writeAffinities(json, "damageAffinities", block.damageAffinities());
 		writeAffinities(json, "nonmagicalAffinities", block.nonmagicalAffinities());
+		writeAppearance(json, block.appearance());
 		return json;
 	}
 
@@ -277,6 +321,20 @@ public class MonsterRegistry {
 		JsonObject out = new JsonObject();
 		for (Map.Entry<String, String> entry : affinities.entrySet()) out.addProperty(entry.getKey(), entry.getValue());
 		json.add(field, out);
+	}
+
+	private static void writeAppearance(JsonObject json, Appearance look) {
+		if (look == null || look.isDefault()) return;
+		JsonObject out = new JsonObject();
+		if (look.mainHand() != null) out.addProperty("mainHand", look.mainHand());
+		if (look.offHand() != null) out.addProperty("offHand", look.offHand());
+		if (look.helmet() != null) out.addProperty("helmet", look.helmet());
+		if (look.chestplate() != null) out.addProperty("chestplate", look.chestplate());
+		if (look.leggings() != null) out.addProperty("leggings", look.leggings());
+		if (look.boots() != null) out.addProperty("boots", look.boots());
+		if (look.baby()) out.addProperty("baby", true);
+		if (look.glowing()) out.addProperty("glowing", true);
+		json.add("appearance", out);
 	}
 
 	private static JsonObject attackToJson(MonsterAttack attack) {
@@ -436,7 +494,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		for (String key : new String[]{"str", "dex", "con", "int", "wis", "cha"}) abilities.put(key, 10);
 
-		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0, 1));
+		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0, 1, Appearance.DEFAULT));
 		return spawnAt(level, x, y, z, id);
 	}
 
@@ -464,7 +522,14 @@ public class MonsterRegistry {
 
 		ResourceLocation entityLoc = ResourceLocation.tryParse(block.baseEntityId());
 		EntityType<?> type = entityLoc != null ? ForgeRegistries.ENTITY_TYPES.getValue(entityLoc) : null;
-		if (type == null) return null;
+		if (type == null) {
+			//Un id desconocido es casi siempre un addon que apunta a una entidad de OTRO mod que no está
+			//instalado. Devolver null dejaba al DM con un comando que no hacía nada y sin explicación. Un
+			//zombi con el nombre y las estadísticas correctas es una ficha jugable; nada no lo es.
+			DndsheetsMod.LOGGER.warn("dndsheets: el monstruo \"{}\" pide la entidad \"{}\", que no existe (¿falta el mod que la trae?). Uso un zombi.",
+				monsterId, block.baseEntityId());
+			type = EntityType.ZOMBIE;
+		}
 
 		Entity entity = type.create(level);
 		if (entity == null) return null;
@@ -473,6 +538,7 @@ public class MonsterRegistry {
 		entity.setCustomName(Component.literal(block.name()));
 		entity.setCustomNameVisible(true);
 		if (entity instanceof Mob mob) mob.setNoAi(true);
+		applyAppearance(entity, block.appearance());
 		tagAsMonster(entity, monsterId, block.maxHp());
 		if (configure != null) configure.accept(entity);
 
@@ -488,6 +554,44 @@ public class MonsterRegistry {
 		TurnManager.addLateMonster(level, entity, block.name());
 
 		return entity;
+	}
+
+	/**
+	 * <p>Viste al monstruo con lo que diga su bloque {@code appearance}. Todo lo que toca aquí es vanilla:
+	 * equipo visible, tamaño de cría y brillo.</p>
+	 *
+	 * <p>Las probabilidades de soltar el equipo se ponen a 0. Un monstruo de mesa es una ficha, no una
+	 * fuente de botín: si el yelmo que le pusiste para que se distinga de sus tres hermanos cae al suelo al
+	 * matarlo, has convertido una decisión visual en una recompensa que el DM no había repartido.</p>
+	 */
+	private static void applyAppearance(Entity entity, Appearance look) {
+		if (look == null || look.isDefault()) return;
+		if (look.glowing()) entity.setGlowingTag(true);
+		if (look.baby()) {
+			//Zombie NO es AgeableMob (los no-muertos no crecen), así que hacen falta las dos ramas.
+			if (entity instanceof net.minecraft.world.entity.monster.Zombie zombie) zombie.setBaby(true);
+			else if (entity instanceof net.minecraft.world.entity.AgeableMob ageable) ageable.setBaby(true);
+		}
+		if (!(entity instanceof Mob mob)) return;
+		equip(mob, net.minecraft.world.entity.EquipmentSlot.MAINHAND, look.mainHand());
+		equip(mob, net.minecraft.world.entity.EquipmentSlot.OFFHAND, look.offHand());
+		equip(mob, net.minecraft.world.entity.EquipmentSlot.HEAD, look.helmet());
+		equip(mob, net.minecraft.world.entity.EquipmentSlot.CHEST, look.chestplate());
+		equip(mob, net.minecraft.world.entity.EquipmentSlot.LEGS, look.leggings());
+		equip(mob, net.minecraft.world.entity.EquipmentSlot.FEET, look.boots());
+	}
+
+	private static void equip(Mob mob, net.minecraft.world.entity.EquipmentSlot slot, String itemId) {
+		if (itemId == null || itemId.isBlank()) return;
+		ResourceLocation loc = ResourceLocation.tryParse(itemId);
+		net.minecraft.world.item.Item item = loc != null ? ForgeRegistries.ITEMS.getValue(loc) : null;
+		if (item == null) {
+			//Se avisa y se sigue: un objeto que no existe no debe impedir que el monstruo aparezca.
+			DndsheetsMod.LOGGER.warn("dndsheets: \"{}\" no es un objeto conocido; no equipo esa ranura.", itemId);
+			return;
+		}
+		mob.setItemSlot(slot, new net.minecraft.world.item.ItemStack(item));
+		mob.setDropChance(slot, 0.0f);
 	}
 
 	//Público: CombatManager lo llama cada vez que un jugador golpea a un monstruo, para que gire a verlo
