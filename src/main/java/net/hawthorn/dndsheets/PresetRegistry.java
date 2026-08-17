@@ -51,6 +51,11 @@ public class PresetRegistry {
 	//comandos — ver AUDIT_TECHNICAL.md M-ARQ-1.
 	private static final JsonRegistryLoader<ClassPreset> LOADER = new JsonRegistryLoader<>("preset", PresetRegistry::parse, PresetRegistry::register);
 
+	/** Carga desde un JSON ya leído (datapack o jar de otro mod) — ver ContentDatapackLoader. */
+	public static int loadJson(com.google.gson.JsonElement root, String source, java.util.function.Consumer<String> onId) {
+		return LOADER.loadJson(root, source, onId);
+	}
+
 	public static int loadFile(Path file) throws IOException {
 		return LOADER.loadFile(file);
 	}

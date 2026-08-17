@@ -1092,6 +1092,34 @@ dependencies, not preference.
       a raw translation key, on the screen read specifically by people who do not yet know how
       anything works.
 
+  41. **Content from datapacks and other mods — the addon path.** Until now content could come from
+      exactly two places: the pack this mod ships, and files a DM writes into their world folder.
+      Another mod wanting to add thirty spells had to call the Java API, compile against dndsheets and
+      get the startup ordering right. That barrier decides whether an ecosystem exists at all: the
+      mods with hundreds of community addons are those where extending them means *putting data in a
+      folder*, not programming.
+
+      Any JSON under `data/<namespace>/dndsheets/<type>/` now loads on world load and on `/reload`,
+      for all six content types. An addon ships files in its jar and depends on nothing; a datapack
+      author who is not a modder can distribute a bestiary.
+
+      - **A single object per file is accepted as well as an array.** One file, one entry is the
+        datapack convention; arrays are how the mod's own packs are written. Both had to work.
+      - **Datapacks load before the world folder**, so on an id clash the DM's hand-written file wins.
+        Addon content is a starting point; whoever runs the game has the last word.
+      - **Collisions are reported with both filenames**, and only real ones: a pack reloading over
+        itself is normal and silent.
+
+      Two things worth recording from doing it. First, adding `ITEM` to `ContentType` broke an
+      exhaustive `switch` in the in-game editor — the compiler catching that the enum means "what the
+      editor can edit", not "kinds of content", so the loader got its own table instead. Second, the
+      first version of the check parsed the example file directly and **passed with the loader
+      broken**; it now goes through `loadJson`, which is the thing that had to work.
+
+      `ADDONS.md` documents both paths, and `src/test/resources/addon_example/` is a working datapack
+      that the self-test parses with the real parsers — executable documentation rather than a
+      snippet that can rot.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

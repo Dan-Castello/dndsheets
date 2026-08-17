@@ -77,6 +77,11 @@ public class MagicItemRegistry {
 	private static final JsonRegistryLoader<MagicItem> LOADER =
 		new JsonRegistryLoader<>("objeto mágico", MagicItemRegistry::parse, MagicItemRegistry::register);
 
+	/** Carga desde un JSON ya leído (datapack o jar de otro mod) — ver ContentDatapackLoader. */
+	public static int loadJson(com.google.gson.JsonElement root, String source, java.util.function.Consumer<String> onId) {
+		return LOADER.loadJson(root, source, onId);
+	}
+
 	public static int loadFile(Path file) throws IOException { return LOADER.loadFile(file); }
 
 	public static MagicItem parse(JsonObject json) {

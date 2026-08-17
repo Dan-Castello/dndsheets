@@ -232,8 +232,26 @@ public class Config {
 	//varios campos obligatorios a la vez y llama a registerWeapon con parámetros posicionales en vez de un
 	//par parse()/register() sobre un registro propio.
 	public static int loadFile(Path file) throws IOException {
-		String json = Files.readString(file);
-		JsonArray weapons = JsonParser.parseString(json).getAsJsonArray();
+		return loadJson(JsonParser.parseString(Files.readString(file)), file.getFileName().toString(), id -> { });
+	}
+
+	/**
+	 * <p>Carga armas de un JSON ya leído, de un archivo del mundo o del jar de otro mod (ver
+	 * {@code ContentDatapackLoader}). Acepta un array de armas o una suelta, que es la convención de un
+	 * datapack: un archivo, una entrada.</p>
+	 *
+	 * <p>Las armas no pasan por {@code JsonRegistryLoader} porque validan tres campos obligatorios a la vez
+	 * y registran con parámetros posicionales en vez de un par parse/register — ver el comentario de esa
+	 * clase. Por eso este método repite su forma en lugar de reusarla.</p>
+	 */
+	public static int loadJson(JsonElement root, String source, java.util.function.Consumer<String> onId) {
+		JsonArray weapons;
+		if (root.isJsonArray()) {
+			weapons = root.getAsJsonArray();
+		} else {
+			weapons = new JsonArray();
+			weapons.add(root);
+		}
 		int count = 0;
 		int index = 0;
 		for (JsonElement element : weapons) {
@@ -241,7 +259,7 @@ public class Config {
 			try {
 				JsonObject weapon = element.getAsJsonObject();
 				if (!weapon.has("id") || !weapon.has("dice") || !weapon.has("ability")) {
-					DndsheetsMod.LOGGER.warn("Saltando arma #{} en {}: falta \"id\", \"dice\" o \"ability\".", index, file.getFileName());
+					DndsheetsMod.LOGGER.warn("Saltando arma #{} en {}: falta \"id\", \"dice\" o \"ability\".", index, source);
 					continue;
 				}
 
@@ -265,9 +283,10 @@ public class Config {
 				Integer customModelData = weapon.has("customModelData") ? weapon.get("customModelData").getAsInt() : null;
 
 				registerWeapon(id, dice, ability, damageType, hands, versatileDice, classes, name, baseItem, customModelData);
+				onId.accept(id);
 				count++;
 			} catch (RuntimeException e) {
-				DndsheetsMod.LOGGER.warn("Saltando arma #{} en {}: {}", index, file.getFileName(), e.toString());
+				DndsheetsMod.LOGGER.warn("Saltando arma #{} en {}: {}", index, source, e.toString());
 			}
 		}
 		return count;

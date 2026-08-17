@@ -30,8 +30,29 @@ public class JsonRegistryLoader<T> {
 	}
 
 	public int loadFile(Path file) throws IOException {
-		String json = Files.readString(file);
-		JsonArray items = JsonParser.parseString(json).getAsJsonArray();
+		return loadJson(JsonParser.parseString(Files.readString(file)), file.getFileName().toString());
+	}
+
+	/**
+	 * <p>Carga contenido de un JSON ya leído, venga de un archivo del mundo o del jar de otro mod (ver
+	 * {@code ContentDatapackLoader}). Acepta un <b>array</b> de entradas —como los packs escritos a mano— o
+	 * un <b>objeto suelto</b>, que es la convención de un datapack: un archivo, una entrada.</p>
+	 *
+	 * @param source de dónde viene, solo para los avisos del log.
+	 */
+	public int loadJson(JsonElement root, String source) {
+		return loadJson(root, source, id -> { });
+	}
+
+	/** @param onId se llama con el id de cada entrada cargada — ver {@link ContentType#loadJson}. */
+	public int loadJson(JsonElement root, String source, java.util.function.Consumer<String> onId) {
+		JsonArray items;
+		if (root.isJsonArray()) {
+			items = root.getAsJsonArray();
+		} else {
+			items = new JsonArray();
+			items.add(root);
+		}
 		int count = 0;
 		//Por elemento, no por archivo entero: un elemento malformado a mitad de la lista no debe descartar
 		//en silencio a todos los que venían después.
@@ -39,14 +60,15 @@ public class JsonRegistryLoader<T> {
 		for (JsonElement element : items) {
 			index++;
 			try {
+				if (element.getAsJsonObject().has("id")) onId.accept(element.getAsJsonObject().get("id").getAsString());
 				if (!element.getAsJsonObject().has("id")) {
-					DndsheetsMod.LOGGER.warn("Saltando {} #{} en {}: falta el campo \"id\".", kindName, index, file.getFileName());
+					DndsheetsMod.LOGGER.warn("Saltando {} #{} en {}: falta el campo \"id\".", kindName, index, source);
 					continue;
 				}
 				register.accept(parse.apply(element.getAsJsonObject()));
 				count++;
 			} catch (RuntimeException e) {
-				DndsheetsMod.LOGGER.warn("Saltando {} #{} en {}: {}", kindName, index, file.getFileName(), e.toString());
+				DndsheetsMod.LOGGER.warn("Saltando {} #{} en {}: {}", kindName, index, source, e.toString());
 			}
 		}
 		return count;

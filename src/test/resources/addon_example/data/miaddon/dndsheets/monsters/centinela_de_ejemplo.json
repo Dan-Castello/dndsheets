@@ -1,0 +1,14 @@
+{
+  "id": "miaddon:centinela_de_ejemplo",
+  "name": "Centinela de Ejemplo",
+  "type": "automata",
+  "baseEntity": "minecraft:iron_golem",
+  "ac": 15,
+  "hp": 40,
+  "abilities": { "str": 16, "dex": 9, "con": 16, "int": 3, "wis": 10, "cha": 1 },
+  "proficiencyBonus": 2,
+  "multiattack": 2,
+  "attacks": [
+    { "name": "Golpe", "toHitAbility": "str", "dice": "1d10", "damageAbility": "str", "damageType": "contundente" }
+  ]
+}

@@ -52,6 +52,7 @@ public class JsonContentSelfTest {
 		checkAbilityImprovements();
 		checkLanguageFiles();
 		checkNetworkShape();
+		checkAddonContentLoads();
 		checkSheetCoordinateSpaces();
 		checkIncapacitatedCannotAct();
 		checkCharacterLookup();
@@ -1972,6 +1973,55 @@ public class JsonContentSelfTest {
 		}
 
 		System.out.println("checkIncapacitatedCannotAct: OK, las condiciones se respetan en las dos direcciones y el jugador ve lo que le pasa y lo que lleva encima.");
+	}
+
+	/**
+	 * <p>Que un addon pueda añadir contenido <b>sin escribir Java</b>: un JSON en
+	 * {@code data/&lt;loquesea&gt;/dndsheets/&lt;tipo&gt;/} y ya. Es la diferencia entre tener ecosistema y no
+	 * tenerlo — los mods con cientos de addons lo son porque extenderlos es poner datos en una carpeta.</p>
+	 *
+	 * <p>Se comprueba contra el datapack de ejemplo del propio repo, parseándolo con los MISMOS parsers que
+	 * usa el juego. Lo que no puede comprobarse aquí es el enganche con el gestor de recursos de Minecraft
+	 * (necesita un servidor), así que eso se sostiene por estructura.</p>
+	 */
+	private static void checkAddonContentLoads() throws Exception {
+		Path addon = Path.of("src", "test", "resources", "addon_example");
+		assertTrue(Files.isDirectory(addon), "falta el datapack de ejemplo: es la documentación ejecutable de cómo se escribe un addon");
+		assertTrue(Files.exists(addon.resolve("pack.mcmeta")), "un datapack sin pack.mcmeta no lo carga Minecraft");
+
+		//Una entrada suelta por archivo, que es la convención de datapack — y el caso que NO existía antes,
+		//porque los packs escritos a mano son arrays.
+		JsonObject spell = JsonParser.parseString(Files.readString(
+			addon.resolve("data/miaddon/dndsheets/spells/rayo_de_ejemplo.json"))).getAsJsonObject();
+		assertTrue(!spell.isJsonArray() && spell.has("id"), "el ejemplo debería ser un objeto suelto, no un array");
+		//Por el CARGADOR, no por el parser a secas: lo que hay que demostrar es que un archivo con una entrada
+		//suelta —la convención de datapack— se carga, y ese caso no existía antes porque los packs escritos a
+		//mano son arrays. Parsear el objeto a pelo pasaría igual con el cargador roto.
+		java.util.List<String> loadedIds = new java.util.ArrayList<>();
+		int count = SpellRegistry.loadJson(spell, "ejemplo", loadedIds::add);
+		assertTrue(count == 1 && loadedIds.contains("miaddon:rayo_de_ejemplo"),
+			"un archivo con UNA entrada suelta debería cargar una entrada, y avisar de su id");
+		SpellRegistry.Spell parsed = SpellRegistry.get("miaddon:rayo_de_ejemplo");
+		assertTrue(parsed != null && parsed.scalesWithSlot(),
+			"y quedar registrado de verdad, con su subida de nivel");
+
+		JsonObject monster = JsonParser.parseString(Files.readString(
+			addon.resolve("data/miaddon/dndsheets/monsters/centinela_de_ejemplo.json"))).getAsJsonObject();
+		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.parse(monster);
+		assertTrue(block.type() == CreatureType.CONSTRUCT && block.attacksPerTurn() == 2 && !block.attacks().isEmpty(),
+			"el monstruo del addon debería traer tipo, multiataque y ataques");
+
+		//Y que el cargador siga enganchado a la recarga de datapacks: sin esto, los archivos están bien
+		//escritos y no los lee nadie.
+		String loader = readSource("ContentDatapackLoader.java");
+		assertTrue(loader.contains("AddReloadListenerEvent"),
+			"el contenido de datapacks tiene que engancharse a la recarga, o un addon no se carga nunca");
+		for (String folder : List.of("weapons", "spells", "monsters", "presets", "traits", "items")) {
+			assertTrue(loader.contains("\"" + folder + "\""),
+				"un addon debería poder traer " + folder + " igual que el resto");
+		}
+
+		System.out.println("checkAddonContentLoads: OK, un addon añade contenido con solo poner JSON en su carpeta.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

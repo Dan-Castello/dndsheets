@@ -1,0 +1,10 @@
+{
+  "id": "miaddon:rayo_de_ejemplo",
+  "name": "Rayo de Ejemplo",
+  "level": 1,
+  "mode": "attack",
+  "castingAbility": "int",
+  "dice": "2d8",
+  "damageType": "rayo",
+  "upcastDice": "1d8"
+}
