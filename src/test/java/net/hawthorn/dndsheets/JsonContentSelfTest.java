@@ -1789,7 +1789,15 @@ public class JsonContentSelfTest {
 				"cambiar de personaje debería cortar lo que el anterior tenía en marcha en " + manager);
 		}
 
-		System.out.println("checkCharacterLevelIsPerCharacter: OK, nivel, vida, recursos, equipo y efectos vivos son del personaje.");
+		//Reportado jugando: el inventario no se veía cambiado hasta abrirlo a mano. Sustituir las ranuras en
+		//el servidor no repinta la barra rápida por sí solo, y quien mira la pantalla no tiene forma de saber
+		//que sus datos ya cambiaron. Los demás estados vanilla que toca el mod —vida, atributo de vida
+		//máxima, posición, efectos— los sincroniza Minecraft solo; el inventario es el único que se
+		//sustituye ENTERO fuera de una interacción con el menú.
+		assertTrue(inventory.contains("broadcastFullState()"),
+			"cambiar el inventario en el servidor hay que anunciarlo, o el jugador ve el viejo hasta que abre la mochila");
+
+		System.out.println("checkCharacterLevelIsPerCharacter: OK, nivel, vida, recursos, equipo y efectos vivos son del personaje, y el equipo se ve al cambiar.");
 	}
 
 	private static JsonObject named(String characterName) {

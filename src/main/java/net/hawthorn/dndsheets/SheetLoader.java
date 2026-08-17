@@ -119,7 +119,7 @@ public class SheetLoader {
 		try {
 			byte[] data = SheetLoader.getServerSheet(uuidString).toString().getBytes();
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> entity), new SheetClientMessage(data));
-			DeathSaveManager.resendStateOnJoin(entity, SheetLoader.getServerSheet(uuidString));
+			DeathSaveManager.resendState(entity, SheetLoader.getServerSheet(uuidString));
 			//Reconectarse durante un combate le da al jugador un entityId nuevo; sin esto quedaba bloqueado
 			//sin poder actuar por el resto del encuentro (ver TurnManager.reconcilePlayerEntity).
 			TurnManager.reconcilePlayerEntity(entity);
@@ -665,6 +665,10 @@ public class SheetLoader {
 		//cliente: sin estas dos líneas, cambiar de personaje dejaba al jugador con el cuerpo del anterior.
 		applyClassHitPoints(player, target);
 		restoreHitPoints(player, target);
+		//"Caído" es del personaje (vive en su hoja), así que la pantalla de salvaciones de muerte tiene que
+		//seguir al que te pones: dejar a un moribundo para llevarte a otro la cierra, y volver con él la
+		//reabre. Sin esto, el estado era correcto en los datos e invisible en pantalla.
+		DeathSaveManager.resendState(player, target);
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(target.toString().getBytes()));
 		return true;
 	}

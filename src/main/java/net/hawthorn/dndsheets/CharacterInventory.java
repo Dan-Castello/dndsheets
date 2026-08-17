@@ -52,11 +52,18 @@ final class CharacterInventory {
 		player.getInventory().clearContent();
 		if (incoming != null && incoming.has(FIELD)) {
 			restore(player, incoming.get(FIELD).getAsString());
+			//Reportado jugando: el inventario no se veía cambiado hasta abrirlo a mano. Cambiar las ranuras en
+			//el servidor NO repinta la barra rápida por sí solo — el menú del jugador manda al cliente lo que
+			//ha cambiado desde su última foto, y una sustitución completa hecha fuera de una interacción con
+			//el menú se queda sin anunciar. broadcastFullState fuerza el envío entero, que es lo que hace
+			//falta cuando lo que cambió es "todo".
+			player.inventoryMenu.broadcastFullState();
 		} else if (outgoing != null) {
 			//Se dice. Quedarse con las manos vacías sin explicación se lee como "el mod me ha borrado las
 			//cosas", y lo que ha pasado es justo lo contrario: están guardadas con el otro personaje.
 			player.sendSystemMessage(net.minecraft.network.chat.Component
 				.translatable("chat.dndsheets.character.inventory_swapped").withStyle(ChatFormatting.GRAY));
+			player.inventoryMenu.broadcastFullState(); //Vaciarlo también hay que anunciarlo, por lo mismo.
 		}
 	}
 

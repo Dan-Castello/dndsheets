@@ -1058,6 +1058,25 @@ dependencies, not preference.
       the body's position, XP and hunger — the things that belong to the person at the keyboard rather
       than to the character they are playing.
 
+  38. **The swapped inventory was not repainted, and the report came with the right generalisation:**
+      "the inventory does not update until you open it manually — I assume this repeats in other
+      aspects." Replacing slots server-side does not redraw the hotbar on its own; the player's menu
+      sends what changed since its last snapshot, and a wholesale replacement made outside a menu
+      interaction goes unannounced. `broadcastFullState()` forces the whole thing, which is what
+      "everything changed" needs.
+
+      The generalisation is right as a habit and, checked, wrong as a diagnosis here — which is worth
+      recording. Every other piece of vanilla state this mod writes is synced by Minecraft itself:
+      health and the max-health attribute travel on the entity's own data, position travels with the
+      entity, status effects travel as effects. **The inventory is the only one replaced wholesale
+      outside a menu interaction**, and that is exactly why it was the only one that broke.
+
+  39. **The death-save screen follows the character.** `downed` already lived on the sheet, so it was
+      per-character by construction — but nothing re-sent it on switch. Leaving a dying character to
+      play another one kept their screen up; coming back to them did not reopen it. The resend is now
+      symmetric (open *or* close) and runs on both join and switch. The state was already right in
+      the data and invisible on screen, which is the same shape as items 32 and 33.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

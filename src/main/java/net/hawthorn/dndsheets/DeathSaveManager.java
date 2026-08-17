@@ -216,11 +216,18 @@ public class DeathSaveManager {
 		CombatFx.saved(player, titleText);
 	}
 
-	//Reenvía el estado a quien acaba de unirse por si estaba caído desde antes de desconectarse.
-	public static void resendStateOnJoin(ServerPlayer player, JsonObject sheet) {
-		if (isDowned(sheet)) {
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new ScreenActionMessage(ScreenActionMessage.Action.DEATH_SAVE_OPEN));
-		}
+	/**
+	 * <p>Pone la pantalla de salvaciones de muerte acorde a la hoja: la abre si el personaje está caído y la
+	 * cierra si no. La usan la conexión (por si se cayó antes de desconectarse) y el cambio de personaje.</p>
+	 *
+	 * <p>Cierra además de abrir porque "caído" es del PERSONAJE (vive en su hoja, ver {@code downed}) y el
+	 * cambio de personaje puede ir en las dos direcciones: dejar a un moribundo para ponerse a otro tenía
+	 * que cerrar su pantalla, y volver con él tiene que reabrirla. Mandar el cierre a quien no tiene ninguna
+	 * abierta no hace nada, así que la versión simétrica sirve para los dos sitios.</p>
+	 */
+	public static void resendState(ServerPlayer player, JsonObject sheet) {
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new ScreenActionMessage(
+			isDowned(sheet) ? ScreenActionMessage.Action.DEATH_SAVE_OPEN : ScreenActionMessage.Action.DEATH_SAVE_CLOSE));
 	}
 
 	private static boolean isDowned(JsonObject sheet) {
