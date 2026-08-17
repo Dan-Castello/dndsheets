@@ -46,6 +46,23 @@ minecraft {
     }
 }
 
+// --- Como se prueba esto, que costo cinco arranques averiguarlo ---
+//
+// El cliente de desarrollo (runClient) NO puede cargar mods de produccion que hagan mixin sobre
+// clases de vanilla. Se probaron uno a uno y fallan todos, cada uno un arranque: Oculus, Patchouli,
+// LionfishAPI, Curios y Citadel. Siempre el mismo motivo: el mod referencia nombres SRG (f_19803_,
+// m_8097_, m_91087_) y este entorno corre con mapeos parchment, donde esos nombres no existen.
+// Pasar el jar por fg.deobf arregla su bytecode pero no sus mixins; activar mixin.env.remapRefMap
+// arregla los mixins del jar deobfeado y rompe los de todos los demas. No hay combinacion que valga.
+//
+// Asi que runClient/mods se queda VACIO: runClient sirve para desarrollar este mod, y para eso
+// sobra. Las integraciones (packs de aspecto, Patchouli, Curios) se prueban donde se van a usar:
+//
+//     ./gradlew build   ->   build/libs/dndsheets-1.0.2.jar   ->   instalacion normal de 1.20.1
+//
+// Ahi todo es de produccion y todo casa. Los jars apartados estan en runClient/mods-disabled.
+// tools/preflight_mods.py sigue sirviendo para la instalacion real: dice que falta antes de arrancar.
+
 configurations {
     shade
     implementation.extendsFrom shade
@@ -82,6 +99,19 @@ dependencies {
 
     // Solo el artefacto "api", que es lo unico que se toca: PatchouliAPI.get().
     compileOnly fg.deobf("vazkii.patchouli:Patchouli:1.20.1-85-FORGE:api")
+
+    // NO se anade el jar completo como runtimeOnly. Probado, y el resultado es el mismo callejon que
+    // con Curios, solo que un paso mas alla: puesto a mano en runClient/mods, Patchouli muere al
+    // arrancar llamando a Minecraft.m_91087_() (el nombre SRG de getInstance) desde su
+    // BookCrashHandler; pasado por fg.deobf, esa llamada se arregla pero fallan sus mixins, y
+    // activar mixin.env.remapRefMap para arreglarlos rompe los mixins de los ONCE mods de
+    // produccion que estan en runClient/mods —Citadel el primero—, que son los que de verdad hay
+    // que probar. Un cliente de desarrollo no puede tener a la vez mods deobfeados y mods de
+    // produccion con mixins.
+    //
+    // Asi que la Guia de Patchouli se prueba en una instalacion normal con el jar construido. Lo que
+    // si se comprueba aqui es su estructura: checkPatchouliBook exige que cada pagina de la Guia este
+    // en exactamente una entrada del libro, en las dos direcciones.
 
     // NO se anade el jar completo como runtimeOnly, aunque seria comodo para probar la integracion:
     // Curios se publica con sus mixins referenciando nombres SRG (f_19803_), y runClient corre con
