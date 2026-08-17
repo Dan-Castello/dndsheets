@@ -48,7 +48,7 @@ public class SpellGiveMessage {
 
 			net.hawthorn.dndsheets.DndsheetsMod.withDmTarget(context, message.targetUuid, target -> {
 				if (message.asStaff) {
-					target.getInventory().add(SpellCommand.buildStaffStack(message.spellId, spell, "minecraft:blaze_rod"));
+					target.getInventory().add(SpellCommand.buildStaffStack(message.spellId, spell, null));
 					target.sendSystemMessage(Component.literal("Báculo de " + spell.name() + " recibido."));
 				} else {
 					SpellCommand.learnForPlayer(target, message.spellId, spell);

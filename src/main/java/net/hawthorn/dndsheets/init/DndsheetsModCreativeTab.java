@@ -68,7 +68,7 @@ public class DndsheetsModCreativeTab {
 			}
 			for (String spellId : SpellRegistry.ids()) {
 				SpellRegistry.Spell spell = SpellRegistry.get(spellId);
-				if (spell != null) safeAccept(output, SpellCommand.buildStaffStack(spellId, spell, "minecraft:blaze_rod"));
+				if (spell != null) safeAccept(output, SpellCommand.buildStaffStack(spellId, spell, null));
 			}
 			for (String monsterId : MonsterRegistry.ids()) {
 				safeAccept(output, MonsterRegistry.buildSpawnCard(monsterId));

@@ -130,7 +130,7 @@ public class SpellCommand {
 		int slotsMax = sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
 		if (slotsMax <= 0) SpellSlots.setFlat(sheet, 1, 1);
 		if (!alreadyKnown) {
-			target.getInventory().add(buildStaffStack(spellId, spell, "minecraft:blaze_rod"));
+			target.getInventory().add(buildStaffStack(spellId, spell, null));
 		}
 
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes()));
@@ -159,7 +159,8 @@ public class SpellCommand {
 
 	//Público: también lo usa la pestaña creativa (DndsheetsModCreativeTab) para mostrar los báculos de cada hechizo cargado.
 	public static ItemStack buildStaffStack(String spellId, SpellRegistry.Spell spell, String itemId) {
-		ResourceLocation itemLoc = ResourceLocation.tryParse(itemId);
+		//null = "el báculo del mod". Lo piden los tres sitios que antes pasaban un blaze rod a mano.
+		ResourceLocation itemLoc = itemId == null ? null : ResourceLocation.tryParse(itemId);
 		Item baseItem = itemLoc != null ? ForgeRegistries.ITEMS.getValue(itemLoc) : null;
 		//Sin ítem configurado, el báculo del mod con su textura. Con uno configurado, el que diga el DM:
 		//quien pone "minecraft:trident" quiere ver un tridente, no nuestro icono encima.
