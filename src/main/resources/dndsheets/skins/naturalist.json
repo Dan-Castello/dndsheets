@@ -2,11 +2,9 @@
   "mod": "naturalist",
   "name": "Naturalist",
   "url": "https://www.curseforge.com/minecraft/mc-mods/naturalist",
-  "_nota": "Fauna real. Se carga despues de Alexs Mobs: con los dos instalados, gana este donde coincidan.",
+  "_nota": "Fauna real. Se carga despues de Alexs Mobs: con los dos instalados, gana este donde coincidan. Sin hiena ni buho: no estan en el mod, y esas cuatro se quedan con su modelo vanilla.",
   "skins": {
     "dndsheets:lion": "naturalist:lion",
-    "dndsheets:hyena": "naturalist:hyena",
-    "dndsheets:giant_hyena": "naturalist:hyena",
     "dndsheets:deer": "naturalist:deer",
     "dndsheets:rhinoceros": "naturalist:rhino",
     "dndsheets:elephant": "naturalist:elephant",
@@ -21,10 +19,10 @@
     "dndsheets:giant_vulture": "naturalist:vulture",
     "dndsheets:brown_bear": "naturalist:bear",
     "dndsheets:black_bear": "naturalist:bear",
-    "dndsheets:owl": "naturalist:owl",
-    "dndsheets:giant_owl": "naturalist:owl",
     "dndsheets:lizard": "naturalist:lizard",
     "dndsheets:boar": "naturalist:boar",
-    "dndsheets:giant_boar": "naturalist:boar"
+    "dndsheets:giant_boar": "naturalist:boar",
+    "dndsheets:axe_beak": "naturalist:ostrich",
+    "dndsheets:will_o_wisp": "naturalist:firefly"
   }
 }

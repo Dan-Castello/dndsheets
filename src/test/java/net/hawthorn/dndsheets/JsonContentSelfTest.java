@@ -39,6 +39,7 @@ public class JsonContentSelfTest {
 		checkMonsterSkins();
 		checkItemLooks();
 		checkPatchouliBook();
+		checkVanillaIds();
 		checkMagicItems();
 		checkTraits(); //Antes de checkPresets(): el preset de monje concede este rasgo por id.
 		checkPresets();
@@ -631,6 +632,60 @@ public class JsonContentSelfTest {
 	 * y quien la lea por ahí no sabrá que existe. Se exige que cada página esté en exactamente una entrada,
 	 * en las dos direcciones.</p>
 	 */
+	/**
+	 * <p>Que todo id de vanilla que nombra el contenido exista <b>en 1.20.1</b>.</p>
+	 *
+	 * <p>Reportado desde una partida real: el Mangual declaraba {@code minecraft:mace}, que es un ítem de
+	 * <b>1.21</b>. Aquí no resuelve, así que el arma caía a un palo y chocaba en la pestaña creativa con
+	 * otra entrada. Nada falla: {@code buildWeaponStack} tiene un ítem por defecto justo para no caerse, y
+	 * el único síntoma fue una línea de aviso en el log del cliente. Un id de otra versión, o mal escrito,
+	 * se comporta exactamente igual — se traga el fallo y entrega otra cosa.</p>
+	 *
+	 * <p>La lista sale del {@code en_us.json} del cliente 1.20.1 (ver {@code tools/extract_vanilla_ids.py}),
+	 * que es la única fuente que no hay que creerse: la trae el propio juego.</p>
+	 */
+	private static void checkVanillaIds() throws Exception {
+		java.util.Set<String> vanilla = new java.util.HashSet<>();
+		for (String line : Files.readAllLines(Path.of("src", "test", "resources", "vanilla_ids_1_20_1.txt"))) {
+			if (!line.startsWith("#") && !line.isBlank()) vanilla.add(line.trim());
+		}
+		assertTrue(vanilla.size() > 1000, "la lista de ids de vanilla parece incompleta: " + vanilla.size());
+
+		int checked = 0;
+		for (JsonElement el : readShippedPack("weapons.json")) {
+			JsonObject weapon = el.getAsJsonObject();
+			checked += assertVanilla(vanilla, "item", weapon.has("item") ? weapon.get("item").getAsString() : null,
+				"el arma " + weapon.get("id").getAsString());
+		}
+		for (JsonElement el : readShippedPack("items.json")) {
+			JsonObject item = el.getAsJsonObject();
+			checked += assertVanilla(vanilla, "item", item.has("item") ? item.get("item").getAsString() : null,
+				"el objeto mágico " + item.get("id").getAsString());
+		}
+		for (JsonElement el : readShippedPack("monsters.json")) {
+			JsonObject monster = el.getAsJsonObject();
+			String id = monster.get("id").getAsString();
+			checked += assertVanilla(vanilla, "entity", monster.get("baseEntity").getAsString(), "el monstruo " + id);
+			if (!monster.has("appearance")) continue;
+			JsonObject look = monster.getAsJsonObject("appearance");
+			for (String slot : look.keySet()) {
+				if (slot.equals("baby") || slot.equals("glowing")) continue;
+				checked += assertVanilla(vanilla, "item", look.get(slot).getAsString(), "el " + slot + " de " + id);
+			}
+		}
+		System.out.println("checkVanillaIds: OK, " + checked + " ids de vanilla existen de verdad en 1.20.1.");
+	}
+
+	/** @return 1 si se comprobó, 0 si el id no era de vanilla (un mod, o ausente) y no toca comprobarlo. */
+	private static int assertVanilla(java.util.Set<String> vanilla, String kind, String id, String who) {
+		//Un id de otro mod no se puede comprobar aquí y no es un fallo: es justo lo que permite que un
+		//addon apunte a la entidad de su mod. Lo que se exige es que lo que DICE ser de Minecraft lo sea.
+		if (id == null || !id.startsWith("minecraft:")) return 0;
+		assertTrue(vanilla.contains(kind + "/" + id.substring("minecraft:".length())),
+			who + " usa \"" + id + "\", que no existe en Minecraft 1.20.1");
+		return 1;
+	}
+
 	private static void checkPatchouliBook() throws Exception {
 		Path book = Path.of("src", "main", "resources", "data", "dndsheets", "patchouli_books", "guide", "book.json");
 		JsonObject meta = JsonParser.parseString(Files.readString(book)).getAsJsonObject();
