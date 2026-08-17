@@ -1077,6 +1077,21 @@ dependencies, not preference.
       symmetric (open *or* close) and runs on both join and switch. The state was already right in
       the data and invisible on screen, which is the same shape as items 32 and 33.
 
+  40. **Nobody was told any of this existed.** The visibility question again, one level up: not "can
+      the player see the state", but "**does anyone know the feature is there?**" The in-game Guide —
+      the thing a new player and a new DM actually read — had 19 pages and mentioned **none** of the
+      last two weeks of work.
+
+      Nobody discovers that standing behind a block gives +2 AC by looking at their dice results.
+      Seven pages added: multiple characters and what each one owns, levelling and the ability
+      improvement, the turn actions, cover, the HUD's condition and held-effect lines, and two DM
+      pages on boss rules and creature types.
+
+      `checkLanguageFiles` now also asserts every page registered in `GuideBook` has a translation.
+      That failure is silent in the worst way — nothing breaks at compile time, and what shows up is
+      a raw translation key, on the screen read specifically by people who do not yet know how
+      anything works.
+
   **The same asymmetry, twice more:** a monster's *spell* did not apply cover to its Dexterity save —
   sheltering from a dragon's breath is the textbook case, and it worked only when a player was the
   caster. And two chat lines announced the target by Minecraft account name instead of character name.

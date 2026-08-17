@@ -1602,8 +1602,23 @@ public class JsonContentSelfTest {
 			}
 		}
 
+		//Las páginas de la guía se declaran en Java y se traducen aquí: una registrada sin traducir sale en
+		//pantalla como su propia clave. Es el mismo fallo callado que arriba, con un paso más — nada falla
+		//al compilar, y la guía es justo lo que lee quien no sabe todavía cómo funciona nada.
+		String guide = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
+			"client", "gui", "GuideBook.java"));
+		java.util.regex.Matcher pages = java.util.regex.Pattern
+			.compile("\"(gui[.]dndsheets[.]guide[.]page[.]\\w+)\"").matcher(guide);
+		int pageCount = 0;
+		while (pages.find()) {
+			pageCount++;
+			assertTrue(referenceKeys.contains(pages.group(1)),
+				"la guía registra la página \"" + pages.group(1) + "\" y no está traducida: saldría la clave cruda");
+		}
+		assertTrue(pageCount >= 20, "esperaba al menos 20 páginas de guía y encontré " + pageCount);
+
 		System.out.println("checkLanguageFiles: OK, " + keysByLang.size() + " idiomas con las mismas "
-			+ referenceKeys.size() + " claves y JSON válido.");
+			+ referenceKeys.size() + " claves, " + pageCount + " páginas de guía traducidas y JSON válido.");
 	}
 
 	/**

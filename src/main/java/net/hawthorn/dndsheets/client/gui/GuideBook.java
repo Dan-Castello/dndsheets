@@ -24,6 +24,14 @@ public class GuideBook {
 		"gui.dndsheets.guide.page.spells",
 		"gui.dndsheets.guide.page.distance",
 		"gui.dndsheets.guide.page.class_items",
+		//Lo añadido en la tanda de fidelidad de reglas. Iba todo sin explicar en ninguna parte, que para
+		//quien juega es lo mismo que no existir: nadie va a descubrir que parapetarse le da +2 a la CA
+		//mirando los números de sus tiradas.
+		"gui.dndsheets.guide.page.characters",
+		"gui.dndsheets.guide.page.level_up",
+		"gui.dndsheets.guide.page.turn_actions",
+		"gui.dndsheets.guide.page.cover",
+		"gui.dndsheets.guide.page.hud_states",
 	};
 
 	private static final String[] DM_PAGES = {
@@ -37,6 +45,8 @@ public class GuideBook {
 		"gui.dndsheets.guide.page.dm_sheet_admin",
 		"gui.dndsheets.guide.page.dm_more_packs",
 		"gui.dndsheets.guide.page.dm_commands",
+		"gui.dndsheets.guide.page.dm_bosses",
+		"gui.dndsheets.guide.page.dm_creatures",
 	};
 
 	private GuideBook() {
