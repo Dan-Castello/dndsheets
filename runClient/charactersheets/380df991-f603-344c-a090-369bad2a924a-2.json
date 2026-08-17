@@ -1,5 +1,8 @@
 {
-  "characterName": "Bardo",
+  "characterName": "Mago",
+  "ownerUuid": "380df991-f603-344c-a090-369bad2a924a",
+  "active": true,
+  "characterLevel": 1,
   "strength": "10",
   "dexterity": "10",
   "constitution": "10",
@@ -72,29 +75,24 @@
   ],
   "spells": [],
   "traits": [],
-  "spellSlotsCurrent": 7,
-  "spellSlotsMax": 7,
+  "spellSlotsCurrent": 2,
+  "spellSlotsMax": 2,
   "schemaVersion": 1,
   "hitDiceTypes": "",
-  "hitPointsMax": "23",
+  "hitPointsMax": "6",
   "armorClass": "10",
-  "hitPoints": "23",
+  "hitPoints": "3",
   "background": "",
   "hitPointsTemp": "0",
-  "characterClass": "Bardo",
+  "characterClass": "Mago",
   "characterRace": "",
   "speed": "",
-  "level": "4",
+  "level": "1",
   "spellSlotsMaxByLevel": {
-    "1": 4,
-    "2": 3
+    "1": 2
   },
   "spellSlotsByLevel": {
-    "1": 4,
-    "2": 3
+    "1": 2
   },
-  "active": false,
-  "ownerUuid": "380df991-f603-344c-a090-369bad2a924a",
-  "characterLevel": 4,
-  "inventory": "{items:[{Count:1b,Slot:0b,id:\"minecraft:blaze_rod\",tag:{display:{Name:\u0027{\"text\":\"Báculo de Esfera Flamigera\"}\u0027},dndsheets:{quickSpell:\"dndsheets:flaming_sphere\"}}},{Count:1b,Slot:1b,id:\"minecraft:iron_sword\",tag:{Damage:0,display:{Name:\u0027{\"text\":\"Daga\"}\u0027},dndsheets:{weapon:\"dndsheets:dagger\"}}},{Count:1b,Slot:2b,id:\"minecraft:rabbit_foot\",tag:{display:{Lore:[\u0027{\"color\":\"gray\",\"text\":\"Clic derecho: golpes a mano desnuda pegan como un animal 10 asaltos.\"}\u0027],Name:\u0027{\"text\":\"Forma Salvaje\"}\u0027},dndsheets:{wildShape:1b}}},{Count:1b,Slot:3b,id:\"minecraft:iron_sword\",tag:{Damage:0}},{Count:1b,Slot:4b,id:\"minecraft:iron_sword\",tag:{Damage:0,display:{Name:\u0027{\"text\":\"Daga\"}\u0027},dndsheets:{weapon:\"dndsheets:dagger\"}}},{Count:1b,Slot:5b,id:\"minecraft:splash_potion\"}]}"
+  "inventory": "{items:[]}"
 }

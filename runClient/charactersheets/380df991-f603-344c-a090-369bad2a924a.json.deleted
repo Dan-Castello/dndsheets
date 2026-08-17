@@ -1,0 +1,113 @@
+{
+  "characterName": "Test",
+  "strength": "8",
+  "dexterity": "13",
+  "constitution": "14",
+  "intelligence": "10",
+  "wisdom": "10",
+  "charisma": "15",
+  "proficiencyBonus": "2",
+  "checks": [
+    "1d20 + $str",
+    "1d20 + $dex",
+    "1d20 + $con",
+    "1d20 + $int",
+    "1d20 + $wis",
+    "1d20 + $cha",
+    "1d20 + $dex"
+  ],
+  "saves": [
+    "1d20 + $str",
+    "1d20 + $dex",
+    "1d20 + $con",
+    "1d20 + $int",
+    "1d20 + $wis",
+    "1d20 + $cha"
+  ],
+  "skills": [
+    "1d20 + $str",
+    "1d20 + $dex",
+    "1d20 + $dex",
+    "1d20 + $dex",
+    "1d20 + $int",
+    "1d20 + $int",
+    "1d20 + $int",
+    "1d20 + $int",
+    "1d20 + $int",
+    "1d20 + $wis",
+    "1d20 + $wis",
+    "1d20 + $wis",
+    "1d20 + $wis",
+    "1d20 + $wis",
+    "1d20 + $cha",
+    "1d20 + $cha",
+    "1d20 + $cha",
+    "1d20 + $cha"
+  ],
+  "attacks": [
+    {
+      "name": "Daga",
+      "itemId": "dndsheets:dagger",
+      "rolls": [
+        [
+          {
+            "context": "Daño",
+            "expression": "1d4 + $dex"
+          }
+        ]
+      ]
+    },
+    {
+      "rolls": [],
+      "name": "Daga"
+    },
+    {
+      "rolls": [],
+      "name": "Daga"
+    },
+    {
+      "rolls": [],
+      "name": "Daga"
+    },
+    {
+      "rolls": [],
+      "name": "Daga"
+    },
+    {
+      "rolls": [],
+      "name": "Daga"
+    },
+    {
+      "rolls": [],
+      "name": "Daga"
+    },
+    {
+      "rolls": [],
+      "name": "Daga"
+    }
+  ],
+  "spells": [],
+  "traits": [],
+  "spellSlotsCurrent": 2,
+  "spellSlotsMax": 2,
+  "schemaVersion": 1,
+  "characterClass": "Brujo",
+  "characterRace": "",
+  "speed": "",
+  "level": "4",
+  "hitDiceTypes": "1d8",
+  "hitPointsMax": "31",
+  "armorClass": "11",
+  "hitPoints": "31",
+  "background": "",
+  "hitPointsTemp": "0",
+  "appliedPresetId": "warlock",
+  "spellSlotsMaxByLevel": {
+    "2": 2
+  },
+  "spellSlotsByLevel": {
+    "2": 2
+  },
+  "active": true,
+  "ownerUuid": "380df991-f603-344c-a090-369bad2a924a"
+}

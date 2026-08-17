@@ -1,0 +1,31 @@
+[
+  { "id": "dndsheets:fire_bolt", "name": "Rayo de Fuego", "level": 0, "mode": "attack", "castingAbility": "int", "dice": "1d10", "damageType": "fuego" },
+  { "id": "dndsheets:magic_missile", "name": "Misil Mágico", "level": 1, "mode": "attack", "castingAbility": "int", "dice": "3d4", "damageType": "fuerza" },
+  { "id": "dndsheets:fireball", "name": "Bola de Fuego", "level": 3, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "8d6", "halfOnSave": true, "damageType": "fuego", "aoeRadius": 6 },
+  { "id": "dndsheets:sacred_flame", "name": "Llama Sagrada", "level": 0, "mode": "save", "castingAbility": "wis", "saveAbility": "dex", "dice": "1d8", "halfOnSave": false, "damageType": "radiante" },
+  { "id": "dndsheets:spirit_guardians", "name": "Guardianes Espirituales", "level": 3, "mode": "save", "castingAbility": "wis", "saveAbility": "wis", "dice": "3d8", "halfOnSave": true, "damageType": "radiante", "aoeRadius": 3, "concentration": true },
+
+  { "id": "dndsheets:ray_of_frost", "name": "Rayo de Escarcha", "level": 0, "mode": "attack", "castingAbility": "int", "dice": "1d8", "damageType": "frio" },
+  { "id": "dndsheets:eldritch_blast", "name": "Descarga Eldritch", "level": 0, "mode": "attack", "castingAbility": "cha", "dice": "1d10", "damageType": "fuerza" },
+  { "id": "dndsheets:poison_spray", "name": "Rociada Venenosa", "level": 0, "mode": "save", "castingAbility": "int", "saveAbility": "con", "dice": "1d12", "halfOnSave": false, "damageType": "veneno" },
+  { "id": "dndsheets:toll_the_dead", "name": "Doblar por los Muertos", "level": 0, "mode": "save", "castingAbility": "wis", "saveAbility": "con", "dice": "1d8", "halfOnSave": false, "damageType": "necrótico" },
+  { "id": "dndsheets:vicious_mockery", "name": "Burla Viciosa", "level": 0, "mode": "save", "castingAbility": "cha", "saveAbility": "wis", "dice": "1d4", "halfOnSave": false, "damageType": "psíquico" },
+  { "id": "dndsheets:produce_flame", "name": "Producir Llama", "level": 0, "mode": "attack", "castingAbility": "wis", "dice": "1d8", "damageType": "fuego" },
+
+  { "id": "dndsheets:burning_hands", "name": "Manos Ardientes", "level": 1, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "3d6", "halfOnSave": true, "damageType": "fuego", "aoeRadius": 5 },
+  { "id": "dndsheets:guiding_bolt", "name": "Destello Guiador", "level": 1, "mode": "attack", "castingAbility": "wis", "dice": "4d6", "damageType": "radiante" },
+  { "id": "dndsheets:chromatic_orb", "name": "Orbe Cromático", "level": 1, "mode": "attack", "castingAbility": "int", "dice": "3d8", "damageType": "fuego" },
+  { "id": "dndsheets:thunderwave", "name": "Onda Atronadora", "level": 1, "mode": "save", "castingAbility": "int", "saveAbility": "con", "dice": "2d8", "halfOnSave": true, "damageType": "trueno", "aoeRadius": 5 },
+  { "id": "dndsheets:witch_bolt", "name": "Rayo de Bruja", "level": 1, "mode": "attack", "castingAbility": "int", "dice": "1d12", "damageType": "rayo", "concentration": true },
+  { "id": "dndsheets:hellish_rebuke", "name": "Reprimenda Infernal", "level": 1, "mode": "save", "castingAbility": "cha", "saveAbility": "dex", "dice": "2d10", "halfOnSave": true, "damageType": "fuego" },
+
+  { "id": "dndsheets:melfs_acid_arrow", "name": "Flecha Ácida de Melf", "level": 2, "mode": "attack", "castingAbility": "int", "dice": "4d4", "damageType": "ácido" },
+  { "id": "dndsheets:shatter", "name": "Destrozar", "level": 2, "mode": "save", "castingAbility": "int", "saveAbility": "con", "dice": "3d8", "halfOnSave": true, "damageType": "trueno", "aoeRadius": 3 },
+  { "id": "dndsheets:moonbeam", "name": "Rayo de Luna", "level": 2, "mode": "save", "castingAbility": "wis", "saveAbility": "con", "dice": "2d10", "halfOnSave": true, "damageType": "radiante", "aoeRadius": 1.5, "concentration": true },
+
+  { "id": "dndsheets:lightning_bolt", "name": "Rayo Relámpago", "level": 3, "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "8d6", "halfOnSave": true, "damageType": "rayo" },
+  { "id": "dndsheets:call_lightning", "name": "Llamar al Rayo", "level": 3, "mode": "save", "castingAbility": "wis", "saveAbility": "dex", "dice": "3d10", "halfOnSave": true, "damageType": "rayo", "concentration": true },
+
+  { "id": "dndsheets:cure_wounds", "name": "Curar Heridas", "level": 1, "mode": "heal", "castingAbility": "wis", "dice": "1d8 + $wis" },
+  { "id": "dndsheets:healing_word", "name": "Palabra Curativa", "level": 1, "mode": "heal", "castingAbility": "wis", "dice": "1d4 + $wis" }
+]
