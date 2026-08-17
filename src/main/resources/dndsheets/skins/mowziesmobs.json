@@ -1,0 +1,16 @@
+{
+  "mod": "mowziesmobs",
+  "name": "Mowzie's Mobs",
+  "url": "https://www.curseforge.com/minecraft/mc-mods/mowzies-mobs",
+  "_nota": "Pocas criaturas, muy animadas, y justo donde vanilla no tenia nada parecido.",
+  "skins": {
+    "dndsheets:animated_armor": "mowziesmobs:ferrous_wroughtnaut",
+    "dndsheets:shield_guardian": "mowziesmobs:ferrous_wroughtnaut",
+    "dndsheets:remorhaz": "mowziesmobs:frostmaw",
+    "dndsheets:shambling_mound": "mowziesmobs:foliaath",
+    "dndsheets:violet_fungus": "mowziesmobs:foliaath",
+    "dndsheets:guardian_naga": "mowziesmobs:naga",
+    "dndsheets:spirit_naga": "mowziesmobs:naga",
+    "dndsheets:xorn": "mowziesmobs:grottol"
+  }
+}

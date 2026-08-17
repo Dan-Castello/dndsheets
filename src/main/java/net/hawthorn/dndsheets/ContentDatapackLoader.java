@@ -95,5 +95,9 @@ public class ContentDatapackLoader extends SimpleJsonResourceReloadListener {
 		}
 
 		if (loaded > 0) DndsheetsMod.LOGGER.info("dndsheets: cargadas {} entradas de {} desde datapacks.", loaded, label);
+
+		//Un /reload registra los monstruos otra vez, con el modelo que diga su JSON: sin esto, recargar
+		//deshace los packs de aspecto y el dragón de Ice and Fire vuelve a ser un devastador.
+		if ("monsters".equals(label)) MonsterSkins.reapplyIfStarted();
 	}
 }

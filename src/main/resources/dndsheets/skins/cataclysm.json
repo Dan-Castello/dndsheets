@@ -1,0 +1,14 @@
+{
+  "mod": "cataclysm",
+  "name": "L_Ender's Cataclysm",
+  "url": "https://www.curseforge.com/minecraft/mc-mods/lends-cataclysm",
+  "_nota": "Jefes enormes para los monstruos que deberian imponer nada mas verlos.",
+  "skins": {
+    "dndsheets:tarrasque": "cataclysm:netherite_monstrosity",
+    "dndsheets:kraken": "cataclysm:the_leviathan",
+    "dndsheets:efreeti": "cataclysm:ignis",
+    "dndsheets:fire_elemental": "cataclysm:ignis",
+    "dndsheets:iron_golem": "cataclysm:ender_guardian",
+    "dndsheets:shield_guardian": "cataclysm:ender_guardian"
+  }
+}

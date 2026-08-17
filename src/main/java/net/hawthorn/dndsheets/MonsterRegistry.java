@@ -154,6 +154,29 @@ public class MonsterRegistry {
 		return REGISTRY.get(id);
 	}
 
+	/**
+	 * <p>Cambia SOLO el modelo de un monstruo ya registrado, dejando intactas sus reglas. Lo usa
+	 * {@link MonsterSkins} para que un dragón pase a ser el dragón de otro mod sin tocar su ficha.</p>
+	 *
+	 * <p>Comprueba que la entidad exista antes de cambiar nada, y esa comprobación es toda la seguridad de
+	 * la idea: un id equivocado en un pack de aspecto deja el modelo vanilla como estaba en vez de degradar
+	 * a un monstruo que funcionaba. Sin ella, una errata convertiría un devastador en un zombi.</p>
+	 *
+	 * @return {@code true} si se aplicó.
+	 */
+	public static boolean reskin(String id, String entityId) {
+		MonsterStatBlock block = REGISTRY.get(id);
+		if (block == null) return false;
+		ResourceLocation loc = ResourceLocation.tryParse(entityId);
+		if (loc == null || !ForgeRegistries.ENTITY_TYPES.containsKey(loc)) return false;
+
+		REGISTRY.replace(new MonsterStatBlock(block.id(), block.name(), entityId, block.ac(), block.maxHp(),
+			block.abilities(), block.proficiencyBonus(), block.attacks(), block.spells(), block.damageAffinities(),
+			block.nonmagicalAffinities(), block.type(), block.legendaryResistances(), block.legendaryActions(),
+			block.attacksPerTurn(), block.appearance()));
+		return true;
+	}
+
 	public static Set<String> ids() {
 		return REGISTRY.ids();
 	}

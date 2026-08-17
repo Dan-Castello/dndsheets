@@ -29,6 +29,8 @@ public class DndPaths {
 	public static final Path RACES_DIR = ROOT.resolve("races");
 	public static final Path BACKGROUNDS_DIR = ROOT.resolve("backgrounds");
 	public static final Path CLASSES_DIR = ROOT.resolve("classes");
+	/** Packs de aspecto del DM: ver {@link MonsterSkins}. No es contenido, es "qué modelo usa cada ficha". */
+	public static final Path SKINS_DIR = ROOT.resolve("skins");
 
 	@FunctionalInterface
 	private interface FileLoader {
@@ -46,6 +48,7 @@ public class DndPaths {
 		createIfMissing(RACES_DIR);
 		createIfMissing(BACKGROUNDS_DIR);
 		createIfMissing(CLASSES_DIR);
+		createIfMissing(SKINS_DIR);
 
 		//Contenido por defecto: para que un jugador nuevo no tenga que escribir armas/hechizos/monstruos/
 		//presets/rasgos desde cero antes de poder jugar (el mismo pack empaquetado dentro del mod).
@@ -69,6 +72,10 @@ public class DndPaths {
 		autoLoadAll(RACES_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.RACE, file), "razas");
 		autoLoadAll(BACKGROUNDS_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.BACKGROUND, file), "trasfondos");
 		autoLoadAll(CLASSES_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.CLASS, file), "clases");
+
+		//Lo ÚLTIMO que toca el bestiario: cambia el modelo de lo que ya esté registrado, venga del pack del
+		//mod, de un datapack o del DM. Si fuese antes, la carga siguiente lo pisaría.
+		MonsterSkins.applyAll();
 
 		//Por-mundo, no bajo ROOT: las piezas de mazmorra referencian .nbt publicados en el datapack DE LA
 		//PARTIDA actual (ver DungeonManager), así que necesitan la ruta real del server.getWorldPath(...) en

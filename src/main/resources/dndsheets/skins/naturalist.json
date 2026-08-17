@@ -1,0 +1,30 @@
+{
+  "mod": "naturalist",
+  "name": "Naturalist",
+  "url": "https://www.curseforge.com/minecraft/mc-mods/naturalist",
+  "_nota": "Fauna real. Se carga despues de Alexs Mobs: con los dos instalados, gana este donde coincidan.",
+  "skins": {
+    "dndsheets:lion": "naturalist:lion",
+    "dndsheets:hyena": "naturalist:hyena",
+    "dndsheets:giant_hyena": "naturalist:hyena",
+    "dndsheets:deer": "naturalist:deer",
+    "dndsheets:rhinoceros": "naturalist:rhino",
+    "dndsheets:elephant": "naturalist:elephant",
+    "dndsheets:mammoth": "naturalist:elephant",
+    "dndsheets:crocodile": "naturalist:alligator",
+    "dndsheets:giant_crocodile": "naturalist:alligator",
+    "dndsheets:poisonous_snake": "naturalist:rattlesnake",
+    "dndsheets:giant_poisonous_snake": "naturalist:rattlesnake",
+    "dndsheets:constrictor_snake": "naturalist:snake",
+    "dndsheets:giant_constrictor_snake": "naturalist:snake",
+    "dndsheets:vulture": "naturalist:vulture",
+    "dndsheets:giant_vulture": "naturalist:vulture",
+    "dndsheets:brown_bear": "naturalist:bear",
+    "dndsheets:black_bear": "naturalist:bear",
+    "dndsheets:owl": "naturalist:owl",
+    "dndsheets:giant_owl": "naturalist:owl",
+    "dndsheets:lizard": "naturalist:lizard",
+    "dndsheets:boar": "naturalist:boar",
+    "dndsheets:giant_boar": "naturalist:boar"
+  }
+}

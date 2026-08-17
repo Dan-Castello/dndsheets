@@ -79,6 +79,54 @@ Minecraft's creature-mod ecosystem already *is* that library, and here you only 
 
 ---
 
+## Model packs — creature mods as the token library
+
+Installing one of the mods below is enough. dndsheets ships a **skin pack** for each: with the mod
+present, the matching monsters switch to its models on world load. Nothing needs configuring, and
+**only the model changes** — HP, AC, attacks, type and the AI-less token behaviour stay dndsheets'.
+
+All of them are free, on Forge 1.20.1, and every one is optional.
+
+| Mod | What it covers here | Entries |
+|---|---|---|
+| [Ice and Fire: Dragons](https://www.curseforge.com/minecraft/mc-mods/ice-and-fire-dragons) (needs Citadel) | **All 40 dragons**, by breath weapon: fire, ice, lightning. Plus hydra, medusa, troll, cyclops-as-hill-giant, purple worm, cockatrice, hippogriff/griffon, couatl, kraken, lich, ghoul, wight, ghost, sprite, merfolk | 59 |
+| [Alex's Mobs](https://www.curseforge.com/minecraft/mc-mods/alexs-mobs) | Beasts — the SRD has 95 and vanilla has no bear, crocodile, elephant, gorilla, eagle, komodo, centipede, shark, orca, moose, mosquito, vulture, snow leopard, void worm | 37 |
+| [Naturalist](https://www.curseforge.com/minecraft/mc-mods/naturalist) | Real fauna: lion, hyena, rhino, deer, alligator, snakes, vulture, bear, owl, lizard, boar | 22 |
+| [The Twilight Forest](https://www.curseforge.com/minecraft/mc-mods/the-twilight-forest) | Classic fantasy vanilla lacks: minotaur, lich, hydra, wraith, kobold, redcap-as-goblin, winter wolf, troll, fire beetle | 15 |
+| [Mowzie's Mobs](https://www.curseforge.com/minecraft/mc-mods/mowzies-mobs) | Animated armor / shield guardian, remorhaz, shambling mound, nagas, xorn | 8 |
+| [Guard Villagers](https://www.curseforge.com/minecraft/mc-mods/guard-villagers) | An actually-armed human for guard, knight, veteran, gladiator, bandit captain — and it draws the `appearance` gear, so each stays distinct | 6 |
+| [L_Ender's Cataclysm](https://www.curseforge.com/minecraft/mc-mods/lends-cataclysm) | Bosses that should be intimidating on sight: tarrasque, kraken, efreeti, fire elemental, iron golem, shield guardian | 6 |
+
+Packs load in that order and later ones win, so with both Alex's Mobs and Naturalist the overlaps
+(bear, elephant, crocodile, snakes, boar, vulture) use Naturalist.
+
+### Nothing here can break a monster
+
+A skin line is applied **only** if the mod is loaded *and* the entity actually exists
+(`MonsterRegistry.reskin` checks the registry first). A wrong id, a mod that renames its entities
+between versions, or a pack for a mod you do not have leaves the monster exactly as it was —
+vanilla model, working stat block. The server log names every line that did not apply.
+
+### Write your own
+
+Drop a file in `<world>/dndsheets/skins/anything.json`. DM files load after the built-in ones, so
+yours wins:
+
+```json
+{
+  "mod": "yourmod",
+  "name": "Your Mod",
+  "skins": {
+    "dndsheets:ancient_red_dragon": "yourmod:elder_wyrm",
+    "dndsheets:goblin": "yourmod:goblin_grunt"
+  }
+}
+```
+
+`"mod": "minecraft"` is allowed, for a pack that only reshuffles vanilla models.
+
+---
+
 ## 2. Call the API, for things data cannot express
 
 `net.hawthorn.dndsheets.api.DndSheetsApi` is the only package with a compatibility promise: methods

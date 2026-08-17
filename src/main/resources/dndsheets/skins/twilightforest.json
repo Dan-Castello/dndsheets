@@ -1,0 +1,23 @@
+{
+  "mod": "twilightforest",
+  "name": "The Twilight Forest",
+  "url": "https://www.curseforge.com/minecraft/mc-mods/the-twilight-forest",
+  "_nota": "Fantasia clasica que vanilla no tiene: minotauro, liche, hidra, espectro y kobold.",
+  "skins": {
+    "dndsheets:minotaur": "twilightforest:minotaur",
+    "dndsheets:lich": "twilightforest:lich",
+    "dndsheets:hydra": "twilightforest:hydra",
+    "dndsheets:wraith": "twilightforest:wraith",
+    "dndsheets:kobold": "twilightforest:kobold",
+    "dndsheets:goblin": "twilightforest:redcap",
+    "dndsheets:winter_wolf": "twilightforest:winter_wolf",
+    "dndsheets:troll": "twilightforest:troll",
+    "dndsheets:deer": "twilightforest:deer",
+    "dndsheets:raven": "twilightforest:raven",
+    "dndsheets:swarm_of_ravens": "twilightforest:raven",
+    "dndsheets:boar": "twilightforest:boar",
+    "dndsheets:giant_boar": "twilightforest:boar",
+    "dndsheets:giant_fire_beetle": "twilightforest:fire_beetle",
+    "dndsheets:swarm_of_insects": "twilightforest:mosquito_swarm"
+  }
+}

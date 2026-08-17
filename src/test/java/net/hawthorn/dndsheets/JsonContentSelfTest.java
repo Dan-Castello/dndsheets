@@ -36,6 +36,7 @@ public class JsonContentSelfTest {
 		checkSpells();
 		checkMonsters();
 		checkMonsterAppearance();
+		checkMonsterSkins();
 		checkMagicItems();
 		checkTraits(); //Antes de checkPresets(): el preset de monje concede este rasgo por id.
 		checkPresets();
@@ -595,6 +596,53 @@ public class JsonContentSelfTest {
 		assertTrue(models.size() >= 55, "el bestiario debería usar al menos 55 modelos distintos, usa " + models.size());
 		assertTrue(dressed >= 50, "al menos 50 monstruos deberían tener aspecto propio, lo tienen " + dressed);
 		System.out.println("checkMonsterAppearance: OK, " + models.size() + " modelos y " + dressed + " monstruos con aspecto propio.");
+	}
+
+	/**
+	 * <p>Packs de aspecto ({@link MonsterSkins}): la traducción entre un id del SRD y la entidad de un mod
+	 * de criaturas instalado. Aquí solo se puede comprobar la mitad de cada línea —la de la izquierda—,
+	 * porque la de la derecha vive en un mod que no está en el classpath del self-test. Es justo la mitad
+	 * que se rompe sola: el id de la entidad lo protege {@code MonsterRegistry.reskin} en tiempo de
+	 * ejecución (si no existe, no cambia nada), pero un monstruo mal escrito a la izquierda no lo protege
+	 * nadie: no hay nada a lo que aplicar y el pack se queda corto en silencio.</p>
+	 *
+	 * <p>La otra comprobación es la lista {@code SHIPPED}: un pack añadido a los recursos y olvidado en la
+	 * lista no se carga <b>nunca</b>, y no hay ningún síntoma que lo delate.</p>
+	 */
+	private static void checkMonsterSkins() throws Exception {
+		java.util.Set<String> bestiary = new java.util.HashSet<>();
+		for (JsonElement el : readShippedPack("monsters.json")) bestiary.add(el.getAsJsonObject().get("id").getAsString());
+
+		Path dir = Path.of("src", "main", "resources", "dndsheets", "skins");
+		java.util.List<Path> packs;
+		try (java.util.stream.Stream<Path> files = Files.list(dir)) {
+			packs = files.filter(p -> p.toString().endsWith(".json")).sorted().toList();
+		}
+		assertTrue(!packs.isEmpty(), "no hay ningún pack de aspecto en " + dir);
+
+		//La lista está escrita a mano en MonsterSkins; se compara con lo que hay en la carpeta.
+		String source = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "MonsterSkins.java"));
+		int entries = 0;
+		for (Path pack : packs) {
+			String fileName = pack.getFileName().toString();
+			String modId = fileName.replace(".json", "");
+			assertTrue(source.contains("\"" + modId + "\""), fileName + " no está en la lista SHIPPED de MonsterSkins: no se cargaría nunca");
+
+			JsonObject json = JsonParser.parseString(Files.readString(pack)).getAsJsonObject();
+			assertTrue(modId.equals(json.get("mod").getAsString()),
+				"el campo \"mod\" de " + fileName + " no coincide con el nombre del archivo");
+			assertTrue(json.has("name") && json.has("url"), fileName + " debería decir de qué mod es y dónde está");
+
+			for (Map.Entry<String, JsonElement> skin : json.getAsJsonObject("skins").entrySet()) {
+				assertTrue(bestiary.contains(skin.getKey()),
+					"\"" + skin.getKey() + "\" (en " + fileName + ") no es un monstruo del bestiario");
+				String entity = skin.getValue().getAsString();
+				assertTrue(entity.startsWith(modId + ":"),
+					"\"" + entity + "\" no es una entidad de " + modId + " (en " + fileName + ")");
+				entries++;
+			}
+		}
+		System.out.println("checkMonsterSkins: OK, " + packs.size() + " packs de aspecto y " + entries + " monstruos cubiertos.");
 	}
 
 	private static JsonObject monsterJson(JsonArray bestiary, String id) {
