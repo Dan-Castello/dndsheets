@@ -11,6 +11,7 @@ antes. FORGE_VERSION=47.2.0 en el entorno para comprobar contra otra version.
 Es aproximado a proposito: solo compara el limite inferior del rango, que es el 99% de los fallos
 reales. Un "${file.jarVersion}" es un marcador que el propio Forge resuelve al arrancar, no un fallo.
 """
+import json
 import os, re, sys, zipfile
 
 MODS = 'runClient/mods'
@@ -59,6 +60,34 @@ def satisfies(have, rng):
         return True
     return ver(have) >= ver(m.group(1))
 
+
+def dev_hostile_mixins(path):
+    """Mods cuyos mixins NO se van a aplicar en el cliente de desarrollo.
+
+    Un mod compilado para produccion referencia los nombres SRG (f_117950_) y trae un refmap con la
+    tabla "searge" para que Forge los traduzca a los del entorno. Sin esa tabla, el @Shadow no
+    encuentra el campo y el arranque muere con MixinApplyError. Le paso a Oculus, y esta es la unica
+    forma de saberlo sin arrancar.
+    """
+    out = []
+    for jar in sorted(os.listdir(path)):
+        if not jar.endswith('.jar'):
+            continue
+        try:
+            z = zipfile.ZipFile(os.path.join(path, jar))
+        except Exception:
+            continue
+        for n in [x for x in z.namelist() if x.endswith('refmap.json')]:
+            try:
+                d = json.loads(z.read(n).decode('utf-8', 'replace'))
+            except Exception:
+                continue
+            blob = json.dumps(d.get('mappings') or {})
+            if re.search(r'[fm]_\d+_', blob) and 'searge' not in (d.get('data') or {}):
+                out.append((jar, n))
+    return out
+
+
 missing, old = [], []
 for jar, mid, rng, mandatory in deps:
     if not mandatory:
@@ -78,5 +107,10 @@ if old:
     print('DEMASIADO VIEJOS:')
     for jar, mid, rng, have in old:
         print('  %-28s pide %s %s, hay %s' % (jar, mid, rng, have))
-if not missing and not old:
-    print('Sin dependencias obligatorias sin cubrir.')
+hostile = dev_hostile_mixins(MODS)
+if hostile:
+    print('MIXINS QUE NO APLICAN EN DESARROLLO (arrancar con esto = MixinApplyError):')
+    for jar, n in hostile:
+        print('  %-28s %s sin tabla searge' % (jar, n))
+if not missing and not old and not hostile:
+    print('Sin dependencias obligatorias sin cubrir, y ningun mixin problematico.')

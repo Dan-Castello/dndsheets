@@ -86,3 +86,8 @@ gradle-app.setting
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+
+# Los mods de terceros con los que se prueba la integracion. No son del repo y pesan
+# cientos de megas; tools/preflight_mods.py dice cuales hacen falta.
+runClient/mods/
+runClient/mods-disabled/
