@@ -64,7 +64,11 @@ repositories {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.20.1-47.2.0'
+    // 47.4.22 y no 47.2.0: varios mods que se usan para probar la integracion (FTB Library, Easy NPC,
+    // Carry On Extend) exigen 47.3+ o 47.4+, y con 47.2.0 el cliente de desarrollo ni arranca. Es la
+    // misma 1.20.1; mods.toml no pide ninguna version de Forge, asi que esto no cambia lo que exige el
+    // mod publicado, solo con que se compila y se prueba.
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.22'
     // https://mvnrepository.com/artifact/io.github.tfriedrichs/dicebot
     minecraftLibrary 'io.github.tfriedrichs:dicebot:1.0.0'
     shade 'io.github.tfriedrichs:dicebot:1.0.0'
