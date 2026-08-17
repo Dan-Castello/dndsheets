@@ -38,6 +38,7 @@ public class JsonContentSelfTest {
 		checkMonsterAppearance();
 		checkMonsterSkins();
 		checkItemLooks();
+		checkPatchouliBook();
 		checkMagicItems();
 		checkTraits(); //Antes de checkPresets(): el preset de monje concede este rasgo por id.
 		checkPresets();
@@ -620,6 +621,70 @@ public class JsonContentSelfTest {
 	 * escrito dentro de cada ItemStack ya repartido. Insertar una constante en medio le cambiaría el icono
 	 * a todo lo que haya en el mundo de alguien, en silencio. Aquí se fija el orden.</p>
 	 */
+	/**
+	 * <p>El libro de Patchouli. La Guía se lee de dos formas —libro escrito sin Patchouli, manual con
+	 * índice con él— pero el texto es <b>uno</b>: las entradas apuntan a las mismas claves de idioma que
+	 * las páginas del libro escrito.</p>
+	 *
+	 * <p>Lo que se comprueba es justo lo que nadie notaría: una página nueva que se añade al libro escrito
+	 * y no al manual (o al revés) no falla en ningún sitio — simplemente falta en una de las dos versiones,
+	 * y quien la lea por ahí no sabrá que existe. Se exige que cada página esté en exactamente una entrada,
+	 * en las dos direcciones.</p>
+	 */
+	private static void checkPatchouliBook() throws Exception {
+		Path book = Path.of("src", "main", "resources", "data", "dndsheets", "patchouli_books", "guide", "book.json");
+		JsonObject meta = JsonParser.parseString(Files.readString(book)).getAsJsonObject();
+		assertTrue(meta.get("i18n").getAsBoolean(), "el libro tiene que ir con i18n para reusar las claves de la Guía");
+		assertTrue(meta.get("use_resource_pack").getAsBoolean(), "Patchouli quiere el contenido en assets/ desde 1.19");
+
+		Path root = Path.of("src", "main", "resources", "assets", "dndsheets", "patchouli_books", "guide", "en_us");
+		java.util.Set<String> categories = new java.util.HashSet<>();
+		try (java.util.stream.Stream<Path> files = Files.list(root.resolve("categories"))) {
+			for (Path file : files.toList()) categories.add(file.getFileName().toString().replace(".json", ""));
+		}
+		assertTrue(!categories.isEmpty(), "el libro no tiene ninguna categoría");
+
+		//Las páginas que el libro escrito enumera, que es la lista de verdad: GuideBook.java.
+		String guide = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
+			"client", "gui", "GuideBook.java"));
+		java.util.Set<String> written = new java.util.HashSet<>();
+		java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"(gui\\.dndsheets\\.guide\\.page\\.[a-z_0-9]+)\"").matcher(guide);
+		while (m.find()) written.add(m.group(1));
+		assertTrue(written.size() >= 26, "GuideBook debería enumerar las páginas de la Guía, encontré " + written.size());
+
+		java.util.Map<String, String> placed = new java.util.HashMap<>();
+		int entries = 0;
+		try (java.util.stream.Stream<Path> files = Files.walk(root.resolve("entries"))) {
+			for (Path file : files.filter(p -> p.toString().endsWith(".json")).sorted().toList()) {
+				JsonObject entry = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+				entries++;
+				String category = entry.get("category").getAsString();
+				assertTrue(category.startsWith("dndsheets:") && categories.contains(category.substring(10)),
+					file.getFileName() + " apunta a la categoría \"" + category + "\", que no existe");
+				for (JsonElement page : entry.getAsJsonArray("pages")) {
+					String key = page.getAsJsonObject().get("text").getAsString();
+					assertTrue(written.contains(key), key + " (en " + file.getFileName() + ") no es una página de la Guía");
+					String before = placed.put(key, file.getFileName().toString());
+					assertTrue(before == null, key + " está en dos entradas: " + before + " y " + file.getFileName());
+				}
+			}
+		}
+		for (String key : written) {
+			assertTrue(placed.containsKey(key), key + " está en el libro escrito pero en ninguna entrada de Patchouli");
+		}
+
+		//Y que las claves nuevas (títulos de categoría y entrada) estén traducidas: checkLanguageFiles
+		//compara los dos idiomas entre sí, pero no sabe que estos archivos las necesitan.
+		JsonObject lang = JsonParser.parseString(Files.readString(
+			Path.of("src", "main", "resources", "assets", "dndsheets", "lang", "es_es.json"))).getAsJsonObject();
+		assertTrue(lang.has(meta.get("landing_text").getAsString()), "falta el texto de portada del libro");
+		for (String category : categories) {
+			assertTrue(lang.has("gui.dndsheets.guide.cat." + category), "falta el nombre de la categoría " + category);
+		}
+		System.out.println("checkPatchouliBook: OK, " + entries + " entradas en " + categories.size()
+			+ " categorías cubren las " + written.size() + " páginas de la Guía.");
+	}
+
 	private static void checkItemLooks() throws Exception {
 		Path textures = Path.of("src", "main", "resources", "assets", "dndsheets", "textures", "item");
 		Path models = Path.of("src", "main", "resources", "assets", "dndsheets", "models", "item");

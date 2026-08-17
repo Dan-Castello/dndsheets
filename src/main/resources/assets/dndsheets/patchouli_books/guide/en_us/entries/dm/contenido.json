@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.contenido",
+  "category": "dndsheets:dm",
+  "icon": "minecraft:writable_book",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_content_packs"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_more_packs"
+    }
+  ]
+}

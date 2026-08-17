@@ -1,0 +1,12 @@
+{
+  "name": "gui.dndsheets.guide.entry.objetos_clase",
+  "category": "dndsheets:personaje",
+  "icon": "minecraft:totem_of_undying",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.class_items"
+    }
+  ]
+}

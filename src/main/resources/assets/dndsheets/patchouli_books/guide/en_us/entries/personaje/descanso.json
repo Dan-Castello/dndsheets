@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.descanso",
+  "category": "dndsheets:personaje",
+  "icon": "minecraft:red_bed",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.rest"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.death_saves"
+    }
+  ]
+}

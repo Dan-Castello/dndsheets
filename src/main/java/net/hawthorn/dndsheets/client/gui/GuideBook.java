@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.hawthorn.dndsheets.compat.PatchouliCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.BookViewScreen;
 import net.minecraft.client.resources.language.I18n;
@@ -53,6 +54,14 @@ public class GuideBook {
 	}
 
 	public static void open(boolean includeDmPages) {
+		//Con Patchouli instalado, la misma Guía se abre como manual: índice, categorías, búsqueda y
+		//marcapáginas. El texto es el mismo —las entradas apuntan a estas mismas claves de idioma— así que
+		//no hay dos guías que mantener, solo dos formas de leerla. Ver PatchouliCompat.
+		//El libro de Patchouli enseña las páginas de DM a todo el mundo: un manual con índice no puede
+		//esconder medio índice sin quedar raro, y lo que hay ahí es cómo se usa el mod, no el secreto de
+		//nadie. El libro escrito sigue respetando includeDmPages.
+		if (PatchouliCompat.openOnClient()) return;
+
 		CompoundTag tag = new CompoundTag();
 		tag.putString("title", I18n.get("gui.dndsheets.guide.title"));
 		tag.putString("author", "DndSheets");

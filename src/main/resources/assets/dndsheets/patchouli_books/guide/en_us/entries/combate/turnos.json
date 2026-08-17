@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.turnos",
+  "category": "dndsheets:combate",
+  "icon": "minecraft:clock",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.turns"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.turn_actions"
+    }
+  ]
+}

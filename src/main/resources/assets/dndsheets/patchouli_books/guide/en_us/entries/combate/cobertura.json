@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.cobertura",
+  "category": "dndsheets:combate",
+  "icon": "minecraft:shield",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.cover"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.distance"
+    }
+  ]
+}

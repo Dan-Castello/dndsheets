@@ -1,0 +1,12 @@
+{
+  "name": "gui.dndsheets.guide.entry.magia",
+  "category": "dndsheets:combate",
+  "icon": "minecraft:blaze_rod",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.spells"
+    }
+  ]
+}

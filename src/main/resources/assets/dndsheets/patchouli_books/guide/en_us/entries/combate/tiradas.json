@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.tiradas",
+  "category": "dndsheets:combate",
+  "icon": "minecraft:bone",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.rolling"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.private_rolls"
+    }
+  ]
+}

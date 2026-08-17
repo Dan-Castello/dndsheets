@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.mazmorras",
+  "category": "dndsheets:dm",
+  "icon": "minecraft:stone_bricks",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_dungeons_1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_dungeons_2"
+    }
+  ]
+}

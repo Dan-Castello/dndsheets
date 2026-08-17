@@ -1,0 +1,12 @@
+{
+  "name": "gui.dndsheets.guide.entry.subir_nivel",
+  "category": "dndsheets:personaje",
+  "icon": "minecraft:experience_bottle",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.level_up"
+    }
+  ]
+}

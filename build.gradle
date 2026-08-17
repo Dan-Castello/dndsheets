@@ -56,6 +56,11 @@ repositories {
     // mod arranca y funciona igual sin Curios instalado (ver CuriosCompat y la entrada opcional de
     // mods.toml). Si este maven estuviera caido, lo unico que se rompe es compilar, no el mod publicado.
     maven { url = "https://maven.theillusivec4.top/" }
+
+    // Patchouli. Misma clase de dependencia que Curios: BLANDA y solo compileOnly. Es el mod estandar
+    // para manuales dentro del juego, y la Guia de este mod es exactamente eso. Sin el instalado, la
+    // Guia sigue abriendose en el libro escrito de siempre (ver PatchouliCompat).
+    maven { url = "https://maven.blamejared.com" }
 }
 
 dependencies {
@@ -70,6 +75,9 @@ dependencies {
     // desde el principio, y compilar contra la mas antigua es lo que hace que el mod funcione con
     // cualquier Curios que el usuario tenga instalado, no solo con el ultimo.
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:5.4.7+1.20.1:api")
+
+    // Solo el artefacto "api", que es lo unico que se toca: PatchouliAPI.get().
+    compileOnly fg.deobf("vazkii.patchouli:Patchouli:1.20.1-85-FORGE:api")
 
     // NO se anade el jar completo como runtimeOnly, aunque seria comodo para probar la integracion:
     // Curios se publica con sus mixins referenciando nombres SRG (f_19803_), y runClient corre con

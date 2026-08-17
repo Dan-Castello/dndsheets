@@ -48,6 +48,10 @@ public class DndsheetsModCreativeTab {
 		.title(Component.translatable("itemGroup.dndsheets.dnd_tab"))
 		.icon(() -> new ItemStack(DndsheetsModItems.TOKEN.get()))
 		.displayItems((params, output) -> {
+			//El manual de Patchouli, si está instalado: se puede guardar en el inventario, que es la mitad
+			//de la gracia frente a una pantalla que solo se abre con un botón.
+			ItemStack guide = net.hawthorn.dndsheets.compat.PatchouliCompat.bookStack();
+			if (!guide.isEmpty()) safeAccept(output, guide);
 			safeAccept(output, MonsterCommand.buildDmToolStack());
 			safeAccept(output, MonsterCommand.buildMoveToolStack());
 			safeAccept(output, NotesCommand.buildNotebookStack());

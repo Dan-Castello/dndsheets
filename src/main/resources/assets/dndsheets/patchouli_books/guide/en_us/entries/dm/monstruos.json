@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.monstruos",
+  "category": "dndsheets:dm",
+  "icon": "minecraft:zombie_head",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_creatures"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_bosses"
+    }
+  ]
+}

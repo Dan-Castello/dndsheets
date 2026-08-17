@@ -30,3 +30,13 @@ description="A mod to let you play D&D 5e in Minecraft."
     versionRange="[5,)"
     ordering="AFTER"
     side="BOTH"
+
+# Dependencia BLANDA: con Patchouli instalado, la Guia se abre como manual con indice, busqueda y
+# marcapaginas, y ademas queda como un item que el jugador puede guardar. Sin el, se abre el libro
+# escrito de siempre con las mismas paginas. Ver PatchouliCompat.
+[[dependencies.dndsheets]]
+    modId="patchouli"
+    mandatory=false
+    versionRange="[1.20.1-84,)"
+    ordering="AFTER"
+    side="BOTH"

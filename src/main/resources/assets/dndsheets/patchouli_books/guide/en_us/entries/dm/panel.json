@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.panel",
+  "category": "dndsheets:dm",
+  "icon": "minecraft:command_block",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_panel"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_commands"
+    }
+  ]
+}

@@ -50,7 +50,7 @@ Essentially, this mod is designed for DMs and players alike that wish to play D&
 - **An in-game content creator** (DM Panel → "Crear contenido"): create, edit, and delete weapons, spells, class presets, traits, and race/background/class options entirely with forms — no hand-written JSON required. Monster templates are created by spawning a generic NPC, configuring it live, and saving it as a reusable stat block. Everything you create is written to a dedicated `dm_created.json` per content type and hot-loads through the same pipeline as a hand-authored pack.
 - **Full DM Panel parity with the command set**: every `/dnd...` action that hands out an item, teaches a spell, or spawns a loaded monster also has a DM Panel row (pick a player, then pick from a searchable list) — commands stay available for anyone who prefers typing, but nothing requires it.
 - **Search bars** on every DM Panel list that can get long (players, weapons, spells, monsters, presets, traits, content-creator lists) — filters live as you type.
-- **`/dndguide`**: reopens the in-game Guide (same content as the sheet's/DM Panel's Guide button) on demand, from anywhere.
+- **`/dndguide`**: reopens the in-game Guide (same content as the sheet's/DM Panel's Guide button) on demand, from anywhere. **With [Patchouli](https://www.curseforge.com/minecraft/mc-mods/patchouli) installed** (optional) the same Guide opens as a proper manual — index, categories, search, bookmarks, and a book item you can keep — instead of a written book. The text is the same either way: the Patchouli entries point at the same language keys, so there is one Guide, not two.
 
 ## Tutorial — first time in the world
 
