@@ -4,14 +4,17 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.hawthorn.dndsheets.DndPaths;
 import net.hawthorn.dndsheets.DungeonManager;
 import net.hawthorn.dndsheets.DungeonPieceRegistry;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -42,6 +45,19 @@ public class DungeonCommand {
 				.then(Commands.literal("remove")
 					.then(Commands.argument("id", StringArgumentType.word())
 						.executes(DungeonCommand::remove))))
+			//Traer una construcción de fuera: sin pool la pega donde estás para que puedas entrar y ponerle
+			//los jigsaw con la vara; con pool la registra directamente como pieza, que es lo que quieres
+			//cuando el .nbt ya trae jigsaws (una estructura de vanilla o de un pack de mazmorras).
+			.then(Commands.literal("import")
+				.then(Commands.argument("archivo", StringArgumentType.string())
+					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
+						DndPaths.fileNames(DndPaths.STRUCTURES_DIR, ".nbt"), builder))
+					.executes(DungeonCommand::importHere)
+					.then(Commands.literal("pool")
+						.then(Commands.argument("pool", StringArgumentType.word())
+							.executes(ctx -> importAsPiece(ctx, 1))
+							.then(Commands.argument("peso", IntegerArgumentType.integer(1, 150))
+								.executes(ctx -> importAsPiece(ctx, IntegerArgumentType.getInteger(ctx, "peso"))))))))
 			.then(Commands.literal("publish").executes(DungeonCommand::publish))
 			.then(Commands.literal("generate")
 				.then(Commands.argument("pool", StringArgumentType.word())
@@ -72,6 +88,64 @@ public class DungeonCommand {
 		}
 
 		ctx.getSource().sendSuccess(() -> Component.literal("Pieza \"" + id + "\" capturada en el pool \"" + pool + "\"."), true);
+		return 1;
+	}
+
+	private static int importHere(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		String fileName = StringArgumentType.getString(ctx, "archivo");
+		ServerLevel level = ctx.getSource().getLevel();
+
+		Optional<DungeonManager.Imported> imported = DungeonManager.importStructure(level, fileName,
+			error -> ctx.getSource().sendFailure(Component.literal(error)));
+		if (imported.isEmpty()) return 0;
+
+		DungeonManager.Imported structure = imported.get();
+		BlockPos at = BlockPos.containing(ctx.getSource().getPosition());
+		if (!DungeonManager.place(level, structure.structureId(), at)) {
+			ctx.getSource().sendFailure(Component.literal("La estructura se importó pero no se pudo pegar aquí."));
+			return 0;
+		}
+
+		//El aviso de los jigsaw es la mitad del valor del comando: una construcción exportada de un editor
+		//no trae ninguno, y sin jigsaws una pieza no se puede enganchar a nada. Descubrirlo ahora es un
+		//aviso; descubrirlo al generar es una mazmorra que no sale y ninguna pista de por qué.
+		String jigsaws = structure.canConnect()
+			? structure.jigsaws().size() + " jigsaw(s)" + (structure.canStart() ? ", incluido el de inicio" : "")
+			: "sin jigsaws: ponlos con la vara de DM antes de capturarla, o no se podrá conectar con nada";
+		ctx.getSource().sendSuccess(() -> Component.literal(structure.structureId() + " pegada aquí ("
+			+ structure.width() + "x" + structure.height() + "x" + structure.depth() + ", " + jigsaws + ")."), true);
+		return 1;
+	}
+
+	private static int importAsPiece(CommandContext<CommandSourceStack> ctx, int weight) throws CommandSyntaxException {
+		String fileName = StringArgumentType.getString(ctx, "archivo");
+		String pool = StringArgumentType.getString(ctx, "pool");
+		ServerPlayer dm = ctx.getSource().getPlayerOrException();
+
+		Optional<DungeonManager.Imported> imported = DungeonManager.importStructure(dm.serverLevel(), fileName,
+			error -> ctx.getSource().sendFailure(Component.literal(error)));
+		if (imported.isEmpty()) return 0;
+
+		DungeonManager.Imported structure = imported.get();
+		if (!structure.canConnect()) {
+			ctx.getSource().sendFailure(Component.literal("Esa estructura no tiene ningún jigsaw, así que como pieza "
+				+ "no se puede enganchar a nada. Pégala con /dnddungeon import \"" + fileName + "\", ponle los jigsaw "
+				+ "con la vara de DM y captúrala con el bloque de estructura."));
+			return 0;
+		}
+
+		String id = structure.structureId().getPath();
+		Optional<String> error = DungeonManager.capturePiece(dm.server,
+			new DungeonPieceRegistry.DungeonPiece(id, structure.structureId().toString(), pool, weight, ""));
+		if (error.isPresent()) {
+			ctx.getSource().sendFailure(Component.literal(error.get()));
+			return 0;
+		}
+
+		String start = structure.canStart() ? " Tiene el jigsaw de inicio: puede abrir la mazmorra."
+			: " No tiene el jigsaw de inicio, así que no puede ser la pieza de arranque.";
+		ctx.getSource().sendSuccess(() -> Component.literal("Pieza \"" + id + "\" registrada en el pool \"" + pool
+			+ "\" (peso " + weight + ")." + start), true);
 		return 1;
 	}
 

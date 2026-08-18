@@ -32,7 +32,8 @@ import java.util.Set;
  * [{
  *   "id": "fighter", "name": "Guerrero", "hitDiceType": "1d10",
  *   "abilities": { "str": 15, "dex": 13, "con": 14, "int": 8, "wis": 12, "cha": 10 },
- *   "startingWeapon": "minecraft:iron_sword"
+ *   "startingWeapon": "minecraft:iron_sword",
+ *   "startingGear": ["minecraft:chainmail_chestplate", "minecraft:shield"]
  * }]
  * </pre>
  */

@@ -57,6 +57,14 @@ public class PresetManager {
 				player.getInventory().add(weapon);
 			}
 
+			//Por el mismo camino que el arma: buildWeaponStack resuelve primero un id de ítem de Minecraft
+			//tal cual, así que una cota de malla no necesita nada especial y un id del mod sigue valiendo.
+			//No se retira al cambiar de preset, a propósito: es equipo vanilla sin etiqueta, y el comentario
+			//de arriba explica por qué borrar lo que no lleva marca es peor que dejar un sobrante.
+			for (String gearId : preset.startingGear()) {
+				player.getInventory().add(Config.buildWeaponStack(gearId, 1));
+			}
+
 			ItemStack resourceItem = classResourceItem(preset.id());
 			if (resourceItem != null) player.getInventory().add(resourceItem);
 		}

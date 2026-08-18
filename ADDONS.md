@@ -12,7 +12,7 @@ Put content files in your own mod's jar (or in a plain datapack) under:
 data/<your-namespace>/dndsheets/<type>/<anything>.json
 ```
 
-where `<type>` is one of `weapons`, `spells`, `monsters`, `presets`, `traits`, `items`.
+where `<type>` is one of `weapons`, `spells`, `monsters`, `presets`, `traits`, `items`, `encounters`.
 
 That is the whole integration. dndsheets loads it on world load and on `/reload`, exactly like recipes.
 

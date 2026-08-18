@@ -4,7 +4,10 @@ Deep-dive reference for anyone (human or AI) picking up this codebase cold. `REA
 
 ## What this is
 
-A Minecraft Forge mod (**1.20.1**, Forge `47.2.0`/`47.4.10`, mod id `dndsheets`) that turns Minecraft into a D&D 5e VTT: a fillable character sheet bound to a keypress, real 5e combat resolution layered on top of vanilla PvP/mob combat (opt-in per weapon/monster/spell — anything unconfigured behaves like normal Minecraft), and a full DM toolkit (spawn monsters with real stat blocks, run initiative, generate dungeons from vanilla's jigsaw system, create content in-game). It needs to be installed on both client and server. No plans to port to other MC versions or other tabletop systems (see the FAQ in `README.md`) — PRs welcome if someone wants to.
+A Minecraft Forge mod (**1.20.1**, Forge `47.2.0`/`47.4.10`, mod id `dndsheets`) that turns Minecraft into a D&D 5e VTT: a fillable character sheet bound to a keypress, real 5e combat resolution layered on top of vanilla PvP/mob combat (opt-in per weapon/monster/spell — anything unconfigured behaves like normal Minecraft), and a full DM toolkit (spawn monsters with real stat blocks, run initiative, generate dungeons from vanilla's jigsaw system, create content in-game). It needs to be installed on both client and server. It targets 1.20.1 today and **the door to future
+Minecraft versions is deliberately left open** — see "Portability to future Minecraft versions" below for
+what a port actually costs, measured against this tree rather than guessed. Other tabletop systems are out
+of scope (see the FAQ in `README.md`) — PRs welcome if someone wants to.
 
 ## Invariants — break these and it fails silently
 
@@ -1153,10 +1156,175 @@ dependencies, not preference.
   `test/dndsheets/` now holds only the one hand-written `ejemplo.json` per type, and the self-test
   reads the shipped packs.
 
+- **Fase 5 — the table you can actually sit down at. Planned.** With Fases 0-4 closed, what is missing
+  is no longer rules: it is everything around them. The order is by **how many people are lost at each
+  step**, not by how interesting the step is — and the first item contains almost no code at all.
+
+  1. **Getting in has to be one click.** Roll20 is a URL. This is: buy Minecraft, install Forge, put the
+     *same* build of the mod on five clients, and run a server. That is where a group dies — before
+     session one, for reasons that have nothing to do with what the mod does. The answer is a published
+     **modpack** (Modrinth `.mrpack` + CurseForge) pinning Forge, this mod and the optional soft-deps,
+     **not** an installer of our own: launchers already solve this and nobody needs a second one.
+     Nothing in that pack may become mandatory — the structural isolation of `CuriosCompat` is exactly
+     what lets a pack ship Curios without the mod ever requiring it.
+  2. **Creating a character, not levelling one. Started: starting equipment (`startingGear`).** Fase 4
+     made everything that *scales* with level correct; building one from zero is still manual.
+
+     The first slice is the one that was already half-built: a preset handed out a starting *weapon* and
+     nothing else, so a level-1 fighter walked out at AC 10 + Dexterity until a DM remembered to hand
+     over armour. A preset now carries a list of items too, delivered through the same
+     `Config.buildWeaponStack` (a plain Minecraft id resolves directly, so a chain shirt needs nothing
+     special) and applied on the same "only when the preset actually changes" branch, so re-applying a
+     preset does not duplicate the gear. **It is not taken back when you switch presets**, deliberately
+     and for the reason already written next to the weapon: untagged vanilla gear cannot be told apart
+     from what the player already owned, and leaving a spare beats deleting someone's armour.
+
+     The SRD lists are translated to what Minecraft actually has — scale mail becomes chain mail — and
+     **the barbarian and the monk get none on purpose**: unarmoured defence *is* their class feature, so
+     handing them a chain shirt would trade the class away for two points of AC. The ids are asserted
+     against the real 1.20.1 registry in `checkVanillaIds`, because a typo in an armour id would
+     otherwise surface as a player being handed a stick.
+
+     Still ahead, in this order: the guided flow itself (species → class → subclass → background → skill
+     proficiencies), then subclasses, then feats — today there are no feats, no multiclass, and subclass
+     is only a text field on the sheet. This is minute one for every new player, and it decides whether a
+     group ever reaches a first session. Keep building it **on `PresetRegistry`**, which already fills
+     class, hit die, abilities and now gear — a parallel "character builder" registry would be the same
+     data twice. **Multiclass stays last**: it re-derives the level tables that `SpellSlots` and
+     `proficiencyBonusFor` pin at all 20 levels, so it is the one piece that can break what is already
+     tested.
+  3. **The DM's prep loop, which is what a VTT actually sells. Half done: encounters
+     (`EncounterRegistry`, `/dndencounters`).** Spawning monsters one at a time is a demo, not a night of
+     play. An encounter is a named group — `"dndsheets:goblin x4", "dndsheets:wolf x2"` — written before
+     the session and dropped in one action, at your feet or at coordinates so it can be waiting behind
+     the door.
+
+     - **It adds no rule and no turn code.** Initiative already starts on the first hit
+       (`autoStartCombatIfNeeded` → `startAt`, which gathers everyone inside the radius), so an encounter
+       never has to know that turns exist. All it contributes is *at once, where you say*.
+     - **Composition is text, not an object** (`"id xN"`). It is the same string in the JSON file and in
+       the in-game creator's box, so there is one parser and one syntax to learn instead of two shapes
+       and a conversion between them. A count of zero is read as one: zero is a typo, not "none of
+       these", and a line that summons nothing reads as a broken encounter.
+     - **It rides the standard content shape** — `NamedRegistry` + `JsonRegistryLoader` + a folder under
+       `<world>/dndsheets/encounters/` + the datapack path, so an addon can ship encounters and a DM can
+       edit them from the DM Panel (Create content → Encounters) without writing JSON. That is the whole
+       reason this was a short job rather than a subsystem.
+     - **They spawn in a ring**, not stacked on one block the way `/dndmonsters spawn <id> <n>` does — a
+       pile of six on one square cannot be pointed at with the DM Wand.
+     - **The report says what is missing**, not just what spawned: an encounter whose boss has a typo'd id
+       plays out one monster short and nobody notices until the fight is over. The shipped pack's ids are
+       asserted against the bestiary in `checkEncounters` for the same reason.
+
+     **Found while doing it:** `checkNetworkShape` was blind to `ContentType`. It counted messages and the
+     enums inside `network/`, and `ContentType` lives in the root package while crossing the wire by
+     ordinal in four messages — so adding a constant to it moved nothing, which is exactly the silent
+     failure the check exists to catch (invariant 2). It now counts that enum from its source, since the
+     enum itself cannot be loaded outside Forge: its constants resolve `DndPaths`.
+
+     **Still ahead in this item: maps somebody else built** — importing schematics / WorldEdit /
+     Litematica / Structurize builds as dungeon pieces. Same bet already made and already paid off for
+     creature models: the library Roll20 and Foundry sell is, here, an ecosystem that exists and is free.
+     Do not author a map library.
+  4. **Light and vision as a real rule. DONE** (`Light`, `VisionManager`, `/dndvision`). Cover was real
+     geometry and darkness was decoration: a player raised their brightness setting and saw, and
+     darkvision existed only as prose inside `items.json`. Below light level 4 a character is now
+     heavily obscured, which the manual calls *effectively blinded*.
+
+     - **It invents no rule.** The blindness is `Condition.CEGADO`, with the seven consequences it has
+       had since Fase 0 — this is why the feature is 150 lines and not a subsystem. All the new code
+       decides is *when* it goes on and off.
+     - **The thresholds are vanilla's own number** (8+ bright, 4-7 dim, below that darkness), read off
+       the light level Minecraft already computes for every block. Night in the open lands on dim light
+       by itself, which is exactly what the SRD says about moonlight — the argument for using the
+       game's number instead of inventing a scale.
+     - **A torch in your hand is bright light**, at the block's own light value. Vanilla emits nothing
+       from a held item, so without this a character holding a lit torch would be blind in a cave;
+       reading `getLightEmission` from the block means another mod's lantern counts with no list to add
+       it to.
+     - **Off by default**, `/dndvision on` to enable, and the value lives in the existing toml so it
+       survives a restart without inventing persistence. This is the most intrusive rule the mod can
+       have — blinding someone who is mining at night changes how Minecraft is played away from the
+       table — and invariant 9 outweighs fidelity here. Creative and spectator are always exempt, which
+       is the DM's practical way out.
+     - **The blindness carries its source** (`DARKNESS_SOURCE`), so walking into the light lifts only
+       the darkness's own blindness and never the one a spell or a DM applied a moment ago. A `Set` in
+       memory would have been the obvious marker and the wrong one: conditions are persisted and the set
+       is not, so a restart would leave someone blind forever. Held structurally in the check, because
+       the path needs a live world.
+     - **Darkvision comes from the race** (`CharacterRules.darkvisionFeetFor`, the SRD's six), with a
+       `darkvision` field on the sheet as the explicit override — and the sentinel is -1, not 0, so the
+       field can also *remove* it. An unrecognised race grants nothing, the same decision already taken
+       for `CreatureType`: races here are free text a pack can replace wholesale, so "I don't know this
+       one" must not read as "yes, it has it".
+     - **Simplified on purpose:** monsters see in the dark (almost every SRD monster has darkvision, and
+       sampling the light of every living entity each tick costs far more than it would correct), and
+       dim light imposes no Perception penalty.
+
+     It also got a Guide page, in both languages and in the Patchouli book — item 40's rule, and the
+     self-test enforces it: a rule nobody is told about is a rule that gets reported as a bug.
+  5. **Positional voice**, as a soft dependency on Simple Voice Chat. Roll20 has an audio channel;
+     proximity voice over real geometry — hearing the thing before seeing it, the DM leaning over to one
+     player — is a table none of them can copy. Isolate it exactly like `CuriosCompat` (zero references
+     to its types outside a package-private class) and never make it mandatory.
+  6. **SRD 5.2 (2024, CC-BY-4.0) and an importer for community JSON.** The commercial VTTs sell official
+     WotC books; that flank is legally closed forever, so do not compete on catalogue — compete on
+     *everything a DM already has comes in*. 5.2 is a large, legal jump on top of the 5.1 import, and the
+     datapack path from item 41 is already the right foundation. It extends the `ATTRIBUTION.md`
+     obligation, which is a licence term and not a courtesy.
+
+  **Still out of scope, and it is the same list as always:** fog of war, a token layer, the mod's own
+  creature models, a web client, other tabletop systems. The first two are what the competition builds
+  *because it has no world*; building them here would be emulating a simulation of what this mod already
+  has.
+
 **What already beats the competition and should be leaned on, not rebuilt:** the 3D map, real
 line of sight, real lighting and real movement are *native*. That is literally what Roll20 and
 Foundry emulate with polygons and fog layers. Do not build a fog-of-war system; do not build a
 token layer. Compete where Minecraft already wins.
+
+## Portability to future Minecraft versions
+
+The mod targets **1.20.1 / Forge**, and the door to a future version is deliberately left open. That is a
+statement about *coupling*, not a promise of a date: everything below is measured against this tree, so
+whoever decides whether to port decides with numbers instead of a feeling.
+
+**What already makes it cheap, and is worth not spending.** Measured today: **zero mixins, zero access
+transformers, zero reflection into vanilla internals**. Nothing here patches Minecraft from the inside —
+it is Forge events and public API throughout, which is the single biggest reason a port is discussable at
+all. The 5e rules live in pure classes that never touch Minecraft (`CharacterRules`, `SpellSlots`,
+`Cover`, `Condition`, `AttackRules`/`SaveRules`, `CreatureType`) and are already tested without a Forge
+runtime, so they port by recompiling. All content is JSON: the 779 imported entries, every DM pack and
+every addon datapack cross unchanged, and so do players' character sheets. The GUI touches vanilla drawing
+in only 9 `blit`, 54 `drawString` and 3 `renderTooltip` calls.
+
+**What the port actually costs, largest first.**
+
+1. **Networking — the bulk of it.** 64 message classes on `SimpleChannel`/`NetworkEvent.Context`, with the
+   channel itself in one place (`DndsheetsMod.PACKET_HANDLER`). From 1.20.5 / NeoForge this becomes the
+   payload API. The work is *mechanical* — every class has the same four members — but it is 64 of them.
+   Invariants 1 and 2 (message id is registration order; enums travel by ordinal) do not go away with the
+   port: they matter **more** during it, because a bulk rewrite is exactly when someone tidies the order.
+2. **Item NBT → data components (1.20.5+).** 19 call sites in 11 files, and **everything this mod writes
+   onto an item lives in a single compound named `dndsheets`** (the two exceptions write vanilla's own
+   `CustomModelData`). So the migration is *one* custom component, not one per kind of item. It is small
+   because it was kept small — see the check below.
+3. **Metadata and toolchain.** `mods.toml` → `neoforge.mods.toml`, loader ids, Java 17 → 21, and the
+   parchment mappings version follows the Minecraft version.
+4. **Worldgen and jigsaw** (`DungeonManager`, `DungeonPieceRegistry`). Already the area with the most
+   vanilla sharp edges in the mod (bugs #7-#11): assume the API moved, and re-verify against decompiled
+   source rather than by reasoning from the Java side — that is what worked the first time.
+
+**`versionRange="[1.20.1]"` stays strict on purpose.** 1.20.2 changed networking and 1.20.5 changed item
+data, so widening it would only let Forge load the mod into a game where it cannot work. The door is held
+open by keeping the port cheap, not by lying in the manifest.
+
+**The rule that keeps it open, and it costs nothing today:** do not grow the coupling. No mixins, no access
+transformers, no reflection into vanilla; rules stay in pure classes; new item state goes through the
+existing `dndsheets` compound rather than a new tag in a new file. `checkPortabilityCoupling` asserts
+exactly that — the absence of mixins and access transformers, and that item NBT is still touched only from
+the annotated set of files. It cannot make the port less work; it stops the work from doubling in silence
+between today and the day someone decides to do it.
 
 ## Where to go next
 
@@ -1165,6 +1333,9 @@ token layer. Compete where Minecraft already wins.
   behind the interface.
 - Adding a screen or touching layout → read `GUI_REFERENCE.md` first, reuse `ListPickerScreen`/`SmallFormScreen`.
 - Adding a content type or command → check whether it fits the `ContentType`/`NamedRegistry`/`JsonRegistryLoader` pattern before writing a parallel one.
+- Touching item NBT, or reaching for a mixin / access transformer → read "Portability to future Minecraft
+  versions" above first. Those are the two decisions that set the price of a future port, and
+  `checkPortabilityCoupling` fails the build rather than let one in unnoticed.
 - Touching dungeons → read `DUNGEON_GUIDE.md`'s "regla de oro" and bugs #7-#11 above before assuming `/reload` or a captured piece is trustworthy without checking.
 - Anything DM-facing that hands out an item/teaches a spell/spawns a monster → there's almost certainly an existing `GiveableItem`-style pattern or DM Panel row to extend rather than a new one-off.
 - Cómo se VE un monstruo → `MonsterRegistry.Appearance` (equipo, cría, brillo) y `baseEntity`, que

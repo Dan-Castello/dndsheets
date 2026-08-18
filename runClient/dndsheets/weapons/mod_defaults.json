@@ -13,7 +13,7 @@
   { "id": "dndsheets:sickle", "dice": "1d4", "ability": "str", "damageType": "cortante", "name": "Hoz", "item": "minecraft:stone_hoe" },
   { "id": "dndsheets:spear", "dice": "1d6", "ability": "str", "damageType": "perforante", "name": "Lanza", "item": "minecraft:trident", "hands": "versatile", "versatileDice": "1d8" },
   { "id": "dndsheets:battleaxe", "dice": "1d8", "ability": "str", "damageType": "cortante", "name": "Hacha de Batalla", "item": "minecraft:iron_axe", "hands": "versatile", "versatileDice": "1d10" },
-  { "id": "dndsheets:flail", "dice": "1d8", "ability": "str", "damageType": "contundente", "name": "Mangual", "item": "minecraft:mace" },
+  { "id": "dndsheets:flail", "dice": "1d8", "ability": "str", "damageType": "contundente", "name": "Mangual", "item": "minecraft:chain" },
   { "id": "dndsheets:glaive", "dice": "1d10", "ability": "str", "damageType": "cortante", "name": "Guja", "item": "minecraft:diamond_sword", "hands": "two" },
   { "id": "dndsheets:longsword", "dice": "1d8", "ability": "str", "damageType": "cortante", "name": "Espada Larga", "item": "minecraft:iron_sword", "hands": "versatile", "versatileDice": "1d10" },
   { "id": "dndsheets:maul", "dice": "2d6", "ability": "str", "damageType": "contundente", "name": "Almádena", "item": "minecraft:netherite_axe", "hands": "two" },

@@ -41,6 +41,7 @@ public class Config {
 	private static final ForgeConfigSpec.ConfigValue<List<? extends String>> HIT_DICE_ENTRIES;
 	private static final ForgeConfigSpec.ConfigValue<List<? extends String>> WEAPON_DAMAGE_ENTRIES;
 	private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ENCHANT_BONUS_ENTRIES;
+	private static final ForgeConfigSpec.BooleanValue VISION_RULES;
 
 	static {
 		ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -73,6 +74,18 @@ public class Config {
 		);
 		ENCHANT_BONUS_ENTRIES = builder.defineList("enchantmentDamageBonus", defaultEnchantBonus(), Config::isValidEnchantEntry);
 
+		builder.comment(
+			"Reglas de visión (VisionManager): en oscuridad —nivel de luz de Minecraft por debajo de 4— un",
+			"personaje sin visión en la oscuridad queda cegado, con lo que eso significa en 5e: ataca con",
+			"desventaja y le atacan con ventaja. Quien tiene el rasgo ve como en penumbra. Llevar una antorcha",
+			"o un farol en la mano cuenta como luz brillante.",
+			"",
+			"Apagado por defecto A PROPÓSITO: es la regla más intrusiva del mod, porque cambia cómo se juega a",
+			"Minecraft fuera de la mesa (minar de noche, entrar en una cueva). Se enciende y se apaga en",
+			"caliente con /dndvision, que escribe aquí."
+		);
+		VISION_RULES = builder.define("visionRules", false);
+
 		SPEC = builder.build();
 	}
 
@@ -91,6 +104,17 @@ public class Config {
 			"sorcerer:6", "hechicero:6",
 			"wizard:6", "mago:6"
 		);
+	}
+
+	/** Si las reglas de visión están activas. Ver {@link net.hawthorn.dndsheets.VisionManager}. */
+	public static boolean visionRules() {
+		return VISION_RULES.get();
+	}
+
+	/** Las enciende o las apaga y lo deja escrito en el toml, para que sobreviva al reinicio. */
+	public static void setVisionRules(boolean enabled) {
+		VISION_RULES.set(enabled);
+		VISION_RULES.save();
 	}
 
 	private static boolean isValidEntry(Object entry) {

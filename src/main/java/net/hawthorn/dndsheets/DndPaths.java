@@ -26,9 +26,17 @@ public class DndPaths {
 	public static final Path MONSTERS_DIR = ROOT.resolve("monsters");
 	public static final Path PRESETS_DIR = ROOT.resolve("presets");
 	public static final Path TRAITS_DIR = ROOT.resolve("traits");
+	public static final Path ENCOUNTERS_DIR = ROOT.resolve("encounters");
 	public static final Path RACES_DIR = ROOT.resolve("races");
 	public static final Path BACKGROUNDS_DIR = ROOT.resolve("backgrounds");
 	public static final Path CLASSES_DIR = ROOT.resolve("classes");
+	/**
+	 * <p>Biblioteca de estructuras {@code .nbt} que el DM trae de fuera, para importarlas como piezas de
+	 * mazmorra (ver {@code DungeonManager.importStructure}). Va aquí y no en la carpeta del mundo <b>a
+	 * propósito</b>: las piezas son de una partida, pero una casa descargada sirve en todas.</p>
+	 */
+	public static final Path STRUCTURES_DIR = ROOT.resolve("structures");
+
 	/** Packs de aspecto del DM: ver {@link MonsterSkins}. No es contenido, es "qué modelo usa cada ficha". */
 	public static final Path SKINS_DIR = ROOT.resolve("skins");
 
@@ -45,9 +53,11 @@ public class DndPaths {
 		createIfMissing(MONSTERS_DIR);
 		createIfMissing(PRESETS_DIR);
 		createIfMissing(TRAITS_DIR);
+		createIfMissing(ENCOUNTERS_DIR);
 		createIfMissing(RACES_DIR);
 		createIfMissing(BACKGROUNDS_DIR);
 		createIfMissing(CLASSES_DIR);
+		createIfMissing(STRUCTURES_DIR);
 		createIfMissing(SKINS_DIR);
 
 		//Contenido por defecto: para que un jugador nuevo no tenga que escribir armas/hechizos/monstruos/
@@ -60,6 +70,7 @@ public class DndPaths {
 		refreshDefaultsLogging(MONSTERS_DIR, "monsters.json");
 		refreshDefaultsLogging(TRAITS_DIR, "traits.json");
 		refreshDefaultsLogging(PRESETS_DIR, "presets.json");
+		refreshDefaultsLogging(ENCOUNTERS_DIR, "encounters.json");
 
 		autoLoadAll(WEAPONS_DIR, Config::loadFile, "armas");
 		autoLoadAll(SPELLS_DIR, SpellRegistry::loadFile, "hechizos");
@@ -67,6 +78,7 @@ public class DndPaths {
 		autoLoadAll(MONSTERS_DIR, MonsterRegistry::loadFile, "monstruos");
 		autoLoadAll(TRAITS_DIR, TraitRegistry::loadFile, "rasgos");
 		autoLoadAll(PRESETS_DIR, PresetRegistry::loadFile, "presets");
+		autoLoadAll(ENCOUNTERS_DIR, EncounterRegistry::loadFile, "encuentros");
 		//Categorías del selector de Raza/Trasfondo/Clase (ver CharacterOptionsRegistry): reemplazan la
 		//lista por defecto entera si hay un .json en la carpeta, no la extienden.
 		autoLoadAll(RACES_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.RACE, file), "razas");
@@ -92,9 +104,17 @@ public class DndPaths {
 	//Público: cada comando *Command lo usa para que el argumento "archivo" de su "load" se autocomplete
 	//con tab en el chat, en vez de dejar al DM adivinar de memoria el nombre exacto del .json.
 	public static List<String> jsonFileNames(Path dir) {
+		return fileNames(dir, ".json");
+	}
+
+	/** Los nombres (sin extensión) de los archivos de un tipo que hay en una carpeta, para autocompletar. */
+	public static List<String> fileNames(Path dir, String extension) {
 		try (Stream<Path> files = Files.list(dir)) {
-			return files.filter(p -> p.toString().endsWith(".json"))
-				.map(p -> p.getFileName().toString().replace(".json", ""))
+			return files.filter(p -> p.toString().endsWith(extension))
+				.map(p -> {
+					String name = p.getFileName().toString();
+					return name.substring(0, name.length() - extension.length());
+				})
 				.toList();
 		} catch (IOException e) {
 			return List.of();

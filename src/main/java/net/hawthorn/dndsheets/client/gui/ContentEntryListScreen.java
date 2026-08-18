@@ -45,6 +45,7 @@ public class ContentEntryListScreen extends ListPickerScreen {
 			case PRESET -> "Presets creados";
 			case TRAIT -> "Rasgos creados";
 			case MONSTER -> "Monstruos creados";
+			case ENCOUNTER -> "Encuentros creados";
 		};
 	}
 
@@ -53,6 +54,7 @@ public class ContentEntryListScreen extends ListPickerScreen {
 			case WEAPON -> ContentTypeForms.weaponFields();
 			case SPELL -> ContentTypeForms.spellFields();
 			case PRESET -> ContentTypeForms.presetFields();
+			case ENCOUNTER -> ContentTypeForms.encounterFields();
 			default -> throw new IllegalStateException(type + " no usa ContentFormScreen");
 		};
 	}
@@ -62,6 +64,7 @@ public class ContentEntryListScreen extends ListPickerScreen {
 			case WEAPON -> ContentTypeForms::weaponPrefill;
 			case SPELL -> ContentTypeForms::spellPrefill;
 			case PRESET -> ContentTypeForms::presetPrefill;
+			case ENCOUNTER -> ContentTypeForms::encounterPrefill;
 			default -> throw new IllegalStateException(type + " no usa ContentFormScreen");
 		};
 	}
@@ -71,6 +74,7 @@ public class ContentEntryListScreen extends ListPickerScreen {
 			case WEAPON -> ContentTypeForms::weaponToJson;
 			case SPELL -> ContentTypeForms::spellToJson;
 			case PRESET -> ContentTypeForms::presetToJson;
+			case ENCOUNTER -> ContentTypeForms::encounterToJson;
 			default -> throw new IllegalStateException(type + " no usa ContentFormScreen");
 		};
 	}

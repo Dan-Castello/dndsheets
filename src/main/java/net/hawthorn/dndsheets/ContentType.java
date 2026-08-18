@@ -39,6 +39,13 @@ public enum ContentType {
 		public int load(Path file) throws IOException { return MonsterRegistry.loadFile(file); }
 		public boolean remove(String id) { return MonsterRegistry.remove(id); }
 		public int loadJson(JsonElement root, String source, Consumer<String> onId) { return MonsterRegistry.loadJson(root, source, onId); }
+	},
+	//Al final, y no en su sitio "lógico": este enum viaja por el cable (readEnum va por ordinal), así que
+	//insertar una constante en medio renumera las de detrás en silencio. Ver invariante 2.
+	ENCOUNTER(DndPaths.ENCOUNTERS_DIR) {
+		public int load(Path file) throws IOException { return EncounterRegistry.loadFile(file); }
+		public boolean remove(String id) { return EncounterRegistry.remove(id); }
+		public int loadJson(JsonElement root, String source, Consumer<String> onId) { return EncounterRegistry.loadJson(root, source, onId); }
 	};
 
 	public final Path dir;

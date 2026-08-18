@@ -52,6 +52,7 @@ public class MonsterCommand {
 					.executes(MonsterCommand::load)))
 			.then(Commands.literal("list").executes(MonsterCommand::list))
 			.then(spawnNode())
+			.then(galleryNode())
 			.then(attackNode())
 			.then(Commands.literal("dmtool")
 				.then(Commands.argument("jugadores", EntityArgument.players()).executes(MonsterCommand::giveDmTool)))
@@ -78,6 +79,18 @@ public class MonsterCommand {
 							.executes(ctx -> spawnGeneric(ctx, StringArgumentType.getString(ctx, "baseEntity"), IntegerArgumentType.getInteger(ctx, "ac"), 10))
 							.then(Commands.argument("hp", IntegerArgumentType.integer(1, 9999))
 								.executes(ctx -> spawnGeneric(ctx, StringArgumentType.getString(ctx, "baseEntity"), IntegerArgumentType.getInteger(ctx, "ac"), IntegerArgumentType.getInteger(ctx, "hp"))))))));
+	}
+
+	//Invoca de golpe TODO el bestiario en cuadrícula, para ver de un vistazo con qué modelo sale cada uno
+	//—que es justo lo que cambia según qué mods de aspecto haya instalados (ver MonsterSkins)—. Sin esto,
+	//comprobar que un pack de aspecto se aplicó de verdad exigía invocarlos de uno en uno.
+	private static LiteralArgumentBuilder<CommandSourceStack> galleryNode() {
+		return Commands.literal("gallery")
+			.executes(ctx -> gallery(ctx, ""))
+			//"clear" es literal, así que gana al argumento: no se puede filtrar por la palabra "clear".
+			.then(Commands.literal("clear").executes(MonsterCommand::galleryClear))
+			.then(Commands.argument("filtro", StringArgumentType.word())
+				.executes(ctx -> gallery(ctx, StringArgumentType.getString(ctx, "filtro"))));
 	}
 
 	//Edita EN VIVO los ataques de un monstruo ya invocado (una instancia concreta, no toda su especie —
@@ -156,6 +169,62 @@ public class MonsterCommand {
 		int finalSpawned = spawned;
 		ctx.getSource().sendSuccess(() -> Component.literal("Invocados " + finalSpawned + " " + block.name() + " (CA " + block.ac() + ", " + block.maxHp() + " PG)."), true);
 		return spawned;
+	}
+
+	//4 bloques y no 3: con 3 los modelos grandes (un dragón de Ice and Fire, un gigante) se solapan con su
+	//vecino y no se distingue cuál es cuál, que es lo único para lo que sirve esta cuadrícula.
+	private static final int GALLERY_SPACING = 4;
+
+	private static int gallery(CommandContext<CommandSourceStack> ctx, String filter) {
+		String needle = filter.toLowerCase(java.util.Locale.ROOT);
+		java.util.List<String> ids = MonsterRegistry.ids().stream()
+			.filter(id -> needle.isEmpty() || id.toLowerCase(java.util.Locale.ROOT).contains(needle))
+			.sorted()
+			.toList();
+		if (ids.isEmpty()) {
+			ctx.getSource().sendFailure(Component.literal("Ningún monstruo cargado " + (needle.isEmpty() ? "todavía." : "contiene \"" + filter + "\".")));
+			return 0;
+		}
+
+		ServerLevel level = ctx.getSource().getLevel();
+		Vec3 origin = ctx.getSource().getPosition();
+		int columns = (int) Math.ceil(Math.sqrt(ids.size()));
+		int spawned = 0;
+		for (int i = 0; i < ids.size(); i++) {
+			//Sin CombatFx.monsterSpawn: son cientos a la vez y el efecto por monstruo solo tapa la vista.
+			if (MonsterRegistry.spawnAt(level,
+					origin.x + (i % columns) * GALLERY_SPACING,
+					origin.y,
+					origin.z + (i / columns) * GALLERY_SPACING,
+					ids.get(i)) != null) {
+				spawned++;
+			}
+		}
+
+		int finalSpawned = spawned;
+		ctx.getSource().sendSuccess(() -> Component.literal("Invocados " + finalSpawned + " monstruos en una cuadrícula de "
+			+ columns + " columnas. Bórralos con /dndmonsters gallery clear."), true);
+		return spawned;
+	}
+
+	//Borra TODO monstruo del mod que haya cerca, no solo los de la galería: 330 fichas no se limpian a mano
+	//con la Vara de DM. El radio cubre de sobra la cuadrícula más grande (18x18 casillas de 4 bloques).
+	private static int galleryClear(CommandContext<CommandSourceStack> ctx) {
+		ServerLevel level = ctx.getSource().getLevel();
+		Vec3 pos = ctx.getSource().getPosition();
+		java.util.List<Entity> found = level.getEntities((Entity) null,
+			new net.minecraft.world.phys.AABB(pos, pos).inflate(200),
+			entity -> MonsterRegistry.monsterIdOf(entity) != null);
+
+		for (Entity entity : found) {
+			//markDefeated antes del remove: este borrado no pasa por la muerte vanilla, y sin esto un
+			//combate en marcha se quedaría esperando a un enemigo que ya no existe (ver TurnManager).
+			net.hawthorn.dndsheets.TurnManager.markDefeated(entity.getId());
+			entity.remove(Entity.RemovalReason.DISCARDED);
+		}
+
+		ctx.getSource().sendSuccess(() -> Component.literal("Borrados " + found.size() + " monstruos en 200 bloques."), true);
+		return found.size();
 	}
 
 	//NPC en blanco (sin JSON de por medio): CA/PG/características por defecto, sin ataques. Pensado para

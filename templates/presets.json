@@ -5,7 +5,8 @@
     "name": "Guerrero",
     "hitDiceType": "1d10",
     "abilities": { "str": 15, "dex": 13, "con": 14, "int": 8, "wis": 12, "cha": 10 },
-    "startingWeapon": "minecraft:iron_sword"
+    "startingWeapon": "minecraft:iron_sword",
+    "startingGear": ["minecraft:chainmail_chestplate", "minecraft:shield"]
   },
   {
     "_note": "spellSlotsMax (opcional, por defecto 0): configura espacios de conjuro Y los llena al máximo al aplicar el preset. traits (opcional): ids de templates/traits.json concedidos automáticamente. spells (opcional): ids de este mismo spells.json añadidos al Grimorio del jugador — sin esto, tener espacios de conjuro no le da al jugador nada que lanzar.",
@@ -14,6 +15,7 @@
     "hitDiceType": "1d6",
     "abilities": { "str": 8, "dex": 14, "con": 12, "int": 15, "wis": 13, "cha": 10 },
     "startingWeapon": "dndsheets:dagger",
+    "startingGear": ["minecraft:book"],
     "spellSlotsMax": 2,
     "spells": ["dndsheets:fire_bolt", "dndsheets:magic_missile"]
   },
@@ -24,6 +26,7 @@
     "hitDiceType": "1d8",
     "abilities": { "str": 10, "dex": 15, "con": 13, "int": 12, "wis": 8, "cha": 14 },
     "startingWeapon": "dndsheets:dagger",
+    "startingGear": ["minecraft:leather_chestplate"],
     "traits": ["picaro:ataque_furtivo"]
   }
 ]

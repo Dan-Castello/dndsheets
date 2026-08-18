@@ -158,6 +158,7 @@ final class ContentTypeForms {
 			FieldSpec.cycle("hitDiceType", "Dado de golpe", new String[]{"1d6", "1d8", "1d10", "1d12"}),
 			FieldSpec.text("abilities", "Fue,Des,Con,Int,Sab,Car (separadas por coma)", "10, 10, 10, 10, 10, 10"),
 			FieldSpec.text("startingWeapon", "Arma inicial (id, opcional)", ""),
+			FieldSpec.text("startingGear", "Equipo inicial (ids, separados por coma)", ""),
 			FieldSpec.intField("spellSlotsMax", "Espacios de conjuro máx.", "0"),
 			FieldSpec.text("traits", "Rasgos concedidos (ids, separados por coma)", ""),
 			FieldSpec.text("spells", "Hechizos conocidos (ids, separados por coma)", "")
@@ -179,6 +180,7 @@ final class ContentTypeForms {
 			abilities.append(abilitiesJson != null && abilitiesJson.has(key) ? abilitiesJson.get(key).getAsInt() : 10);
 		}
 		map.put("abilities", abilities.toString());
+		map.put("startingGear", joinArray(entry, "startingGear"));
 		map.put("traits", joinArray(entry, "traits"));
 		map.put("spells", joinArray(entry, "spells"));
 		return map;
@@ -199,8 +201,36 @@ final class ContentTypeForms {
 
 		addIfNotBlank(entry, "startingWeapon", values.get("startingWeapon"));
 		entry.addProperty("spellSlotsMax", parseIntOr(values.get("spellSlotsMax"), 0));
+		addCommaArray(entry, "startingGear", values.get("startingGear"));
 		addCommaArray(entry, "traits", values.get("traits"));
 		addCommaArray(entry, "spells", values.get("spells"));
+		return entry;
+	}
+
+	// --- Encuentros (ver command.EncounterCommand / EncounterRegistry.parse) ---
+
+	static List<FieldSpec> encounterFields() {
+		return List.of(
+			FieldSpec.text("id", "Id", ""),
+			FieldSpec.text("name", "Nombre", ""),
+			//La misma sintaxis que en el JSON: un parser y una forma de escribirlo, no dos.
+			FieldSpec.text("monsters", "Monstruos (id x cantidad, separados por coma)", "")
+		);
+	}
+
+	static Map<String, String> encounterPrefill(JsonObject entry) {
+		Map<String, String> map = new LinkedHashMap<>();
+		putIfPresent(map, entry, "id");
+		putIfPresent(map, entry, "name");
+		map.put("monsters", joinArray(entry, "monsters"));
+		return map;
+	}
+
+	static JsonObject encounterToJson(Map<String, String> values) {
+		JsonObject entry = new JsonObject();
+		entry.addProperty("id", values.get("id"));
+		addIfNotBlank(entry, "name", values.get("name"));
+		addCommaArray(entry, "monsters", values.get("monsters"));
 		return entry;
 	}
 

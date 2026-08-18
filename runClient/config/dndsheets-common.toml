@@ -18,4 +18,13 @@ weaponDamage = ["minecraft:wooden_sword;1d6;str", "minecraft:wooden_axe;1d8;str"
 #Formato: una entrada por línea como "id_de_encantamiento;bono_por_nivel" (p.ej. "minecraft:sharpness;1").
 #Un Sharpness III con bono 1 suma +3. Añade aquí cualquier otro encantamiento que quieras que cuente.
 enchantmentDamageBonus = ["minecraft:sharpness;1", "minecraft:smite;1", "minecraft:bane_of_arthropods;1", "minecraft:power;1", "minecraft:impaling;1"]
+#Reglas de visión (VisionManager): en oscuridad —nivel de luz de Minecraft por debajo de 4— un
+#personaje sin visión en la oscuridad queda cegado, con lo que eso significa en 5e: ataca con
+#desventaja y le atacan con ventaja. Quien tiene el rasgo ve como en penumbra. Llevar una antorcha
+#o un farol en la mano cuenta como luz brillante.
+#
+#Apagado por defecto A PROPÓSITO: es la regla más intrusiva del mod, porque cambia cómo se juega a
+#Minecraft fuera de la mesa (minar de noche, entrar en una cueva). Se enciende y se apaga en
+#caliente con /dndvision, que escribe aquí.
+visionRules = false
 

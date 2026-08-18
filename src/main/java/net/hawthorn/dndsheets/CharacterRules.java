@@ -264,6 +264,47 @@ final class CharacterRules {
 		}
 	}
 
+	/** Lo que ve en la oscuridad quien la tiene, en el SRD: 60 pies. */
+	private static final int SRD_DARKVISION_FEET = 60;
+
+	/**
+	 * Razas del SRD con visión en la oscuridad. "elfo" cubre también a "semielfo" y "orco" a "semiorco" —
+	 * las dos mitades la tienen, así que la subcadena da la respuesta correcta sin repetir la entrada. Se
+	 * incluyen los nombres en inglés porque una mesa puede tener la lista de razas en cualquier idioma.
+	 */
+	private static final List<String> DARKVISION_RACES =
+		List.of("enano", "dwarf", "elfo", "elf", "gnomo", "gnome", "orco", "orc", "tiefling", "drow");
+
+	/**
+	 * <p>Visión en la oscuridad del personaje de esta hoja, en pies; cero significa que no la tiene.</p>
+	 *
+	 * <p>Dos fuentes, en este orden: el campo {@code darkvision} de la ficha si está escrito —la salida para
+	 * una raza de la casa, un rasgo o un objeto que la conceda— y si no, la raza. La tabla es la del SRD:
+	 * enano, elfo (y por tanto semielfo), gnomo, semiorco y tiefling ven 60 pies; humano, mediano y
+	 * dracónido no ven nada.</p>
+	 *
+	 * <p><b>Una raza que no se reconoce no concede el rasgo</b>, y es deliberado: las razas de este mod son
+	 * texto libre que un pack puede reemplazar entero ({@link CharacterOptionsRegistry}), así que aquí no se
+	 * puede distinguir "raza que no ve" de "raza que no conozco". Ante la duda no se concede — ninguna regla
+	 * debería dispararse sobre una suposición, que es la misma decisión que ya se tomó con
+	 * {@link CreatureType} — y el campo de la ficha es la corrección explícita. La comparación quita acentos
+	 * y va por subcadena para que "Elfo", "elfo del bosque" y "Elf" sean lo mismo.</p>
+	 */
+	static int darkvisionFeetFor(JsonObject sheet) {
+		int explicit = intField(sheet, "darkvision", -1);
+		if (explicit >= 0) return explicit;
+		return darkvisionFeetFor(sheet != null && sheet.has("characterRace")
+			? sheet.get("characterRace").getAsString() : null);
+	}
+
+	static int darkvisionFeetFor(String race) {
+		if (race == null || race.isBlank()) return 0;
+		String normalized = java.text.Normalizer.normalize(race, java.text.Normalizer.Form.NFD)
+			.replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT);
+		for (String seer : DARKVISION_RACES) if (normalized.contains(seer)) return SRD_DARKVISION_FEET;
+		return 0;
+	}
+
 	/**
 	 * <p>Id para una ficha de PNJ, legible y apta como nombre de archivo. Los acentos se descomponen y se
 	 * quitan ANTES de filtrar caracteres: sin eso, "Capitán" daba {@code npc-capit-n}, porque la "á" no

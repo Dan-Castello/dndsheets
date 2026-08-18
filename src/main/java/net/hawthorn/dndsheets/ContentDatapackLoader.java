@@ -67,6 +67,7 @@ public class ContentDatapackLoader extends SimpleJsonResourceReloadListener {
 		event.addListener(new ContentDatapackLoader("presets", PresetRegistry::loadJson));
 		event.addListener(new ContentDatapackLoader("traits", TraitRegistry::loadJson));
 		event.addListener(new ContentDatapackLoader("items", MagicItemRegistry::loadJson));
+		event.addListener(new ContentDatapackLoader("encounters", EncounterRegistry::loadJson));
 	}
 
 	@Override

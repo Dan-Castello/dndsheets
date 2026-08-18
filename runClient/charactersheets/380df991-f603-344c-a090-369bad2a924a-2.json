@@ -81,7 +81,7 @@
   "hitDiceTypes": "",
   "hitPointsMax": "6",
   "armorClass": "10",
-  "hitPoints": "3",
+  "hitPoints": "6",
   "background": "",
   "hitPointsTemp": "0",
   "characterClass": "Mago",
@@ -94,5 +94,6 @@
   "spellSlotsByLevel": {
     "1": 2
   },
-  "inventory": "{items:[]}"
+  "inventory": "{items:[]}",
+  "nextAttackAdvantage": "normal"
 }

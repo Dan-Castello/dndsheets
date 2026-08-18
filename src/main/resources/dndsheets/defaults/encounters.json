@@ -1,0 +1,22 @@
+[
+  {
+    "id": "dndsheets:emboscada_goblin", "name": "Emboscada de goblins",
+    "monsters": ["dndsheets:goblin x4"]
+  },
+  {
+    "id": "dndsheets:patrulla_hobgoblin", "name": "Patrulla hobgoblin",
+    "monsters": ["dndsheets:hobgoblin x2", "dndsheets:goblin x3"]
+  },
+  {
+    "id": "dndsheets:manada_lobos", "name": "Manada de lobos",
+    "monsters": ["dndsheets:wolf x3", "dndsheets:dire_wolf"]
+  },
+  {
+    "id": "dndsheets:cripta", "name": "Guardianes de la cripta",
+    "monsters": ["dndsheets:skeleton x3", "dndsheets:zombie x2"]
+  },
+  {
+    "id": "dndsheets:bandidos", "name": "Bandidos del camino",
+    "monsters": ["dndsheets:bandit x4", "dndsheets:bandit_captain"]
+  }
+]

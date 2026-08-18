@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -31,6 +32,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.function.Consumer;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,12 +152,111 @@ public class DungeonManager {
 		if (structureId == null) return false;
 
 		Optional<StructureTemplate> template = level.getStructureManager().get(structureId);
-		if (template.isEmpty()) return false;
+		return template.isPresent() && jigsawNames(template.get()).contains(START_JIGSAW_NAME);
+	}
 
-		for (StructureTemplate.StructureBlockInfo info : template.get().filterBlocks(BlockPos.ZERO, new StructurePlaceSettings(), Blocks.JIGSAW)) {
-			if (info.nbt() != null && START_JIGSAW_NAME.equals(info.nbt().getString("name"))) return true;
+	/**
+	 * <p>Los nombres de los jigsaw que hay dentro de un .nbt. Lo miran dos cosas por motivos distintos:
+	 * {@link #hasStartJigsaw} para saber si una pieza puede abrir una mazmorra, y la importación para poder
+	 * decirle al DM si lo que acaba de traer se puede conectar con algo.</p>
+	 */
+	public static List<String> jigsawNames(StructureTemplate template) {
+		List<String> names = new ArrayList<>();
+		for (StructureTemplate.StructureBlockInfo info : template.filterBlocks(BlockPos.ZERO, new StructurePlaceSettings(), Blocks.JIGSAW)) {
+			if (info.nbt() != null) names.add(info.nbt().getString("name"));
 		}
-		return false;
+		return names;
+	}
+
+	// --- Traer construcciones de fuera ------------------------------------------------------------
+
+	/**
+	 * <p>Espacio de nombres de todo lo que el DM importa. Separado del suyo propio para que se vea de un
+	 * vistazo qué salió de esta partida y qué vino de fuera.</p>
+	 */
+	public static final String IMPORT_NAMESPACE = "dndsheets_import";
+
+	/** Lo que se sabe de un .nbt recién traído, que es justo lo que hay que contarle al DM. */
+	public record Imported(ResourceLocation structureId, int width, int height, int depth, List<String> jigsaws) {
+		public boolean canConnect() {
+			return !jigsaws.isEmpty();
+		}
+
+		public boolean canStart() {
+			return jigsaws.contains(START_JIGSAW_NAME);
+		}
+	}
+
+	/**
+	 * <p>Un nombre de archivo cualquiera convertido en ruta válida de {@link ResourceLocation}: minúsculas,
+	 * sin acentos y sin nada fuera de {@code [a-z0-9_-]}.</p>
+	 *
+	 * <p>Hace falta porque los archivos que se descargan se llaman "Casa Grande (v2).nbt", y un
+	 * ResourceLocation con un espacio o una tilde dentro no es que falle: es que
+	 * {@code ResourceLocation.tryParse} devuelve null y la importación muere con un mensaje que habla de
+	 * ids cuando el DM solo ha copiado un archivo. Mismo problema, y misma solución, que el
+	 * {@code npc-capit-n} de {@code CharacterRules.npcIdFor}: los acentos se quitan ANTES de filtrar.</p>
+	 */
+	public static String structureNameFor(String fileName) {
+		String withoutAccents = java.text.Normalizer.normalize(fileName == null ? "" : fileName,
+			java.text.Normalizer.Form.NFD).replaceAll("\\p{M}+", "");
+		String slug = withoutAccents.toLowerCase(java.util.Locale.ROOT)
+			.replaceAll("[^a-z0-9]+", "_")
+			.replaceAll("(^_|_$)", "");
+		return slug.isEmpty() ? "estructura" : slug;
+	}
+
+	/**
+	 * <p>Copia un {@code .nbt} de la biblioteca compartida ({@link DndPaths#STRUCTURES_DIR}) a la carpeta
+	 * {@code generated/} de esta partida, que es de donde vanilla lee las estructuras guardadas y donde
+	 * {@link #capturePiece} ya sabe buscarlas. Con eso, una construcción traída de fuera entra en el flujo
+	 * de mazmorras existente sin que ese flujo tenga que enterarse.</p>
+	 *
+	 * <p>No se toca el archivo por dentro: un {@code .nbt} de estructura ya es el formato de Minecraft.
+	 * Litematica y los editores de mapas exportan a él, así que traducir formatos ajenos —.schem,
+	 * .litematic— sería escribir un conversor para llegar al mismo sitio al que su propio botón de
+	 * exportar llega.</p>
+	 */
+	public static Optional<Imported> importStructure(ServerLevel level, String fileName, Consumer<String> onError) {
+		Path source = DndPaths.STRUCTURES_DIR.resolve(fileName + ".nbt");
+		if (!Files.exists(source)) {
+			onError.accept("No encontré " + source.toAbsolutePath() + ". Copia ahí el .nbt y vuelve a intentarlo.");
+			return Optional.empty();
+		}
+
+		ResourceLocation structureId = new ResourceLocation(IMPORT_NAMESPACE, structureNameFor(fileName));
+		Path destination = level.getServer().getWorldPath(LevelResource.GENERATED_DIR)
+			.resolve(structureId.getNamespace()).resolve("structures").resolve(structureId.getPath() + ".nbt");
+		try {
+			Files.createDirectories(destination.getParent());
+			Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			DndsheetsMod.LOGGER.error("dndsheets: no pude copiar la estructura importada {}.", fileName, e);
+			onError.accept("No pude copiar el archivo: " + e.getMessage());
+			return Optional.empty();
+		}
+
+		//El gestor de plantillas cachea también los fallos: si alguien nombró este id antes de que el archivo
+		//existiera, sin esto se queda con el "no existe" para siempre y la importación parece no haber pasado.
+		level.getStructureManager().remove(structureId);
+
+		Optional<StructureTemplate> template = level.getStructureManager().get(structureId);
+		if (template.isEmpty()) {
+			onError.accept("\"" + fileName + ".nbt\" no es una estructura de Minecraft válida "
+				+ "(¿es un .schem o un .litematic? expórtalo a estructura de vanilla primero).");
+			return Optional.empty();
+		}
+
+		Vec3i size = template.get().getSize();
+		return Optional.of(new Imported(structureId, size.getX(), size.getY(), size.getZ(),
+			jigsawNames(template.get())));
+	}
+
+	/** Pega una estructura ya importada en el mundo, para poder entrar en ella y ponerle los jigsaw. */
+	public static boolean place(ServerLevel level, ResourceLocation structureId, BlockPos at) {
+		Optional<StructureTemplate> template = level.getStructureManager().get(structureId);
+		return template.isPresent()
+			&& template.get().placeInWorld(level, at, at, new StructurePlaceSettings(), level.getRandom(), 2);
 	}
 
 	public static void removePiece(MinecraftServer server, String id) {

@@ -32,6 +32,7 @@ public class GuideBook {
 		"gui.dndsheets.guide.page.level_up",
 		"gui.dndsheets.guide.page.turn_actions",
 		"gui.dndsheets.guide.page.cover",
+		"gui.dndsheets.guide.page.vision",
 		"gui.dndsheets.guide.page.hud_states",
 	};
 
@@ -48,6 +49,7 @@ public class GuideBook {
 		"gui.dndsheets.guide.page.dm_commands",
 		"gui.dndsheets.guide.page.dm_bosses",
 		"gui.dndsheets.guide.page.dm_creatures",
+		"gui.dndsheets.guide.page.dm_encounters",
 	};
 
 	private GuideBook() {

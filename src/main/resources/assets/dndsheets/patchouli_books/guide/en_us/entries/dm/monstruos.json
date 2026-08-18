@@ -11,6 +11,10 @@
     {
       "type": "patchouli:text",
       "text": "gui.dndsheets.guide.page.dm_bosses"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_encounters"
     }
   ]
 }

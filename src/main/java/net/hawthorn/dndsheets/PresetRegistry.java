@@ -21,7 +21,7 @@ import java.util.Set;
 //y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
 //expone a que cambien de firma sin aviso.
 public class PresetRegistry {
-	public record ClassPreset(String id, String name, String hitDiceType, Map<String, Integer> abilities, String startingWeaponId, int spellSlotsMax, List<String> traits, List<String> spells) {
+	public record ClassPreset(String id, String name, String hitDiceType, Map<String, Integer> abilities, String startingWeaponId, List<String> startingGear, int spellSlotsMax, List<String> traits, List<String> spells) {
 		public int ability(String key) {
 			Integer score = abilities.get(key);
 			return score == null ? 10 : score;
@@ -84,7 +84,15 @@ public class PresetRegistry {
 			for (JsonElement el : json.getAsJsonArray("spells")) spells.add(el.getAsString());
 		}
 
-		return new ClassPreset(id, name, hitDiceType, abilities, startingWeaponId, spellSlotsMax, traits, spells);
+		//Equipo inicial: lo que el arma inicial no cubre y sin embargo decide la mitad de la ficha. La
+		//armadura de aquí sube la CA de verdad, porque la CA sale del atributo real de Minecraft — un
+		//guerrero recién creado valía 10 + Destreza hasta que un DM se acordaba de darle una cota.
+		List<String> startingGear = new ArrayList<>();
+		if (json.has("startingGear")) {
+			for (JsonElement el : json.getAsJsonArray("startingGear")) startingGear.add(el.getAsString());
+		}
+
+		return new ClassPreset(id, name, hitDiceType, abilities, startingWeaponId, startingGear, spellSlotsMax, traits, spells);
 	}
 
 	//Rellena los campos generales de la hoja. No toca "attacks" (ver PresetManager, que además entrega el arma inicial real).

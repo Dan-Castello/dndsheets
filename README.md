@@ -32,8 +32,9 @@ Essentially, this mod is designed for DMs and players alike that wish to play D&
 - **Monsters with real stat blocks** (AC, HP, abilities, attacks, spells) spawned as AI-less vanilla mobs via `/dndmonsters`, loadable in bulk from JSON. Players fighting them works exactly like PvP (attack-vs-AC, real HP loss, removed on defeat).
 - **A DM Wand** (`/dndmonsters dmtool`): right-click a spawned monster to open a menu of its attacks/spells and resolve them against the nearest player; shift+right-click a monster *or* an armor stand to delete it instantly (handy cleanup if you spawned too many).
 - **A death save system**: dropping to 0 HP freezes you at 1 HP (blind, weak, nearly immobile) instead of dying, opens a window to roll death saves (3 successes stabilizes, 3 failures is real death, a natural 20 wakes you up), and any nearby player can revive you instantly by interacting with you.
-- **Class presets**: pick a preset (Fighter, Wizard, etc.) from a sheet button to fill in class, hit die, and all six ability scores at once, optionally handing you a starting weapon. Loadable in bulk from JSON via `/dndpresets`.
+- **Class presets**: pick a preset (Fighter, Wizard, etc.) from a sheet button to fill in class, hit die, and all six ability scores at once, and hand you the class's starting weapon **and starting gear** — the fighter's chain mail and shield are real armour, so they raise your AC for real. Barbarians and monks get none, because unarmoured defence is the whole point of theirs. Loadable in bulk from JSON via `/dndpresets`.
 - **A creative-mode inventory tab** ("D&D Sheets") listing the DM Wand, the DM Notebook, every custom weapon, one báculo per loaded spell, and a summon card per loaded monster (works like a vanilla spawn egg) — no need to remember any command IDs.
+- **Darkness is a real rule too** (opt-in, `/dndvision on`): below light level 4 you are effectively blinded — attacks at disadvantage, attackers at advantage — unless your race has darkvision, which sees it as dim light. Holding a torch or lantern counts as bright light, at the block's own light value, so another mod's lamp works too. Off by default, because blinding someone who is just mining at night is not what an unconfigured Minecraft should do.
 - **Cover is real geometry, not a checkbox**: crouch behind a wall and you get 5e cover (+2 or +5 to AC and Dexterity saves), measured by ray-casting the actual blocks between attacker and target. Other VTTs simulate this with polygons; here the wall is just there.
 - **Levelling up**: `/dndsheet levelup <players>` raises the level, re-derives max HP, proficiency and spell slots, and announces what changed. At levels 4/8/12/16/19 the player gets an **Ability Score Improvement** screen (+2 to one ability or +1 to two, capped at 20). Unspent improvements are remembered on the sheet — reopen with `/dndchar mejora`.
 - **Characters can be deleted**: `/dndchar delete <id>`, or the "Borrar un personaje..." toggle in `/dndchar`. The sheet file is renamed to `.json.deleted` rather than removed, so a mistake is recoverable by hand, and you are never left with no character — deleting your only one leaves you a fresh blank sheet, which is how you reset.
@@ -46,6 +47,7 @@ Essentially, this mod is designed for DMs and players alike that wish to play D&
 - **`/dnddistance <target>`**: distance to any entity in feet (5 ft/block, rounded to the nearest 5, same grid the rest of the sheet uses).
 - **AoE preview**: shift+click an area-spell báculo to see the blast radius (particle ring) at the point you're aiming, without actually casting — a normal click still casts for real.
 - **A DM Notebook** (`/dndnotes give <players>`, operator-only): a renamed Book and Quill for private DM notes — private and persistent for free, since it's just a normal book.
+- **Encounters** (`/dndencounters`): save a group of monsters by name — `dndsheets:goblin x4, dndsheets:wolf x2` — before the session, then drop the whole thing in one action, at your feet or at coordinates so it is already waiting behind the door. They spawn in a ring instead of stacked on one block, and initiative starts by itself on the first hit. Build them from the DM Panel (Create content → Encounters), from a JSON file, or from an addon datapack — five are bundled to start with.
 - **Dungeon generation** on top of vanilla's jigsaw system: build a room, save it with a structure block, then right-click it (and its jigsaw blocks) with the DM Wand to capture/configure it without hand-editing datapack JSON or the jigsaw block's own GUI. Generate from the DM Panel or `/dnddungeon generate`. See `DUNGEON_GUIDE.md`.
 - **An in-game content creator** (DM Panel → "Crear contenido"): create, edit, and delete weapons, spells, class presets, traits, and race/background/class options entirely with forms — no hand-written JSON required. Monster templates are created by spawning a generic NPC, configuring it live, and saving it as a reusable stat block. Everything you create is written to a dedicated `dm_created.json` per content type and hot-loads through the same pipeline as a hand-authored pack.
 - **Full DM Panel parity with the command set**: every `/dnd...` action that hands out an item, teaches a spell, or spawns a loaded monster also has a DM Panel row (pick a player, then pick from a searchable list) — commands stay available for anyone who prefers typing, but nothing requires it.
@@ -131,6 +133,8 @@ All commands below except `/roll`, `/r`, `/rollprivate`, `/rp`, `/dnddistance` a
 | | `generate` | `<pool> <maxDepth 1-7> <pos>` | Generates a dungeon from the given entry pool. |
 | `/dndnotes` | `give` | `<players>` | Gives a DM Notebook (renamed Book and Quill). |
 | `/dndguide` | — | — | Reopens the in-game Guide (DM pages included if you're an operator). |
+| `/dndencounters` | `list` / `spawn` / `load` | `<encounterId> [x y z]`, `<file>` | Lists saved encounters, drops one whole group, or hot-reloads an encounter file. |
+| `/dndvision` | `on` / `off` / — | — | Turns the darkness rules on or off (off by default), or reports how they stand. |
 
 ### Keeping this tutorial in sync
 
@@ -147,6 +151,11 @@ You don't have to write JSON by hand: DM Panel → "Crear contenido" builds weap
 Dice expressions accept the ability-score shorthand `$str`/`$dex`/`$con`/`$int`/`$wis`/`$cha`, plus `$prof` (proficiency bonus) and `$hprof` (half proficiency, rounded up) — e.g. a cleric's Cure Wounds might use `"1d8 + $wis"`. Expressions with more than one dice group (e.g. `1d20 + 1d4`) are fully supported.
 
 ## Planned Features
+- **One-click install**: a published modpack, so a group doesn't have to match Forge and mod versions by hand on five machines.
+- **Guided character creation**: species, class, subclass, background and skill proficiencies, step by step (starting gear is already in). Feats and multiclassing after that.
+- **Importing maps somebody else built** (schematics / WorldEdit / Litematica) as dungeon pieces (encounters are already in).
+- **Positional voice chat** as an optional integration.
+- **The 2024 SRD (5.2)** on top of the current 5.1 content, plus an importer for community JSON.
 - Localization to languages other than English and Spanish.
 
 ## Working on this codebase
@@ -165,6 +174,8 @@ Unlike the original release of this mod, D&D Sheets now *does* touch normal game
 ## I don't know how to play D&D, does this mod teach me? Can you make a version for Pathfinder? Can you update to 1.21.1? Will I always be a DM?
 Please note that while this mod makes playing D&D much easier, it does not contain any resources to play the game with. You will need to legally obtain those yourself.
 
-There are also no plans to expand to other tabletop systems or update to newer versions of Minecraft. But you're more than welcome to do so yourself! Feel free to make pull requests to the project GitHub if you'd like to take up the task.
+There are no plans to expand to other tabletop systems.
+
+Newer Minecraft versions are a different answer. The mod targets 1.20.1 today, and it is deliberately built so that a port stays possible: no mixins, no access transformers, no reflection into Minecraft's internals, all content in JSON, and the 5e rules in plain classes that don't touch Minecraft at all. There's no date and no promise — there is a documented, measured path (see "Portability to future Minecraft versions" in `PROJECT_CONTEXT.md`) and a self-test that fails the build if a change makes that path more expensive. Your content, your dungeons and your character sheets are JSON, so they aren't tied to a version either. PRs welcome if you'd like to take the port up yourself.
 
 You will always be a DM.

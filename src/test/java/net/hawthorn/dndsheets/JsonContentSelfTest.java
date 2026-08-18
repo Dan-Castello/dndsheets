@@ -68,6 +68,9 @@ public class JsonContentSelfTest {
 		checkTabTextures();
 		checkInteractHandlers();
 		checkParchmentTextHasNoShadow();
+		checkVision();
+		checkEncounters();
+		checkPortabilityCoupling();
 
 		System.out.println("JsonContentSelfTest: OK, los 5 JSON de ejemplo parsean con los registros reales.");
 	}
@@ -661,6 +664,18 @@ public class JsonContentSelfTest {
 			JsonObject item = el.getAsJsonObject();
 			checked += assertVanilla(vanilla, "item", item.has("item") ? item.get("item").getAsString() : null,
 				"el objeto mágico " + item.get("id").getAsString());
+		}
+		for (JsonElement el : readShippedPack("presets.json")) {
+			JsonObject preset = el.getAsJsonObject();
+			String presetId = preset.get("id").getAsString();
+			checked += assertVanilla(vanilla, "item",
+				preset.has("startingWeapon") ? preset.get("startingWeapon").getAsString() : null,
+				"el arma inicial de " + presetId);
+			if (preset.has("startingGear")) {
+				for (JsonElement gear : preset.getAsJsonArray("startingGear")) {
+					checked += assertVanilla(vanilla, "item", gear.getAsString(), "el equipo inicial de " + presetId);
+				}
+			}
 		}
 		for (JsonElement el : readShippedPack("monsters.json")) {
 			JsonObject monster = el.getAsJsonObject();
@@ -1742,6 +1757,172 @@ public class JsonContentSelfTest {
 				+ "\"normal\" indistinguible de \"ninguna fuente\"");
 	}
 
+	/**
+	 * <p>Encuentros: un grupo de monstruos guardado antes de la sesión y soltado de una vez. Lo que se fija
+	 * aquí es la sintaxis de la composición —la misma en el JSON y en el formulario del creador in-game— y
+	 * que los monstruos del pack que se envía existan de verdad.</p>
+	 *
+	 * <p>Esto último es el que importa: un id mal escrito en un encuentro no revienta nada, simplemente
+	 * invoca menos monstruos de los que el DM preparó, y eso se descubre en mitad del combate.</p>
+	 */
+	private static void checkEncounters() throws Exception {
+		assertTrue(EncounterRegistry.parseMember("dndsheets:goblin x4").count() == 4, "x4 son cuatro");
+		assertTrue(EncounterRegistry.parseMember("dndsheets:goblin x4").monsterId().equals("dndsheets:goblin"),
+			"y el id se queda sin la cola");
+		assertTrue(EncounterRegistry.parseMember("dndsheets:goblin").count() == 1, "sin cola, uno");
+		assertTrue(EncounterRegistry.parseMember("  dndsheets:goblin x2  ").monsterId().equals("dndsheets:goblin"),
+			"los espacios de alrededor no forman parte del id");
+		//Una "x" dentro del nombre no es una cuenta: solo cuenta la última, y solo si detrás hay un número.
+		assertTrue(EncounterRegistry.parseMember("mod:xorn").monsterId().equals("mod:xorn"),
+			"un id que empieza por x sigue siendo un id");
+		assertTrue(EncounterRegistry.parseMember("mod:dragon x viejo").count() == 1,
+			"lo que no es un número no es una cuenta");
+		//Cero no es "ninguno", es una errata: un encuentro con una línea que no invoca nada se lee como roto.
+		assertTrue(EncounterRegistry.parseMember("mod:goblin x0").count() == 1, "cero se trata como uno");
+		assertTrue(EncounterRegistry.parseMember("") == null && EncounterRegistry.parseMember(null) == null,
+			"una línea vacía se salta en vez de tumbar el encuentro");
+
+		java.util.Set<String> bestiary = new java.util.HashSet<>();
+		for (JsonElement el : readShippedPack("monsters.json")) bestiary.add(el.getAsJsonObject().get("id").getAsString());
+
+		int checked = 0;
+		for (JsonElement el : readShippedPack("encounters.json")) {
+			EncounterRegistry.Encounter encounter = EncounterRegistry.parse(el.getAsJsonObject());
+			assertTrue(!encounter.members().isEmpty(), "el encuentro " + encounter.id() + " no invoca nada");
+			for (EncounterRegistry.Member member : encounter.members()) {
+				assertTrue(bestiary.contains(member.monsterId()),
+					"el encuentro " + encounter.id() + " pide [" + member.monsterId() + "], que no está en el bestiario");
+				checked++;
+			}
+		}
+		assertTrue(checked > 0, "el pack de encuentros que se envía está vacío");
+
+		System.out.println("checkEncounters: OK, la sintaxis de composición y " + checked
+			+ " monstruos de los encuentros que se envían existen.");
+	}
+
+	/**
+	 * <p>La luz, que es la otra mitad del entorno después de la cobertura: en oscuridad se está "muy
+	 * oscurecido" y eso en 5e es estar ciego. Aquí se fija lo que es puro —dónde caen los cortes entre luz,
+	 * penumbra y oscuridad, qué cambia la visión en la oscuridad, y qué razas la tienen— porque lo demás
+	 * necesita un mundo con bloques.</p>
+	 *
+	 * <p>Los umbrales se comprueban <b>en su frontera exacta</b>: el error natural aquí es el de siempre,
+	 * un {@code >=} escrito como {@code >}, y desplaza la regla entera un nivel de luz sin que nada más
+	 * cambie.</p>
+	 */
+	private static void checkVision() throws Exception {
+		assertTrue(Light.fromLightLevel(0) == Light.DARK && Light.fromLightLevel(3) == Light.DARK,
+			"por debajo de 4 es oscuridad");
+		assertTrue(Light.fromLightLevel(4) == Light.DIM && Light.fromLightLevel(7) == Light.DIM,
+			"de 4 a 7 es penumbra: es donde cae la noche a cielo abierto, que en el SRD es luz de luna");
+		assertTrue(Light.fromLightLevel(8) == Light.BRIGHT && Light.fromLightLevel(15) == Light.BRIGHT,
+			"de 8 en adelante es luz brillante");
+		assertTrue(Light.DARK.blinds() && !Light.DIM.blinds() && !Light.BRIGHT.blinds(),
+			"solo la oscuridad ciega: la penumbra estorba, no impide ver");
+
+		//La visión en la oscuridad convierte oscuridad en penumbra y no en luz brillante — quien la tiene
+		//deja de estar ciego, no deja de estar a oscuras.
+		assertTrue(Light.DARK.withDarkvision(true) == Light.DIM, "con visión en la oscuridad, la oscuridad es penumbra");
+		assertTrue(!Light.DARK.withDarkvision(true).blinds(), "y por tanto ya no ciega");
+		assertTrue(Light.DARK.withDarkvision(false).blinds(), "sin ella, la oscuridad sigue cegando");
+		assertTrue(Light.DIM.withDarkvision(true) == Light.DIM && Light.BRIGHT.withDarkvision(true) == Light.BRIGHT,
+			"el rasgo no mejora lo que ya se ve");
+
+		for (String race : List.of("Enano", "Elfo", "Semielfo", "Gnomo", "Semiorco", "Tiefling", "Dwarf", "elfo del bosque")) {
+			assertTrue(CharacterRules.darkvisionFeetFor(race) == 60, race + " ve en la oscuridad en el SRD");
+		}
+		for (String race : List.of("Humano", "Mediano", "Dracónido", "")) {
+			assertTrue(CharacterRules.darkvisionFeetFor(race) == 0, "la raza [" + race + "] no ve en la oscuridad");
+		}
+		//Una raza de la casa no concede el rasgo por su cuenta: las razas son texto libre que un pack puede
+		//reemplazar entero, así que "no la reconozco" no puede leerse como "sí la tiene".
+		assertTrue(CharacterRules.darkvisionFeetFor("Aarakocra") == 0, "una raza desconocida no concede el rasgo");
+		assertTrue(CharacterRules.darkvisionFeetFor((String) null) == 0, "una hoja sin raza tampoco");
+
+		JsonObject dwarf = new JsonObject();
+		dwarf.addProperty("characterRace", "Enano");
+		assertTrue(CharacterRules.darkvisionFeetFor(dwarf) == 60, "la raza de la hoja decide si no hay campo explícito");
+		//El campo explícito tiene que poder QUITARLO, no solo darlo: por eso el centinela es -1 y no 0. Con 0
+		//como "sin valor", un enano cegado por una maldición no se podría escribir en la ficha.
+		dwarf.addProperty("darkvision", "0");
+		assertTrue(CharacterRules.darkvisionFeetFor(dwarf) == 0, "el campo de la ficha manda sobre la raza, también para quitarlo");
+		JsonObject custom = new JsonObject();
+		custom.addProperty("characterRace", "Aarakocra");
+		custom.addProperty("darkvision", "120");
+		assertTrue(CharacterRules.darkvisionFeetFor(custom) == 120, "y es la salida para una raza de la casa");
+
+		//Quitar la ceguera sin mirar quién la puso borraría también la de un conjuro o la de un DM en cuanto
+		//el jugador saliera a la luz. Eso no se puede probar sin mundo, así que se sujeta por estructura.
+		String manager = readSource("VisionManager.java");
+		String lift = manager.substring(manager.indexOf("private static void lift("));
+		lift = lift.substring(0, lift.indexOf("\n\t}"));
+		assertTrue(lift.contains("sourceOf(Condition.CEGADO) != DARKNESS_SOURCE"),
+			"lift() tiene que comprobar la fuente antes de quitar la ceguera: si no, salir a la luz cura "
+				+ "también la ceguera que acaba de echarte un conjuro o un DM.");
+
+		System.out.println("checkVision: OK, los cortes de luz, la visión en la oscuridad y de quién es cada ceguera.");
+	}
+
+	/**
+	 * <p>El mod apunta a 1.20.1 y la puerta a una versión futura se deja abierta a propósito. Lo que decide
+	 * si esa puerta sigue abierta no es una promesa en el README: es el <b>acoplamiento</b> con vanilla, y
+	 * ese crece en silencio — nada falla hoy por meter un mixin o por leer el NBT de un objeto en un sitio
+	 * nuevo. Se paga entero el día que alguien porte.</p>
+	 *
+	 * <p><b>Mixins y access transformers</b> parchean Minecraft por dentro, así que hay que reescribirlos en
+	 * cada versión. Hoy no hay ninguno: el mod entero funciona con eventos y API pública de Forge, que es la
+	 * razón principal de que portarlo sea siquiera discutible.</p>
+	 *
+	 * <p><b>El NBT de los objetos</b> desaparece en 1.20.5 y pasa a componentes. Todo lo que este mod escribe
+	 * en un objeto vive en un único compuesto {@code "dndsheets"}, así que la migración es <i>un</i> componente
+	 * y no una por tipo de objeto — pero eso solo es verdad mientras el acceso siga concentrado en los ficheros
+	 * anotados aquí. La lista no prohíbe tocar NBT: obliga a que dispersarlo sea una decisión.</p>
+	 *
+	 * <p>Ver "Portability to future Minecraft versions" en {@code PROJECT_CONTEXT.md}.</p>
+	 */
+	private static void checkPortabilityCoupling() throws Exception {
+		//Los ficheros que hoy tocan el NBT de un ItemStack. Si añades uno, añádelo aquí y comprueba que lo
+		//que escribes va dentro del compuesto "dndsheets", como todo lo demás.
+		Set<String> allowed = Set.of(
+			"AbilityItem.java", "AbilityItemDispatcher.java", "Config.java", "ItemLook.java",
+			"JournalManager.java", "MagicItemRegistry.java", "MonsterCommand.java", "MonsterRegistry.java",
+			"PresetManager.java", "SpellCommand.java", "SpellRegistry.java");
+
+		List<Path> files;
+		try (Stream<Path> walk = Files.walk(Path.of("src", "main"))) {
+			files = walk.filter(Files::isRegularFile).toList();
+		}
+
+		Set<String> stray = new java.util.TreeSet<>();
+		for (Path file : files) {
+			String name = file.getFileName().toString();
+			assertTrue(!name.endsWith("mixins.json") && !name.equals("accesstransformer.cfg"),
+				"apareció " + file + ": un mixin o un access transformer parchea Minecraft por dentro y hay que "
+					+ "reescribirlo en cada versión. Hoy no hay ninguno, y eso es la mitad de lo que mantiene "
+					+ "barato un port futuro (PROJECT_CONTEXT.md, \"Portability to future Minecraft versions\").");
+			if (!name.endsWith(".java")) continue;
+
+			String source = Files.readString(file);
+			assertTrue(!source.contains("setAccessible(") && !source.contains("getDeclaredField("),
+				name + " usa reflexión sobre las tripas de vanilla: se rompe en cuanto cambian los mapeos y no "
+					+ "avisa al compilar. Si hace falta llegar a algo interno, un evento de Forge o un PR a Forge.");
+			if (source.contains("getOrCreateTag()") || source.contains(".getTag()") || source.contains("addTagElement"))
+				stray.add(name);
+		}
+
+		stray.removeAll(allowed);
+		assertTrue(stray.isEmpty(),
+			"tocan el NBT de un objeto fuera de la lista anotada: " + stray + ". El NBT de objetos deja de existir "
+				+ "en 1.20.5 (pasa a componentes); hoy esa migración es UN componente porque todo lo que el mod "
+				+ "escribe vive en el compuesto \"dndsheets\" y solo se toca desde " + allowed.size() + " ficheros. "
+				+ "Si el acceso se dispersa, el coste del port crece sin que nada se queje. Si es deliberado, "
+				+ "añade el fichero a la lista de checkPortabilityCoupling.");
+
+		System.out.println("checkPortabilityCoupling: OK, sin mixins ni access transformers y el NBT de objetos "
+			+ "sigue concentrado en " + allowed.size() + " ficheros.");
+	}
+
 	private static String readSource(String fileName) throws Exception {
 		//Acepta "Algo.java" y "command/Algo.java": los dos sitios que deciden un nivel viven en paquetes
 		//distintos, y partir la ruta aquí evita un segundo helper que haga lo mismo.
@@ -2118,15 +2299,29 @@ public class JsonContentSelfTest {
 			}
 		}
 
-		int shape = messages + enumConstants;
+		//ContentType vive fuera de network/ y cruza el cable igual (ContentEntry*Message lo escriben con
+		//writeEnum, o sea por ordinal). La primera versión de esta comprobación solo miraba la carpeta
+		//network/, así que añadirle una constante no movía el número: justo el agujero que esto existe para
+		//tapar. Se cuenta por su fuente porque el enum no se puede cargar aquí — sus constantes resuelven
+		//DndPaths, y eso pide una instancia de Forge arrancada.
+		java.util.regex.Matcher contentTypes = java.util.regex.Pattern
+			.compile("(?m)^\\t([A-Z_]+)\\(DndPaths\\.").matcher(readSource("ContentType.java"));
+		int wireEnumsOutsideNetwork = 0;
+		while (contentTypes.find()) wireEnumsOutsideNetwork++;
+		assertTrue(wireEnumsOutsideNetwork > 0, "no encontré las constantes de ContentType, ¿cambió su forma?");
+		detail.append("\n    ContentType.java ContentType: ").append(wireEnumsOutsideNetwork);
+
+		int shape = messages + enumConstants + wireEnumsOutsideNetwork;
 		assertTrue(shape == DndsheetsMod.NETWORK_SHAPE,
-			"la forma de la red cambió (" + messages + " mensajes + " + enumConstants + " constantes = " + shape
+			"la forma de la red cambió (" + messages + " mensajes + " + enumConstants + " constantes en network/ + "
+				+ wireEnumsOutsideNetwork + " fuera = " + shape
 				+ ", anotado " + DndsheetsMod.NETWORK_SHAPE + ")." + detail
 				+ "\n  Si añadiste un mensaje o una constante de enum que cruza el cable: añádelo al FINAL,"
 				+ " sube PROTOCOL_VERSION y actualiza NETWORK_SHAPE. Si no subes la versión, un cliente nuevo"
 				+ " y un servidor viejo se dan la mano y se desalinean después, en silencio.");
 
-		System.out.println("checkNetworkShape: OK, " + messages + " mensajes y " + enumConstants + " constantes de enum en el cable.");
+		System.out.println("checkNetworkShape: OK, " + shape + " piezas en el cable (" + messages + " mensajes, " + enumConstants
+			+ " constantes en network/ y " + wireEnumsOutsideNetwork + " fuera).");
 	}
 
 	/**
@@ -2283,7 +2478,7 @@ public class JsonContentSelfTest {
 		String loader = readSource("ContentDatapackLoader.java");
 		assertTrue(loader.contains("AddReloadListenerEvent"),
 			"el contenido de datapacks tiene que engancharse a la recarga, o un addon no se carga nunca");
-		for (String folder : List.of("weapons", "spells", "monsters", "presets", "traits", "items")) {
+		for (String folder : List.of("weapons", "spells", "monsters", "presets", "traits", "items", "encounters")) {
 			assertTrue(loader.contains("\"" + folder + "\""),
 				"un addon debería poder traer " + folder + " igual que el resto");
 		}
