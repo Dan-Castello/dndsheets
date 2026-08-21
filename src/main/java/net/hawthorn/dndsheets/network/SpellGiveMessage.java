@@ -42,17 +42,17 @@ public class SpellGiveMessage {
 
 			SpellRegistry.Spell spell = SpellRegistry.get(message.spellId);
 			if (spell == null) {
-				dm.sendSystemMessage(Component.literal("No conozco el hechizo \"" + message.spellId + "\"."));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_such", message.spellId));
 				return;
 			}
 
 			net.hawthorn.dndsheets.DndsheetsMod.withDmTarget(context, message.targetUuid, target -> {
 				if (message.asStaff) {
 					target.getInventory().add(SpellCommand.buildStaffStack(message.spellId, spell, null));
-					target.sendSystemMessage(Component.literal("Báculo de " + spell.name() + " recibido."));
+					target.sendSystemMessage(Component.translatable("chat.dndsheets.spell.staff_received", spell.name()));
 				} else {
 					SpellCommand.learnForPlayer(target, message.spellId, spell);
-					target.sendSystemMessage(Component.literal("Aprendiste " + spell.name() + "."));
+					target.sendSystemMessage(Component.translatable("chat.dndsheets.spell.learned", spell.name()));
 				}
 			});
 		});

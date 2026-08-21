@@ -25,7 +25,7 @@ public class ContentEntryListScreen extends ListPickerScreen {
 	private final List<JsonObject> entries;
 
 	private ContentEntryListScreen(ContentType type, List<JsonObject> entries, Screen parent) {
-		super(Component.literal(titleFor(type)), parent);
+		super(Component.translatable(specFor(type).titleKey()), parent);
 		this.type = type;
 		this.entries = entries;
 	}
@@ -38,48 +38,37 @@ public class ContentEntryListScreen extends ListPickerScreen {
 		Minecraft.getInstance().setScreen(new ContentEntryListScreen(type, entries, Minecraft.getInstance().screen));
 	}
 
-	private static String titleFor(ContentType type) {
-		return switch (type) {
-			case WEAPON -> "Armas creadas";
-			case SPELL -> "Hechizos creados";
-			case PRESET -> "Presets creados";
-			case TRAIT -> "Rasgos creados";
-			case MONSTER -> "Monstruos creados";
-			case ENCOUNTER -> "Encuentros creados";
-			case FEAT -> "Dotes creadas";
-		};
+	/**
+	 * <p>Todo lo que este menu necesita saber de un tipo de contenido: como se titula, que campos pide su
+	 * formulario, como se rellena desde una entrada existente y como vuelve a JSON.</p>
+	 *
+	 * <p>Eran CUATRO switch paralelos sobre el mismo enum, con los mismos casos en el mismo orden. Anadir
+	 * un tipo obligaba a acordarse de tocar los cuatro, y olvidarse de uno no daba error de compilacion:
+	 * daba un {@code IllegalStateException} en ejecucion, al abrir ese menu concreto.</p>
+	 */
+	private record FormSpec(String titleKey,
+			List<ContentFormScreen.FieldSpec> fields,
+			Function<JsonObject, Map<String, String>> prefill,
+			Function<Map<String, String>, JsonObject> toJson) {
 	}
 
-	private static List<ContentFormScreen.FieldSpec> fieldsFor(ContentType type) {
+	//TRAIT y MONSTER no tienen formulario plano: TRAIT usa TraitEditScreen (listas anidadas de nivel/dado)
+	//y MONSTER todavia no tiene UI. Llevan solo titulo, y el switch los nombra en vez de dejarlos caer en
+	//una rama default que lanzaba: asi el compilador obliga a decidir que hace un tipo NUEVO.
+	private static FormSpec specFor(ContentType type) {
 		return switch (type) {
-			case WEAPON -> ContentTypeForms.weaponFields();
-			case SPELL -> ContentTypeForms.spellFields();
-			case PRESET -> ContentTypeForms.presetFields();
-			case ENCOUNTER -> ContentTypeForms.encounterFields();
-			case FEAT -> ContentTypeForms.featFields();
-			default -> throw new IllegalStateException(type + " no usa ContentFormScreen");
-		};
-	}
-
-	private static Function<JsonObject, Map<String, String>> prefillFor(ContentType type) {
-		return switch (type) {
-			case WEAPON -> ContentTypeForms::weaponPrefill;
-			case SPELL -> ContentTypeForms::spellPrefill;
-			case PRESET -> ContentTypeForms::presetPrefill;
-			case ENCOUNTER -> ContentTypeForms::encounterPrefill;
-			case FEAT -> ContentTypeForms::featPrefill;
-			default -> throw new IllegalStateException(type + " no usa ContentFormScreen");
-		};
-	}
-
-	private static Function<Map<String, String>, JsonObject> toJsonFor(ContentType type) {
-		return switch (type) {
-			case WEAPON -> ContentTypeForms::weaponToJson;
-			case SPELL -> ContentTypeForms::spellToJson;
-			case PRESET -> ContentTypeForms::presetToJson;
-			case ENCOUNTER -> ContentTypeForms::encounterToJson;
-			case FEAT -> ContentTypeForms::featToJson;
-			default -> throw new IllegalStateException(type + " no usa ContentFormScreen");
+			case WEAPON -> new FormSpec("gui.dndsheets.content_entry.weapons",
+				ContentTypeForms.weaponFields(), ContentTypeForms::weaponPrefill, ContentTypeForms::weaponToJson);
+			case SPELL -> new FormSpec("gui.dndsheets.content_entry.spells",
+				ContentTypeForms.spellFields(), ContentTypeForms::spellPrefill, ContentTypeForms::spellToJson);
+			case PRESET -> new FormSpec("gui.dndsheets.content_entry.presets",
+				ContentTypeForms.presetFields(), ContentTypeForms::presetPrefill, ContentTypeForms::presetToJson);
+			case ENCOUNTER -> new FormSpec("gui.dndsheets.content_entry.encounters",
+				ContentTypeForms.encounterFields(), ContentTypeForms::encounterPrefill, ContentTypeForms::encounterToJson);
+			case FEAT -> new FormSpec("gui.dndsheets.content_entry.feats",
+				ContentTypeForms.featFields(), ContentTypeForms::featPrefill, ContentTypeForms::featToJson);
+			case TRAIT -> new FormSpec("gui.dndsheets.content_entry.traits", null, null, null);
+			case MONSTER -> new FormSpec("gui.dndsheets.content_entry.monsters", null, null, null);
 		};
 	}
 
@@ -105,7 +94,9 @@ public class ContentEntryListScreen extends ListPickerScreen {
 		if (type == ContentType.TRAIT) {
 			TraitEditScreen.open(entry);
 		} else {
-			ContentFormScreen.open(type, "Editar: " + id, fieldsFor(type), prefillFor(type).apply(entry), toJsonFor(type));
+			FormSpec spec = specFor(type);
+			ContentFormScreen.open(type, Component.translatable("gui.dndsheets.content_entry.edit", id).getString(),
+				spec.fields(), spec.prefill().apply(entry), spec.toJson());
 		}
 	}
 
@@ -113,9 +104,14 @@ public class ContentEntryListScreen extends ListPickerScreen {
 	//las tablas se agregan editando la entrada recién creada desde TraitEditScreen.
 	private void openCreateForm() {
 		if (type == ContentType.TRAIT) {
-			ContentFormScreen.open(type, "Añadir rasgo", ContentTypeForms.traitCreateFields(), Map.of(), ContentTypeForms::traitCreateToJson);
+			ContentFormScreen.open(type, Component.translatable("gui.dndsheets.content_entry.add_trait").getString(),
+				ContentTypeForms.traitCreateFields(), Map.of(), ContentTypeForms::traitCreateToJson);
 		} else {
-			ContentFormScreen.open(type, "Añadir " + titleFor(type).toLowerCase(java.util.Locale.ROOT), fieldsFor(type), Map.of(), toJsonFor(type));
+			FormSpec spec = specFor(type);
+			ContentFormScreen.open(type,
+				Component.translatable("gui.dndsheets.content_entry.add_to",
+					Component.translatable(spec.titleKey()).getString().toLowerCase(java.util.Locale.ROOT)).getString(),
+				spec.fields(), Map.of(), spec.toJson());
 		}
 	}
 

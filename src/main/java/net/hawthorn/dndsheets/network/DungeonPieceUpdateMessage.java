@@ -50,7 +50,7 @@ public class DungeonPieceUpdateMessage {
 
 			DungeonPieceRegistry.DungeonPiece existing = DungeonPieceRegistry.get(message.id);
 			if (existing == null) {
-				dm.sendSystemMessage(Component.literal("No conozco ninguna pieza \"" + message.id + "\"."));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.no_such_piece", message.id));
 				return;
 			}
 
@@ -58,7 +58,7 @@ public class DungeonPieceUpdateMessage {
 			DungeonPieceRegistry.register(new DungeonPieceRegistry.DungeonPiece(existing.id(), existing.structureId(), message.pool, weight, message.tags));
 			DungeonPieceRegistry.save(dm.getServer());
 
-			dm.sendSystemMessage(Component.literal("Pieza \"" + message.id + "\" actualizada."));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.piece_updated", message.id));
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), DungeonPieceListMessage.of(dm.serverLevel(), DungeonPieceRegistry.all()));
 		});
 	}

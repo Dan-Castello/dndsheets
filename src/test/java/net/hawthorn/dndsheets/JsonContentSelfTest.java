@@ -61,6 +61,8 @@ public class JsonContentSelfTest {
 		checkAbilityImprovements();
 		checkLanguageFiles();
 		checkTranslationKeysExist();
+		checkPlaceholderParity();
+		checkChatMessagesAreTranslatable();
 		checkNetworkShape();
 		checkSheetWritesArePersisted();
 		checkAddonContentLoads();
@@ -2567,6 +2569,72 @@ public class JsonContentSelfTest {
 	 * las que se usan esten en ninguno de los dos: con una errata en el codigo, ambos ficheros siguen
 	 * cuadrando entre si y el fallo pasa igual. Esta comprobacion mira el otro lado, el del uso.</p>
 	 */
+	/**
+	 * <p>Un mensaje traducido lleva huecos ({@code %s}) que se rellenan con los argumentos que le pasa el
+	 * codigo. Si dos idiomas no declaran los MISMOS huecos, el que tenga de mas ensena un "%s" pelado al
+	 * jugador y el que tenga de menos se come el dato — un "Invocado Goblin (CA , PG)."</p>
+	 *
+	 * <p>{@code checkLanguageFiles} compara que existan las mismas claves, no que digan la misma forma, asi
+	 * que este agujero le pasaba por debajo. Aparecio de verdad al traducir los 63 mensajes de chat: uno de
+	 * los avisos de mazmorra tiene cuatro huecos y es facil escribir la version inglesa con tres.</p>
+	 */
+	private static void checkPlaceholderParity() throws Exception {
+		Path dir = Path.of("src", "main", "resources", "assets", "dndsheets", "lang");
+		JsonObject es = JsonParser.parseString(Files.readString(dir.resolve("es_es.json"))).getAsJsonObject();
+		JsonObject en = JsonParser.parseString(Files.readString(dir.resolve("en_us.json"))).getAsJsonObject();
+
+		Set<String> desalineadas = new java.util.TreeSet<>();
+		int conHuecos = 0;
+		for (String clave : es.keySet()) {
+			if (!en.has(clave)) continue; //Eso ya lo caza checkLanguageFiles.
+			int huecosEs = contarHuecos(es.get(clave).getAsString());
+			int huecosEn = contarHuecos(en.get(clave).getAsString());
+			if (huecosEs > 0) conHuecos++;
+			if (huecosEs != huecosEn) desalineadas.add(clave + " (es=" + huecosEs + ", en=" + huecosEn + ")");
+		}
+
+		assertTrue(desalineadas.isEmpty(),
+			"estas claves no declaran los mismos huecos en los dos idiomas: " + desalineadas
+				+ ".\n  Los %s se rellenan por posicion con lo que pasa el codigo: sobrarle uno a un idioma pinta"
+				+ " un %s crudo en pantalla, y faltarle uno se traga el dato sin avisar.");
+
+		System.out.println("checkPlaceholderParity: OK, " + conHuecos + " mensajes con huecos y los mismos en ambos idiomas.");
+	}
+
+	private static int contarHuecos(String texto) {
+		int total = 0;
+		java.util.regex.Matcher m = java.util.regex.Pattern.compile("%s").matcher(texto);
+		while (m.find()) total++;
+		return total;
+	}
+
+	/**
+	 * <p>Nada de {@code sendSystemMessage(Component.literal("texto"))}: eso es un mensaje que solo existe en
+	 * un idioma. Se permite {@code Component.literal(variable)}, donde el texto ya viene resuelto de otro
+	 * sitio, porque ahi no hay nada que traducir aqui.</p>
+	 */
+	private static void checkChatMessagesAreTranslatable() throws Exception {
+		List<Path> fuentes;
+		try (Stream<Path> walk = Files.walk(Path.of("src", "main", "java"))) {
+			fuentes = walk.filter(f -> f.toString().endsWith(".java")).sorted().toList();
+		}
+
+		Set<String> culpables = new java.util.TreeSet<>();
+		for (Path fuente : fuentes) {
+			java.util.regex.Matcher m = java.util.regex.Pattern
+				.compile("sendSystemMessage\\(Component\\.literal\\(\"")
+				.matcher(Files.readString(fuente));
+			if (m.find()) culpables.add(fuente.getFileName().toString());
+		}
+
+		assertTrue(culpables.isEmpty(),
+			"estos archivos mandan al chat un texto fijo sin pasar por los ficheros de idioma: " + culpables
+				+ ".\n  Usa Component.translatable(\"chat.dndsheets....\", args...) y anade la clave a en_us.json"
+				+ " Y a es_es.json. Component.literal(variable) si vale: ahi el texto ya viene hecho.");
+
+		System.out.println("checkChatMessagesAreTranslatable: OK, ningun mensaje de chat con texto fijo.");
+	}
+
 	private static void checkTranslationKeysExist() throws Exception {
 		String lang = Files.readString(Path.of("src", "main", "resources", "assets", "dndsheets", "lang", "en_us.json"));
 		java.util.Set<String> declaradas = new java.util.HashSet<>();

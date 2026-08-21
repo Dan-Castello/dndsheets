@@ -101,8 +101,7 @@ public final class VisionManager {
 		grant(player, MobEffects.DARKNESS);
 		if (combatant.hasCondition(Condition.CEGADO)) return;
 		combatant.addCondition(Condition.CEGADO, DARKNESS_SOURCE);
-		player.sendSystemMessage(Component.literal(
-			"Estás a oscuras: atacas con desventaja y te atacan con ventaja. Enciende algo.")
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.vision.blinded")
 			.withStyle(ChatFormatting.DARK_GRAY));
 	}
 
@@ -112,7 +111,7 @@ public final class VisionManager {
 		remove(player, MobEffects.NIGHT_VISION);
 		if (combatant.sourceOf(Condition.CEGADO) != DARKNESS_SOURCE) return;
 		combatant.removeCondition(Condition.CEGADO);
-		player.sendSystemMessage(Component.literal("Vuelves a ver.").withStyle(ChatFormatting.DARK_GRAY));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.vision.restored").withStyle(ChatFormatting.DARK_GRAY));
 	}
 
 	/**

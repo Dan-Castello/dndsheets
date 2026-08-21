@@ -57,13 +57,13 @@ public class DruidWildShapeManager {
 		Runnable expire = () -> {
 			if (shifted.remove(uuid) && server != null) {
 				ServerPlayer stillHere = server.getPlayerList().getPlayer(uuid);
-				if (stillHere != null) stillHere.sendSystemMessage(Component.literal("Vuelves a tu forma normal.").withStyle(ChatFormatting.GRAY));
+				if (stillHere != null) stillHere.sendSystemMessage(Component.translatable("chat.dndsheets.wildshape.end").withStyle(ChatFormatting.GRAY));
 			}
 		};
 
 		TurnManager.scheduleExpiry(DURATION_ROUNDS, DURATION_TICKS, expire);
 
-		player.sendSystemMessage(Component.literal("¡Adoptas Forma Salvaje! Tus golpes a mano desnuda son zarpazos reales.").withStyle(ChatFeedback.RESOURCE));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.wildshape.start").withStyle(ChatFeedback.RESOURCE));
 	}
 
 	//--- Ítem de Forma Salvaje: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos

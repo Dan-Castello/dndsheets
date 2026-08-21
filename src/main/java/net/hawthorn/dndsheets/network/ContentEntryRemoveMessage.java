@@ -41,16 +41,16 @@ public class ContentEntryRemoveMessage {
 
 			try {
 				if (!ContentPackFile.removeById(message.type.dmCreatedFile(), "id", message.id)) {
-					dm.sendSystemMessage(Component.literal("\"" + message.id + "\" no estaba en el contenido creado in-game."));
+					dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.not_present", message.id));
 					return;
 				}
 			} catch (IOException e) {
-				dm.sendSystemMessage(Component.literal("No pude borrar: " + e.getMessage()));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.delete_failed", e.getMessage()));
 				return;
 			}
 			message.type.remove(message.id);
 
-			dm.sendSystemMessage(Component.literal("Borrado \"" + message.id + "\"."));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.deleted", message.id));
 			String arrayJson = ContentPackFile.readArrayText(message.type.dmCreatedFile());
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), new ContentEntryListMessage(message.type, arrayJson));
 		});

@@ -35,7 +35,7 @@ public class GiveItemMessage {
 		NetworkEvent.Context context = contextSupplier.get();
 		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid, target -> {
 			for (ItemStack stack : message.kind.stacks()) target.getInventory().add(stack);
-			target.sendSystemMessage(Component.literal(message.kind.label() + " recibido."));
+			target.sendSystemMessage(Component.translatable("chat.dndsheets.item.received", message.kind.label()));
 		}));
 	}
 }

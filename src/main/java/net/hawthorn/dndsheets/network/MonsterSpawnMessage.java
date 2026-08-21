@@ -37,19 +37,19 @@ public class MonsterSpawnMessage {
 
 			MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(message.monsterId);
 			if (block == null) {
-				dm.sendSystemMessage(Component.literal("No conozco el monstruo \"" + message.monsterId + "\"."));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.monster.no_such", message.monsterId));
 				return;
 			}
 
 			Vec3 pos = dm.position();
 			Entity entity = MonsterRegistry.spawnAt(dm.serverLevel(), pos.x, pos.y, pos.z, message.monsterId);
 			if (entity == null) {
-				dm.sendSystemMessage(Component.literal("El ítem base \"" + block.baseEntityId() + "\" de " + message.monsterId + " no existe."));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.monster.no_base_entity", block.baseEntityId(), message.monsterId));
 				return;
 			}
 
 			CombatFx.monsterSpawn(entity);
-			dm.sendSystemMessage(Component.literal("Invocado " + block.name() + " (CA " + block.ac() + ", " + block.maxHp() + " PG)."));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.monster.spawned", block.name(), block.ac(), block.maxHp()));
 		});
 	}
 }

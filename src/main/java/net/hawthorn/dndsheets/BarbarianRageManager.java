@@ -64,14 +64,14 @@ public class BarbarianRageManager {
 		Runnable expire = () -> {
 			if (raging.remove(uuid) && server != null) {
 				ServerPlayer stillHere = server.getPlayerList().getPlayer(uuid);
-				if (stillHere != null) stillHere.sendSystemMessage(Component.literal("Tu furia termina.").withStyle(ChatFormatting.GRAY));
+				if (stillHere != null) stillHere.sendSystemMessage(Component.translatable("chat.dndsheets.rage.end").withStyle(ChatFormatting.GRAY));
 			}
 		};
 
 		TurnManager.scheduleExpiry(DURATION_ROUNDS, DURATION_TICKS, expire);
 
 		CombatFx.activate(player);
-		player.sendSystemMessage(Component.literal("¡Entras en furia! Resistencia a daño físico y +" + damageBonusFor(player) + " de daño cuerpo a cuerpo con Fuerza.").withStyle(ChatFeedback.RESOURCE));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.rage.start", damageBonusFor(player)).withStyle(ChatFeedback.RESOURCE));
 	}
 
 	//--- Tótem de Furia: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos de

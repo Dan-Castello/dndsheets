@@ -71,7 +71,7 @@ public class MonsterSaveTemplateMessage {
 			if (target == null) return;
 			MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(target);
 			if (block == null) {
-				dm.sendSystemMessage(Component.literal("Ese objetivo no es un monstruo invocado por /dndmonsters."));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.monster.not_spawned"));
 				return;
 			}
 
@@ -86,11 +86,11 @@ public class MonsterSaveTemplateMessage {
 				ContentPackFile.upsert(ContentType.MONSTER.dmCreatedFile(), "id", json);
 				ContentType.MONSTER.load(ContentType.MONSTER.dmCreatedFile());
 			} catch (IOException e) {
-				dm.sendSystemMessage(Component.literal("No pude guardar la plantilla: " + e.getMessage()));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.monster.template_failed", e.getMessage()));
 				return;
 			}
 
-			dm.sendSystemMessage(Component.literal("Plantilla \"" + message.id + "\" guardada (" + attacks.size() + " ataque(s))."));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.monster.template_saved", message.id, attacks.size()));
 		});
 	}
 }

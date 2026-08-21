@@ -48,7 +48,7 @@ public class DungeonJigsawConfigureMessage {
 			if (!(dm.level().getBlockEntity(message.pos) instanceof JigsawBlockEntity jigsaw)) return;
 
 			DungeonManager.configureJigsaw(jigsaw, message.pool, message.isStart);
-			dm.sendSystemMessage(Component.literal("Jigsaw configurado: pool \"" + message.pool + "\"" + (message.isStart ? " (pieza de inicio)." : ".")));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.jigsaw_set", message.pool, (message.isStart ? " (pieza de inicio)." : ".")));
 		});
 	}
 }

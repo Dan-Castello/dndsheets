@@ -30,7 +30,7 @@ public class WarlockPactMagicManager {
 		if (current >= max) return;
 
 		SpellSlots.restoreAll(sheet);
-		player.sendSystemMessage(Component.literal("Magia de Pacto: recuperas todos tus espacios de conjuro.").withStyle(ChatFormatting.DARK_PURPLE));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.pact_magic").withStyle(ChatFormatting.DARK_PURPLE));
 	}
 
 	private static boolean isWarlock(JsonObject sheet) {

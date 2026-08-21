@@ -34,7 +34,7 @@ public class PassivePerceptionRequestMessage {
 			ServerPlayer dm = context.getSender();
 			int passive = SheetCommand.passivePerceptionOf(target);
 			String name = SheetLoader.characterNameOf(SheetLoader.getServerSheet(target.getStringUUID()), target);
-			dm.sendSystemMessage(Component.literal("Percepción pasiva de " + name + ": " + passive));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.character.passive_perception", name, passive));
 		}));
 	}
 }

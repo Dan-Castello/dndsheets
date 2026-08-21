@@ -44,7 +44,7 @@ public class ClericTurnUndeadManager {
 
 	public static void use(ServerPlayer cleric) {
 		if (!RestResource.spend(cleric, RestResource.CHANNEL_DIVINITY)) {
-			cleric.sendSystemMessage(Component.literal("Ya usaste Canalizar Divinidad. Recupéralo descansando.").withStyle(ChatFormatting.GRAY));
+			cleric.sendSystemMessage(Component.translatable("chat.dndsheets.resource.spent_channel").withStyle(ChatFormatting.GRAY));
 			return;
 		}
 
@@ -70,7 +70,7 @@ public class ClericTurnUndeadManager {
 		if (turned == 0) {
 			//Se avisa aunque no haya funcionado nada: sin esto, gastar el recurso sin ningún no-muerto cerca
 			//se ve exactamente igual que un uso que salió mal, y el clérigo no sabe cuál de las dos fue.
-			cleric.sendSystemMessage(Component.literal("Ningún muerto viviente ha sido expulsado.").withStyle(ChatFormatting.GRAY));
+			cleric.sendSystemMessage(Component.translatable("chat.dndsheets.resource.turn_undead_none").withStyle(ChatFormatting.GRAY));
 		}
 	}
 

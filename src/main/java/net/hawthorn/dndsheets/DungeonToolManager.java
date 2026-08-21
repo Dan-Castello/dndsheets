@@ -58,7 +58,7 @@ public class DungeonToolManager {
 
 		String structureId = structureBlock.getStructureName();
 		if (structureId == null || structureId.isBlank()) {
-			serverDm.sendSystemMessage(Component.literal("Este bloque de estructura todavía no tiene nombre — ponle uno y guárdalo primero.").withStyle(ChatFormatting.GRAY));
+			serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.block_unnamed").withStyle(ChatFormatting.GRAY));
 			return;
 		}
 
@@ -67,8 +67,7 @@ public class DungeonToolManager {
 		//su GUI vanilla en algún momento, p.ej. mirándolo por curiosidad), así que se distingue ANTES de
 		//intentar, para dar un mensaje que de verdad sirva en vez de "revisá que todo esté bien".
 		if (structureBlock.getMode() != StructureMode.SAVE) {
-			serverDm.sendSystemMessage(Component.literal("Este bloque de estructura está en modo " + structureBlock.getMode()
-				+ ", no SAVE — abrí su GUI vanilla (clic derecho SIN la Vara de DM) y ponelo en SAVE antes de capturar.").withStyle(ChatFormatting.GRAY));
+			serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.block_wrong_mode", structureBlock.getMode()).withStyle(ChatFormatting.GRAY));
 			return;
 		}
 
@@ -80,7 +79,7 @@ public class DungeonToolManager {
 		//acordara de volver a apretar "Save" a mano tras marcar las conexiones. Capturar con la Vara ya es
 		//"la foto final", así que toma la foto en este mismo instante en vez de confiar en una vieja.
 		if (!structureBlock.saveStructure()) {
-			serverDm.sendSystemMessage(Component.literal("No pude re-guardar el bloque de estructura (motivo desconocido) — abrí su GUI vanilla, volvé a apretar Save a mano una vez, y reintentá con la Vara.").withStyle(ChatFormatting.GRAY));
+			serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.block_resave_failed").withStyle(ChatFormatting.GRAY));
 			return;
 		}
 
@@ -119,11 +118,11 @@ public class DungeonToolManager {
 		//normal para que copiar sea una acción explícita, nunca un efecto secundario de configurar.
 		if (dm.isShiftKeyDown()) {
 			if (!isConfigured) {
-				serverDm.sendSystemMessage(Component.literal("Este jigsaw todavía no está configurado — nada que copiar.").withStyle(ChatFormatting.GRAY));
+				serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.jigsaw_unset").withStyle(ChatFormatting.GRAY));
 				return;
 			}
 			jigsawClipboard.put(dm.getUUID(), new JigsawClipboard(currentPoolLocation.getPath(), currentIsStart));
-			serverDm.sendSystemMessage(Component.literal("Copiado: pool \"" + currentPoolLocation.getPath() + "\"" + (currentIsStart ? " (inicio)." : ".")).withStyle(ChatFormatting.GRAY));
+			serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.jigsaw_copied", currentPoolLocation.getPath(), (currentIsStart ? " (inicio)." : ".")).withStyle(ChatFormatting.GRAY));
 			return;
 		}
 

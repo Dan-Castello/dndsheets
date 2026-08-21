@@ -46,11 +46,11 @@ public class ContentEntrySaveMessage {
 			try {
 				entry = JsonParser.parseString(message.entryJson).getAsJsonObject();
 			} catch (RuntimeException e) {
-				dm.sendSystemMessage(Component.literal("No pude interpretar el formulario: " + e.getMessage()));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.form_unreadable", e.getMessage()));
 				return;
 			}
 			if (!entry.has("id") || entry.get("id").getAsString().isBlank()) {
-				dm.sendSystemMessage(Component.literal("Falta el id."));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.missing_id"));
 				return;
 			}
 
@@ -60,11 +60,11 @@ public class ContentEntrySaveMessage {
 				///dnd... load no se toca ni se repite acá.
 				message.type.load(message.type.dmCreatedFile());
 			} catch (IOException e) {
-				dm.sendSystemMessage(Component.literal("No pude guardar: " + e.getMessage()));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.save_failed", e.getMessage()));
 				return;
 			}
 
-			dm.sendSystemMessage(Component.literal("Guardado \"" + entry.get("id").getAsString() + "\"."));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.saved", entry.get("id").getAsString()));
 			String arrayJson = ContentPackFile.readArrayText(message.type.dmCreatedFile());
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), new ContentEntryListMessage(message.type, arrayJson));
 		});

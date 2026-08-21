@@ -34,12 +34,12 @@ public class DungeonPieceRemoveMessage {
 			ServerPlayer dm = context.getSender();
 			if (dm == null || !dm.hasPermissions(2)) return;
 			if (DungeonPieceRegistry.get(message.id) == null) {
-				dm.sendSystemMessage(Component.literal("No conozco ninguna pieza \"" + message.id + "\"."));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.no_such_piece", message.id));
 				return;
 			}
 
 			DungeonManager.removePiece(dm.getServer(), message.id);
-			dm.sendSystemMessage(Component.literal("Pieza \"" + message.id + "\" borrada."));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.piece_deleted", message.id));
 			//Reabre la lista ya sin la pieza borrada, en vez de simplemente cerrar — mismo eco que usa
 			//DungeonPieceUpdateMessage tras editar.
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), DungeonPieceListMessage.of(dm.serverLevel(), DungeonPieceRegistry.all()));

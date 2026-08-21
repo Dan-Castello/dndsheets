@@ -37,14 +37,14 @@ public class WeaponGiveMessage {
 			ServerPlayer dm = context.getSender();
 			if (dm == null || !dm.hasPermissions(2)) return;
 			if (Config.weaponDefaultFor(message.weaponId) == null) {
-				dm.sendSystemMessage(Component.literal("No conozco el arma \"" + message.weaponId + "\"."));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.weapon.no_such", message.weaponId));
 				return;
 			}
 
 			DndsheetsMod.withDmTarget(context, message.targetUuid, target -> {
 				ItemStack stack = Config.buildWeaponStack(message.weaponId, 1);
 				target.getInventory().add(stack);
-				target.sendSystemMessage(Component.literal(stack.getHoverName().getString() + " recibido."));
+				target.sendSystemMessage(Component.translatable("chat.dndsheets.item.received", stack.getHoverName().getString()));
 			});
 		});
 	}

@@ -374,8 +374,7 @@ public class SheetCommand {
 			//applyLevel escribe el nivel total y concede lo que toque; el reparto ya está en la hoja, así que
 			//los PG y los espacios se recalculan solos leyéndolo.
 			applyLevel(target, net.hawthorn.dndsheets.ClassLevels.total(levels));
-			target.sendSystemMessage(Component.literal("Ahora eres " + net.hawthorn.dndsheets.ClassLevels.describe(levels)
-				+ ".").withStyle(net.minecraft.ChatFormatting.GREEN));
+			target.sendSystemMessage(Component.translatable("chat.dndsheets.character.now_you_are", net.hawthorn.dndsheets.ClassLevels.describe(levels)).withStyle(net.minecraft.ChatFormatting.GREEN));
 		}
 
 		ctx.getSource().sendSuccess(() -> Component.literal("Nivel de " + classId + " concedido a "

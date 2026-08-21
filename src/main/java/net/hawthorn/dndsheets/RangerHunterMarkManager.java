@@ -45,7 +45,7 @@ public class RangerHunterMarkManager {
 	public static void mark(ServerPlayer ranger, Entity target) {
 		markedEntityIdByRanger.put(ranger.getUUID(), target.getId());
 		CombatFx.activate(ranger);
-		ranger.sendSystemMessage(Component.literal("Marcas a " + target.getName().getString() + " como presa.").withStyle(ChatFeedback.RESOURCE));
+		ranger.sendSystemMessage(Component.translatable("chat.dndsheets.resource.hunters_mark", target.getName().getString()).withStyle(ChatFeedback.RESOURCE));
 
 		UUID rangerUuid = ranger.getUUID();
 		int targetId = target.getId();

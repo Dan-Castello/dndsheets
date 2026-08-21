@@ -33,7 +33,7 @@ public class ShieldManager {
 		sheet.addProperty("shieldReady", true);
 		SheetLoader.saveAndSync(player, sheet);
 		CombatFx.activate(player);
-		player.sendSystemMessage(Component.literal("Escudo listo: se activará solo si un ataque te acertaría sin él.").withStyle(ChatFeedback.RESOURCE));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.shield_ready").withStyle(ChatFeedback.RESOURCE));
 	}
 
 	//Público: comprobado justo donde ya se compara la tirada de ataque contra la CA, tanto en PvP como en
@@ -50,7 +50,7 @@ public class ShieldManager {
 
 		SpellSlots.spend(sheet, LEVEL);
 		SheetLoader.saveAndSync(victim, sheet);
-		victim.sendSystemMessage(Component.literal("¡Escudo! Tu CA sube a " + (normalAc + AC_BONUS) + " y el golpe falla.").withStyle(ChatFormatting.AQUA));
+		victim.sendSystemMessage(Component.translatable("chat.dndsheets.resource.shield_hit", (normalAc + AC_BONUS)).withStyle(ChatFormatting.AQUA));
 		return normalAc + AC_BONUS;
 	}
 

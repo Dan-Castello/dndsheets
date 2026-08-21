@@ -129,10 +129,10 @@ public class BrowseActionMessage {
 					if (SheetLoader.switchCharacter(sender, message.characterId)) {
 						JsonObject sheet = SheetLoader.getCharacterSheet(message.characterId);
 						String name = sheet != null && sheet.has("characterName") ? sheet.get("characterName").getAsString() : message.characterId;
-						sender.sendSystemMessage(Component.literal("Ahora llevas a " + name + ".").withStyle(ChatFormatting.GREEN));
+						sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.now_playing", name).withStyle(ChatFormatting.GREEN));
 						sendOwnCharacters(sender); //Reabre la lista con la marca ya movida, sin otro viaje de ida y vuelta.
 					} else {
-						sender.sendSystemMessage(Component.literal("Ese personaje no existe o no es tuyo.").withStyle(ChatFormatting.RED));
+						sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.no_such").withStyle(ChatFormatting.RED));
 					}
 				}
 			}

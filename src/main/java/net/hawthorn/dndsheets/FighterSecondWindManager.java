@@ -25,7 +25,7 @@ public class FighterSecondWindManager {
 
 	public static void use(ServerPlayer player) {
 		if (!RestResource.spend(player, RestResource.SECOND_WIND)) {
-			player.sendSystemMessage(Component.literal("Ya usaste Segundo Aliento. Recupéralo descansando.").withStyle(ChatFormatting.GRAY));
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.spent_second_wind").withStyle(ChatFormatting.GRAY));
 			return;
 		}
 
@@ -36,7 +36,7 @@ public class FighterSecondWindManager {
 
 		player.heal(amount);
 		CombatFx.activate(player);
-		player.sendSystemMessage(Component.literal("¡Segundo Aliento! Recuperas " + amount + " PG.").withStyle(ChatFeedback.RESOURCE));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.second_wind", amount).withStyle(ChatFeedback.RESOURCE));
 	}
 
 	//Público: RestManager lo llama para los dos tipos de descanso, corto y largo — 5e recupera este

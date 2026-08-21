@@ -61,7 +61,7 @@ public class DungeonPieceCaptureMessage {
 				return;
 			}
 
-			dm.sendSystemMessage(Component.literal("Pieza \"" + message.id + "\" capturada en el pool \"" + message.pool + "\"."));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.piece_captured", message.id, message.pool));
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), DungeonPieceListMessage.of(dm.serverLevel(), DungeonPieceRegistry.all()));
 		});
 	}

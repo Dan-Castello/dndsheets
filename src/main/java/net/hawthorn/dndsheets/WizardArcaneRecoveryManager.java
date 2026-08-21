@@ -41,7 +41,7 @@ public class WizardArcaneRecoveryManager {
 		int recovered = SpellSlots.restoreBudget(sheet, budget, MAX_RECOVERED_LEVEL);
 		if (recovered <= 0) return;
 
-		player.sendSystemMessage(Component.literal("Recuperación Arcana: recuperas " + recovered + " espacio(s) de conjuro.").withStyle(ChatFormatting.LIGHT_PURPLE));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.arcane_recovery", recovered).withStyle(ChatFormatting.LIGHT_PURPLE));
 	}
 
 	//Público: RestManager lo llama en cada descanso LARGO.

@@ -64,12 +64,12 @@ public class OptionsSaveMessage {
 			try {
 				ContentPackFile.writeStringArray(DndPaths.dmCreatedFile(dir), values);
 			} catch (IOException e) {
-				dm.sendSystemMessage(Component.literal("No pude guardar: " + e.getMessage()));
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.options.save_failed", e.getMessage()));
 				return;
 			}
 			CharacterOptionsRegistry.replace(message.category, values);
 
-			dm.sendSystemMessage(Component.literal("Lista de " + message.category + " actualizada (" + values.size() + " opciones)."));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.options.updated", message.category, values.size()));
 			JsonArray echo = new JsonArray();
 			for (String value : values) echo.add(value);
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), new OptionsListMessage(message.category, echo.toString()));

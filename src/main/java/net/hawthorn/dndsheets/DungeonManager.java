@@ -375,15 +375,11 @@ public class DungeonManager {
 			else missingStart.add(piece.id());
 		}
 		if (withStart == 0) {
-			dm.sendSystemMessage(Component.literal("Ninguna pieza en el pool \"" + poolName + "\" tiene el jigsaw de inicio (Name=" + START_JIGSAW_NAME
-				+ ") — ¿la capturaste con la Vara de DM (clic en el bloque de estructura) DESPUÉS de marcar el jigsaw como pieza de inicio?"));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.no_start_piece", poolName, START_JIGSAW_NAME));
 			return false;
 		}
 		if (!missingStart.isEmpty()) {
-			dm.sendSystemMessage(Component.literal("El pool \"" + poolName + "\" mezcla tu pieza de entrada con " + missingStart.size()
-				+ " pieza(s) sin jigsaw de inicio (" + String.join(", ", missingStart) + "). Minecraft elige una pieza al azar de este pool para arrancar"
-				+ " — si le toca una de esas, la generación falla (tenías ~1 en " + poolPieces.size() + " de que pasara justo eso)."
-				+ " Movelas a otro pool, o creá un pool dedicado solo para la(s) pieza(s) de entrada."));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.mixed_pool", poolName, missingStart.size(), String.join(", ", missingStart), poolPieces.size()));
 			return false;
 		}
 
@@ -398,13 +394,13 @@ public class DungeonManager {
 			//funciones/logros, ninguno de ellos "worldgen" — los pools de estructura se leen SOLO al
 			//cargar el mundo. Un pool nuevo (o uno editado) queda escrito en el datapack pero invisible
 			//para el registro en vivo hasta que el mundo se recarga de verdad.
-			dm.sendSystemMessage(Component.literal("Pool \"" + poolName + "\" publicado pero todavía no cargado — Minecraft solo lee pools de estructura al cargar el mundo, /reload no alcanza. Salí al menú principal y volvé a entrar (o reiniciá el servidor) y generá de nuevo."));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.pool_not_loaded", poolName));
 			return false;
 		}
 
 		boolean success = JigsawPlacement.generateJigsaw(dm.serverLevel(), holder.get(), new ResourceLocation(START_JIGSAW_NAME), maxDepth, pos, false);
 		if (!success) {
-			dm.sendSystemMessage(Component.literal("La generación falló — revisa que la pieza de arranque tenga un jigsaw con Name=" + START_JIGSAW_NAME + "."));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.generation_failed", START_JIGSAW_NAME));
 		}
 		return success;
 	}

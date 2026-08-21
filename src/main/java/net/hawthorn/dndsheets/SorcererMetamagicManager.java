@@ -33,7 +33,7 @@ public class SorcererMetamagicManager {
 		sheet.addProperty("twinnedSpellPending", true);
 		SheetLoader.saveAndSync(player, sheet);
 		CombatFx.activate(player);
-		player.sendSystemMessage(Component.literal("Tu próximo hechizo de un solo objetivo alcanzará también a un segundo objetivo cercano.").withStyle(ChatFeedback.RESOURCE));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.twinned_armed").withStyle(ChatFeedback.RESOURCE));
 	}
 
 	//Público: SpellCastManager lo consume al lanzar el siguiente hechizo, con o sin segundo objetivo real

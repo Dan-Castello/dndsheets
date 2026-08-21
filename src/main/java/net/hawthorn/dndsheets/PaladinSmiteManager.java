@@ -57,7 +57,7 @@ public class PaladinSmiteManager {
 		patch.addProperty("smitePending", true);
 		DndsheetsMod.sendSheetFieldUpdate(player, patch);
 		CombatFx.activate(player);
-		player.sendSystemMessage(Component.literal("Tu próximo golpe de arma que acierte gastará un espacio de conjuro para Castigo Divino.").withStyle(ChatFeedback.RESOURCE));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.smite_armed").withStyle(ChatFeedback.RESOURCE));
 	}
 
 	//Público: CombatManager lo consume justo después de confirmar un golpe (no antes: fallar el ataque no

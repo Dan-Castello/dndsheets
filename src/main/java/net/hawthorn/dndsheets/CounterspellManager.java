@@ -40,7 +40,7 @@ public class CounterspellManager {
 		sheet.addProperty("counterspellReady", true);
 		SheetLoader.saveAndSync(player, sheet);
 		CombatFx.activate(player);
-		player.sendSystemMessage(Component.literal("Contrahechizo listo: anulará el próximo hechizo que veas lanzar cerca, mientras tengas reacción y espacios.").withStyle(ChatFeedback.RESOURCE));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.counterspell_ready").withStyle(ChatFeedback.RESOURCE));
 	}
 
 	//Público: llamado justo antes de resolver el efecto de un hechizo, tanto si lo lanza un jugador

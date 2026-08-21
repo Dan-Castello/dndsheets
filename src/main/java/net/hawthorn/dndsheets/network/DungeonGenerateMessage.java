@@ -47,7 +47,7 @@ public class DungeonGenerateMessage {
 			int maxDepth = Math.max(1, Math.min(7, message.maxDepth));
 			boolean success = DungeonManager.generate(dm, message.pool, maxDepth, message.pos);
 			//DungeonManager.generate ya le manda al DM el motivo del fallo — aquí solo falta confirmar el éxito.
-			if (success) dm.sendSystemMessage(Component.literal("Mazmorra generada en " + message.pos.toShortString() + "."));
+			if (success) dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.generated", message.pos.toShortString()));
 		});
 	}
 }

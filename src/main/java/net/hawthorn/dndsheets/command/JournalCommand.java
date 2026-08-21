@@ -122,8 +122,7 @@ public class JournalCommand {
 		JournalManager.Entry entry = JournalManager.get(id);
 		//Al que la recibe se le avisa: un handout que aparece en una lista sin decir nada no lo lee nadie.
 		for (ServerPlayer target : targets) {
-			target.sendSystemMessage(Component.literal("Has recibido \"" + entry.title()
-				+ "\". Léelo con /dndjournal.").withStyle(ChatFormatting.GOLD));
+			target.sendSystemMessage(Component.translatable("chat.dndsheets.journal.received", entry.title()).withStyle(ChatFormatting.GOLD));
 		}
 		ctx.getSource().sendSuccess(() -> Component.literal("Compartido con " + targets.size() + " jugador(es)."), false);
 		return targets.size();

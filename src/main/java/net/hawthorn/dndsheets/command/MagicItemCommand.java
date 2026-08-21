@@ -143,8 +143,7 @@ public class MagicItemCommand {
 			ItemStack stack = MagicItemRegistry.tag(new ItemStack(base), id);
 			stack.setHoverName(Component.literal(magicItem.name()).withStyle(ChatFormatting.AQUA));
 			target.getInventory().add(stack);
-			target.sendSystemMessage(Component.literal("Recibiste " + magicItem.name()
-				+ (magicItem.attunement() ? ". Sintonízalo con /dnditems attune " + id : "."))
+			target.sendSystemMessage(Component.translatable("chat.dndsheets.item.received_magic", magicItem.name(), (magicItem.attunement() ? ". Sintonízalo con /dnditems attune " + id : "."))
 				.withStyle(ChatFormatting.GREEN));
 		}
 		ctx.getSource().sendSuccess(() -> Component.literal("Entregado " + magicItem.name() + " a "

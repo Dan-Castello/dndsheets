@@ -23,11 +23,11 @@ public class TurnItemManager {
 		if (!(event.getEntity() instanceof ServerPlayer player) || !(event.getEntity().level() instanceof ServerLevel level)) return;
 
 		if (!TurnManager.isActive()) {
-			player.sendSystemMessage(Component.literal("No hay modo turnos activo.").withStyle(ChatFormatting.GRAY));
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.turn.not_active").withStyle(ChatFormatting.GRAY));
 			return;
 		}
 		if (!TurnManager.isCurrentActor(player)) {
-			player.sendSystemMessage(Component.literal("No es tu turno.").withStyle(ChatFormatting.RED));
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.turn.not_yours").withStyle(ChatFormatting.RED));
 			return;
 		}
 

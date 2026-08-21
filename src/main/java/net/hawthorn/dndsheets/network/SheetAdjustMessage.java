@@ -120,7 +120,7 @@ public class SheetAdjustMessage {
 					case CONDITION -> SheetCommand.applyCondition(target, message.strA, message.intA != 0);
 				}
 				if (dm != null) {
-					dm.sendSystemMessage(Component.literal("Hoja de " + target.getName().getString() + " actualizada."));
+					dm.sendSystemMessage(Component.translatable("chat.dndsheets.character.sheet_updated", target.getName().getString()));
 				}
 			});
 		});
