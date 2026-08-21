@@ -207,6 +207,64 @@ final class ContentTypeForms {
 		return entry;
 	}
 
+	// --- Dotes (ver FeatRegistry.parse) ---
+
+	static List<FieldSpec> featFields() {
+		return List.of(
+			FieldSpec.text("id", "Id", ""),
+			FieldSpec.text("name", "Nombre", ""),
+			FieldSpec.text("description", "Descripción", ""),
+			//Las mismas seis en el mismo orden que el preset: aquí son el BONO que suma, no la puntuación.
+			FieldSpec.text("abilities", "Bonos Fue,Des,Con,Int,Sab,Car (separados por coma)", "0, 0, 0, 0, 0, 0"),
+			FieldSpec.text("traits", "Rasgos concedidos (ids, separados por coma)", ""),
+			FieldSpec.text("spells", "Hechizos concedidos (ids, separados por coma)", ""),
+			//Sin este campo, editar aquí un Don Épico importado le borraba el nivel 19: el formulario
+			//reescribe la entrada entera, así que lo que no pregunta lo pierde.
+			FieldSpec.text("minLevel", "Nivel mínimo", "1")
+		);
+	}
+
+	static Map<String, String> featPrefill(JsonObject entry) {
+		Map<String, String> map = new LinkedHashMap<>();
+		putIfPresent(map, entry, "id");
+		putIfPresent(map, entry, "name");
+		putIfPresent(map, entry, "description");
+		StringBuilder abilities = new StringBuilder();
+		JsonObject scores = entry.has("abilities") ? entry.getAsJsonObject("abilities") : null;
+		for (String key : ABILITIES) {
+			if (abilities.length() > 0) abilities.append(", ");
+			abilities.append(scores != null && scores.has(key) ? scores.get(key).getAsInt() : 0);
+		}
+		map.put("abilities", abilities.toString());
+		map.put("traits", joinArray(entry, "traits"));
+		map.put("spells", joinArray(entry, "spells"));
+		map.put("minLevel", String.valueOf(entry.has("minLevel") ? entry.get("minLevel").getAsInt() : 1));
+		return map;
+	}
+
+	static JsonObject featToJson(Map<String, String> values) {
+		JsonObject entry = new JsonObject();
+		entry.addProperty("id", values.get("id"));
+		addIfNotBlank(entry, "name", values.get("name"));
+		addIfNotBlank(entry, "description", values.get("description"));
+
+		JsonObject abilities = new JsonObject();
+		String[] parts = values.getOrDefault("abilities", "").split(",");
+		for (int i = 0; i < ABILITIES.length; i++) {
+			int bonus = i < parts.length ? parseIntOr(parts[i], 0) : 0;
+			//Solo se escriben los bonos que existen: un cero en el formulario es "esta no", no "+0".
+			if (bonus != 0) abilities.addProperty(ABILITIES[i], bonus);
+		}
+		if (abilities.size() > 0) entry.add("abilities", abilities);
+
+		addCommaArray(entry, "traits", values.get("traits"));
+		addCommaArray(entry, "spells", values.get("spells"));
+		//1 es lo normal y no se escribe, igual que un bono de 0: el campo ausente ya significa "desde nivel 1".
+		int minLevel = parseIntOr(values.getOrDefault("minLevel", "1"), 1);
+		if (minLevel > 1) entry.addProperty("minLevel", minLevel);
+		return entry;
+	}
+
 	// --- Encuentros (ver command.EncounterCommand / EncounterRegistry.parse) ---
 
 	static List<FieldSpec> encounterFields() {

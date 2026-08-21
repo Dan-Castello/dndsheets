@@ -91,3 +91,9 @@ gradle-app.setting
 # cientos de megas; tools/preflight_mods.py dice cuales hacen falta.
 runClient/mods/
 runClient/mods-disabled/
+
+# Capturas del cliente de desarrollo: las genera F2 al probar, no son del repo.
+runClient/screenshots/
+
+# Grafo de conocimiento generado por /graphify (graph.json pesa ~5 MB, se reconstruye).
+graphify-out/

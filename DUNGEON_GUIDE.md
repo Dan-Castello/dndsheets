@@ -70,6 +70,26 @@ Al confirmar, el mod valida el pool (ver arriba), publica todos los pools (escri
 
 **Equivalente por comando** (útil para depurar o automatizar): `/dnddungeon generate <pool> <maxDepth> <x> <y> <z>`.
 
+## 4b. Traer una construcción de fuera (importar)
+
+No hace falta construir cada sala: cualquier estructura `.nbt` de Minecraft sirve. Es el formato al que
+exportan Litematica ("Export to vanilla structure"), los editores de mapas y los propios bloques de
+estructura, así que una casa descargada entra sin conversor de por medio.
+
+1. Copiá el `.nbt` en `<carpeta del juego>/dndsheets/structures/`. Esa carpeta es **compartida entre
+   partidas** a propósito: las piezas son de un mundo, pero una casa descargada sirve en todos.
+2. `/dnddungeon import "<nombre del archivo>"` (sin el `.nbt`; con comillas si tiene espacios) la pega
+   donde estás parado y te dice el tamaño y **cuántos jigsaw trae**.
+3. Si trae 0 jigsaws —lo normal en algo exportado de un editor— seguí desde el paso 2 de esta guía:
+   ponele los jigsaw con la Vara de DM y capturala con un bloque de estructura como cualquier sala tuya.
+4. Si el `.nbt` **ya trae jigsaws** (una estructura de vanilla, o de un pack de mazmorras),
+   `/dnddungeon import "<archivo>" pool <pool> [peso]` la registra directamente como pieza, sin pegarla ni
+   volver a escanearla.
+
+El nombre del archivo se convierte solo en un id válido (`Casa Grande (v2).nbt` → `casa_grande_v2`), y
+todo lo importado vive en el espacio de nombres `dndsheets_import:` para que se distinga de un vistazo de
+lo que escaneaste vos.
+
 ## 5. Gestionar piezas ya capturadas
 
 - **Panel de DM → Mazmorras** lista todas las piezas; tocar una abre "Editar pieza" (pool/peso/tags — no el id ni la estructura, esos son fijos desde la captura), con un botón "Borrar pieza" ahí mismo.
@@ -85,6 +105,8 @@ Al confirmar, el mod valida el pool (ver arriba), publica todos los pools (escri
 | "El pool ... mezcla tu pieza de entrada con N pieza(s) sin jigsaw de inicio" | Exactamente la regla de oro de "4. Generar la mazmorra": tenés piezas normales compartiendo pool con tu pieza de entrada. Movelas a otro pool (editalas desde `DungeonPieceListScreen` → tocar la pieza → cambiar Pool), o recapturá la de entrada con un pool nuevo y dedicado. |
 | `No starting jigsaw dndsheets:dungeon_start found in start pool ...` (log del servidor) pese a que la validación de arriba no avisó nada | Recargaste el mundo *después* de la última captura/publicación pero *antes* de que el `.nbt` reflejara el jigsaw — volvé a capturar la pieza (clic con la Vara en el bloque de estructura, ahora re-guarda solo antes de copiar) y generá de nuevo. |
 | "Pool \"X\" publicado pero todavía no cargado" | Esperado la primera vez que usás un pool nuevo (o justo después de editarlo/agregarle piezas) — ver el aviso de arriba en "4. Generar la mazmorra". Salí al menú principal, volvé a entrar al mundo, y generá de nuevo. Si el mensaje sigue apareciendo después de recargar el mundo, ahí sí revisá que alguna pieza tenga exactamente ese pool (mayúsculas/espacios). |
+| "no es una estructura de Minecraft válida" al importar | El archivo es un `.schem` (WorldEdit) o un `.litematic` (Litematica), que no son el formato de vanilla. Abrilo en Litematica y usá "Export to vanilla structure" — el mod no trae conversor porque el botón de exportar de ellos llega al mismo sitio. |
+| "Esa estructura no tiene ningún jigsaw" al importar con `pool` | Lo exportado de un editor no trae jigsaws. Pegala con `/dnddungeon import "<archivo>"` sin pool, ponele los jigsaw con la Vara y capturala normal. |
 | La mazmorra generó menos de lo esperado / se cortó pronto | Subí "Profundidad máx.", o revisá que los jigsaws de tus piezas intermedias (no solo la de entrada) también tengan Pool configurado — un jigsaw sin pool propio no sigue expandiendo. |
 
 ## Referencia rápida — convención de nombres

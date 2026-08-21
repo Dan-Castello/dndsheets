@@ -31,6 +31,10 @@ final class CharacterRules {
 	 */
 	static int maxHitPointsFor(JsonObject sheet, int level) {
 		int con = intField(sheet, "constitution", 10);
+		//Con reparto de niveles manda el reparto: cada clase pone su propio dado, y el texto de la clase
+		//("Guerrero 3 / Mago 2") ya no sirve para deducir uno solo — Config.hitDieFor cogería el primero
+		//que encontrara dentro de la frase.
+		if (ClassLevels.isMulticlass(sheet)) return ClassLevels.maxHitPoints(ClassLevels.of(sheet), con);
 		int hitDie = Config.hitDieFor(sheet != null && sheet.has("characterClass") ? sheet.get("characterClass").getAsString() : "");
 		int conMod = Math.floorDiv(con - 10, 2);
 
@@ -262,6 +266,28 @@ final class CharacterRules {
 			String candidate = playerUuid + "-" + n;
 			if (!existing.contains(candidate)) return candidate;
 		}
+	}
+
+	/**
+	 * <p>El campo de la hoja para una característica escrita como {@code "str"} o como {@code "strength"}.
+	 * Devuelve null para cualquier otra cosa: una dote de un pack que diga {@code "fuerza"} no debe escribir
+	 * en un campo inventado ni, peor, en uno que exista por casualidad.</p>
+	 *
+	 * <p>Existe porque el contenido usa las claves cortas del SRD y la hoja los nombres largos. La conversión
+	 * estaba escrita a mano en {@code PresetRegistry.applyToSheet}, seis líneas seguidas; a la segunda cosa
+	 * que concede características —las dotes— eso ya son doce.</p>
+	 */
+	static String abilityFieldFor(String ability) {
+		if (ability == null) return null;
+		return switch (ability.toLowerCase(Locale.ROOT)) {
+			case "str", "strength" -> "strength";
+			case "dex", "dexterity" -> "dexterity";
+			case "con", "constitution" -> "constitution";
+			case "int", "intelligence" -> "intelligence";
+			case "wis", "wisdom" -> "wisdom";
+			case "cha", "charisma" -> "charisma";
+			default -> null;
+		};
 	}
 
 	/** Lo que ve en la oscuridad quien la tiene, en el SRD: 60 pies. */

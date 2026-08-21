@@ -246,7 +246,7 @@ public class MonsterRegistry {
 					s.has("saveDc") ? s.get("saveDc").getAsInt() : 10,
 					s.get("dice").getAsString(),
 					!s.has("halfOnSave") || s.get("halfOnSave").getAsBoolean(),
-					s.has("damageType") ? s.get("damageType").getAsString().toLowerCase(Locale.ROOT) : "fisico",
+					s.has("damageType") ? DamageTypes.normalize(s.get("damageType").getAsString()) : "fisico",
 					effect != null ? effect.get("name").getAsString() : null,
 					effect != null ? effect.get("dice").getAsString() : null,
 					effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0
@@ -281,7 +281,9 @@ public class MonsterRegistry {
 		if (!json.has(field)) return result;
 		JsonObject affinities = json.getAsJsonObject(field);
 		for (String type : affinities.keySet()) {
-			result.put(type.toLowerCase(Locale.ROOT), affinities.get(type).getAsString().toLowerCase(Locale.ROOT));
+			//La CLAVE se normaliza como el tipo del golpe que la va a consultar: un bloque escrito en ingles
+			//("fire") tiene que casar con el dano que le llega ("fuego") o la resistencia no existe.
+			result.put(DamageTypes.normalize(type), affinities.get(type).getAsString().toLowerCase(Locale.ROOT));
 		}
 		return result;
 	}
@@ -295,7 +297,7 @@ public class MonsterRegistry {
 			a.has("toHitAbility") ? a.get("toHitAbility").getAsString().toLowerCase(Locale.ROOT) : "str",
 			a.get("dice").getAsString(),
 			a.has("damageAbility") ? a.get("damageAbility").getAsString().toLowerCase(Locale.ROOT) : "str",
-			a.has("damageType") ? a.get("damageType").getAsString().toLowerCase(Locale.ROOT) : "fisico",
+			a.has("damageType") ? DamageTypes.normalize(a.get("damageType").getAsString()) : "fisico",
 			effect != null ? effect.get("name").getAsString() : null,
 			effect != null ? effect.get("dice").getAsString() : null,
 			effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0

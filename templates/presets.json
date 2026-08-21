@@ -6,7 +6,10 @@
     "hitDiceType": "1d10",
     "abilities": { "str": 15, "dex": 13, "con": 14, "int": 8, "wis": 12, "cha": 10 },
     "startingWeapon": "minecraft:iron_sword",
-    "startingGear": ["minecraft:chainmail_chestplate", "minecraft:shield"]
+    "startingGear": ["minecraft:chainmail_chestplate", "minecraft:shield"],
+    "subclasses": [
+      { "id": "fighter:champion", "name": "Campeón", "level": 3, "criticalFrom": 19 }
+    ]
   },
   {
     "_note": "spellSlotsMax (opcional, por defecto 0): configura espacios de conjuro Y los llena al máximo al aplicar el preset. traits (opcional): ids de templates/traits.json concedidos automáticamente. spells (opcional): ids de este mismo spells.json añadidos al Grimorio del jugador — sin esto, tener espacios de conjuro no le da al jugador nada que lanzar.",
@@ -17,7 +20,10 @@
     "startingWeapon": "dndsheets:dagger",
     "startingGear": ["minecraft:book"],
     "spellSlotsMax": 2,
-    "spells": ["dndsheets:fire_bolt", "dndsheets:magic_missile"]
+    "spells": ["dndsheets:fire_bolt", "dndsheets:magic_missile"],
+    "subclasses": [
+      { "id": "wizard:evocation", "name": "Escuela de Evocación", "level": 2 }
+    ]
   },
   {
     "_note": "traits: mismo campo, para una clase no-caster con rasgo pasivo en vez de hechizos.",
@@ -27,6 +33,9 @@
     "abilities": { "str": 10, "dex": 15, "con": 13, "int": 12, "wis": 8, "cha": 14 },
     "startingWeapon": "dndsheets:dagger",
     "startingGear": ["minecraft:leather_chestplate"],
-    "traits": ["picaro:ataque_furtivo"]
+    "traits": ["picaro:ataque_furtivo"],
+    "subclasses": [
+      { "id": "rogue:thief", "name": "Ladrón", "level": 3 }
+    ]
   }
 ]

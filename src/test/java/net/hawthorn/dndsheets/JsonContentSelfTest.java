@@ -43,6 +43,9 @@ public class JsonContentSelfTest {
 		checkMagicItems();
 		checkTraits(); //Antes de checkPresets(): el preset de monje concede este rasgo por id.
 		checkPresets();
+		checkFeats();
+		checkSubclasses();
+		checkMulticlass(); //También después de checkPresets(): los nombres de las clases salen de ahí.
 		checkDice();
 		checkDungeonPools();
 		checkConditions();
@@ -70,7 +73,11 @@ public class JsonContentSelfTest {
 		checkParchmentTextHasNoShadow();
 		checkVision();
 		checkEncounters();
+		checkStructureImport();
+		checkSkillProficiency();
+		checkCharacterSetup();
 		checkPortabilityCoupling();
+		checkImportedContent();
 
 		System.out.println("JsonContentSelfTest: OK, los 5 JSON de ejemplo parsean con los registros reales.");
 	}
@@ -1758,6 +1765,376 @@ public class JsonContentSelfTest {
 	}
 
 	/**
+	 * <p>La lista de pasos para dejar una ficha jugable (raza, clase por preset, trasfondo y competencias).
+	 * Es una pantalla, así que casi todo lo suyo solo se ve jugando; lo que sí se puede sujetar son las dos
+	 * formas en que dejaría de funcionar sin que nada se queje.</p>
+	 *
+	 * <p>La primera es que el selector de opciones vuelva <b>a la hoja</b> en vez de a quien lo pidió: la
+	 * lista de pasos pide razas y trasfondos, y si el servidor la devuelve a la hoja, el jugador sale
+	 * expulsado de la configuración a media faena y no hay error en ningún sitio. La segunda es que la
+	 * pantalla exista y no la abra nadie.</p>
+	 */
+	private static void checkCharacterSetup() throws Exception {
+		String handler = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
+			"network", "CharacterOptionsListMessage.java"));
+		assertTrue(!handler.contains("instanceof CharacterSheetScreen"),
+			"la lista de opciones tiene que volver a la pantalla que la pidió, sea cual sea: si vuelve solo "
+				+ "a la hoja, elegir una raza desde la lista de pasos echa al jugador de la configuración.");
+
+		String list = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
+			"client", "gui", "CharacterListScreen.java"));
+		assertTrue(list.contains("CharacterSetupScreen.open"),
+			"nadie abre la lista de pasos: una pantalla que no se puede abrir es lo mismo que no tenerla.");
+
+		System.out.println("checkCharacterSetup: OK, los pasos se abren desde algún sitio y los selectores vuelven a ellos.");
+	}
+
+	/**
+	 * <p>Multiclase. Es lo último del roadmap por una razón: rehace tres tablas que ya estaban fijadas nivel
+	 * por nivel, y las tres fallan callando. Lo que se comprueba aquí es justo eso — el reparto de dados de
+	 * golpe, el nivel de lanzador y que una hoja SIN reparto siga comportándose exactamente como antes.</p>
+	 *
+	 * <p>El caso que más importa es el redondeo del semilanzador, porque hay dos reglas distintas con el
+	 * mismo aspecto: de una sola clase, la mitad hacia <b>arriba</b> (un paladín de nivel 2 ya lanza); en
+	 * multiclase, la mitad hacia <b>abajo</b> (un paladín 2 aporta 1). Escribir las dos igual da una tabla
+	 * que acierta en la mitad de los casos, que es peor que una que falle siempre.</p>
+	 */
+	private static void checkMulticlass() throws Exception {
+		assertTrue(ClassLevels.total(mix("fighter", 3, "wizard", 2)) == 5, "los niveles se suman");
+
+		assertTrue(ClassLevels.casterLevel(mix("fighter", 3, "wizard", 2)) == 2,
+			"solo los niveles de lanzador cuentan para la tabla");
+		//La trampa: dos semilanzadores de nivel 5 aportan 2 + 2, no 3 + 3.
+		assertTrue(ClassLevels.casterLevel(mix("paladin", 5, "ranger", 5)) == 4,
+			"en multiclase el semilanzador redondea hacia ABAJO");
+		assertTrue(ClassLevels.casterLevel(mix("paladin", 1, "wizard", 1)) == 1,
+			"un semilanzador de nivel 1 no aporta nada todavía");
+		//El brujo va por libre: sus espacios son otra reserva, así que no suman a esta tabla.
+		assertTrue(ClassLevels.casterLevel(mix("warlock", 5, "wizard", 3)) == 3,
+			"los niveles de brujo no entran en el nivel de lanzador");
+		assertTrue(ClassLevels.casterLevel(mix("fighter", 5, "rogue", 5)) == 0,
+			"dos clases que no lanzan no lanzan");
+
+		//PG: el dado entero es el de la PRIMERA clase, y por eso el orden cambia el resultado.
+		assertTrue(ClassLevels.maxHitPoints(mix("fighter", 1, "wizard", 1), 14) == 18,
+			"guerrero primero: 10+2 del d10 entero, y 4+2 del d6 medio");
+		assertTrue(ClassLevels.maxHitPoints(mix("wizard", 1, "fighter", 1), 14) == 16,
+			"mago primero: 6+2 y luego 6+2 del d10 medio — el orden importa y es el de la hoja");
+		//Constitución penosa: cada nivel da al menos 1 PG, igual que en la ruta de una sola clase.
+		assertTrue(ClassLevels.maxHitPoints(mix("wizard", 3), 3) == 4,
+			"con Constitución 3 cada nivel después del primero da 1 PG, nunca menos");
+
+		//Sembrar el reparto: multiclasar a un guerrero de nivel 5 tiene que dejarlo en 5 + 1, no en 0 + 1.
+		JsonObject sheet = new JsonObject();
+		sheet.addProperty("appliedPresetId", "fighter");
+		sheet.addProperty("characterLevel", "5");
+		java.util.Map<String, Integer> levels = ClassLevels.addLevel(sheet, "wizard", "fighter", 5);
+		assertTrue(levels.get("fighter") == 5 && levels.get("wizard") == 1, "el nivel que ya tenía no se pierde");
+		assertTrue(sheet.get("characterLevel").getAsString().equals("6"), "y el total se reescribe");
+		assertTrue(sheet.get("characterClass").getAsString().equals("Guerrero 5 / Mago 1"),
+			"la clase se lee como el reparto que es, con los nombres de los presets");
+
+		//La cadena entera: reparto -> nivel de lanzador -> tabla de lanzador COMPLETO -> hoja.
+		JsonObject caster = new JsonObject();
+		JsonObject classLevels = new JsonObject();
+		classLevels.addProperty("fighter", 3);
+		classLevels.addProperty("wizard", 3);
+		caster.add("classLevels", classLevels);
+		SpellSlots.applyProgression(caster, "Guerrero 3 / Mago 3", 6);
+		JsonObject max = caster.getAsJsonObject("spellSlotsMaxByLevel");
+		assertTrue(max.get("1").getAsInt() == 4 && max.get("2").getAsInt() == 2,
+			"un guerrero 3 / mago 3 lanza como un lanzador completo de nivel 3, no de nivel 6");
+		assertTrue(!max.has("3") || max.get("3").getAsInt() == 0, "y no llega a los de nivel 3");
+
+		//Y lo que NO puede cambiar: una hoja sin reparto es exactamente la de siempre.
+		JsonObject single = new JsonObject();
+		single.addProperty("characterClass", "Mago");
+		single.addProperty("constitution", "14");
+		assertTrue(!ClassLevels.isMulticlass(single), "sin campo no hay multiclase");
+		assertTrue(CharacterRules.maxHitPointsFor(single, 3) == ClassLevels.maxHitPoints(mix("wizard", 3), 14),
+			"y la ruta de siempre da lo mismo que el reparto de una sola clase: si no, multiclasar y "
+				+ "volver atrás cambiaría los PG de un personaje sin tocarle el nivel");
+
+		System.out.println("checkMulticlass: OK, dados por clase, nivel de lanzador y la hoja sin reparto intacta.");
+	}
+
+	private static java.util.Map<String, Integer> mix(Object... pairs) {
+		java.util.Map<String, Integer> levels = new java.util.LinkedHashMap<>();
+		for (int i = 0; i < pairs.length; i += 2) levels.put((String) pairs[i], (Integer) pairs[i + 1]);
+		return levels;
+	}
+
+	/**
+	 * <p>Dotes. El SRD trae <b>una</b> (Luchador) y no es un descuido de la importación: las demás están en
+	 * el Manual del Jugador. Así que lo que hay que comprobar no es el catálogo sino el mecanismo, que es lo
+	 * que una mesa o un addon van a usar para meter las suyas.</p>
+	 *
+	 * <p>Lo único con mecánica real de una dote es que sube características, y ahí hay dos formas de
+	 * romperla en silencio: pasarse del tope de 20 —lo que la haría mejor que la mejora que sustituye— y
+	 * dejar que se coja dos veces.</p>
+	 */
+	private static void checkFeats() throws Exception {
+		int loaded = 0;
+		for (JsonElement el : readShippedPack("feats.json")) {
+			FeatRegistry.Feat feat = FeatRegistry.parse(el.getAsJsonObject());
+			FeatRegistry.register(feat);
+			assertTrue(!feat.name().isBlank(), "la dote " + feat.id() + " no tiene nombre");
+			assertTrue(!feat.description().isBlank(),
+				"la dote " + feat.id() + " no explica lo que hace: casi ninguna tiene mecánica en este motor, "
+					+ "así que el texto es LO que la dote es.");
+			loaded++;
+		}
+		assertTrue(loaded > 0, "el pack de dotes que se envía está vacío");
+		assertTrue(FeatRegistry.get("dndsheets:grappler") != null, "falta Luchador");
+
+		//Nivel mínimo. Lo trajo el SRD 5.2 y no es decoración: un Don Épico es de nivel 19, y sin puerta
+		//aparece en la mejora del nivel 4 como una opción más.
+		FeatRegistry.Feat boon = FeatRegistry.get("dndsheets:boon_of_truesight");
+		assertTrue(boon != null && boon.minLevel() == 19,
+			"los Dones Épicos del SRD 5.2 tienen que llegar con su nivel 19 puesto");
+		assertTrue(FeatRegistry.get("dndsheets:archery").minLevel() == 1,
+			"y un estilo de combate es de nivel 1: si TODO lo importado quedara con el nivel del último tipo "
+				+ "leído, la lista de un nivel 4 se vaciaría o se llenaría entera");
+
+		JsonObject young = new JsonObject();
+		assertTrue(!FeatRegistry.grant(young, "dndsheets:boon_of_truesight", 20, 4),
+			"un nivel 4 no puede coger un Don Épico");
+		assertTrue(FeatRegistry.grant(young, "dndsheets:boon_of_truesight", 20, 19),
+			"y a nivel 19 sí");
+		assertTrue(!FeatRegistry.availableAt(boon, 18) && FeatRegistry.availableAt(boon, 19),
+			"la puerta es >= y no >, o el nivel 19 exacto se quedaría fuera");
+
+		//La Mejora de Característica es una dote en el SRD 5.2, pero aquí ES el recurso que las dotes gastan.
+		//Importarla la habría dejado como alternativa a sí misma: coges la mejora para coger la mejora.
+		assertTrue(FeatRegistry.get("dndsheets:ability_score_improvement") == null,
+			"la Mejora de Característica no puede entrar como dote: es lo que las dotes gastan");
+
+		//Una dote de prueba que sí sube características: es la mitad con mecánica y la que se puede romper.
+		JsonObject json = new JsonObject();
+		json.addProperty("id", "test:forzudo");
+		json.addProperty("name", "Forzudo");
+		json.addProperty("description", "Sube Fuerza.");
+		JsonObject abilities = new JsonObject();
+		abilities.addProperty("str", 2);
+		json.add("abilities", abilities);
+		FeatRegistry.register(FeatRegistry.parse(json));
+
+		JsonObject sheet = new JsonObject();
+		sheet.addProperty("strength", "16");
+		assertTrue(FeatRegistry.grant(sheet, "test:forzudo", 20, 4), "una dote nueva se puede coger");
+		assertTrue(sheet.get("strength").getAsString().equals("18"), "y sube la característica que dice");
+		assertTrue(FeatRegistry.takenBy(sheet).contains("test:forzudo"), "y queda anotada en la hoja");
+		assertTrue(!FeatRegistry.grant(sheet, "test:forzudo", 20, 4), "la misma dote no se coge dos veces");
+		assertTrue(!FeatRegistry.grant(sheet, "test:no_existe", 20, 4), "y una que no existe tampoco");
+
+		//El tope es el mismo que el de la mejora: una dote que lo saltara sería estrictamente mejor que ella.
+		JsonObject strong = new JsonObject();
+		strong.addProperty("strength", "19");
+		FeatRegistry.grant(strong, "test:forzudo", 20, 4);
+		assertTrue(strong.get("strength").getAsString().equals("20"), "el bono se recorta en 20");
+
+		assertTrue("strength".equals(CharacterRules.abilityFieldFor("str"))
+			&& "strength".equals(CharacterRules.abilityFieldFor("Strength")),
+			"el contenido escribe \"str\" y la hoja \"strength\": las dos formas tienen que llegar al mismo campo");
+		assertTrue(CharacterRules.abilityFieldFor("fuerza") == null,
+			"y lo que no se reconoce no puede escribir en un campo inventado");
+
+		//Gastar la mejora pendiente necesita un jugador, así que lo que se sujeta es que siga escrito: sin la
+		//comprobación, un nivel 1 coge dotes; sin el descuento, una mejora pendiente da dotes infinitas.
+		String manager = readSource("LevelUpManager.java");
+		String applyFeat = manager.substring(manager.indexOf("public static boolean applyFeat("));
+		applyFeat = applyFeat.substring(0, applyFeat.indexOf("\n\t}"));
+		assertTrue(applyFeat.contains("pendingOf(sheet) <= 0"),
+			"applyFeat tiene que exigir una mejora pendiente: si no, cualquiera coge dotes a nivel 1");
+		assertTrue(applyFeat.contains("PENDING, pendingOf(sheet) - 1"),
+			"y tiene que gastarla: si no, una sola mejora da todas las dotes del pack");
+
+		System.out.println("checkFeats: OK, " + loaded + " dote(s) del SRD, el tope de característica y la mejora que gastan.");
+	}
+
+	/**
+	 * <p>Subclases: la segunda mitad de lo que es un personaje en 5e. Se comprueban tres cosas distintas —
+	 * los datos que se envían, la puerta del nivel y el único gancho de motor que tienen.</p>
+	 *
+	 * <p>La puerta del nivel es la que importa: {@code applySubclass} tiene que negarse a aplicar una
+	 * subclase que el personaje todavía no puede elegir. Filtrar solo la lista que se pinta no es filtrar —
+	 * un cliente modificado manda el id que quiera, y sin esta comprobación un guerrero de nivel 1 se lleva
+	 * el rango de crítico del Campeón.</p>
+	 */
+	private static void checkSubclasses() throws Exception {
+		java.util.Set<String> spells = new java.util.HashSet<>();
+		for (JsonElement el : readShippedPack("spells.json")) spells.add(el.getAsJsonObject().get("id").getAsString());
+		java.util.Set<String> traits = new java.util.HashSet<>();
+		for (JsonElement el : readShippedPack("traits.json")) traits.add(el.getAsJsonObject().get("id").getAsString());
+
+		java.util.Set<String> seen = new java.util.HashSet<>();
+		int checked = 0;
+		for (JsonElement el : readShippedPack("presets.json")) {
+			JsonObject preset = el.getAsJsonObject();
+			String presetId = preset.get("id").getAsString();
+			assertTrue(preset.has("subclasses"),
+				"el preset " + presetId + " no ofrece ninguna subclase: en 5e toda clase tiene arquetipo");
+			for (JsonElement sub : preset.getAsJsonArray("subclasses")) {
+				JsonObject subclass = sub.getAsJsonObject();
+				String id = subclass.get("id").getAsString();
+				assertTrue(seen.add(id), "la subclase " + id + " está repetida: el id es lo que se elige");
+
+				int level = subclass.has("level") ? subclass.get("level").getAsInt() : 3;
+				assertTrue(level >= 1 && level <= 20, id + " se elige al nivel " + level + ", que no existe");
+				//El rango de crítico del motor está acotado: un dato fuera de ese rango se aplicaría
+				//recortado, o sea que el JSON diría una cosa y la mesa jugaría otra.
+				if (subclass.has("criticalFrom")) {
+					int from = subclass.get("criticalFrom").getAsInt();
+					assertTrue(from >= 15 && from <= 20, id + " critica desde " + from + ", fuera de lo que el motor acepta");
+				}
+				if (subclass.has("spells")) {
+					for (JsonElement spell : subclass.getAsJsonArray("spells")) {
+						assertTrue(spells.contains(spell.getAsString()),
+							id + " concede \"" + spell.getAsString() + "\", que no está en el pack de hechizos");
+					}
+				}
+				if (subclass.has("traits")) {
+					for (JsonElement trait : subclass.getAsJsonArray("traits")) {
+						assertTrue(traits.contains(trait.getAsString()),
+							id + " concede el rasgo \"" + trait.getAsString() + "\", que no existe");
+					}
+				}
+				checked++;
+			}
+		}
+
+		//La puerta del nivel, sobre el preset de guerrero que checkPresets() acaba de registrar.
+		JsonObject sheet = new JsonObject();
+		sheet.addProperty("appliedPresetId", "fighter");
+		sheet.addProperty("characterLevel", "2");
+		assertTrue(PresetRegistry.availableSubclasses(sheet).isEmpty(),
+			"a nivel 2 un guerrero todavía no elige arquetipo");
+		assertTrue(!PresetRegistry.applySubclass(sheet, "fighter:champion"),
+			"y pedirlo igualmente tiene que rebotar en el servidor, no solo faltar en la lista");
+		assertTrue(!sheet.has("criticalFrom"), "y no dejar nada escrito en la hoja al rebotar");
+
+		sheet.addProperty("characterLevel", "3");
+		assertTrue(PresetRegistry.availableSubclasses(sheet).size() == 1, "a nivel 3 ya hay una que elegir");
+		assertTrue(PresetRegistry.applySubclass(sheet, "fighter:champion"), "y se puede elegir");
+		assertTrue(sheet.get("characterSubclass").getAsString().equals("Campeón")
+			&& sheet.get("appliedSubclassId").getAsString().equals("fighter:champion"),
+			"la hoja guarda el id para las reglas y el nombre para la pantalla, como ya hace con el preset");
+		//Una subclase de otra clase no se cuela ni con el nivel correcto.
+		assertTrue(!PresetRegistry.applySubclass(sheet, "wizard:evocation"),
+			"un guerrero no puede elegir la escuela de un mago");
+
+		//El gancho de motor, que es lo único que la subclase cambia en una tirada.
+		assertTrue(DiceManager.criticalFrom(new JsonObject()) == 20, "sin nada escrito se critica con 20");
+		assertTrue(DiceManager.criticalFrom(sheet) == 19, "el Campeón critica con 19");
+		JsonObject absurd = new JsonObject();
+		absurd.addProperty("criticalFrom", "2");
+		assertTrue(DiceManager.criticalFrom(absurd) == 15,
+			"un número absurdo en un JSON se recorta: si no, cada ataque sería crítico y se descubriría jugando");
+		JsonObject garbage = new JsonObject();
+		garbage.addProperty("criticalFrom", "diecinueve");
+		assertTrue(DiceManager.criticalFrom(garbage) == 20, "y lo que no es un número se ignora");
+
+		System.out.println("checkSubclasses: OK, " + checked + " subclases, la puerta del nivel y el rango de crítico.");
+	}
+
+	/**
+	 * <p>Competencias de habilidad. La regla es de texto —añadir o quitar {@code + $prof} en la expresión de
+	 * la tirada— y por eso se puede fijar aquí entera: lo que no se puede probar sin servidor es quién tiene
+	 * permiso para escribirla, y de eso se ocupa el mensaje.</p>
+	 *
+	 * <p>Lo que de verdad protege esta comprobación es el <b>orden</b>. El índice es lo único que liga una
+	 * fila de la pantalla con una casilla del array {@code skills}, así que si la lista de etiquetas de la
+	 * hoja y la de {@link RollIndex} se desordenan entre sí, nada falla: simplemente marcas Atletismo y te
+	 * llevas competencia en Sigilo.</p>
+	 */
+	private static void checkSkillProficiency() throws Exception {
+		assertTrue(RollIndex.withProficiency("1d20 + $dex", true).equals("1d20 + $dex + $prof"),
+			"marcar competencia añade el término");
+		assertTrue(RollIndex.withProficiency("1d20 + $dex + $prof", true).equals("1d20 + $dex + $prof"),
+			"marcarla dos veces no lo duplica");
+		assertTrue(RollIndex.withProficiency("1d20 + $dex + $prof", false).equals("1d20 + $dex"),
+			"desmarcarla lo quita entero, sin dejar el + suelto");
+		//Reescribir la expresión desde la característica sería más corto y borraría el +2 de un objeto
+		//mágico que alguien puso a mano. El editor de tiradas existe justo para poder ponerlo.
+		assertTrue(RollIndex.withProficiency("1d20 + $dex + 2", true).equals("1d20 + $dex + 2 + $prof"),
+			"lo que ya había en la expresión sigue ahí");
+		assertTrue(RollIndex.withProficiency("1d20 + $dex + 2 + $prof", false).equals("1d20 + $dex + 2"),
+			"y sigue ahí al desmarcarla");
+		//$hprof es MEDIA competencia (bardo, pícaro experto): quitar competencia no puede comérselo.
+		assertTrue(RollIndex.withProficiency("1d20 + $hprof", false).equals("1d20 + $hprof"),
+			"media competencia no es competencia y no se toca");
+		assertTrue(!RollIndex.isProficient("1d20 + $hprof"), "y tampoco cuenta como marcada");
+		assertTrue(RollIndex.isProficient("1d20 + $dex + $prof"), "una expresión con el término está marcada");
+		//Escrito al principio no lo produce la pantalla, pero un DM puede haberlo escrito así a mano: si se
+		//detecta como marcada, tiene que poder desmarcarse, o la casilla dice una cosa y la tirada otra.
+		assertTrue(RollIndex.withProficiency("$prof + 1d20", false).equals("1d20"),
+			"también se quita si estaba escrito delante");
+
+		assertTrue(RollIndex.skillAbility(0).equals("str"), "Atletismo es de Fuerza");
+		assertTrue(RollIndex.skillAbility(3).equals("dex") && RollIndex.skillAbility(1).equals("dex"),
+			"Acrobacias y Sigilo son de Destreza");
+		assertTrue(RollIndex.skillAbility(4).equals("int") && RollIndex.skillAbility(8).equals("int"),
+			"las cinco de conocimiento son de Inteligencia");
+		assertTrue(RollIndex.skillAbility(9).equals("wis") && RollIndex.skillAbility(13).equals("wis"),
+			"las cinco de percepción son de Sabiduría");
+		assertTrue(RollIndex.skillAbility(14).equals("cha") && RollIndex.skillAbility(17).equals("cha"),
+			"las cuatro sociales son de Carisma");
+		assertTrue(RollIndex.basicNames(RollIndex.Category.SKILLS).size() == RollIndex.SKILL_COUNT,
+			"las dos listas de habilidades de RollIndex tienen que medir lo mismo");
+
+		//El orden de las etiquetas de la hoja contra el de RollIndex, que es el del array "skills".
+		String sheetScreen = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
+			"client", "gui", "CharacterSheetScreen.java"));
+		java.util.regex.Matcher labels = java.util.regex.Pattern
+			.compile("gui[.]dndsheets[.]character_sheet[.]label_skill_([a-z]+)").matcher(sheetScreen);
+		List<String> inScreen = new java.util.ArrayList<>();
+		while (labels.find()) {
+			if (!inScreen.contains(labels.group(1))) inScreen.add(labels.group(1));
+		}
+		assertTrue(inScreen.size() == RollIndex.SKILL_COUNT,
+			"la hoja debería nombrar las " + RollIndex.SKILL_COUNT + " habilidades, encontré " + inScreen.size());
+		for (int index = 0; index < RollIndex.SKILL_COUNT; index++) {
+			assertTrue(RollIndex.skillLangKey(index).endsWith("_" + inScreen.get(index)),
+				"la habilidad " + index + " es \"" + inScreen.get(index) + "\" en la hoja y \""
+					+ RollIndex.skillLangKey(index) + "\" en RollIndex: con las dos listas desordenadas entre "
+					+ "sí, marcar una habilidad da competencia en otra y nada falla.");
+		}
+
+		System.out.println("checkSkillProficiency: OK, el término de competencia y las 18 habilidades en el mismo orden.");
+	}
+
+	/**
+	 * <p>Traer una construcción de fuera: el nombre del archivo tiene que acabar siendo una ruta válida de
+	 * {@code ResourceLocation}, y los archivos que uno se descarga se llaman "Casa Grande (v2).nbt".</p>
+	 *
+	 * <p>Es el mismo fallo que dio {@code npc-capit-n} en su día, y por eso se comprueba igual: los acentos
+	 * se quitan ANTES de filtrar caracteres, porque descomponer después convierte la letra en separador. En
+	 * un mod en español eso no es un caso raro, es la mitad de los nombres.</p>
+	 */
+	private static void checkStructureImport() {
+		assertTrue(DungeonManager.structureNameFor("Casa Grande (v2)").equals("casa_grande_v2"),
+			"un nombre de archivo normal tiene que salir como ruta válida");
+		assertTrue(DungeonManager.structureNameFor("Capitán").equals("capitan"),
+			"los acentos se quitan, no se convierten en separador");
+		assertTrue(DungeonManager.structureNameFor("torre").equals("torre"), "lo que ya vale no se toca");
+		assertTrue(DungeonManager.structureNameFor("___torre___").equals("torre"),
+			"un separador suelto al principio o al final no es parte del nombre");
+		//Un nombre entero en caracteres no latinos no puede dar una ruta vacía: eso sería un id inválido.
+		for (String odd : List.of("", "   ", "!!!", "日本")) {
+			assertTrue(DungeonManager.structureNameFor(odd).equals("estructura"),
+				"un nombre del que no queda nada usable tiene que caer en uno por defecto");
+		}
+		assertTrue(DungeonManager.structureNameFor(null).equals("estructura"), "y sin nombre, tampoco vale null");
+
+		for (String name : List.of("Casa Grande (v2)", "Capitán", "___torre___", "MAYÚSCULAS Y ESPACIOS")) {
+			assertTrue(DungeonManager.structureNameFor(name).matches("[a-z0-9_]+"),
+				"\"" + name + "\" no da una ruta que ResourceLocation acepte");
+		}
+
+		System.out.println("checkStructureImport: OK, cualquier nombre de archivo acaba siendo una ruta válida.");
+	}
+
+	/**
 	 * <p>Encuentros: un grupo de monstruos guardado antes de la sesión y soltado de una vez. Lo que se fija
 	 * aquí es la sintaxis de la composición —la misma en el JSON y en el formulario del creador in-game— y
 	 * que los monstruos del pack que se envía existan de verdad.</p>
@@ -1921,6 +2298,97 @@ public class JsonContentSelfTest {
 
 		System.out.println("checkPortabilityCoupling: OK, sin mixins ni access transformers y el NBT de objetos "
 			+ "sigue concentrado en " + allowed.size() + " ficheros.");
+	}
+
+	/**
+	 * <p>Contenido traído de fuera: lo que el SRD 5.2 añadió y, sobre todo, <b>lo que hace falta para que un
+	 * pack escrito en otro idioma no mienta</b>.</p>
+	 *
+	 * <p>Un tipo de daño no es una etiqueta que se imprime: es la CLAVE con la que se busca la resistencia
+	 * del objetivo. Mientras se comparó tal cual venía escrito, un pack de la comunidad en inglés
+	 * ({@code "damageType": "fire"}) atravesaba la resistencia al fuego de un personaje
+	 * ({@code "fuego": "resistant"}) sin que saltara nada: el daño salía, y salía mal. Eso no es un fallo
+	 * que una mesa pueda ver — por eso se comprueba de punta a punta y no solo la función.</p>
+	 *
+	 * <p>La segunda mitad es de licencia, no de mecánica: el SRD 5.2 es CC-BY-4.0 y <b>obliga</b> a citarlo.
+	 * Enviar el contenido sin la atribución sería redistribuirlo mal, así que la atribución se comprueba
+	 * como cualquier otra cosa que se puede olvidar.</p>
+	 */
+	private static void checkImportedContent() throws Exception {
+		assertTrue(DamageTypes.normalize("fire").equals("fuego")
+			&& DamageTypes.normalize("Fire").equals("fuego")
+			&& DamageTypes.normalize(" FUEGO ").equals("fuego")
+			&& DamageTypes.normalize("fuego").equals("fuego"),
+			"\"fire\", \"Fire\" y \"fuego\" son el mismo tipo de daño");
+		assertTrue(DamageTypes.normalize("necrótico").equals("necrotico"),
+			"y el acento tampoco puede hacer dos tipos de uno");
+		//Un tipo que no está en la tabla no se descarta: se normaliza. Una mesa que se invente "sangrado"
+		//tiene que poder resistirlo, y para eso basta con que las dos puntas lo escriban igual.
+		assertTrue(DamageTypes.normalize("Sangrado").equals(DamageTypes.normalize("sangrado")),
+			"un tipo casero se normaliza igual en las dos puntas de la comparación");
+		assertTrue(DamageTypes.normalize(null).equals("fisico") && DamageTypes.normalize("  ").equals("fisico"),
+			"sin tipo declarado el golpe es físico, como siempre");
+
+		//De punta a punta: un hechizo importado en inglés contra una hoja con la resistencia escrita en
+		//español. Es la comprobación que importa — las dos anteriores pueden pasar y esta fallar igual si
+		//el registro se salta la normalización al parsear.
+		JsonObject imported = new JsonObject();
+		imported.addProperty("id", "test:llamarada");
+		imported.addProperty("name", "Llamarada");
+		imported.addProperty("level", 1);
+		imported.addProperty("mode", "attack");
+		imported.addProperty("castingAbility", "int");
+		imported.addProperty("dice", "2d6");
+		imported.addProperty("damageType", "Fire");
+		SpellRegistry.Spell spell = SpellRegistry.parse(imported);
+		assertTrue(spell.damageType().equals("fuego"),
+			"el registro tiene que normalizar al parsear: si no, cada sitio que compare lo hará a su manera");
+
+		JsonObject sheet = new JsonObject();
+		JsonObject affinities = new JsonObject();
+		affinities.addProperty("fuego", "resistant");
+		sheet.add("damageAffinities", affinities);
+		assertTrue(DamageTypes.multiplierFor(null, sheet, spell.damageType()) == 0.5,
+			"una resistencia escrita en español tiene que frenar un conjuro importado en inglés");
+
+		//Y el bloque de monstruo por el otro lado: la resistencia declarada en inglés frente al golpe que
+		//llega en español. Las claves del pack se normalizan al cargarlo por esta misma razón.
+		JsonObject beast = new JsonObject();
+		beast.addProperty("id", "test:elemental");
+		beast.addProperty("name", "Elemental");
+		beast.addProperty("baseEntity", "minecraft:blaze");
+		beast.addProperty("ac", 13);
+		beast.addProperty("hp", 20);
+		JsonObject scores = new JsonObject();
+		for (String ability : new String[]{"str", "dex", "con", "int", "wis", "cha"}) scores.addProperty(ability, 10);
+		beast.add("abilities", scores);
+		JsonObject resist = new JsonObject();
+		resist.addProperty("Fire", "immune");
+		beast.add("damageAffinities", resist);
+		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.parse(beast);
+		assertTrue(block.damageAffinities().containsKey("fuego"),
+			"la resistencia de un bestiario importado en inglés tiene que quedar guardada con la clave que "
+				+ "luego se le va a preguntar");
+
+		//El importador y su licencia. El SRD 5.2 es CC-BY-4.0: citarlo no es cortesía, es la condición.
+		assertTrue(java.nio.file.Files.exists(Path.of("tools", "import_srd.py")),
+			"falta tools/import_srd.py: sin él, ampliar el contenido vuelve a ser trabajo a mano sin rastro");
+		//Sin saltos de linea ni ">" de cita: la frase que exige la licencia ocupa dos lineas del Markdown, y
+		//buscarla tal cual ataba la comprobacion a donde cae el corte de linea.
+		String attribution = Files.readString(Path.of("ATTRIBUTION.md"))
+			.replaceAll("(?m)^>", " ").replaceAll("\\s+", " ");
+		//Lo que se exige es la frase EXACTA que pide la licencia del 5.2. Buscar "SRD 5.2" a secas daba por
+		//buena una atribución borrada (la sigla sale en los párrafos que la explican), y buscar "Creative
+		//Commons Attribution 4.0" también, porque el bloque del SRD 5.1 ya la lleva. Una comprobación que
+		//aprueba el archivo sin la cita no comprueba la cita.
+		assertTrue(attribution.contains("SRD 5.2 is licensed under the Creative Commons Attribution 4.0"),
+			"falta la cita literal que exige la licencia del SRD 5.2 en ATTRIBUTION.md: sin ella, enviar "
+				+ "feats.json es redistribuir material CC-BY sin atribuir");
+		assertTrue(attribution.contains("feats.json"),
+			"y a decir qué archivos son: una atribución que no señala el archivo no señala nada");
+
+		System.out.println("checkImportedContent: OK, un pack en inglés compara igual que uno en español y el "
+			+ "SRD 5.2 va citado.");
 	}
 
 	private static String readSource(String fileName) throws Exception {
@@ -2284,6 +2752,19 @@ public class JsonContentSelfTest {
 		String mod = readSource("DndsheetsMod.java");
 		int messages = mod.split("addNetworkMessage" + java.util.regex.Pattern.quote("("), -1).length - 1;
 
+		//La cuenta de arriba no ve un intercambio: mover dos entradas ya registradas deja el total igual y
+		//renumera los ids en silencio, que es justo lo que la invariante 1 prohíbe. Así que además del cuánto
+		//se anota el ORDEN: los nombres, en la secuencia en que salen de la fuente, resumidos en un hash.
+		StringBuilder order = new StringBuilder();
+		java.util.regex.Matcher registered = java.util.regex.Pattern
+			.compile("addNetworkMessage\\(\\s*(\\w+)\\.class").matcher(mod);
+		int orderedMessages = 0;
+		while (registered.find()) {
+			order.append(registered.group(1)).append(',');
+			orderedMessages++;
+		}
+		assertTrue(orderedMessages > 0, "no encontré ninguna llamada a addNetworkMessage(X.class), ¿cambió su forma?");
+
 		int enumConstants = 0;
 		StringBuilder detail = new StringBuilder();
 		Path networkDir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "network");
@@ -2294,6 +2775,10 @@ public class JsonContentSelfTest {
 				while (enums.find()) {
 					int count = enums.group(2).split(",").length;
 					enumConstants += count;
+					//Mismo motivo que con los mensajes: un enum que viaja por ordinal se desalinea al reordenarlo
+					//sin que la cuenta se entere. Se guardan los nombres tal y como aparecen.
+					order.append(enums.group(1)).append(':');
+					for (String constant : enums.group(2).split(",")) order.append(constant.trim()).append(',');
 					detail.append("\n    ").append(file.getFileName()).append(' ').append(enums.group(1)).append(": ").append(count);
 				}
 			}
@@ -2307,7 +2792,11 @@ public class JsonContentSelfTest {
 		java.util.regex.Matcher contentTypes = java.util.regex.Pattern
 			.compile("(?m)^\\t([A-Z_]+)\\(DndPaths\\.").matcher(readSource("ContentType.java"));
 		int wireEnumsOutsideNetwork = 0;
-		while (contentTypes.find()) wireEnumsOutsideNetwork++;
+		order.append("ContentType:");
+		while (contentTypes.find()) {
+			order.append(contentTypes.group(1)).append(',');
+			wireEnumsOutsideNetwork++;
+		}
 		assertTrue(wireEnumsOutsideNetwork > 0, "no encontré las constantes de ContentType, ¿cambió su forma?");
 		detail.append("\n    ContentType.java ContentType: ").append(wireEnumsOutsideNetwork);
 
@@ -2320,8 +2809,17 @@ public class JsonContentSelfTest {
 				+ " sube PROTOCOL_VERSION y actualiza NETWORK_SHAPE. Si no subes la versión, un cliente nuevo"
 				+ " y un servidor viejo se dan la mano y se desalinean después, en silencio.");
 
+		int orderHash = order.toString().hashCode();
+		assertTrue(orderHash == DndsheetsMod.NETWORK_ORDER,
+			"el ORDEN de la red cambió (hash " + orderHash + ", anotado " + DndsheetsMod.NETWORK_ORDER + ") con la"
+				+ " cuenta intacta: se movió algo de sitio en vez de añadirse al final." + detail
+				+ "\n  El id de un mensaje es su orden de registro y los enums viajan por ordinal, así que"
+				+ " intercambiar dos entradas renumera a las dos sin romper nada al compilar. Si el movimiento es"
+				+ " a propósito, sube PROTOCOL_VERSION y anota este hash en NETWORK_ORDER; si no, devuélvelo a su"
+				+ " sitio y añade lo nuevo al FINAL.");
+
 		System.out.println("checkNetworkShape: OK, " + shape + " piezas en el cable (" + messages + " mensajes, " + enumConstants
-			+ " constantes en network/ y " + wireEnumsOutsideNetwork + " fuera).");
+			+ " constantes en network/ y " + wireEnumsOutsideNetwork + " fuera), orden " + orderHash + ".");
 	}
 
 	/**
@@ -2478,7 +2976,7 @@ public class JsonContentSelfTest {
 		String loader = readSource("ContentDatapackLoader.java");
 		assertTrue(loader.contains("AddReloadListenerEvent"),
 			"el contenido de datapacks tiene que engancharse a la recarga, o un addon no se carga nunca");
-		for (String folder : List.of("weapons", "spells", "monsters", "presets", "traits", "items", "encounters")) {
+		for (String folder : List.of("weapons", "spells", "monsters", "presets", "traits", "items", "encounters", "feats")) {
 			assertTrue(loader.contains("\"" + folder + "\""),
 				"un addon debería poder traer " + folder + " igual que el resto");
 		}
@@ -2563,23 +3061,30 @@ public class JsonContentSelfTest {
 		//--- PG máximos por clase/nivel/Constitución (regla de media del SRD) ---
 		//Vive en CharacterRules y no en SheetLoader precisamente para poder comprobarse aquí: SheetLoader
 		//resuelve FMLPaths al inicializarse y ni siquiera carga fuera de una instancia de Forge.
-		//OJO: aquí el dado de golpe es SIEMPRE d8. Config.hitDiceByClass solo se llena al parsear el .toml,
-		//que no se carga fuera del juego, así que Config.hitDieFor cae a su valor por defecto documentado
-		//(8, el más común en 5e). Eso es justo lo que conviene fijar: la forma de la fórmula y el fallback.
+		//El dado de golpe sale de Config.hitDiceByClass, que ahora está SEMBRADO con los valores por defecto
+		//en vez de vacío hasta que Forge parsea el .toml (ver Config). Antes de eso, aquí —y en el juego,
+		//durante todo el arranque anterior a la carga de la config— un guerrero era d8 como cualquier otra
+		//clase. Así que estas cifras son las de un d10 de verdad.
 		JsonObject hero = new JsonObject();
 		hero.addProperty("characterClass", "fighter");
 		hero.addProperty("constitution", "14"); //+2
 
-		//Nivel 1 = dado completo + mod → 8 + 2.
-		assertTrue(CharacterRules.maxHitPointsFor(hero, 1) == 10,
-			"a d8 con CON 14 deberían salir 10 PG a nivel 1, dio " + CharacterRules.maxHitPointsFor(hero, 1));
-		//Cada nivel siguiente suma media+1 (5) + mod (2) = 7.
-		assertTrue(CharacterRules.maxHitPointsFor(hero, 2) == 17,
-			"debería subir a 17 PG a nivel 2, dio " + CharacterRules.maxHitPointsFor(hero, 2));
-		assertTrue(CharacterRules.maxHitPointsFor(hero, 3) == 24,
+		//Nivel 1 = dado completo + mod → 10 + 2.
+		assertTrue(CharacterRules.maxHitPointsFor(hero, 1) == 12,
+			"a d10 con CON 14 deberían salir 12 PG a nivel 1, dio " + CharacterRules.maxHitPointsFor(hero, 1));
+		//Cada nivel siguiente suma media+1 (6) + mod (2) = 8.
+		assertTrue(CharacterRules.maxHitPointsFor(hero, 2) == 20,
+			"debería subir a 20 PG a nivel 2, dio " + CharacterRules.maxHitPointsFor(hero, 2));
+		assertTrue(CharacterRules.maxHitPointsFor(hero, 3) == 28,
 			"debería escalar de forma lineal por nivel, dio " + CharacterRules.maxHitPointsFor(hero, 3));
 		//Nivel 0 o negativo se trata como 1: en 5e ningún personaje es de nivel 0.
-		assertTrue(CharacterRules.maxHitPointsFor(hero, 0) == 10, "el nivel 0 debería tratarse como nivel 1");
+		assertTrue(CharacterRules.maxHitPointsFor(hero, 0) == 12, "el nivel 0 debería tratarse como nivel 1");
+		//Y el d8 sigue siendo el valor por defecto de una clase que la tabla no conoce.
+		JsonObject homebrew = new JsonObject();
+		homebrew.addProperty("characterClass", "Cazarrecompensas");
+		homebrew.addProperty("constitution", "14");
+		assertTrue(CharacterRules.maxHitPointsFor(homebrew, 1) == 10,
+			"una clase de la casa cae al d8 documentado, dio " + CharacterRules.maxHitPointsFor(homebrew, 1));
 
 		//Constitución penosa: nunca menos de 1 PG por nivel, aunque el modificador sea muy negativo.
 		JsonObject frail = new JsonObject();

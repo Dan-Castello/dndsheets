@@ -32,6 +32,7 @@ public class ContentTypeListScreen extends ListPickerScreen {
 		addRow(Component.literal("Presets de clase"), b -> request(ContentType.PRESET));
 		addRow(Component.literal("Rasgos"), b -> request(ContentType.TRAIT));
 		addRow(Component.literal("Encuentros"), b -> request(ContentType.ENCOUNTER));
+		addRow(Component.literal("Dotes"), b -> request(ContentType.FEAT));
 		addRow(Component.literal("Razas"), b -> requestOptions(CharacterOptionsRegistry.RACE));
 		addRow(Component.literal("Trasfondos"), b -> requestOptions(CharacterOptionsRegistry.BACKGROUND));
 		addRow(Component.literal("Clases"), b -> requestOptions(CharacterOptionsRegistry.CLASS));

@@ -71,11 +71,11 @@ public class DiceManager {
 	//realmente tirado dentro de la tirada elegida (ver firstDieValue).
 	public static AttackRoll rollAttack(JsonObject sheet, String expression, Advantage advantage) {
 		RollOutcome first = roll(sheet, expression);
-		if (advantage == Advantage.NORMAL) return toAttackRoll(first);
+		if (advantage == Advantage.NORMAL) return toAttackRoll(sheet, first);
 
 		RollOutcome second = roll(sheet, expression);
-		if (first.result() == null) return toAttackRoll(second);
-		if (second.result() == null) return toAttackRoll(first);
+		if (first.result() == null) return toAttackRoll(sheet, second);
+		if (second.result() == null) return toAttackRoll(sheet, first);
 
 		boolean keepFirst = advantage == Advantage.ADVANTAGE
 			? first.result().getValue() >= second.result().getValue()
@@ -83,13 +83,33 @@ public class DiceManager {
 		RollOutcome kept = keepFirst ? first : second;
 		RollOutcome discarded = keepFirst ? second : first;
 		String label = advantage == Advantage.ADVANTAGE ? "ventaja" : "desventaja";
-		return toAttackRoll(new RollOutcome(kept.result(), kept.formatted() + " (" + label + ", se descarta " + discarded.formatted() + ")"));
+		return toAttackRoll(sheet, new RollOutcome(kept.result(), kept.formatted() + " (" + label + ", se descarta " + discarded.formatted() + ")"));
 	}
 
-	private static AttackRoll toAttackRoll(RollOutcome outcome) {
+	private static AttackRoll toAttackRoll(JsonObject sheet, RollOutcome outcome) {
 		if (outcome.result() == null) return new AttackRoll(outcome, false, false);
 		int natural = firstDieValue(outcome.result());
-		return new AttackRoll(outcome, natural == 20, natural == 1);
+		//El 1 natural sigue siendo pifia pase lo que pase: ampliar el rango de crítico no estrecha el de
+		//fallo, y en 5e no hay nada que lo haga.
+		return new AttackRoll(outcome, natural >= criticalFrom(sheet), natural == 1);
+	}
+
+	/**
+	 * <p>Desde qué dado natural critica esta ficha. 20 salvo que algo lo baje: hoy solo el Campeón del
+	 * guerrero (19), que es el rasgo de subclase del SRD que este motor puede sostener sin inventar nada.</p>
+	 *
+	 * <p>Se lee de la hoja y no de la subclase para que el motor no tenga que saber qué es una subclase: la
+	 * regla vive en un sitio y quien la conceda solo escribe un número, igual que hace el pacto del brujo.
+	 * El tope inferior es un cortafuegos, no una regla: un 2 escrito en un JSON convertiría cada ataque en
+	 * crítico, y eso se descubriría en mitad de un combate.</p>
+	 */
+	static int criticalFrom(JsonObject sheet) {
+		if (sheet == null || !sheet.has("criticalFrom")) return 20;
+		try {
+			return Math.min(20, Math.max(15, Integer.parseInt(sheet.get("criticalFrom").getAsString())));
+		} catch (RuntimeException e) {
+			return 20;
+		}
 	}
 
 	/**

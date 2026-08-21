@@ -218,7 +218,7 @@ public class SpellRegistry {
 		//hechizos ni siquiera se podían escribir — el parser los descartaba con un aviso.
 		String dice = json.has("dice") ? json.get("dice").getAsString() : "0";
 		boolean halfOnSave = !json.has("halfOnSave") || json.get("halfOnSave").getAsBoolean();
-		String damageType = json.has("damageType") ? json.get("damageType").getAsString().toLowerCase(Locale.ROOT) : "fisico";
+		String damageType = json.has("damageType") ? DamageTypes.normalize(json.get("damageType").getAsString()) : "fisico";
 		boolean concentration = json.has("concentration") && json.get("concentration").getAsBoolean();
 		//Techo defensivo: sin esto, un radio absurdo en el JSON (a propósito o por error de tipeo) hace que
 		//SpellCastManager.findAoeTargets escanee todas las entidades cargadas del servidor en cada lanzado,

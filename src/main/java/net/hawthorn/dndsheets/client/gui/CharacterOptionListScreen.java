@@ -6,6 +6,7 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.network.SheetServerMessage;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
@@ -32,13 +33,13 @@ public class CharacterOptionListScreen extends ListPickerScreen {
 	private final String category;
 	private final List<String> options;
 
-	private CharacterOptionListScreen(CharacterSheetScreen returnTo, String category, List<String> options) {
+	private CharacterOptionListScreen(Screen returnTo, String category, List<String> options) {
 		super(Component.literal(titleFor(category)), returnTo);
 		this.category = category;
 		this.options = options;
 	}
 
-	public static void open(CharacterSheetScreen returnTo, String category, List<String> options) {
+	public static void open(Screen returnTo, String category, List<String> options) {
 		Minecraft.getInstance().setScreen(new CharacterOptionListScreen(returnTo, category, options));
 	}
 

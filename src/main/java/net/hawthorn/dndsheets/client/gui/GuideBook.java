@@ -18,6 +18,7 @@ public class GuideBook {
 	private static final String[] PLAYER_PAGES = {
 		"gui.dndsheets.guide.page.sheet",
 		"gui.dndsheets.guide.page.rolling",
+		"gui.dndsheets.guide.page.skills",
 		"gui.dndsheets.guide.page.private_rolls",
 		"gui.dndsheets.guide.page.turns",
 		"gui.dndsheets.guide.page.rest",
@@ -30,6 +31,7 @@ public class GuideBook {
 		//mirando los números de sus tiradas.
 		"gui.dndsheets.guide.page.characters",
 		"gui.dndsheets.guide.page.level_up",
+		"gui.dndsheets.guide.page.subclass",
 		"gui.dndsheets.guide.page.turn_actions",
 		"gui.dndsheets.guide.page.cover",
 		"gui.dndsheets.guide.page.vision",
@@ -41,6 +43,7 @@ public class GuideBook {
 		"gui.dndsheets.guide.page.dm_wand",
 		"gui.dndsheets.guide.page.dm_dungeons_1",
 		"gui.dndsheets.guide.page.dm_dungeons_2",
+		"gui.dndsheets.guide.page.dm_dungeons_3",
 		"gui.dndsheets.guide.page.dm_notes",
 		"gui.dndsheets.guide.page.dm_turns",
 		"gui.dndsheets.guide.page.dm_content_packs",

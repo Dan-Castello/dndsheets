@@ -324,4 +324,83 @@ public class RollIndex {
         };
         return result;
     }
+
+    // --- Competencias de habilidad ---------------------------------------------------------------
+
+    /**
+     * <p>Las 18 habilidades de 5e, en el MISMO orden que el array {@code skills} de la hoja y que las
+     * etiquetas de {@code CharacterSheetScreen}. Viven aquí y no en la pantalla porque el índice es lo que
+     * decide qué habilidad recibe la competencia: dos listas en dos archivos que se desordenen entre sí no
+     * dan un error, dan competencia en Sigilo a quien eligió Atletismo.</p>
+     */
+    private static final String[] SKILL_KEYS = {
+        "athletics", "acrobatics", "sleightofhand", "stealth", "arcana", "history", "investigation",
+        "nature", "religion", "animalhandling", "insight", "medicine", "perception", "survival",
+        "deception", "intimidation", "performance", "persuasion"
+    };
+
+    public static final int SKILL_COUNT = 18;
+
+    /** El token que la calculadora de tiradas ya entiende como "suma tu bono de competencia". */
+    public static final String PROFICIENCY_TOKEN = "$prof";
+
+    //Las dos formas en que el término puede aparecer escrito. La segunda (al principio de la expresión)
+    //existe solo para poder QUITARLA: nadie la escribe desde la interfaz, pero una expresión escrita a mano
+    //por un DM que empiece por $prof tiene que poder desmarcarse igual, o la casilla dice una cosa y la
+    //tirada hace otra. (?![a-z]) protege a $hprof, que es media competencia y no es esto.
+    private static final java.util.regex.Pattern PROFICIENCY_TERM = java.util.regex.Pattern.compile(
+        "(\\s*[+]\\s*[$]prof(?![a-z])|[$]prof(?![a-z])\\s*[+]\\s*)");
+
+    public static String skillLangKey(int index) {
+        return "gui.dndsheets.character_sheet.label_skill_" + SKILL_KEYS[index];
+    }
+
+    /**
+     * <p>La característica de cada habilidad, por tramos: Atletismo es de Fuerza; Acrobacias, Juego de
+     * Manos y Sigilo de Destreza; las cinco de conocimiento de Inteligencia; las cinco de percepción de
+     * Sabiduría; las cuatro sociales de Carisma. Es la tabla del SRD y el orden de arriba la sigue, así que
+     * se lee de los tramos en vez de repetirla entrada por entrada.</p>
+     */
+    public static String skillAbility(int index) {
+        if (index <= 0) return "str";
+        if (index <= 3) return "dex";
+        if (index <= 8) return "int";
+        if (index <= 13) return "wis";
+        return "cha";
+    }
+
+    public static boolean isProficient(String expression) {
+        return expression != null && expression.contains(PROFICIENCY_TOKEN);
+    }
+
+    /**
+     * <p>Añade o quita el término de competencia <b>sin tocar el resto de la expresión</b>. Reescribirla
+     * entera desde la característica sería una línea más corta y borraría cualquier bono que el jugador o
+     * el DM hubieran puesto a mano en esa habilidad, que es justo lo que un editor de tiradas existe para
+     * permitir.</p>
+     */
+    public static String withProficiency(String expression, boolean proficient) {
+        String base = PROFICIENCY_TERM.matcher(expression == null ? "" : expression).replaceAll("").trim();
+        return proficient ? base + " + " + PROFICIENCY_TOKEN : base;
+    }
+
+    public static boolean isSkillProficient(JsonObject sheet, int index) {
+        String expression = skillExpression(sheet, index);
+        return expression != null && isProficient(expression);
+    }
+
+    /** @return true si algo cambió; false si el índice no existe en esta hoja. */
+    public static boolean setSkillProficiency(JsonObject sheet, int index, boolean proficient) {
+        String expression = skillExpression(sheet, index);
+        if (expression == null) return false;
+        sheet.getAsJsonArray(Category.SKILLS.toString()).set(index, new JsonPrimitive(withProficiency(expression, proficient)));
+        return true;
+    }
+
+    private static String skillExpression(JsonObject sheet, int index) {
+        if (sheet == null || index < 0 || index >= SKILL_COUNT) return null;
+        JsonArray skills = sheet.getAsJsonArray(Category.SKILLS.toString());
+        if (skills == null || index >= skills.size()) return null;
+        return skills.get(index).getAsString();
+    }
 }

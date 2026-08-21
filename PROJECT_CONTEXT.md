@@ -1156,7 +1156,8 @@ dependencies, not preference.
   `test/dndsheets/` now holds only the one hand-written `ejemplo.json` per type, and the self-test
   reads the shipped packs.
 
-- **Fase 5 — the table you can actually sit down at. Planned.** With Fases 0-4 closed, what is missing
+- **Fase 5 — the table you can actually sit down at. Items 2, 3, 4 and 6 done; 1 is the modpack and 5 is
+  out of scope.** With Fases 0-4 closed, what is missing
   is no longer rules: it is everything around them. The order is by **how many people are lost at each
   step**, not by how interesting the step is — and the first item contains almost no code at all.
 
@@ -1185,16 +1186,133 @@ dependencies, not preference.
      against the real 1.20.1 registry in `checkVanillaIds`, because a typo in an armour id would
      otherwise surface as a player being handed a stick.
 
-     Still ahead, in this order: the guided flow itself (species → class → subclass → background → skill
-     proficiencies), then subclasses, then feats — today there are no feats, no multiclass, and subclass
-     is only a text field on the sheet. This is minute one for every new player, and it decides whether a
-     group ever reaches a first session. Keep building it **on `PresetRegistry`**, which already fills
-     class, hit die, abilities and now gear — a parallel "character builder" registry would be the same
-     data twice. **Multiclass stays last**: it re-derives the level tables that `SpellSlots` and
+     **Skill proficiencies are in** (`RollIndex`, `SkillProficiencyScreen`). They were the half of a
+     level-1 sheet that a player could not fill in at all: proficiency means `+ $prof` inside the roll
+     expression, and `"skills"` has been an **operator-only key** in `SheetServerMessage` since the hole
+     where anyone could rewrite their own rolls was closed. So the choice existed on paper and needed the
+     DM to type it.
+
+     - **The client sends which skill, the server writes the expression.** That is what makes it a player
+       action without reopening the hole: you can ask for proficiency, not for `+99`. It rides
+       `BrowseActionMessage` (invariant 3) rather than a new message class — the same "act on your own
+       character" message that already carries switch, create and delete.
+     - **The term is added and removed, not rewritten.** Rebuilding the expression from the ability would
+       be one line shorter and would erase the `+2` someone put there by hand, which is exactly what the
+       roll editor exists to allow. `$hprof` (half proficiency) survives untouched, and a `$prof` written
+       at the *front* of an expression can still be removed — otherwise the tick box would say one thing
+       and the roll do another.
+     - **The check that matters is the order.** The index is the only thing tying a row on screen to a
+       slot in the `skills` array, so if the sheet's label list and `RollIndex` drift apart nothing fails:
+       you tick Athletics and get proficiency in Stealth. The self-test reads the labels out of
+       `CharacterSheetScreen` and compares the two orders position by position.
+     - **No cap on how many**, deliberately: in 5e the number and the list come from class and background,
+       and that part is not built yet. An invented limit would block legitimate tables, and at a real
+       table the DM already looks at the sheet.
+
+     **And the four steps are now a list you can see** (`CharacterSetupScreen`, reached from the sheet's
+     "Personajes" → "Configurar personaje..."): race, class *by preset*, background, skills, each row
+     showing what is already chosen and each opening the screen that already existed for it.
+
+     - **A checklist, not a wizard.** Every step was already reachable from the sheet; what a new player
+       lacked was knowing that there are four and where they are. A linear wizard would additionally need
+       its own back-path per step and would forbid filling a sheet in the order a real table fills one.
+       This is the same failure as item 40 one level up: not "the state cannot be seen" but "the task
+       cannot be seen".
+     - **Class goes through the preset**, not the name list: a preset also writes the hit die, the six
+       ability scores, the starting gear and the class traits. Picking only the word leaves a sheet that
+       says "Wizard" and still has 10 in everything.
+     - **The option picker now returns to whoever asked**, instead of always to the sheet — the one-line
+       change that makes any screen able to host a step, and what `PresetScreen` already did. Pinned,
+       because narrowing it back would silently eject the player from setup halfway through and raise no
+       error anywhere.
+     - **Creating a character now says what to do next in chat.** Same reason as everything else in this
+       family: an unexplained blank sheet is indistinguishable from a broken mod.
+
+     **Subclasses are in** (`PresetRegistry.Subclass`, `SubclassScreen`). The twelve SRD archetypes, one
+     per class, chosen at the level 5e asks for.
+
+     - **They live inside their preset, not in a registry of their own.** A subclass without its class
+       means nothing — "School of Evocation" is not something a barbarian can pick — and a separate
+       registry would mean carrying that pairing by hand in both directions.
+     - **They grant exactly what a preset grants** (traits and spells) by the same code, so no new way to
+       grant anything entered the mod. The one exception is `criticalFrom`, and it exists for one case:
+       the fighter's Champion crits on a 19, which is the single SRD subclass feature this engine can
+       already back. It is written to the **sheet**, and the rule is read in `DiceManager` where a natural
+       20 was already being decided — so the engine still does not know what a subclass is, exactly like
+       the warlock pact.
+     - **The level gate is enforced on the server**, not by hiding rows: filtering only the list that gets
+       painted is not filtering, because a modified client sends whatever id it likes. Without it a
+       level-1 fighter takes the Champion's crit range. That is the assertion the check spends most of
+       its lines on.
+     - **The choice is permanent**, like the pact: picking another does not revoke the first. Changing
+       subclass is rebuilding a character, and stripping features from someone mid-campaign because they
+       clicked a row is worse than leaving a wrong subclass a DM can fix.
+     - **Domain spells are only the ones from the level you choose at.** This mod's spell list is not
+       gated by level, so handing a level-1 cleric the whole Life Domain list would be handing them a
+       level-9 cleric's spells.
+     - Most of the twelve carry **no mechanics**, and that is the magic-item decision again: an archetype
+       the DM narrates is not broken, and inventing features the engine cannot back would be inventing
+       rules. The names, the level and the grant path are what make them addable later — by a pack, with
+       no Java.
+
+     **Feats are in** (`FeatRegistry`, `FeatScreen`), taken **instead of** an Ability Score Improvement.
+
+     - **They spend the same pending improvement**, through `LevelUpManager` where the improvement already
+       lived. Two separate resources would mean a level 4 grants both, and then it stops being a choice —
+       which is the entire point of a feat in 5e. The button sits on the improvement screen for the same
+       reason: you should see the alternative you are turning down.
+     - **The SRD contains exactly one feat.** Grappler ships; the rest are Player's Handbook material and
+       cannot be copied here. So what was built is the mechanism, and the value is that a table or an
+       addon adds theirs by dropping a JSON in a folder — same bet as item 41, and the reason feats are a
+       content type (`ContentType.FEAT`, datapack path, in-game editor) rather than a hardcoded list.
+     - **Raising ability scores is the mechanical half**, and it is capped at 20 like the improvement it
+       replaces — a feat that could exceed it would be strictly better than the thing it costs. That cap
+       and "you cannot take the same feat twice" are what the check spends its lines on, because both fail
+       silently and in the player's favour.
+     - `CharacterRules.abilityFieldFor` came out of it: content writes `"str"` and the sheet says
+       `"strength"`, a conversion that was already spelled out six lines at a time in
+       `PresetRegistry.applyToSheet`. At the second thing that grants ability scores it becomes twelve.
+
+     **Multiclass is in** (`ClassLevels`, `/dndsheet multiclass`), and it was left for last on purpose:
+     it is the only piece that redoes tables already pinned level by level — spell slots, the proficiency
+     bonus, max hit points — and all three fail quietly.
+
+     - **It enters as an optional field that wins when present**, not as a change to the model. A sheet
+       with no `classLevels` — every sheet that exists today — behaves exactly as before, and the rest of
+       the mod never learns that multiclassing exists. The one place that does change is that
+       `characterLevel` is rewritten as the sum, so the ~70 readers of "what level is this character" keep
+       reading a number.
+     - **Two choke points, not a sweep**: `CharacterRules.maxHitPointsFor` and `SpellSlots.applyProgression`
+       each ask the sheet whether there is a split before doing what they always did. That is also *why*
+       the class text can safely become "Guerrero 3 / Mago 2": nothing derives a die or a caster type from
+       that string any more when a split exists, which it would have done wrongly (`Config.hitDieFor`
+       matches by substring and would have taken whichever class name came first in the sentence).
+     - **The half-caster rounding is the trap, and it is two different rules wearing the same face.** A
+       single-class half caster rounds **up** (a level-2 paladin already casts); a multiclassed one
+       contributes **half, rounded down** (a level-2 paladin adds 1). Writing both with the same rounding
+       gives a table that is right about half the time, which is worse than one that is always wrong. Two
+       half-casters at level 5 contribute 4, not 6 — that is the assertion, and the mutation that reverses
+       the rounding trips exactly on it.
+     - **Warlock levels do not enter the caster level**, because pact magic is a second pool and this
+       sheet can only carry one. A character with both keeps the caster pool; falling short is the safe
+       direction, since the opposite hands out slots nobody has.
+     - **Not modelled, deliberately**: the ability-score prerequisites (the DM grants the level, and an
+       automatic check could only get in the way of a table playing another way) and the new class's
+       features (applying its whole preset would overwrite the six ability scores, the hit die and the gear
+       of a character who already exists; the DM grants traits, as they already do).
+
+     **Found while doing it:** `Config.hitDiceByClass` was **empty until Forge parsed the toml**, so
+     `hitDieFor` answered d8 for every class during the whole of startup before that — and in every pure
+     test, which is why the max-HP check documented "here the die is always d8" as if it were a property
+     of the test rather than a defect. It is now seeded with the same defaults the config declares; the
+     toml still overwrites it wholesale on load, so nothing a DM configures changes. The existing check
+     now pins a fighter's real d10 *and* the d8 fallback for a class the table does not know. Keep building both on `PresetRegistry`, which now fills
+     class, hit die, abilities, gear and archetypes — a parallel "character builder" registry would be the
+     same data twice. **Multiclass stays last**: it re-derives the level tables that `SpellSlots` and
      `proficiencyBonusFor` pin at all 20 levels, so it is the one piece that can break what is already
      tested.
-  3. **The DM's prep loop, which is what a VTT actually sells. Half done: encounters
-     (`EncounterRegistry`, `/dndencounters`).** Spawning monsters one at a time is a demo, not a night of
+  3. **The DM's prep loop, which is what a VTT actually sells. DONE — encounters
+     (`EncounterRegistry`, `/dndencounters`) and imported builds (`/dnddungeon import`).** Spawning monsters one at a time is a demo, not a night of
      play. An encounter is a named group — `"dndsheets:goblin x4", "dndsheets:wolf x2"` — written before
      the session and dropped in one action, at your feet or at coordinates so it can be waiting behind
      the door.
@@ -1222,10 +1340,33 @@ dependencies, not preference.
      failure the check exists to catch (invariant 2). It now counts that enum from its source, since the
      enum itself cannot be loaded outside Forge: its constants resolve `DndPaths`.
 
-     **Still ahead in this item: maps somebody else built** — importing schematics / WorldEdit /
-     Litematica / Structurize builds as dungeon pieces. Same bet already made and already paid off for
+     **The other half — maps somebody else built.** Same bet already made and already paid off for
      creature models: the library Roll20 and Foundry sell is, here, an ecosystem that exists and is free.
-     Do not author a map library.
+     A `.nbt` dropped into `dndsheets/structures/` is pasted where you stand, or registered straight as a
+     piece when it already carries jigsaws.
+
+     - **No converter, and that is the decision, not the shortcut.** A `.nbt` structure *is* Minecraft's
+       own format, and Litematica, the map editors and the structure block all export to it — writing a
+       `.schem`/`.litematic` reader would be a few hundred lines to arrive where their own Export button
+       already arrives. What the mod owes the DM instead is the *sentence*: "that is a .schem, export it
+       to a vanilla structure first", which is what the failure now says.
+     - **The report is the feature.** A build exported from an editor carries **zero jigsaws**, and a
+       piece with no jigsaw can never be attached to anything — vanilla's placement matches a jigsaw on
+       the parent to one on the child. Told at import, that is a one-line instruction (add them with the
+       Wand); discovered at generation, it is a dungeon that does not appear and no clue as to why. So
+       importing *with* a pool refuses outright when there are no jigsaws, and importing without one
+       reports the count and the size.
+     - **It reuses `capturePiece` rather than writing a second path.** The import copies into the world's
+       `generated/` folder — exactly where a structure block saves, and exactly where capture already
+       looks — so a build from outside enters the existing dungeon flow without that flow learning
+       anything new. The library folder itself is deliberately **shared across worlds** (pieces belong to
+       a save; a downloaded house does not).
+     - **`structureNameFor` is pure and pinned**, because "Casa Grande (v2).nbt" has to become a legal
+       `ResourceLocation` path. Accents are stripped *before* filtering — the same bug as the
+       `npc-capit-n` slug, and in a Spanish-language mod that is half the filenames, not an edge case.
+     - **The template manager caches misses**, so the import invalidates the id before reading it back;
+       without that, anyone who named the id before the file existed keeps the cached "does not exist"
+       and the import looks like it did nothing.
   4. **Light and vision as a real rule. DONE** (`Light`, `VisionManager`, `/dndvision`). Cover was real
      geometry and darkness was decoration: a player raised their brightness setting and saw, and
      darkvision existed only as prose inside `items.json`. Below light level 4 a character is now
@@ -1263,15 +1404,53 @@ dependencies, not preference.
 
      It also got a Guide page, in both languages and in the Patchouli book — item 40's rule, and the
      self-test enforces it: a rule nobody is told about is a rule that gets reported as a bug.
-  5. **Positional voice**, as a soft dependency on Simple Voice Chat. Roll20 has an audio channel;
-     proximity voice over real geometry — hearing the thing before seeing it, the DM leaning over to one
-     player — is a table none of them can copy. Isolate it exactly like `CuriosCompat` (zero references
-     to its types outside a package-private class) and never make it mandatory.
-  6. **SRD 5.2 (2024, CC-BY-4.0) and an importer for community JSON.** The commercial VTTs sell official
-     WotC books; that flank is legally closed forever, so do not compete on catalogue — compete on
-     *everything a DM already has comes in*. 5.2 is a large, legal jump on top of the 5.1 import, and the
-     datapack path from item 41 is already the right foundation. It extends the `ATTRIBUTION.md`
-     obligation, which is a licence term and not a courtesy.
+  5. **Positional voice — out of scope, by decision.** Proximity voice over real geometry is a table
+     none of the competitors can copy, and it is worth having; it is just **not this mod's job**. Simple
+     Voice Chat already does it, a group installs it alongside, and it needs nothing from here. Writing
+     an integration would buy a soft dependency, a compat class and a second thing to keep working, in
+     exchange for what the two mods already do side by side. Do not build it.
+  6. **SRD 5.2 (2024, CC-BY-4.0) and an importer for community JSON. DONE** (`tools/import_srd.py`,
+     `DamageTypes.normalize`, 16 feats). The commercial VTTs sell official WotC books; that flank is
+     legally closed forever, so the competition is not on catalogue — it is on *everything a DM already
+     has comes in*.
+
+     - **The importer is the deliverable; the SRD 5.2 content is what proves it runs.** The 779 entries
+       already shipped were imported **by hand, once**, and that work left no trace in the repo: every
+       later expansion was the same work again, and a table that wanted its own content had to write it
+       entry by entry. A script that can be re-run is the difference between a catalogue and a pipeline.
+     - **Three input shapes, detected from the first record** — 5e-bits (`index`, the SRD transcription
+       for both 5.1 and 5.2), Open5e (`slug`, the community's OGL content), and **this mod's own format**
+       (`id`). That last one is not a joke case: it is how one table merges another table's pack.
+     - **`--into` only adds, and splices text.** Reading a pack with `json.load` and writing it back with
+       `json.dump` would reformat the hand-written entries that are already there (invariant 10), so new
+       entries are spliced in as lines before the closing `]`. An id already present is skipped and
+       reported. That is what makes it safe to point at a pack a DM has been editing.
+     - **What it cannot map honestly, it skips and says why.** Most SRD spells are utility spells with no
+       damage to roll; importing them anyway would produce spells that cast and do nothing — a failure
+       discovered at the table, three sessions later. 25 spells in, 5 out is the correct number.
+     - **The real defect it exposed was in the mod, not in the data.** A damage type is not a label that
+       gets printed: it is the **key** the target's resistances are looked up with. Every parse site
+       lowercased it and compared it raw, so a community pack written in English (`"damageType": "fire"`)
+       walked straight through a character's `"fuego": "resistant"` with nothing to show for it — the
+       number came out, and came out wrong. `DamageTypes.normalize` now runs at the four parse sites and
+       at the lookup, so English and Spanish packs compare identically; an unknown type is normalised
+       rather than discarded, which is what lets a table's homemade "sangrado" resist correctly. The
+       canonical list moved out of `SheetCommand` for the same reason: the list that is *suggested* and
+       the list that *decides* cannot be two lists.
+     - **SRD 5.2's real gift was the feats.** 5.1 contained exactly one (Grappler), which is why the feat
+       system shipped with a single example. 5.2 published the list, so 15 more come in: origin feats,
+       the four fighting styles, the seven Epic Boons. That forced the one genuinely mechanical addition,
+       **`minLevel`**: an Epic Boon is level 19, and without a gate it sat in the level-4 improvement list
+       as an option the server would refuse. It is checked in `FeatRegistry.grant`, not only in the screen
+       that offers it — the list is a suggestion, the grant is the rule — and the in-game feat form asks
+       for it too, because that form rewrites the whole entry and would otherwise silently strip the 19
+       off an imported Boon.
+     - **The Ability Score Improvement is not imported**, even though 5.2 lists it as a feat: here it *is*
+       the resource feats spend, so importing it would offer the improvement as an alternative to itself.
+     - **Translations live in `tools/lang/` as data**, so the command in `ATTRIBUTION.md` reproduces the
+       shipped Spanish pack instead of an English one. The attribution itself is pinned by the self-test
+       with the licence's own sentence — the first two attempts passed against a deleted section, because
+       "SRD 5.2" and "Creative Commons Attribution 4.0" both already appeared elsewhere in the file.
 
   **Still out of scope, and it is the same list as always:** fog of war, a token layer, the mod's own
   creature models, a web client, other tabletop systems. The first two are what the competition builds

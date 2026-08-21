@@ -52,10 +52,9 @@ public class SheetCommand {
 	//Solo sugerencias de tab (los 13 tipos de daño de 5e en español): cualquier otro texto sigue siendo
 	//válido, pero para que DamageTypes.multiplierFor coincida de verdad con lo que digan las armas/
 	//hechizos, conviene escribir siempre el mismo nombre exacto — de ahí que valga la pena sugerirlo.
-	private static final String[] DAMAGE_TYPE_SUGGESTIONS = {
-		"fisico", "cortante", "perforante", "contundente", "fuego", "frio", "rayo",
-		"acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno"
-	};
+	//La lista vive en DamageTypes, que es quien decide si una resistencia aplica. Duplicarla aqui era
+	//sugerirle al DM un tipo que luego podia no comparar igual.
+	private static final String[] DAMAGE_TYPE_SUGGESTIONS = net.hawthorn.dndsheets.DamageTypes.CANONICAL;
 
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
@@ -129,6 +128,14 @@ public class SheetCommand {
 				.then(Commands.literal("levelup")
 					.then(Commands.argument("jugadores", EntityArgument.players())
 						.executes(SheetCommand::levelUp)))
+				//Multiclase: un nivel EN una clase, no un nivel a secas. Lo concede el DM, como el resto de
+				//los niveles.
+				.then(Commands.literal("multiclass")
+					.then(Commands.argument("jugadores", EntityArgument.players())
+						.then(Commands.argument("clase", StringArgumentType.word())
+							.suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
+								net.hawthorn.dndsheets.PresetRegistry.ids(), builder))
+							.executes(SheetCommand::multiclass))))
 				.then(Commands.literal("setlevel")
 					.then(Commands.argument("jugadores", EntityArgument.players())
 						.then(Commands.argument("nivel", IntegerArgumentType.integer(1, 20))
@@ -339,6 +346,43 @@ public class SheetCommand {
 		sendSheetUpdate(target, sheet);
 	}
 
+	/**
+	 * <p>Sube un nivel <b>en una clase concreta</b>. Es lo mismo que {@code levelup} salvo en la única cosa
+	 * que la multiclase cambia: de qué clase es el nivel que se gana.</p>
+	 *
+	 * <p>Pasa por {@code applyLevel} igual que todo lo demás, así que la Mejora de Característica se concede
+	 * por el mismo sitio y en los mismos niveles totales — un guerrero 3 / mago 1 la recibe al llegar a 4,
+	 * que es lo que dice 5e. Escribir el nivel por otro camino habría sido la forma de perderla.</p>
+	 */
+	private static int multiclass(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		String classId = StringArgumentType.getString(ctx, "clase");
+		if (net.hawthorn.dndsheets.PresetRegistry.get(classId) == null) {
+			ctx.getSource().sendFailure(Component.literal("No conozco la clase \"" + classId
+				+ "\". Míralas con /dndpresets list."));
+			return 0;
+		}
+
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		for (ServerPlayer target : targets) {
+			JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
+			if (sheet == null) continue;
+
+			String currentClassId = sheet.has("appliedPresetId") ? sheet.get("appliedPresetId").getAsString() : "";
+			java.util.Map<String, Integer> levels = net.hawthorn.dndsheets.ClassLevels.addLevel(
+				sheet, classId, currentClassId, SheetLoader.characterLevelOf(sheet));
+
+			//applyLevel escribe el nivel total y concede lo que toque; el reparto ya está en la hoja, así que
+			//los PG y los espacios se recalculan solos leyéndolo.
+			applyLevel(target, net.hawthorn.dndsheets.ClassLevels.total(levels));
+			target.sendSystemMessage(Component.literal("Ahora eres " + net.hawthorn.dndsheets.ClassLevels.describe(levels)
+				+ ".").withStyle(net.minecraft.ChatFormatting.GREEN));
+		}
+
+		ctx.getSource().sendSuccess(() -> Component.literal("Nivel de " + classId + " concedido a "
+			+ targets.size() + " jugador(es)."), true);
+		return targets.size();
+	}
+
 	private static int giveInspirationItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		return giveItemToTargets(ctx, BardInspirationManager::buildInspirationStack, "Cuerno de Inspiración entregado");
 	}
@@ -401,7 +445,7 @@ public class SheetCommand {
 	//Fija resistencia/vulnerabilidad/inmunidad a un tipo de daño (p.ej. "fuego", "veneno") en la hoja;
 	//"normal" borra la entrada (ver DamageTypes.multiplierFor, que lee esta misma "damageAffinities").
 	private static int setDamageAffinity(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		String tipo = StringArgumentType.getString(ctx, "tipo").toLowerCase(java.util.Locale.ROOT);
+		String tipo = net.hawthorn.dndsheets.DamageTypes.normalize(StringArgumentType.getString(ctx, "tipo"));
 		String afinidad = StringArgumentType.getString(ctx, "afinidad").toLowerCase(java.util.Locale.ROOT);
 
 		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");

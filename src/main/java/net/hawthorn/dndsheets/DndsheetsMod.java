@@ -88,7 +88,19 @@ public class DndsheetsMod {
 	 * la mano igual para desalinearse después. Un número que hay que tocar a mano no impide el error, pero
 	 * lo convierte en una decisión en vez de un olvido.</p>
 	 */
-	public static final int NETWORK_SHAPE = 96;
+	public static final int NETWORK_SHAPE = 104;
+
+	/**
+	 * <p>El orden exacto en que las piezas cruzan el cable, resumido en un hash. {@link #NETWORK_SHAPE}
+	 * cuenta cuántas hay, y por eso no ve el fallo que la invariante 1 nombra primero: <b>reordenar</b> dos
+	 * entradas ya registradas no cambia la cuenta. Borrar baja el número, insertar en medio lo sube, pero
+	 * intercambiar dos deja 104 igual — y los ids se renumeran en silencio.</p>
+	 *
+	 * <p>Tampoco lo usa el juego: {@code JsonContentSelfTest.checkNetworkShape} rehace el hash desde la
+	 * fuente y tumba el build cuando no cuadra. Si mueves algo a propósito, sube {@link #PROTOCOL_VERSION}
+	 * y pega aquí el número que te diga el fallo.</p>
+	 */
+	public static final int NETWORK_ORDER = 88363992;
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 

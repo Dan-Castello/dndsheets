@@ -34,11 +34,13 @@ public class CharacterOptionsListMessage {
 	public static void handler(CharacterOptionsListMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
 		NetworkUtil.handleOnClient(context, () -> {
-			//Todavía no navegamos a ningún lado: la pantalla activa en este instante es la hoja que pidió
-			//la lista, así que es el momento de capturarla para volver a ELLA (no cerrar todo) al elegir
-			//o cancelar (ver CharacterOptionListScreen).
-			CharacterSheetScreen returnTo = Minecraft.getInstance().screen instanceof CharacterSheetScreen sheet ? sheet : null;
-			CharacterOptionListScreen.open(returnTo, message.category, message.options);
+			//Todavía no navegamos a ningún lado: la pantalla activa en este instante es la que pidió la
+			//lista, así que es el momento de capturarla para volver a ELLA (no cerrar todo) al elegir o
+			//cancelar (ver CharacterOptionListScreen).
+			//Se captura CUALQUIER pantalla y no solo la hoja: la lista de pasos (CharacterSetupScreen)
+			//también pide opciones, y devolverla a la hoja la echaría de la configuración a media faena.
+			//Es además lo que ya hacía PresetScreen, así que ahora los dos selectores vuelven igual.
+			CharacterOptionListScreen.open(Minecraft.getInstance().screen, message.category, message.options);
 		});
 	}
 }

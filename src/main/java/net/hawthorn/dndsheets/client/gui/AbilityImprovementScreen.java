@@ -23,7 +23,7 @@ import com.google.gson.JsonObject;
  */
 public class AbilityImprovementScreen extends ModalDialogScreen {
 	private static final int WIDTH = 280;
-	private static final int HEIGHT = 152;
+	private static final int HEIGHT = 176;
 	private static final int MAX_ABILITY = 20;
 
 	private static final String[] KEYS = {"strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"};
@@ -59,6 +59,15 @@ public class AbilityImprovementScreen extends ModalDialogScreen {
 		});
 		confirm.active = false;
 		this.confirmButton = confirm;
+
+		//La dote es la OTRA cara de esta misma elección en 5e ("+2 a una, +1 a dos, o una dote"), así que
+		//va en esta pantalla y no en otra: separarlas dejaría al jugador eligiendo sin ver la alternativa.
+		addModalButton(16, 140, 248, 20, Component.literal("...o coge una dote"), button -> {
+			DndsheetsMod.PACKET_HANDLER.sendToServer(
+				new net.hawthorn.dndsheets.network.BrowseActionMessage(
+					net.hawthorn.dndsheets.network.BrowseActionMessage.Action.LIST_FEATS));
+			this.onClose();
+		});
 		refresh();
 	}
 

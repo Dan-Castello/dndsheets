@@ -40,5 +40,7 @@ public class SheetClientMessage {
 		//(CharacterSheetSaveProcedure), la primera tirada después de cambiar escribía los datos del
 		//personaje viejo ENCIMA del nuevo. No era solo que no se refrescara: se perdían datos.
 		net.hawthorn.dndsheets.client.gui.CharacterSheetScreen.refreshIfOpen();
+		net.hawthorn.dndsheets.client.gui.SkillProficiencyScreen.refreshIfOpen();
+		net.hawthorn.dndsheets.client.gui.CharacterSetupScreen.refreshIfOpen();
 	}
 }

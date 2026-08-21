@@ -21,7 +21,20 @@ import java.util.Set;
 //y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
 //expone a que cambien de firma sin aviso.
 public class PresetRegistry {
-	public record ClassPreset(String id, String name, String hitDiceType, Map<String, Integer> abilities, String startingWeaponId, List<String> startingGear, int spellSlotsMax, List<String> traits, List<String> spells) {
+	/**
+	 * <p>Una subclase (arquetipo): la segunda mitad de lo que es un personaje en 5e, elegida unos niveles
+	 * después de la clase. Vive DENTRO de su preset y no en un registro propio porque una subclase sin su
+	 * clase no significa nada — "Escuela de Evocación" no es elegible por un bárbaro, y un registro aparte
+	 * obligaría a llevar la pareja a mano en los dos sentidos.</p>
+	 *
+	 * <p>Concede exactamente lo mismo que un preset (rasgos y hechizos) por el mismo camino, así que no
+	 * añade ninguna forma nueva de conceder nada. {@code criticalFrom} es la única excepción y existe por
+	 * un solo caso: el Campeón del guerrero critica con 19, que es el rasgo de subclase del SRD que este
+	 * motor sí puede sostener sin inventarse un subsistema. Cero significa "no lo toca".</p>
+	 */
+	public record Subclass(String id, String name, int level, List<String> traits, List<String> spells, int criticalFrom) {}
+
+	public record ClassPreset(String id, String name, String hitDiceType, Map<String, Integer> abilities, String startingWeaponId, List<String> startingGear, int spellSlotsMax, List<String> traits, List<String> spells, List<Subclass> subclasses) {
 		public int ability(String key) {
 			Integer score = abilities.get(key);
 			return score == null ? 10 : score;
@@ -92,7 +105,26 @@ public class PresetRegistry {
 			for (JsonElement el : json.getAsJsonArray("startingGear")) startingGear.add(el.getAsString());
 		}
 
-		return new ClassPreset(id, name, hitDiceType, abilities, startingWeaponId, startingGear, spellSlotsMax, traits, spells);
+		List<Subclass> subclasses = new ArrayList<>();
+		if (json.has("subclasses")) {
+			for (JsonElement element : json.getAsJsonArray("subclasses")) {
+				JsonObject entry = element.getAsJsonObject();
+				List<String> subTraits = new ArrayList<>();
+				if (entry.has("traits")) for (JsonElement el : entry.getAsJsonArray("traits")) subTraits.add(el.getAsString());
+				List<String> subSpells = new ArrayList<>();
+				if (entry.has("spells")) for (JsonElement el : entry.getAsJsonArray("spells")) subSpells.add(el.getAsString());
+				subclasses.add(new Subclass(
+					entry.get("id").getAsString(),
+					entry.has("name") ? entry.get("name").getAsString() : entry.get("id").getAsString(),
+					//Nivel 3 por defecto: es el de la mayoría de las clases del SRD, y una subclase sin nivel
+					//escrito es casi siempre una que sigue la norma.
+					entry.has("level") ? entry.get("level").getAsInt() : 3,
+					subTraits, subSpells,
+					entry.has("criticalFrom") ? entry.get("criticalFrom").getAsInt() : 0));
+			}
+		}
+
+		return new ClassPreset(id, name, hitDiceType, abilities, startingWeaponId, startingGear, spellSlotsMax, traits, spells, subclasses);
 	}
 
 	//Rellena los campos generales de la hoja. No toca "attacks" (ver PresetManager, que además entrega el arma inicial real).
@@ -116,6 +148,49 @@ public class PresetRegistry {
 		//Rasgo icónico de un preset caster: sin esto el Grimorio se quedaba vacío pese a tener espacios de
 		//conjuro — el preset configuraba el CONTADOR de espacios pero nunca daba ningún hechizo que gastarlos.
 		for (String spellId : preset.spells()) SpellRegistry.learn(sheet, spellId);
+	}
+
+	/**
+	 * <p>Las subclases que este personaje puede elegir ahora mismo: las de su preset cuyo nivel ya alcanzó.
+	 * Sin preset aplicado no hay ninguna, que es correcto — la subclase es una rama de la clase, así que
+	 * primero hay que tener clase.</p>
+	 */
+	public static List<Subclass> availableSubclasses(JsonObject sheet) {
+		if (sheet == null || !sheet.has("appliedPresetId")) return List.of();
+		ClassPreset preset = get(sheet.get("appliedPresetId").getAsString());
+		if (preset == null) return List.of();
+
+		int level = CharacterRules.levelOf(sheet);
+		List<Subclass> available = new ArrayList<>();
+		for (Subclass subclass : preset.subclasses()) {
+			if (level >= subclass.level()) available.add(subclass);
+		}
+		return available;
+	}
+
+	/**
+	 * <p>Aplica una subclase a la hoja. Devuelve false si esa subclase no es de la clase de este personaje o
+	 * si todavía no tiene nivel para ella: se comprueba aquí y no solo al pintar la lista, porque un cliente
+	 * modificado puede pedir cualquier id — la misma frontera de siempre.</p>
+	 *
+	 * <p><b>La elección es permanente</b>, como el pacto del brujo: no se revoca la anterior al elegir otra.
+	 * Cambiar de subclase es rehacer el personaje, y quitarle rasgos a alguien a mitad de campaña porque
+	 * pulsó una fila es peor que dejarle una subclase que no quería, que el DM puede arreglar.</p>
+	 */
+	public static boolean applySubclass(JsonObject sheet, String subclassId) {
+		for (Subclass subclass : availableSubclasses(sheet)) {
+			if (!subclass.id().equals(subclassId)) continue;
+
+			sheet.addProperty("appliedSubclassId", subclass.id());
+			//El nombre también, y no solo el id: es lo que lee la pantalla del cliente, que no tiene el
+			//registro. Mismo par que appliedPresetId/characterClass.
+			sheet.addProperty("characterSubclass", subclass.name());
+			if (subclass.criticalFrom() > 0) sheet.addProperty("criticalFrom", String.valueOf(subclass.criticalFrom()));
+			for (String traitId : subclass.traits()) TraitRegistry.grant(sheet, traitId);
+			for (String spellId : subclass.spells()) SpellRegistry.learn(sheet, spellId);
+			return true;
+		}
+		return false;
 	}
 
 	//Antes de conceder los rasgos del preset NUEVO, quita los del preset anterior (si había uno registrado

@@ -40,10 +40,10 @@ public class CharacterListScreen extends ListPickerScreen {
 		Minecraft.getInstance().setScreen(new CharacterListScreen(ids, labels));
 	}
 
-	//Deja sitio bajo la lista para las dos filas fijas: crear y borrar.
+	//Deja sitio bajo la lista para las tres filas fijas: competencias, crear y borrar.
 	@Override
 	protected int listHeight() {
-		return super.listHeight() - 2 * (BUTTON_HEIGHT + SPACING);
+		return super.listHeight() - 3 * (BUTTON_HEIGHT + SPACING);
 	}
 
 	@Override
@@ -55,6 +55,13 @@ public class CharacterListScreen extends ListPickerScreen {
 		//de las dos, y la destructiva no debería ser la que queda más a mano.
 		this.addRenderableWidget(net.hawthorn.dndsheets.client.gui.components.TomeButton.of(
 			Component.literal("+ Personaje nuevo..."), button -> NewCharacterScreen.open(),
+			left, y, buttonWidth(), BUTTON_HEIGHT));
+		y += BUTTON_HEIGHT + SPACING;
+		//Configurar es de un personaje, así que vive donde se elige personaje. La hoja no puede abrirlo: es
+		//una de las tres pantallas que sí son AbstractContainerScreen y su fila de botones ya está llena
+		//(ver el punto 25 de PROJECT_CONTEXT.md), y esta pantalla se abre desde ella.
+		this.addRenderableWidget(net.hawthorn.dndsheets.client.gui.components.TomeButton.of(
+			Component.literal("Configurar personaje..."), button -> CharacterSetupScreen.open(this),
 			left, y, buttonWidth(), BUTTON_HEIGHT));
 		y += BUTTON_HEIGHT + SPACING;
 		net.minecraft.client.gui.components.Button toggle = this.addRenderableWidget(

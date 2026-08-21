@@ -155,6 +155,32 @@ public class LevelUpManager {
 		return true;
 	}
 
+	/**
+	 * <p>Coger una dote <b>en vez de</b> la mejora de característica. Gasta la misma pendiente y por el mismo
+	 * sitio: si fueran dos recursos distintos, un nivel 4 daría las dos cosas y la elección dejaría de serlo.</p>
+	 *
+	 * <p>Se valida en el servidor, igual que la mejora y por lo mismo: "solo si te tocaba" y "solo una vez"
+	 * son comprobaciones que no pueden vivir donde el jugador manda.</p>
+	 */
+	public static boolean applyFeat(ServerPlayer target, String featId) {
+		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
+		if (sheet == null || pendingOf(sheet) <= 0) return false;
+		if (!FeatRegistry.grant(sheet, featId, MAX_ABILITY, SheetLoader.characterLevelOf(sheet))) return false;
+
+		sheet.addProperty(PENDING, pendingOf(sheet) - 1);
+		//Igual que la mejora: una dote que suba Constitución tiene que volver a derivar los PG máximos.
+		SheetLoader.applyClassHitPoints(target, sheet);
+		SheetLoader.saveServer(sheet, target.getStringUUID());
+		DndsheetsMod.PACKET_HANDLER.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> target),
+			new net.hawthorn.dndsheets.network.SheetClientMessage(sheet.toString().getBytes()));
+
+		String name = SheetLoader.characterNameOf(sheet, target);
+		ChatFeedback.broadcast(target, Component.translatable("chat.dndsheets.levelup.feat_taken", name,
+			FeatRegistry.get(featId).name()).withStyle(ChatFormatting.GREEN));
+		if (pendingOf(sheet) > 0) openImprovementScreen(target, pendingOf(sheet));
+		return true;
+	}
+
 	private static boolean raise(JsonObject sheet, String ability, int amount) {
 		int score = scoreOf(sheet, ability);
 		if (score >= MAX_ABILITY) return false;

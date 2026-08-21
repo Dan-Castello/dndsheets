@@ -199,7 +199,24 @@ public class Config {
 	//de compartir la textura del ítem base — null significa "sin modelo custom" (comportamiento de siempre).
 	public record WeaponGiveInfo(String displayName, String baseItemId, Integer customModelData) {}
 
-	private static Map<String, Integer> hitDiceByClass = new LinkedHashMap<>();
+	//Sembrado con los valores por defecto y no vacío: hasta que Forge carga el toml, hitDieFor devolvía d8
+	//para TODAS las clases, así que cualquier cosa que derivara PG antes de esa carga (o fuera del juego,
+	//como el self-test) daba números de una clase que no existe. El toml lo sobrescribe entero al cargar,
+	//así que sembrarlo no cambia nada de lo que el DM configure.
+	private static Map<String, Integer> hitDiceByClass = parseHitDice(defaultHitDice());
+
+	private static Map<String, Integer> parseHitDice(List<String> entries) {
+		Map<String, Integer> parsed = new LinkedHashMap<>();
+		for (String entry : entries) {
+			String[] parts = entry.split(":");
+			try {
+				parsed.put(parts[0].trim().toLowerCase(Locale.ROOT), Integer.parseInt(parts[1].trim()));
+			} catch (RuntimeException ignored) {
+				//Entradas inválidas ya se filtran por isValidEntry(), pero por si acaso.
+			}
+		}
+		return parsed;
+	}
 	private static Map<String, WeaponDefault> weaponDamageByItem = new LinkedHashMap<>();
 	private static Map<String, Integer> enchantBonusPerLevel = new LinkedHashMap<>();
 
@@ -221,7 +238,7 @@ public class Config {
 	public static void registerWeapon(String id, String dice, String ability, String damageType, String hands, String versatileDice, List<String> classes, String displayName, String baseItemId, Integer customModelData) {
 		List<String> normalizedClasses = new java.util.ArrayList<>();
 		for (String c : classes) normalizedClasses.add(c.toLowerCase(Locale.ROOT));
-		jsonWeapons.put(id, new WeaponDefault(dice, ability.toLowerCase(Locale.ROOT), damageType.toLowerCase(Locale.ROOT), hands.toLowerCase(Locale.ROOT), versatileDice, normalizedClasses));
+		jsonWeapons.put(id, new WeaponDefault(dice, ability.toLowerCase(Locale.ROOT), DamageTypes.normalize(damageType), hands.toLowerCase(Locale.ROOT), versatileDice, normalizedClasses));
 		jsonWeaponGiveInfo.put(id, new WeaponGiveInfo(displayName, baseItemId, customModelData));
 	}
 
@@ -455,16 +472,9 @@ public class Config {
 	}
 
 	private static void reload() {
-		Map<String, Integer> parsedHitDice = new LinkedHashMap<>();
-		for (String entry : HIT_DICE_ENTRIES.get()) {
-			String[] parts = entry.split(":");
-			try {
-				parsedHitDice.put(parts[0].trim().toLowerCase(Locale.ROOT), Integer.parseInt(parts[1].trim()));
-			} catch (NumberFormatException ignored) {
-				//Entradas inválidas ya se filtran por isValidEntry(), pero por si acaso.
-			}
-		}
-		hitDiceByClass = parsedHitDice;
+		List<String> configured = new java.util.ArrayList<>();
+		for (String entry : HIT_DICE_ENTRIES.get()) configured.add(entry);
+		hitDiceByClass = parseHitDice(configured);
 
 		Map<String, WeaponDefault> parsedWeapons = new LinkedHashMap<>();
 		for (String entry : WEAPON_DAMAGE_ENTRIES.get()) {

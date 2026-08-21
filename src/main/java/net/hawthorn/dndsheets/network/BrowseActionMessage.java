@@ -34,10 +34,11 @@ import java.util.function.Supplier;
 public class BrowseActionMessage {
 
 	//Al final, nunca en medio: writeEnum viaja por ordinal (ver la invariante 2 de PROJECT_CONTEXT.md).
-	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL, JOURNAL_DETAIL, DELETE, CREATE }
+	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL, JOURNAL_DETAIL, DELETE, CREATE, SKILL_TOGGLE, LIST_SUBCLASSES, SUBCLASS_CHOOSE, LIST_FEATS, FEAT_CHOOSE }
 
 	final Action action;
-	//Lo usan SWITCH y DELETE (un id) y CREATE (el nombre del personaje nuevo); las demás lo mandan vacío.
+	//Lo usan SWITCH y DELETE (un id), CREATE (el nombre del personaje nuevo) y SKILL_TOGGLE (el índice de
+	//la habilidad); las demás lo mandan vacío.
 	//El campo es un texto libre, así que CREATE cabe aquí sin registrar un mensaje más — invariante 3.
 	final String characterId;
 
@@ -89,6 +90,9 @@ public class BrowseActionMessage {
 					//Creado pero NO puesto: ponérselo es una acción aparte y deliberada (ver
 					//SheetLoader.createCharacter). Se dice, porque si no parece que no ha pasado nada.
 					sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.created", name).withStyle(ChatFormatting.GREEN));
+					//Sin esto, un personaje recién creado es una hoja en blanco y ninguna pista de que hay
+					//cuatro cosas que elegir ni de dónde están.
+					sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.setup_hint").withStyle(ChatFormatting.GRAY));
 					sendOwnCharacters(sender); //Reabre la lista ya con el nuevo dentro.
 					DndsheetsMod.LOGGER.info("dndsheets: personaje {} creado para {}", created, sender.getName().getString());
 				}
@@ -103,6 +107,24 @@ public class BrowseActionMessage {
 						sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.delete_failed").withStyle(ChatFormatting.RED));
 					}
 				}
+				//Elegir en qué eres competente es una acción sobre tu propio personaje, como cambiar de uno
+				//a otro: no se gatea por operador. Lo que NO puede hacer un jugador es escribir la expresión
+				//—"skills" es una clave de solo-operador en SheetServerMessage, justo para eso—, así que aquí
+				//el cliente manda un índice y la regla la escribe el servidor. Un cliente modificado solo
+				//puede pedir competencia en una habilidad suya, que es lo que la pantalla ya ofrece.
+				case SKILL_TOGGLE -> toggleSkill(sender, message.characterId);
+				//La subclase es de tu personaje, como el resto de esta pantalla: sin operador. Lo que decide
+				//qué puedes elegir lo pone el servidor (tu preset y tu nivel), no la lista que tenga el cliente.
+				case LIST_SUBCLASSES -> sendSubclasses(sender);
+				case SUBCLASS_CHOOSE -> chooseSubclass(sender, message.characterId);
+				//Las dotes se listan siempre; lo que decide si se puede coger una es tener una mejora
+				//pendiente, y eso lo comprueba LevelUpManager al elegirla.
+				case LIST_FEATS -> sendFeats(sender);
+				case FEAT_CHOOSE -> {
+					if (!net.hawthorn.dndsheets.LevelUpManager.applyFeat(sender, message.characterId)) {
+						sender.sendSystemMessage(Component.translatable("chat.dndsheets.levelup.feat_unavailable").withStyle(ChatFormatting.RED));
+					}
+				}
 				case SWITCH -> {
 					if (SheetLoader.switchCharacter(sender, message.characterId)) {
 						JsonObject sheet = SheetLoader.getCharacterSheet(message.characterId);
@@ -115,6 +137,76 @@ public class BrowseActionMessage {
 				}
 			}
 		});
+	}
+
+	private static void sendFeats(ServerPlayer player) {
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		List<String> taken = net.hawthorn.dndsheets.FeatRegistry.takenBy(sheet);
+		int level = SheetLoader.characterLevelOf(sheet);
+		List<String> ids = new ArrayList<>();
+		List<String> labels = new ArrayList<>();
+		for (String id : net.hawthorn.dndsheets.FeatRegistry.ids()) {
+			net.hawthorn.dndsheets.FeatRegistry.Feat feat = net.hawthorn.dndsheets.FeatRegistry.get(id);
+			//Las que aun no le tocan por nivel SI se quitan, al contrario que las ya cogidas: un Don Epico de
+			//nivel 19 en la lista de un nivel 4 no es informacion, es una opcion que el servidor va a rechazar.
+			if (!net.hawthorn.dndsheets.FeatRegistry.availableAt(feat, level)) continue;
+			ids.add(id);
+			//Las que ya tiene se mandan marcadas en vez de quitarlas: que una lista encoja sin explicación
+			//se lee como que falta contenido, y esto es justo lo contrario.
+			labels.add((taken.contains(id) ? "✔ " : "") + feat.name());
+		}
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
+			new BrowseListMessage(BrowseListMessage.Kind.FEAT, ids, labels));
+	}
+
+	private static void sendSubclasses(ServerPlayer player) {
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		List<String> ids = new ArrayList<>();
+		List<String> labels = new ArrayList<>();
+		for (net.hawthorn.dndsheets.PresetRegistry.Subclass subclass
+				: net.hawthorn.dndsheets.PresetRegistry.availableSubclasses(sheet)) {
+			ids.add(subclass.id());
+			labels.add(subclass.name());
+		}
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
+			new BrowseListMessage(BrowseListMessage.Kind.SUBCLASS, ids, labels));
+	}
+
+	private static void chooseSubclass(ServerPlayer player, String subclassId) {
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		if (sheet == null) return;
+		if (!net.hawthorn.dndsheets.PresetRegistry.applySubclass(sheet, subclassId)) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.character.subclass_unavailable").withStyle(ChatFormatting.RED));
+			return;
+		}
+
+		SheetLoader.saveServer(sheet, player.getStringUUID());
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.character.subclass_chosen",
+			sheet.get("characterSubclass").getAsString()).withStyle(ChatFormatting.GREEN));
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
+			new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+	}
+
+	private static void toggleSkill(ServerPlayer player, String rawIndex) {
+		int index;
+		try {
+			index = Integer.parseInt(rawIndex.trim());
+		} catch (NumberFormatException e) {
+			return;
+		}
+
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		if (sheet == null) return;
+		SheetLoader.validateSheet(sheet); //Una hoja vieja puede no tener aún las 18 habilidades.
+
+		boolean proficient = !net.hawthorn.dndsheets.RollIndex.isSkillProficient(sheet, index);
+		if (!net.hawthorn.dndsheets.RollIndex.setSkillProficiency(sheet, index, proficient)) return;
+
+		//Invariante 4: lo que cambia una hoja tiene que llegar a saveServer. El autoguardado es una red de
+		//seguridad, no el camino de escritura.
+		SheetLoader.saveServer(sheet, player.getStringUUID());
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
+			new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 	}
 
 	/**

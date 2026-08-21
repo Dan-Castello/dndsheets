@@ -67,6 +67,25 @@ public final class SpellSlots {
 	}
 
 	/**
+	 * <p>Escribe un máximo nuevo y ajusta lo que queda: los espacios ganados entran <b>llenos</b> y los que
+	 * ya se habían gastado siguen gastados. Compartido por la ruta de una clase y la de multiclase, que solo
+	 * se diferencian en qué tabla leen.</p>
+	 */
+	private static void applySlots(JsonObject sheet, int[] max) {
+		int[] before = readSlots(sheet, "spellSlotsMaxByLevel");
+		int[] current = currentSlots(sheet);
+
+		for (int level = 1; level <= MAX_SPELL_LEVEL; level++) {
+			int gained = Math.max(0, max[level] - before[level]);
+			current[level] = Math.min(max[level], current[level] + gained);
+		}
+
+		writeSlots(sheet, "spellSlotsMaxByLevel", max);
+		writeSlots(sheet, "spellSlotsByLevel", current);
+		syncTotals(sheet);
+	}
+
+	/**
 	 * <p>Espacios máximos por nivel de conjuro. El índice es el nivel de conjuro (1..9); el 0 va siempre a
 	 * cero porque los trucos son a voluntad.</p>
 	 */
@@ -202,6 +221,29 @@ public final class SpellSlots {
 	 * descanso largo con el que se sube, así que darlos vacíos obligaría a otro descanso para estrenarlos.</p>
 	 */
 	public static void applyProgression(JsonObject sheet, String characterClass, int characterLevel) {
+		//Un multiclase no lee su tabla por el nombre de la clase: la lee por su nivel de lanzador, que sale
+		//del reparto (ver ClassLevels.casterLevel). Y la tabla que lee es SIEMPRE la de lanzador completo —
+		//esa es la regla de 5e, no una aproximación: el semilanzador ya se pagó al mitad al sumar.
+		if (ClassLevels.isMulticlass(sheet)) {
+			java.util.Map<String, Integer> mix = ClassLevels.of(sheet);
+			int casterLevel = ClassLevels.casterLevel(mix);
+			if (casterLevel > 0) {
+				applySlots(sheet, maxSlots(Caster.FULL, casterLevel));
+				return;
+			}
+			//Sin nivel de lanzador puede quedar el pacto: un guerrero/brujo no aporta nada a la tabla de
+			//arriba y sin embargo lanza. Si hubiera las dos cosas manda la de arriba, porque esta hoja solo
+			//sabe llevar una reserva y quedarse corto es la dirección segura.
+			for (java.util.Map.Entry<String, Integer> entry : mix.entrySet()) {
+				if (casterFor(entry.getKey()) == Caster.PACT) {
+					applySlots(sheet, maxSlots(Caster.PACT, entry.getValue()));
+					return;
+				}
+			}
+			migrateFlatPool(sheet);
+			return;
+		}
+
 		Caster caster = casterFor(characterClass);
 		if (caster == Caster.NONE) {
 			//Una clase que no lanza no lleva progresión, pero eso NO significa "sin espacios": el DM puede
@@ -211,18 +253,7 @@ public final class SpellSlots {
 			return;
 		}
 
-		int[] max = maxSlots(caster, characterLevel);
-		int[] before = readSlots(sheet, "spellSlotsMaxByLevel");
-		int[] current = currentSlots(sheet);
-
-		for (int level = 1; level <= MAX_SPELL_LEVEL; level++) {
-			int gained = Math.max(0, max[level] - before[level]);
-			current[level] = Math.min(max[level], current[level] + gained);
-		}
-
-		writeSlots(sheet, "spellSlotsMaxByLevel", max);
-		writeSlots(sheet, "spellSlotsByLevel", current);
-		syncTotals(sheet);
+		applySlots(sheet, maxSlots(caster, characterLevel));
 	}
 
 	/**
