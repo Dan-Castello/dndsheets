@@ -1,13 +1,13 @@
 # Project context — dndsheets
 
-Deep-dive reference for anyone (human or AI) picking up this codebase cold. `README.md` is the player/DM-facing pitch; `GUI_REFERENCE.md` and `DUNGEON_GUIDE.md` are authoritative for their areas. This file is the map that ties them together, plus the parts none of them cover: architecture, why things are shaped the way they are, every real bug found during the most recent testing pass (with root causes, not just symptoms), and the commit history.
+Deep-dive reference for anyone (human or AI) picking up this codebase cold. This is the only prose document in the repo: the per-topic guides it used to point at (screen catalogue, dungeon walkthrough, addon guide) were folded in or retired. This file is the map that ties them together, plus the parts none of them cover: architecture, why things are shaped the way they are, every real bug found during the most recent testing pass (with root causes, not just symptoms), and the commit history.
 
 ## What this is
 
 A Minecraft Forge mod (**1.20.1**, Forge `47.2.0`/`47.4.10`, mod id `dndsheets`) that turns Minecraft into a D&D 5e VTT: a fillable character sheet bound to a keypress, real 5e combat resolution layered on top of vanilla PvP/mob combat (opt-in per weapon/monster/spell — anything unconfigured behaves like normal Minecraft), and a full DM toolkit (spawn monsters with real stat blocks, run initiative, generate dungeons from vanilla's jigsaw system, create content in-game). It needs to be installed on both client and server. It targets 1.20.1 today and **the door to future
 Minecraft versions is deliberately left open** — see "Portability to future Minecraft versions" below for
 what a port actually costs, measured against this tree rather than guessed. Other tabletop systems are out
-of scope (see the FAQ in `README.md`) — PRs welcome if someone wants to.
+of scope — PRs welcome if someone wants to.
 
 ## Invariants — break these and it fails silently
 
@@ -40,9 +40,15 @@ before your first edit.
 6. **A dungeon start pool must contain only pieces that have the start jigsaw.** Vanilla picks one
    random piece from the pool and searches only inside it, never retrying. Mixed pools fail
    non-deterministically.
-7. **Read `GUI_REFERENCE.md` before adding or moving a screen.** Almost every screen should extend
-   `ListPickerScreen` or `SmallFormScreen`; the two worst layout bugs in the project's history
-   both came from a screen fighting its base's math instead of using it.
+7. **Never hand-roll a screen's layout: extend one of the three bases.** `FormPanelScreen` owns the
+   parchment panel and its arithmetic (frame, title, rule, the `Math.max(44, ...)` floor, stacked rows,
+   `EditBox` labels); `SmallFormScreen` adds the Confirm/Cancel/Delete contract on top of it;
+   `ListPickerScreen` is the scrollable row list; `ModalDialogScreen` is the fixed-size dialog. **No
+   concrete screen extends bare `Screen`** — only those bases do. The two worst layout bugs in the
+   project's history both came from the one screen that used to: `SheetAdjustScreen` re-derived the
+   vertical floor (cutting rows off-screen) and split a 190px row into two 90px fields, leaving an
+   "Apply" button **2 pixels wide**. Use `addFieldRow(...)`, which divides the width instead of
+   guessing it.
 8. **Content JSON is user data.** Adding a field is fine; renaming or requiring one breaks every
    pack a DM already wrote. Every parser defaults missing fields and isolates errors per element.
 9. **Leave vanilla alone when nothing is configured.** An unregistered weapon, a mob with no stat
@@ -102,11 +108,11 @@ datapacks/dndsheets_loot/    A loot-table datapack bundled with the mod (separat
 runClient/, runServer/       Local dev run directories (gitignored except structure) — this is
                              where `saves/<world>/dndsheets/` and `saves/<world>/datapacks/
                              dndsheets_dungeon/` actually live during testing.
-AUDIT_REPORT_2026.md         Historical technical-debt ledger (F1-F26). All 26 closed; kept as history.
-GUI_REFERENCE.md             Every screen: file, type, exact widget coordinates. Consult before
-                             touching layout instead of re-deriving it from code.
-DUNGEON_GUIDE.md             DM-facing dungeon walkthrough + troubleshooting, kept in sync with
-                             the actual jigsaw/reload/pool mechanics (see bugs #6-#9 below).
+PROJECT_CONTEXT.md           This file. The only prose document left: the invariants, the roadmap,
+                             the rules core, the SRD licence obligation and the bug ledger. The
+                             per-topic documents (screen catalogue, dungeon walkthrough, addon
+                             guide, technical-debt ledger) were removed once their content was
+                             either absorbed here or fully resolved.
 ```
 
 ## The rules core (read this before touching combat)
@@ -186,13 +192,13 @@ mirror-image reason.
 
 **The in-game content creator** (`ContentType` enum + `ContentPackFile` + `ContentFormScreen`) is the newest major piece and worth understanding before extending it. `ContentType` has one constant per id-keyed content type (WEAPON/SPELL/PRESET/TRAIT/MONSTER), each wrapping that type's `load`/`remove`. `ContentPackFile.upsert`/`removeById` read-modify-write a dedicated `dm_created.json` per type (kept separate from hand-authored packs so the tool never overwrites a file a DM manages by hand), then the caller re-invokes the type's normal `loadFile` to hot-register — there is no separate persistence layer, it's the exact same pipeline as a hand-dropped file, just automated. `ContentFormScreen` is a **generic** data-driven form (`FieldSpec` list → `SmallFormScreen`) for the three flat-schema types (weapons/spells/presets); traits (nested level→dice tables) and monsters (attack lists, created by capturing a live-configured NPC instead of a from-scratch form) don't fit that shape and get bespoke screens (`TraitEditScreen`, `MonsterTemplateSaveScreen`). Race/background/class options use a separate `OptionsManageScreen`/`OptionsSaveMessage` pair because of the replace-not-merge semantics mentioned above — trying to fold them into the `ContentType` abstraction would be forcing two genuinely different mechanics into one shape.
 
-**GUI architecture**: three real `AbstractContainerScreen`s (character sheet, roll editor, advanced roll editor); everything else is a plain `Screen` opened imperatively via a static `open(...)`. Two shared bases carry almost every "plain" screen: **`ListPickerScreen`** (title + bordered panel + scrollable button list, optional "< Atrás" back button when opened with a `parent`, optional search box via overriding `searchable()` — filters the button list live, see bug #12) and **`SmallFormScreen`** (a short vertical form of `EditBox`/cyclic-button fields + Confirm/Cancel, optional third "Borrar" button via overriding `showDeleteButton()`/`onDelete()`, see bug #6). `GuiStyle` is the single source of the shared panel look. Read `GUI_REFERENCE.md` before adding a screen — there's almost always an existing base or widget that fits; the two size bugs below (#2, #3) both came from a screen fighting its base's layout math instead of using it.
+**GUI architecture**: three real `AbstractContainerScreen`s (character sheet, roll editor, advanced roll editor); everything else is a plain `Screen` opened imperatively via a static `open(...)`. Two shared bases carry almost every "plain" screen: **`ListPickerScreen`** (title + bordered panel + scrollable button list, optional "< Atrás" back button when opened with a `parent`, optional search box via overriding `searchable()` — filters the button list live, see bug #12) and **`SmallFormScreen`** (a short vertical form of `EditBox`/cyclic-button fields + Confirm/Cancel, optional third "Borrar" button via overriding `showDeleteButton()`/`onDelete()`, see bug #6). `GuiStyle` is the single source of the shared panel look. See invariant 7 before adding a screen — there's almost always an existing base or widget that fits; the two size bugs below (#2, #3) both came from a screen fighting its base's layout math instead of using it.
 
 **Networking**: every message is a small hand-written class (constructor, `FriendlyByteBuf` constructor, `buffer`, `handler` — no codec), registered once in `DndsheetsMod.registerNetworkMessages` (alphabetical, message id assigned by registration order — **never reorder or delete an entry**, it silently renumbers everything after it for anyone on a mismatched client/server build; `PROTOCOL_VERSION` exists precisely so a mismatch fails clean instead of desyncing). `DndsheetsMod.withDmTarget(context, targetUuid, action)` is the shared op-check + target-resolution helper used by every DM-acts-on-another-player message. Bulk "give one of several similar items" actions (the class-resource items, dungeon piece list, content entries) consistently use one message parameterized by an enum/type field rather than one message class per variant — follow that when adding another "pick one of N similar things" flow instead of writing N message classes.
 
 **Sheet persistence**: `SheetLoader` keeps every player's sheet as an in-memory `JsonObject` (keyed by UUID), backed by one JSON file per player under `<server>/charactersheets/`. The single write path is `SheetLoader.saveServer` — historically only called when a sheet was created or when the *owning player* saved their own sheet screen; DM-initiated edits (gold, slots, presets, traits, ...) relied on a 5-minute autosave timer + save-on-clean-shutdown instead, which was a real, since-fixed bug (#5 below). If you add a new way to mutate a sheet, make sure it ends up calling `saveServer` (directly or through `SheetCommand.sendSheetUpdate`) rather than assuming the autosave will catch it.
 
-**Dungeon generation**: `DungeonPieceRegistry` (per-world, not per-instance like the content registries) holds captured pieces. `DungeonManager` converts them into vanilla `template_pool` datapack JSON (`publish`) and calls vanilla's `JigsawPlacement.generateJigsaw` (`generate`). This area has more vanilla-API sharp edges than anywhere else in the mod — see bugs #7-#10, all found by reading decompiled vanilla source and directly inspecting a broken world's files rather than guessing from the Java side alone. If you touch this again, `DUNGEON_GUIDE.md`'s "regla de oro" callout and the decompiled-source findings below are the fastest way back to speed.
+**Dungeon generation**: `DungeonPieceRegistry` (per-world, not per-instance like the content registries) holds captured pieces. `DungeonManager` converts them into vanilla `template_pool` datapack JSON (`publish`) and calls vanilla's `JigsawPlacement.generateJigsaw` (`generate`). This area has more vanilla-API sharp edges than anywhere else in the mod — see bugs #7-#10, all found by reading decompiled vanilla source and directly inspecting a broken world's files rather than guessing from the Java side alone. If you touch this again, the "regla de oro" (invariant 6) and the decompiled-source findings below are the fastest way back to speed.
 
 ## Bugs found and fixed (most recent testing pass)
 
@@ -204,7 +210,7 @@ Numbered in roughly the order found. Each was root-caused, not just patched at t
 4. **DM Panel actions gave zero feedback.** `SheetAdjustMessage`'s handler ran gold/slots/advantage/damage-affinity/pact/level changes but never told the DM anything happened, so a *working* change looked broken. Fixed with one confirmation chat message covering all six actions.
 5. **DM-side sheet edits didn't survive a restart.** `SheetCommand.sendSheetUpdate` (the shared exit point for gold/slots/advantage/damage-affinity/pact/level) only sent the network update to the target player — it never called `SheetLoader.saveServer`. Changes lived in memory only, reaching disk exclusively via the 5-minute autosave or a clean `/stop`. An abrupt restart during testing silently lost recent changes, which read as "gold resets with the server." Fixed by saving in that same shared method.
 6. **Dungeon piece / content-entry delete UX wasted a full extra row per item.** Started as command-only, then a `"Borrar: id"` companion row per list entry — the user pointed out that doubled every list's height for no reason. Settled on a `SmallFormScreen.showDeleteButton()`/`onDelete()` hook (a third button alongside Confirm/Cancel on the *edit* screen, not the list), applied to `DungeonPieceEditScreen` and the content creator's weapon/spell/preset editor; `TraitEditScreen` (not a `SmallFormScreen`) gets an explicit row since it doesn't have the hook available.
-7. **Dungeon pieces captured a stale `.nbt` snapshot.** A vanilla Structure Block's "Save" button snapshots the world *at that instant*, not continuously. `DUNGEON_GUIDE.md`'s original documented order — save the structure block, *then* place/configure jigsaws — meant jigsaw configuration done afterward via the DM Wand never made it into the captured piece unless the DM remembered to re-press Save by hand. Fixed by having the DM Wand call `StructureBlockEntity.saveStructure()` itself the instant it opens the capture form (`DungeonToolManager.onCaptureFromStructureBlock`), so order no longer matters. (The auto-resave can itself fail if the structure block isn't in SAVE mode at that moment — added a precise diagnostic for that case rather than a generic "didn't work.")
+7. **Dungeon pieces captured a stale `.nbt` snapshot.** A vanilla Structure Block's "Save" button snapshots the world *at that instant*, not continuously. The originally documented order — save the structure block, *then* place/configure jigsaws — meant jigsaw configuration done afterward via the DM Wand never made it into the captured piece unless the DM remembered to re-press Save by hand. Fixed by having the DM Wand call `StructureBlockEntity.saveStructure()` itself the instant it opens the capture form (`DungeonToolManager.onCaptureFromStructureBlock`), so order no longer matters. (The auto-resave can itself fail if the structure block isn't in SAVE mode at that moment — added a precise diagnostic for that case rather than a generic "didn't work.")
 8. **`/reload` cannot make a new/edited dungeon pool available, ever, in the same session.** Confirmed by decompiling vanilla source: `ReloadableServerResources.listeners()` — the exact list `/reload` refreshes — is `[tagManager, lootData, recipes, functionLibrary, advancements]`. `Registries.TEMPLATE_POOL` is a "worldgen" registry, populated only when the *world itself* loads, never touched by `/reload`. `DungeonManager.publish()` still calls `/reload` (harmless, and it does register the datapack as "known" for next time) but the mod now tells the DM the true fix: leave to the main menu and re-enter the world (or restart a dedicated server) once per new/edited pool, not every generation.
 9. **The real "No starting jigsaw found" bug: mixing pieces in the start pool.** Confirmed by decompressing the user's actual captured `.nbt` files and counting jigsaw markers directly (not guessable from Java-side reasoning alone). Vanilla's `JigsawPlacement.addPieces` picks **one random, weight-biased piece from the entire start pool** and searches *only inside that one piece* for the jigsaw named `dndsheets:dungeon_start` — it never retries with a different piece on failure. A pool containing both an entrance piece (has the jigsaw) and regular connector pieces (don't) had a real, non-intermittent probability of failing every single generation. Fixed with `DungeonManager.hasStartJigsaw()` — proactive validation (same NBT scan vanilla does internally, just done ahead of time) before ever calling vanilla's generator, with a message stating the actual problem and fix. `DungeonPieceListScreen` now also marks `[inicio]` on pieces that have the jigsaw, so the mixup is visible before it becomes a failure.
 10. **Unhelpful pool-name validation message.** DMs repeatedly typed a structure's own namespace (e.g. `dndsheets_dm:dungeon`) into pool fields, which must be a bare word (auto-namespaced to `dndsheets:X`). Centralized one educational message (`DungeonManager.poolNameError`) across the 6 call sites that previously each had their own generic "not a valid pool name."
@@ -212,7 +218,7 @@ Numbered in roughly the order found. Each was root-caused, not just patched at t
 12. **Long GUI lists had no way to filter.** Added an opt-in `searchable()` to `ListPickerScreen` (live-filters the existing scrollable button list, no new widget type) and enabled it on every screen backed by a potentially-long or data-driven list: player picker, weapon/spell/monster/preset/trait pickers, content-creator lists, race/background/class option lists. Left the dungeon piece list and Grimoire un-searchable — both already override `listTop()` for their own reasons and would need extra care to compose correctly with the search box's reserved space.
 13. **In-game tutorial vs. README** (a design correction, not a bug): the first attempt at "add a tutorial" was a big walkthrough section added to `README.md` — which never ships with the compiled mod jar. Pivoted to make the *existing* `GuideBook` (already opened via a sheet/DM-Panel button, previously never triggered proactively) the actual source of truth: now auto-opens once on a player's genuine first join (reusing "no sheet file exists yet for this UUID" as the signal — no new persisted flag needed), reachable anytime via `/dndguide` or the existing buttons, and its page content was expanded to cover class-resource items and the previously-undocumented `/dndsheet`/`/dndweapons`/`/dndpresets` admin subcommands. `README.md`'s tutorial section was kept as repo/contributor-facing documentation, not treated as the in-game delivery mechanism.
 
-For older, already-resolved technical debt (naming, duplication, dead code — not user-facing bugs), see `AUDIT_REPORT_2026.md`; only one item there (F26, test coverage for `rollAttack`/`rollDamage`) is still open.
+Older, already-resolved technical debt (naming, duplication, dead code — not user-facing bugs) lived in a separate ledger, now closed and removed. `AUDIT_REPORT_2026.md`; only one item there (F26, test coverage for `rollAttack`/`rollDamage`) is still open.
 
 ## Commit history
 
@@ -244,7 +250,8 @@ dependencies, not preference.
   in its alphabetical slot — see invariant 1.
 - **Fase 2 — SRD content. Imported in four batches; the bestiary is done.** 24 → **87 spells**
   13 → **330 monsters** and 0 → **362 magic items** (145 with resistances, 68 of them conditional). Content comes from
-  SRD 5.1 under CC-BY-4.0 — see `ATTRIBUTION.md`, which is a licence obligation, not a courtesy.
+  SRD 5.1 under CC-BY-4.0 — see "Atribución de contenido de terceros" at the end of this file, which is
+  a licence obligation, not a courtesy.
 
   Putting content **after** Fase 0 was load-bearing, not tidiness. The very first batch found two
   engine bugs that would have silently ruined a bulk import: `dice` was mandatory so a
@@ -1127,7 +1134,7 @@ dependencies, not preference.
       first version of the check parsed the example file directly and **passed with the loader
       broken**; it now goes through `loadJson`, which is the thing that had to work.
 
-      `ADDONS.md` documents both paths, and `src/test/resources/addon_example/` is a working datapack
+      `src/test/resources/addon_example/` is a working datapack
       that the self-test parses with the real parsers — executable documentation rather than a
       snippet that can rot.
 
@@ -1455,7 +1462,7 @@ dependencies, not preference.
        off an imported Boon.
      - **The Ability Score Improvement is not imported**, even though 5.2 lists it as a feat: here it *is*
        the resource feats spend, so importing it would offer the improvement as an alternative to itself.
-     - **Translations live in `tools/lang/` as data**, so the command in `ATTRIBUTION.md` reproduces the
+     - **Translations live in `tools/lang/` as data**, so the importer command documented at the end of this file reproduces the
        shipped Spanish pack instead of an English one. The attribution itself is pinned by the self-test
        with the licence's own sentence — the first two attempts passed against a deleted section, because
        "SRD 5.2" and "Creative Commons Attribution 4.0" both already appeared elsewhere in the file.
@@ -1518,16 +1525,84 @@ between today and the day someone decides to do it.
 - Touching combat, damage, AC, hit points or conditions → go through `Combatant`. If you find
   yourself writing `instanceof Player` to decide how to read a stat, that branch already exists
   behind the interface.
-- Adding a screen or touching layout → read `GUI_REFERENCE.md` first, reuse `ListPickerScreen`/`SmallFormScreen`.
+- Adding a screen or touching layout → invariant 7 above: extend `FormPanelScreen`/`SmallFormScreen`/
+  `ListPickerScreen`/`ModalDialogScreen`, never bare `Screen`, and never hand-place a row.
 - Adding a content type or command → check whether it fits the `ContentType`/`NamedRegistry`/`JsonRegistryLoader` pattern before writing a parallel one.
 - Touching item NBT, or reaching for a mixin / access transformer → read "Portability to future Minecraft
   versions" above first. Those are the two decisions that set the price of a future port, and
   `checkPortabilityCoupling` fails the build rather than let one in unnoticed.
-- Touching dungeons → read `DUNGEON_GUIDE.md`'s "regla de oro" and bugs #7-#11 above before assuming `/reload` or a captured piece is trustworthy without checking.
+- Touching dungeons → the "regla de oro" (a start pool holds ONLY pieces with the start jigsaw) and bugs #7-#11 above, before assuming `/reload` or a captured piece is trustworthy without checking.
 - Anything DM-facing that hands out an item/teaches a spell/spawns a monster → there's almost certainly an existing `GiveableItem`-style pattern or DM Panel row to extend rather than a new one-off.
 - Cómo se VE un monstruo → `MonsterRegistry.Appearance` (equipo, cría, brillo) y `baseEntity`, que
   acepta la entidad de cualquier mod instalado. El mod no trae ni traerá modelos propios: la biblioteca
   de fichas que tienen Roll20 o Foundry aquí es el ecosistema de mods de criaturas. Antes de elegir un
   modelo nuevo, comprobar dos cosas que el JSON no dice: si dibuja el equipo (el aldeano no) y si actúa
   por su cuenta (warden, guardián anciano, enderman y gólem de nieve se descartaron por eso).
-  Comprobado en `checkMonsterAppearance`, documentado para addons en `ADDONS.md`.
+  Comprobado en `checkMonsterAppearance`.
+
+## Atribución de contenido de terceros (obligación de licencia)
+
+Esto no es cortesía: es la condición bajo la que se puede redistribuir el contenido. Vivía en
+`ATTRIBUTION.md`; al quedar un solo documento, se mudó aquí entero. `JsonContentSelfTest`
+comprueba que las citas literales sigan presentes, así que borrarlas tumba el build.
+
+### SRD 5.1
+
+Parte del contenido incluido en este mod (hechizos, monstruos y sus estadísticas) deriva del
+**System Reference Document 5.1 ("SRD 5.1")** de Wizards of the Coast LLC, bajo licencia
+**Creative Commons Attribution 4.0 International (CC-BY-4.0)**.
+
+> This work includes material taken from the System Reference Document 5.1 ("SRD 5.1") by
+> Wizards of the Coast LLC and available at
+> https://dnd.wizards.com/resources/systems-reference-document.
+> The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License,
+> available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
+Los datos se importaron de la transcripción JSON de
+[5e-bits/5e-database](https://github.com/5e-bits/5e-database), también CC-BY-4.0. Los nombres se
+tradujeron al español y las estadísticas se adaptaron a los esquemas de este mod; esas
+adaptaciones y traducciones son obra de este proyecto.
+
+### SRD 5.2
+
+Las **dotes** que se envían (`feats.json`) derivan del **System Reference Document 5.2
+("SRD 5.2")**, la publicación de 2024 de Wizards of the Coast LLC, también bajo **CC-BY-4.0**.
+
+> This work includes material from the System Reference Document 5.2 ("SRD 5.2") by Wizards of the
+> Coast LLC and available at https://www.dndbeyond.com/srd. The SRD 5.2 is licensed under the
+> Creative Commons Attribution 4.0 International License, available at
+> https://creativecommons.org/licenses/by/4.0/legalcode.
+
+Hubo que ir a buscarlo porque el SRD 5.1 traía **una sola dote** (Luchador): durante todo el
+desarrollo, la elección "mejora de característica o dote" tenía una única alternativa. El SRD 5.2
+publicó la lista entera, y de ahí salen las 15 restantes.
+
+### Qué NO está incluido, y no va a estarlo
+
+Contenido de manuales cerrados de D&D (Xanathar's, Tasha's, Volo's, monstruos y subclases fuera
+del SRD). Este mod se distribuye públicamente y solo puede llevar material redistribuible.
+
+### Archivos afectados
+
+- `src/main/resources/dndsheets/defaults/spells.json` (SRD 5.1)
+- `src/main/resources/dndsheets/defaults/monsters.json` (SRD 5.1)
+- `src/main/resources/dndsheets/defaults/items.json` (SRD 5.1)
+- `src/main/resources/dndsheets/defaults/feats.json` (SRD 5.2)
+- `tools/lang/srd52_feats_es.json` (traducción de este proyecto del texto del SRD 5.2)
+- `test/dndsheets/*/ejemplo.json`
+
+Cualquier ampliación futura de estos packs desde el SRD queda cubierta por esta misma atribución.
+
+### Cómo se reproduce la importación
+
+No es prosa, es un comando. Los packs se regeneran con `tools/import_srd.py`, que lee la
+transcripción JSON del SRD (5.1 o 5.2) y la traduce a los esquemas de este mod:
+
+```
+python tools/import_srd.py --kind feat --from https://raw.githubusercontent.com/5e-bits/5e-database/main/src/2024/en/5e-SRD-Feats.json --lang tools/lang/srd52_feats_es.json --into src/main/resources/dndsheets/defaults/feats.json
+```
+
+Las traducciones viven en `tools/lang/` precisamente para que ese comando devuelva el archivo que
+se envía y no una versión en inglés: la adaptación queda como dato, no como trabajo perdido. El
+mismo importador acepta [Open5e](https://open5e.com/) para contenido **OGL** de la comunidad — ese
+material NO se envía con el mod; lo trae cada mesa a su mundo bajo la licencia que le corresponda.

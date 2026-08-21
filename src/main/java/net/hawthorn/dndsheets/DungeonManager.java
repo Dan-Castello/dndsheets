@@ -77,7 +77,7 @@ public class DungeonManager {
 
 	//Mensaje compartido por los ~6 sitios que rechazan un pool inválido (comando y red) — el error más
 	//común con diferencia es escribir el espacio de nombres de la ESTRUCTURA (p.ej. "dndsheets_dm:dungeon",
-	//que el DM eligió libremente al nombrar el bloque de estructura, ver DUNGEON_GUIDE.md paso 1) en el
+	//que el DM eligió libremente al nombrar el bloque de estructura) en el
 	//campo de POOL, que se autonamespacea solo a "dndsheets:X" y nunca debería llevar ":" escrito a mano.
 	public static Component poolNameError(String poolName) {
 		return Component.translatable("chat.dndsheets.dungeon.bad_pool_name",

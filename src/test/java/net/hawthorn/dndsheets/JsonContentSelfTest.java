@@ -978,7 +978,7 @@ public class JsonContentSelfTest {
 	}
 
 	//No cubierto hasta ahora pese a no depender del runtime de Forge (mismo perfil que los *Registry de
-	//arriba) — ver AUDIT_REPORT_2026.md F26. "1d1" tira siempre 1: da un total determinista sin depender
+	//arriba) — cierra el hallazgo F26. "1d1" tira siempre 1: da un total determinista sin depender
 	//de aleatoriedad para poder comprobar la sustitución de $str/$prof/$hprof con un assert exacto.
 	/**
 	 * <p>Cierra F26, lo ultimo que quedaba abierto del ledger: {@code checkDice()} cubria {@code roll()} a
@@ -2472,14 +2472,14 @@ public class JsonContentSelfTest {
 			"falta tools/import_srd.py: sin él, ampliar el contenido vuelve a ser trabajo a mano sin rastro");
 		//Sin saltos de linea ni ">" de cita: la frase que exige la licencia ocupa dos lineas del Markdown, y
 		//buscarla tal cual ataba la comprobacion a donde cae el corte de linea.
-		String attribution = Files.readString(Path.of("ATTRIBUTION.md"))
+		String attribution = Files.readString(Path.of("PROJECT_CONTEXT.md"))
 			.replaceAll("(?m)^>", " ").replaceAll("\\s+", " ");
 		//Lo que se exige es la frase EXACTA que pide la licencia del 5.2. Buscar "SRD 5.2" a secas daba por
 		//buena una atribución borrada (la sigla sale en los párrafos que la explican), y buscar "Creative
 		//Commons Attribution 4.0" también, porque el bloque del SRD 5.1 ya la lleva. Una comprobación que
 		//aprueba el archivo sin la cita no comprueba la cita.
 		assertTrue(attribution.contains("SRD 5.2 is licensed under the Creative Commons Attribution 4.0"),
-			"falta la cita literal que exige la licencia del SRD 5.2 en ATTRIBUTION.md: sin ella, enviar "
+			"falta la cita literal que exige la licencia del SRD 5.2 en PROJECT_CONTEXT.md: sin ella, enviar "
 				+ "feats.json es redistribuir material CC-BY sin atribuir");
 		assertTrue(attribution.contains("feats.json"),
 			"y a decir qué archivos son: una atribución que no señala el archivo no señala nada");

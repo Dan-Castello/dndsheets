@@ -19,7 +19,7 @@ import java.util.Locale;
  *
  * <p>Clase pura, sin nada de Minecraft, para poder comprobar las tablas en el self-test.</p>
  *
- * <p>Tablas del SRD 5.1 (CC-BY-4.0), ver ATTRIBUTION.md.</p>
+ * <p>Tablas del SRD 5.1 (CC-BY-4.0); la atribución que exige la licencia vive en PROJECT_CONTEXT.md.</p>
  */
 public final class SpellSlots {
 

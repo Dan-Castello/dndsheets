@@ -20,7 +20,7 @@ import java.util.Locale;
  * quitar, acción de monstruo) como los menús de botón fijo (Panel de DM, Modo turnos) — un menú fijo
  * no es más que una lista que nunca necesita desplazarse. Antes cada una repetía las mismas
  * constantes de layout, el reenvío de {@code mouseScrolled} a la lista y {@code isPauseScreen() ->
- * false}; ver GUI_REFERENCE.md.</p>
+ * false}.</p>
  *
  * <p>{@code init()} e {@code render()} no son {@code final}: una pantalla con contenido extra (un
  * subtítulo, un botón fijo bajo la lista) puede sobrescribirlos, llamar a {@code super} primero y

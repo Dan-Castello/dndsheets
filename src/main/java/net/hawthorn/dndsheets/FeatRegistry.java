@@ -19,7 +19,7 @@ import java.util.Set;
  * <p><b>El SRD 5.1 traía una sola dote</b> (Luchador), y durante un tiempo eso fue todo lo que se podía
  * enviar. El <b>SRD 5.2</b> (2024, también CC-BY-4.0) publicó la lista entera, así que ahora vienen las 16
  * que se pueden redistribuir: las de origen, los estilos de combate y los Dones Épicos. Se importaron con
- * {@code tools/import_srd.py} (ver {@code ATTRIBUTION.md}), y una mesa o un addon siguen pudiendo añadir
+ * {@code tools/import_srd.py} (ver la atribución del SRD en {@code PROJECT_CONTEXT.md}), y una mesa o un addon siguen pudiendo añadir
  * las suyas <b>poniendo un JSON en una carpeta</b>, igual que con hechizos, monstruos o encuentros.</p>
  *
  * <p>Lo que el SRD 5.2 obligó a modelar es el <b>nivel mínimo</b>: los Dones Épicos son de nivel 19 y los

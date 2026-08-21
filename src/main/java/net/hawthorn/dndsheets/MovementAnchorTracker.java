@@ -19,7 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 //Presupuesto de movimiento y anclaje de posición del modo turnos — extraído de TurnManager (ver
-//AUDIT_REPORT_2026.md F3): quien NO tiene el turno queda anclado donde estaba; quien SÍ lo tiene solo
+//hallazgo F3): quien NO tiene el turno queda anclado donde estaba; quien SÍ lo tiene solo
 //puede alejarse hasta su "speed" de hoja antes de que se le devuelva a la última posición válida. Estado
 //propio, sin tocar el orden de turnos — recibe lo que necesita como parámetro en vez de leer los campos
 //de TurnManager directamente.

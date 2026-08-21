@@ -50,7 +50,7 @@ public class MonsterRegistry {
 	 *
 	 * <p>La respuesta de fondo, la que da un ecosistema de verdad, está en {@code baseEntity}: acepta
 	 * CUALQUIER entidad registrada, también la de otro mod. Un addon con dragones de verdad se enchufa
-	 * escribiendo su id ahí, sin tocar este mod. Ver ADDONS.md.</p>
+	 * escribiendo su id ahí, sin tocar este mod.</p>
 	 */
 	public record Appearance(String mainHand, String offHand, String helmet, String chestplate, String leggings,
 			String boots, boolean baby, boolean glowing) {

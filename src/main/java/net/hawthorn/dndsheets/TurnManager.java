@@ -279,7 +279,7 @@ public class TurnManager {
 	private static final Map<Integer, List<StatusEffect>> effects = new HashMap<>();
 
 	//Anclaje de posición y presupuesto de movimiento del modo turnos — ver MovementAnchorTracker
-	//(AUDIT_REPORT_2026.md F3).
+	//(hallazgo F3).
 	private static final MovementAnchorTracker movementAnchors = new MovementAnchorTracker();
 
 	//Rasgos con duración en asaltos (Furia del bárbaro, etc.) en vez de ticks reales — ver
@@ -299,7 +299,7 @@ public class TurnManager {
 	//ya que /dndturns start mete a todos los jugadores conectados en el radio.
 	private static final Set<Integer> reactionUsed = new HashSet<>();
 
-	//Ataques de oportunidad del modo turnos — ver OpportunityAttackTracker (AUDIT_REPORT_2026.md F3).
+	//Ataques de oportunidad del modo turnos — ver OpportunityAttackTracker (hallazgo F3).
 	private static final OpportunityAttackTracker opportunityAttacks = new OpportunityAttackTracker();
 
 	//Público: usado por Escudo/Contrahechizo (fuera de turno) y por el ataque de oportunidad de abajo

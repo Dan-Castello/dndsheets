@@ -7,7 +7,7 @@ import net.minecraft.client.gui.GuiGraphics;
  * cortos, diálogos): un tomo encuadernado en cuero con cantoneras de latón, dibujado con el biselado
  * que usa la GUI de Minecraft. Es el único sitio donde vive ese aspecto — cambiarlo aquí lo cambia en
  * las más de cuarenta pantallas que cuelgan de {@code ListPickerScreen}, {@code SmallFormScreen} y
- * {@code ModalDialogScreen}. Ver GUI_REFERENCE.md.</p>
+ * {@code ModalDialogScreen}.</p>
  *
  * <p><b>Por qué biselado y no un borde plano.</b> Minecraft dibuja TODA su interfaz con dos líneas de
  * bisel — clara arriba e izquierda, oscura abajo y derecha— sobre un relleno liso. Es lo que hace que un

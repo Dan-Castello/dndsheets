@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-//Ataques de oportunidad del modo turnos — extraído de TurnManager (ver AUDIT_REPORT_2026.md F3): qué
+//Ataques de oportunidad del modo turnos — extraído de TurnManager (ver hallazgo F3): qué
 //monstruos tenían a quien se mueve al alcance cuerpo a cuerpo, para dispararles la reacción en cuanto se
 //alejan sin desengancharse. Estado propio; recibe el orden de turnos como parámetro en vez de leer el
 //campo de TurnManager directamente.
