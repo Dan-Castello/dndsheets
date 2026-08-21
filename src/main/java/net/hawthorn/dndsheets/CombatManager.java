@@ -296,7 +296,7 @@ public class CombatManager {
 		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(attackerSheet, expression, advantage);
 		if (attackRoll.outcome().result() == null) return null;
 		CombatFx.diceTick(attacker);
-		sendSheetUpdate(attacker);
+		persistAndSendSheetUpdate(attacker);
 
 		String attackerName = SheetLoader.characterNameOf(attackerSheet, attacker);
 		//Cobertura, CA efectiva, acierto y crítico: mismas reglas, y mismo código, que cuando ataca un
@@ -608,7 +608,13 @@ public class CombatManager {
 	//Llamado justo después de consumeAdvantage/BardInspirationManager.consumeAttackBonus en cada tirada de
 	//ataque: en vez de reenviar la hoja completa, manda solo los dos campos que esos dos métodos acaban de
 	//tocar — antes esto pasaba en CADA golpe de CADA combate. Ver AUDIT_TECHNICAL.md M-NET-1.
-	private static void sendSheetUpdate(Player player) {
+	private static void persistAndSendSheetUpdate(Player player) {
+		//Los tres consumos de arriba mutan la hoja en memoria; sin esto solo viajaban al cliente y quedaban
+		//colgando del autosave de 5 minutos (invariante 4). Afecta al espacio de conjuro que gasta el
+		//Castigo Divino, que es el que de verdad duele perder.
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		if (sheet != null) SheetLoader.saveServer(sheet, player.getStringUUID());
+
 		JsonObject patch = new JsonObject();
 		patch.addProperty("nextAttackAdvantage", "normal");
 		patch.add("bardicInspiration", JsonNull.INSTANCE);

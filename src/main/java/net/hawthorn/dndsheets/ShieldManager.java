@@ -1,14 +1,12 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
-import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.network.PacketDistributor;
 
 /**
  * <p>Escudo: clic derecho marca el hechizo como "listo" en la hoja (mismo patrón que Castigo Divino/
@@ -34,6 +32,7 @@ public class ShieldManager {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (sheet == null) return;
 		sheet.addProperty("shieldReady", true);
+		SheetLoader.saveAndSync(player, sheet);
 		CombatFx.activate(player);
 		player.sendSystemMessage(Component.literal("Escudo listo: se activará solo si un ataque te acertaría sin él.").withStyle(ChatFeedback.RESOURCE));
 	}
@@ -51,13 +50,9 @@ public class ShieldManager {
 		if (!SpellSlots.hasSlotFor(sheet, LEVEL) || !TurnManager.tryReact(victim)) return normalAc;
 
 		SpellSlots.spend(sheet, LEVEL);
-		sendSheetUpdate(victim, sheet);
+		SheetLoader.saveAndSync(victim, sheet);
 		victim.sendSystemMessage(Component.literal("¡Escudo! Tu CA sube a " + (normalAc + AC_BONUS) + " y el golpe falla.").withStyle(ChatFormatting.AQUA));
 		return normalAc + AC_BONUS;
-	}
-
-	private static void sendSheetUpdate(ServerPlayer player, JsonObject sheet) {
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes()));
 	}
 
 	public static ItemStack buildShieldStack() {

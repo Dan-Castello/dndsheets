@@ -1,7 +1,6 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
-import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,7 +11,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.network.PacketDistributor;
 
 /**
  * <p>Contrahechizo: mismo "listo, se activa solo cuando ayuda" que Escudo (ver {@link ShieldManager}), pero
@@ -41,6 +39,7 @@ public class CounterspellManager {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (sheet == null) return;
 		sheet.addProperty("counterspellReady", true);
+		SheetLoader.saveAndSync(player, sheet);
 		CombatFx.activate(player);
 		player.sendSystemMessage(Component.literal("Contrahechizo listo: anulará el próximo hechizo que veas lanzar cerca, mientras tengas reacción y espacios.").withStyle(ChatFeedback.RESOURCE));
 	}
@@ -72,14 +71,10 @@ public class CounterspellManager {
 			//"listo" para siempre y anulaba cualquier hechizo enemigo que pasara cerca en cualquier ronda
 			//futura sin que el jugador tuviera que volver a prepararlo (se podía "spamear" pasivamente).
 			sheet.addProperty("counterspellReady", false);
-			sendSheetUpdate(player, sheet);
+			SheetLoader.saveAndSync(player, sheet);
 			return SheetLoader.characterNameOf(sheet, player);
 		}
 		return null;
-	}
-
-	private static void sendSheetUpdate(ServerPlayer player, JsonObject sheet) {
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes()));
 	}
 
 	public static ItemStack buildCounterspellStack() {

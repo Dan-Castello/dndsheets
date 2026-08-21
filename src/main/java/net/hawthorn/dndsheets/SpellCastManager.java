@@ -78,6 +78,11 @@ public class SpellCastManager {
 	 */
 	private static int spendSlot(ServerPlayer caster, JsonObject casterSheet, int spellLevel, int minSlotLevel) {
 		int spent = SpellSlots.spend(casterSheet, spellLevel, minSlotLevel);
+		//Persistir, no solo avisar: el espacio gastado es estado de la hoja (invariante 4). Antes solo salía
+		//el parche al cliente, así que cerrar el servidor antes del autosave devolvía el espacio ya gastado.
+		//Se guarda con saveServer y no con saveAndSync porque el parche por campo de abajo ya sincroniza, y
+		//es mucho más barato que mandar la hoja entera en cada lanzamiento.
+		SheetLoader.saveServer(casterSheet, caster.getStringUUID());
 		sendSlotsUpdate(caster, casterSheet);
 		return spent;
 	}

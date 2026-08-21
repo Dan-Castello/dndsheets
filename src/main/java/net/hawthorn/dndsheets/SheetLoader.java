@@ -390,6 +390,23 @@ public class SheetLoader {
 		return Math.max(1, fallbackEntity.experienceLevel); //Los PJ de D&D nunca son nivel 0, pero el XP de Minecraft empieza en 0.
 	}
 
+	/**
+	 * <p>Persiste la hoja Y se la manda al cliente, en ese orden. Es el par que la <b>invariante 4</b> pide:
+	 * quien muta una hoja tiene que llegar a {@link #saveServer}, y quien la muta desde el servidor casi
+	 * siempre necesita además que el jugador lo vea.</p>
+	 *
+	 * <p>Existe porque el par se estaba escribiendo a medias. Cuatro managers de flag armado
+	 * ({@code CounterspellManager}, {@code PaladinSmiteManager}, {@code ShieldManager},
+	 * {@code SorcererMetamagicManager}) mutaban la hoja y <b>solo</b> avisaban al cliente, y tres de ellos
+	 * tenían su propio {@code sendSheetUpdate} privado idéntico. El estado quedaba colgando del autosave de
+	 * 5 minutos, que es la red de seguridad y no la ruta de escritura — apagar el servidor antes de que
+	 * saltara devolvía el escudo, el castigo o el espacio de conjuro ya gastados.</p>
+	 */
+	public static void saveAndSync(ServerPlayer player, JsonObject sheet) {
+		saveServer(sheet, player.getStringUUID());
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes()));
+	}
+
 	//Save the given sheet into a JSON file, making a new one if it doesn't exist, and updates the "sheets" HashMap.
 	//El id se resuelve por activeCharacterOf igual que en la lectura: los 3 llamadores pasan un UUID de
 	//jugador, y sin esto guardarían siempre sobre la hoja legacy en vez de sobre el personaje que lleva

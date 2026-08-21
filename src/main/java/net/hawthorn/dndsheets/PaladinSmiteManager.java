@@ -51,6 +51,7 @@ public class PaladinSmiteManager {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (sheet == null) return;
 		sheet.addProperty("smitePending", true);
+		SheetLoader.saveServer(sheet, player.getStringUUID());
 		//Un flag armado que no se ve es un flag que se olvida: el paladín no sabía si le quedaba el castigo
 		//preparado de hace tres turnos o si ya lo gastó.
 		JsonObject patch = new JsonObject();

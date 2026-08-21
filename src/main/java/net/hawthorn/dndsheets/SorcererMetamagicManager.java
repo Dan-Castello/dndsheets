@@ -32,6 +32,7 @@ public class SorcererMetamagicManager {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (sheet == null) return;
 		sheet.addProperty("twinnedSpellPending", true);
+		SheetLoader.saveAndSync(player, sheet);
 		CombatFx.activate(player);
 		player.sendSystemMessage(Component.literal("Tu próximo hechizo de un solo objetivo alcanzará también a un segundo objetivo cercano.").withStyle(ChatFeedback.RESOURCE));
 	}
