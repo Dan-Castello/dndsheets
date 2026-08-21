@@ -61,17 +61,13 @@ public class DruidWildShapeManager {
 			}
 		};
 
-		if (TurnManager.isActive()) {
-			TurnManager.onRoundsPass(DURATION_ROUNDS, expire);
-		} else {
-			DndsheetsMod.queueServerWork(DURATION_TICKS, expire);
-		}
+		TurnManager.scheduleExpiry(DURATION_ROUNDS, DURATION_TICKS, expire);
 
 		player.sendSystemMessage(Component.literal("¡Adoptas Forma Salvaje! Tus golpes a mano desnuda son zarpazos reales.").withStyle(ChatFeedback.RESOURCE));
 	}
 
 	//--- Ítem de Forma Salvaje: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos
-	//de interacción por separado — ver AUDIT_TECHNICAL.md M-EVT-1. Mismo patrón que el Tótem de Furia
+	//de interacción por separado. Mismo patrón que el Tótem de Furia
 	//(BarbarianRageManager). ---
 
 	static void tryUse(PlayerInteractEvent event) {

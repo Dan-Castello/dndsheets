@@ -20,7 +20,7 @@ public class DeathSaveScreen extends ModalDialogScreen {
 	private static final int HEIGHT = 115;
 
 	protected DeathSaveScreen() {
-		super(Component.literal("Salvación de Muerte"), WIDTH, HEIGHT);
+		super(Component.translatable("gui.dndsheets.death_save.title"), WIDTH, HEIGHT);
 	}
 
 	public static void open() {
@@ -35,13 +35,13 @@ public class DeathSaveScreen extends ModalDialogScreen {
 
 	@Override
 	protected void init() {
-		addModalButton(20, 60, WIDTH - 40, 20, Component.literal("Tirar salvación de muerte"), button ->
+		addModalButton(20, 60, WIDTH - 40, 20, Component.translatable("gui.dndsheets.death_save.roll"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new DeathSaveRollMessage())
 		);
 		//Dejarse morir: para quien no quiere seguir tirando (personaje que ya cumplió su arco, sesión que
 		//se tiene que cortar, etc.) — mata de verdad al instante, mismo camino que 3 fallos de salvación
 		//(ver DeathSaveManager.handleGiveUpRequest). Sin confirmación extra: un solo clic, igual que tirar.
-		addModalButton(20, 85, WIDTH - 40, 20, Component.literal("Dejarse morir").withStyle(ChatFormatting.DARK_RED), button ->
+		addModalButton(20, 85, WIDTH - 40, 20, Component.translatable("gui.dndsheets.death_save.give_up").withStyle(ChatFormatting.DARK_RED), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new DeathSaveGiveUpMessage())
 		);
 	}
@@ -61,14 +61,14 @@ public class DeathSaveScreen extends ModalDialogScreen {
 		this.renderPanel(guiGraphics);
 
 		int top = dialogTop();
-		guiGraphics.drawCenteredString(this.font, Component.literal("¡Estás caído!"), this.width / 2, top + 8, 0xFFFFFF);
+		guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.death_save.downed"), this.width / 2, top + 8, 0xFFFFFF);
 
 		JsonObject sheet = SheetLoader.getClientSheet();
 		int successes = sheet != null && sheet.has("deathSaveSuccesses") ? sheet.get("deathSaveSuccesses").getAsInt() : 0;
 		int failures = sheet != null && sheet.has("deathSaveFailures") ? sheet.get("deathSaveFailures").getAsInt() : 0;
 
-		guiGraphics.drawCenteredString(this.font, Component.literal("Éxitos: " + marks(successes) + "     Fallos: " + marks(failures)), this.width / 2, top + 24, 0xAAAAAA);
-		guiGraphics.drawCenteredString(this.font, Component.literal("Otro jugador puede reanimarte interactuando contigo."), this.width / 2, top + 38, 0x888888);
+		guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.death_save.marks", marks(successes), marks(failures)), this.width / 2, top + 24, 0xAAAAAA);
+		guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.death_save.revive_hint"), this.width / 2, top + 38, 0x888888);
 
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 	}

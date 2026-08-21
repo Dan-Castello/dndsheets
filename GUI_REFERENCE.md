@@ -15,7 +15,7 @@ El mod usa la API de GUI **vanilla de Minecraft/Forge** (`net.minecraft.client.g
 Documentados una sola vez aquí; las pantallas que los usan solo indican qué instancia crean (posición/tamaño), no repiten su comportamiento.
 
 - `GuiStyle` (`client/gui/GuiStyle.java`) — colores y panel de fondo compartidos por toda pantalla plana sin textura propia.
-- `TomeButton` (`client/gui/components/TomeButton.java`) — fila y botón con la identidad del mod: tira de pergamino sobre cuero, filete de latón a la izquierda y biselado de Minecraft. **Sustituye al botón gris de vanilla en todo el mod: no queda ni un `Button.builder` en `src/main/java`.** Las tres bases (`ListPickerScreen.addRow`, `SmallFormScreen`, `ModalDialogScreen.addModalButton`) cubren la mayoría, pero **cinco pantallas fabrican los suyos a mano** —`SheetAdjustScreen` (10), `CharacterSheetScreen` (3), `GrimoireScreen`, `RollEditorScreen` y `AdvancedRollEditorScreen`— y hay que convertirlas una a una. Al añadir un botón nuevo, usar `TomeButton.of(mensaje, onPress, x, y, w, h)`; `Button.builder(...)` sale gris y desentona.
+- `TomeButton` (`client/gui/components/TomeButton.java`) — fila y botón con la identidad del mod: tira de pergamino sobre cuero, filete de latón a la izquierda y biselado de Minecraft. **Sustituye al botón gris de vanilla en todo el mod: no queda ni un `Button.builder` en `src/main/java`.** Las tres bases (`ListPickerScreen.addRow`, `SmallFormScreen`, `ModalDialogScreen.addModalButton`) cubren la mayoría, pero **seis pantallas fabrican los suyos a mano** —`SheetAdjustScreen` (10), `CharacterSheetScreen` (4), `CharacterListScreen` (3), `GrimoireScreen` (2), `RollEditorScreen` y `AdvancedRollEditorScreen`— y hay que convertirlas una a una. Al añadir un botón nuevo, usar `TomeButton.of(mensaje, onPress, x, y, w, h)`; `Button.builder(...)` sale gris y desentona.
 - `DirectionalCycleButton` **extiende `TomeButton`**, no `Button`: siendo un `Button` pelado se pintaba gris pese al rediseño. El foco se marca por **dos** vías —fondo y filete encendido, más texto aclarado— porque un solo cambio de tono sobre fondo oscuro no se distingue con brillo bajo. El texto se centra en el hueco que queda tras el filete, no en el botón entero, o quedaría descuadrado.
 - `ListPickerScreen` (`client/gui/ListPickerScreen.java`) — base para pantallas de lista/menú vertical de botones. Maneja la navegación "&lt; Atrás" (ver más abajo). Dibuja un filete de latón bajo el título: separa la cabecera sin gastar una fila entera de alto.
 - `ModalDialogScreen` (`client/gui/ModalDialogScreen.java`) — base para diálogos centrados de tamaño fijo. Usada por `RestChoiceScreen`, `RestVoteScreen`, `DeathSaveScreen`.
@@ -248,9 +248,9 @@ Dos columnas de 9 filas cada una, separación vertical `SKILL_SEPARATION = 20`.
 - **Tipo:** extiende `SmallFormScreen` (ver esa sección), `titleRows=3`
 - **Cómo se abre:** `AddMonsterAttackScreen.open(int entityId)` — desde el botón "+ Añadir ataque" de `MonsterActionScreen`
 - **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `SmallFormScreen`
-- **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*3` (`ROW_HEIGHT=26` → `height/2 - 78`)
+- **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*3` (`ROW_HEIGHT=30` → `height/2 - 90`)
 
-Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=26`. Campos/cíclicos añadidos con `addField(...)`/`addCycleButton(...)`, Confirmar/Cancelar generados automáticamente por la base.
+Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=30`. Campos/cíclicos añadidos con `addField(...)`/`addCycleButton(...)`, Confirmar/Cancelar generados automáticamente por la base.
 
 | Widget | Tipo | X | Y | Ancho | Alto | Notas |
 |---|---|---|---|---|---|---|
@@ -271,9 +271,9 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 - **Tipo:** extiende `SmallFormScreen` (ver esa sección), `titleRows=2`
 - **Cómo se abre:** `SpawnGenericScreen.open()` — desde el Panel de DM
 - **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `SmallFormScreen`
-- **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*2` (= `height/2 - 52`)
+- **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*2` (= `height/2 - 60`)
 
-Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=26`
+Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=30`
 
 | Widget | Tipo | X | Y | Ancho | Alto | Notas |
 |---|---|---|---|---|---|---|
@@ -293,9 +293,9 @@ Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HE
 - **Tipo:** extiende `SmallFormScreen` (ver esa sección), `titleRows=2`
 - **Cómo se abre:** `AddTurnEffectScreen.open(String targetUuid)` — callback pasado a `PlayerPickerScreen.open(...)` desde el botón "Aplicar efecto" de `TurnControlScreen`
 - **Textura de fondo:** ninguna — panel `GuiStyle` dibujado por `SmallFormScreen`
-- **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*2` (= `height/2 - 52`)
+- **Tamaño del panel:** full-screen centrado; `centerX = width/2`; `y0 = height/2 - ROW_HEIGHT*2` (= `height/2 - 60`)
 
-Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=26`
+Constantes (en `SmallFormScreen`): `FIELD_WIDTH=160`, `FIELD_HEIGHT=20`, `ROW_HEIGHT=30`
 
 | Widget | Tipo | X | Y | Ancho | Alto | Notas |
 |---|---|---|---|---|---|---|

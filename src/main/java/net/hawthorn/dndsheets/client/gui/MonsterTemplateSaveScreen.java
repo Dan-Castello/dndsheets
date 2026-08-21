@@ -20,7 +20,7 @@ public class MonsterTemplateSaveScreen extends SmallFormScreen {
 	private EditBox idBox, abilitiesBox;
 
 	private MonsterTemplateSaveScreen(int entityId, Screen parent) {
-		super(Component.literal("Guardar como plantilla"), 1, parent);
+		super(Component.translatable("gui.dndsheets.monster_action.save_template"), 1, parent);
 		this.entityId = entityId;
 	}
 

@@ -19,12 +19,14 @@ import java.util.function.Consumer;
 public class PlayerPickerScreen extends ListPickerScreen {
 	private final Consumer<String> onPick;
 
-	private PlayerPickerScreen(String prompt, Consumer<String> onPick, Screen parent) {
-		super(Component.literal(prompt), parent);
+	private PlayerPickerScreen(Component prompt, Consumer<String> onPick, Screen parent) {
+		super(prompt, parent);
 		this.onPick = onPick;
 	}
 
-	public static void open(String prompt, Consumer<String> onPick) {
+	//El prompt entra ya como Component para que pueda ser translatable: era un String suelto, y eso
+	//obligaba a que los once sitios que la abren escribieran su titulo en espanol fijo.
+	public static void open(Component prompt, Consumer<String> onPick) {
 		Minecraft.getInstance().setScreen(new PlayerPickerScreen(prompt, onPick, Minecraft.getInstance().screen));
 	}
 

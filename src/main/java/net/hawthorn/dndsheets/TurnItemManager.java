@@ -17,7 +17,7 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 public class TurnItemManager {
 
 	//Se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos de interacción por
-	//separado — ver AUDIT_TECHNICAL.md M-EVT-1.
+	//separado.
 	static void tryUse(PlayerInteractEvent event, boolean isNext) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player) || !(event.getEntity().level() instanceof ServerLevel level)) return;

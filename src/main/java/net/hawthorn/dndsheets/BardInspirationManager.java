@@ -53,8 +53,7 @@ public class BardInspirationManager {
 		latestGrantToken.remove(event.getEntity().getUUID());
 	}
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a EntityInteract por su cuenta — ver
-	//AUDIT_TECHNICAL.md M-EVT-1.
+	//Se activa desde AbilityItemDispatcher en vez de suscribirse a EntityInteract por su cuenta.
 	static void tryUse(PlayerInteractEvent.EntityInteract event) {
 		if (!(event.getEntity() instanceof ServerPlayer bard) || !(event.getTarget() instanceof ServerPlayer target)) return;
 
@@ -96,13 +95,12 @@ public class BardInspirationManager {
 			ServerPlayer stillHere = server != null ? server.getPlayerList().getPlayer(uuid) : null;
 			if (stillHere == null) return;
 			JsonObject sheet = SheetLoader.getServerSheet(stillHere.getStringUUID());
-			if (sheet != null) sheet.remove("bardicInspiration");
+			if (sheet != null) {
+				sheet.remove("bardicInspiration");
+				SheetLoader.saveAndSync(stillHere, sheet);
+			}
 		};
-		if (TurnManager.isActive()) {
-			TurnManager.onRoundsPass(DURATION_ROUNDS, expire);
-		} else {
-			DndsheetsMod.queueServerWork(DURATION_TICKS, expire);
-		}
+		TurnManager.scheduleExpiry(DURATION_ROUNDS, DURATION_TICKS, expire);
 	}
 
 	//Público: CombatManager/SpellCastManager lo llaman justo antes de tirar un ataque, igual que

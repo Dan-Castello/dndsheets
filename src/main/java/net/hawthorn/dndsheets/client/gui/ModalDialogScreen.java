@@ -6,7 +6,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 //Esqueleto repetido en RestChoiceScreen/RestVoteScreen/DeathSaveScreen: caja de tamaño fijo centrada en
-//la pantalla, con botones colocados en coordenadas relativas a esa caja. Ver AUDIT_TECHNICAL.md M-DUP-7.
+//la pantalla, con botones colocados en coordenadas relativas a esa caja.
 public abstract class ModalDialogScreen extends Screen {
 	private final int dialogWidth;
 	private final int dialogHeight;

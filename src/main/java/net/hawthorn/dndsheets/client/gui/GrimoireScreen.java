@@ -47,7 +47,7 @@ public class GrimoireScreen extends ListPickerScreen {
 	private int chosenSlotLevel;
 
 	protected GrimoireScreen(Screen parent) {
-		super(Component.literal("Grimorio"), parent);
+		super(Component.translatable("gui.dndsheets.grimoire.title"), parent);
 	}
 
 	@Override
@@ -78,7 +78,7 @@ public class GrimoireScreen extends ListPickerScreen {
 		//Lanzar a nivel superior es una DECISIÓN, no algo que el servidor pueda adivinar: gastar un espacio
 		//de 5º en una Bola de Fuego a cambio de más dados solo lo sabe quien lanza. Un botón que cicla en vez
 		//de un desplegable porque los niveles posibles son pocos y contiguos.
-		slotLevelButton = this.addRenderableWidget(TomeButton.of(Component.literal("Nivel del espacio"), button -> {
+		slotLevelButton = this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.grimoire.slot_level"), button -> {
 			chosenSlotLevel = nextUsableLevel();
 			updateButtons();
 		}, left, slotY, buttonWidth(), BUTTON_HEIGHT));
@@ -86,7 +86,7 @@ public class GrimoireScreen extends ListPickerScreen {
 		//Lanzar ya no pasa por un solo clic sobre el hechizo: un jugador que clica para leer qué hay en la
 		//lista no quiere gastar un espacio de conjuro real por curiosidad (ver AUDIT_UX.md, Jugador #2).
 		//Elegir un hechizo solo lo selecciona; este botón aparte es el que de verdad lo lanza.
-		castButton = this.addRenderableWidget(TomeButton.of(Component.literal("Elige un hechizo para lanzarlo"), button -> {
+		castButton = this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.grimoire.pick_spell"), button -> {
 			if (selected == null) return;
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new SpellCastMessage(selected.id(), chosenSlotLevel));
 		}, left, castY, buttonWidth(), BUTTON_HEIGHT));
@@ -146,7 +146,7 @@ public class GrimoireScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return hasNoKnownSpells() ? Component.literal("No conoces ningún hechizo. Pide al DM /dndspells learn.") : null;
+		return hasNoKnownSpells() ? Component.translatable("gui.dndsheets.grimoire.empty") : null;
 	}
 
 	//F9 del audit: evita reconstruir toda la lista de KnownSpell solo para saber si está vacía.
@@ -169,31 +169,54 @@ public class GrimoireScreen extends ListPickerScreen {
 	 * sabe si puede lanzar su Bola de Fuego: eso depende de si le queda alguno de 3º o más, y el total
 	 * dice exactamente lo mismo tanto si le quedan cinco de nivel 1 como si le queda uno de nivel 5.</p>
 	 */
+	/** Una columna ya montada: el rótulo del nivel, el "quedan/máx" y su color. */
+	private record SlotColumn(Component levelLabel, Component countLabel, int color) {}
+
+	//La tabla solo cambia cuando cambia la hoja, pero renderSlotTable corre por FOTOGRAMA mientras el
+	//Grimorio esté abierto: dos int[10] nuevos (readSlots hace 18 String.valueOf para buscar sus claves),
+	//una List<Integer> con autoboxing y hasta 18 Component nuevos, todo para dibujar el mismo texto. Se
+	//monta una vez por version de hoja, igual que ResourceHudOverlay.
+	private int cachedSlotVersion = -1;
+	private List<SlotColumn> cachedColumns;
+
+	private void rebuildSlotTable(JsonObject sheet) {
+		int[] max = SpellSlots.maxSlotsOf(sheet);
+		int[] current = SpellSlots.currentSlots(sheet);
+
+		cachedColumns = new ArrayList<>();
+		for (int level = 1; level <= SpellSlots.MAX_SPELL_LEVEL; level++) {
+			if (max[level] <= 0) continue;
+			//Un nivel agotado se apaga en vez de desaparecer: sigue ocupando su columna, así la tabla no se
+			//reordena bajo el ratón cada vez que se gasta el último de un nivel.
+			int color = current[level] > 0 ? GuiStyle.SUBTITLE_COLOR : GuiStyle.MUTED_COLOR;
+			cachedColumns.add(new SlotColumn(
+				Component.literal(level + "º"),
+				Component.literal(current[level] + "/" + max[level]),
+				color));
+		}
+	}
+
 	private void renderSlotTable(GuiGraphics guiGraphics) {
 		JsonObject sheet = SheetLoader.getClientSheet();
 		if (sheet == null) return;
 
-		int[] max = SpellSlots.maxSlotsOf(sheet);
-		int[] current = SpellSlots.currentSlots(sheet);
-
-		List<Integer> levels = new ArrayList<>();
-		for (int level = 1; level <= SpellSlots.MAX_SPELL_LEVEL; level++) {
-			if (max[level] > 0) levels.add(level);
+		int version = SheetLoader.clientSheetVersion();
+		if (version != cachedSlotVersion) {
+			rebuildSlotTable(sheet);
+			cachedSlotVersion = version;
 		}
-		if (levels.isEmpty()) {
-			guiGraphics.drawCenteredString(this.font, Component.literal("Sin espacios de conjuro"), this.width / 2, SUBTITLE_Y, GuiStyle.MUTED_COLOR);
+
+		if (cachedColumns.isEmpty()) {
+			guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.grimoire.no_slots"), this.width / 2, SUBTITLE_Y, GuiStyle.MUTED_COLOR);
 			return;
 		}
 
-		int firstColumnCenter = (this.width - levels.size() * SLOT_COL_WIDTH) / 2 + SLOT_COL_WIDTH / 2;
-		for (int i = 0; i < levels.size(); i++) {
-			int level = levels.get(i);
+		int firstColumnCenter = (this.width - cachedColumns.size() * SLOT_COL_WIDTH) / 2 + SLOT_COL_WIDTH / 2;
+		for (int i = 0; i < cachedColumns.size(); i++) {
+			SlotColumn column = cachedColumns.get(i);
 			int x = firstColumnCenter + i * SLOT_COL_WIDTH;
-			guiGraphics.drawCenteredString(this.font, Component.literal(level + "º"), x, SUBTITLE_Y, GuiStyle.MUTED_COLOR);
-			//Un nivel agotado se apaga en vez de desaparecer: sigue ocupando su columna, así la tabla no se
-			//reordena bajo el ratón cada vez que se gasta el último de un nivel.
-			int color = current[level] > 0 ? GuiStyle.SUBTITLE_COLOR : GuiStyle.MUTED_COLOR;
-			guiGraphics.drawCenteredString(this.font, Component.literal(current[level] + "/" + max[level]), x, SUBTITLE_Y + SLOT_ROW_STEP, color);
+			guiGraphics.drawCenteredString(this.font, column.levelLabel(), x, SUBTITLE_Y, GuiStyle.MUTED_COLOR);
+			guiGraphics.drawCenteredString(this.font, column.countLabel(), x, SUBTITLE_Y + SLOT_ROW_STEP, column.color());
 		}
 	}
 

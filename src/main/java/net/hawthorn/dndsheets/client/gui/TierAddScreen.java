@@ -15,7 +15,7 @@ public class TierAddScreen extends SmallFormScreen {
 	private EditBox levelBox, diceBox;
 
 	private TierAddScreen(JsonObject entry, String field, Screen parent) {
-		super(Component.literal("Añadir nivel"), 1, parent);
+		super(Component.translatable("gui.dndsheets.tier_add.title"), 1, parent);
 		this.entry = entry;
 		this.field = field;
 	}

@@ -68,18 +68,14 @@ public class BarbarianRageManager {
 			}
 		};
 
-		if (TurnManager.isActive()) {
-			TurnManager.onRoundsPass(DURATION_ROUNDS, expire);
-		} else {
-			DndsheetsMod.queueServerWork(DURATION_TICKS, expire);
-		}
+		TurnManager.scheduleExpiry(DURATION_ROUNDS, DURATION_TICKS, expire);
 
 		CombatFx.activate(player);
 		player.sendSystemMessage(Component.literal("¡Entras en furia! Resistencia a daño físico y +" + damageBonusFor(player) + " de daño cuerpo a cuerpo con Fuerza.").withStyle(ChatFeedback.RESOURCE));
 	}
 
 	//--- Tótem de Furia: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos de
-	//interacción por separado — ver AUDIT_TECHNICAL.md M-EVT-1. Mismo patrón que los ítems de turno
+	//interacción por separado. Mismo patrón que los ítems de turno
 	//(TurnItemManager). ---
 
 	static void tryUse(PlayerInteractEvent event) {

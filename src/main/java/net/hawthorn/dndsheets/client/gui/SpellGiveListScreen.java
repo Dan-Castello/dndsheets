@@ -13,7 +13,7 @@ public class SpellGiveListScreen extends ListPickerScreen {
 	private final String targetUuid;
 
 	private SpellGiveListScreen(String targetUuid, Screen parent) {
-		super(Component.literal("Enseñar / dar hechizo"), parent);
+		super(Component.translatable("gui.dndsheets.spell_give.title"), parent);
 		this.targetUuid = targetUuid;
 	}
 
@@ -29,8 +29,8 @@ public class SpellGiveListScreen extends ListPickerScreen {
 	@Override
 	protected void buildRows() {
 		for (String spellId : SpellRegistry.ids()) {
-			addRow(Component.literal("Aprender: " + spellId), b -> send(spellId, false));
-			addRow(Component.literal("Báculo: " + spellId), b -> send(spellId, true));
+			addRow(Component.translatable("gui.dndsheets.spell_give.learn", spellId), b -> send(spellId, false));
+			addRow(Component.translatable("gui.dndsheets.spell_give.staff", spellId), b -> send(spellId, true));
 		}
 	}
 
@@ -41,6 +41,6 @@ public class SpellGiveListScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return SpellRegistry.ids().isEmpty() ? Component.literal("No hay hechizos cargados.") : null;
+		return SpellRegistry.ids().isEmpty() ? Component.translatable("gui.dndsheets.spell_give.empty") : null;
 	}
 }

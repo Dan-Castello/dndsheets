@@ -3,6 +3,8 @@ package net.hawthorn.dndsheets.client.gui;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.hawthorn.dndsheets.Combatant;
+import net.hawthorn.dndsheets.DamageTypes;
 import net.hawthorn.dndsheets.client.gui.ContentFormScreen.FieldSpec;
 
 import java.util.LinkedHashMap;
@@ -24,11 +26,6 @@ import java.util.Map;
  * necesitando el JSON a mano por ahora — cubre el caso común, no cada campo del esquema.</p>
  */
 final class ContentTypeForms {
-	private static final String[] ABILITIES = {"str", "dex", "con", "int", "wis", "cha"};
-	private static final String[] DAMAGE_TYPES = {
-		"fisico", "cortante", "perforante", "contundente", "fuego", "frio", "rayo",
-		"acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno"
-	};
 	private static final String[] BOOL_OPTIONS = {"si", "no"};
 
 	private ContentTypeForms() {
@@ -79,7 +76,7 @@ final class ContentTypeForms {
 			FieldSpec.text("item", "Ítem base (id de Minecraft/mod)", "minecraft:stick"),
 			FieldSpec.text("dice", "Dado de daño", "1d6"),
 			FieldSpec.cycle("ability", "Característica", new String[]{"str", "dex"}),
-			FieldSpec.cycle("damageType", "Tipo de daño", DAMAGE_TYPES),
+			FieldSpec.cycle("damageType", "Tipo de daño", DamageTypes.CANONICAL),
 			FieldSpec.cycle("hands", "Manos", new String[]{"one", "two", "versatile"}),
 			FieldSpec.text("versatileDice", "Dado versátil (si aplica)", ""),
 			FieldSpec.text("classes", "Clases permitidas (vacío = todas, separadas por coma)", "")
@@ -117,10 +114,10 @@ final class ContentTypeForms {
 			FieldSpec.text("name", "Nombre", ""),
 			FieldSpec.intField("level", "Nivel (0 = truco)", "0"),
 			FieldSpec.cycle("mode", "Modo", new String[]{"attack", "save", "heal"}),
-			FieldSpec.cycle("castingAbility", "Característica de lanzamiento", ABILITIES),
-			FieldSpec.cycle("saveAbility", "Característica de salvación (si modo=save)", ABILITIES),
+			FieldSpec.cycle("castingAbility", "Característica de lanzamiento", Combatant.ABILITIES),
+			FieldSpec.cycle("saveAbility", "Característica de salvación (si modo=save)", Combatant.ABILITIES),
 			FieldSpec.text("dice", "Dado", "1d8"),
-			FieldSpec.cycle("damageType", "Tipo de daño", DAMAGE_TYPES),
+			FieldSpec.cycle("damageType", "Tipo de daño", DamageTypes.CANONICAL),
 			FieldSpec.cycle("halfOnSave", "Mitad de daño si salva", BOOL_OPTIONS)
 		);
 	}
@@ -175,7 +172,7 @@ final class ContentTypeForms {
 
 		StringBuilder abilities = new StringBuilder();
 		JsonObject abilitiesJson = entry.has("abilities") ? entry.getAsJsonObject("abilities") : null;
-		for (String key : ABILITIES) {
+		for (String key : Combatant.ABILITIES) {
 			if (abilities.length() > 0) abilities.append(", ");
 			abilities.append(abilitiesJson != null && abilitiesJson.has(key) ? abilitiesJson.get(key).getAsInt() : 10);
 		}
@@ -194,8 +191,8 @@ final class ContentTypeForms {
 
 		JsonObject abilities = new JsonObject();
 		String[] parts = values.getOrDefault("abilities", "").split(",");
-		for (int i = 0; i < ABILITIES.length; i++) {
-			abilities.addProperty(ABILITIES[i], i < parts.length ? parseIntOr(parts[i], 10) : 10);
+		for (int i = 0; i < Combatant.ABILITIES.length; i++) {
+			abilities.addProperty(Combatant.ABILITIES[i], i < parts.length ? parseIntOr(parts[i], 10) : 10);
 		}
 		entry.add("abilities", abilities);
 
@@ -231,7 +228,7 @@ final class ContentTypeForms {
 		putIfPresent(map, entry, "description");
 		StringBuilder abilities = new StringBuilder();
 		JsonObject scores = entry.has("abilities") ? entry.getAsJsonObject("abilities") : null;
-		for (String key : ABILITIES) {
+		for (String key : Combatant.ABILITIES) {
 			if (abilities.length() > 0) abilities.append(", ");
 			abilities.append(scores != null && scores.has(key) ? scores.get(key).getAsInt() : 0);
 		}
@@ -250,10 +247,10 @@ final class ContentTypeForms {
 
 		JsonObject abilities = new JsonObject();
 		String[] parts = values.getOrDefault("abilities", "").split(",");
-		for (int i = 0; i < ABILITIES.length; i++) {
+		for (int i = 0; i < Combatant.ABILITIES.length; i++) {
 			int bonus = i < parts.length ? parseIntOr(parts[i], 0) : 0;
 			//Solo se escriben los bonos que existen: un cero en el formulario es "esta no", no "+0".
-			if (bonus != 0) abilities.addProperty(ABILITIES[i], bonus);
+			if (bonus != 0) abilities.addProperty(Combatant.ABILITIES[i], bonus);
 		}
 		if (abilities.size() > 0) entry.add("abilities", abilities);
 
@@ -299,7 +296,7 @@ final class ContentTypeForms {
 		return List.of(
 			FieldSpec.text("id", "Id", ""),
 			FieldSpec.text("name", "Nombre", ""),
-			FieldSpec.cycle("unarmedAbility", "Característica (golpe desarmado)", ABILITIES)
+			FieldSpec.cycle("unarmedAbility", "Característica (golpe desarmado)", Combatant.ABILITIES)
 		);
 	}
 

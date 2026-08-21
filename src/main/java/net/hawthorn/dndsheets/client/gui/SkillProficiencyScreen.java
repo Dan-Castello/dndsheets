@@ -32,7 +32,7 @@ import net.minecraft.network.chat.Component;
 public class SkillProficiencyScreen extends ListPickerScreen {
 
 	private SkillProficiencyScreen(Screen parent) {
-		super(Component.literal("Competencias de habilidad"), parent);
+		super(Component.translatable("gui.dndsheets.character_setup.skills"), parent);
 	}
 
 	public static void open(Screen parent) {

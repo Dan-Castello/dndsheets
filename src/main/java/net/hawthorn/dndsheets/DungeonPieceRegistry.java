@@ -93,9 +93,9 @@ public class DungeonPieceRegistry {
 
 		try {
 			Files.createDirectories(file.getParent());
-			Gson prettyGson = new GsonBuilder().setPrettyPrinting().create();
+
 			try (OutputStream out = Files.newOutputStream(file, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-				out.write(prettyGson.toJson(array).getBytes());
+				out.write(DndsheetsMod.PRETTY_GSON.toJson(array).getBytes());
 			}
 		} catch (IOException e) {
 			DndsheetsMod.LOGGER.error("dndsheets: no pude guardar las piezas de mazmorra.", e);

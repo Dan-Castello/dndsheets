@@ -187,7 +187,7 @@ public class MonsterRegistry {
 
 	//Público: usado por MonsterCommand (/dndmonsters load) y por DndPaths para precargar solo todos los
 	//.json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de
-	//comandos — ver AUDIT_TECHNICAL.md M-ARQ-1. Antes, un monstruo malformado a mitad del archivo abortaba
+	//comandos. Antes, un monstruo malformado a mitad del archivo abortaba
 	//el resto (visible solo como un WARN de carga, invisible para el DM en el chat) — JsonRegistryLoader
 	//ya salta por elemento, no por archivo.
 	private static final JsonRegistryLoader<MonsterStatBlock> LOADER = new JsonRegistryLoader<>("monstruo", MonsterRegistry::parse, MonsterRegistry::register);
@@ -224,7 +224,7 @@ public class MonsterRegistry {
 
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		JsonObject abilitiesJson = json.has("abilities") ? json.getAsJsonObject("abilities") : null;
-		for (String key : new String[]{"str", "dex", "con", "int", "wis", "cha"}) {
+		for (String key : Combatant.ABILITIES) {
 			abilities.put(key, abilitiesJson != null && abilitiesJson.has(key) ? abilitiesJson.get(key).getAsInt() : 10);
 		}
 
@@ -415,10 +415,14 @@ public class MonsterRegistry {
 	//Se llama en cada acción de un monstruo (turno automático, ataque de oportunidad, o el DM abriendo su
 	//menú), así que el JSON parseado se cachea por entityId en vez de reparsearse cada vez — invalidado
 	//solo en los dos sitios que de verdad cambian el NBT (saveCustomAttacks/clearCustomAttacks).
-	private static final Map<Integer, List<MonsterAttack>> customAttacksCache = new HashMap<>();
+	//Indexado por UUID y NO por entity.getId(): el id numerico de una entidad se RECICLA cuando la
+	//entidad muere o se descarga, asi que un monstruo nuevo podia heredar el id de uno muerto y con el
+	//los ataques personalizados del anterior. No era solo una fuga de memoria: devolvia datos de otro.
+	//Se desaloja ademas al morir (ver TurnManager.onMonsterDeath) para que no crezca sin cota.
+	private static final Map<java.util.UUID, List<MonsterAttack>> customAttacksCache = new HashMap<>();
 
 	public static List<MonsterAttack> customAttacksOf(Entity entity) {
-		List<MonsterAttack> cached = customAttacksCache.get(entity.getId());
+		List<MonsterAttack> cached = customAttacksCache.get(entity.getUUID());
 		if (cached != null) return cached;
 
 		CompoundTag data = entity.getPersistentData();
@@ -436,7 +440,7 @@ public class MonsterRegistry {
 				}
 			}
 		}
-		customAttacksCache.put(entity.getId(), result);
+		customAttacksCache.put(entity.getUUID(), result);
 		return result;
 	}
 
@@ -454,10 +458,15 @@ public class MonsterRegistry {
 		return removed;
 	}
 
+	/** Desaloja el caché de un monstruo que acaba de morir. Llamado desde TurnManager.onMonsterDeath. */
+	public static void forgetCustomAttacks(Entity entity) {
+		customAttacksCache.remove(entity.getUUID());
+	}
+
 	public static void clearCustomAttacks(Entity entity) {
 		CompoundTag data = entity.getPersistentData();
 		if (data.contains("dndsheets")) data.getCompound("dndsheets").remove("customAttacks");
-		customAttacksCache.remove(entity.getId());
+		customAttacksCache.remove(entity.getUUID());
 	}
 
 	private static void saveCustomAttacks(Entity entity, List<MonsterAttack> attacks) {
@@ -469,7 +478,7 @@ public class MonsterRegistry {
 		tag.putString("customAttacks", array.toString());
 		data.put("dndsheets", tag);
 
-		customAttacksCache.put(entity.getId(), List.copyOf(attacks)); //Refresca el caché con lo que ya tenemos en memoria, en vez de invalidar y reparsear el JSON que se acaba de escribir.
+		customAttacksCache.put(entity.getUUID(), List.copyOf(attacks)); //Refresca el caché con lo que ya tenemos en memoria, en vez de invalidar y reparsear el JSON que se acaba de escribir.
 	}
 
 	//--- Vara de DM: cualquier ítem etiquetado {dndsheets:{dmtool:true}} (mismo patrón que las armas personalizadas) ---
@@ -518,7 +527,7 @@ public class MonsterRegistry {
 	public static Entity spawnGeneric(ServerLevel level, double x, double y, double z, String name, String baseEntityId, int ac, int hp) {
 		String id = "dndsheets:npc_" + (++genericCounter);
 		Map<String, Integer> abilities = new LinkedHashMap<>();
-		for (String key : new String[]{"str", "dex", "con", "int", "wis", "cha"}) abilities.put(key, 10);
+		for (String key : Combatant.ABILITIES) abilities.put(key, 10);
 
 		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0, 1, Appearance.DEFAULT));
 		return spawnAt(level, x, y, z, id);

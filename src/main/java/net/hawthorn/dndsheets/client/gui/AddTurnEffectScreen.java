@@ -22,7 +22,7 @@ public class AddTurnEffectScreen extends SmallFormScreen {
 	private CycleField dice;
 
 	private AddTurnEffectScreen(String targetUuid, Screen parent) {
-		super(Component.literal("Aplicar efecto"), 2, parent);
+		super(Component.translatable("gui.dndsheets.add_effect.title"), 2, parent);
 		this.targetUuid = targetUuid;
 	}
 

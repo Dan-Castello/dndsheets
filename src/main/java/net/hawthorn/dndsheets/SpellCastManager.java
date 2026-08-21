@@ -223,6 +223,8 @@ public class SpellCastManager {
 		} else if ("buff".equals(spell.mode())) {
 			//Se concede al propio lanzador: es un hechizo sobre uno mismo, no necesita objetivo delante.
 			WeaponBuffManager.grant(casterSheet, spell.name(), spell.dice(), spell.damageType(), ZoneManager.DEFAULT_ROUNDS);
+			//grant() solo toca el JsonObject, y el guardado de spendSlot ya paso antes que esto.
+			SheetLoader.saveServer(casterSheet, caster.getStringUUID());
 			ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.buff_granted",
 				casterName, spell.name(), spell.dice()).withStyle(ChatFormatting.GOLD));
 		} else if ("temphp".equals(spell.mode())) {
@@ -548,7 +550,7 @@ public class SpellCastManager {
 	}
 
 	//Antes reenviaban la hoja completa en cada hechizo lanzado — ahora solo los campos que de verdad
-	//cambiaron. Ver AUDIT_TECHNICAL.md M-NET-1. Son DOS, no uno: la tabla por nivel y el total que sale de
+	//cambiaron. Son DOS, no uno: la tabla por nivel y el total que sale de
 	//ella (ver SpellSlots.clientPatch); mandando solo el total, el Grimorio se quedaba enseñando columnas
 	//viejas y ofreciendo niveles ya gastados.
 	private static void sendSlotsUpdate(ServerPlayer player, JsonObject sheet) {

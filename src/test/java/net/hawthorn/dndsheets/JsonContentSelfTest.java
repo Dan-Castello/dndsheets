@@ -47,6 +47,7 @@ public class JsonContentSelfTest {
 		checkSubclasses();
 		checkMulticlass(); //También después de checkPresets(): los nombres de las clases salen de ahí.
 		checkDice();
+		checkAttackAndDamageRolls();
 		checkDungeonPools();
 		checkConditions();
 		checkAoeShapes();
@@ -59,7 +60,9 @@ public class JsonContentSelfTest {
 		checkCover();
 		checkAbilityImprovements();
 		checkLanguageFiles();
+		checkTranslationKeysExist();
 		checkNetworkShape();
+		checkSheetWritesArePersisted();
 		checkAddonContentLoads();
 		checkSheetCoordinateSpaces();
 		checkIncapacitatedCannotAct();
@@ -973,6 +976,76 @@ public class JsonContentSelfTest {
 	//No cubierto hasta ahora pese a no depender del runtime de Forge (mismo perfil que los *Registry de
 	//arriba) — ver AUDIT_REPORT_2026.md F26. "1d1" tira siempre 1: da un total determinista sin depender
 	//de aleatoriedad para poder comprobar la sustitución de $str/$prof/$hprof con un assert exacto.
+	/**
+	 * <p>Cierra F26, lo ultimo que quedaba abierto del ledger: {@code checkDice()} cubria {@code roll()} a
+	 * fondo pero no {@code rollAttack}/{@code rollDamage}, que son las dos que de verdad deciden un combate.</p>
+	 *
+	 * <p>Determinista con {@code 1d1}, el mismo truco que ya usa checkDice: un d1 siempre saca 1, asi que el
+	 * total es fijo y ademas es un 1 natural, que es la pifia. El critico no se puede forzar con dados (haria
+	 * falta un 20 natural), pero la regla que lo gobierna, {@code criticalFrom}, si se comprueba directa —el
+	 * self-test vive en el mismo paquete.</p>
+	 */
+	private static void checkAttackAndDamageRolls() {
+		JsonObject sheet = new JsonObject();
+		sheet.addProperty("strength", "16"); //modificador +3
+
+		//Un 1 natural es pifia pase lo que pase, y nunca es critico a la vez.
+		DiceManager.AttackRoll pifia = DiceManager.rollAttack(sheet, "1d1 + $str", DiceManager.Advantage.NORMAL);
+		assertTrue(pifia.outcome().result() != null && pifia.outcome().result().getValue() == 4,
+			"1d1 + $str (Fue 16) como ataque deberia dar total 4");
+		assertTrue(pifia.criticalMiss(), "un 1 natural deberia ser pifia");
+		assertTrue(!pifia.criticalHit(), "un 1 natural NO deberia ser critico");
+
+		//Ventaja/desventaja tiran dos veces y anotan cual se descarta; con 1d1 las dos valen igual, asi que lo
+		//comprobable es que el total no cambia y que la narracion dice cual fue.
+		DiceManager.AttackRoll conVentaja = DiceManager.rollAttack(sheet, "1d1 + 5", DiceManager.Advantage.ADVANTAGE);
+		assertTrue(conVentaja.outcome().result().getValue() == 6, "con ventaja sobre 1d1 + 5 el total sigue siendo 6");
+		assertTrue(conVentaja.outcome().formatted().contains("ventaja")
+			&& conVentaja.outcome().formatted().contains("se descarta"),
+			"la tirada con ventaja deberia decir que descarta la otra: " + conVentaja.outcome().formatted());
+
+		DiceManager.AttackRoll conDesventaja = DiceManager.rollAttack(sheet, "1d1 + 5", DiceManager.Advantage.DISADVANTAGE);
+		assertTrue(conDesventaja.outcome().formatted().contains("desventaja"),
+			"la tirada con desventaja deberia decirlo: " + conDesventaja.outcome().formatted());
+
+		//Expresion invalida: ni critico ni pifia, y sin resultado. Si esto devolviera true en cualquiera de los
+		//dos, un ataque con un dado mal escrito acertaria o fallaria solo.
+		DiceManager.AttackRoll rota = DiceManager.rollAttack(sheet, "999999d20", DiceManager.Advantage.NORMAL);
+		assertTrue(rota.outcome().result() == null && !rota.criticalHit() && !rota.criticalMiss(),
+			"una tirada que el guard de dados absurdos rechaza no deberia ser ni critico ni pifia");
+
+		//LA regla del critico en 5e: se doblan los DADOS, no el modificador. 2d1 + 3 normal = 5; critico = 7
+		//(los dos dados otra vez), no 10. Doblar el total entero es el error clasico y aqui queda pinchado.
+		DiceManager.DamageResult normal = DiceManager.rollDamage(sheet, "2d1 + 3", false);
+		assertTrue(normal.amount() == 5, "2d1 + 3 sin critico deberia ser 5, fue " + normal.amount());
+
+		DiceManager.DamageResult critico = DiceManager.rollDamage(sheet, "2d1 + 3", true);
+		assertTrue(critico.amount() == 7,
+			"2d1 + 3 critico deberia ser 7 (dados doblados, modificador una vez), fue " + critico.amount());
+		assertTrue(critico.formatted() != null && critico.formatted().contains("TICO!"),
+			"el daño critico deberia anunciarse: " + critico.formatted());
+
+		DiceManager.DamageResult danoRoto = DiceManager.rollDamage(sheet, "999999d20", false);
+		assertTrue(danoRoto.amount() == 0 && danoRoto.formatted() == null,
+			"una expresion de daño invalida deberia dar 0 y sin texto, no un daño inventado");
+
+		//criticalFrom: 20 salvo que la ficha lo baje, y con cortafuegos. Un 2 escrito en un JSON convertiria
+		//CADA ataque en critico, y eso se descubriria en mitad de un combate.
+		assertTrue(DiceManager.criticalFrom(null) == 20, "sin ficha se critica en 20");
+		assertTrue(DiceManager.criticalFrom(new JsonObject()) == 20, "sin el campo se critica en 20");
+		JsonObject campeon = new JsonObject();
+		campeon.addProperty("criticalFrom", "19");
+		assertTrue(DiceManager.criticalFrom(campeon) == 19, "el Campeon del guerrero critica en 19");
+		JsonObject absurdo = new JsonObject();
+		absurdo.addProperty("criticalFrom", "2");
+		assertTrue(DiceManager.criticalFrom(absurdo) == 15, "un 2 deberia toparse en 15, no dejar criticar siempre");
+		JsonObject basura = new JsonObject();
+		basura.addProperty("criticalFrom", "no es un numero");
+		assertTrue(DiceManager.criticalFrom(basura) == 20, "un valor no numerico deberia caer al 20 de siempre");
+
+		System.out.println("checkAttackAndDamageRolls: OK, pifia, ventaja/desventaja, dados doblados sin doblar el modificador y umbral de critico.");
+	}
+
 	private static void checkDice() {
 		JsonObject sheet = new JsonObject();
 		sheet.addProperty("strength", "16"); //modificador +3
@@ -2485,6 +2558,53 @@ public class JsonContentSelfTest {
 	 * en pantalla. Una clave que existe en un idioma y no en el otro falla igual de silenciosamente, solo
 	 * que para la mitad de la gente.</p>
 	 */
+	/**
+	 * <p>Toda clave que el codigo pide con {@code Component.translatable} tiene que existir en los ficheros
+	 * de idioma. Si no, Minecraft no falla: pinta la clave cruda —"gui.dndsheets.dm_panel.title"— en el
+	 * boton, y eso solo se descubre abriendo esa pantalla concreta en el idioma concreto.</p>
+	 *
+	 * <p>{@code checkLanguageFiles} ya comprueba que los dos idiomas tengan las MISMAS claves, pero no que
+	 * las que se usan esten en ninguno de los dos: con una errata en el codigo, ambos ficheros siguen
+	 * cuadrando entre si y el fallo pasa igual. Esta comprobacion mira el otro lado, el del uso.</p>
+	 */
+	private static void checkTranslationKeysExist() throws Exception {
+		String lang = Files.readString(Path.of("src", "main", "resources", "assets", "dndsheets", "lang", "en_us.json"));
+		java.util.Set<String> declaradas = new java.util.HashSet<>();
+		//Mayúsculas incluidas: las claves de vanilla no son todas minúsculas ("itemGroup.dndsheets.dnd_tab").
+		java.util.regex.Matcher declara = java.util.regex.Pattern.compile("\"([A-Za-z0-9_.]+)\"\\s*:").matcher(lang);
+		while (declara.find()) declaradas.add(declara.group(1));
+
+		List<Path> fuentes;
+		try (Stream<Path> walk = Files.walk(Path.of("src", "main", "java"))) {
+			fuentes = walk.filter(f -> f.toString().endsWith(".java")).sorted().toList();
+		}
+
+		java.util.Set<String> faltan = new java.util.TreeSet<>();
+		int usadas = 0;
+		for (Path fuente : fuentes) {
+			String fuenteTexto = Files.readString(fuente);
+			java.util.regex.Matcher usa = java.util.regex.Pattern
+				.compile("Component\\.translatable\\(\"([^\"]+)\"").matcher(fuenteTexto);
+			while (usa.find()) {
+				usadas++;
+				String clave = usa.group(1);
+				//Las de vanilla (item.minecraft.*, entity.*) no viven en nuestros ficheros.
+				if (!clave.contains("dndsheets")) continue;
+				//Clave construida a trozos ("...button_" + type): el sufijo solo se sabe en ejecucion, asi
+				//que aqui no hay nada que comprobar. Se reconoce porque tras la comilla viene un "+".
+				if (fuenteTexto.startsWith(" +", usa.end())) continue;
+				if (!declaradas.contains(clave)) faltan.add(clave + "  (" + fuente.getFileName() + ")");
+			}
+		}
+
+		assertTrue(faltan.isEmpty(),
+			"el codigo pide claves de traduccion que no existen en los ficheros de idioma: " + faltan
+				+ ".\n  Minecraft no falla por esto: pinta la clave cruda en pantalla, asi que solo se ve"
+				+ " abriendo esa pantalla. Anade la clave a en_us.json Y a es_es.json.");
+
+		System.out.println("checkTranslationKeysExist: OK, " + usadas + " usos de translatable y todos con clave declarada.");
+	}
+
 	private static void checkLanguageFiles() throws Exception {
 		Path dir = Path.of("src", "main", "resources", "assets", "dndsheets", "lang");
 		Map<String, Set<String>> keysByLang = new java.util.LinkedHashMap<>();
@@ -2748,6 +2868,53 @@ public class JsonContentSelfTest {
 	 * decisión y no un olvido. Existe porque ya pasó: {@code BrowseActionMessage.Action} ganó {@code DELETE}
 	 * y la versión de protocolo se quedó donde estaba, sin que nada se quejara.</p>
 	 */
+	/**
+	 * <p>Invariante 4: lo que muta una hoja tiene que llegar a {@code SheetLoader.saveServer}. El autosave de
+	 * 5 minutos es la red de seguridad, no la ruta de escritura.</p>
+	 *
+	 * <p>Se rompia en nueve sitios a la vez, y todos con la misma forma: mutar el JsonObject y mandar solo el
+	 * parche al cliente. El jugador veia el cambio, el disco no se enteraba, y apagar el servidor antes del
+	 * autosave devolvia el espacio de conjuro gastado, el escudo, el castigo o —lo peor— levantaba a un
+	 * personaje que estaba tirando salvaciones de muerte.</p>
+	 *
+	 * <p><b>Sin lista de excepciones a mano.</b> El criterio se mantiene solo: un archivo que no menciona
+	 * {@code ServerPlayer} no PUEDE guardar (saveServer pide el uuid del jugador), asi que es un helper puro
+	 * sobre el JsonObject y persiste quien lo llama —{@code SpellSlots}, {@code WeaponBuffManager},
+	 * {@code ClassLevels}, {@code FeatRegistry}, {@code PresetRegistry}. En cuanto alguien le pase un
+	 * ServerPlayer a uno de esos, esta comprobacion empieza a exigirle el guardado sola.</p>
+	 */
+	private static void checkSheetWritesArePersisted() throws Exception {
+		Path root = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets");
+		List<Path> files;
+		try (Stream<Path> walk = Files.walk(root, 1)) {
+			files = walk.filter(f -> f.toString().endsWith(".java")).sorted().toList();
+		}
+
+		Set<String> offenders = new java.util.TreeSet<>();
+		int pureHelpers = 0;
+		for (Path file : files) {
+			String source = Files.readString(file);
+			boolean mutates = source.contains("sheet.addProperty(") || source.contains("sheet.remove(")
+				|| source.contains("Sheet.addProperty(") || source.contains("Sheet.remove(");
+			if (!mutates) continue;
+
+			if (!source.contains("ServerPlayer")) { pureHelpers++; continue; }
+
+			boolean saves = source.contains("saveServer(") || source.contains("saveAndSync(")
+				|| source.contains("saveCharacter(");
+			if (!saves) offenders.add(file.getFileName().toString());
+		}
+
+		assertTrue(offenders.isEmpty(),
+			"estos archivos mutan una hoja y tienen el ServerPlayer a mano, pero nunca la guardan: " + offenders
+				+ ".\n  Es la invariante 4: manda el cambio por SheetLoader.saveAndSync (guarda + sincroniza) o por"
+				+ " saveServer si ya mandas un parche por campo. Sin eso el cambio solo vive en RAM hasta el autosave"
+				+ " de 5 minutos, y un cierre antes de que salte lo deshace sin avisar a nadie.");
+
+		System.out.println("checkSheetWritesArePersisted: OK, toda mutacion de hoja con jugador delante persiste ("
+			+ pureHelpers + " helpers puros exentos, persiste quien los llama).");
+	}
+
 	private static void checkNetworkShape() throws Exception {
 		String mod = readSource("DndsheetsMod.java");
 		int messages = mod.split("addNetworkMessage" + java.util.regex.Pattern.quote("("), -1).length - 1;

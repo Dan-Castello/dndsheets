@@ -22,7 +22,7 @@ public class DungeonPieceEditScreen extends SmallFormScreen {
 	private EditBox poolBox, weightBox, tagsBox;
 
 	private DungeonPieceEditScreen(DungeonPieceRegistry.DungeonPiece piece, Screen parent) {
-		super(Component.literal("Editar pieza: " + piece.id()), 2, parent);
+		super(Component.translatable("gui.dndsheets.dungeon_piece_edit.title", piece.id()), 2, parent);
 		this.piece = piece;
 	}
 
@@ -53,7 +53,7 @@ public class DungeonPieceEditScreen extends SmallFormScreen {
 
 	@Override
 	protected Component deleteButtonLabel() {
-		return Component.literal("Borrar pieza");
+		return Component.translatable("gui.dndsheets.dungeon_piece_edit.delete");
 	}
 
 	@Override

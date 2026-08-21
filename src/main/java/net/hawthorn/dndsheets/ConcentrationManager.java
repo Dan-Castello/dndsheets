@@ -26,6 +26,12 @@ public class ConcentrationManager {
 
 	private static final Map<UUID, Concentrating> concentratingOn = new HashMap<>();
 
+	/** Solo quita la entrada del mapa; NO revierte zonas ni invocaciones como stopConcentrating. Para
+	 *  desconexion, donde lo unico que hay que evitar es que el UUID se quede en RAM para siempre. */
+	static void clearFor(ServerPlayer player) {
+		concentratingOn.remove(player.getUUID());
+	}
+
 	public static void startConcentrating(ServerPlayer caster, String spellName) {
 		stopConcentrating(caster); //Un hechizo de concentración nuevo reemplaza cualquiera anterior — corta el efecto viejo antes de anotar el nuevo, en vez de dejarlo huérfano para siempre.
 		concentratingOn.put(caster.getUUID(), new Concentrating(spellName, -1, null));
@@ -52,6 +58,8 @@ public class ConcentrationManager {
 			sheet.addProperty("concentratingOn", spellName);
 			patch.addProperty("concentratingOn", spellName);
 		}
+		//Persistir ademas de avisar: en que se concentra el lanzador es estado de la hoja (invariante 4).
+		SheetLoader.saveServer(sheet, caster.getStringUUID());
 		DndsheetsMod.sendSheetFieldUpdate(caster, patch);
 	}
 
@@ -73,7 +81,10 @@ public class ConcentrationManager {
 		//dejaba el muro ardiendo igual — el mismo fallo que ya se corrigió una vez para los efectos de estado.
 		ZoneManager.removeFor(caster.getUUID());
 		//Los buffs de arma tambien son de concentracion (Favor Divino, Castigo Marcador).
-		WeaponBuffManager.clear(SheetLoader.getServerSheet(caster.getStringUUID()));
+		//WeaponBuffManager es un helper puro sobre el JsonObject: quien lo llama es quien persiste.
+		JsonObject buffed = SheetLoader.getServerSheet(caster.getStringUUID());
+		WeaponBuffManager.clear(buffed);
+		if (buffed != null) SheetLoader.saveServer(buffed, caster.getStringUUID());
 		//Las invocaciones tambien: Arma Espiritual y Esfera Flamigera son de concentracion.
 		if (caster.level() instanceof net.minecraft.server.level.ServerLevel summonLevel) {
 			SummonManager.removeFor(summonLevel, caster.getUUID());

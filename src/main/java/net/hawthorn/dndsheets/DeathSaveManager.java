@@ -33,6 +33,10 @@ public class DeathSaveManager {
 	private static final int INFINITE_DURATION = 1_000_000;
 	private static final Set<UUID> allowRealDeath = ConcurrentHashMap.newKeySet();
 
+	static void clearFor(ServerPlayer player) {
+		allowRealDeath.remove(player.getUUID());
+	}
+
 	//Se cancela la muerte real y se pasa al estado "caído" en su lugar, salvo que ya se le haya dejado
 	//morir de verdad (3 fallos de salvación) o ya esté caído (para no reiniciar el conteo por accidente).
 	@SubscribeEvent
@@ -238,8 +242,11 @@ public class DeathSaveManager {
 		return SheetLoader.characterNameOf(sheet, player);
 	}
 
+	//Los 5 caminos que tocan la hoja de un caido (rendirse, estabilizar, morir, tirar, y el reset al
+	//reaparecer) salen por aqui, asi que persistir en este unico sitio los cubre a todos. Antes solo
+	//avisaba al cliente: un reinicio a mitad de salvaciones devolvia al personaje en pie y con el
+	//contador a cero (invariante 4).
 	private static void sendSheetUpdate(ServerPlayer player, JsonObject sheet) {
-		byte[] data = sheet.toString().getBytes();
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(data));
+		SheetLoader.saveAndSync(player, sheet);
 	}
 }

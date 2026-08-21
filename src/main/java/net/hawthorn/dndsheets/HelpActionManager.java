@@ -46,6 +46,7 @@ public class HelpActionManager {
 		JsonObject allySheet = SheetLoader.getServerSheet(ally.getStringUUID());
 		if (allySheet == null) return;
 		allySheet.addProperty("nextAttackAdvantage", "advantage");
+		SheetLoader.saveServer(allySheet, ally.getStringUUID());
 
 		//El aliado tiene que VER que le llegó: es un flag en su hoja, y sin este parche solo se enteraría al
 		//volver a abrirla. Mismo parche corto que usa el resto del mod tras tocar un campo suelto.

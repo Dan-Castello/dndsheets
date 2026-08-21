@@ -38,6 +38,12 @@ public class DungeonToolManager {
 	//Por DM, no global: dos DMs trabajando en la misma partida no deberían pisarse el portapapeles.
 	private static final Map<UUID, JigsawClipboard> jigsawClipboard = new HashMap<>();
 
+	/** El portapapeles no se limpiaba NUNCA: ni put/get tenian remove, asi que cada DM que copiara un
+	 *  jigsaw dejaba su entrada para el resto de la vida del servidor. */
+	static void clearFor(ServerPlayer player) {
+		jigsawClipboard.remove(player.getUUID());
+	}
+
 	@SubscribeEvent
 	public static void onCaptureFromStructureBlock(PlayerInteractEvent.RightClickBlock event) {
 		if (!MonsterRegistry.isDmTool(event.getItemStack())) return;

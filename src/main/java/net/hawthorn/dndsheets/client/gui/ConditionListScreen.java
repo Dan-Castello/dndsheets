@@ -28,7 +28,7 @@ public class ConditionListScreen extends ListPickerScreen {
 	private final Set<Condition> active;
 
 	private ConditionListScreen(String targetUuid, String targetName, Set<Condition> active, Screen parent) {
-		super(Component.literal("Condiciones de " + targetName), parent);
+		super(Component.translatable("gui.dndsheets.condition_list.title", targetName), parent);
 		this.targetUuid = targetUuid;
 		this.active = active;
 	}

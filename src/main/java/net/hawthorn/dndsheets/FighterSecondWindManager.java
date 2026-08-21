@@ -46,7 +46,7 @@ public class FighterSecondWindManager {
 	}
 
 	//--- Ítem de Segundo Aliento: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3
-	//eventos de interacción por separado — ver AUDIT_TECHNICAL.md M-EVT-1. Mismo patrón que el Tótem de
+	//eventos de interacción por separado. Mismo patrón que el Tótem de
 	//Furia (BarbarianRageManager). ---
 
 	static void tryUse(PlayerInteractEvent event) {

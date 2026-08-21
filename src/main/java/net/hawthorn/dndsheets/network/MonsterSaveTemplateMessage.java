@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.network;
 
 import com.google.gson.JsonObject;
+import net.hawthorn.dndsheets.Combatant;
 import net.hawthorn.dndsheets.ContentPackFile;
 import net.hawthorn.dndsheets.ContentType;
 import net.hawthorn.dndsheets.MonsterRegistry;
@@ -19,7 +20,6 @@ import java.util.function.Supplier;
 //Cliente (el DM) -> servidor: guarda un monstruo invocado (normalmente un NPC genérico ya armado con
 //ataques en vivo) como plantilla en monsters/dm_created.json — ver client.gui.MonsterTemplateSaveScreen.
 public class MonsterSaveTemplateMessage {
-	private static final String[] ABILITIES = {"str", "dex", "con", "int", "wis", "cha"};
 
 	int entityId;
 	String id;
@@ -46,7 +46,7 @@ public class MonsterSaveTemplateMessage {
 	private static Map<String, Integer> parseAbilities(String csv) {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		String[] parts = csv.split(",");
-		for (int i = 0; i < ABILITIES.length; i++) {
+		for (int i = 0; i < Combatant.ABILITIES.length; i++) {
 			int value = 10;
 			if (i < parts.length) {
 				try {
@@ -55,7 +55,7 @@ public class MonsterSaveTemplateMessage {
 					//Se queda en 10.
 				}
 			}
-			abilities.put(ABILITIES[i], value);
+			abilities.put(Combatant.ABILITIES[i], value);
 		}
 		return abilities;
 	}

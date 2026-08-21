@@ -23,8 +23,7 @@ public class ShieldManager {
 	private static final int LEVEL = 1;
 	private static final int AC_BONUS = 5;
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta — ver
-	//AUDIT_TECHNICAL.md M-EVT-1.
+	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta.
 	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;

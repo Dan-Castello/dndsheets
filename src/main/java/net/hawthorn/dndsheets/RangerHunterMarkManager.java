@@ -53,15 +53,10 @@ public class RangerHunterMarkManager {
 			Integer current = markedEntityIdByRanger.get(rangerUuid);
 			if (current != null && current == targetId) markedEntityIdByRanger.remove(rangerUuid);
 		};
-		if (TurnManager.isActive()) {
-			TurnManager.onRoundsPass(DURATION_ROUNDS, expire);
-		} else {
-			DndsheetsMod.queueServerWork(DURATION_TICKS, expire);
-		}
+		TurnManager.scheduleExpiry(DURATION_ROUNDS, DURATION_TICKS, expire);
 	}
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a EntityInteract por su cuenta — ver
-	//AUDIT_TECHNICAL.md M-EVT-1.
+	//Se activa desde AbilityItemDispatcher en vez de suscribirse a EntityInteract por su cuenta.
 	static void tryUse(PlayerInteractEvent.EntityInteract event) {
 		if (!(event.getEntity() instanceof ServerPlayer ranger)) return;
 

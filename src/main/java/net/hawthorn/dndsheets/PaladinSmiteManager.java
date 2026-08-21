@@ -42,8 +42,7 @@ public class PaladinSmiteManager {
 		return dice + "d8";
 	}
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta — ver
-	//AUDIT_TECHNICAL.md M-EVT-1.
+	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta.
 	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;

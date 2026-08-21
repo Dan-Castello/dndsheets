@@ -21,7 +21,7 @@ public class NewCharacterScreen extends SmallFormScreen {
 	private EditBox nameBox;
 
 	private NewCharacterScreen(Screen parent) {
-		super(Component.literal("Personaje nuevo"), 1, parent);
+		super(Component.translatable("gui.dndsheets.new_character.title"), 1, parent);
 	}
 
 	public static void open() {
@@ -32,7 +32,7 @@ public class NewCharacterScreen extends SmallFormScreen {
 	protected void buildForm() {
 		//Sin valor por defecto: un "Personaje" ya escrito se queda tal cual en cuanto alguien pulse
 		//Confirmar sin mirar, y dos personajes con el mismo nombre son justo lo que cuesta distinguir.
-		nameBox = addField("Nombre del personaje", "", 40);
+		nameBox = addField(Component.translatable("gui.dndsheets.new_character.name").getString(), "", 40);
 	}
 
 	@Override

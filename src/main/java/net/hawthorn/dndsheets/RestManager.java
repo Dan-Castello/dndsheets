@@ -54,8 +54,7 @@ public class RestManager {
 
 	//Se activa desde AbilityItemDispatcher (clic derecho con ítem/bloque/entidad, funciona igual en los
 	//tres casos porque un ítem de bloque como el reloj mirando a una pared dispara RightClickBlock, no
-	//RightClickItem) en vez de suscribirse a los 3 eventos de interacción por separado — ver
-	//AUDIT_TECHNICAL.md M-EVT-1.
+	//RightClickItem) en vez de suscribirse a los 3 eventos de interacción por separado.
 	static void tryOpenRestChoice(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;

@@ -17,7 +17,7 @@ public class TurnActionScreen extends ModalDialogScreen {
 	private static final int HEIGHT = 104;
 
 	protected TurnActionScreen() {
-		super(Component.literal("Acciones de Turno"), WIDTH, HEIGHT);
+		super(Component.translatable("gui.dndsheets.turn_action.title"), WIDTH, HEIGHT);
 	}
 
 	public static void open() {
@@ -41,7 +41,7 @@ public class TurnActionScreen extends ModalDialogScreen {
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderPanel(guiGraphics);
-		guiGraphics.drawCenteredString(this.font, Component.literal("Gasta tu acción de este turno en:"), this.width / 2, dialogTop() + 8, 0xFFFFFF);
+		guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.turn_action.prompt"), this.width / 2, dialogTop() + 8, 0xFFFFFF);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 	}
 }

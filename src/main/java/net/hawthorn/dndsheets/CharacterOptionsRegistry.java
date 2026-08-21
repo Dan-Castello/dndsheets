@@ -63,7 +63,7 @@ public class CharacterOptionsRegistry {
 
 	//Público: usado por CharacterOptionsCommand (/dndoptions load) y por DndPaths para precargar solo
 	//todos los .json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa
-	//de comandos — ver AUDIT_TECHNICAL.md M-ARQ-1. REEMPLAZA la lista completa de la categoría, no la
+	//de comandos. REEMPLAZA la lista completa de la categoría, no la
 	//extiende (ver comentario de clase).
 	public static int loadFile(String category, Path file) throws IOException {
 		String json = Files.readString(file);

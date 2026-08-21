@@ -23,7 +23,7 @@ public class OptionsManageScreen extends ListPickerScreen {
 	private final List<String> values;
 
 	private OptionsManageScreen(String category, List<String> values, Screen parent) {
-		super(Component.literal("Opciones: " + category), parent);
+		super(Component.translatable("gui.dndsheets.options_manage.title", category), parent);
 		this.category = category;
 		this.values = values;
 	}
@@ -42,17 +42,17 @@ public class OptionsManageScreen extends ListPickerScreen {
 	@Override
 	protected void buildRows() {
 		for (String value : values) {
-			addRow(Component.literal("Borrar: " + value), b -> {
+			addRow(Component.translatable("gui.dndsheets.options_manage.delete", value), b -> {
 				JsonArray remaining = new JsonArray();
 				for (String other : values) if (!other.equals(value)) remaining.add(other);
 				DndsheetsMod.PACKET_HANDLER.sendToServer(new OptionsSaveMessage(category, remaining.toString()));
 			});
 		}
-		addRow(Component.literal("+ Añadir opción"), b -> OptionsAddScreen.open(category, values));
+		addRow(Component.translatable("gui.dndsheets.options_manage.add"), b -> OptionsAddScreen.open(category, values));
 	}
 
 	@Override
 	protected Component emptyMessage() {
-		return values.isEmpty() ? Component.literal("Esta categoría se quedaría sin opciones — añadí al menos una.") : null;
+		return values.isEmpty() ? Component.translatable("gui.dndsheets.options_manage.empty") : null;
 	}
 }

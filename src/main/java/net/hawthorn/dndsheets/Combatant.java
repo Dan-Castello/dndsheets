@@ -9,7 +9,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +44,15 @@ public interface Combatant {
 	int maxHp();
 
 	/** Modificador de característica por clave corta: {@code str}, {@code dex}, {@code con}, {@code int}, {@code wis}, {@code cha}. */
+	/**
+	 * <p>Las seis características de 5e con la clave exacta que acepta {@link #abilityModifier(String)}, en
+	 * el orden de la hoja. Vive aquí, junto al método que las consume, por el mismo motivo que
+	 * {@code DamageTypes.CANONICAL} vive junto a las resistencias: era la misma lista escrita a mano en
+	 * <b>ocho</b> sitios (dos registros, un comando, un mensaje de red y cuatro pantallas), y dos copias que
+	 * se separen son un menú que ofrece una característica que luego no modifica nada.</p>
+	 */
+	String[] ABILITIES = {"str", "dex", "con", "int", "wis", "cha"};
+
 	int abilityModifier(String ability);
 
 	int proficiencyBonus();
@@ -125,10 +133,12 @@ public interface Combatant {
 	/** Fuente desconocida: la condición se aplicó sin decir quién la causó (p.ej. a mano por el DM). */
 	int NO_SOURCE = -1;
 
+	//El keySet del EnumMap recien construido, sin copiarlo a un EnumSet aparte: el mapa lo acaba de crear
+	//conditionSources() y no lo tiene nadie mas, asi que su keySet ya es una vista privada y de contains
+	//igual de rapido. Se ahorra una coleccion por llamada, y esto se llama entre 6 y 10 veces por
+	//resolucion de ataque (ventaja, auto-critico, resistencias, cannotAct, cannotMove...).
 	default Set<Condition> conditions() {
-		Set<Condition> result = EnumSet.noneOf(Condition.class);
-		result.addAll(conditionSources().keySet());
-		return result;
+		return conditionSources().keySet();
 	}
 
 	default int sourceOf(Condition condition) {

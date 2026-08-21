@@ -81,6 +81,6 @@ public class CharacterOptionListScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return options.isEmpty() ? Component.literal("No hay opciones cargadas (pide al DM /dndoptions load).") : null;
+		return options.isEmpty() ? Component.translatable("gui.dndsheets.character_option.empty") : null;
 	}
 }

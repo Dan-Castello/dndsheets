@@ -23,8 +23,7 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
  */
 public class SorcererMetamagicManager {
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta — ver
-	//AUDIT_TECHNICAL.md M-EVT-1.
+	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta.
 	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;

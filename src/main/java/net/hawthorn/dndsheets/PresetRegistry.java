@@ -61,7 +61,7 @@ public class PresetRegistry {
 
 	//Público: usado por PresetCommand (/dndpresets load) y por DndPaths para precargar solo todos los
 	//.json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de
-	//comandos — ver AUDIT_TECHNICAL.md M-ARQ-1.
+	//comandos.
 	private static final JsonRegistryLoader<ClassPreset> LOADER = new JsonRegistryLoader<>("preset", PresetRegistry::parse, PresetRegistry::register);
 
 	/** Carga desde un JSON ya leído (datapack o jar de otro mod) — ver ContentDatapackLoader. */
@@ -80,7 +80,7 @@ public class PresetRegistry {
 
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		JsonObject abilitiesJson = json.has("abilities") ? json.getAsJsonObject("abilities") : null;
-		for (String key : new String[]{"str", "dex", "con", "int", "wis", "cha"}) {
+		for (String key : Combatant.ABILITIES) {
 			abilities.put(key, abilitiesJson != null && abilitiesJson.has(key) ? abilitiesJson.get(key).getAsInt() : 10);
 		}
 

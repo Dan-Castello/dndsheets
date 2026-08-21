@@ -17,7 +17,7 @@ public class DungeonGenerateScreen extends SmallFormScreen {
 	private EditBox poolBox, maxDepthBox, xBox, yBox, zBox;
 
 	private DungeonGenerateScreen(Screen parent) {
-		super(Component.literal("Generar mazmorra"), 3, parent);
+		super(Component.translatable("gui.dndsheets.dungeon_pieces.generate"), 3, parent);
 	}
 
 	public static void open() {

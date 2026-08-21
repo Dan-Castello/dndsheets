@@ -21,7 +21,7 @@ public class PartyScreen extends ListPickerScreen {
 	private final List<String> rows;
 
 	private PartyScreen(List<String> rows, Screen parent) {
-		super(Component.literal("Grupo"), parent);
+		super(Component.translatable("gui.dndsheets.party.title"), parent);
 		this.rows = rows;
 	}
 
@@ -44,6 +44,6 @@ public class PartyScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return rows.isEmpty() ? Component.literal("Ningún jugador conectado con hoja cargada.") : null;
+		return rows.isEmpty() ? Component.translatable("gui.dndsheets.party.empty") : null;
 	}
 }

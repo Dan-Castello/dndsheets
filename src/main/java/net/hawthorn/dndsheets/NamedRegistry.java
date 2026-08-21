@@ -7,7 +7,7 @@ import java.util.function.Function;
 
 //Esqueleto repetido en TraitRegistry/PresetRegistry/SpellRegistry/MonsterRegistry: un mapa en memoria de
 //id -> definición, cargado en caliente por su comando /dnd... load, perdido al reiniciar el servidor salvo
-//que se recargue el mismo archivo. Ver AUDIT_TECHNICAL.md M-DUP-6.
+//que se recargue el mismo archivo.
 public class NamedRegistry<T> {
 	private final Map<String, T> items = new LinkedHashMap<>();
 	private final Function<T, String> idOf;

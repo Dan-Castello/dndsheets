@@ -13,7 +13,7 @@ public class WeaponGiveListScreen extends ListPickerScreen {
 	private final String targetUuid;
 
 	private WeaponGiveListScreen(String targetUuid, Screen parent) {
-		super(Component.literal("Dar arma"), parent);
+		super(Component.translatable("gui.dndsheets.dm_panel.give_weapon"), parent);
 		this.targetUuid = targetUuid;
 	}
 
@@ -38,6 +38,6 @@ public class WeaponGiveListScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return Config.loadedWeaponIds().isEmpty() ? Component.literal("No hay armas cargadas.") : null;
+		return Config.loadedWeaponIds().isEmpty() ? Component.translatable("gui.dndsheets.weapon_give.empty") : null;
 	}
 }

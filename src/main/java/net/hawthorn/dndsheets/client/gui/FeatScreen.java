@@ -22,7 +22,7 @@ public class FeatScreen extends ListPickerScreen {
 	private final List<String> labels;
 
 	private FeatScreen(List<String> ids, List<String> labels) {
-		super(Component.literal("Elige una dote"), Minecraft.getInstance().screen);
+		super(Component.translatable("gui.dndsheets.feat.title"), Minecraft.getInstance().screen);
 		this.ids = ids;
 		this.labels = labels;
 	}
@@ -51,7 +51,7 @@ public class FeatScreen extends ListPickerScreen {
 	@Override
 	protected Component emptyMessage() {
 		return ids.isEmpty()
-			? Component.literal("No hay dotes cargadas. El SRD solo trae una; el DM puede añadir más con un JSON.")
+			? Component.translatable("gui.dndsheets.feat.empty")
 			: null;
 	}
 }

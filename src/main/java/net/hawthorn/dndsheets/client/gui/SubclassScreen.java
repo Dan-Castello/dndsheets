@@ -22,7 +22,7 @@ public class SubclassScreen extends ListPickerScreen {
 	private final List<String> labels;
 
 	private SubclassScreen(List<String> ids, List<String> labels) {
-		super(Component.literal("Elige subclase"), Minecraft.getInstance().screen);
+		super(Component.translatable("gui.dndsheets.subclass.title"), Minecraft.getInstance().screen);
 		this.ids = ids;
 		this.labels = labels;
 	}
@@ -46,7 +46,7 @@ public class SubclassScreen extends ListPickerScreen {
 	@Override
 	protected Component emptyMessage() {
 		return ids.isEmpty()
-			? Component.literal("Todavía no: la subclase se elige al alcanzar el nivel que pide tu clase.")
+			? Component.translatable("gui.dndsheets.subclass.empty")
 			: null;
 	}
 }

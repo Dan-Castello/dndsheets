@@ -22,7 +22,7 @@ public class DungeonPieceAddScreen extends SmallFormScreen {
 	private EditBox idBox, structureBox, poolBox, weightBox, tagsBox;
 
 	private DungeonPieceAddScreen(String prefillStructureId, String prefillId, Screen parent) {
-		super(Component.literal("Añadir pieza de mazmorra"), 3, parent);
+		super(Component.translatable("gui.dndsheets.dungeon_piece_add.title"), 3, parent);
 		this.prefillStructureId = prefillStructureId;
 		this.prefillId = prefillId;
 	}

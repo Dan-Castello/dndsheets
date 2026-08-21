@@ -22,7 +22,12 @@ public class DiceManager {
 	//Motor de TODAS las tiradas del mod: estos Pattern/Logger se compilaban/re-obtenían en cada tirada
 	//(cada golpe, cada tirada de habilidad), así que se cachean una sola vez como campos estáticos.
 	private static final Logger LOGGER = LogManager.getLogger(DndsheetsMod.MODID);
-	private static final Pattern BRACKETED_DIE_PATTERN = Pattern.compile("\\[(\\d+)]");
+	//El pretty-printer mete ENTRE CORCHETES los dados de un grupo, separados por coma cuando hay más de
+	//uno: "1d1" sale como "1 = 1[1]", pero "2d6 + 1" sale como "5 = 4[1, 3] + 1". El patrón de antes era
+	//\[(\d+)] —un solo número— así que en cuanto había dos dados NO casaba y sumaba cero. Eso hacía que un
+	//crítico no doblara NADA en ningún arma de varios dados: mandoble y martillo (2d6) y los ataques de
+	//monstruo de 2d8/2d10 pegaban en un crítico exactamente lo mismo que en un golpe normal.
+	private static final Pattern BRACKETED_DIE_PATTERN = Pattern.compile("\\[([\\d,\\s]+)]");
 	private static final Pattern ABSURD_DICE_COUNT_PATTERN = Pattern.compile("(\\d+)d\\d");
 	private static final Pattern DICE_NOTATION_PATTERN = Pattern.compile("\\d*d\\d+");
 	private static final Pattern BRACKETED_VALUE_PATTERN = Pattern.compile("\\[[^\\]]*]");
@@ -131,7 +136,10 @@ public class DiceManager {
 	//con leerlo para saber si salió natural 20/1, sin recorrer el árbol interno de DiceResult.
 	private static int firstDieValue(DiceResult result) {
 		Matcher m = BRACKETED_DIE_PATTERN.matcher(new DiceResultPrettyPrinter().prettyPrint(result));
-		return m.find() ? Integer.parseInt(m.group(1)) : -1;
+		if (!m.find()) return -1;
+		//El primero del grupo: una tirada de ataque es siempre 1d20, pero ahora el grupo puede traer varios
+		//numeros, y el natural que decide critico/pifia es el primero.
+		return Integer.parseInt(m.group(1).split(",")[0].trim());
 	}
 
 	//Suma todos los dados tirados (todos los corchetes), para poder doblar solo la parte de dados de una
@@ -139,7 +147,9 @@ public class DiceManager {
 	private static int sumDiceValues(DiceResult result) {
 		Matcher m = BRACKETED_DIE_PATTERN.matcher(new DiceResultPrettyPrinter().prettyPrint(result));
 		int sum = 0;
-		while (m.find()) sum += Integer.parseInt(m.group(1));
+		while (m.find()) {
+			for (String die : m.group(1).split(",")) sum += Integer.parseInt(die.trim());
+		}
 		return sum;
 	}
 

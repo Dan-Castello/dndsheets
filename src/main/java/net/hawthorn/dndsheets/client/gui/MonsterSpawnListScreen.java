@@ -12,7 +12,7 @@ import net.minecraft.network.chat.Component;
 //(SpawnGenericScreen), sin cambios.
 public class MonsterSpawnListScreen extends ListPickerScreen {
 	private MonsterSpawnListScreen(Screen parent) {
-		super(Component.literal("Invocar monstruo cargado"), parent);
+		super(Component.translatable("gui.dndsheets.dm_panel.spawn_monster"), parent);
 	}
 
 	public static void open() {
@@ -36,6 +36,6 @@ public class MonsterSpawnListScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return MonsterRegistry.ids().isEmpty() ? Component.literal("No hay monstruos cargados.") : null;
+		return MonsterRegistry.ids().isEmpty() ? Component.translatable("gui.dndsheets.monster_spawn.empty") : null;
 	}
 }

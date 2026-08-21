@@ -18,6 +18,8 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.network.PacketDistributor;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.FriendlyByteBuf;
@@ -40,6 +42,17 @@ import java.util.UUID;
 @Mod("dndsheets")
 public class DndsheetsMod {
 	public static final Logger LOGGER = LogManager.getLogger(DndsheetsMod.class);
+
+	/**
+	 * <p>El escritor de JSON con sangria que usa todo el mod. Vive aqui por el mismo motivo que LOGGER y
+	 * PACKET_HANDLER: es infraestructura compartida, no de ningun subsistema.</p>
+	 *
+	 * <p>Construir un Gson no es gratis —arma toda la lista de TypeAdapterFactory— y se estaba haciendo
+	 * <b>en cada escritura</b> en seis sitios. El peor era SheetLoader.saveAll(), que corre cada 5 minutos
+	 * y repetia la construccion UNA VEZ POR HOJA: con seis jugadores y varios PNJ, un puñado de Gson
+	 * nuevos en el mismo tick. Es inmutable y seguro entre hilos, asi que una sola instancia sirve.</p>
+	 */
+	public static final Gson PRETTY_GSON = new GsonBuilder().setPrettyPrinting().create();
 	public static final String MODID = "dndsheets";
 
 	public DndsheetsMod() {
@@ -205,7 +218,7 @@ public class DndsheetsMod {
 
 	//Envía un parche de unos pocos campos de la hoja (ver network.SheetFieldUpdateMessage) en vez de la
 	//hoja JSON completa — para cambios acotados como consumir ventaja/inspiración o gastar un espacio de
-	//conjuro, que antes reenviaban toda la hoja en cada golpe/hechizo. Ver AUDIT_TECHNICAL.md M-NET-1.
+	//conjuro, que antes reenviaban toda la hoja en cada golpe/hechizo.
 	public static void sendSheetFieldUpdate(ServerPlayer player, JsonObject patch) {
 		PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetFieldUpdateMessage(patch.toString().getBytes()));
 	}

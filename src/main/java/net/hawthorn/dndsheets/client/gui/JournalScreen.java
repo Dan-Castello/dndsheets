@@ -21,7 +21,7 @@ public class JournalScreen extends ListPickerScreen {
 	private final List<String> labels;
 
 	private JournalScreen(List<String> ids, List<String> labels) {
-		super(Component.literal("Diario de campaña"));
+		super(Component.translatable("gui.dndsheets.journal.title"));
 		this.ids = ids;
 		this.labels = labels;
 	}
@@ -53,7 +53,7 @@ public class JournalScreen extends ListPickerScreen {
 	@Override
 	protected Component emptyMessage() {
 		return ids.isEmpty()
-			? Component.literal("No hay nada en el diario todavía.")
+			? Component.translatable("gui.dndsheets.journal.empty")
 			: null;
 	}
 }

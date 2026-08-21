@@ -15,7 +15,7 @@ public class RestChoiceScreen extends ModalDialogScreen {
 	private static final int HEIGHT = 80;
 
 	protected RestChoiceScreen() {
-		super(Component.literal("Proponer Descanso"), WIDTH, HEIGHT);
+		super(Component.translatable("gui.dndsheets.rest_choice.title"), WIDTH, HEIGHT);
 	}
 
 	public static void open() {
@@ -24,12 +24,12 @@ public class RestChoiceScreen extends ModalDialogScreen {
 
 	@Override
 	protected void init() {
-		addModalButton(20, 30, WIDTH - 40, 20, Component.literal("Descanso corto"), button -> {
+		addModalButton(20, 30, WIDTH - 40, 20, Component.translatable("gui.dndsheets.rest_choice.short"), button -> {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new RestProposeMessage(false));
 			this.onClose();
 		});
 
-		addModalButton(20, 54, WIDTH - 40, 20, Component.literal("Descanso largo"), button -> {
+		addModalButton(20, 54, WIDTH - 40, 20, Component.translatable("gui.dndsheets.rest_choice.long"), button -> {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new RestProposeMessage(true));
 			this.onClose();
 		});
@@ -38,7 +38,7 @@ public class RestChoiceScreen extends ModalDialogScreen {
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderPanel(guiGraphics);
-		guiGraphics.drawCenteredString(this.font, Component.literal("¿Qué tipo de descanso propones?"), this.width / 2, dialogTop() + 8, 0xFFFFFF);
+		guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.rest_choice.prompt"), this.width / 2, dialogTop() + 8, 0xFFFFFF);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 	}
 }

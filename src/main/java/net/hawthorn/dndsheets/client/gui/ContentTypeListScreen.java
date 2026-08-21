@@ -18,7 +18,7 @@ import net.minecraft.network.chat.Component;
  */
 public class ContentTypeListScreen extends ListPickerScreen {
 	private ContentTypeListScreen(Screen parent) {
-		super(Component.literal("Crear contenido"), parent);
+		super(Component.translatable("gui.dndsheets.content_type.title"), parent);
 	}
 
 	public static void open() {
@@ -27,15 +27,15 @@ public class ContentTypeListScreen extends ListPickerScreen {
 
 	@Override
 	protected void buildRows() {
-		addRow(Component.literal("Armas"), b -> request(ContentType.WEAPON));
-		addRow(Component.literal("Hechizos"), b -> request(ContentType.SPELL));
-		addRow(Component.literal("Presets de clase"), b -> request(ContentType.PRESET));
-		addRow(Component.literal("Rasgos"), b -> request(ContentType.TRAIT));
-		addRow(Component.literal("Encuentros"), b -> request(ContentType.ENCOUNTER));
-		addRow(Component.literal("Dotes"), b -> request(ContentType.FEAT));
-		addRow(Component.literal("Razas"), b -> requestOptions(CharacterOptionsRegistry.RACE));
-		addRow(Component.literal("Trasfondos"), b -> requestOptions(CharacterOptionsRegistry.BACKGROUND));
-		addRow(Component.literal("Clases"), b -> requestOptions(CharacterOptionsRegistry.CLASS));
+		addRow(Component.translatable("gui.dndsheets.content_type.weapons"), b -> request(ContentType.WEAPON));
+		addRow(Component.translatable("gui.dndsheets.content_type.spells"), b -> request(ContentType.SPELL));
+		addRow(Component.translatable("gui.dndsheets.content_type.presets"), b -> request(ContentType.PRESET));
+		addRow(Component.translatable("gui.dndsheets.content_type.traits"), b -> request(ContentType.TRAIT));
+		addRow(Component.translatable("gui.dndsheets.content_type.encounters"), b -> request(ContentType.ENCOUNTER));
+		addRow(Component.translatable("gui.dndsheets.content_type.feats"), b -> request(ContentType.FEAT));
+		addRow(Component.translatable("gui.dndsheets.content_type.races"), b -> requestOptions(CharacterOptionsRegistry.RACE));
+		addRow(Component.translatable("gui.dndsheets.content_type.backgrounds"), b -> requestOptions(CharacterOptionsRegistry.BACKGROUND));
+		addRow(Component.translatable("gui.dndsheets.content_type.classes"), b -> requestOptions(CharacterOptionsRegistry.CLASS));
 	}
 
 	private static void request(ContentType type) {

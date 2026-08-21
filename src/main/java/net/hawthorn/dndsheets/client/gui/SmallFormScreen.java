@@ -1,54 +1,27 @@
 package net.hawthorn.dndsheets.client.gui;
 
-import net.hawthorn.dndsheets.client.gui.components.DirectionalCycleButton;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.hawthorn.dndsheets.client.gui.components.TomeButton;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-
-//Base para formularios cortos de una sola columna (nombre, un par de campos, botones
-//Confirmar/Cancelar) abiertos desde el Panel de DM o la Vara de DM: SpawnGenericScreen,
-//AddTurnEffectScreen y AddMonsterAttackScreen duplicaban las mismas constantes de layout, el helper
-//cycleLabel/parseIntOr y el patrón de render/tick de sus EditBox — ver AUDIT_REPORT_2026.md F6. Mismo
-//espíritu que ModalDialogScreen, pero para un formulario vertical centrado en vez de una caja de diálogo
-//de tamaño fijo.
-//
-//"Cancelar" (y "Confirmar", una vez enviado el mensaje) vuelven a `parent` en vez de cerrar todo el
-//menú — mismo mecanismo de navegación que ListPickerScreen, ver esa clase.
-public abstract class SmallFormScreen extends Screen {
-	protected static final int FIELD_WIDTH = 160;
-	protected static final int FIELD_HEIGHT = 20;
-	//30, no 26: deja 10px libres arriba de cada campo para su etiqueta (ver addField) sin pisar el
-	//campo anterior — antes ningún campo de este formulario mostraba en pantalla para qué era, solo su
-	//Component de narración (invisible, solo lectores de accesibilidad) y el valor por defecto ya escrito.
-	protected static final int ROW_HEIGHT = 30;
-	//Alto de la banda de cabecera por encima del primer campo: tiene que dejar sitio al título (8 px), al
-	//filete y a la etiqueta del primer campo, que se dibuja en formTop-10.
-	private static final int TITLE_BAND = 34;
-
-	private final int titleRows;
-	private final Screen parent;
-	private final List<EditBox> editBoxes = new ArrayList<>();
-	private final List<String> editBoxLabels = new ArrayList<>();
-	protected int centerX;
-	protected int formTop;
-	private int cursorY;
-	private int formBottom;
+/**
+ * <p>Formulario corto: se rellenan unos campos y se pulsa <b>Confirmar</b> una vez. Añade a
+ * {@link FormPanelScreen} lo único que es suyo — la fila Confirmar/Cancelar, la de Borrar opcional, y el
+ * {@link #onConfirm()} que dispara el envío.</p>
+ *
+ * <p>El marco, las filas, los campos y el {@code tick} viven en la base: los comparte con
+ * {@link SheetAdjustScreen}, que es un panel de control (diez acciones sueltas, ningún Confirmar) y por
+ * eso no puede heredar de aquí por mucho que dibuje el mismo pergamino.</p>
+ *
+ * <p>"Cancelar" (y "Confirmar", una vez enviado el mensaje) vuelven a {@code parent} en vez de cerrar todo
+ * el menú — mismo mecanismo de navegación que ListPickerScreen, ver esa clase.</p>
+ */
+public abstract class SmallFormScreen extends FormPanelScreen {
 
 	protected SmallFormScreen(Component title, int titleRows, Screen parent) {
-		super(title);
-		this.titleRows = titleRows;
-		this.parent = parent;
+		super(title, titleRows, parent);
 	}
-
-	/** Añade los campos/botones del formulario, en orden, con addField(...)/addCycleButton(...). */
-	protected abstract void buildForm();
 
 	/** Se llama al pulsar "Confirmar", antes de cerrar la pantalla. */
 	protected abstract void onConfirm();
@@ -63,30 +36,24 @@ public abstract class SmallFormScreen extends Screen {
 	}
 
 	protected Component deleteButtonLabel() {
-		return Component.literal("Borrar");
+		return Component.translatable("gui.dndsheets.common.delete");
 	}
 
 	@Override
 	protected final void init() {
-		centerX = this.width / 2;
-		//Mismo tope que SheetAdjustScreen: sin esto, un formulario con muchos campos (los del creador de
-		//contenido, p.ej.) centrado en height/2 sin piso empujaba las primeras filas (y su título) fuera de
-		//la pantalla en ventanas bajas/GUI Scale alto, en vez de solo quedar apretado.
-		formTop = Math.max(44, this.height / 2 - ROW_HEIGHT * titleRows);
-		cursorY = formTop;
-		editBoxes.clear();
+		layoutTop();
 		buildForm();
 
 		int y = nextRowY();
 		//TomeButton, igual que las filas de ListPickerScreen: los dos son las únicas fábricas de botones
 		//del mod, así que el aspecto se cambia en dos sitios y llega a todas las pantallas.
-		this.addRenderableWidget(TomeButton.of(Component.literal("Confirmar"), button -> {
+		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.confirm"), button -> {
 			onConfirm();
 			this.onClose();
-		}, centerX - FIELD_WIDTH / 2, y, FIELD_WIDTH / 2 - 2, FIELD_HEIGHT));
+		}, centerX - formWidth() / 2, y, formWidth() / 2 - 2, FIELD_HEIGHT));
 
-		this.addRenderableWidget(TomeButton.of(Component.literal("Cancelar"), button -> this.onClose(),
-			centerX + 2, y, FIELD_WIDTH / 2 - 2, FIELD_HEIGHT));
+		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.cancel"), button -> this.onClose(),
+			centerX + 2, y, formWidth() / 2 - 2, FIELD_HEIGHT));
 
 		formBottom = y + FIELD_HEIGHT + 10;
 
@@ -98,116 +65,16 @@ public abstract class SmallFormScreen extends Screen {
 			this.addRenderableWidget(TomeButton.of(deleteButtonLabel(), button -> {
 				onDelete();
 				this.onClose();
-			}, centerX - FIELD_WIDTH / 2, deleteY, FIELD_WIDTH, FIELD_HEIGHT));
+			}, centerX - formWidth() / 2, deleteY, formWidth(), FIELD_HEIGHT));
 			formBottom = deleteY + FIELD_HEIGHT + 10;
-		}
-	}
-
-	private int nextRowY() {
-		int y = cursorY;
-		cursorY += ROW_HEIGHT;
-		return y;
-	}
-
-	protected EditBox addField(String label, String defaultValue, int maxLength) {
-		int y = nextRowY();
-		EditBox box = new EditBox(this.font, centerX - FIELD_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal(label));
-		box.setValue(defaultValue);
-		box.setMaxLength(maxLength);
-		this.addWidget(box);
-		if (editBoxes.isEmpty()) this.setInitialFocus(box);
-		editBoxes.add(box);
-		editBoxLabels.add(label);
-		return box;
-	}
-
-	protected CycleField addCycleButton(String prefix, String[] options) {
-		return addCycleButton(prefix, options, options, 0);
-	}
-
-	//Para opciones cuyo valor real (guardado/enviado al servidor) es un código interno poco claro para un
-	//DM (p.ej. "str"/"dex") — displayLabels es SOLO lo que se muestra en el botón, en el mismo orden que
-	//options; CycleField.value() sigue devolviendo el código interno de options, no el texto mostrado.
-	protected CycleField addCycleButton(String prefix, String[] options, String[] displayLabels) {
-		return addCycleButton(prefix, options, displayLabels, 0);
-	}
-
-	//Con índice inicial: para prellenar un formulario de EDICIÓN (ver ContentFormScreen) con el valor que ya
-	//tenía la entrada, en vez de arrancar siempre en options[0] como si fuera nueva.
-	protected CycleField addCycleButton(String prefix, String[] options, String[] displayLabels, int initialIndex) {
-		int y = nextRowY();
-		CycleField field = new CycleField(options);
-		field.index = initialIndex >= 0 && initialIndex < options.length ? initialIndex : 0;
-		field.button = this.addRenderableWidget(new DirectionalCycleButton(centerX - FIELD_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT,
-			cycleLabel(prefix, displayLabels[field.index]),
-			() -> {
-				field.index = (field.index + 1) % options.length;
-				field.button.setMessage(cycleLabel(prefix, displayLabels[field.index]));
-			},
-			() -> {
-				field.index = (field.index - 1 + options.length) % options.length;
-				field.button.setMessage(cycleLabel(prefix, displayLabels[field.index]));
-			}));
-		return field;
-	}
-
-	protected static int parseIntOr(String value, int fallback) {
-		try {
-			return Integer.parseInt(value.trim());
-		} catch (NumberFormatException e) {
-			return fallback;
-		}
-	}
-
-	private static Component cycleLabel(String prefix, String value) {
-		return Component.literal(prefix + ": " + value);
-	}
-
-	/** Botón cíclico con su índice actual — ver addCycleButton. */
-	protected static final class CycleField {
-		private final String[] options;
-		private Button button;
-		private int index = 0;
-
-		private CycleField(String[] options) {
-			this.options = options;
-		}
-
-		public String value() {
-			return options[index];
 		}
 	}
 
 	@Override
 	public final void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics);
-		//La cabecera necesita su propia banda. El título estaba en formTop-16 (ocupa hasta formTop-8) y la
-		//etiqueta del primer campo arranca en formTop-10: se pisaban dos filas de píxeles, y con la fuente
-		//de Minecraft eso no se lee como "juntos", se lee como texto duplicado y emborronado.
-		GuiStyle.panel(guiGraphics, centerX - FIELD_WIDTH / 2 - 14, formTop - TITLE_BAND, centerX + FIELD_WIDTH / 2 + 14, formBottom);
-		guiGraphics.drawCenteredString(this.font, title, this.width / 2, formTop - TITLE_BAND + 6, GuiStyle.TITLE_COLOR);
-		//Filete de separación, el mismo recurso que usa ListPickerScreen para su cabecera.
-		GuiStyle.rule(guiGraphics, centerX - FIELD_WIDTH / 2 - 6, centerX + FIELD_WIDTH / 2 + 6, formTop - 18);
+		renderPanelChrome(guiGraphics);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
-		for (int i = 0; i < editBoxes.size(); i++) {
-			EditBox box = editBoxes.get(i);
-			guiGraphics.drawString(this.font, editBoxLabels.get(i), box.getX(), box.getY() - 10, GuiStyle.TITLE_COLOR, false);
-			box.render(guiGraphics, mouseX, mouseY, partialTicks);
-		}
-	}
-
-	@Override
-	public void onClose() {
-		Minecraft.getInstance().setScreen(parent);
-	}
-
-	@Override
-	public final void tick() {
-		for (EditBox box : editBoxes) box.tick();
-	}
-
-	@Override
-	public final boolean isPauseScreen() {
-		return false;
+		renderFields(guiGraphics, mouseX, mouseY, partialTicks);
 	}
 }

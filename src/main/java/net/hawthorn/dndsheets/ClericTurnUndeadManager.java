@@ -106,7 +106,7 @@ public class ClericTurnUndeadManager {
 	}
 
 	//Se activa desde AbilityItemDispatcher en vez de suscribirse a los eventos de interacción por su cuenta
-	//— ver AUDIT_TECHNICAL.md M-EVT-1. Mismo patrón que el resto de ítems de capacidad.
+	//. Mismo patrón que el resto de ítems de capacidad.
 	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (event.getEntity() instanceof ServerPlayer player) use(player);

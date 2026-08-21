@@ -28,7 +28,7 @@ public class CompendiumEntryScreen extends ModalDialogScreen {
 	private String heading = "";
 
 	private CompendiumEntryScreen(String text, Screen parent) {
-		super(Component.literal("Compendio"), WIDTH, HEIGHT);
+		super(Component.translatable("gui.dndsheets.compendium.title"), WIDTH, HEIGHT);
 		this.text = text;
 		this.parent = parent;
 	}
@@ -56,7 +56,7 @@ public class CompendiumEntryScreen extends ModalDialogScreen {
 			}
 		}
 
-		addModalButton(WIDTH - 60 - PADDING, HEIGHT - 24, 60, 16, Component.literal("Cerrar"), b -> this.onClose());
+		addModalButton(WIDTH - 60 - PADDING, HEIGHT - 24, 60, 16, Component.translatable("gui.dndsheets.common.close"), b -> this.onClose());
 	}
 
 	@Override

@@ -16,7 +16,7 @@ import net.minecraft.network.chat.Component;
 public class CompendiumScreen extends ListPickerScreen {
 
 	private CompendiumScreen() {
-		super(Component.literal("Compendio"));
+		super(Component.translatable("gui.dndsheets.compendium.title"));
 	}
 
 	public static void open() {
@@ -25,10 +25,10 @@ public class CompendiumScreen extends ListPickerScreen {
 
 	@Override
 	protected void buildRows() {
-		addRow(Component.literal("Hechizos"), b -> request("spells"));
-		addRow(Component.literal("Monstruos"), b -> request("monsters"));
-		addRow(Component.literal("Objetos mágicos"), b -> request("items"));
-		addRow(Component.literal("Armas"), b -> request("weapons"));
+		addRow(Component.translatable("gui.dndsheets.compendium.spells"), b -> request("spells"));
+		addRow(Component.translatable("gui.dndsheets.compendium.monsters"), b -> request("monsters"));
+		addRow(Component.translatable("gui.dndsheets.compendium.items"), b -> request("items"));
+		addRow(Component.translatable("gui.dndsheets.compendium.weapons"), b -> request("weapons"));
 	}
 
 	private static void request(String category) {

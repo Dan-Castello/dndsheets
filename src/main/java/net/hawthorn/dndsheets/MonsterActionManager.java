@@ -88,6 +88,11 @@ public class MonsterActionManager {
 	//selecciona (sobreescribe la selección anterior si había una), clic derecho en un bloque lo mueve ahí.
 	private static final Map<UUID, Integer> pendingMove = new HashMap<>();
 
+	/** El DM que empezo a mover un monstruo y se desconecto sin elegir destino dejaba su entrada dentro. */
+	static void clearFor(ServerPlayer player) {
+		pendingMove.remove(player.getUUID());
+	}
+
 	@SubscribeEvent
 	public static void onSelectMonsterToMove(PlayerInteractEvent.EntityInteract event) {
 		if (event.getEntity().level().isClientSide()) return;

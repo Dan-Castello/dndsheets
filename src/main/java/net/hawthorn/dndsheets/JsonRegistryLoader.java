@@ -15,8 +15,7 @@ import java.util.function.Function;
 //archivo y, por cada elemento, validar que tenga "id", parsearlo y registrarlo — saltando (con aviso en
 //LOGGER, sin abortar el archivo entero) cualquier elemento sin "id" o que falle al parsear/registrar.
 //Vive en el paquete raíz (no en command/) para que cada registro pueda cargarse a sí mismo desde JSON sin
-//que DndPaths (arranque del servidor) tenga que depender de la capa de comandos — ver AUDIT_TECHNICAL.md
-//A-DUP-3 / M-ARQ-1. WeaponCommand no lo usa: valida varios campos obligatorios a la vez y llama a
+//que DndPaths (arranque del servidor) tenga que depender de la capa de comandos/ M-ARQ-1. WeaponCommand no lo usa: valida varios campos obligatorios a la vez y llama a
 //Config.registerWeapon con parámetros posicionales en vez de un par parse()/register() sobre un registro propio.
 public class JsonRegistryLoader<T> {
 	private final String kindName; //Para los mensajes de log, p.ej. "rasgo", "preset", "hechizo", "monstruo".

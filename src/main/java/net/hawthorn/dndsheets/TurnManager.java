@@ -168,6 +168,7 @@ public class TurnManager {
 		if (event.getEntity().level().isClientSide()) return;
 		if (!isMonster(event.getEntity())) return;
 		markDefeated(event.getEntity().getId());
+		MonsterRegistry.forgetCustomAttacks(event.getEntity());
 		if (event.getEntity().level() instanceof ServerLevel level) checkAllEnemiesDefeated(level);
 	}
 
@@ -416,8 +417,7 @@ public class TurnManager {
 	//radio, ordena de mayor a menor y arranca el modo turnos. Público: lo usan tanto TurnCommand
 	//(/dndturns start) como el Panel de DM (network.TurnControlMessage) y CombatManager.autoStartCombatIfNeeded
 	//(el primer golpe de un jugador a un monstruo arranca el combate solo si no había uno activo) — vivía
-	//antes en TurnCommand, invirtiendo la dependencia (lógica de dominio llamando a la capa de comandos),
-	//ver AUDIT_TECHNICAL.md M-ARQ-1.
+	//antes en TurnCommand, invirtiendo la dependencia (lógica de dominio llamando a la capa de comandos).
 	public static int startAt(ServerLevel level, Vec3 pos, double radius) {
 		return startAt(level, pos, radius, null);
 	}
@@ -746,6 +746,21 @@ public class TurnManager {
 		else effects.put(entityId, remaining);
 	}
 
+	/**
+	 * <p>Programa el fin de un rasgo con duración en la unidad que toque: <b>asaltos</b> si el modo turnos
+	 * está activo, <b>ticks reales</b> si no. Un "1 minuto" de 5e son 10 asaltos en combate, pero 1.200
+	 * ticks fuera de él, y contarlo en la unidad equivocada acorta o alarga el rasgo sin avisar.</p>
+	 *
+	 * <p>La decisión estaba escrita a mano, idéntica, en los cuatro rasgos con duración (Furia, Forma
+	 * Salvaje, Marca del Cazador, Inspiración Bárdica), cada uno con su propio par de constantes. Lo que
+	 * hace cada uno al expirar sí es distinto —uno no avisa a nadie, otro comprueba un token— así que eso
+	 * se queda en cada manager: aquí solo vive lo que de verdad era la misma línea cuatro veces.</p>
+	 */
+	public static void scheduleExpiry(int rounds, int ticks, Runnable onExpire) {
+		if (isActive()) onRoundsPass(rounds, onExpire);
+		else DndsheetsMod.queueServerWork(ticks, onExpire);
+	}
+
 	//Público: para que un rasgo con duración (Furia del bárbaro, etc.) cuente en asaltos completos en vez
 	//de ticks reales mientras el modo turnos esté activo — ver BarbarianRageManager. Si el modo turnos
 	//termina antes de que pasen los asaltos, se dispara igual (ver end()): no se queda colgado para siempre.
@@ -791,12 +806,18 @@ public class TurnManager {
 	private static void tickWeaponBuffs(ServerLevel level) {
 		for (ServerPlayer player : level.players()) {
 			JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
-			if (WeaponBuffManager.tickRound(sheet)) {
+			//Los dos tickRound son helpers puros sobre el JsonObject y descuentan asaltos en la hoja, asi
+			//que persistir es cosa de aqui (invariante 4). Solo se escribe cuando algo cambio de verdad:
+			//guardar la hoja de cada jugador en cada asalto seria una escritura por combatiente y ronda.
+			boolean changed = WeaponBuffManager.tickRound(sheet);
+			if (changed) {
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.spell.buff_faded").withStyle(ChatFormatting.GRAY));
 			}
 			for (String type : ConsumableManager.tickRound(sheet)) {
+				changed = true;
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.item.resistance_faded", type).withStyle(ChatFormatting.GRAY));
 			}
+			if (changed) SheetLoader.saveServer(sheet, player.getStringUUID());
 		}
 	}
 

@@ -35,7 +35,7 @@ public class CompendiumListScreen extends ListPickerScreen {
 		String category = ids.isEmpty() ? "" : ids.get(0).split("[|]", 2)[0];
 		Minecraft minecraft = Minecraft.getInstance();
 		minecraft.setScreen(new CompendiumListScreen(
-			Component.literal("Compendio · " + category), ids, labels, minecraft.screen));
+			Component.translatable("gui.dndsheets.compendium.category", category), ids, labels, minecraft.screen));
 	}
 
 	@Override
@@ -60,6 +60,6 @@ public class CompendiumListScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return ids.isEmpty() ? Component.literal("No hay contenido cargado de esa categoría.") : null;
+		return ids.isEmpty() ? Component.translatable("gui.dndsheets.compendium.empty") : null;
 	}
 }

@@ -20,7 +20,7 @@ public class TraitGrantScreen extends ListPickerScreen {
 	private final List<String> names;
 
 	private TraitGrantScreen(String targetUuid, List<String> ids, List<String> names, Screen parent) {
-		super(Component.literal("Elige un rasgo para conceder"), parent);
+		super(Component.translatable("gui.dndsheets.trait_grant.title"), parent);
 		this.targetUuid = targetUuid;
 		this.ids = ids;
 		this.names = names;
@@ -48,6 +48,6 @@ public class TraitGrantScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return names.isEmpty() ? Component.literal("No hay rasgos cargados (/dndtraits load).") : null;
+		return names.isEmpty() ? Component.translatable("gui.dndsheets.trait_grant.empty") : null;
 	}
 }

@@ -18,7 +18,7 @@ public class RestVoteScreen extends ModalDialogScreen {
 	private final String typeLabel;
 
 	protected RestVoteScreen(String proposerName, String typeLabel) {
-		super(Component.literal("Votación de Descanso"), WIDTH, HEIGHT);
+		super(Component.translatable("gui.dndsheets.rest_vote.title"), WIDTH, HEIGHT);
 		this.proposerName = proposerName;
 		this.typeLabel = typeLabel;
 	}
@@ -35,12 +35,12 @@ public class RestVoteScreen extends ModalDialogScreen {
 
 	@Override
 	protected void init() {
-		addModalButton(20, 60, (WIDTH - 50) / 2, 20, Component.literal("Aceptar"), button -> {
+		addModalButton(20, 60, (WIDTH - 50) / 2, 20, Component.translatable("gui.dndsheets.rest_vote.accept"), button -> {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new RestVoteResponseMessage(true));
 			this.onClose();
 		});
 
-		addModalButton(30 + (WIDTH - 50) / 2, 60, (WIDTH - 50) / 2, 20, Component.literal("Rechazar"), button -> {
+		addModalButton(30 + (WIDTH - 50) / 2, 60, (WIDTH - 50) / 2, 20, Component.translatable("gui.dndsheets.rest_vote.reject"), button -> {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new RestVoteResponseMessage(false));
 			this.onClose();
 		});
@@ -56,7 +56,7 @@ public class RestVoteScreen extends ModalDialogScreen {
 		this.renderPanel(guiGraphics);
 		int top = dialogTop();
 		guiGraphics.drawCenteredString(this.font, Component.literal(proposerName + " propone un descanso " + typeLabel + "."), this.width / 2, top + 8, 0xFFFFFF);
-		guiGraphics.drawCenteredString(this.font, Component.literal("Se aplicará solo si todos aceptan."), this.width / 2, top + 22, 0xAAAAAA);
+		guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.rest_vote.hint"), this.width / 2, top + 22, 0xAAAAAA);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 	}
 }

@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.hawthorn.dndsheets.DamageTypes;
 import net.hawthorn.dndsheets.client.gui.components.TomeButton;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
@@ -23,18 +24,14 @@ import java.util.Map;
  * pedidos al servidor (ver {@code network.SheetSummaryRequestMessage}). Ventaja y tipo de daño/afinidad
  * se eligen con botones cíclicos, igual que en {@link AddMonsterAttackScreen}.</p>
  */
-public class SheetAdjustScreen extends Screen {
+public class SheetAdjustScreen extends FormPanelScreen {
 	private static final String[] ADVANTAGE_LABELS = {"normal", "ventaja", "desventaja"};
-	private static final String[] DAMAGE_TYPES = {
-		"fisico", "cortante", "perforante", "contundente", "fuego", "frio", "rayo",
-		"acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno"
-	};
 	private static final String[] AFFINITIES = {"normal", "resistant", "vulnerable", "immune"};
 	private static final String[] PACTS = {"cadena", "hoja", "vara"};
 
 	//Los valores de arriba son los identificadores reales guardados en la hoja/comparados en el resto del
 	//código (DamageTypes.multiplierFor, CombatManager, SheetCommand...) — no se pueden cambiar sin romper
-	//esos otros sitios. Esto solo traduce lo que el botón cíclico MUESTRA, ver AUDIT_TECHNICAL.md m9.
+	//esos otros sitios. Esto solo traduce lo que el botón cíclico MUESTRA.
 	private static final Map<String, String> DISPLAY_KEYS = Map.ofEntries(
 		Map.entry("normal", "gui.dndsheets.sheet_adjust.normal"),
 		Map.entry("ventaja", "gui.dndsheets.sheet_adjust.advantage"),
@@ -61,14 +58,17 @@ public class SheetAdjustScreen extends Screen {
 		Map.entry("trueno", "gui.dndsheets.sheet_adjust.damage_thunder")
 	);
 
-	private static final int FIELD_WIDTH = 90;
-	private static final int WIDE_WIDTH = 190;
-	private static final int FIELD_HEIGHT = 20;
-	private static final int ROW_HEIGHT = 26;
+	//Ancho de UNA columna dentro de la fila; el ancho de la fila entera es formWidth().
+	private static final int COLUMN_WIDTH = 90;
+
+	//Panel ancho y filas apretadas: son diez acciones, y con la separación por defecto no caben.
+	@Override protected int formWidth() { return 190; }
+	@Override protected int rowHeight() { return 26; }
+	//Banda alta: bajo el título va una segunda línea de solo lectura con PG/CA.
+	@Override protected int titleBand() { return 44; }
 
 	private final String targetUuid;
 	private final String targetName;
-	private final Screen parent;
 	private final int gold;
 	private final int slotsMax;
 	private final int slotsCurrent;
@@ -81,8 +81,6 @@ public class SheetAdjustScreen extends Screen {
 	private EditBox slotsMaxBox;
 	private EditBox slotsCurrentBox;
 	private EditBox levelBox;
-	private int y0;
-	private int formBottom;
 	private int advantageIndex = 0;
 	private int damageTypeIndex = 0;
 	private int affinityIndex = 0;
@@ -93,7 +91,8 @@ public class SheetAdjustScreen extends Screen {
 	private Button pactButton;
 
 	private SheetAdjustScreen(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac, String conditionsCsv, Screen parent) {
-		super(Component.literal("Ajustes de hoja"));
+		//El título ya dice de quién y con cuánto oro: antes se dibujaba a mano en cada frame.
+		super(Component.translatable("gui.dndsheets.sheet_adjust.title", targetName, gold), 6, parent);
 		this.targetUuid = targetUuid;
 		this.targetName = targetName;
 		this.gold = gold;
@@ -103,138 +102,120 @@ public class SheetAdjustScreen extends Screen {
 		this.maxHp = maxHp;
 		this.ac = ac;
 		this.conditionsCsv = conditionsCsv;
-		this.parent = parent;
 	}
 
 	public static void open(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac, String conditionsCsv) {
 		Minecraft.getInstance().setScreen(new SheetAdjustScreen(targetUuid, targetName, gold, slotsMax, slotsCurrent, hp, maxHp, ac, conditionsCsv, Minecraft.getInstance().screen));
 	}
 
-	//Vuelve a la pantalla anterior (normalmente PlayerPickerScreen) en vez de cerrar todo el menú —
-	//mismo mecanismo que ListPickerScreen/SmallFormScreen, ver esas clases.
 	@Override
-	public void onClose() {
-		Minecraft.getInstance().setScreen(parent);
+	protected void init() {
+		layoutTop();
+		buildForm();
 	}
 
 	@Override
-	protected void init() {
-		int centerX = this.width / 2;
-		//Centrado normalmente, pero sin dejar que el panel (título en y0-26, borde en y0-40) se salga por
-		//arriba de la pantalla en ventanas bajas/GUI Scale alto — con 8 filas, centrar en height/2 sin tope
-		//empujaba "Espacios de conjuro" y el resto fuera de la vista (ni se veía ni se podía pulsar
-		//"Aplicar") en vez de solo verse recortado.
-		y0 = Math.max(44, this.height / 2 - ROW_HEIGHT * 6);
-		int y = y0;
+	protected void buildForm() {
+		int y = formTop;
 
 		//--- Oro ---
-		goldAmountBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Cantidad"));
-		goldAmountBox.setValue("0");
-		goldAmountBox.setMaxLength(10);
-		goldAmountBox.setTooltip(Tooltip.create(Component.literal("Cantidad de oro a sumar o fijar con los botones de la derecha.")));
-		this.addWidget(goldAmountBox);
-		this.setInitialFocus(goldAmountBox);
-		Button addGoldButton = TomeButton.of(Component.literal("Añadir"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.gold(targetUuid, "add", parseIntOr(goldAmountBox.getValue(), 0))), centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, 40, FIELD_HEIGHT);
-		addGoldButton.setTooltip(Tooltip.create(Component.literal("Suma esta cantidad al oro actual del jugador.")));
+		goldAmountBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.gold_amount").getString(), "0", 10, y, centerX - formWidth() / 2, COLUMN_WIDTH);
+		goldAmountBox.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.gold_tip")));
+		Button addGoldButton = TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.gold_add"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.gold(targetUuid, "add", parseIntOr(goldAmountBox.getValue(), 0))), centerX - formWidth() / 2 + COLUMN_WIDTH + 4, y, 40, FIELD_HEIGHT);
+		addGoldButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.gold_add_tip")));
 		this.addRenderableWidget(addGoldButton);
 
-		Button setGoldButton = TomeButton.of(Component.literal("Fijar"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.gold(targetUuid, "set", parseIntOr(goldAmountBox.getValue(), 0))), centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 48, y, 40, FIELD_HEIGHT);
-		setGoldButton.setTooltip(Tooltip.create(Component.literal("Reemplaza el oro actual del jugador por esta cantidad.")));
+		Button setGoldButton = TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.gold_set"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.gold(targetUuid, "set", parseIntOr(goldAmountBox.getValue(), 0))), centerX - formWidth() / 2 + COLUMN_WIDTH + 48, y, 40, FIELD_HEIGHT);
+		setGoldButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.gold_set_tip")));
 		this.addRenderableWidget(setGoldButton);
-		y += ROW_HEIGHT;
+		y += rowHeight();
 
 		//--- Espacios de conjuro ---
-		slotsMaxBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Máximo"));
-		slotsMaxBox.setValue(String.valueOf(slotsMax));
-		slotsMaxBox.setMaxLength(3);
-		slotsMaxBox.setTooltip(Tooltip.create(Component.literal("Espacios de conjuro MÁXIMOS del jugador.")));
-		this.addWidget(slotsMaxBox);
+		slotsMaxBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.slots_max").getString(), String.valueOf(slotsMax), 3, y, centerX - formWidth() / 2, COLUMN_WIDTH);
+		slotsMaxBox.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.slots_max_tip")));
 
-		slotsCurrentBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Actual"));
-		slotsCurrentBox.setValue(String.valueOf(slotsCurrent));
-		slotsCurrentBox.setMaxLength(3);
-		slotsCurrentBox.setTooltip(Tooltip.create(Component.literal("Espacios de conjuro que le quedan AHORA MISMO al jugador.")));
-		this.addWidget(slotsCurrentBox);
-		y += ROW_HEIGHT;
+		slotsCurrentBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.slots_current").getString(), String.valueOf(slotsCurrent), 3, y, centerX - formWidth() / 2 + COLUMN_WIDTH + 4, COLUMN_WIDTH);
+		slotsCurrentBox.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.slots_current_tip")));
+		y += rowHeight();
 
-		//Fila propia para "Aplicar": los dos campos (90px cada uno) ya casi llenan WIDE_WIDTH (190px), así
+		//Fila propia para "Aplicar": los dos campos (90px cada uno) ya casi llenan formWidth() (190px), así
 		//que compartir la fila con ellos dejaba el botón en 190-188=2 PÍXELES de ancho — prácticamente
 		//imposible de pulsar, la causa real de "los cambios de espacios de conjuro no se aplican" (no era
 		//el recorte vertical que se corrigió antes, este es un bug de ancho aparte).
-		this.addRenderableWidget(TomeButton.of(Component.literal("Aplicar espacios de conjuro"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.slots(targetUuid, parseIntOr(slotsMaxBox.getValue(), 0), parseIntOr(slotsCurrentBox.getValue(), 0))), centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT));
-		y += ROW_HEIGHT;
+		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.slots_apply"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.slots(targetUuid, parseIntOr(slotsMaxBox.getValue(), 0), parseIntOr(slotsCurrentBox.getValue(), 0))), centerX - formWidth() / 2, y, formWidth(), FIELD_HEIGHT));
+		y += rowHeight();
 
 		//--- Ventaja próximo ataque ---
-		advantageButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH - 60, FIELD_HEIGHT,
-			cycleLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex]),
-			() -> { advantageIndex = (advantageIndex + 1) % ADVANTAGE_LABELS.length; advantageButton.setMessage(cycleLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex])); },
-			() -> { advantageIndex = (advantageIndex - 1 + ADVANTAGE_LABELS.length) % ADVANTAGE_LABELS.length; advantageButton.setMessage(cycleLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex])); }));
-		advantageButton.setTooltip(Tooltip.create(Component.literal("Se aplica solo a la próxima tirada de ataque del jugador, luego vuelve a Normal. Clic derecho para retroceder.")));
-		this.addRenderableWidget(TomeButton.of(Component.literal("Aplicar"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.advantage(targetUuid, ADVANTAGE_LABELS[advantageIndex])), centerX - WIDE_WIDTH / 2 + WIDE_WIDTH - 56, y, 56, FIELD_HEIGHT));
-		y += ROW_HEIGHT;
+		advantageButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - formWidth() / 2, y, formWidth() - 60, FIELD_HEIGHT,
+			translatedLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex]),
+			() -> { advantageIndex = (advantageIndex + 1) % ADVANTAGE_LABELS.length; advantageButton.setMessage(translatedLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex])); },
+			() -> { advantageIndex = (advantageIndex - 1 + ADVANTAGE_LABELS.length) % ADVANTAGE_LABELS.length; advantageButton.setMessage(translatedLabel("Próximo ataque", ADVANTAGE_LABELS[advantageIndex])); }));
+		advantageButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.advantage_tip")));
+		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.apply"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.advantage(targetUuid, ADVANTAGE_LABELS[advantageIndex])), centerX - formWidth() / 2 + formWidth() - 56, y, 56, FIELD_HEIGHT));
+		y += rowHeight();
 
 		//--- Tipo de daño / afinidad ---
-		damageTypeButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT,
-			cycleLabel("Tipo", DAMAGE_TYPES[damageTypeIndex]),
-			() -> { damageTypeIndex = (damageTypeIndex + 1) % DAMAGE_TYPES.length; damageTypeButton.setMessage(cycleLabel("Tipo", DAMAGE_TYPES[damageTypeIndex])); },
-			() -> { damageTypeIndex = (damageTypeIndex - 1 + DAMAGE_TYPES.length) % DAMAGE_TYPES.length; damageTypeButton.setMessage(cycleLabel("Tipo", DAMAGE_TYPES[damageTypeIndex])); }));
-		affinityButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, FIELD_WIDTH, FIELD_HEIGHT,
-			cycleLabel("Afinidad", AFFINITIES[affinityIndex]),
-			() -> { affinityIndex = (affinityIndex + 1) % AFFINITIES.length; affinityButton.setMessage(cycleLabel("Afinidad", AFFINITIES[affinityIndex])); },
-			() -> { affinityIndex = (affinityIndex - 1 + AFFINITIES.length) % AFFINITIES.length; affinityButton.setMessage(cycleLabel("Afinidad", AFFINITIES[affinityIndex])); }));
-		affinityButton.setTooltip(Tooltip.create(Component.literal("Normal = daño normal, Resistente = mitad, Vulnerable = doble, Inmune = ninguno. Clic derecho para retroceder.")));
-		y += ROW_HEIGHT;
+		damageTypeButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - formWidth() / 2, y, COLUMN_WIDTH, FIELD_HEIGHT,
+			translatedLabel("Tipo", DamageTypes.CANONICAL[damageTypeIndex]),
+			() -> { damageTypeIndex = (damageTypeIndex + 1) % DamageTypes.CANONICAL.length; damageTypeButton.setMessage(translatedLabel("Tipo", DamageTypes.CANONICAL[damageTypeIndex])); },
+			() -> { damageTypeIndex = (damageTypeIndex - 1 + DamageTypes.CANONICAL.length) % DamageTypes.CANONICAL.length; damageTypeButton.setMessage(translatedLabel("Tipo", DamageTypes.CANONICAL[damageTypeIndex])); }));
+		affinityButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - formWidth() / 2 + COLUMN_WIDTH + 4, y, COLUMN_WIDTH, FIELD_HEIGHT,
+			translatedLabel("Afinidad", AFFINITIES[affinityIndex]),
+			() -> { affinityIndex = (affinityIndex + 1) % AFFINITIES.length; affinityButton.setMessage(translatedLabel("Afinidad", AFFINITIES[affinityIndex])); },
+			() -> { affinityIndex = (affinityIndex - 1 + AFFINITIES.length) % AFFINITIES.length; affinityButton.setMessage(translatedLabel("Afinidad", AFFINITIES[affinityIndex])); }));
+		affinityButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.affinity_tip")));
+		y += rowHeight();
 
 		//Misma fila propia que arriba, mismo bug de ancho (190-188=2px) si compartía fila con los dos botones cíclicos.
-		this.addRenderableWidget(TomeButton.of(Component.literal("Aplicar tipo de daño"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.damageAffinity(targetUuid, DAMAGE_TYPES[damageTypeIndex], AFFINITIES[affinityIndex])), centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT));
-		y += ROW_HEIGHT;
+		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.affinity_apply"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.damageAffinity(targetUuid, DamageTypes.CANONICAL[damageTypeIndex], AFFINITIES[affinityIndex])), centerX - formWidth() / 2, y, formWidth(), FIELD_HEIGHT));
+		y += rowHeight();
 
 		//--- Pacto del brujo (elección permanente, ver AUDIT_UX.md DM #3) ---
-		pactButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH - 60, FIELD_HEIGHT,
-			cycleLabel("Pacto", PACTS[pactIndex]),
-			() -> { pactIndex = (pactIndex + 1) % PACTS.length; pactButton.setMessage(cycleLabel("Pacto", PACTS[pactIndex])); },
-			() -> { pactIndex = (pactIndex - 1 + PACTS.length) % PACTS.length; pactButton.setMessage(cycleLabel("Pacto", PACTS[pactIndex])); }));
-		pactButton.setTooltip(Tooltip.create(Component.literal("Elección permanente: Pacto de la Hoja usa Carisma para atacar/dañar con armas. Clic derecho para retroceder.")));
-		this.addRenderableWidget(TomeButton.of(Component.literal("Aplicar"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.pact(targetUuid, PACTS[pactIndex])), centerX - WIDE_WIDTH / 2 + WIDE_WIDTH - 56, y, 56, FIELD_HEIGHT));
-		y += ROW_HEIGHT;
+		pactButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - formWidth() / 2, y, formWidth() - 60, FIELD_HEIGHT,
+			translatedLabel("Pacto", PACTS[pactIndex]),
+			() -> { pactIndex = (pactIndex + 1) % PACTS.length; pactButton.setMessage(translatedLabel("Pacto", PACTS[pactIndex])); },
+			() -> { pactIndex = (pactIndex - 1 + PACTS.length) % PACTS.length; pactButton.setMessage(translatedLabel("Pacto", PACTS[pactIndex])); }));
+		pactButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.pact_tip")));
+		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.apply"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.pact(targetUuid, PACTS[pactIndex])), centerX - formWidth() / 2 + formWidth() - 56, y, 56, FIELD_HEIGHT));
+		y += rowHeight();
 
 		//--- Nivel de personaje (elección permanente, ver AUDIT_UX.md DM #3) ---
-		levelBox = new EditBox(this.font, centerX - WIDE_WIDTH / 2, y, FIELD_WIDTH, FIELD_HEIGHT, Component.literal("Nivel"));
-		levelBox.setValue("1");
-		levelBox.setMaxLength(2);
-		levelBox.setTooltip(Tooltip.create(Component.literal("Desacopla el nivel de personaje del XP real de Minecraft.")));
-		this.addWidget(levelBox);
-		Button setLevelButton = TomeButton.of(Component.literal("Fijar nivel"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.level(targetUuid, parseIntOr(levelBox.getValue(), 1))), centerX - WIDE_WIDTH / 2 + FIELD_WIDTH + 4, y, WIDE_WIDTH - FIELD_WIDTH - 4, FIELD_HEIGHT);
-		setLevelButton.setTooltip(Tooltip.create(Component.literal("Elección permanente: fija el nivel de personaje, no solo lo estima del XP.")));
+		levelBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.level").getString(), "1", 2, y, centerX - formWidth() / 2, COLUMN_WIDTH);
+		levelBox.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.level_tip")));
+		Button setLevelButton = TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.level_set"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.level(targetUuid, parseIntOr(levelBox.getValue(), 1))), centerX - formWidth() / 2 + COLUMN_WIDTH + 4, y, formWidth() - COLUMN_WIDTH - 4, FIELD_HEIGHT);
+		setLevelButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.level_set_tip")));
 		this.addRenderableWidget(setLevelButton);
-		y += ROW_HEIGHT;
+		y += rowHeight();
 
 		//--- Percepción pasiva ---
-		this.addRenderableWidget(TomeButton.of(Component.literal("Ver percepción pasiva (solo tú la ves)"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new PassivePerceptionRequestMessage(targetUuid)), centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT));
-		y += ROW_HEIGHT + 4;
+		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.passive"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new PassivePerceptionRequestMessage(targetUuid)), centerX - formWidth() / 2, y, formWidth(), FIELD_HEIGHT));
+		y += rowHeight() + 4;
 
 		//Una fila, no catorce: las condiciones viven en su propia lista (ver ConditionListScreen). Esta
 		//pantalla ya llegó a salirse por arriba con 8 filas (ver PROJECT_CONTEXT.md, bug #2), así que no es
 		//sitio para meter un control por condición.
-		this.addRenderableWidget(TomeButton.of(Component.literal("Condiciones..."), button ->
-			ConditionListScreen.open(targetUuid, targetName, conditionsCsv), centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT));
-		y += ROW_HEIGHT + 4;
+		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.conditions"), button ->
+			ConditionListScreen.open(targetUuid, targetName, conditionsCsv), centerX - formWidth() / 2, y, formWidth(), FIELD_HEIGHT));
+		y += rowHeight() + 4;
 
-		this.addRenderableWidget(TomeButton.of(Component.literal("< Atrás"), button -> this.onClose(), centerX - WIDE_WIDTH / 2, y, WIDE_WIDTH, FIELD_HEIGHT));
+		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.back"), button -> this.onClose(), centerX - formWidth() / 2, y, formWidth(), FIELD_HEIGHT));
 
 		formBottom = y + FIELD_HEIGHT + 10;
 	}
 
-	private static Component cycleLabel(String prefix, String value) {
-		return Component.literal(prefix + ": " + displayLabel(value));
+	//El cycleLabel de la base NO traduce: devuelve el valor interno tal cual, que es lo correcto para un
+	//formulario cuyos valores ya son legibles. Aqui no lo son ("resistant", "cadena"), asi que este panel
+	//pasa por DISPLAY_KEYS antes de pintarlos. El valor que viaja al servidor sigue siendo el interno.
+	private static Component translatedLabel(String prefix, String internalValue) {
+		return Component.literal(prefix + ": " + displayLabel(internalValue));
 	}
 
 	private static String displayLabel(String internalValue) {
@@ -242,42 +223,19 @@ public class SheetAdjustScreen extends Screen {
 		return key != null ? Component.translatable(key).getString() : internalValue;
 	}
 
-	private static int parseIntOr(String value, int fallback) {
-		try {
-			return Integer.parseInt(value.trim());
-		} catch (NumberFormatException e) {
-			return fallback;
-		}
-	}
-
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics);
-		int centerX = this.width / 2;
-		GuiStyle.panel(guiGraphics, centerX - WIDE_WIDTH / 2 - 14, y0 - 40, centerX + WIDE_WIDTH / 2 + 14, formBottom);
-		guiGraphics.drawCenteredString(this.font, Component.literal("Ajustes de " + targetName + " (oro actual: " + gold + ")"),
-			centerX, y0 - 26, GuiStyle.TITLE_COLOR);
+		//Marco, título y filete: los mismos que dibujan las 13 pantallas de SmallFormScreen, ahora desde el
+		//mismo sitio (ver FormPanelScreen). El título lo pone el constructor.
+		renderPanelChrome(guiGraphics);
 		//Solo lectura: PG/CA reales del jugador, para no tener que pedirle que abra su propia hoja en
-		//pleno combate — ver AUDIT_UX.md, DM #1.
-		guiGraphics.drawCenteredString(this.font, Component.literal("PG " + hp + "/" + maxHp + " · CA " + ac),
-			centerX, y0 - 16, 0xFFAA00);
+		//pleno combate. Es lo único que este panel pinta de más, y por eso su banda de cabecera es mayor.
+		guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.sheet_adjust.vitals", hp, maxHp, ac),
+			centerX, formTop - titleBand() + 16, 0xFFAA00);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
-		goldAmountBox.render(guiGraphics, mouseX, mouseY, partialTicks);
-		slotsMaxBox.render(guiGraphics, mouseX, mouseY, partialTicks);
-		slotsCurrentBox.render(guiGraphics, mouseX, mouseY, partialTicks);
-		levelBox.render(guiGraphics, mouseX, mouseY, partialTicks);
-	}
-
-	@Override
-	public void tick() {
-		goldAmountBox.tick();
-		slotsMaxBox.tick();
-		slotsCurrentBox.tick();
-		levelBox.tick();
-	}
-
-	@Override
-	public boolean isPauseScreen() {
-		return false;
+		//Los cuatro campos, con su etiqueta encima: antes se renderizaban uno a uno a mano y ninguno
+		//mostraba para qué era.
+		renderFields(guiGraphics, mouseX, mouseY, partialTicks);
 	}
 }

@@ -31,7 +31,7 @@ public class CharacterListScreen extends ListPickerScreen {
 	private boolean deleteMode;
 
 	private CharacterListScreen(List<String> ids, List<String> labels) {
-		super(Component.literal("Tus personajes"));
+		super(Component.translatable("gui.dndsheets.character_list.title"));
 		this.ids = ids;
 		this.labels = labels;
 	}
@@ -54,14 +54,14 @@ public class CharacterListScreen extends ListPickerScreen {
 		//Crear va ARRIBA de borrar y con el mismo aspecto que una fila normal: es la acción que más se usa
 		//de las dos, y la destructiva no debería ser la que queda más a mano.
 		this.addRenderableWidget(net.hawthorn.dndsheets.client.gui.components.TomeButton.of(
-			Component.literal("+ Personaje nuevo..."), button -> NewCharacterScreen.open(),
+			Component.translatable("gui.dndsheets.character_list.new"), button -> NewCharacterScreen.open(),
 			left, y, buttonWidth(), BUTTON_HEIGHT));
 		y += BUTTON_HEIGHT + SPACING;
 		//Configurar es de un personaje, así que vive donde se elige personaje. La hoja no puede abrirlo: es
 		//una de las tres pantallas que sí son AbstractContainerScreen y su fila de botones ya está llena
 		//(ver el punto 25 de PROJECT_CONTEXT.md), y esta pantalla se abre desde ella.
 		this.addRenderableWidget(net.hawthorn.dndsheets.client.gui.components.TomeButton.of(
-			Component.literal("Configurar personaje..."), button -> CharacterSetupScreen.open(this),
+			Component.translatable("gui.dndsheets.character_list.setup"), button -> CharacterSetupScreen.open(this),
 			left, y, buttonWidth(), BUTTON_HEIGHT));
 		y += BUTTON_HEIGHT + SPACING;
 		net.minecraft.client.gui.components.Button toggle = this.addRenderableWidget(
@@ -76,8 +76,8 @@ public class CharacterListScreen extends ListPickerScreen {
 
 	private Component deleteLabel() {
 		return deleteMode
-			? Component.literal("Cancelar (elige uno para borrarlo)").withStyle(ChatFormatting.RED)
-			: Component.literal("Borrar un personaje...").withStyle(ChatFormatting.GRAY);
+			? Component.translatable("gui.dndsheets.character_list.delete_cancel").withStyle(ChatFormatting.RED)
+			: Component.translatable("gui.dndsheets.character_list.delete").withStyle(ChatFormatting.GRAY);
 	}
 
 	@Override
@@ -97,6 +97,6 @@ public class CharacterListScreen extends ListPickerScreen {
 	protected Component emptyMessage() {
 		//Un jugador siempre tiene al menos su hoja de siempre, así que esto solo se ve si algo fue mal
 		//cargándolas — decirlo es más útil que una lista vacía sin explicación.
-		return ids.isEmpty() ? Component.literal("No se encontró ningún personaje. Crea uno con /dndchar new <nombre>.") : null;
+		return ids.isEmpty() ? Component.translatable("gui.dndsheets.character_list.empty") : null;
 	}
 }

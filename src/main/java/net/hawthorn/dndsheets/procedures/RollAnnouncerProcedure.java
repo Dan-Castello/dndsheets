@@ -101,7 +101,7 @@ public class RollAnnouncerProcedure {
 		}
 
 		//Antes reenviaba la hoja completa por cada tirada de ataque desde la pestaña de Ataques — ahora solo
-		//los dos campos que consumeAdvantage/consumeAttackBonus acaban de tocar. Ver AUDIT_TECHNICAL.md M-NET-1.
+		//los dos campos que consumeAdvantage/consumeAttackBonus acaban de tocar.
 		if (hasAttackRoll && roller instanceof ServerPlayer serverPlayer) {
 			JsonObject patch = new JsonObject();
 			patch.addProperty("nextAttackAdvantage", "normal");

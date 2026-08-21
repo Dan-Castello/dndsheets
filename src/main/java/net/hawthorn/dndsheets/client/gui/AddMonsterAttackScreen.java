@@ -1,5 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.hawthorn.dndsheets.Combatant;
+import net.hawthorn.dndsheets.DamageTypes;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.AddCustomAttackMessage;
 import net.minecraft.client.Minecraft;
@@ -15,15 +17,10 @@ import net.minecraft.network.chat.Component;
  * — nombre y dado siguen siendo texto porque no tienen un catálogo fijo de opciones.</p>
  */
 public class AddMonsterAttackScreen extends SmallFormScreen {
-	private static final String[] ABILITIES = {"str", "dex", "con", "int", "wis", "cha"};
 	//Solo para mostrar en el botón cíclico (ver SmallFormScreen.addCycleButton) — el valor real que se
-	//guarda/manda al servidor sigue siendo el código corto de ABILITIES, ese es el que espera el resto del
+	//guarda/manda al servidor sigue siendo el código corto de Combatant.ABILITIES, ese es el que espera el resto del
 	//código (MonsterRegistry.abilityModifier busca por "str"/"dex"/... en minúsculas).
 	private static final String[] ABILITY_LABELS = {"Fuerza", "Destreza", "Constitución", "Inteligencia", "Sabiduría", "Carisma"};
-	private static final String[] DAMAGE_TYPES = {
-		"fisico", "cortante", "perforante", "contundente", "fuego", "frio", "rayo",
-		"acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno"
-	};
 
 	private final int entityId;
 	private EditBox nameBox;
@@ -33,7 +30,7 @@ public class AddMonsterAttackScreen extends SmallFormScreen {
 	private CycleField damageType;
 
 	private AddMonsterAttackScreen(int entityId, Screen parent) {
-		super(Component.literal("Añadir ataque"), 3, parent);
+		super(Component.translatable("gui.dndsheets.add_attack.title"), 3, parent);
 		this.entityId = entityId;
 	}
 
@@ -45,9 +42,9 @@ public class AddMonsterAttackScreen extends SmallFormScreen {
 	protected void buildForm() {
 		nameBox = addField("Nombre", "Ataque", 40);
 		diceBox = addField("Dado", "1d6", 20);
-		toHit = addCycleButton("Ataque con", ABILITIES, ABILITY_LABELS);
-		damageAbility = addCycleButton("Daño con", ABILITIES, ABILITY_LABELS);
-		damageType = addCycleButton("Tipo", DAMAGE_TYPES);
+		toHit = addCycleButton("Ataque con", Combatant.ABILITIES, ABILITY_LABELS);
+		damageAbility = addCycleButton("Daño con", Combatant.ABILITIES, ABILITY_LABELS);
+		damageType = addCycleButton("Tipo", DamageTypes.CANONICAL);
 	}
 
 	@Override

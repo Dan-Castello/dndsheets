@@ -17,7 +17,7 @@ public class TurnControlScreen extends ListPickerScreen {
 	private static final String[] LABELS = {"Iniciar turnos", "Siguiente turno", "Saltar (cancelar)", "Terminar turnos"};
 
 	private TurnControlScreen(Screen parent) {
-		super(Component.literal("Modo turnos"), parent);
+		super(Component.translatable("gui.dndsheets.dm_panel.turn_mode"), parent);
 	}
 
 	public static void open() {
@@ -36,7 +36,7 @@ public class TurnControlScreen extends ListPickerScreen {
 
 		//Ver AUDIT_UX.md, DM #4: aplicar un efecto de estado (veneno, etc.) solo existía como
 		///dndturns effect tecleado a mano, sin GUI para elegir dado/duración.
-		addRow(Component.literal("Aplicar efecto"), b ->
-			PlayerPickerScreen.open("Elige a quién aplicar el efecto", AddTurnEffectScreen::open));
+		addRow(Component.translatable("gui.dndsheets.add_effect.title"), b ->
+			PlayerPickerScreen.open(Component.translatable("gui.dndsheets.turn_control.pick_effect_target"), AddTurnEffectScreen::open));
 	}
 }

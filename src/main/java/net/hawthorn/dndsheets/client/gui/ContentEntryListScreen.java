@@ -95,7 +95,7 @@ public class ContentEntryListScreen extends ListPickerScreen {
 			String name = entry.has("name") ? entry.get("name").getAsString() : id;
 			addRow(Component.literal(id.equals(name) ? id : id + " — " + name), b -> openEditor(entry));
 		}
-		addRow(Component.literal("+ Añadir"), b -> openCreateForm());
+		addRow(Component.translatable("gui.dndsheets.content_entry.add"), b -> openCreateForm());
 	}
 
 	//TRAIT tiene sus propias listas anidadas (nivel/dado) que no encajan en ContentFormScreen — ver
@@ -121,6 +121,6 @@ public class ContentEntryListScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return entries.isEmpty() ? Component.literal("Nada creado todavía in-game de este tipo.") : null;
+		return entries.isEmpty() ? Component.translatable("gui.dndsheets.content_entry.empty") : null;
 	}
 }

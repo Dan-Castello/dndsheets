@@ -103,7 +103,7 @@ public class JournalManager {
 		}
 		try {
 			Files.createDirectories(DndPaths.ROOT);
-			Files.writeString(FILE, new GsonBuilder().setPrettyPrinting().create().toJson(array));
+			Files.writeString(FILE, DndsheetsMod.PRETTY_GSON.toJson(array));
 		} catch (IOException e) {
 			DndsheetsMod.LOGGER.error("No se pudo guardar el diario de campaña.", e);
 		}

@@ -17,7 +17,7 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 public class QuickSpellManager {
 
 	//Se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos de interacción por
-	//separado — ver AUDIT_TECHNICAL.md M-EVT-1. A diferencia de los demás ítems de un solo flag booleano,
+	//separado. A diferencia de los demás ítems de un solo flag booleano,
 	//el dispatcher detecta este por SpellRegistry.quickSpellIdOf (equivalente a dndTag.contains("quickSpell"))
 	//y ya trae el id extraído.
 	static void tryUse(PlayerInteractEvent event, String spellId) {

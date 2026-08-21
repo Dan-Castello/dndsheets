@@ -23,7 +23,7 @@ public class DungeonJigsawConfigureScreen extends SmallFormScreen {
 	private CycleField isStart;
 
 	private DungeonJigsawConfigureScreen(BlockPos pos, String currentPool, boolean currentIsStart, Screen parent) {
-		super(Component.literal("Configurar jigsaw"), 1, parent);
+		super(Component.translatable("gui.dndsheets.dungeon_jigsaw.title"), 1, parent);
 		this.pos = pos;
 		this.initialPool = currentPool;
 		this.initialIsStart = currentIsStart;

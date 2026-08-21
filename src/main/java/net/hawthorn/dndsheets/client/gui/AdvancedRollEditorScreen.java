@@ -149,7 +149,7 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 				editBox.setValue(editBox.getValue() + subStringToAdd);
 			}
 		}, this.leftPos + x, this.topPos + y, sizeX, sizeY);
-		btn.setTooltip(Tooltip.create(Component.literal("Añade \"" + subStringToAdd.trim() + "\" a la expresión de la tirada.")));
+		btn.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.roll_editor.add_term", subStringToAdd.trim())));
 		guistate.put(guistateKey, btn);
 		this.addRenderableWidget(btn);
 		buttonList.add(btn);

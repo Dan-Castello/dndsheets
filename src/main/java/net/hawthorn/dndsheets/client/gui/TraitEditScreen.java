@@ -29,7 +29,7 @@ public class TraitEditScreen extends ListPickerScreen {
 	private final String id;
 
 	private TraitEditScreen(JsonObject entry, Screen parent) {
-		super(Component.literal("Editar rasgo: " + entry.get("id").getAsString()), parent);
+		super(Component.translatable("gui.dndsheets.trait_edit.title", entry.get("id").getAsString()), parent);
 		this.entry = entry;
 		this.id = entry.get("id").getAsString();
 	}
@@ -42,16 +42,16 @@ public class TraitEditScreen extends ListPickerScreen {
 	protected void buildRows() {
 		String name = entry.has("name") ? entry.get("name").getAsString() : id;
 		String unarmedAbility = entry.has("unarmedAbility") ? entry.get("unarmedAbility").getAsString() : "str";
-		addRow(Component.literal("Nombre: " + name + " (pulsa para cambiar)"), b -> TraitBasicInfoScreen.open(entry));
-		addRow(Component.literal("Golpe desarmado usa: " + unarmedAbility + " (pulsa para cambiar)"), b -> TraitBasicInfoScreen.open(entry));
+		addRow(Component.translatable("gui.dndsheets.trait_edit.name", name), b -> TraitBasicInfoScreen.open(entry));
+		addRow(Component.translatable("gui.dndsheets.trait_edit.unarmed", unarmedAbility), b -> TraitBasicInfoScreen.open(entry));
 
 		addTierRows("unarmedDiceByLevel", "Artes marciales");
-		addRow(Component.literal("+ Añadir nivel (artes marciales)"), b -> TierAddScreen.open(entry, "unarmedDiceByLevel"));
+		addRow(Component.translatable("gui.dndsheets.trait_edit.add_martial"), b -> TierAddScreen.open(entry, "unarmedDiceByLevel"));
 
 		addTierRows("sneakAttackDiceByLevel", "Ataque furtivo");
-		addRow(Component.literal("+ Añadir nivel (ataque furtivo)"), b -> TierAddScreen.open(entry, "sneakAttackDiceByLevel"));
+		addRow(Component.translatable("gui.dndsheets.trait_edit.add_sneak"), b -> TierAddScreen.open(entry, "sneakAttackDiceByLevel"));
 
-		addRow(Component.literal("Borrar rasgo"), b -> {
+		addRow(Component.translatable("gui.dndsheets.trait_edit.delete"), b -> {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new ContentEntryRemoveMessage(ContentType.TRAIT, id));
 			this.onClose();
 		});
@@ -61,7 +61,7 @@ public class TraitEditScreen extends ListPickerScreen {
 		if (!entry.has(field)) return;
 		for (JsonElement el : entry.getAsJsonArray(field)) {
 			JsonObject tier = el.getAsJsonObject();
-			addRow(Component.literal("Borrar " + label + " nivel " + tier.get("level").getAsInt() + ": " + tier.get("dice").getAsString()),
+			addRow(Component.translatable("gui.dndsheets.trait_edit.delete_tier", label, tier.get("level").getAsInt(), tier.get("dice").getAsString()),
 				b -> removeTier(field, tier));
 		}
 	}

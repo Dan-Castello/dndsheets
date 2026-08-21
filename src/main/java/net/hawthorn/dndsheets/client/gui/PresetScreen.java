@@ -23,7 +23,7 @@ public class PresetScreen extends ListPickerScreen {
 	private final List<String> names;
 
 	private PresetScreen(String targetUuid, List<String> ids, List<String> names, Screen parent) {
-		super(Component.literal("Elige un preset de clase"), parent);
+		super(Component.translatable("gui.dndsheets.preset.title"), parent);
 		this.targetUuid = targetUuid;
 		this.ids = ids;
 		this.names = names;
@@ -55,6 +55,6 @@ public class PresetScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return names.isEmpty() ? Component.literal("No hay presets cargados (pide al DM /dndpresets load).") : null;
+		return names.isEmpty() ? Component.translatable("gui.dndsheets.preset.empty") : null;
 	}
 }

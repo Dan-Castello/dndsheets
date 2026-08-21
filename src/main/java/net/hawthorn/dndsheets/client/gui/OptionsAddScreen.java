@@ -18,7 +18,7 @@ public class OptionsAddScreen extends SmallFormScreen {
 	private EditBox valueBox;
 
 	private OptionsAddScreen(String category, List<String> current, Screen parent) {
-		super(Component.literal("Añadir opción"), 1, parent);
+		super(Component.translatable("gui.dndsheets.options_add.title"), 1, parent);
 		this.category = category;
 		this.current = current;
 	}

@@ -47,7 +47,7 @@ public class SheetLoader {
 	public static final Path SHEETS_DIR = GAME_DIR.resolve("charactersheets");
 
 	//Sin esto no había forma programática de saber si una hoja en disco es de una versión anterior del
-	//mod — ver AUDIT_TECHNICAL.md M-SEC-1. Subir este número solo tiene sentido el día que un campo
+	//mod. Subir este número solo tiene sentido el día que un campo
 	//existente cambie de forma de verdad (no cuando se añade uno nuevo: eso ya lo cubre validateSheet
 	//solo, sin necesidad de versión).
 	public static final int CURRENT_SCHEMA_VERSION = 1;
@@ -59,7 +59,7 @@ public class SheetLoader {
 	 * jugador sigue siendo un id válido, que es exactamente lo que hace que todo lo guardado antes de este
 	 * cambio siga funcionando sin migración: su archivo ya se llamaba así.</p>
 	 */
-	private static HashMap<String, JsonObject> sheets = new HashMap<String, JsonObject>(); //Privado: sin consumo externo confirmado (ver AUDIT_TECHNICAL.md M-API-1), solo se lee/escribe a través de getServerSheet/saveServer, que ya validan/loguean.
+	private static HashMap<String, JsonObject> sheets = new HashMap<String, JsonObject>(); //Privado: sin consumo externo confirmado, solo se lee/escribe a través de getServerSheet/saveServer, que ya validan/loguean.
 
 	/**
 	 * <p>UUID de jugador → id del personaje que lleva ahora mismo. Es una caché derivada de las propias
@@ -143,6 +143,33 @@ public class SheetLoader {
 				}
 			});
 		}
+	}
+
+	/**
+	 * <p>Punto UNICO de limpieza al desconectar. Todos estos estados viven indexados por jugador en RAM (no
+	 * son datos de hoja), asi que sin quitarlos el UUID se queda dentro para siempre: un servidor de
+	 * comunidad acumula una entrada por jugador que paso por ahi y no vuelve.</p>
+	 *
+	 * <p>Existe porque estaba a medias. De diez colecciones por jugador solo tres se limpiaban
+	 * ({@code BardInspirationManager}, {@code SpellCastManager}, {@code RestManager}), cada una con su
+	 * propio {@code @SubscribeEvent}; y {@code BardInspirationManager} hasta documentaba el problema en un
+	 * comentario nombrando a los cuatro que lo seguian teniendo. Aqui se centraliza igual que ya estaba
+	 * centralizada la limpieza por cambio de personaje (ver switchCharacter), en vez de repartir siete
+	 * handlers identicos.</p>
+	 *
+	 * <p>Se llama a {@code clearFor} y NO a {@code ConcentrationManager.stopConcentrating}: al desconectar
+	 * solo hay que soltar la memoria, no revertir zonas ni invocaciones del mundo.</p>
+	 */
+	@SubscribeEvent
+	public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
+		if (!(event.getEntity() instanceof ServerPlayer player)) return;
+		ConcentrationManager.clearFor(player);
+		BarbarianRageManager.clearFor(player);
+		DruidWildShapeManager.clearFor(player);
+		RangerHunterMarkManager.clearFor(player);
+		DeathSaveManager.clearFor(player);
+		DungeonToolManager.clearFor(player);
+		MonsterActionManager.clearFor(player);
 	}
 
 	//Sin esto no había ninguna forma de enterarse de la tecla H (u P para operadores) salvo que alguien te
@@ -273,9 +300,20 @@ public class SheetLoader {
 		}
 	}
 
+	//Una sola queja por hueco, no una por fotograma. Lo llama ResourceHudOverlay.render, que corre SIEMPRE
+	//(el HUD no necesita ningun menu abierto): con current==null, a 120 fps eran 120 lineas de log por
+	//segundo, ordenes de magnitud mas caras que el propio render. La ventana existe de verdad —entre entrar
+	//al mundo y que llegue SheetClientMessage— asi que el aviso no sobra, sobra repetirlo.
+	private static boolean warnedNullClientSheet = false;
+
 	public static JsonObject getClientSheet() {
 		if (current == null) {
+			if (!warnedNullClientSheet) {
+				warnedNullClientSheet = true;
 			DndsheetsMod.LOGGER.warn("Client sheet returned null. Are you sure you're not calling this from the server side?");
+			}
+		} else {
+			warnedNullClientSheet = false; //Rearmado: si vuelve a faltar mas tarde, es un hueco NUEVO y merece su aviso.
 		}
 		return current;
 	}
@@ -294,7 +332,9 @@ public class SheetLoader {
 			return sheets.get(characterId);
 		}
 		else {
-			DndsheetsMod.LOGGER.warn("Server character sheet retrieval failed. Make sure the UUID is correct and that you're not calling this from the client.");
+			//debug y no warn: esto es alcanzable desde Combatant.of, que corre a 20 Hz por el camino de
+			//MovementAnchorTracker. Un jugador en combate sin hoja generaba 20 lineas por segundo.
+			DndsheetsMod.LOGGER.debug("Server character sheet retrieval failed. Make sure the UUID is correct and that you're not calling this from the client.");
 			return null;
 		}
 	}
@@ -419,13 +459,12 @@ public class SheetLoader {
 		
 		try {
 			Files.createDirectories(SHEETS_DIR);
-			boolean overwritten = Files.deleteIfExists(file);
-			Gson prettyGson = new GsonBuilder().setPrettyPrinting().create();
-			String prettyJson = prettyGson.toJson(sheet);
-			
-			try (OutputStream out = Files.newOutputStream(file, StandardOpenOption.CREATE)) {
-				out.write(prettyJson.getBytes());
-			}
+			//writeString y no deleteIfExists + newOutputStream(CREATE): CREATE a secas NO trunca (solo
+			//implica TRUNCATE_EXISTING cuando no pasas ninguna opcion), asi que sin el borrado previo una
+			//hoja que ENCOGE —quitar una condicion, gastar un espacio que borra la clave— dejaba pegada la
+			//cola del contenido anterior y el JSON quedaba corrupto. writeString trunca de por si, en una
+			//llamada en vez de tres, y sin la copia extra que hacia getBytes().
+			Files.writeString(file, DndsheetsMod.PRETTY_GSON.toJson(sheet));
 		} catch (IOException e) {
 			//El mapa en memoria ya se actualizó arriba, así que sin este log el jugador ve su hoja "guardada"
 			//mientras el archivo real en disco puede no reflejarlo, sin ningún aviso.
@@ -766,11 +805,7 @@ public class SheetLoader {
 		Path file = SHEETS_DIR.resolve(characterId + ".json").toAbsolutePath();
 		try {
 			Files.createDirectories(SHEETS_DIR);
-			Files.deleteIfExists(file);
-			String prettyJson = new GsonBuilder().setPrettyPrinting().create().toJson(sheet);
-			try (OutputStream out = Files.newOutputStream(file, StandardOpenOption.CREATE)) {
-				out.write(prettyJson.getBytes());
-			}
+			Files.writeString(file, DndsheetsMod.PRETTY_GSON.toJson(sheet)); //Trunca; ver saveServer.
 		} catch (IOException e) {
 			DndsheetsMod.LOGGER.error("No se pudo guardar el personaje " + characterId + " en disco.", e);
 		}
@@ -879,12 +914,29 @@ public class SheetLoader {
 	//Sets a new "current" sheet from the "sheets" HashSet. Ideally some GUI letting you choose from the loaded list will call this.
 	public static void setClient(JsonObject sheet) {
 		current = sheet;
+		clientSheetVersion++;
 		//lol it's really that simple
 	}
 
+	/**
+	 * <p>Sube en cada cambio de la hoja del cliente, por reemplazo entero o por parche. Sirve para que el
+	 * lado cliente sepa "esto ya no vale" sin tener que comparar la hoja, que es un arbol JSON: recalcular
+	 * su hashCode cuesta lo mismo que rehacer el trabajo que se querria evitar.</p>
+	 *
+	 * <p>Lo usa {@code ResourceHudOverlay}, que es lo que mas veces por segundo corre del mod: es un HUD
+	 * siempre visible, o sea por fotograma (60-240 Hz) y sin que haga falta abrir ningun menu. Construia
+	 * cuatro cadenas cada vez —recorriendo el array de condiciones y troceandolo— cuando esas cadenas solo
+	 * cambian cuando cambia la hoja.</p>
+	 */
+	public static int clientSheetVersion() {
+		return clientSheetVersion;
+	}
+
+	private static int clientSheetVersion = 0;
+
 	//Aplica un parche parcial (ver network.SheetFieldUpdateMessage) sobre la hoja cacheada del cliente, en
 	//vez de reemplazarla entera como setClient — JsonNull en un valor significa "borrar esta clave", igual
-	//que el servidor la borró con JsonObject.remove(...). Ver AUDIT_TECHNICAL.md M-NET-1.
+	//que el servidor la borró con JsonObject.remove(...).
 	public static void applyClientDelta(JsonObject patch) {
 		if (current == null) return;
 		for (String key : patch.keySet()) {
@@ -892,6 +944,7 @@ public class SheetLoader {
 			if (value.isJsonNull()) current.remove(key);
 			else current.add(key, value);
 		}
+		clientSheetVersion++;
 	}
 
 

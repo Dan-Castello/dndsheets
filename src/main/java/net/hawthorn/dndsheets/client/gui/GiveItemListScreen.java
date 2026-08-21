@@ -13,7 +13,7 @@ public class GiveItemListScreen extends ListPickerScreen {
 	private final String targetUuid;
 
 	private GiveItemListScreen(String targetUuid, Screen parent) {
-		super(Component.literal("Dar objeto"), parent);
+		super(Component.translatable("gui.dndsheets.dm_panel.give_item"), parent);
 		this.targetUuid = targetUuid;
 	}
 

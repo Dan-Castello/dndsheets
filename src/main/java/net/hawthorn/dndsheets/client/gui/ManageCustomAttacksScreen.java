@@ -19,7 +19,7 @@ public class ManageCustomAttacksScreen extends ListPickerScreen {
 	private final List<String> customAttackNames;
 
 	private ManageCustomAttacksScreen(int entityId, List<String> customAttackNames, Screen parent) {
-		super(Component.literal("Ataques personalizados"), parent);
+		super(Component.translatable("gui.dndsheets.custom_attacks.title"), parent);
 		this.entityId = entityId;
 		this.customAttackNames = customAttackNames;
 	}
@@ -36,13 +36,13 @@ public class ManageCustomAttacksScreen extends ListPickerScreen {
 	@Override
 	protected void buildRows() {
 		for (String name : customAttackNames) {
-			addRow(Component.literal("Quitar: " + name), b -> {
+			addRow(Component.translatable("gui.dndsheets.custom_attacks.remove", name), b -> {
 				DndsheetsMod.PACKET_HANDLER.sendToServer(new RemoveCustomAttackMessage(entityId, name));
 				this.onClose();
 			});
 		}
 
-		addRow(Component.literal("Borrar todos"), b -> {
+		addRow(Component.translatable("gui.dndsheets.custom_attacks.delete_all"), b -> {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new ClearCustomAttacksMessage(entityId));
 			this.onClose();
 		});
@@ -50,6 +50,6 @@ public class ManageCustomAttacksScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return customAttackNames.isEmpty() ? Component.literal("Este monstruo no tiene ataques personalizados.") : null;
+		return customAttackNames.isEmpty() ? Component.translatable("gui.dndsheets.custom_attacks.empty") : null;
 	}
 }

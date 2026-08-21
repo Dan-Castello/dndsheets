@@ -19,7 +19,7 @@ public class SpawnGenericScreen extends SmallFormScreen {
 	private EditBox hpBox;
 
 	private SpawnGenericScreen(Screen parent) {
-		super(Component.literal("NPC genérico"), 2, parent);
+		super(Component.translatable("gui.dndsheets.spawn_generic.title"), 2, parent);
 	}
 
 	public static void open() {

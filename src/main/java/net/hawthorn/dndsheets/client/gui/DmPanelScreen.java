@@ -19,7 +19,7 @@ import net.minecraft.network.chat.Component;
  */
 public class DmPanelScreen extends ListPickerScreen {
 	private DmPanelScreen() {
-		super(Component.literal("Panel de DM"));
+		super(Component.translatable("gui.dndsheets.dm_panel.title"));
 	}
 
 	public static void open() {
@@ -30,29 +30,29 @@ public class DmPanelScreen extends ListPickerScreen {
 	protected void buildRows() {
 		//Primera fila: es lo que un DM mira más veces por sesión, y hasta ahora había que abrir los Ajustes
 		//de hoja de cada jugador por separado para ver sus PG.
-		addRow(Component.literal("Grupo (PG, CA, condiciones)"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.party"),
 			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.LIST_PARTY)));
-		addRow(Component.literal("Modo turnos"), b -> TurnControlScreen.open());
-		addRow(Component.literal("Invocar NPC genérico"), b -> SpawnGenericScreen.open());
-		addRow(Component.literal("Invocar monstruo cargado"), b -> MonsterSpawnListScreen.open());
-		addRow(Component.literal("Conceder rasgo"), b -> PlayerPickerScreen.open("Elige a quién conceder el rasgo",
+		addRow(Component.translatable("gui.dndsheets.dm_panel.turn_mode"), b -> TurnControlScreen.open());
+		addRow(Component.translatable("gui.dndsheets.dm_panel.spawn_npc"), b -> SpawnGenericScreen.open());
+		addRow(Component.translatable("gui.dndsheets.dm_panel.spawn_monster"), b -> MonsterSpawnListScreen.open());
+		addRow(Component.translatable("gui.dndsheets.dm_panel.grant_trait"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_trait"),
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new TraitListRequestMessage(uuid))));
-		addRow(Component.literal("Dar objeto"), b -> PlayerPickerScreen.open("Elige a quién dar el objeto", GiveItemListScreen::open));
-		addRow(Component.literal("Dar arma"), b -> PlayerPickerScreen.open("Elige a quién dar el arma", WeaponGiveListScreen::open));
-		addRow(Component.literal("Enseñar/dar hechizo"), b -> PlayerPickerScreen.open("Elige a quién enseñar/dar el hechizo", SpellGiveListScreen::open));
-		addRow(Component.literal("Ajustes de hoja"), b -> PlayerPickerScreen.open("Elige a quién ajustar la hoja",
+		addRow(Component.translatable("gui.dndsheets.dm_panel.give_item"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_item"), GiveItemListScreen::open));
+		addRow(Component.translatable("gui.dndsheets.dm_panel.give_weapon"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_weapon"), WeaponGiveListScreen::open));
+		addRow(Component.translatable("gui.dndsheets.dm_panel.give_spell"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_spell"), SpellGiveListScreen::open));
+		addRow(Component.translatable("gui.dndsheets.dm_panel.sheet_adjust"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_sheet"),
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetSummaryRequestMessage(uuid))));
-		addRow(Component.literal("Aplicar preset a jugador"), b -> PlayerPickerScreen.open("Elige a quién aplicar el preset",
+		addRow(Component.translatable("gui.dndsheets.dm_panel.apply_preset"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_preset"),
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage(uuid))));
-		addRow(Component.literal("Mazmorras (piezas y generación)"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.dungeons"),
 			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new DungeonPieceListRequestMessage()));
-		addRow(Component.literal("Compendio"), b -> CompendiumScreen.open());
+		addRow(Component.translatable("gui.dndsheets.dm_panel.compendium"), b -> CompendiumScreen.open());
 		//El diario se abre por comando (/dndjournal) y no desde aquí con un mensaje: el servidor ya sabe
 		//qué puede leer cada uno, y pedirlo desde el cliente sería un viaje de más para el mismo resultado.
-		addRow(Component.literal("Diario y handouts"), b -> {
+		addRow(Component.translatable("gui.dndsheets.dm_panel.journal"), b -> {
 			net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndjournal");
 		});
-		addRow(Component.literal("Crear contenido"), b -> ContentTypeListScreen.open());
+		addRow(Component.translatable("gui.dndsheets.dm_panel.create_content"), b -> ContentTypeListScreen.open());
 		addRow(Component.translatable("gui.dndsheets.guide.button"), b -> GuideBook.open(true));
 	}
 }

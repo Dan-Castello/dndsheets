@@ -24,19 +24,51 @@ public class ResourceHudOverlay {
 		event.registerAboveAll("dndsheets_resources", (gui, guiGraphics, partialTick, width, height) -> render(guiGraphics));
 	}
 
+	//Las cuatro lineas del HUD, ya montadas, y la version de hoja con la que se montaron. Este render corre
+	//por FOTOGRAMA y sin necesidad de abrir nada, asi que es el codigo que mas veces por segundo se ejecuta
+	//del mod; rehacer estas cadenas a 120 fps era ~2.500 asignaciones por segundo para un texto que solo
+	//cambia cuando cambia la hoja. Null = esa linea no se dibuja.
+	private static int cachedVersion = -1;
+	private static String cachedSlots;
+	private static String cachedConditions;
+	private static String cachedHeld;
+	private static String cachedGold;
+
+	private static void rebuild(JsonObject sheet) {
+		int spellSlotsMax = sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
+		if (spellSlotsMax > 0) {
+			int slots = sheet.has("spellSlotsCurrent") ? sheet.get("spellSlotsCurrent").getAsInt() : 0;
+			cachedSlots = "Conjuros: " + slots + "/" + spellSlotsMax;
+		} else {
+			cachedSlots = null;
+		}
+
+		String conditions = activeConditionLabels(sheet);
+		cachedConditions = conditions.isEmpty() ? null : conditions;
+
+		String held = heldEffects(sheet);
+		cachedHeld = held.isEmpty() ? null : held;
+
+		cachedGold = sheet.has("gold") ? "Oro: " + sheet.get("gold").getAsInt() : null;
+	}
+
 	private static void render(GuiGraphics guiGraphics) {
 		JsonObject sheet = SheetLoader.getClientSheet();
 		if (sheet == null) return;
+
+		int version = SheetLoader.clientSheetVersion();
+		if (version != cachedVersion) {
+			rebuild(sheet);
+			cachedVersion = version;
+		}
 
 		int x = 6;
 		int y = 6;
 		int lineHeight = 10;
 		var font = Minecraft.getInstance().font;
 
-		int spellSlotsMax = sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
-		if (spellSlotsMax > 0) {
-			int current = sheet.has("spellSlotsCurrent") ? sheet.get("spellSlotsCurrent").getAsInt() : 0;
-			guiGraphics.drawString(font, "Conjuros: " + current + "/" + spellSlotsMax, x, y, 0x55FFFF);
+		if (cachedSlots != null) {
+			guiGraphics.drawString(font, cachedSlots, x, y, 0x55FFFF);
 			y += lineHeight;
 		}
 
@@ -44,9 +76,8 @@ public class ResourceHudOverlay {
 		//que un jugador paralizado no tenía forma de saberlo: sus clics dejaban de hacer nada y eso se lee
 		//como que el mod está roto, no como la regla que es. Media docena de reglas del motor dependen de
 		//condiciones y ninguna se veía desde el lado de quien las sufre.
-		String conditions = activeConditionLabels(sheet);
-		if (!conditions.isEmpty()) {
-			guiGraphics.drawString(font, conditions, x, y, 0xFF5555);
+		if (cachedConditions != null) {
+			guiGraphics.drawString(font, cachedConditions, x, y, 0xFF5555);
 			y += lineHeight;
 		}
 
@@ -54,14 +85,13 @@ public class ResourceHudOverlay {
 		//Bárdica y no lo sabías, armabas un Castigo y no sabías si seguía armado tres turnos después, y la
 		//concentración —de lo que más se consulta en una mesa— solo existía como una línea de chat que se va
 		//con el scroll. Un modificador que no se ve no se puede jugar; se descubre después, en el resultado.
-		String held = heldEffects(sheet);
-		if (!held.isEmpty()) {
-			guiGraphics.drawString(font, held, x, y, 0xFFD9A0);
+		if (cachedHeld != null) {
+			guiGraphics.drawString(font, cachedHeld, x, y, 0xFFD9A0);
 			y += lineHeight;
 		}
 
-		if (sheet.has("gold")) {
-			guiGraphics.drawString(font, "Oro: " + sheet.get("gold").getAsInt(), x, y, 0xFFD700);
+		if (cachedGold != null) {
+			guiGraphics.drawString(font, cachedGold, x, y, 0xFFD700);
 		}
 	}
 

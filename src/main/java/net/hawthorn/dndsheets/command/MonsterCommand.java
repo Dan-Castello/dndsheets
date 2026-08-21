@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import net.hawthorn.dndsheets.Combatant;
 import net.hawthorn.dndsheets.CombatFx;
 import net.hawthorn.dndsheets.MonsterRegistry;
 import net.hawthorn.dndsheets.DndPaths;
@@ -40,7 +41,6 @@ import java.util.Set;
 @Mod.EventBusSubscriber
 public class MonsterCommand {
 	private static final Path MONSTERS_DIR = DndPaths.MONSTERS_DIR;
-	private static final String[] ABILITY_SUGGESTIONS = {"str", "dex", "con", "int", "wis", "cha"};
 
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
@@ -102,10 +102,10 @@ public class MonsterCommand {
 				.then(Commands.argument("objetivo", EntityArgument.entity())
 					.then(Commands.argument("nombre", StringArgumentType.string())
 						.then(Commands.argument("habAtaque", StringArgumentType.word())
-							.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(ABILITY_SUGGESTIONS, builder))
+							.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(Combatant.ABILITIES, builder))
 							.then(Commands.argument("dado", StringArgumentType.word())
 								.then(Commands.argument("habDano", StringArgumentType.word())
-									.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(ABILITY_SUGGESTIONS, builder))
+									.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(Combatant.ABILITIES, builder))
 									.then(Commands.argument("tipoDano", StringArgumentType.word())
 										.executes(MonsterCommand::addAttack))))))))
 			.then(Commands.literal("remove")

@@ -1020,7 +1020,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			RollEditorScreen.workingIndex = index;
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new RollEditorOpenMessage());
 		});
-		editButton.setTooltip(Tooltip.create(Component.literal("Editar la fórmula de: " + label.getString())));
+		editButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.character_sheet.edit_formula_of", label)));
 		guistate.put(guistateKey + "_edit", editButton);
 		this.addRenderableWidget(editButton);
 
@@ -1089,7 +1089,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				int btnIndex = scrollList.getIndex(e);
 				sendRoll(category, btnIndex, subIndex);
 			});
-			rollButton.setTooltip(Tooltip.create(Component.literal("Tirar " + rollTooltip + ".")));
+			rollButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.character_sheet.roll_tooltip", rollTooltip)));
 			this.addWidget(rollButton);
 			rollButtons.add(rollButton);
 
@@ -1103,7 +1103,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				AdvancedRollEditorScreen.workingSubIndex = subIndex;
 				DndsheetsMod.PACKET_HANDLER.sendToServer(new AdvancedRollEditorOpenMessage());
 			});
-			editButton.setTooltip(Tooltip.create(Component.literal("Editar la fórmula de " + rollTooltip + ".")));
+			editButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.character_sheet.edit_formula", rollTooltip)));
 			this.addWidget(editButton);
 			editButtons.add(editButton);
 		}
@@ -1120,15 +1120,14 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			JsonArray arr = sheet.getAsJsonArray(RollIndex.Category.fromInt(category).toString());
 			arr.remove(removedIndex);
 		});
-		deleteButton.setTooltip(Tooltip.create(Component.literal("Eliminar esta fila.")));
+		deleteButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.character_sheet.delete_row")));
 		this.addWidget(deleteButton);
 
 		scrollList.addListItem(nameBox, rollButtons, editButtons, deleteButton);
 	}
 
 	//Cada campo de texto de la hoja repetía esta misma lógica de "placeholder que reaparece cuando el
-	//campo queda vacío" como subclase anónima de EditBox, cambiando solo la clave de traducción — ver
-	//AUDIT_TECHNICAL.md A-DUP-4. x/y son offsets sin aplicar leftPos/topPos todavía, igual que las
+	//campo queda vacío" como subclase anónima de EditBox, cambiando solo la clave de traducción. x/y son offsets sin aplicar leftPos/topPos todavía, igual que las
 	//constantes OFFSET_X/OFFSET_Y de la clase.
 	private EditBox placeholderEditBox(int x, int y, int width, int height, String translationKey, int maxLength) {
 		String placeholder = Component.translatable(translationKey).getString();
@@ -1344,7 +1343,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		initiativeButton = new ImageButton(this.leftPos + INITIATIVE_OFFSET_X, this.topPos + INITIATIVE_OFFSET_Y, 16, 16, 0, 0, 16, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_d20.png"), 16, 32, e -> {
 			sendRoll(0, 6, 0);
 		});
-		initiativeButton.setTooltip(Tooltip.create(Component.literal("Tirar: " + LABEL_INITIATIVE.getString())));
+		initiativeButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.character_sheet.roll_of", LABEL_INITIATIVE)));
 		guistate.put("button:roll_init", initiativeButton);
 		this.addRenderableWidget(initiativeButton);
 
@@ -1354,7 +1353,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			RollEditorScreen.workingIndex = 6;
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new RollEditorOpenMessage());
 		});
-		initiativeEditButton.setTooltip(Tooltip.create(Component.literal("Editar la fórmula de: " + LABEL_INITIATIVE.getString())));
+		initiativeEditButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.character_sheet.edit_formula_of", LABEL_INITIATIVE)));
 		guistate.put("button:roll_init_edit", initiativeEditButton);
 		this.addRenderableWidget(initiativeEditButton);
 	}
@@ -1469,7 +1468,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			addToScrollList(attackRolls, rollForm, 3, attackRolls.getListSize(), PanelStatus.ATTACKS);
 
 		});
-		addButton.setTooltip(Tooltip.create(Component.literal("Añadir un ataque nuevo.")));
+		addButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.character_sheet.add_attack")));
 		this.addRenderableWidget(addButton);
 	}
 
@@ -1502,7 +1501,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			editMode = !editMode;
 			updateTabs();
 		});
-		editToggle.setTooltip(Tooltip.create(Component.literal("Alternar modo edición: cambia los dados de tirada por editar fórmula/eliminar en la pestaña de Ataques.")));
+		editToggle.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.character_sheet.edit_toggle")));
 		guistate.put("button:edit_toggle", editToggle);
 		this.addRenderableWidget(editToggle);
 

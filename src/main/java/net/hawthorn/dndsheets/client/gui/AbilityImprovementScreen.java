@@ -34,7 +34,7 @@ public class AbilityImprovementScreen extends ModalDialogScreen {
 	private final Button[] abilityButtons = new Button[KEYS.length];
 
 	protected AbilityImprovementScreen() {
-		super(Component.literal("Mejora de Característica"), WIDTH, HEIGHT);
+		super(Component.translatable("gui.dndsheets.ability_improvement.title"), WIDTH, HEIGHT);
 	}
 
 	public static void open() {
@@ -53,7 +53,7 @@ public class AbilityImprovementScreen extends ModalDialogScreen {
 
 		//"+2 a la elegida" solo tiene sentido con una ya elegida; hasta entonces el botón está ahí pero
 		//apagado, en vez de aparecer de golpe y mover el resto de la pantalla bajo el ratón.
-		Button confirm = addModalButton(16, 116, 248, 20, Component.literal("Confirmar +2 a la elegida"), button -> {
+		Button confirm = addModalButton(16, 116, 248, 20, Component.translatable("gui.dndsheets.ability_improvement.confirm"), button -> {
 			if (firstPick == null) return;
 			send(firstPick, "");
 		});
@@ -62,7 +62,7 @@ public class AbilityImprovementScreen extends ModalDialogScreen {
 
 		//La dote es la OTRA cara de esta misma elección en 5e ("+2 a una, +1 a dos, o una dote"), así que
 		//va en esta pantalla y no en otra: separarlas dejaría al jugador eligiendo sin ver la alternativa.
-		addModalButton(16, 140, 248, 20, Component.literal("...o coge una dote"), button -> {
+		addModalButton(16, 140, 248, 20, Component.translatable("gui.dndsheets.ability_improvement.take_feat"), button -> {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(
 				new net.hawthorn.dndsheets.network.BrowseActionMessage(
 					net.hawthorn.dndsheets.network.BrowseActionMessage.Action.LIST_FEATS));
@@ -126,10 +126,10 @@ public class AbilityImprovementScreen extends ModalDialogScreen {
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderPanel(guiGraphics);
 		Component titulo = firstPick == null
-			? Component.literal("Elige: +2 a una, o +1 a dos distintas")
-			: Component.literal("Ahora elige la segunda, o confirma el +2");
+			? Component.translatable("gui.dndsheets.ability_improvement.hint_first")
+			: Component.translatable("gui.dndsheets.ability_improvement.hint_second");
 		guiGraphics.drawCenteredString(this.font, titulo, this.width / 2, dialogTop() + 8, 0xFFFFFF);
-		guiGraphics.drawCenteredString(this.font, Component.literal("El máximo de una característica es 20."),
+		guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.ability_improvement.cap"),
 			this.width / 2, dialogTop() + 20, GuiStyle.MUTED_COLOR);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 	}

@@ -25,7 +25,7 @@ public class DungeonPieceListScreen extends ListPickerScreen {
 	private final List<Boolean> hasStart;
 
 	private DungeonPieceListScreen(List<DungeonPieceRegistry.DungeonPiece> pieces, List<Boolean> hasStart, Screen parent) {
-		super(Component.literal("Mazmorras"), parent);
+		super(Component.translatable("gui.dndsheets.dungeon_pieces.title"), parent);
 		this.pieces = pieces;
 		this.hasStart = hasStart;
 	}
@@ -48,13 +48,13 @@ public class DungeonPieceListScreen extends ListPickerScreen {
 			addRow(Component.literal(piece.id() + " — " + piece.pool() + " (peso " + piece.weight() + ")" + suffix),
 				b -> DungeonPieceEditScreen.open(piece));
 		}
-		addRow(Component.literal("+ Añadir pieza"), b -> DungeonPieceAddScreen.open());
-		addRow(Component.literal("Generar mazmorra"), b -> DungeonGenerateScreen.open());
+		addRow(Component.translatable("gui.dndsheets.dungeon_pieces.add"), b -> DungeonPieceAddScreen.open());
+		addRow(Component.translatable("gui.dndsheets.dungeon_pieces.generate"), b -> DungeonGenerateScreen.open());
 	}
 
 	@Override
 	protected Component emptyMessage() {
-		return pieces.isEmpty() ? Component.literal("Sin piezas todavía. Escanea una sala con un bloque de estructura y añádela.") : null;
+		return pieces.isEmpty() ? Component.translatable("gui.dndsheets.dungeon_pieces.empty") : null;
 	}
 
 	@Override
@@ -62,7 +62,7 @@ public class DungeonPieceListScreen extends ListPickerScreen {
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		if (!DungeonManager.structurizeAvailable()) {
 			guiGraphics.drawCenteredString(this.font,
-				Component.literal("Structurize + BlockUI no detectados — usando el flujo vanilla (bloque de estructura + jigsaw)."),
+				Component.translatable("gui.dndsheets.dungeon_pieces.no_structurize"),
 				this.width / 2, SUBTITLE_Y, GuiStyle.MUTED_COLOR);
 		}
 	}

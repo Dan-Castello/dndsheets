@@ -47,45 +47,20 @@
     "1d20 + $cha",
     "1d20 + $cha"
   ],
-  "attacks": [
-    {
-      "name": "Daga",
-      "itemId": "dndsheets:dagger",
-      "rolls": [
-        [
-          {
-            "context": "Daño",
-            "expression": "1d4 + $dex"
-          }
-        ]
-      ]
-    },
-    {
-      "name": "Iron Sword",
-      "itemId": "minecraft:iron_sword",
-      "rolls": [
-        [
-          {
-            "context": "Daño",
-            "expression": "1d6 + $str"
-          }
-        ]
-      ]
-    }
-  ],
+  "attacks": [],
   "spells": [],
   "traits": [],
   "spellSlotsCurrent": 2,
   "spellSlotsMax": 2,
   "schemaVersion": 1,
   "hitDiceTypes": "",
-  "hitPointsMax": "6",
+  "hitPointsMax": "8",
   "armorClass": "10",
-  "hitPoints": "6",
-  "background": "",
+  "hitPoints": "8",
+  "background": "Noble",
   "hitPointsTemp": "0",
-  "characterClass": "Mago",
-  "characterRace": "",
+  "characterClass": "Bardo",
+  "characterRace": "Enano",
   "speed": "",
   "level": "1",
   "spellSlotsMaxByLevel": {

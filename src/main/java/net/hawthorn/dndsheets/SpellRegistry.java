@@ -173,8 +173,7 @@ public class SpellRegistry {
 	}
 
 	//Público: usado por SpellCommand (/dndspells load) y por DndPaths para precargar solo todos los .json
-	//de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de comandos —
-	//ver AUDIT_TECHNICAL.md M-ARQ-1.
+	//de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de comandos.
 	private static final JsonRegistryLoader<Spell> LOADER = new JsonRegistryLoader<>("hechizo", SpellRegistry::parse, SpellRegistry::register);
 
 	/** Carga desde un JSON ya leído (datapack o jar de otro mod) — ver ContentDatapackLoader. */

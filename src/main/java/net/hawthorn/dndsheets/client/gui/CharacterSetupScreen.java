@@ -34,7 +34,7 @@ import net.minecraft.network.chat.Component;
 public class CharacterSetupScreen extends ListPickerScreen {
 
 	private CharacterSetupScreen(Screen parent) {
-		super(Component.literal("Configurar personaje"), parent);
+		super(Component.translatable("gui.dndsheets.character_setup.title"), parent);
 	}
 
 	public static void open(Screen parent) {
@@ -51,17 +51,17 @@ public class CharacterSetupScreen extends ListPickerScreen {
 	protected void buildRows() {
 		JsonObject sheet = SheetLoader.getClientSheet();
 
-		addRow(step("Raza", field(sheet, "characterRace")),
+		addRow(step("gui.dndsheets.character_setup.race", field(sheet, "characterRace")),
 			button -> DndsheetsMod.PACKET_HANDLER.sendToServer(
 				new CharacterOptionsRequestMessage(CharacterOptionsRegistry.RACE)));
 
 		//La clase se elige por PRESET y no por la lista de nombres: el preset escribe además el dado de
 		//golpe, las seis características, el equipo inicial y los rasgos de la clase. Elegir solo el texto
 		//deja una ficha que dice "Mago" y sigue teniendo 10 en todo.
-		addRow(step("Clase (preset)", field(sheet, "characterClass")),
+		addRow(step("gui.dndsheets.character_setup.class", field(sheet, "characterClass")),
 			button -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage()));
 
-		addRow(step("Trasfondo", field(sheet, "background")),
+		addRow(step("gui.dndsheets.character_setup.background", field(sheet, "background")),
 			button -> DndsheetsMod.PACKET_HANDLER.sendToServer(
 				new CharacterOptionsRequestMessage(CharacterOptionsRegistry.BACKGROUND)));
 
@@ -69,7 +69,7 @@ public class CharacterSetupScreen extends ListPickerScreen {
 		//nivel 1 es prometerle algo que la pantalla luego le niega. Que se pueda o no lo sabe el servidor
 		//(preset y nivel), así que la fila se ofrece siempre que haya clase y él decide si hay lista.
 		if (!field(sheet, "characterClass").isBlank()) {
-			addRow(step("Subclase", field(sheet, "characterSubclass")),
+			addRow(step("gui.dndsheets.character_setup.subclass", field(sheet, "characterSubclass")),
 				button -> DndsheetsMod.PACKET_HANDLER.sendToServer(
 					new BrowseActionMessage(BrowseActionMessage.Action.LIST_SUBCLASSES)));
 		}
@@ -78,7 +78,7 @@ public class CharacterSetupScreen extends ListPickerScreen {
 		for (int index = 0; index < RollIndex.SKILL_COUNT; index++) {
 			if (RollIndex.isSkillProficient(sheet, index)) proficiencies++;
 		}
-		addRow(step("Competencias de habilidad", proficiencies == 0 ? "" : proficiencies + " marcadas"),
+		addRow(step("gui.dndsheets.character_setup.skills", proficiencies == 0 ? "" : Component.translatable("gui.dndsheets.character_setup.skills_marked", proficiencies).getString()),
 			button -> SkillProficiencyScreen.open(this));
 	}
 

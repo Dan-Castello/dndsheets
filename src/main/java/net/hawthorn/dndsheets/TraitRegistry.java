@@ -57,8 +57,7 @@ public class TraitRegistry {
 	}
 
 	//Público: usado por TraitCommand (/dndtraits load) y por DndPaths para precargar solo todos los .json
-	//de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de comandos —
-	//ver AUDIT_TECHNICAL.md M-ARQ-1.
+	//de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de comandos.
 	private static final JsonRegistryLoader<Trait> LOADER = new JsonRegistryLoader<>("rasgo", TraitRegistry::parse, TraitRegistry::register);
 
 	/** Carga desde un JSON ya leído (datapack o jar de otro mod) — ver ContentDatapackLoader. */

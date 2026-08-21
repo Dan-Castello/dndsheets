@@ -330,13 +330,13 @@ public class DungeonManager {
 			//poolDir no existe todavía (primera publicación) — nada que limpiar.
 		}
 
-		Gson prettyGson = new GsonBuilder().setPrettyPrinting().create();
+
 		for (Map.Entry<String, JsonObject> entry : pools.entrySet()) {
 			Path poolFile = poolDir.resolve(entry.getKey() + ".json");
 			try {
 				Files.createDirectories(poolFile.getParent());
 				try (OutputStream out = Files.newOutputStream(poolFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-					out.write(prettyGson.toJson(entry.getValue()).getBytes());
+					out.write(DndsheetsMod.PRETTY_GSON.toJson(entry.getValue()).getBytes());
 				}
 			} catch (IOException e) {
 				DndsheetsMod.LOGGER.error("dndsheets: no pude escribir el pool {}.", entry.getKey(), e);
@@ -422,7 +422,7 @@ public class DungeonManager {
 			root.add("pack", packSection);
 
 			try (OutputStream out = Files.newOutputStream(mcmeta, StandardOpenOption.CREATE)) {
-				out.write(new GsonBuilder().setPrettyPrinting().create().toJson(root).getBytes());
+				out.write(DndsheetsMod.PRETTY_GSON.toJson(root).getBytes());
 			}
 		} catch (IOException e) {
 			DndsheetsMod.LOGGER.error("dndsheets: no pude crear pack.mcmeta para el datapack de mazmorras.", e);

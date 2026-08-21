@@ -269,7 +269,7 @@ public class Config {
 
 	//Público: usado por WeaponCommand (/dndweapons load) y por DndPaths para precargar solo todos los
 	//.json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de
-	//comandos — ver AUDIT_TECHNICAL.md M-ARQ-1. No usa JsonRegistryLoader como los demás *Registry: valida
+	//comandos. No usa JsonRegistryLoader como los demás *Registry: valida
 	//varios campos obligatorios a la vez y llama a registerWeapon con parámetros posicionales en vez de un
 	//par parse()/register() sobre un registro propio.
 	public static int loadFile(Path file) throws IOException {

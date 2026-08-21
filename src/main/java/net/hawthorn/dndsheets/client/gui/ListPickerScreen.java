@@ -125,8 +125,8 @@ public abstract class ListPickerScreen extends Screen {
 		list = new ButtonListWidget((this.width - buttonWidth()) / 2, listTop(), buttonWidth(), listHeight(), BUTTON_HEIGHT + SPACING);
 
 		if (searchable()) {
-			searchBox = new EditBox(this.font, (this.width - buttonWidth()) / 2, LIST_TOP, buttonWidth(), SEARCH_HEIGHT, Component.literal("Buscar"));
-			searchBox.setHint(Component.literal("Buscar..."));
+			searchBox = new EditBox(this.font, (this.width - buttonWidth()) / 2, LIST_TOP, buttonWidth(), SEARCH_HEIGHT, Component.translatable("gui.dndsheets.common.search"));
+			searchBox.setHint(Component.translatable("gui.dndsheets.common.search_hint"));
 			searchBox.setResponder(text -> applyFilter());
 			this.addRenderableWidget(searchBox);
 			this.setInitialFocus(searchBox);
@@ -139,7 +139,7 @@ public abstract class ListPickerScreen extends Screen {
 		this.addRenderableWidget(list);
 
 		if (parent != null) {
-			this.addRenderableWidget(TomeButton.of(Component.literal("< Atrás"), b -> this.onClose(),
+			this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.back"), b -> this.onClose(),
 				panelLeft() + 4, BACK_BUTTON_TOP, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT));
 		}
 	}

@@ -10,7 +10,7 @@ import net.minecraftforge.fml.common.Mod;
 //Descanso, Tótem de Furia, Contrahechizo, Escudo, Marca del Cazador, Segundo Aliento, Castigo Divino,
 //Hechizo Gemelo, Forma Salvaje, Inspiración Bárdica, báculos de hechizo rápido, ítems de turno): antes
 //cada manager se suscribía por separado a los mismos 3 eventos de interacción y releía el NBT de forma
-//independiente (hasta 18+ handlers por clic derecho) — ver AUDIT_TECHNICAL.md M-EVT-1. Aquí se lee una
+//independiente (hasta 18+ handlers por clic derecho). Aquí se lee una
 //sola vez y se delega al manager correspondiente. Cada rama de evento solo comprueba los flags de los
 //managers que originalmente escuchaban ESE evento (p.ej. Marca del Cazador solo actuaba en EntityInteract,
 //porque necesita el objetivo del clic) para no cambiarle el comportamiento a nadie. "quickSpell" es la
