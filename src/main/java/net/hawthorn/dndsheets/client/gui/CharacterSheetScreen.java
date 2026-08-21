@@ -963,8 +963,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		//Main Tab
 		//A diferencia de las pestañas Skills/Attacks (más abajo), a estos campos antes solo se les tocaba
 		//"active" y nunca "visible": cambiar de pestaña los dejaba deshabilitados pero seguían dibujándose
-		//encima de Skills/Attacks en su misma posición de pantalla — la UI superpuesta reportada en
-		//AUDIT_UX.md. EditBox.visible arranca en true y nunca se apagaba.
+		//encima de Skills/Attacks en su misma posición de pantalla — la UI superpuesta reportada en. EditBox.visible arranca en true y nunca se apagaba.
 		isActive = panelActive == PanelStatus.MAIN;
 		for (AbstractWidget widget : mainPanelWidgets) setActiveVisible(isActive, widget);
 
@@ -1223,8 +1222,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		//
 		//La lista a mano ya falló dos veces, y siempre igual: alguien añade un campo, no se acuerda de
 		//apuntarlo en el sitio lejano donde se oculta, y el campo se queda dibujado encima de Habilidades y
-		//Ataques — sin rótulo, sin hacer nada y sin que falle nada. Le pasó primero a la tanda entera
-		//(AUDIT_UX.md) y después a Nivel, Hambre y el botón de Guía. Capturado así, un campo nuevo entra
+		//Ataques — sin rótulo, sin hacer nada y sin que falle nada. Le pasó primero a la tanda entera y después a Nivel, Hambre y el botón de Guía. Capturado así, un campo nuevo entra
 		//solo por existir.
 		int before = this.children().size();
 

@@ -77,7 +77,7 @@ public class PresetManager {
 
 	//El preset solo rellena la hoja (clase/características/rasgos); sin esto, el ítem que activa el
 	//recurso de esa clase (Furia, Segundo Aliento...) nunca llegaba al jugador salvo que el DM se
-	//acordara de dárselo aparte con /dndsheet — ver AUDIT_UX.md, sección Jugador #1. Los ids de preset
+	//acordara de dárselo aparte con /dndsheet. Los ids de preset
 	//son los mismos nombres de clase en inglés que ya usa test/dndsheets/presets/presets.json. Las clases
 	//sin entrada acá (mago, brujo, clérigo, pícaro, monje) no tienen ítem de recurso: su rasgo icónico ya
 	//llega por TraitRegistry (pícaro/monje) o es automático sin ítem (mago/brujo/clérigo).

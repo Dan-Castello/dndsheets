@@ -15,7 +15,11 @@ Every one of these has already cost someone a debugging session, or would. They 
 respect and expensive to discover. If you are an agent or a new contributor, read this list
 before your first edit.
 
-1. **Never reorder or delete an entry in `DndsheetsMod.registerNetworkMessages`.** The message id
+1. **Never reorder or delete an entry in `DndsheetsMod.registerNetworkMessages`.** *Machine-enforced now:*
+   `JsonContentSelfTest.checkNetworkShape` compares three pinned numbers against the source — `NETWORK_SHAPE`
+   (how many pieces cross the wire), `NETWORK_ORDER` (in which order) and `NETWORK_WIRE` (what each field
+   actually writes and reads). The three exist because each caught the previous one being blind: counting
+   misses a swap, ordering misses a field changing type. The message id
    is the registration order, so an insertion silently renumbers everything after it. Add new
    entries at the end.
 2. **Never insert a constant into the middle of an enum that crosses the network.**
@@ -24,7 +28,11 @@ before your first edit.
 3. **Prefer extending a parameterized message over registering a new class.**
    `SheetAdjustMessage` already merges six former message classes behind a `Field` enum; the
    bulk "give one of N similar things" flows follow the same shape.
-4. **Anything that mutates a sheet must reach `SheetLoader.saveServer`.** The 5-minute autosave is
+4. **Anything that mutates a sheet must reach `SheetLoader.saveServer`.** *Machine-enforced now:*
+   `JsonContentSelfTest.checkSheetWritesArePersisted` fails the build when a file mutates a sheet with the
+   `ServerPlayer` in hand and never saves. It is per-FILE, not per-site, so a file that saves somewhere else
+   can still hide an unsaved path — use `SheetLoader.saveAndSync(player, sheet)`, which persists and syncs in
+   one call. The 5-minute autosave is
    a backstop, not the write path — relying on it already lost DM-side edits once.
 5. **`/reload` can never publish a new or edited dungeon pool in the same session.**
    `Registries.TEMPLATE_POOL` is worldgen; it loads with the world. Tell the DM to re-enter the
@@ -94,7 +102,7 @@ datapacks/dndsheets_loot/    A loot-table datapack bundled with the mod (separat
 runClient/, runServer/       Local dev run directories (gitignored except structure) — this is
                              where `saves/<world>/dndsheets/` and `saves/<world>/datapacks/
                              dndsheets_dungeon/` actually live during testing.
-AUDIT_REPORT_2026.md         Historical technical-debt ledger (F1-F26), mostly resolved.
+AUDIT_REPORT_2026.md         Historical technical-debt ledger (F1-F26). All 26 closed; kept as history.
 GUI_REFERENCE.md             Every screen: file, type, exact widget coordinates. Consult before
                              touching layout instead of re-deriving it from code.
 DUNGEON_GUIDE.md             DM-facing dungeon walkthrough + troubleshooting, kept in sync with
@@ -208,12 +216,12 @@ For older, already-resolved technical debt (naming, duplication, dead code — n
 
 ## Commit history
 
-31 commits total. Two very different eras:
+129 commits total. Two very different eras:
 
 - **2025-09-19 — MCreator origin** (`6c01dd2` through `9a4de9f`, all same day): the mod started as an MCreator export (commit messages like *"fuck it"*, *"welp"*, *"remnants of a certain bad program"* say it plainly). `cba86da`/`95f4a80` clean up the generated Gradle project and MCreator assets. `7e6a6db` (2025-09-25) adds the original README; `309da21` merges a small patch PR. No further activity for ~10 months.
-- **2026-08-02 onward — current maintenance** (`a9c061d` through `dc4d637`, all Dan-Castello): `a9c061d` "Full refactor" is the real break from the MCreator-era code. Then a steady cadence of focused passes, each with a real commit message instead of "welp": `8fa8aae` resolves the first 17 blocks of a technical audit; `6a07ec3`/`afa9511` unify GUI visual identity (`GuiStyle`, `ListPickerScreen`); `d07cf75` adds distance measurement, AoE preview, the DM Notebook; `1b170f2` adds the entire dungeon/jigsaw system and applies a second audit pass; `6f1e354`/`dc4d637` are housekeeping (gitignore, cleanup).
+- **2026-08-02 onward — current maintenance** (`a9c061d` onward, all Dan-Castello): `a9c061d` "Full refactor" is the real break from the MCreator-era code. Then a steady cadence of focused passes, each with a real commit message instead of "welp": `8fa8aae` resolves the first 17 blocks of a technical audit; `6a07ec3`/`afa9511` unify GUI visual identity (`GuiStyle`, `ListPickerScreen`); `d07cf75` adds distance measurement, AoE preview, the DM Notebook; `1b170f2` adds the entire dungeon/jigsaw system and applies a second audit pass; `6f1e354`/`dc4d637` are housekeeping (gitignore, cleanup).
 
-**A large amount of work is uncommitted.** The content creator, the DM-Panel command-parity pass, the search bars, every bug fix in the numbered list above, and all of Fase 0 + the Fase 1 core are working-tree changes. Worth a deliberate, logically-split set of commits rather than one giant diff, given the size.
+**That backlog is committed now.** The content creator, the DM-Panel command-parity pass, the search bars, Fase 0 and the Fase 1 core all landed, along with feats, subclasses, multiclass, skill proficiencies and the SRD importer. The lesson stands and is worth keeping: work that only exists in the working tree is work that one `git clean` deletes, and a tree that big is impossible to split into honest commits after the fact.
 
 ## The VTT roadmap and why it is in this order
 

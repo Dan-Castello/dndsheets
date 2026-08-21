@@ -79,8 +79,9 @@ public class DungeonManager {
 	//común con diferencia es escribir el espacio de nombres de la ESTRUCTURA (p.ej. "dndsheets_dm:dungeon",
 	//que el DM eligió libremente al nombrar el bloque de estructura, ver DUNGEON_GUIDE.md paso 1) en el
 	//campo de POOL, que se autonamespacea solo a "dndsheets:X" y nunca debería llevar ":" escrito a mano.
-	public static String poolNameError(String poolName) {
-		return "\"" + poolName + "\" no es un nombre de pool válido. Escribí solo el nombre, sin \":\" — por ejemplo \"dungeon\", no \"" + POOL_NAMESPACE + ":dungeon\" ni el espacio de nombres que le pusiste a tu estructura. Se guarda como \"" + POOL_NAMESPACE + ":" + poolName + "\" solo.";
+	public static Component poolNameError(String poolName) {
+		return Component.translatable("chat.dndsheets.dungeon.bad_pool_name",
+			poolName, POOL_NAMESPACE, POOL_NAMESPACE + ":" + poolName);
 	}
 
 	//Puramente informativo (ver decisión del DM): sin llamadas reflectivas a la API de Structurize, solo

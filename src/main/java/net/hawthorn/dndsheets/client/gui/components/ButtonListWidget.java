@@ -14,8 +14,7 @@ import java.util.List;
  * disponible — usada por las pantallas de elegir-uno-de-varios del Panel de DM (jugador, preset, rasgo,
  * acción de monstruo, ataque personalizado a quitar). Antes de esto, cada pantalla centraba su lista a
  * mano con {@code (alto - total) / 2} sin ningún tope: con suficientes filas ese cálculo se volvía
- * negativo y empujaba los botones fuera de pantalla, sin ninguna forma de llegar a ellos (ver
- * AUDIT_UX.md).</p>
+ * negativo y empujaba los botones fuera de pantalla, sin ninguna forma de llegar a ellos.</p>
  *
  * <p>Los botones deben registrarse en la pantalla con {@code Screen#addWidget} (NO
  * {@code addRenderableWidget}, para que la pantalla no los dibuje por su cuenta — este widget ya se

@@ -19,15 +19,15 @@ import java.util.List;
 public class FeatScreen extends ListPickerScreen {
 
 	private final List<String> ids;
-	private final List<String> labels;
+	private final List<Component> labels;
 
-	private FeatScreen(List<String> ids, List<String> labels) {
+	private FeatScreen(List<String> ids, List<Component> labels) {
 		super(Component.translatable("gui.dndsheets.feat.title"), Minecraft.getInstance().screen);
 		this.ids = ids;
 		this.labels = labels;
 	}
 
-	public static void open(List<String> ids, List<String> labels) {
+	public static void open(List<String> ids, List<Component> labels) {
 		Minecraft.getInstance().setScreen(new FeatScreen(ids, labels));
 	}
 
@@ -40,7 +40,7 @@ public class FeatScreen extends ListPickerScreen {
 	protected void buildRows() {
 		for (int i = 0; i < ids.size(); i++) {
 			String featId = ids.get(i);
-			addRow(Component.literal(labels.get(i)), button -> {
+			addRow(labels.get(i), button -> {
 				DndsheetsMod.PACKET_HANDLER.sendToServer(
 					new BrowseActionMessage(BrowseActionMessage.Action.FEAT_CHOOSE, featId));
 				this.onClose();

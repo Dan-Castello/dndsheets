@@ -23,9 +23,7 @@ public class DungeonPieceListRequestMessage {
 
 	public static void handler(DungeonPieceListRequestMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		NetworkUtil.handleOnServer(context, () -> {
-			ServerPlayer dm = context.getSender();
-			if (dm == null || !dm.hasPermissions(2)) return;
+		NetworkUtil.handleOnServerAsDm(context, dm -> {
 
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm),
 				DungeonPieceListMessage.of(dm.serverLevel(), DungeonPieceRegistry.all()));

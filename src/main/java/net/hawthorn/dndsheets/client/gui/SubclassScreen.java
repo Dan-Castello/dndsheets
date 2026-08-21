@@ -19,15 +19,15 @@ import java.util.List;
 public class SubclassScreen extends ListPickerScreen {
 
 	private final List<String> ids;
-	private final List<String> labels;
+	private final List<Component> labels;
 
-	private SubclassScreen(List<String> ids, List<String> labels) {
+	private SubclassScreen(List<String> ids, List<Component> labels) {
 		super(Component.translatable("gui.dndsheets.subclass.title"), Minecraft.getInstance().screen);
 		this.ids = ids;
 		this.labels = labels;
 	}
 
-	public static void open(List<String> ids, List<String> labels) {
+	public static void open(List<String> ids, List<Component> labels) {
 		Minecraft.getInstance().setScreen(new SubclassScreen(ids, labels));
 	}
 
@@ -35,7 +35,7 @@ public class SubclassScreen extends ListPickerScreen {
 	protected void buildRows() {
 		for (int i = 0; i < ids.size(); i++) {
 			String subclassId = ids.get(i);
-			addRow(Component.literal(labels.get(i)), button -> {
+			addRow(labels.get(i), button -> {
 				DndsheetsMod.PACKET_HANDLER.sendToServer(
 					new BrowseActionMessage(BrowseActionMessage.Action.SUBCLASS_CHOOSE, subclassId));
 				this.onClose();

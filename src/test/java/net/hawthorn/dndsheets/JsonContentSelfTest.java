@@ -64,6 +64,8 @@ public class JsonContentSelfTest {
 		checkPlaceholderParity();
 		checkChatMessagesAreTranslatable();
 		checkNetworkShape();
+		checkNetworkWire();
+		checkDmGuardIsShared();
 		checkSheetWritesArePersisted();
 		checkAddonContentLoads();
 		checkSheetCoordinateSpaces();
@@ -1044,6 +1046,26 @@ public class JsonContentSelfTest {
 		JsonObject basura = new JsonObject();
 		basura.addProperty("criticalFrom", "no es un numero");
 		assertTrue(DiceManager.criticalFrom(basura) == 20, "un valor no numerico deberia caer al 20 de siempre");
+
+		//Un dado mal escrito en un pack de contenido no debe poder dar critico. La libreria no rechaza una
+		//expresion que no entiende: le saca un numero igual, y ese numero entraba como si fuera el d20.
+		//
+		//Hay DOS filtros y cubren cosas distintas. El de rango (1..20) atrapa lo que se ve aqui: "20" sale
+		//como "20 = 20", sin corchetes, asi que firstDieValue devuelve -1 y no hay ni critico ni pifia. El
+		//de notacion (rollAttack exige que la expresion TENGA un dado) es el que cubre el caso peligroso de
+		//verdad, "no soy un dado", que la libreria convierte en "99 = 99[99]" con un valor ALEATORIO — ese
+		//no se puede fijar en una prueba, porque acertaria unas veces si y otras no, y una prueba
+		//intermitente se acaba ignorando. Aqui se pincha lo determinista; el aleatorio lo cierra el filtro.
+		DiceManager.AttackRoll sinDado = DiceManager.rollAttack(sheet, "20", DiceManager.Advantage.NORMAL);
+		assertTrue(!sinDado.criticalHit(), "una expresion sin dados que vale 20 NO es un 20 natural");
+		assertTrue(!sinDado.criticalMiss(), "y tampoco puede ser pifia");
+
+		DiceManager.AttackRoll unoPlano = DiceManager.rollAttack(sheet, "1", DiceManager.Advantage.NORMAL);
+		assertTrue(!unoPlano.criticalMiss(), "una expresion sin dados que vale 1 tampoco es una pifia");
+
+		//Y con dado de verdad la deteccion sigue viva: 1d1 saca 1, que es pifia.
+		assertTrue(DiceManager.rollAttack(sheet, "1d1", DiceManager.Advantage.NORMAL).criticalMiss(),
+			"con un dado real, el 1 natural tiene que seguir siendo pifia");
 
 		System.out.println("checkAttackAndDamageRolls: OK, pifia, ventaja/desventaja, dados doblados sin doblar el modificador y umbral de critico.");
 	}
@@ -2945,7 +2967,13 @@ public class JsonContentSelfTest {
 	 * autosave devolvia el espacio de conjuro gastado, el escudo, el castigo o —lo peor— levantaba a un
 	 * personaje que estaba tirando salvaciones de muerte.</p>
 	 *
-	 * <p><b>Sin lista de excepciones a mano.</b> El criterio se mantiene solo: un archivo que no menciona
+	 * <p><b>Granularidad: por ARCHIVO, no por sitio.</b> Un archivo que guarde en algun sitio pasa aunque
+ * otra ruta suya mute sin guardar — le paso a {@code SpellCastManager}, que persistia el espacio de
+ * conjuro en spendSlot pero no el gasto del Hechizo Gemelo. Comprobarlo por sitio pediria seguir el flujo
+ * del metodo, que es mucho mas maquinaria de la que esto merece; sirve como red contra el descuido
+ * completo, no como prueba de que cada linea persiste.</p>
+ *
+ * <p><b>Sin lista de excepciones a mano.</b> El criterio se mantiene solo: un archivo que no menciona
 	 * {@code ServerPlayer} no PUEDE guardar (saveServer pide el uuid del jugador), asi que es un helper puro
 	 * sobre el JsonObject y persiste quien lo llama —{@code SpellSlots}, {@code WeaponBuffManager},
 	 * {@code ClassLevels}, {@code FeatRegistry}, {@code PresetRegistry}. En cuanto alguien le pase un
@@ -2981,6 +3009,86 @@ public class JsonContentSelfTest {
 
 		System.out.println("checkSheetWritesArePersisted: OK, toda mutacion de hoja con jugador delante persiste ("
 			+ pureHelpers + " helpers puros exentos, persiste quien los llama).");
+	}
+
+	/**
+	 * <p>El TERCER angulo del cable, tras la cuenta ({@code NETWORK_SHAPE}) y el orden
+	 * ({@code NETWORK_ORDER}): que tipo tiene cada campo. Se hashea la secuencia de {@code writeX}/
+	 * {@code readX} de todas las clases de {@code network/}.</p>
+	 *
+	 * <p>Existe porque el hueco se demostro solo: cambiar las etiquetas de {@code BrowseListMessage} de
+	 * texto plano a {@code Component} —para que el compendio lo traduzca el cliente— no movio ni la cuenta
+	 * ni el orden, asi que las otras dos comprobaciones dieron OK mientras la compatibilidad ya estaba
+	 * rota. Un cliente viejo lee un String donde el servidor escribe un Component y se desincroniza a
+	 * mitad del paquete, en silencio.</p>
+	 */
+	/**
+	 * <p>El candado de DM no se copia: se pide por {@code NetworkUtil.handleOnServerAsDm}.</p>
+	 *
+	 * <p>Esto no es orden por gusto. El guard estaba escrito a mano, palabra por palabra, en <b>22</b>
+	 * mensajes, y es una comprobacion de PERMISOS. Un mensaje nuevo que se olvide de el no falla ni avisa:
+	 * el cliente puede mandar el paquete sin tener el menu abierto, asi que cualquier jugador podria borrar
+	 * piezas de mazmorra, invocar monstruos o editar el contenido. Con el helper no se puede olvidar — o
+	 * pides el jugador por esa puerta, o no lo tienes.</p>
+	 *
+	 * <p><b>Alcance honesto:</b> esto atrapa la copia LITERAL volviendo, que es lo que se acaba de quitar.
+	 * No entiende Java, asi que una redaccion distinta del mismo candado se le escapa. Es una red contra el
+	 * copiar-pegar, no una prueba de que todo mensaje de DM este protegido.</p>
+	 */
+	private static void checkDmGuardIsShared() throws Exception {
+		Path networkDir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "network");
+		List<Path> mensajes;
+		try (Stream<Path> files = Files.list(networkDir)) {
+			mensajes = files.filter(f -> f.toString().endsWith(".java")).sorted().toList();
+		}
+
+		Set<String> copiado = new java.util.TreeSet<>();
+		for (Path mensaje : mensajes) {
+			//NetworkUtil ES el sitio donde vive el candado; ahi tiene que estar.
+			if (mensaje.getFileName().toString().equals("NetworkUtil.java")) continue;
+			if (Files.readString(mensaje).contains("!dm.hasPermissions(2)")) {
+				copiado.add(mensaje.getFileName().toString());
+			}
+		}
+
+		assertTrue(copiado.isEmpty(),
+			"estos mensajes vuelven a llevar el candado de DM copiado a mano: " + copiado
+				+ ".\n  Usa NetworkUtil.handleOnServerAsDm(context, dm -> { ... }): resuelve el emisor y"
+				+ " comprueba el permiso en un solo sitio. Copiarlo es como se olvida, y olvidarlo deja el"
+				+ " mensaje abierto a cualquier jugador.");
+
+		System.out.println("checkDmGuardIsShared: OK, el candado de DM vive solo en NetworkUtil.");
+	}
+
+	private static void checkNetworkWire() throws Exception {
+		Path networkDir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "network");
+		List<Path> mensajes;
+		try (Stream<Path> files = Files.list(networkDir)) {
+			mensajes = files.filter(f -> f.toString().endsWith(".java")).sorted().toList();
+		}
+
+		StringBuilder cable = new StringBuilder();
+		int llamadas = 0;
+		for (Path mensaje : mensajes) {
+			cable.append(mensaje.getFileName()).append(':');
+			java.util.regex.Matcher m = java.util.regex.Pattern
+				.compile("\\b(?:buffer|buf)\\.(write|read)([A-Za-z]+)\\(").matcher(Files.readString(mensaje));
+			while (m.find()) {
+				cable.append(m.group(1)).append(m.group(2)).append(',');
+				llamadas++;
+			}
+		}
+
+		int hash = cable.toString().hashCode();
+		assertTrue(hash == DndsheetsMod.NETWORK_WIRE,
+			"cambio LO QUE SE ESCRIBE en el cable (hash " + hash + ", anotado " + DndsheetsMod.NETWORK_WIRE
+				+ ") con la cuenta y el orden intactos: algun campo cambio de tipo, o se anadio/quito uno"
+				+ " dentro de un mensaje que ya existia."
+				+ "\n  Eso rompe la compatibilidad igual que anadir un mensaje: el cliente viejo lee un tipo"
+				+ " donde el servidor nuevo escribe otro y se desincroniza a mitad del paquete. Sube"
+				+ " PROTOCOL_VERSION y anota aqui el hash nuevo.");
+
+		System.out.println("checkNetworkWire: OK, " + llamadas + " lecturas/escrituras en el cable, hash " + hash + ".");
 	}
 
 	private static void checkNetworkShape() throws Exception {

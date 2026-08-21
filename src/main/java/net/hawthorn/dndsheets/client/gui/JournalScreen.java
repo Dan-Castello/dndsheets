@@ -18,15 +18,15 @@ import java.util.List;
 public class JournalScreen extends ListPickerScreen {
 
 	private final List<String> ids;
-	private final List<String> labels;
+	private final List<Component> labels;
 
-	private JournalScreen(List<String> ids, List<String> labels) {
+	private JournalScreen(List<String> ids, List<Component> labels) {
 		super(Component.translatable("gui.dndsheets.journal.title"));
 		this.ids = ids;
 		this.labels = labels;
 	}
 
-	public static void open(List<String> ids, List<String> labels) {
+	public static void open(List<String> ids, List<Component> labels) {
 		Minecraft.getInstance().setScreen(new JournalScreen(ids, labels));
 	}
 
@@ -44,7 +44,7 @@ public class JournalScreen extends ListPickerScreen {
 	protected void buildRows() {
 		for (int i = 0; i < ids.size(); i++) {
 			String id = ids.get(i);
-			addRow(Component.literal(labels.get(i)).withStyle(ChatFormatting.GRAY),
+			addRow(labels.get(i).copy().withStyle(ChatFormatting.GRAY),
 				b -> DndsheetsMod.PACKET_HANDLER.sendToServer(
 					new BrowseActionMessage(BrowseActionMessage.Action.JOURNAL_DETAIL, id)));
 		}

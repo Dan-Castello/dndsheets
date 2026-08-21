@@ -263,6 +263,10 @@ public class SpellCastManager {
 	private static void castTwinnedIfPending(ServerPlayer caster, String casterName, SpellRegistry.Spell spell, Entity firstTarget, int proficiency, int abilityMod) {
 		JsonObject casterSheet = SheetLoader.getServerSheet(caster.getStringUUID());
 		if (!SorcererMetamagicManager.consumePending(casterSheet)) return;
+		//consumePending solo quita el flag del JsonObject. Sin esto el gasto vivia unicamente en RAM hasta el
+		//autoguardado: reiniciar antes de que saltara devolvia el Hechizo Gemelo armado y se podia gemelar
+		//gratis otra vez (invariante 4). Armarlo si se persistia; gastarlo no.
+		SheetLoader.saveServer(casterSheet, caster.getStringUUID());
 
 		Entity secondTarget = findNearestOther(caster, firstTarget);
 		if (secondTarget == null) {
@@ -425,7 +429,7 @@ public class SpellCastManager {
 
 	//ponytail: un solo rayo al centro de la hitbox del objetivo, no varios puntos de su volumen ni un
 	//cálculo de cobertura parcial — alcanza para "un muro entero bloquea, un hueco en la pared no", que es
-	//lo que pedía AUDIT.md; una esquina asomando por el borde de una pared puede dar un falso negativo.
+	//.
 	private static boolean hasClearPath(ServerPlayer caster, Vec3 from, Vec3 to) {
 		return !Cover.isBlocked(caster.level(), from, to, caster);
 	}

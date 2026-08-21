@@ -10,7 +10,7 @@ import net.minecraft.network.chat.Component;
 /**
  * <p>Formulario para aplicar un efecto de estado (veneno, etc.) a UN jugador ya elegido en
  * {@link PlayerPickerScreen}, abierto desde el botón "Aplicar efecto" de {@link TurnControlScreen}
- * (equivalente en GUI a {@code /dndturns effect} — ver AUDIT_UX.md, DM #4). El dado se elige con un
+ * (equivalente en GUI a {@code /dndturns effect}). El dado se elige con un
  * botón cíclico sobre las mismas sugerencias que ya usa {@code TurnCommand}, en vez de texto libre.</p>
  */
 public class AddTurnEffectScreen extends SmallFormScreen {

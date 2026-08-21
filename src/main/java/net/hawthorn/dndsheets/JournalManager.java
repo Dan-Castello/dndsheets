@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets;
 
+import net.minecraft.network.chat.Component;
 import com.google.gson.*;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -46,10 +47,12 @@ public class JournalManager {
 		}
 
 		/** Etiqueta de a quién alcanza, para que el DM lo vea sin abrir la entrada. */
-		public String visibilityLabel() {
-			if (party) return "grupo";
-			if (sharedWith.isEmpty()) return "privada";
-			return sharedWith.size() + (sharedWith.size() == 1 ? " jugador" : " jugadores");
+		public Component visibilityLabel() {
+			if (party) return Component.translatable("gui.dndsheets.journal.visibility_party");
+			if (sharedWith.isEmpty()) return Component.translatable("gui.dndsheets.journal.visibility_private");
+			return Component.translatable(sharedWith.size() == 1
+				? "gui.dndsheets.journal.visibility_one"
+				: "gui.dndsheets.journal.visibility_many", sharedWith.size());
 		}
 	}
 

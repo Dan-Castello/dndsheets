@@ -30,9 +30,7 @@ public class TraitListRequestMessage {
 
 	public static void handler(TraitListRequestMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		NetworkUtil.handleOnServer(context, () -> {
-			ServerPlayer dm = context.getSender();
-			if (dm == null || !dm.hasPermissions(2)) return;
+		NetworkUtil.handleOnServerAsDm(context, dm -> {
 
 			List<String> ids = new ArrayList<>(TraitRegistry.ids());
 			List<String> names = new ArrayList<>();

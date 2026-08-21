@@ -23,15 +23,15 @@ import java.util.List;
 public class CompendiumListScreen extends ListPickerScreen {
 
 	private final List<String> ids;
-	private final List<String> labels;
+	private final List<Component> labels;
 
-	private CompendiumListScreen(Component title, List<String> ids, List<String> labels, Screen parent) {
+	private CompendiumListScreen(Component title, List<String> ids, List<Component> labels, Screen parent) {
 		super(title, parent);
 		this.ids = ids;
 		this.labels = labels;
 	}
 
-	public static void open(List<String> ids, List<String> labels) {
+	public static void open(List<String> ids, List<Component> labels) {
 		String category = ids.isEmpty() ? "" : ids.get(0).split("[|]", 2)[0];
 		Minecraft minecraft = Minecraft.getInstance();
 		minecraft.setScreen(new CompendiumListScreen(
@@ -52,7 +52,7 @@ public class CompendiumListScreen extends ListPickerScreen {
 	protected void buildRows() {
 		for (int i = 0; i < ids.size(); i++) {
 			String entryId = ids.get(i);
-			addRow(Component.literal(labels.get(i)).withStyle(ChatFormatting.GRAY),
+			addRow(labels.get(i).copy().withStyle(ChatFormatting.GRAY),
 				b -> DndsheetsMod.PACKET_HANDLER.sendToServer(
 					new BrowseActionMessage(BrowseActionMessage.Action.CONTENT_DETAIL, entryId)));
 		}

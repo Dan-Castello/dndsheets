@@ -84,7 +84,7 @@ public class GrimoireScreen extends ListPickerScreen {
 		}, left, slotY, buttonWidth(), BUTTON_HEIGHT));
 
 		//Lanzar ya no pasa por un solo clic sobre el hechizo: un jugador que clica para leer qué hay en la
-		//lista no quiere gastar un espacio de conjuro real por curiosidad (ver AUDIT_UX.md, Jugador #2).
+		//lista no quiere gastar un espacio de conjuro real por curiosidad.
 		//Elegir un hechizo solo lo selecciona; este botón aparte es el que de verdad lo lanza.
 		castButton = this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.grimoire.pick_spell"), button -> {
 			if (selected == null) return;

@@ -1,10 +1,13 @@
-# Deuda técnica pendiente — dndsheets
+# Ledger de deuda tecnica (cerrado) — dndsheets
 
-Este archivo era la auditoría completa del 2026-08-07 (26 hallazgos, F1-F26). Verificado contra el código el 2026-08-12: **16 ya estaban resueltos** (F1, F2, F3, F5, F6, F8, F10, F13, F15, F16, F17, F19, F20, F21, F24, F25) y se quitaron de aquí. Pasada del 2026-08-14 (refactor dirigido, ver commit correspondiente): **resueltos F4, F7, F9, F11, F12, F14, F18, F22**; **F23 ya estaba resuelto** desde antes de esta pasada (el código ya tenía `panelActive`/`editMode` como `private static`) y se retira de la lista de abiertos. Queda **1 abierto** (parcial, fuera de alcance de la pasada del 2026-08-14: es trabajo de tests, no de refactor).
+Este archivo era la auditoría completa del 2026-08-07 (26 hallazgos, F1-F26). Verificado contra el código el 2026-08-12: **16 ya estaban resueltos** (F1, F2, F3, F5, F6, F8, F10, F13, F15, F16, F17, F19, F20, F21, F24, F25) y se quitaron de aquí. Pasada del 2026-08-14 (refactor dirigido, ver commit correspondiente): **resueltos F4, F7, F9, F11, F12, F14, F18, F22**; **F23 ya estaba resuelto** desde antes de esta pasada (el código ya tenía `panelActive`/`editMode` como `private static`) y se retira de la lista de abiertos. Queda **1 abierto** (parcial, fuera de alcance de la pasada del 2026-08-14: es trabajo de tests, no de refactor). Pasada del 2026-08-21: **F26 cerrado**, con lo que **no queda ninguno abierto** — los 26 hallazgos originales estan resueltos. El archivo se conserva como historia: dice que se encontro, que se hizo y por que, que es lo que no se puede reconstruir leyendo el codigo de hoy.
 
-| ID | Prioridad | Categoría | Ubicación | Descripción | Propuesta | Riesgo | Esfuerzo |
-|---|---|---|---|---|---|---|---|
-| F26 | Media (parcial) | Testabilidad | `DiceManager.rollAttack`/`rollDamage` | `JsonContentSelfTest.checkDice()` ya cubre `roll()` a fondo, pero no `rollAttack`/`rollDamage`. | Extender `checkDice()` (o método hermano) cubriendo esos dos. | Bajo | S |
+
+## Resuelto en la pasada del 2026-08-21
+
+| ID | Ubicación | Qué se hizo |
+|---|---|---|
+| F26 | `DiceManager.rollAttack`/`rollDamage` | Nuevo `JsonContentSelfTest.checkAttackAndDamageRolls()`: pifia con 1 natural, ventaja/desventaja anotando cuál se descarta, umbrales de `criticalFrom` (20 por defecto, 19 del Campeón, tope inferior 15) y **la regla que importa: en un crítico se doblan los dados, no el modificador**. Escribir la comprobación destapó un bug vivo: `BRACKETED_DIE_PATTERN` era `\[(\d+)]` y solo casaba UN dado, así que con dos o más el corchete llevaba `[1, 3]`, no casaba, y `sumDiceValues` devolvía 0 — **un crítico no doblaba nada en ningún arma de varios dados** (mandoble y martillo 2d6, ataques de monstruo 2d8/2d10). Un dado suelto sí doblaba, que es por qué nadie lo vio. |
 
 ## Resueltos en la pasada del 2026-08-14
 

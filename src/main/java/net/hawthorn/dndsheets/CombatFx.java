@@ -30,7 +30,7 @@ public class CombatFx {
 
 	//Chispazo al conectar un golpe (armas, hechizos de ataque, monstruos). Un crítico (natural 20) se ve y
 	//suena distinto del roce normal — antes de esto un 20 natural que triplicaba el daño se sentía
-	//idéntico a un golpe raspado, ver AUDIT_UX.md, Transversal #4.
+	//idéntico a un golpe raspado.
 	public static void hit(Entity target, boolean critical) {
 		hit(target, critical, null);
 	}
@@ -153,7 +153,7 @@ public class CombatFx {
 
 	//Destello + campanilla al activar un recurso de clase (Furia, Segundo Aliento, Inspiración
 	//Bárdica...). Antes de esto esos managers solo mandaban una línea de chat: el mismo golpe de espada
-	//normal ya sonaba y brillaba más que activar un recurso de clase — ver AUDIT_UX.md, Transversal #1.
+	//normal ya sonaba y brillaba más que activar un recurso de clase.
 	public static void activate(Entity entity) {
 		particles(entity, ParticleTypes.END_ROD, 12, 0.4);
 		sound(entity, SoundEvents.EXPERIENCE_ORB_PICKUP, 0.8f, 1.2f);

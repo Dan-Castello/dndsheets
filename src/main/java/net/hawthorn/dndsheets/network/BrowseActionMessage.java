@@ -144,7 +144,7 @@ public class BrowseActionMessage {
 		List<String> taken = net.hawthorn.dndsheets.FeatRegistry.takenBy(sheet);
 		int level = SheetLoader.characterLevelOf(sheet);
 		List<String> ids = new ArrayList<>();
-		List<String> labels = new ArrayList<>();
+		List<Component> labels = new ArrayList<>();
 		for (String id : net.hawthorn.dndsheets.FeatRegistry.ids()) {
 			net.hawthorn.dndsheets.FeatRegistry.Feat feat = net.hawthorn.dndsheets.FeatRegistry.get(id);
 			//Las que aun no le tocan por nivel SI se quitan, al contrario que las ya cogidas: un Don Epico de
@@ -153,7 +153,7 @@ public class BrowseActionMessage {
 			ids.add(id);
 			//Las que ya tiene se mandan marcadas en vez de quitarlas: que una lista encoja sin explicación
 			//se lee como que falta contenido, y esto es justo lo contrario.
-			labels.add((taken.contains(id) ? "✔ " : "") + feat.name());
+			labels.add(Component.literal((taken.contains(id) ? "✔ " : "") + feat.name()));
 		}
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
 			new BrowseListMessage(BrowseListMessage.Kind.FEAT, ids, labels));
@@ -162,11 +162,11 @@ public class BrowseActionMessage {
 	private static void sendSubclasses(ServerPlayer player) {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		List<String> ids = new ArrayList<>();
-		List<String> labels = new ArrayList<>();
+		List<Component> labels = new ArrayList<>();
 		for (net.hawthorn.dndsheets.PresetRegistry.Subclass subclass
 				: net.hawthorn.dndsheets.PresetRegistry.availableSubclasses(sheet)) {
 			ids.add(subclass.id());
-			labels.add(subclass.name());
+			labels.add(Component.literal(subclass.name()));
 		}
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
 			new BrowseListMessage(BrowseListMessage.Kind.SUBCLASS, ids, labels));
@@ -216,13 +216,15 @@ public class BrowseActionMessage {
 	 */
 	public static void sendJournal(ServerPlayer player) {
 		List<String> ids = new ArrayList<>();
-		List<String> labels = new ArrayList<>();
+		List<Component> labels = new ArrayList<>();
 		boolean isDm = player.hasPermissions(2);
 		for (net.hawthorn.dndsheets.JournalManager.Entry entry : net.hawthorn.dndsheets.JournalManager.readableBy(player)) {
 			ids.add(entry.id());
 			//La etiqueta de visibilidad solo se le enseña al DM: a un jugador no le aporta nada saber que
 			//lo que acaba de recibir es "2 jugadores", y sí le dice que hay alguien más en el ajo.
-			labels.add(entry.title() + (isDm ? "  ·  " + entry.visibilityLabel() : ""));
+			labels.add(isDm
+				? Component.translatable("gui.dndsheets.journal.row", entry.title(), entry.visibilityLabel())
+				: Component.literal(entry.title()));
 		}
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
 			new BrowseListMessage(BrowseListMessage.Kind.JOURNAL, ids, labels));
@@ -235,14 +237,14 @@ public class BrowseActionMessage {
 		if (entry == null || !entry.canRead(player)) return;
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
 			new BrowseListMessage(BrowseListMessage.Kind.DETAIL, List.of(id),
-				List.of(entry.title() + "\n" + entry.body())));
+				List.of(Component.literal(entry.title() + "\n" + entry.body()))));
 	}
 
 	/** Público: también lo usa {@code /dndchar} sin argumentos, que ya está del lado del servidor. */
 	public static void sendOwnCharacters(ServerPlayer player) {
 		String activeId = SheetLoader.activeCharacterOf(player.getStringUUID());
 		List<String> ids = new ArrayList<>();
-		List<String> labels = new ArrayList<>();
+		List<Component> labels = new ArrayList<>();
 
 		List<String> owned = SheetLoader.charactersOf(player.getStringUUID());
 		for (String characterId : owned) {
@@ -253,7 +255,7 @@ public class BrowseActionMessage {
 			String label = SheetLoader.suggestionLabelFor(owned, characterId);
 			String characterClass = sheet != null && sheet.has("characterClass") ? sheet.get("characterClass").getAsString() : "";
 			ids.add(characterId);
-			labels.add((characterId.equals(activeId) ? "▶ " : "   ") + label + (characterClass.isBlank() ? "" : " · " + characterClass));
+			labels.add(Component.literal((characterId.equals(activeId) ? "▶ " : "   ") + label + (characterClass.isBlank() ? "" : " · " + characterClass)));
 		}
 
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
@@ -267,7 +269,7 @@ public class BrowseActionMessage {
 	 */
 	private static void sendParty(ServerPlayer dm) {
 		List<String> ids = new ArrayList<>();
-		List<String> labels = new ArrayList<>();
+		List<Component> labels = new ArrayList<>();
 
 		for (ServerPlayer player : dm.server.getPlayerList().getPlayers()) {
 			Combatant combatant = Combatant.of(player);
@@ -290,7 +292,7 @@ public class BrowseActionMessage {
 			}
 
 			ids.add(player.getStringUUID());
-			labels.add(label.toString());
+			labels.add(Component.literal(label.toString()));
 		}
 
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm),

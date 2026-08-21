@@ -89,7 +89,11 @@ public class DndsheetsMod {
 	//nada, pero un cliente nuevo mandandole ese ordinal a un servidor viejo revienta al leerlo — que es
 	//exactamente lo que el handshake debe impedir. DELETE se colo sin subir la version: por eso existe
 	//ahora NETWORK_SHAPE, que hace fallar el build cuando la forma de la red cambia y esta linea no.
-	private static final String PROTOCOL_VERSION = "7";
+	//Sube a "8": BrowseListMessage manda sus etiquetas como Component y ya no como texto plano, para que el
+	//compendio lo traduzca el CLIENTE en su idioma en vez de que el servidor le fije el suyo. Cambia el
+	//formato en el cable sin cambiar ni el numero de mensajes ni su orden — o sea que NI NETWORK_SHAPE ni
+	//NETWORK_ORDER lo ven, y por eso existe ahora tambien NETWORK_WIRE (ver abajo).
+	private static final String PROTOCOL_VERSION = "8";
 
 	/**
 	 * <p>Cuántas piezas cruzan el cable: mensajes registrados más constantes de los enums que viajan por
@@ -114,6 +118,18 @@ public class DndsheetsMod {
 	 * y pega aquí el número que te diga el fallo.</p>
 	 */
 	public static final int NETWORK_ORDER = 88363992;
+
+	/**
+	 * <p>Que se escribe y se lee en el cable, resumido en un hash: la secuencia de llamadas
+	 * {@code writeX}/{@code readX} de cada clase de {@code network/}.</p>
+	 *
+	 * <p>Es el tercer angulo del mismo problema, y el que faltaba. {@link #NETWORK_SHAPE} cuenta CUANTAS
+	 * piezas cruzan; {@link #NETWORK_ORDER} vigila EN QUE ORDEN; ninguno de los dos ve que un campo cambie
+	 * de TIPO. Pasar {@code BrowseListMessage.labels} de {@code writeUtf} a {@code writeComponent} dejo los
+	 * dos numeros intactos y aun asi rompio la compatibilidad: un cliente viejo leería un texto donde el
+	 * servidor nuevo escribe un Component, y se desincroniza a mitad del paquete.</p>
+	 */
+	public static final int NETWORK_WIRE = 326945585;
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 

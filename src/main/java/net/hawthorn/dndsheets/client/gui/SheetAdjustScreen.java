@@ -175,7 +175,7 @@ public class SheetAdjustScreen extends FormPanelScreen {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.damageAffinity(targetUuid, DamageTypes.CANONICAL[damageTypeIndex], AFFINITIES[affinityIndex])), centerX - formWidth() / 2, y, formWidth(), FIELD_HEIGHT));
 		y += rowHeight();
 
-		//--- Pacto del brujo (elección permanente, ver AUDIT_UX.md DM #3) ---
+		//--- Pacto del brujo (elección permanente) ---
 		pactButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - formWidth() / 2, y, formWidth() - 60, FIELD_HEIGHT,
 			translatedLabel("Pacto", PACTS[pactIndex]),
 			() -> { pactIndex = (pactIndex + 1) % PACTS.length; pactButton.setMessage(translatedLabel("Pacto", PACTS[pactIndex])); },
@@ -185,7 +185,7 @@ public class SheetAdjustScreen extends FormPanelScreen {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.pact(targetUuid, PACTS[pactIndex])), centerX - formWidth() / 2 + formWidth() - 56, y, 56, FIELD_HEIGHT));
 		y += rowHeight();
 
-		//--- Nivel de personaje (elección permanente, ver AUDIT_UX.md DM #3) ---
+		//--- Nivel de personaje (elección permanente) ---
 		levelBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.level").getString(), "1", 2, y, centerX - formWidth() / 2, COLUMN_WIDTH);
 		levelBox.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.level_tip")));
 		Button setLevelButton = TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.level_set"), button ->

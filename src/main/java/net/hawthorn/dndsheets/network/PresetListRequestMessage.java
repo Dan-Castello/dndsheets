@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 
 //Cliente -> servidor: pide la lista de presets cargados, o bien para el jugador que la pide (botón
 //"Presets" de su propia hoja, targetUuid vacío) o bien, si es un DM, para aplicársela a OTRO jugador
-//elegido antes en PlayerPickerScreen (ver AUDIT_UX.md, DM #2: antes de esto aplicar un preset a otro
+//elegido antes en PlayerPickerScreen
 //jugador solo existía como /dndpresets apply tecleado a mano).
 public class PresetListRequestMessage {
 	String targetUuid;

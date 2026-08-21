@@ -38,9 +38,7 @@ public class ContentEntrySaveMessage {
 
 	public static void handler(ContentEntrySaveMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		NetworkUtil.handleOnServer(context, () -> {
-			ServerPlayer dm = context.getSender();
-			if (dm == null || !dm.hasPermissions(2)) return;
+		NetworkUtil.handleOnServerAsDm(context, dm -> {
 
 			JsonObject entry;
 			try {

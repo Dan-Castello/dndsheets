@@ -157,7 +157,7 @@ public class SheetCommand {
 
 	//Ahora que checks/saves/skills son de solo-operador (ver network.SheetServerMessage), esta es la vía de
 	//un DM/OP para seguir ajustándolas a distancia sin necesitar abrir la hoja de OTRO jugador como si fuera
-	//la propia (cambio de arquitectura mayor, deliberadamente fuera de esta pasada — ver AUDIT.md). "nombre"
+	//la propia (cambio de arquitectura mayor, deliberadamente fuera de esta pasada). "nombre"
 	//acepta el nombre en inglés que ya usa RollIndex.getBasicContext (p.ej. "Persuasion Check") o, para quien
 	//prefiera no acordarse del nombre exacto, directamente el índice numérico.
 	private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestRollNames(

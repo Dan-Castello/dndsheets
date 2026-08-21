@@ -18,14 +18,14 @@ import java.util.List;
  */
 public class PartyScreen extends ListPickerScreen {
 
-	private final List<String> rows;
+	private final List<Component> rows;
 
-	private PartyScreen(List<String> rows, Screen parent) {
+	private PartyScreen(List<Component> rows, Screen parent) {
 		super(Component.translatable("gui.dndsheets.party.title"), parent);
 		this.rows = rows;
 	}
 
-	public static void open(List<String> rows) {
+	public static void open(List<Component> rows) {
 		Minecraft.getInstance().setScreen(new PartyScreen(rows, Minecraft.getInstance().screen));
 	}
 
@@ -37,8 +37,8 @@ public class PartyScreen extends ListPickerScreen {
 
 	@Override
 	protected void buildRows() {
-		for (String row : rows) {
-			addRow(Component.literal(row).withStyle(ChatFormatting.GRAY), button -> {});
+		for (Component row : rows) {
+			addRow(row.copy().withStyle(ChatFormatting.GRAY), button -> {});
 		}
 	}
 

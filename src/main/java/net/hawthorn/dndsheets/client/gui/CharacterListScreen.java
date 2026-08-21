@@ -21,7 +21,7 @@ import java.util.List;
 public class CharacterListScreen extends ListPickerScreen {
 
 	private final List<String> ids;
-	private final List<String> labels;
+	private final List<Component> labels;
 	/**
 	 * <p>Modo borrar: hay que activarlo antes de que una fila borre nada. Es la confirmación, y va aquí en
 	 * vez de en un diálogo por fila porque borrar ya deja una copia en disco ({@code .json.deleted}) — la
@@ -30,13 +30,13 @@ public class CharacterListScreen extends ListPickerScreen {
 	 */
 	private boolean deleteMode;
 
-	private CharacterListScreen(List<String> ids, List<String> labels) {
+	private CharacterListScreen(List<String> ids, List<Component> labels) {
 		super(Component.translatable("gui.dndsheets.character_list.title"));
 		this.ids = ids;
 		this.labels = labels;
 	}
 
-	public static void open(List<String> ids, List<String> labels) {
+	public static void open(List<String> ids, List<Component> labels) {
 		Minecraft.getInstance().setScreen(new CharacterListScreen(ids, labels));
 	}
 
@@ -84,10 +84,15 @@ public class CharacterListScreen extends ListPickerScreen {
 	protected void buildRows() {
 		for (int i = 0; i < ids.size(); i++) {
 			String characterId = ids.get(i);
-			boolean active = labels.get(i).startsWith("▶");
+			//El personaje activo viene marcado con "▶" desde el servidor (ver BrowseActionMessage.listMine).
+			//Se sigue mirando el texto ya resuelto porque la marca es un simbolo, no una palabra: no cambia
+			//con el idioma.
+			boolean active = labels.get(i).getString().startsWith("▶");
 			ChatFormatting color = deleteMode ? ChatFormatting.RED : (active ? ChatFormatting.GREEN : ChatFormatting.GRAY);
-			String label = deleteMode ? "Borrar: " + labels.get(i) : labels.get(i);
-			addRow(Component.literal(label).withStyle(color),
+			Component label = deleteMode
+				? Component.translatable("gui.dndsheets.character_list.delete_row", labels.get(i))
+				: labels.get(i).copy();
+			addRow(label.copy().withStyle(color),
 				button -> DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(
 					deleteMode ? BrowseActionMessage.Action.DELETE : BrowseActionMessage.Action.SWITCH, characterId)));
 		}

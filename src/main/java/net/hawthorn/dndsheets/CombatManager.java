@@ -443,7 +443,7 @@ public class CombatManager {
 	//Un arma "two" (a dos manos de verdad, p.ej. mandoble) no se puede empuñar con nada más en la otra
 	//mano — a diferencia de la versátil, que solo pierde el dado grande y sigue atacando igual, esta
 	//directamente no ataca. Antes esto no se comprobaba en ningún lado (simplificación deliberada
-	//documentada en AUDIT.md) y llevar un escudo con un mandoble atacaba igual, solo con el dado chico.
+	// y llevar un escudo con un mandoble atacaba igual, solo con el dado chico.
 	private static boolean blockedByOffhand(IdentifiedWeapon weapon, boolean offhandEmpty) {
 		if (offhandEmpty || UNARMED_ID.equals(weapon.id())) return false;
 		Config.WeaponDefault weaponDefault = Config.weaponDefaultFor(weapon.id());

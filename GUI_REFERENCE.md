@@ -15,6 +15,7 @@ El mod usa la API de GUI **vanilla de Minecraft/Forge** (`net.minecraft.client.g
 Documentados una sola vez aquí; las pantallas que los usan solo indican qué instancia crean (posición/tamaño), no repiten su comportamiento.
 
 - `GuiStyle` (`client/gui/GuiStyle.java`) — colores y panel de fondo compartidos por toda pantalla plana sin textura propia.
+- `FormPanelScreen` (`client/gui/FormPanelScreen.java`) — **el panel sobre pergamino y su aritmética**: marco, título, filete, el tope `Math.max(44, ...)` que impide que se salga por arriba, las filas que se apilan y los `EditBox` con su etiqueta encima. No decide qué botones lleva abajo. De él cuelgan `SmallFormScreen` (que añade Confirmar/Cancelar/Borrar) y `SheetAdjustScreen` (que no los quiere). Ninguna pantalla concreta extiende ya `Screen` pelado: solo lo hacen las tres bases (`FormPanelScreen`, `ListPickerScreen`, `ModalDialogScreen`).
 - `TomeButton` (`client/gui/components/TomeButton.java`) — fila y botón con la identidad del mod: tira de pergamino sobre cuero, filete de latón a la izquierda y biselado de Minecraft. **Sustituye al botón gris de vanilla en todo el mod: no queda ni un `Button.builder` en `src/main/java`.** Las tres bases (`ListPickerScreen.addRow`, `SmallFormScreen`, `ModalDialogScreen.addModalButton`) cubren la mayoría, pero **seis pantallas fabrican los suyos a mano** —`SheetAdjustScreen` (10), `CharacterSheetScreen` (4), `CharacterListScreen` (3), `GrimoireScreen` (2), `RollEditorScreen` y `AdvancedRollEditorScreen`— y hay que convertirlas una a una. Al añadir un botón nuevo, usar `TomeButton.of(mensaje, onPress, x, y, w, h)`; `Button.builder(...)` sale gris y desentona.
 - `DirectionalCycleButton` **extiende `TomeButton`**, no `Button`: siendo un `Button` pelado se pintaba gris pese al rediseño. El foco se marca por **dos** vías —fondo y filete encendido, más texto aclarado— porque un solo cambio de tono sobre fondo oscuro no se distingue con brillo bajo. El texto se centra en el hueco que queda tras el filete, no en el botón entero, o quedaría descuadrado.
 - `ListPickerScreen` (`client/gui/ListPickerScreen.java`) — base para pantallas de lista/menú vertical de botones. Maneja la navegación "&lt; Atrás" (ver más abajo). Dibuja un filete de latón bajo el título: separa la cabecera sin gastar una fila entera de alto.
@@ -85,7 +86,7 @@ El estado llega **ya formateado desde el servidor** en todas: el cliente solo lo
 
 ## Registro de pantallas
 
-Solo 3 de las 25 pantallas son `AbstractContainerScreen` registradas como menú real (`init/DndsheetsModScreens.java`): `CharacterSheetScreen`, `RollEditorScreen`, `AdvancedRollEditorScreen`. El resto son `Screen` planas abiertas imperativamente vía un método estático `open(...)`.
+Solo 3 de las 51 pantallas son `AbstractContainerScreen` registradas como menú real (`init/DndsheetsModScreens.java`): `CharacterSheetScreen`, `RollEditorScreen`, `AdvancedRollEditorScreen`. El resto son `Screen` planas abiertas imperativamente vía un método estático `open(...)`.
 
 ---
 
@@ -236,7 +237,7 @@ Dos columnas de 9 filas cada una, separación vertical `SKILL_SEPARATION = 20`.
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/ModalDialogScreen.java`
 - **Tipo:** clase base abstracta, extiende `Screen`
-- **Propósito:** caja de diálogo de tamaño fijo centrada en pantalla; evita repetir el mismo esqueleto en cada diálogo modal (antes duplicado en `RestChoiceScreen`/`RestVoteScreen`/`DeathSaveScreen` — ver `AUDIT_TECHNICAL.md M-DUP-7`)
+- **Propósito:** caja de diálogo de tamaño fijo centrada en pantalla; evita repetir el mismo esqueleto en cada diálogo modal (antes duplicado en `RestChoiceScreen`/`RestVoteScreen`/`DeathSaveScreen` — ver `
 - **Constructor:** `ModalDialogScreen(Component title, int dialogWidth, int dialogHeight)`
 - **Geometría:** `dialogLeft() = (width - dialogWidth) / 2`, `dialogTop() = (height - dialogHeight) / 2`
 - **API para subclases:** `addModalButton(int x, int y, int width, int height, Component message, Button.OnPress onPress)` — x/y son relativos a la esquina superior izquierda del diálogo (`dialogLeft()+x`, `dialogTop()+y`), no a la pantalla completa. `renderPanel(guiGraphics)` — primera línea del `render()` de cada subclase: fondo borroso vanilla + panel `GuiStyle` del tamaño del diálogo (antes cada subclase hacía `renderBackground` suelto y solo `DeathSaveScreen` dibujaba panel propio).
@@ -466,7 +467,7 @@ Un nombre vacio no se manda: el servidor lo rechazaria igual, y un viaje de ida 
 ## SheetAdjustScreen
 
 - **Archivo:** `src/main/java/net/hawthorn/dndsheets/client/gui/SheetAdjustScreen.java`
-- **Tipo:** `Screen` (plana) — layout propio, no encaja en `ListPickerScreen`/`SmallFormScreen`; dibuja el panel `GuiStyle` directamente en `render()`; captura `parent = Minecraft.getInstance().screen` en `open()` y sobrescribe `onClose()` a mano (mismo mecanismo que `ListPickerScreen`, sin heredar de ella)
+- **Tipo:** `FormPanelScreen` — es un PANEL DE CONTROL, no un formulario: diez acciones independientes que se aplican cada una por su cuenta, sin ningún «Confirmar» único. Por eso no puede heredar de `SmallFormScreen`, cuyo contrato es rellenar y confirmar una vez. Comparte con ella el marco, las filas, los campos y el `tick` (ver `FormPanelScreen`); sobrescribe `formWidth()`=190, `rowHeight()`=26 y `titleBand()`=44 para caber en diez filas y una línea de PG/CA bajo el título
 - **Cómo se abre:** `SheetAdjustScreen.open(targetUuid, targetName, gold, slotsMax, slotsCurrent, hp, maxHp, ac)` — desde el Panel de DM tras elegir jugador en `PlayerPickerScreen` (que queda como `parent`)
 - **Textura de fondo:** ninguna — panel `GuiStyle.panel(...)` de `(centerX-WIDE_WIDTH/2-14, y0-40)` a `(centerX+WIDE_WIDTH/2+14, formBottom)`
 - **Tamaño del panel:** full-screen centrado; `centerX=width/2`, `y0 = height/2 - ROW_HEIGHT*6` (`ROW_HEIGHT=26`), `FIELD_WIDTH=90`, `WIDE_WIDTH=190`, `FIELD_HEIGHT=20`
@@ -827,7 +828,7 @@ Los widgets del panel principal se capturan **por diferencia** sobre `children()
 No es una florituría. La lista escrita a mano en `updateTabs` falló **dos veces**, y las dos igual:
 alguien añade un campo, no se acuerda de apuntarlo en el sitio lejano donde se oculta, y el campo se queda
 dibujado encima de Habilidades y Ataques — sin rótulo, sin hacer nada y sin que falle nada. Le pasó
-primero a la tanda entera (`AUDIT_UX.md`) y después a **Nivel, Hambre y el botón de Guía**, que se veían
+primero a la tanda entera (` y después a **Nivel, Hambre y el botón de Guía**, que se veían
 como dos recuadros vacíos junto al `+` de Ataques.
 
 Las otras dos pestañas no tienen este problema porque sus listas (`skillButtons`, `skillEditButtons`) las

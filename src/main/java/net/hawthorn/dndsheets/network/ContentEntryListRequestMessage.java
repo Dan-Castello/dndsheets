@@ -29,9 +29,7 @@ public class ContentEntryListRequestMessage {
 
 	public static void handler(ContentEntryListRequestMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		NetworkUtil.handleOnServer(context, () -> {
-			ServerPlayer dm = context.getSender();
-			if (dm == null || !dm.hasPermissions(2)) return;
+		NetworkUtil.handleOnServerAsDm(context, dm -> {
 
 			String arrayJson = ContentPackFile.readArrayText(message.type.dmCreatedFile());
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), new ContentEntryListMessage(message.type, arrayJson));

@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * <p>Selector de presets de clase: la lista (ids + nombres) la manda el servidor en
  * {@code PresetListMessage} (pedida por {@code PresetListRequestMessage} al pulsar "Presets" en la
- * hoja, o por un DM tras elegir a otro jugador en {@link PlayerPickerScreen} — ver AUDIT_UX.md, DM #2),
+ * hoja, o por un DM tras elegir a otro jugador en {@link PlayerPickerScreen},
  * porque el registro de presets solo vive en memoria del servidor. Elegir uno rellena la clase, el dado
  * de golpe y las características de la hoja — hay que cerrarla y reabrirla para verlo. {@code
  * targetUuid} vacío significa "aplícalo a mi propia hoja".</p>

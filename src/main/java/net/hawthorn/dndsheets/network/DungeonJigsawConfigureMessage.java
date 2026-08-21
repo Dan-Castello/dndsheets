@@ -37,11 +37,9 @@ public class DungeonJigsawConfigureMessage {
 
 	public static void handler(DungeonJigsawConfigureMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		NetworkUtil.handleOnServer(context, () -> {
-			ServerPlayer dm = context.getSender();
-			if (dm == null || !dm.hasPermissions(2)) return;
+		NetworkUtil.handleOnServerAsDm(context, dm -> {
 			if (!DungeonManager.isValidPoolName(message.pool)) {
-				dm.sendSystemMessage(Component.literal(DungeonManager.poolNameError(message.pool)));
+				dm.sendSystemMessage((DungeonManager.poolNameError(message.pool)));
 				return;
 			}
 

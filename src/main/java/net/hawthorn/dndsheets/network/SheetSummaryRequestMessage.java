@@ -40,7 +40,7 @@ public class SheetSummaryRequestMessage {
 			int gold = sheet.has("gold") ? sheet.get("gold").getAsInt() : 0;
 			int slotsMax = sheet.get("spellSlotsMax").getAsInt();
 			int slotsCurrent = sheet.get("spellSlotsCurrent").getAsInt();
-			//PG/CA reales del jugador (no de la hoja, que solo los refleja) — ver AUDIT_UX.md, DM #1: antes
+			//PG/CA reales del jugador (no de la hoja, que solo los refleja)
 			//de esto no había forma de consultarlos en pleno combate sin pedirle al propio jugador que
 			//abriera su hoja.
 			int hp = Math.round(target.getHealth());

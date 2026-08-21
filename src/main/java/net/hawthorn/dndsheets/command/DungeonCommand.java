@@ -76,7 +76,7 @@ public class DungeonCommand {
 		//comando era el único camino que dejaba pasar un pool con ".."/mayúsculas hasta DungeonManager,
 		//justo lo que isValidPoolName existe para bloquear (ver su comentario: path traversal en publish()).
 		if (!DungeonManager.isValidPoolName(pool)) {
-			ctx.getSource().sendFailure(Component.literal(DungeonManager.poolNameError(pool)));
+			ctx.getSource().sendFailure((DungeonManager.poolNameError(pool)));
 			return 0;
 		}
 
@@ -200,7 +200,7 @@ public class DungeonCommand {
 		//a construir un ResourceLocation inválido más abajo y reventaba con una excepción sin capturar en
 		//vez del mismo aviso limpio que ya daba la GUI.
 		if (!DungeonManager.isValidPoolName(pool)) {
-			ctx.getSource().sendFailure(Component.literal(DungeonManager.poolNameError(pool)));
+			ctx.getSource().sendFailure((DungeonManager.poolNameError(pool)));
 			return 0;
 		}
 

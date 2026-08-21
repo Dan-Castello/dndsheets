@@ -62,9 +62,7 @@ public class MonsterSaveTemplateMessage {
 
 	public static void handler(MonsterSaveTemplateMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		NetworkUtil.handleOnServer(context, () -> {
-			ServerPlayer dm = context.getSender();
-			if (dm == null || !dm.hasPermissions(2)) return;
+		NetworkUtil.handleOnServerAsDm(context, dm -> {
 			if (message.id.isBlank()) return;
 
 			Entity target = dm.level().getEntity(message.entityId);

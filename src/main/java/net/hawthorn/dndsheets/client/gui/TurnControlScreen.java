@@ -34,8 +34,8 @@ public class TurnControlScreen extends ListPickerScreen {
 			});
 		}
 
-		//Ver AUDIT_UX.md, DM #4: aplicar un efecto de estado (veneno, etc.) solo existía como
-		///dndturns effect tecleado a mano, sin GUI para elegir dado/duración.
+		//Aplicar un efecto de estado (veneno, etc.) solo existía como /dndturns effect tecleado a mano,
+		//sin GUI para elegir dado ni duración.
 		addRow(Component.translatable("gui.dndsheets.add_effect.title"), b ->
 			PlayerPickerScreen.open(Component.translatable("gui.dndsheets.turn_control.pick_effect_target"), AddTurnEffectScreen::open));
 	}

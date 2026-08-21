@@ -8,8 +8,8 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 //Cliente (el DM) -> servidor: formulario de AddTurnEffectScreen para el jugador elegido antes en
-//PlayerPickerScreen (equivalente en GUI a /dndturns effect — ver AUDIT_UX.md, DM #4: antes de esto solo
-//existía como comando tecleado a mano, sin GUI para duración).
+//PlayerPickerScreen (equivalente en GUI a /dndturns effect): antes de esto solo
+//existía como comando tecleado a mano, sin GUI para duración.
 public class TurnEffectApplyMessage {
 	String targetUuid, name, dice;
 	int turns;

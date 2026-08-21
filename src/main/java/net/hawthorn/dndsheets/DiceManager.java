@@ -75,6 +75,15 @@ public class DiceManager {
 	//modificador no cambia entre una tirada y otra. El crítico se detecta mirando el primer dado
 	//realmente tirado dentro de la tirada elegida (ver firstDieValue).
 	public static AttackRoll rollAttack(JsonObject sheet, String expression, Advantage advantage) {
+		//Una tirada de ataque tiene que TENER un dado. La libreria no rechaza una expresion que no entiende:
+		//le saca un numero igual, y ese numero entraba como si fuera el d20 — un dado mal escrito en un pack
+		//de contenido daba CRITICO AUTOMATICO cada vez que ese numero caia en 20. Se filtra con el mismo
+		//patron que ya usa el propio parser, asi que lo que aqui se considera "un dado" y lo que se tira
+		//despues no pueden separarse.
+		if (!DICE_NOTATION_PATTERN.matcher(expression.toLowerCase()).find()) {
+			return new AttackRoll(roll(sheet, expression), false, false);
+		}
+
 		RollOutcome first = roll(sheet, expression);
 		if (advantage == Advantage.NORMAL) return toAttackRoll(sheet, first);
 
@@ -94,6 +103,11 @@ public class DiceManager {
 	private static AttackRoll toAttackRoll(JsonObject sheet, RollOutcome outcome) {
 		if (outcome.result() == null) return new AttackRoll(outcome, false, false);
 		int natural = firstDieValue(outcome.result());
+		//Una tirada de ataque es SIEMPRE 1d20, asi que el dado natural solo puede caer entre 1 y 20. Fuera de
+		//ese rango no hubo d20: la libreria de dados no rechaza una expresion que no entiende, le saca un
+		//numero igual, y ese numero entraba aqui como si fuera el dado. Un dado mal escrito en un pack de
+		//contenido daba CRITICO AUTOMATICO cada vez que ese numero salia 20 o mas.
+		if (natural < 1 || natural > 20) return new AttackRoll(outcome, false, false);
 		//El 1 natural sigue siendo pifia pase lo que pase: ampliar el rango de crítico no estrecha el de
 		//fallo, y en 5e no hay nada que lo haga.
 		return new AttackRoll(outcome, natural >= criticalFrom(sheet), natural == 1);

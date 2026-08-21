@@ -30,9 +30,7 @@ public class DungeonPieceRemoveMessage {
 
 	public static void handler(DungeonPieceRemoveMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		NetworkUtil.handleOnServer(context, () -> {
-			ServerPlayer dm = context.getSender();
-			if (dm == null || !dm.hasPermissions(2)) return;
+		NetworkUtil.handleOnServerAsDm(context, dm -> {
 			if (DungeonPieceRegistry.get(message.id) == null) {
 				dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.no_such_piece", message.id));
 				return;
