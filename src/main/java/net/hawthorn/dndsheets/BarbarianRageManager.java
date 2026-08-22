@@ -84,7 +84,7 @@ public class BarbarianRageManager {
 	}
 
 	public static ItemStack buildRageItemStack() {
-		return AbilityItem.build(ItemLook.RAGE, "rage", Component.literal("Tótem de Furia"),
-			Component.literal("Clic derecho: entra en furia " + DURATION_ROUNDS + " asaltos.").withStyle(ChatFormatting.GRAY));
+		return AbilityItem.build(ItemLook.RAGE, "rage", Component.translatable("chat.dndsheets.rage.item_name"),
+			Component.translatable("chat.dndsheets.rage.item_lore", DURATION_ROUNDS).withStyle(ChatFormatting.GRAY));
 	}
 }

@@ -825,7 +825,13 @@ public class TurnManager {
 		Entity entity = level.getEntity(entry.entityId());
 		if (entity != null) {
 			movementAnchors.pin(level, entry.entityId(), entity.position());
-			if (entry.isMonster() && MonsterRegistry.statBlockOf(entity) == null) setCompatMobActive(entity, false);
+			//El criterio es "¿este mob tiene la IA encendida?", no "¿es de otro mod?". Antes eran lo mismo
+			//—los propios se invocaban SIEMPRE con NoAI— y dejaron de serlo con "ai": true en el bloque de
+			//monstruo (ver MonsterRegistry.keepsOwnAi): un NPC que patrulla o sigue al grupo tiene que
+			//quedarse quieto mientras no es su turno igual que cualquier otro, o se pasea por el combate
+			//entre turnos ajenos. Preguntar por la IA cubre los dos casos con una sola regla, y de paso
+			//incluye a un aliado con IA, que con el gate de isMonster se quedaba suelto.
+			if (entity instanceof Mob mob && !mob.isNoAi()) setCompatMobActive(entity, false);
 		}
 		clearGlow(level, entry);
 	}

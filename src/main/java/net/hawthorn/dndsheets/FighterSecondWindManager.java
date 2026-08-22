@@ -55,7 +55,7 @@ public class FighterSecondWindManager {
 	}
 
 	public static ItemStack buildSecondWindStack() {
-		return AbilityItem.build(ItemLook.SECOND_WIND, "secondWind", Component.literal("Segundo Aliento"),
-			Component.literal("Clic derecho: cura 1d10 + nivel. Una vez por descanso.").withStyle(ChatFormatting.GRAY));
+		return AbilityItem.build(ItemLook.SECOND_WIND, "secondWind", Component.translatable("chat.dndsheets.second_wind.item_name"),
+			Component.translatable("chat.dndsheets.second_wind.item_lore").withStyle(ChatFormatting.GRAY));
 	}
 }

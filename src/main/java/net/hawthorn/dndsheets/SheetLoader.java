@@ -740,6 +740,18 @@ public class SheetLoader {
 	 */
 	public static net.minecraft.world.entity.Entity spawnNpc(net.minecraft.server.level.ServerLevel level,
 			double x, double y, double z, String characterId, String baseEntityId) {
+		return spawnNpc(level, x, y, z, characterId, baseEntityId, false);
+	}
+
+	/**
+	 * @param keepsOwnAi deja viva la IA de la entidad base en vez de invocarla congelada. Es lo mismo que
+	 *                   {@code "ai": true} en un bloque de monstruo (ver {@code MonsterRegistry}): sirve
+	 *                   para las entidades de mods de NPC, que traen sus propios objetivos —patrullar,
+	 *                   seguir al grupo— y son inútiles congeladas. En combate manda el mod igual:
+	 *                   {@code TurnManager.freeze} apaga esa IA mientras dura el encuentro.
+	 */
+	public static net.minecraft.world.entity.Entity spawnNpc(net.minecraft.server.level.ServerLevel level,
+			double x, double y, double z, String characterId, String baseEntityId, boolean keepsOwnAi) {
 		JsonObject sheet = sheets.get(characterId);
 		if (sheet == null) return null;
 
@@ -755,7 +767,7 @@ public class SheetLoader {
 		entity.moveTo(x, y, z, 0, 0);
 		entity.setCustomName(Component.literal(name));
 		entity.setCustomNameVisible(true);
-		if (entity instanceof net.minecraft.world.entity.Mob mob) mob.setNoAi(true);
+		if (entity instanceof net.minecraft.world.entity.Mob mob) mob.setNoAi(!keepsOwnAi);
 		Combatant.tagAsCharacter(entity, characterId);
 
 		level.addFreshEntity(entity);

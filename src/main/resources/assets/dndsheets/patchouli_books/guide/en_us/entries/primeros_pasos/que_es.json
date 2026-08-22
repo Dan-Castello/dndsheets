@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.que_es",
+  "category": "dndsheets:primeros_pasos",
+  "icon": "minecraft:oak_sign",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.intro"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.roles"
+    }
+  ]
+}

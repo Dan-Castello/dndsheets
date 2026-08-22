@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.command;
 
 import com.google.gson.JsonObject;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -72,11 +73,17 @@ public class CharacterCommand {
 				.requires(source -> source.hasPermission(2))
 				.then(Commands.argument("id", StringArgumentType.word())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(npcIds(), builder))
-					.executes(ctx -> spawn(ctx, "minecraft:villager"))
+					.executes(ctx -> spawn(ctx, "minecraft:villager", false))
 					.then(Commands.argument("entidad", StringArgumentType.string())
 						.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
 							new String[]{"minecraft:villager", "minecraft:zombie", "minecraft:skeleton", "minecraft:armor_stand", "minecraft:iron_golem"}, builder))
-						.executes(ctx -> spawn(ctx, StringArgumentType.getString(ctx, "entidad")))))));
+						.executes(ctx -> spawn(ctx, StringArgumentType.getString(ctx, "entidad"), false))
+						//El tercer argumento solo tiene sentido con el segundo puesto: dejarle la IA a un
+						//aldeano vanilla es un aldeano que se va andando, y a una entidad de un mod de NPC
+						//es lo único que la hace servir para algo. Ver MonsterRegistry.keepsOwnAi.
+						.then(Commands.argument("ia", BoolArgumentType.bool())
+							.executes(ctx -> spawn(ctx, StringArgumentType.getString(ctx, "entidad"),
+								BoolArgumentType.getBool(ctx, "ia"))))))));
 	}
 
 	//Sugerencias de tab con los ids propios: sin esto habría que copiarlos a mano del /dndchar list, y son
@@ -141,7 +148,7 @@ public class CharacterCommand {
 		boolean wasNpc = SheetLoader.ownerOf(characterId, SheetLoader.getCharacterSheet(characterId)) == null;
 		String error = SheetLoader.deleteCharacter(player, characterId, ctx.getSource().hasPermission(2));
 		if (error != null) {
-			ctx.getSource().sendFailure(Component.literal("No se pudo borrar: ese personaje no existe o no es tuyo."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.character.delete_failed"));
 			return 0;
 		}
 		ctx.getSource().sendSuccess(() -> Component.literal("Personaje \"" + name + "\" borrado. Queda una copia en charactersheets/"
@@ -150,7 +157,7 @@ public class CharacterCommand {
 		//mob vanilla EN SILENCIO: sigue ahí, se le puede pegar, y ya no juega con ninguna regla. Decirlo es
 		//más honesto que dejar al DM descubrirlo en mitad de un combate.
 		if (wasNpc) {
-			ctx.getSource().sendSuccess(() -> Component.literal("Si su cuerpo sigue en el mundo, bórralo con la Vara de DM: sin ficha ya no juega con reglas.")
+			ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.character.delete_body_hint")
 				.withStyle(ChatFormatting.GRAY), false);
 		}
 		return 1;
@@ -175,11 +182,11 @@ public class CharacterCommand {
 		List<String> owned = SheetLoader.charactersOf(player.getStringUUID());
 
 		if (owned.isEmpty()) {
-			ctx.getSource().sendSuccess(() -> Component.literal("No tienes ningún personaje todavía.").withStyle(ChatFormatting.GRAY), false);
+			ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.character.none_yet").withStyle(ChatFormatting.GRAY), false);
 			return 0;
 		}
 
-		ctx.getSource().sendSuccess(() -> Component.literal("Tus personajes:").withStyle(ChatFormatting.GOLD), false);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.character.list_header").withStyle(ChatFormatting.GOLD), false);
 		for (String characterId : owned) {
 			JsonObject sheet = SheetLoader.getCharacterSheet(characterId);
 			String name = sheet != null && sheet.has("characterName") ? sheet.get("characterName").getAsString() : "(sin nombre)";
@@ -229,12 +236,12 @@ public class CharacterCommand {
 	 * porque un tabernero y un capitán de la guardia no deberían verse igual; por defecto un aldeano, que
 	 * es lo que más se parece a "una persona".</p>
 	 */
-	private static int spawn(CommandContext<CommandSourceStack> ctx, String baseEntityId) throws CommandSyntaxException {
+	private static int spawn(CommandContext<CommandSourceStack> ctx, String baseEntityId, boolean keepsOwnAi) throws CommandSyntaxException {
 		String characterId = StringArgumentType.getString(ctx, "id");
 		net.minecraft.world.phys.Vec3 pos = ctx.getSource().getPosition();
 		net.minecraft.server.level.ServerLevel level = ctx.getSource().getLevel();
 
-		net.minecraft.world.entity.Entity spawned = SheetLoader.spawnNpc(level, pos.x, pos.y, pos.z, characterId, baseEntityId);
+		net.minecraft.world.entity.Entity spawned = SheetLoader.spawnNpc(level, pos.x, pos.y, pos.z, characterId, baseEntityId, keepsOwnAi);
 		if (spawned == null) {
 			//Los dos motivos posibles se distinguen, en vez de un "no se pudo" que obliga a adivinar cuál es.
 			ctx.getSource().sendFailure(Component.literal(

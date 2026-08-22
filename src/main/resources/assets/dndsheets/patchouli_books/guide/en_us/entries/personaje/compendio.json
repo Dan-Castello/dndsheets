@@ -1,0 +1,12 @@
+{
+  "name": "gui.dndsheets.guide.entry.compendio",
+  "category": "dndsheets:personaje",
+  "icon": "minecraft:enchanted_book",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.compendium"
+    }
+  ]
+}

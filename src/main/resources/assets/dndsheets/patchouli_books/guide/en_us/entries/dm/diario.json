@@ -1,0 +1,12 @@
+{
+  "name": "gui.dndsheets.guide.entry.diario",
+  "category": "dndsheets:dm",
+  "icon": "minecraft:book",
+  "sortnum": 7,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_journal"
+    }
+  ]
+}

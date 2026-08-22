@@ -193,7 +193,7 @@ public class SheetCommand {
 	private static int setRoll(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		RollIndex.Category category = parseRollCategory(StringArgumentType.getString(ctx, "categoria"));
 		if (category == null) {
-			ctx.getSource().sendFailure(Component.literal("Categoría desconocida: usa checks, saves o skills."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.roll.unknown_category"));
 			return 0;
 		}
 

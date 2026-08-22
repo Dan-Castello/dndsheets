@@ -89,7 +89,16 @@ public class MonsterRegistry {
 		List<MonsterAttack> attacks, List<MonsterSpell> spells,
 		Map<String, String> damageAffinities, Map<String, String> nonmagicalAffinities,
 		CreatureType type, int legendaryResistances, int legendaryActions, int attacksPerTurn,
-		Appearance appearance
+		Appearance appearance,
+		//"ai": true deja viva la IA de la entidad base en vez de invocarla congelada. Existe para las
+		//entidades de mods de NPC (EasyNPC y compañía), que traen sus propios objetivos —patrullar, seguir
+		//al grupo, quedarse en su puesto— y son el motivo por el que baseEntityId acepta cualquier entidad
+		//instalada: sin esto, el setNoAi de spawnAt los mataba en el instante de aparecer y quedaban de
+		//adorno. En COMBATE sigue mandando el mod: TurnManager.freeze apaga esa IA mientras dura el
+		//encuentro y la devuelve al acabar, así que el monstruo resuelve su turno con las reglas de 5e
+		//(MonsterActionManager.autoAct) y no con la IA de vanilla. Es decir: la IA es para FUERA del
+		//combate, que es donde hoy no había nada.
+		boolean keepsOwnAi
 	) {
 		public int abilityModifier(String key) {
 			Integer score = abilities.get(key.toLowerCase(Locale.ROOT));
@@ -173,7 +182,7 @@ public class MonsterRegistry {
 		REGISTRY.replace(new MonsterStatBlock(block.id(), block.name(), entityId, block.ac(), block.maxHp(),
 			block.abilities(), block.proficiencyBonus(), block.attacks(), block.spells(), block.damageAffinities(),
 			block.nonmagicalAffinities(), block.type(), block.legendaryResistances(), block.legendaryActions(),
-			block.attacksPerTurn(), block.appearance()));
+			block.attacksPerTurn(), block.appearance(), block.keepsOwnAi()));
 		return true;
 	}
 
@@ -221,6 +230,7 @@ public class MonsterRegistry {
 		int ac = json.has("ac") ? json.get("ac").getAsInt() : 10;
 		int hp = json.has("hp") ? json.get("hp").getAsInt() : 1;
 		int prof = json.has("proficiencyBonus") ? json.get("proficiencyBonus").getAsInt() : 2;
+		boolean keepsOwnAi = json.has("ai") && json.get("ai").getAsBoolean();
 
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		JsonObject abilitiesJson = json.has("abilities") ? json.getAsJsonObject("abilities") : null;
@@ -273,7 +283,7 @@ public class MonsterRegistry {
 		int attacksPerTurn = json.has("multiattack") ? Math.max(1, Math.min(6, json.get("multiattack").getAsInt())) : 1;
 		Appearance appearance = parseAppearance(json.has("appearance") ? json.getAsJsonObject("appearance") : null);
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, appearance);
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, appearance, keepsOwnAi);
 	}
 
 	private static Map<String, String> readAffinities(JsonObject json, String field) {
@@ -317,6 +327,7 @@ public class MonsterRegistry {
 		if (block.legendaryActions() > 0) json.addProperty("legendaryActions", block.legendaryActions());
 		if (block.attacksPerTurn() > 1) json.addProperty("multiattack", block.attacksPerTurn());
 		json.addProperty("baseEntity", block.baseEntityId());
+		if (block.keepsOwnAi()) json.addProperty("ai", true);
 		json.addProperty("ac", block.ac());
 		json.addProperty("hp", block.maxHp());
 		json.addProperty("proficiencyBonus", block.proficiencyBonus());
@@ -529,7 +540,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		for (String key : Combatant.ABILITIES) abilities.put(key, 10);
 
-		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0, 1, Appearance.DEFAULT));
+		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0, 1, Appearance.DEFAULT, false));
 		return spawnAt(level, x, y, z, id);
 	}
 
@@ -572,7 +583,8 @@ public class MonsterRegistry {
 		entity.moveTo(x, y, z, 0, 0);
 		entity.setCustomName(Component.literal(block.name()));
 		entity.setCustomNameVisible(true);
-		if (entity instanceof Mob mob) mob.setNoAi(true);
+		//Congelado salvo que el bloque pida lo contrario con "ai": true — ver keepsOwnAi.
+		if (entity instanceof Mob mob) mob.setNoAi(!block.keepsOwnAi());
 		applyAppearance(entity, block.appearance());
 		tagAsMonster(entity, monsterId, block.maxHp());
 		if (configure != null) configure.accept(entity);

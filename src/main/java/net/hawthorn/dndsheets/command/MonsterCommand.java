@@ -251,7 +251,7 @@ public class MonsterCommand {
 	private static int addAttack(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		Entity target = EntityArgument.getEntity(ctx, "objetivo");
 		if (MonsterRegistry.statBlockOf(target) == null) {
-			ctx.getSource().sendFailure(Component.literal("Ese objetivo no es un monstruo invocado por /dndmonsters."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.monster.not_summoned"));
 			return 0;
 		}
 
@@ -303,13 +303,13 @@ public class MonsterCommand {
 		CompoundTag dndTag = new CompoundTag();
 		dndTag.putBoolean("dmtool", true);
 		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.literal("Vara de DM"));
+		stack.setHoverName(Component.translatable("chat.dndsheets.monster.wand_item_name"));
 
 		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
 		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.literal("Clic derecho en un monstruo invocado: menú de sus ataques/hechizos.").withStyle(net.minecraft.ChatFormatting.GRAY))));
+			Component.translatable("chat.dndsheets.monster.wand_item_lore").withStyle(net.minecraft.ChatFormatting.GRAY))));
 		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.literal("Agachado + clic derecho en un monstruo o armor stand: lo borra.").withStyle(net.minecraft.ChatFormatting.GRAY))));
+			Component.translatable("chat.dndsheets.monster.wand_item_lore2").withStyle(net.minecraft.ChatFormatting.GRAY))));
 		stack.getOrCreateTagElement("display").put("Lore", lore);
 
 		return stack;
@@ -333,13 +333,13 @@ public class MonsterCommand {
 		CompoundTag dndTag = new CompoundTag();
 		dndTag.putBoolean("movetool", true);
 		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.literal("Vara de Movimiento"));
+		stack.setHoverName(Component.translatable("chat.dndsheets.monster.move_item_name"));
 
 		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
 		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.literal("Clic derecho en un monstruo invocado: lo selecciona.").withStyle(net.minecraft.ChatFormatting.GRAY))));
+			Component.translatable("chat.dndsheets.monster.move_item_lore").withStyle(net.minecraft.ChatFormatting.GRAY))));
 		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
-			Component.literal("Clic derecho en un bloque: mueve ahí al monstruo seleccionado.").withStyle(net.minecraft.ChatFormatting.GRAY))));
+			Component.translatable("chat.dndsheets.monster.move_item_lore2").withStyle(net.minecraft.ChatFormatting.GRAY))));
 		stack.getOrCreateTagElement("display").put("Lore", lore);
 
 		return stack;

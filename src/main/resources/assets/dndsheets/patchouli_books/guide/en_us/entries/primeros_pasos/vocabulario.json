@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.vocabulario",
+  "category": "dndsheets:primeros_pasos",
+  "icon": "minecraft:book",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.glossary_1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.glossary_2"
+    }
+  ]
+}

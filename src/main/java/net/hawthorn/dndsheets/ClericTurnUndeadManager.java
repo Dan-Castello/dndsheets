@@ -113,7 +113,7 @@ public class ClericTurnUndeadManager {
 	}
 
 	public static ItemStack buildTurnUndeadStack() {
-		return AbilityItem.build(ItemLook.TURN_UNDEAD, "turnUndead", Component.literal("Símbolo Sagrado"),
-			Component.literal("Clic derecho: los no-muertos cercanos huyen si fallan una salvación. Una vez por descanso.").withStyle(ChatFormatting.GRAY));
+		return AbilityItem.build(ItemLook.TURN_UNDEAD, "turnUndead", Component.translatable("chat.dndsheets.turn_undead.item_name"),
+			Component.translatable("chat.dndsheets.turn_undead.item_lore").withStyle(ChatFormatting.GRAY));
 	}
 }

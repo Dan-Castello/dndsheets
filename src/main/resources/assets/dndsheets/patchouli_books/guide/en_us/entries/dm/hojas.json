@@ -2,7 +2,7 @@
   "name": "gui.dndsheets.guide.entry.hojas",
   "category": "dndsheets:dm",
   "icon": "minecraft:name_tag",
-  "sortnum": 5,
+  "sortnum": 6,
   "pages": [
     {
       "type": "patchouli:text",

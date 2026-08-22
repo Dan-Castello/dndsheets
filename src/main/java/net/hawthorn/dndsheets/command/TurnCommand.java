@@ -64,7 +64,7 @@ public class TurnCommand {
 
 	private static int start(CommandContext<CommandSourceStack> ctx, double radius) {
 		int count = TurnManager.startAt(ctx.getSource().getLevel(), ctx.getSource().getPosition(), radius);
-		if (count == 0) ctx.getSource().sendFailure(Component.literal("No hay jugadores ni monstruos invocados en ese radio."));
+		if (count == 0) ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.turn.nobody_in_radius"));
 		return count;
 	}
 

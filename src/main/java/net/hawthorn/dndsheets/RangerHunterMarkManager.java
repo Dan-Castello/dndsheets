@@ -65,7 +65,7 @@ public class RangerHunterMarkManager {
 	}
 
 	public static ItemStack buildHunterMarkStack() {
-		return AbilityItem.build(ItemLook.HUNTERS_MARK, "hunterMark", Component.literal("Marca del Cazador"),
-			Component.literal("Clic derecho en un objetivo: +1d6 de daño al golpearlo con armas.").withStyle(ChatFormatting.GRAY));
+		return AbilityItem.build(ItemLook.HUNTERS_MARK, "hunterMark", Component.translatable("chat.dndsheets.hunter_mark.item_name"),
+			Component.translatable("chat.dndsheets.hunter_mark.item_lore").withStyle(ChatFormatting.GRAY));
 	}
 }

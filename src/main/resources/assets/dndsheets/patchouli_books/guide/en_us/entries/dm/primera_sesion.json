@@ -1,0 +1,20 @@
+{
+  "name": "gui.dndsheets.guide.entry.primera_sesion",
+  "category": "dndsheets:dm",
+  "icon": "minecraft:lantern",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_first_1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_first_2"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_first_3"
+    }
+  ]
+}

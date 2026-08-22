@@ -9,7 +9,9 @@ import net.hawthorn.dndsheets.SheetLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
 
@@ -263,9 +265,17 @@ public class BrowseActionMessage {
 	}
 
 	/**
-	 * <p>Vista de grupo: cada jugador conectado con el personaje que lleva puesto, sus PG y CA reales y sus
-	 * condiciones activas. Los PG y la CA salen del {@link Combatant}, no de la hoja, porque la hoja solo
-	 * los refleja — y esto se mira en mitad de un combate, cuando lo que importa es el número de verdad.</p>
+	 * <p>Vista de grupo: cada jugador conectado con el personaje que lleva puesto, y cada PNJ con cuerpo en
+	 * el mundo, con sus PG y CA reales y sus condiciones activas. Los PG y la CA salen del
+	 * {@link Combatant}, no de la hoja, porque la hoja solo los refleja — y esto se mira en mitad de un
+	 * combate, cuando lo que importa es el número de verdad.</p>
+	 *
+	 * <p>Los PNJ entran aquí porque juegan con las reglas completas de un PJ (ver
+	 * {@code Combatant.NpcCombatant}) y no salían en ninguna lista: para saber cómo iba el que acompaña al
+	 * grupo había que ir a buscarlo y mirarlo. Se recorren las <b>entidades cargadas</b> y no las fichas
+	 * ({@code SheetLoader.npcIds}) a propósito — una ficha sin cuerpo no está en la partida, y un PNJ con
+	 * dos cuerpos son dos cosas distintas que atender. El recorrido se paga al abrir un menú, nunca en un
+	 * bucle de combate, que es el mismo criterio con el que {@code npcIds} recorre todas las hojas.</p>
 	 */
 	private static void sendParty(ServerPlayer dm) {
 		List<String> ids = new ArrayList<>();
@@ -274,28 +284,44 @@ public class BrowseActionMessage {
 		for (ServerPlayer player : dm.server.getPlayerList().getPlayers()) {
 			Combatant combatant = Combatant.of(player);
 			if (combatant == null) continue; //Sin hoja cargada todavía: no hay nada que enseñar de él.
-
-			StringBuilder label = new StringBuilder(combatant.name())
-				.append(" · PG ").append(combatant.currentHp()).append('/').append(combatant.maxHp())
-				.append(" · CA ").append(combatant.armorClass());
-
-			//Las condiciones son lo que un DM necesita ver de un vistazo y lo que hoy no se ve en ningún
-			//sitio sin abrir la ficha de cada uno por separado.
-			if (!combatant.conditions().isEmpty()) {
-				label.append(" · ");
-				boolean first = true;
-				for (Condition condition : combatant.conditions()) {
-					if (!first) label.append(", ");
-					label.append(condition.label());
-					first = false;
-				}
-			}
-
 			ids.add(player.getStringUUID());
-			labels.add(Component.literal(label.toString()));
+			labels.add(partyRow(combatant));
+		}
+
+		for (ServerLevel level : dm.server.getAllLevels()) {
+			for (Entity entity : level.getAllEntities()) {
+				String characterId = Combatant.characterIdOf(entity);
+				if (characterId == null) continue;
+				//Ficha borrada con el cuerpo todavía en el mundo: Combatant.of cae a monstruo o a null. Sin
+				//ficha ya no es un PNJ, así que tampoco es del grupo.
+				if (!(Combatant.of(entity) instanceof Combatant.NpcCombatant combatant)) continue;
+				ids.add(characterId);
+				labels.add(partyRow(combatant).copy()
+					.append(Component.translatable("gui.dndsheets.party.npc_tag").withStyle(ChatFormatting.DARK_GRAY)));
+			}
 		}
 
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm),
 			new BrowseListMessage(BrowseListMessage.Kind.PARTY, ids, labels));
+	}
+
+	/** Una fila del grupo: nombre, PG, CA y las condiciones que lleva encima. */
+	private static Component partyRow(Combatant combatant) {
+		StringBuilder label = new StringBuilder(combatant.name())
+			.append(" · PG ").append(combatant.currentHp()).append('/').append(combatant.maxHp())
+			.append(" · CA ").append(combatant.armorClass());
+
+		//Las condiciones son lo que un DM necesita ver de un vistazo y lo que si no no se ve en ningún
+		//sitio sin abrir la ficha de cada uno por separado.
+		if (!combatant.conditions().isEmpty()) {
+			label.append(" · ");
+			boolean first = true;
+			for (Condition condition : combatant.conditions()) {
+				if (!first) label.append(", ");
+				label.append(condition.label());
+				first = false;
+			}
+		}
+		return Component.literal(label.toString());
 	}
 }

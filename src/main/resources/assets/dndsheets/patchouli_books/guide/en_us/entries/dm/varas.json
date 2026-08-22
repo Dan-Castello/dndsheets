@@ -2,7 +2,7 @@
   "name": "gui.dndsheets.guide.entry.varas",
   "category": "dndsheets:dm",
   "icon": "minecraft:stick",
-  "sortnum": 1,
+  "sortnum": 2,
   "pages": [
     {
       "type": "patchouli:text",

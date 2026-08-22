@@ -113,7 +113,7 @@ public class BardInspirationManager {
 	}
 
 	public static ItemStack buildInspirationStack() {
-		return AbilityItem.build(ItemLook.INSPIRATION, "bardicInspiration", Component.literal("Cuerno de Inspiración"),
-			Component.literal("Clic derecho en OTRO jugador: le da un dado de inspiración.").withStyle(ChatFormatting.GRAY));
+		return AbilityItem.build(ItemLook.INSPIRATION, "bardicInspiration", Component.translatable("chat.dndsheets.inspiration.item_name"),
+			Component.translatable("chat.dndsheets.inspiration.item_lore").withStyle(ChatFormatting.GRAY));
 	}
 }

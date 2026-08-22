@@ -71,7 +71,7 @@ public class MagicItemCommand {
 
 	private static int list(CommandContext<CommandSourceStack> ctx) {
 		if (MagicItemRegistry.ids().isEmpty()) {
-			ctx.getSource().sendFailure(Component.literal("No hay ningún objeto mágico cargado."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.magic.none_loaded"));
 			return 0;
 		}
 		ctx.getSource().sendSuccess(() -> Component.literal("Objetos mágicos cargados: " + MagicItemRegistry.ids().size())
@@ -89,7 +89,7 @@ public class MagicItemCommand {
 	private static int info(CommandContext<CommandSourceStack> ctx) {
 		MagicItemRegistry.MagicItem item = MagicItemRegistry.get(StringArgumentType.getString(ctx, "id"));
 		if (item == null) {
-			ctx.getSource().sendFailure(Component.literal("No existe ese objeto mágico."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.magic.no_such_item"));
 			return 0;
 		}
 		ctx.getSource().sendSuccess(() -> Component.literal(item.name() + " — " + item.rarity()
@@ -105,7 +105,7 @@ public class MagicItemCommand {
 		String id = StringArgumentType.getString(ctx, "id");
 		MagicItemRegistry.MagicItem item = MagicItemRegistry.get(id);
 		if (item == null) {
-			ctx.getSource().sendFailure(Component.literal("No existe ese objeto mágico."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.magic.no_such_item"));
 			return 0;
 		}
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
@@ -130,7 +130,7 @@ public class MagicItemCommand {
 		String id = StringArgumentType.getString(ctx, "id");
 		MagicItemRegistry.MagicItem magicItem = MagicItemRegistry.get(id);
 		if (magicItem == null) {
-			ctx.getSource().sendFailure(Component.literal("No existe ese objeto mágico."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.magic.no_such_item"));
 			return 0;
 		}
 		Item base = ForgeRegistries.ITEMS.getValue(ResourceLocation.tryParse(magicItem.itemId()));

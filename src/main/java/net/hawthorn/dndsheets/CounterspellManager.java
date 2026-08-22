@@ -77,7 +77,7 @@ public class CounterspellManager {
 	}
 
 	public static ItemStack buildCounterspellStack() {
-		return AbilityItem.build(ItemLook.COUNTERSPELL, "counterspellSpell", Component.literal("Contrahechizo"),
-			Component.literal("Clic derecho: listo para anular el próximo hechizo que veas lanzar cerca.").withStyle(ChatFormatting.GRAY));
+		return AbilityItem.build(ItemLook.COUNTERSPELL, "counterspellSpell", Component.translatable("chat.dndsheets.counterspell.item_name"),
+			Component.translatable("chat.dndsheets.counterspell.item_lore").withStyle(ChatFormatting.GRAY));
 	}
 }

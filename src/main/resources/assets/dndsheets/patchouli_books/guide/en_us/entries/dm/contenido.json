@@ -2,7 +2,7 @@
   "name": "gui.dndsheets.guide.entry.contenido",
   "category": "dndsheets:dm",
   "icon": "minecraft:writable_book",
-  "sortnum": 4,
+  "sortnum": 5,
   "pages": [
     {
       "type": "patchouli:text",
@@ -10,7 +10,19 @@
     },
     {
       "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_content_packs_2"
+    },
+    {
+      "type": "patchouli:text",
       "text": "gui.dndsheets.guide.page.dm_more_packs"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_npc_ai"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_npc_ai_2"
     }
   ]
 }

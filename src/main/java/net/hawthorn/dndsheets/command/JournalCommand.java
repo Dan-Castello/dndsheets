@@ -103,7 +103,7 @@ public class JournalCommand {
 
 		JournalManager.Entry entry = JournalManager.publishFromBook(dm, book, title);
 		if (entry == null) {
-			ctx.getSource().sendFailure(Component.literal("El libro está en blanco: escribe algo antes de publicarlo."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.journal.blank_book"));
 			return 0;
 		}
 		ctx.getSource().sendSuccess(() -> Component.literal("Publicado \"" + entry.title() + "\" [" + entry.id()
@@ -116,7 +116,7 @@ public class JournalCommand {
 		String id = StringArgumentType.getString(ctx, "id");
 		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
 		if (!JournalManager.share(id, targets)) {
-			ctx.getSource().sendFailure(Component.literal("No existe esa entrada."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.journal.no_entry"));
 			return 0;
 		}
 		JournalManager.Entry entry = JournalManager.get(id);
@@ -131,7 +131,7 @@ public class JournalCommand {
 	private static int setParty(CommandContext<CommandSourceStack> ctx, boolean party) {
 		String id = StringArgumentType.getString(ctx, "id");
 		if (!JournalManager.setParty(id, party)) {
-			ctx.getSource().sendFailure(Component.literal("No existe esa entrada."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.journal.no_entry"));
 			return 0;
 		}
 		ctx.getSource().sendSuccess(() -> Component.literal(party
@@ -142,10 +142,10 @@ public class JournalCommand {
 	private static int delete(CommandContext<CommandSourceStack> ctx) {
 		String id = StringArgumentType.getString(ctx, "id");
 		if (!JournalManager.delete(id)) {
-			ctx.getSource().sendFailure(Component.literal("No existe esa entrada."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.journal.no_entry"));
 			return 0;
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Entrada borrada."), false);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.journal.deleted"), false);
 		return 1;
 	}
 }

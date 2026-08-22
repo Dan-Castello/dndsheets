@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.empezar",
+  "category": "dndsheets:primeros_pasos",
+  "icon": "minecraft:compass",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.first_ten"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.first_combat"
+    }
+  ]
+}

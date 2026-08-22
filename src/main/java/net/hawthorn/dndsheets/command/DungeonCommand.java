@@ -102,7 +102,7 @@ public class DungeonCommand {
 		DungeonManager.Imported structure = imported.get();
 		BlockPos at = BlockPos.containing(ctx.getSource().getPosition());
 		if (!DungeonManager.place(level, structure.structureId(), at)) {
-			ctx.getSource().sendFailure(Component.literal("La estructura se importó pero no se pudo pegar aquí."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.dungeon.paste_failed"));
 			return 0;
 		}
 
@@ -152,7 +152,7 @@ public class DungeonCommand {
 	private static int list(CommandContext<CommandSourceStack> ctx) {
 		List<DungeonPieceRegistry.DungeonPiece> pieces = DungeonPieceRegistry.all();
 		if (pieces.isEmpty()) {
-			ctx.getSource().sendSuccess(() -> Component.literal("No hay piezas de mazmorra registradas."), false);
+			ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.dungeon.no_pieces"), false);
 			return 0;
 		}
 
@@ -184,7 +184,7 @@ public class DungeonCommand {
 			return 0;
 		}
 
-		ctx.getSource().sendSuccess(() -> Component.literal("Pools de mazmorra publicados y recargados."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.dungeon.published"), true);
 		return 1;
 	}
 

@@ -39,6 +39,8 @@ public class JsonContentSelfTest {
 		checkMonsterSkins();
 		checkItemLooks();
 		checkPatchouliBook();
+		checkGuideLayout();
+		checkKeepsOwnAi();
 		checkVanillaIds();
 		checkMagicItems();
 		checkTraits(); //Antes de checkPresets(): el preset de monje concede este rasgo por id.
@@ -728,15 +730,40 @@ public class JsonContentSelfTest {
 		}
 		assertTrue(!categories.isEmpty(), "el libro no tiene ninguna categoría");
 
-		//Las páginas que el libro escrito enumera, que es la lista de verdad: GuideBook.java.
+		//Las páginas que el libro escrito enumera, que es la lista de verdad: GuideBook.java. Y no solo
+		//CUÁLES, también cómo están agrupadas y en qué orden: desde que el libro escrito se parte en los
+		//mismos capítulos y entradas que el de Patchouli, que las dos listas contengan las mismas páginas
+		//ya no basta — pueden repartirlas distinto y enseñarle dos libros diferentes al mismo lector,
+		//según tenga Patchouli instalado o no.
 		String guide = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"client", "gui", "GuideBook.java"));
+		java.util.Map<String, String> entryChapter = new java.util.LinkedHashMap<>();
+		java.util.Map<String, List<String>> entryPages = new java.util.LinkedHashMap<>();
 		java.util.Set<String> written = new java.util.HashSet<>();
-		java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"(gui\\.dndsheets\\.guide\\.page\\.[a-z_0-9]+)\"").matcher(guide);
-		while (m.find()) written.add(m.group(1));
+		String chapter = null;
+		String current = null;
+		java.util.regex.Matcher m = java.util.regex.Pattern
+			.compile("\"gui\\.dndsheets\\.guide\\.(cat|entry|page)\\.([a-z_0-9]+)\"").matcher(guide);
+		while (m.find()) {
+			switch (m.group(1)) {
+				case "cat" -> chapter = m.group(2);
+				case "entry" -> {
+					current = m.group(2);
+					assertTrue(chapter != null, "la entrada " + current + " de GuideBook no cuelga de ninguna categoría");
+					entryChapter.put(current, chapter);
+					entryPages.put(current, new java.util.ArrayList<>());
+				}
+				default -> {
+					assertTrue(current != null, "la página " + m.group(2) + " de GuideBook no está en ninguna entrada");
+					entryPages.get(current).add("gui.dndsheets.guide.page." + m.group(2));
+					written.add("gui.dndsheets.guide.page." + m.group(2));
+				}
+			}
+		}
 		assertTrue(written.size() >= 26, "GuideBook debería enumerar las páginas de la Guía, encontré " + written.size());
 
 		java.util.Map<String, String> placed = new java.util.HashMap<>();
+		java.util.Set<String> filed = new java.util.HashSet<>();
 		int entries = 0;
 		try (java.util.stream.Stream<Path> files = Files.walk(root.resolve("entries"))) {
 			for (Path file : files.filter(p -> p.toString().endsWith(".json")).sorted().toList()) {
@@ -745,16 +772,32 @@ public class JsonContentSelfTest {
 				String category = entry.get("category").getAsString();
 				assertTrue(category.startsWith("dndsheets:") && categories.contains(category.substring(10)),
 					file.getFileName() + " apunta a la categoría \"" + category + "\", que no existe");
+
+				//El nombre del archivo ES el de la entrada en GuideBook: entries/dm/varas.json va con
+				//"gui.dndsheets.guide.entry.varas". Sin esa convención no hay forma de emparejarlas.
+				String name = file.getFileName().toString().replace(".json", "");
+				filed.add(name);
+				assertTrue(entryPages.containsKey(name), "la entrada " + name + " de Patchouli no está en GuideBook");
+				assertTrue(category.equals("dndsheets:" + entryChapter.get(name)), name + " está en la categoría "
+					+ category + " en Patchouli y en " + entryChapter.get(name) + " en GuideBook");
+
+				List<String> here = new java.util.ArrayList<>();
 				for (JsonElement page : entry.getAsJsonArray("pages")) {
 					String key = page.getAsJsonObject().get("text").getAsString();
+					here.add(key);
 					assertTrue(written.contains(key), key + " (en " + file.getFileName() + ") no es una página de la Guía");
 					String before = placed.put(key, file.getFileName().toString());
 					assertTrue(before == null, key + " está en dos entradas: " + before + " y " + file.getFileName());
 				}
+				assertTrue(here.equals(entryPages.get(name)), name + " lleva otras páginas, o en otro orden, en"
+					+ " GuideBook " + entryPages.get(name) + " que en Patchouli " + here);
 			}
 		}
 		for (String key : written) {
 			assertTrue(placed.containsKey(key), key + " está en el libro escrito pero en ninguna entrada de Patchouli");
+		}
+		for (String name : entryPages.keySet()) {
+			assertTrue(filed.contains(name), "la entrada " + name + " de GuideBook no tiene archivo en Patchouli");
 		}
 
 		//Y que las claves nuevas (títulos de categoría y entrada) estén traducidas: checkLanguageFiles
@@ -765,8 +808,123 @@ public class JsonContentSelfTest {
 		for (String category : categories) {
 			assertTrue(lang.has("gui.dndsheets.guide.cat." + category), "falta el nombre de la categoría " + category);
 		}
+		//Los títulos de entrada los pide GuideBook por variable (entry.titleKey()), así que
+		//checkTranslationKeysExist —que solo ve Component.translatable("literal")— no los alcanza.
+		for (String name : entryPages.keySet()) {
+			assertTrue(lang.has("gui.dndsheets.guide.entry." + name), "falta el nombre de la entrada " + name);
+		}
+		assertTrue(lang.has("gui.dndsheets.guide.index") && lang.has("gui.dndsheets.guide.back"),
+			"faltan el título del índice o el enlace de vuelta del libro escrito");
+
+		//Y que cada página quepa donde se lee. Una página de Patchouli que se pasa NO se recorta con
+		//puntos suspensivos ni se parte en dos: lo que sobra desaparece, nada avisa, y solo se descubre
+		//comparando el texto del archivo con el de la pantalla. Ya había pasado — "subir de nivel" medía
+		//704 caracteres y enseñaba poco más de la mitad. El libro escrito sí parte solo lo que se pase
+		//(GuideBook.wrap), así que este tope existe por Patchouli, que es el que no puede.
+		//ponytail: 320 sale de medir el ancho de página de Patchouli, no de su código. Si alguna vez se
+		//ve una página cortada por debajo de ese número, se baja el tope; no hay forma de calcularlo
+		//desde aquí sin arrancar el juego.
+		for (String file : new String[] { "es_es", "en_us" }) {
+			JsonObject texts = JsonParser.parseString(Files.readString(
+				Path.of("src", "main", "resources", "assets", "dndsheets", "lang", file + ".json"))).getAsJsonObject();
+			for (String key : written) {
+				assertTrue(texts.has(key), file + " no traduce la página " + key);
+				int length = texts.get(key).getAsString().length();
+				assertTrue(length <= 320, key + " mide " + length + " caracteres en " + file
+					+ ": no cabe en una página de Patchouli, pártela en dos claves");
+			}
+		}
+
 		System.out.println("checkPatchouliBook: OK, " + entries + " entradas en " + categories.size()
 			+ " categorías cubren las " + written.size() + " páginas de la Guía.");
+	}
+
+	/**
+	 * <p>El reparto en páginas del libro escrito de la Guía. Importa más de lo que parece: de cuántas
+	 * páginas ocupe el índice depende el número al que salta CADA una de sus filas, así que una línea de
+	 * más manda todos los enlaces a la página equivocada — y no falla nada, simplemente se abre otra.</p>
+	 */
+	private static void checkGuideLayout() {
+		List<String> lines = new java.util.ArrayList<>();
+		for (int i = 0; i < 25; i++) lines.add("linea" + i);
+
+		//Primera página más corta (ahí va el título de la entrada), el resto enteras: 10 + 12 + 3.
+		List<String> chunks = net.hawthorn.dndsheets.client.gui.GuideLayout.wrap(lines, 10, 12);
+		assertTrue(chunks.size() == 3, "25 líneas en páginas de 10 y 12 son 3 páginas, no " + chunks.size());
+		assertTrue(chunks.get(0).split(" ").length == 10 && chunks.get(1).split(" ").length == 12,
+			"las páginas llenas no llegan a su límite: " + chunks.get(0).split(" ").length + " y "
+				+ chunks.get(1).split(" ").length);
+		//Lo que más duele si se rompe: texto perdido por el camino, que es justo lo que esto vino a
+		//arreglar. Se compara el texto entero, no el número de trozos.
+		assertTrue(String.join(" ", chunks).equals(String.join(" ", lines)), "wrap perdió o repitió texto");
+
+		//Un texto que acaba justo en el límite no deja una página en blanco detrás.
+		assertTrue(net.hawthorn.dndsheets.client.gui.GuideLayout.wrap(lines.subList(0, 10), 10, 12).size() == 1,
+			"un texto que cabe justo debería ocupar una sola página");
+
+		//El índice: filas de altura 1 salvo un título que ocupa dos, en páginas de 14 líneas.
+		List<Integer> heights = new java.util.ArrayList<>();
+		for (int i = 0; i < 20; i++) heights.add(i == 5 ? 2 : 1);
+		List<Integer> pages = net.hawthorn.dndsheets.client.gui.GuideLayout.paginate(heights, 14);
+		int rows = 0;
+		int at = 0;
+		for (int size : pages) {
+			int tall = 0;
+			for (int i = at; i < at + size; i++) tall += heights.get(i);
+			assertTrue(tall <= 14, "una página del índice se pasa de 14 líneas: " + tall);
+			at += size;
+			rows += size;
+		}
+		assertTrue(rows == heights.size(), "el índice perdió filas al paginarse: " + rows + " de " + heights.size());
+		assertTrue(pages.size() == 2, "21 líneas de índice caben en 2 páginas, no en " + pages.size());
+
+		System.out.println("checkGuideLayout: OK, el libro escrito parte las páginas largas y el índice"
+			+ " enlaza a la página que es.");
+	}
+
+	/**
+	 * <p>{@code "ai": true} deja viva la IA de la entidad base al invocarla, para que las entidades de un
+	 * mod de NPC sirvan de algo (patrullar, seguir al grupo) en vez de aparecer congeladas. Tres cosas
+	 * tienen que seguir siendo verdad a la vez, y cada una se rompe sola:</p>
+	 *
+	 * <ul>
+	 *   <li>que el campo se lea y se escriba, y que <b>por defecto sea false</b> — un pack ya escrito no
+	 *       puede cambiar de comportamiento por añadir un campo (invariante 8);</li>
+	 *   <li>que {@code spawnAt} pregunte por él en vez del {@code setNoAi(true)} fijo de siempre;</li>
+	 *   <li>que {@code TurnManager.freeze} congele por "¿tiene la IA encendida?" y no por "¿le falta
+	 *       bloque de estadísticas?". Si eso se revierte, un PNJ con IA se pasea por el combate durante
+	 *       los turnos de los demás — y no falla nada, solo se juega mal.</li>
+	 * </ul>
+	 */
+	private static void checkKeepsOwnAi() throws Exception {
+		JsonObject plain = JsonParser.parseString("{\"id\":\"test:guardia\",\"hp\":10}").getAsJsonObject();
+		assertTrue(!MonsterRegistry.parse(plain).keepsOwnAi(),
+			"sin campo \"ai\" el monstruo tiene que salir congelado, como siempre");
+
+		JsonObject withAi = JsonParser.parseString("{\"id\":\"test:guardia\",\"hp\":10,\"ai\":true}").getAsJsonObject();
+		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.parse(withAi);
+		assertTrue(block.keepsOwnAi(), "\"ai\": true tiene que conservar la IA de la entidad base");
+
+		//Ida y vuelta: el DM que capture ese monstruo desde el juego no puede perder el campo por el camino.
+		JsonObject written = MonsterRegistry.toJson(block);
+		assertTrue(written.has("ai") && written.get("ai").getAsBoolean(), "toJson pierde el campo \"ai\"");
+		assertTrue(MonsterRegistry.parse(written).keepsOwnAi(), "el campo \"ai\" no sobrevive ida y vuelta");
+		assertTrue(!MonsterRegistry.toJson(MonsterRegistry.parse(plain)).has("ai"),
+			"toJson escribe \"ai\": false en packs que no lo piden, y eso es ruido en el JSON del DM");
+
+		String spawner = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
+			"MonsterRegistry.java"));
+		assertTrue(spawner.contains("mob.setNoAi(!block.keepsOwnAi())"),
+			"spawnAt ha vuelto a congelar todo sin preguntar: \"ai\": true dejaría de hacer nada");
+
+		String turns = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
+			"TurnManager.java"));
+		assertTrue(turns.contains("entity instanceof Mob mob && !mob.isNoAi()"),
+			"freeze ha vuelto a mirar el bloque de estadísticas en vez de la IA: un PNJ con IA se movería"
+				+ " durante los turnos de los demás");
+
+		System.out.println("checkKeepsOwnAi: OK, la IA propia se declara, sobrevive ida y vuelta, y el modo"
+			+ " turnos la sigue apagando mientras dura el combate.");
 	}
 
 	private static void checkItemLooks() throws Exception {
@@ -1364,7 +1522,7 @@ public class JsonContentSelfTest {
 			List.of(), List.of(),
 			Map.of("fuego", "vulnerable"),          //Incondicional.
 			Map.of("cortante", "immune"),           //Solo frente a armas no mágicas.
-			CreatureType.HUMANOID, 0, 0, 1, null);  //Un licántropo es humanoide en 5e, también en forma de bestia.
+			CreatureType.HUMANOID, 0, 0, 1, null, false);  //Un licántropo es humanoide en 5e, también en forma de bestia.
 		Combatant beast = new Combatant.MonsterCombatant(null, conditional);
 		assertTrue(beast.damageMultiplier("cortante", false) == 0.0, "cortante no mágico debería rebotar en el licántropo");
 		assertTrue(beast.damageMultiplier("cortante", true) == 1.0, "cortante mágico debería atravesarlo entero");
@@ -2654,7 +2812,38 @@ public class JsonContentSelfTest {
 				+ ".\n  Usa Component.translatable(\"chat.dndsheets....\", args...) y anade la clave a en_us.json"
 				+ " Y a es_es.json. Component.literal(variable) si vale: ahi el texto ya viene hecho.");
 
-		System.out.println("checkChatMessagesAreTranslatable: OK, ningun mensaje de chat con texto fijo.");
+		//sendSystemMessage no era la unica puerta. Los nombres y descripciones de los items de clase
+		//(Totem de Furia, Ayudar, Vara de DM...) se construian con Component.literal, asi que un jugador
+		//en ingles leia el mod en espanol y no habia forma de saberlo mirando los ficheros de idioma: la
+		//cadena no estaba en ellos. Aqui se busca cualquier literal con prosa dentro (una minuscula
+		//seguida de un espacio) — un separador " - " o un formato "%s / %s" no la tienen y no molestan.
+		java.util.regex.Pattern prosa = java.util.regex.Pattern.compile("Component\\.literal\\(\"[^\"]*[a-z] [^\"]*\"");
+		java.util.Set<String> conProsa = new java.util.TreeSet<>();
+		int enComandos = 0;
+		for (Path fuente : fuentes) {
+			java.util.regex.Matcher m = prosa.matcher(Files.readString(fuente));
+			int veces = 0;
+			while (m.find()) veces++;
+			if (veces == 0) continue;
+			//La respuesta de un comando la lee QUIEN LO ESCRIBE, en su propio chat, y casi siempre lleva
+			//variables interpoladas ("Pieza \"X\" capturada en el pool \"Y\"") — pasarlas a claves con
+			//huecos es otra tanda, y una que checkPlaceholderParity tendra que vigilar entera.
+			//ponytail: 86 respuestas de comando siguen en espanol fijo. El tope de abajo impide que
+			//crezcan; bajarlo a 0 es la tanda que falta.
+			if (fuente.toString().replace('\\', '/').contains("/command/")) enComandos += veces;
+			else conProsa.add(fuente.getFileName().toString());
+		}
+
+		assertTrue(conProsa.isEmpty(),
+			"estos archivos ensenan texto fijo al jugador (nombre o descripcion de item, etiqueta de"
+				+ " pantalla) sin pasar por los ficheros de idioma: " + conProsa
+				+ ".\n  Es el mismo fallo que arriba y no se ve en ninguna pantalla hasta que alguien juega"
+				+ " en el otro idioma. Component.translatable(\"chat.dndsheets....\", args...).");
+		assertTrue(enComandos <= 86, "las respuestas de comando con texto fijo han subido a " + enComandos
+			+ " (eran 86): no anadas mas, pasalas a Component.translatable con su clave");
+
+		System.out.println("checkChatMessagesAreTranslatable: OK, nada de lo que ve un jugador lleva texto"
+			+ " fijo; quedan " + enComandos + " respuestas de comando (solo las ve quien las escribe).");
 	}
 
 	private static void checkTranslationKeysExist() throws Exception {
@@ -2712,6 +2901,20 @@ public class JsonContentSelfTest {
 			}
 		}
 		assertTrue(keysByLang.size() >= 2, "esperaba al menos dos idiomas y encontré " + keysByLang.size());
+
+		//Minecraft NO tiene respaldo por región: carga en_us y encima el idioma EXACTO elegido. 1.20.1
+		//ofrece SIETE españoles (es_es, es_ar, es_cl, es_ec, es_mx, es_uy, es_ve), así que un jugador con
+		//"Español (México)" recibía es_mx de vanilla y en_us del mod: el juego en español y el mod entero
+		//en inglés, sin ningún error en el log y sin nada que mirar en los ficheros de idioma, porque el
+		//que fallaba era el que no existía. No hay forma de declarar "es_* usa es_es" — la única salida es
+		//que el archivo esté con cada nombre, y que las copias no se separen del original.
+		String spanish = Files.readString(dir.resolve("es_es.json"));
+		for (String variant : new String[] { "es_ar", "es_cl", "es_ec", "es_mx", "es_uy", "es_ve" }) {
+			Path copy = dir.resolve(variant + ".json");
+			assertTrue(Files.exists(copy), "falta " + variant + ".json: corre tools/sync_lang_variants.py");
+			assertTrue(Files.readString(copy).equals(spanish), variant + ".json se ha separado de es_es.json"
+				+ " — quien juegue en ese español leería otra cosa. Corre tools/sync_lang_variants.py");
+		}
 
 		//Todas contra la primera: con dos idiomas es lo mismo que compararlas entre sí, y con cinco sigue
 		//dando un mensaje que dice qué falta y dónde.

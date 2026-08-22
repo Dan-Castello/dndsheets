@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.dado",
+  "category": "dndsheets:primeros_pasos",
+  "icon": "minecraft:bone",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.d20"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.advantage_basics"
+    }
+  ]
+}

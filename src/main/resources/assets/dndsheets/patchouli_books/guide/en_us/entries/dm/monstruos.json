@@ -2,7 +2,7 @@
   "name": "gui.dndsheets.guide.entry.monstruos",
   "category": "dndsheets:dm",
   "icon": "minecraft:zombie_head",
-  "sortnum": 2,
+  "sortnum": 3,
   "pages": [
     {
       "type": "patchouli:text",
@@ -14,7 +14,15 @@
     },
     {
       "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_bosses_2"
+    },
+    {
+      "type": "patchouli:text",
       "text": "gui.dndsheets.guide.page.dm_encounters"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_encounters_2"
     }
   ]
 }

@@ -76,7 +76,7 @@ public class DruidWildShapeManager {
 	}
 
 	public static ItemStack buildWildShapeStack() {
-		return AbilityItem.build(ItemLook.WILD_SHAPE, "wildShape", Component.literal("Forma Salvaje"),
-			Component.literal("Clic derecho: golpes a mano desnuda pegan como un animal " + DURATION_ROUNDS + " asaltos.").withStyle(ChatFormatting.GRAY));
+		return AbilityItem.build(ItemLook.WILD_SHAPE, "wildShape", Component.translatable("chat.dndsheets.wildshape.item_name"),
+			Component.translatable("chat.dndsheets.wildshape.item_lore", DURATION_ROUNDS).withStyle(ChatFormatting.GRAY));
 	}
 }

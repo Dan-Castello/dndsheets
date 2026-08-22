@@ -3,12 +3,12 @@
   "ownerUuid": "380df991-f603-344c-a090-369bad2a924a",
   "active": true,
   "characterLevel": 1,
-  "strength": "10",
+  "strength": "12",
   "dexterity": "10",
-  "constitution": "10",
-  "intelligence": "10",
-  "wisdom": "10",
-  "charisma": "10",
+  "constitution": "14",
+  "intelligence": "8",
+  "wisdom": "15",
+  "charisma": "13",
   "proficiencyBonus": "2",
   "checks": [
     "1d20 + $str",
@@ -47,19 +47,32 @@
     "1d20 + $cha",
     "1d20 + $cha"
   ],
-  "attacks": [],
+  "attacks": [
+    {
+      "name": "Martillo de Guerra",
+      "itemId": "dndsheets:warhammer",
+      "rolls": [
+        [
+          {
+            "context": "Daño",
+            "expression": "1d8 + $str"
+          }
+        ]
+      ]
+    }
+  ],
   "spells": [],
   "traits": [],
   "spellSlotsCurrent": 2,
   "spellSlotsMax": 2,
   "schemaVersion": 1,
-  "hitDiceTypes": "",
-  "hitPointsMax": "8",
-  "armorClass": "10",
-  "hitPoints": "8",
+  "hitDiceTypes": "1d8",
+  "hitPointsMax": "10",
+  "armorClass": "15",
+  "hitPoints": "10",
   "background": "Noble",
   "hitPointsTemp": "0",
-  "characterClass": "Bardo",
+  "characterClass": "Clérigo",
   "characterRace": "Enano",
   "speed": "",
   "level": "1",
@@ -70,5 +83,6 @@
     "1": 2
   },
   "inventory": "{items:[]}",
-  "nextAttackAdvantage": "normal"
+  "nextAttackAdvantage": "normal",
+  "appliedPresetId": "cleric"
 }

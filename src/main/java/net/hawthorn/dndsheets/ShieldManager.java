@@ -55,7 +55,7 @@ public class ShieldManager {
 	}
 
 	public static ItemStack buildShieldStack() {
-		return AbilityItem.build(ItemLook.SHIELD, "shieldSpell", Component.literal("Escudo"),
-			Component.literal("Clic derecho: listo para activarse solo cuando te salve de un golpe.").withStyle(ChatFormatting.GRAY));
+		return AbilityItem.build(ItemLook.SHIELD, "shieldSpell", Component.translatable("chat.dndsheets.shield.item_name"),
+			Component.translatable("chat.dndsheets.shield.item_lore").withStyle(ChatFormatting.GRAY));
 	}
 }

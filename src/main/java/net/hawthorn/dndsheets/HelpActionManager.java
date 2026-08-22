@@ -61,7 +61,7 @@ public class HelpActionManager {
 	}
 
 	public static ItemStack buildHelpStack() {
-		return AbilityItem.build(ItemLook.HELP, "helpAction", Component.literal("Ayudar"),
-			Component.literal("Clic derecho en OTRO jugador: su próximo ataque tiene ventaja. Gasta tu acción.").withStyle(ChatFormatting.GRAY));
+		return AbilityItem.build(ItemLook.HELP, "helpAction", Component.translatable("chat.dndsheets.action.help_item_name"),
+			Component.translatable("chat.dndsheets.action.help_item_lore").withStyle(ChatFormatting.GRAY));
 	}
 }
