@@ -18,6 +18,14 @@
     },
     {
       "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_ownclock"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_ownclock_2"
+    },
+    {
+      "type": "patchouli:text",
       "text": "gui.dndsheets.guide.page.dm_encounters"
     },
     {

@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.hawthorn.dndsheets.Combatant;
 import net.hawthorn.dndsheets.CombatFx;
 import net.hawthorn.dndsheets.MonsterRegistry;
@@ -18,6 +19,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
@@ -54,10 +57,74 @@ public class MonsterCommand {
 			.then(spawnNode())
 			.then(galleryNode())
 			.then(attackNode())
+			.then(bindNode())
 			.then(Commands.literal("dmtool")
 				.then(Commands.argument("jugadores", EntityArgument.players()).executes(MonsterCommand::giveDmTool)))
 			.then(Commands.literal("movetool")
 				.then(Commands.argument("jugadores", EntityArgument.players()).executes(MonsterCommand::giveMoveTool))));
+	}
+
+	/**
+	 * <p>Le pega un bloque de estadísticas a una criatura que <b>ya existe</b>, en vez de invocar una
+	 * nueva. Es la dirección que faltaba: hasta ahora un monstruo del mod solo podía nacer del mod, así que
+	 * el DM tenía que elegir entre las reglas de 5e y las herramientas de un mod de NPC (EasyNPC y
+	 * compañía), que son mucho mejores para construir un personaje —piel, pose, diálogos, objetivos de
+	 * patrulla o de seguir al grupo— que cualquier cosa que este mod vaya a tener.</p>
+	 *
+	 * <p>Con esto no hay que elegir: se construye la criatura donde mejor se construya, y luego se le dice
+	 * "esto es un dndsheets:capitan_guardia". Desde ese momento tiene CA, PG, resistencias, ataques,
+	 * condiciones y turno propio como cualquier monstruo del bestiario, y sigue siendo suya para su mod de
+	 * origen. Ojo a lo que NO es: no hay integración con EasyNPC ni dependencia de nadie. La etiqueta es
+	 * NBT persistente ({@code MonsterRegistry.tagAsMonster}) y funciona igual sobre un mob de vanilla o de
+	 * cualquier otro mod, que es justo por lo que no hace falta integrar nada.</p>
+	 *
+	 * <p>Su IA no se toca: si la criatura ya sabía patrullar, sigue sabiendo. El modo turnos la congela
+	 * mientras dure el combate y se la devuelve al acabar (ver {@code TurnManager.freeze}), exactamente
+	 * igual que a un monstruo propio invocado con {@code "ai": true}.</p>
+	 */
+	private static LiteralArgumentBuilder<CommandSourceStack> bindNode() {
+		return Commands.literal("bind")
+			.then(Commands.argument("objetivo", EntityArgument.entity())
+				.then(Commands.argument("monstruoId", ResourceLocationArgument.id())
+					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(MonsterRegistry.ids(), builder))
+					.executes(MonsterCommand::bind)))
+			.then(Commands.literal("clear")
+				.then(Commands.argument("objetivo", EntityArgument.entity())
+					.executes(MonsterCommand::unbind)));
+	}
+
+	private static int bind(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		Entity target = EntityArgument.getEntity(ctx, "objetivo");
+		String monsterId = ResourceLocationArgument.getId(ctx, "monstruoId").toString();
+		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(monsterId);
+		if (block == null) {
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.monster.no_such_block", monsterId));
+			return 0;
+		}
+		//Un jugador tiene su propia hoja y sus propias reglas: darle un bloque de monstruo sería pisarlas.
+		if (target instanceof net.minecraft.world.entity.player.Player) {
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.monster.bind_player"));
+			return 0;
+		}
+
+		//Qué se pisa y qué no lo decide MonsterRegistry.applyStatBlock, que es también lo que ejecuta el
+		//selector de la Vara de DM: dos formas de hacer lo mismo tienen que hacer lo mismo.
+		MonsterRegistry.applyStatBlock(target, block);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.monster.bound",
+			target.getName().getString(), monsterId), true);
+		return 1;
+	}
+
+	private static int unbind(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		Entity target = EntityArgument.getEntity(ctx, "objetivo");
+		if (MonsterRegistry.monsterIdOf(target) == null) {
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.monster.not_bound"));
+			return 0;
+		}
+		target.getPersistentData().remove("dndsheets");
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.monster.unbound",
+			target.getName().getString()), true);
+		return 1;
 	}
 
 	private static LiteralArgumentBuilder<CommandSourceStack> spawnNode() {
@@ -310,6 +377,8 @@ public class MonsterCommand {
 			Component.translatable("chat.dndsheets.monster.wand_item_lore").withStyle(net.minecraft.ChatFormatting.GRAY))));
 		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
 			Component.translatable("chat.dndsheets.monster.wand_item_lore2").withStyle(net.minecraft.ChatFormatting.GRAY))));
+		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(
+			Component.translatable("chat.dndsheets.monster.wand_item_lore3").withStyle(net.minecraft.ChatFormatting.GRAY))));
 		stack.getOrCreateTagElement("display").put("Lore", lore);
 
 		return stack;

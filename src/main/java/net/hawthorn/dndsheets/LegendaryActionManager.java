@@ -72,7 +72,12 @@ public class LegendaryActionManager {
 
 	private static int budgetOf(Entity entity) {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(entity);
-		return block == null ? 0 : block.legendaryActions();
+		if (block == null) return 0;
+		//Con reloj propio, ninguna. Las acciones legendarias existen en 5e para que un jefe pueda hacer
+		//algo mientras espera su turno; quien no espera turno no las necesita, y dárselas igual sería
+		//darle dos economías de acción a la vez.
+		if (block.ownClock()) return 0;
+		return block.legendaryActions();
 	}
 
 	/**

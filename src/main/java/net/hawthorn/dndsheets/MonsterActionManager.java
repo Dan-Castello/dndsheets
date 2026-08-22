@@ -34,6 +34,30 @@ public class MonsterActionManager {
 
 	@SubscribeEvent
 	public static void onInteractWithMonster(PlayerInteractEvent.EntityInteract event) {
+		handleDmWand(event, event.getTarget());
+	}
+
+	/**
+	 * <p>Un armor stand <b>nunca</b> llega por {@code EntityInteract}, así que borrarlo con la Vara de DM
+	 * no funcionaba desde el día que se escribió. La causa está en vanilla y no se ve leyendo este
+	 * archivo: {@code ArmorStand.interactAt} devuelve {@code CONSUME} en cuanto detecta que está en el
+	 * cliente —antes de mirar el objeto, la ranura ni nada— para poder equiparlo con clic derecho. Y
+	 * {@code Minecraft.startUseItem} solo reintenta con {@code interact} <em>si el primero no consumió</em>
+	 * ({@code if (!interactionresult.consumesAction())}), así que el paquete INTERACT no se manda jamás y
+	 * el evento normal no se dispara nunca. El que sí llega es este, el del INTERACT_AT.</p>
+	 *
+	 * <p>Se filtra por armor stand a propósito: cualquier otra entidad manda los DOS paquetes (su
+	 * {@code interactAt} devuelve PASS y el cliente reintenta), así que atender los dos eventos sin filtro
+	 * ejecutaría el manejador dos veces por clic — el mismo fallo de doble pasada que documenta
+	 * {@link InteractionEvents}, por otra puerta.</p>
+	 */
+	@SubscribeEvent
+	public static void onInteractWithArmorStand(PlayerInteractEvent.EntityInteractSpecific event) {
+		if (!(event.getTarget() instanceof ArmorStand)) return;
+		handleDmWand(event, event.getTarget());
+	}
+
+	private static void handleDmWand(PlayerInteractEvent event, Entity target) {
 		if (event.getEntity().level().isClientSide()) return;
 		Player dm = event.getEntity();
 		//event.getItemStack() es el objeto de LA MANO DE ESTE EVENTO, no "cualquiera de las dos". El
@@ -44,16 +68,20 @@ public class MonsterActionManager {
 		if (!MonsterRegistry.isDmTool(event.getItemStack())) return;
 		if (!dm.hasPermissions(2)) return; //La Vara de DM solo funciona en manos de un op, aunque un jugador la consiga.
 
-		Entity target = event.getTarget();
+		//A un jugador la vara no le hace nada: tiene su propia hoja, y el clic sigue su curso normal.
+		if (target instanceof Player) return;
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(target);
 		boolean isArmorStand = target instanceof ArmorStand;
-		if (block == null && !isArmorStand) return;
 
 		InteractionEvents.consume(event);
 
 		//Agachado + clic derecho con la Vara de DM: borra al monstruo o armor stand al instante, para
 		//limpiar si se invocó de más. Sin agacharse, se comporta como siempre (menú de acciones).
 		if (dm.isShiftKeyDown()) {
+			//Borrar sigue valiendo SOLO para lo que invocó el mod (y los armor stands de práctica). Una
+			//criatura de otro mod a la que todavía no se le ha dado ficha no es nuestra para borrarla, y
+			//un agachado + clic de más se llevaría por delante el NPC que alguien acaba de construir.
+			if (block == null && !isArmorStand) return;
 			Component deletedName = block != null ? Component.literal(block.name()) : Component.translatable("chat.dndsheets.monster.the_armor_stand");
 			TurnManager.markDefeated(target.getId()); //Borrado a mano por el DM: ya no es un enemigo en pie, cuenta igual que muerto para el fin automático de combate.
 			target.remove(Entity.RemovalReason.DISCARDED);
@@ -66,8 +94,16 @@ public class MonsterActionManager {
 			return;
 		}
 
-		if (block == null) return; //Los armor stands no tienen menú de acciones, solo se pueden eliminar.
 		if (!(dm instanceof ServerPlayer serverDm)) return;
+
+		//Sin ficha todavía: en vez de no hacer nada (que es lo que hacía antes), se ofrece dársela. Es el
+		//puente con cualquier mod de NPC — se construye la criatura allí, con sus herramientas, y aquí se
+		//le dice qué es. Ver MonsterBindMessage.
+		if (block == null) {
+			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> serverDm),
+				new net.hawthorn.dndsheets.network.MonsterBindMessage(target.getId(), ""));
+			return;
+		}
 
 		List<String> customAttackNames = new ArrayList<>();
 		for (MonsterRegistry.MonsterAttack attack : MonsterRegistry.customAttacksOf(target)) customAttackNames.add(attack.name());
@@ -242,7 +278,12 @@ public class MonsterActionManager {
 		//combatiente ya gastó su turno y dispara el auto-avance (ver TurnManager.scheduleAutoAdvance). Sin
 		//esto, un monstruo sin nadie cerca se quedaría con el turno colgado para siempre — nadie va a
 		//escribir /dndturns next por él.
-		if (!TurnManager.tryAct(monsterEntity)) return;
+		//Un jefe con reloj propio no pide turno (nunca es el suyo): pide poder actuar. Y NO puede pasar por
+		//tryAct ni de rebote — ese método programa el auto-avance del turno, así que llamarlo desde fuera
+		//del orden le pasaría el turno a otro cada seis segundos.
+		if (MonsterRegistry.isOffClock(monsterEntity)) {
+			if (!TurnManager.canActIgnoringTurn(monsterEntity)) return;
+		} else if (!TurnManager.tryAct(monsterEntity)) return;
 
 		//Una invocación del jugador ataca a los enemigos de su dueño; un monstruo del DM, al jugador más
 		//cercano. Sin esta distinción, el Arma Espiritual le pegaba a quien la invocó.

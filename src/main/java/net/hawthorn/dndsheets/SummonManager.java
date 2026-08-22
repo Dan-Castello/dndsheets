@@ -68,7 +68,7 @@ public class SummonManager {
 			//distinguirla de un monstruo del DM de un vistazo, incluso a través de una pared.
 			//Congelada, como cualquier monstruo del mod: una invocación actúa en su turno por autoAct, no
 			//por su cuenta. La IA propia es para los PNJ de ambiente, no para esto.
-			CreatureType.CONSTRUCT, 0, 0, 1, MonsterRegistry.Appearance.GLOWING, false));
+			CreatureType.CONSTRUCT, 0, 0, 1, MonsterRegistry.Appearance.GLOWING, false, false));
 
 		//Delante del lanzador, no encima: invocarlo dentro de su propia hitbox lo dejaría empujándolo.
 		Vec3 spot = caster.position().add(caster.getViewVector(1.0f).scale(2.0));

@@ -7,6 +7,14 @@
     {
       "type": "patchouli:text",
       "text": "gui.dndsheets.guide.page.class_items"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.wildshape"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.wildshape_2"
     }
   ]
 }

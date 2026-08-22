@@ -421,7 +421,7 @@ public class CombatManager {
 	//TraitRegistry mientras esté activa — no debería poder pasar que se sumen los dos a la vez.
 	private static TraitRegistry.UnarmedProfile unarmedProfileFor(Player player, JsonObject sheet, int level) {
 		if (player instanceof ServerPlayer serverPlayer && DruidWildShapeManager.isShifted(serverPlayer)) {
-			return DruidWildShapeManager.unarmedProfile();
+			return DruidWildShapeManager.unarmedProfile(serverPlayer);
 		}
 		return TraitRegistry.unarmedProfileFor(sheet, level);
 	}

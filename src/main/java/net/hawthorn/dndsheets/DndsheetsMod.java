@@ -93,7 +93,7 @@ public class DndsheetsMod {
 	//compendio lo traduzca el CLIENTE en su idioma en vez de que el servidor le fije el suyo. Cambia el
 	//formato en el cable sin cambiar ni el numero de mensajes ni su orden — o sea que NI NETWORK_SHAPE ni
 	//NETWORK_ORDER lo ven, y por eso existe ahora tambien NETWORK_WIRE (ver abajo).
-	private static final String PROTOCOL_VERSION = "8";
+	private static final String PROTOCOL_VERSION = "10";
 
 	/**
 	 * <p>Cuántas piezas cruzan el cable: mensajes registrados más constantes de los enums que viajan por
@@ -105,7 +105,7 @@ public class DndsheetsMod {
 	 * la mano igual para desalinearse después. Un número que hay que tocar a mano no impide el error, pero
 	 * lo convierte en una decisión en vez de un olvido.</p>
 	 */
-	public static final int NETWORK_SHAPE = 104;
+	public static final int NETWORK_SHAPE = 109;
 
 	/**
 	 * <p>El orden exacto en que las piezas cruzan el cable, resumido en un hash. {@link #NETWORK_SHAPE}
@@ -117,7 +117,7 @@ public class DndsheetsMod {
 	 * fuente y tumba el build cuando no cuadra. Si mueves algo a propósito, sube {@link #PROTOCOL_VERSION}
 	 * y pega aquí el número que te diga el fallo.</p>
 	 */
-	public static final int NETWORK_ORDER = 88363992;
+	public static final int NETWORK_ORDER = -929442425;
 
 	/**
 	 * <p>Que se escribe y se lee en el cable, resumido en un hash: la secuencia de llamadas
@@ -129,7 +129,7 @@ public class DndsheetsMod {
 	 * dos numeros intactos y aun asi rompio la compatibilidad: un cliente viejo leería un texto donde el
 	 * servidor nuevo escribe un Component, y se desincroniza a mitad del paquete.</p>
 	 */
-	public static final int NETWORK_WIRE = 326945585;
+	public static final int NETWORK_WIRE = 2124062058;
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 
@@ -212,6 +212,8 @@ public class DndsheetsMod {
 		//Sheet...) renumeraría en silencio todos los de después. Añade siempre al final de esta lista.
 		addNetworkMessage(BrowseActionMessage.class, BrowseActionMessage::buffer, BrowseActionMessage::new, BrowseActionMessage::handler);
 		addNetworkMessage(BrowseListMessage.class, BrowseListMessage::buffer, BrowseListMessage::new, BrowseListMessage::handler);
+		addNetworkMessage(MonsterBindMessage.class, MonsterBindMessage::buffer, MonsterBindMessage::new, MonsterBindMessage::handler);
+		addNetworkMessage(WildShapeMessage.class, WildShapeMessage::buffer, WildShapeMessage::new, WildShapeMessage::handler);
 	}
 
 	//Patrón repetido en los mensajes cliente(DM)->servidor que actúan sobre OTRO jugador (SheetAdjustMessage,

@@ -41,6 +41,8 @@ public class JsonContentSelfTest {
 		checkPatchouliBook();
 		checkGuideLayout();
 		checkKeepsOwnAi();
+		checkWildShape();
+		checkOwnClock();
 		checkVanillaIds();
 		checkMagicItems();
 		checkTraits(); //Antes de checkPresets(): el preset de monje concede este rasgo por id.
@@ -176,6 +178,20 @@ public class JsonContentSelfTest {
 		//Contar por un ítem que vale en los tres eventos es la forma barata de fijar que siguen unificados.
 		int copias = dispatcher.split("getBoolean\\(\"rage\"\\)", -1).length - 1;
 		assertTrue(copias == 1, "la cadena de reparto está duplicada " + copias + " veces; con copias se separan y unos ítems dejan de funcionar según a qué mires");
+
+		//Un armor stand NUNCA llega por EntityInteract, así que el manejador de la Vara de DM necesita
+		//además el de EntityInteractSpecific o borrarlo con ella no funciona — y no funcionó nunca, sin que
+		//nada fallara: ArmorStand.interactAt devuelve CONSUME en el cliente antes de mirar nada, y
+		//Minecraft.startUseItem solo manda el segundo paquete si el primero NO consumió. Es la clase de
+		//causa que no se encuentra leyendo el mod, solo leyendo vanilla, así que queda anotada aquí.
+		String wand = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
+			"MonsterActionManager.java"));
+		assertTrue(wand.contains("PlayerInteractEvent.EntityInteractSpecific"),
+			"MonsterActionManager perdió el manejador de EntityInteractSpecific: la Vara de DM deja de"
+				+ " funcionar sobre armor stands, y el evento normal no llega nunca para ellos");
+		assertTrue(wand.contains("event.getTarget() instanceof ArmorStand"),
+			"ese manejador tiene que filtrar por armor stand: cualquier otra entidad manda los dos paquetes"
+				+ " y el manejador correría dos veces por clic");
 
 		System.out.println("checkInteractHandlers: OK, los " + abilityFlags.size() + " ítems de capacidad se despachan y la cadena está sin duplicar.");
 	}
@@ -914,8 +930,9 @@ public class JsonContentSelfTest {
 
 		String spawner = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"MonsterRegistry.java"));
-		assertTrue(spawner.contains("mob.setNoAi(!block.keepsOwnAi())"),
-			"spawnAt ha vuelto a congelar todo sin preguntar: \"ai\": true dejaría de hacer nada");
+		assertTrue(spawner.contains("mob.setNoAi(!block.keepsOwnAi() && !block.ownClock())"),
+			"spawnAt ha vuelto a congelar todo sin preguntar: \"ai\": true (o un jefe con reloj propio, que"
+				+ " la necesita por definición) dejaría de hacer nada");
 
 		String turns = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"TurnManager.java"));
@@ -925,6 +942,110 @@ public class JsonContentSelfTest {
 
 		System.out.println("checkKeepsOwnAi: OK, la IA propia se declara, sobrevive ida y vuelta, y el modo"
 			+ " turnos la sigue apagando mientras dura el combate.");
+	}
+
+	/**
+	 * <p>La Forma Salvaje <b>escribe encima</b> de la hoja del druida (características físicas y CA) y
+	 * guarda debajo lo que había para devolverlo. Ese es el trato entero, y si la vuelta se rompe no falla
+	 * nada: queda un druida con la Fuerza de un oso y una CA que no es la suya, en una ficha que se
+	 * persiste. Se comprueban las dos direcciones y, sobre todo, <b>que volver deje la hoja como estaba</b>
+	 * — comparando el JSON completo, no campo a campo, para que también se note un residuo que nadie
+	 * pensó en mirar.</p>
+	 */
+	private static void checkWildShape() {
+		MonsterRegistry.MonsterStatBlock oso = new MonsterRegistry.MonsterStatBlock(
+			"test:oso", "Oso pardo", "minecraft:polar_bear", 11, 34,
+			Map.of("str", 19, "dex", 10, "con", 16, "int", 2, "wis", 13, "cha", 7), 2,
+			List.of(), List.of(), Map.of(), Map.of(),
+			CreatureType.BEAST, 0, 0, 1, null, false, false);
+
+		//Caso 1: un druida normal, sin CA fijada a mano por el DM.
+		JsonObject sheet = JsonParser.parseString(
+			"{\"strength\":\"10\",\"dexterity\":\"14\",\"constitution\":\"12\",\"intelligence\":\"13\"}").getAsJsonObject();
+		String antes = sheet.toString();
+
+		DruidWildShapeManager.writeShape(sheet, oso, 7);
+		assertTrue(DruidWildShapeManager.shapeOf(sheet) != null, "tras transformarse la hoja tiene que decir en qué está");
+		assertTrue(sheet.get("strength").getAsString().equals("19"), "la Fuerza tiene que ser la de la bestia");
+		assertTrue(sheet.get("armorClassOverride").getAsInt() == 11, "la CA tiene que ser la de la bestia");
+		assertTrue(sheet.get("intelligence").getAsString().equals("13"),
+			"la Inteligencia NO cambia: en 5e la bestia no te vuelve tonto");
+
+		int back = DruidWildShapeManager.clearShape(sheet, 99);
+		assertTrue(back == 7, "tiene que volver con los PG que tenía al transformarse, no con " + back);
+		assertTrue(sheet.toString().equals(antes),
+			"volver no dejó la hoja como estaba.\n  antes: " + antes + "\n  después: " + sheet);
+
+		//Caso 2, el que de verdad corrompe: un druida al que el DM ya le había fijado la CA a mano. Si la
+		//forma no distingue "no había override" de "había uno", vuelve con la CA de la bestia clavada.
+		JsonObject conOverride = JsonParser.parseString(
+			"{\"strength\":\"10\",\"dexterity\":\"14\",\"constitution\":\"12\",\"armorClassOverride\":18}").getAsJsonObject();
+		String antesOverride = conOverride.toString();
+		DruidWildShapeManager.writeShape(conOverride, oso, 5);
+		assertTrue(conOverride.get("armorClassOverride").getAsInt() == 11, "mientras dura la forma manda la CA de la bestia");
+		DruidWildShapeManager.clearShape(conOverride, 99);
+		assertTrue(conOverride.toString().equals(antesOverride),
+			"la CA que el DM había fijado no volvió: " + conOverride);
+
+		//Y sin PG guardados (hoja de una versión anterior) cae al valor de respaldo en vez de a cero.
+		assertTrue(DruidWildShapeManager.clearShape(new JsonObject(), 42) == 42,
+			"sin PG anotados tiene que volver con el respaldo, no con 0");
+
+		System.out.println("checkWildShape: OK, la forma escribe los números de la bestia y volver deja la"
+			+ " hoja exactamente como estaba.");
+	}
+
+	/**
+	 * <p>Un jefe con {@code "ownClock"} sale del ORDEN de turnos sin salir del combate. Todo lo que sostiene
+	 * esa frase se rompe en silencio, así que se fija aquí:</p>
+	 *
+	 * <ul>
+	 *   <li>que el campo se lea, se escriba y por defecto sea falso;</li>
+	 *   <li>que el salto en {@code advance} pase por {@code step}, que es quien descuenta el asalto — si
+	 *       alguien lo cambia por un {@code currentIndex++} suelto, una ronda con el jefe al final deja de
+	 *       contar y todo lo que dure asaltos (muros, buffs, invocaciones) se congela;</li>
+	 *   <li>que NO pase por {@code tryAct}, que programa el auto-avance: desde fuera del orden, le pasaría
+	 *       el turno a otro cada seis segundos;</li>
+	 *   <li>que siga contando para el fin del combate, o el encuentro terminaría con el dragón vivo;</li>
+	 *   <li>y que las acciones legendarias queden a cero, para no darle dos economías de acción.</li>
+	 * </ul>
+	 */
+	private static void checkOwnClock() throws Exception {
+		JsonObject plain = JsonParser.parseString("{\"id\":\"test:x\",\"hp\":10}").getAsJsonObject();
+		assertTrue(!MonsterRegistry.parse(plain).ownClock(), "sin el campo, un monstruo espera su turno como todos");
+		JsonObject boss = JsonParser.parseString("{\"id\":\"test:x\",\"hp\":10,\"ownClock\":true}").getAsJsonObject();
+		assertTrue(MonsterRegistry.parse(boss).ownClock(), "\"ownClock\": true tiene que sacarlo del orden");
+		assertTrue(MonsterRegistry.toJson(MonsterRegistry.parse(boss)).get("ownClock").getAsBoolean(),
+			"toJson pierde \"ownClock\": un jefe capturado por el DM volvería a hacer cola");
+		assertTrue(!MonsterRegistry.toJson(MonsterRegistry.parse(plain)).has("ownClock"),
+			"toJson escribe \"ownClock\": false donde nadie lo pidió, y eso es ruido en el JSON del DM");
+
+		String turns = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "TurnManager.java"));
+		assertTrue(turns.contains("isOffClock(level, current()); skipped++) step(level)"),
+			"el salto del jefe tiene que pasar por step(): es quien cierra el asalto");
+		assertTrue(turns.contains("if (MonsterRegistry.isOffClock(entity)) return;"),
+			"freeze ha vuelto a anclar al jefe con reloj propio: dejaría de moverse por su cuenta");
+
+		String actions = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "MonsterActionManager.java"));
+		assertTrue(actions.contains("TurnManager.canActIgnoringTurn(monsterEntity)"),
+			"autoAct tiene que preguntar por las condiciones, no por el turno, cuando el bloque lleva reloj propio");
+
+		String legendary = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "LegendaryActionManager.java"));
+		assertTrue(legendary.contains("if (block.ownClock()) return 0;"),
+			"un jefe con reloj propio no puede tener ADEMAS acciones legendarias");
+
+		//Y que el bestiario traiga jefes marcados de verdad: sin esto la funcion entera es config muerta.
+		int apex = 0;
+		for (JsonElement el : readShippedPack("monsters.json")) {
+			JsonObject monster = el.getAsJsonObject();
+			if (!monster.has("ownClock") || !monster.get("ownClock").getAsBoolean()) continue;
+			apex++;
+			assertTrue(monster.has("legendaryActions"),
+				monster.get("id").getAsString() + " lleva reloj propio sin ser legendario: esto es para jefes");
+		}
+		assertTrue(apex >= 10, "el bestiario deberia traer jefes con reloj propio ya marcados, encontre " + apex);
+
+		System.out.println("checkOwnClock: OK, " + apex + " jefes fuera del orden de turnos, dentro del combate.");
 	}
 
 	private static void checkItemLooks() throws Exception {
@@ -1522,7 +1643,7 @@ public class JsonContentSelfTest {
 			List.of(), List.of(),
 			Map.of("fuego", "vulnerable"),          //Incondicional.
 			Map.of("cortante", "immune"),           //Solo frente a armas no mágicas.
-			CreatureType.HUMANOID, 0, 0, 1, null, false);  //Un licántropo es humanoide en 5e, también en forma de bestia.
+			CreatureType.HUMANOID, 0, 0, 1, null, false, false);  //Un licántropo es humanoide en 5e, también en forma de bestia.
 		Combatant beast = new Combatant.MonsterCombatant(null, conditional);
 		assertTrue(beast.damageMultiplier("cortante", false) == 0.0, "cortante no mágico debería rebotar en el licántropo");
 		assertTrue(beast.damageMultiplier("cortante", true) == 1.0, "cortante mágico debería atravesarlo entero");
@@ -2884,6 +3005,19 @@ public class JsonContentSelfTest {
 		System.out.println("checkTranslationKeysExist: OK, " + usadas + " usos de translatable y todos con clave declarada.");
 	}
 
+	/**
+	 * <p>Las variantes regionales de espanol que hay que publicar ademas de {@code es_es}. Esta lista es la
+	 * UNICA: {@code tools/sync_lang_variants.py} la lee de aqui, para que no puedan separarse.</p>
+	 *
+	 * <p><b>La regla general, por si algun dia se traduce a otro idioma:</b> Minecraft carga {@code en_us} y
+	 * encima el codigo EXACTO elegido, sin ningun respaldo por region. Publicar solo una variante de un
+	 * idioma con varias deja al resto en INGLES, sin error en el log y sin nada raro en los ficheros de
+	 * idioma. La misma trampa espera a {@code pt_br}/{@code pt_pt} y a {@code zh_cn}/{@code zh_tw}: quien
+	 * anada uno de esos, que anada tambien sus hermanos aqui. Lo que no sea variante del mismo idioma
+	 * (asturiano {@code esan}, p.ej.) NO va: es otro idioma y su sitio es el respaldo a {@code en_us}.</p>
+	 */
+	private static final String[] SPANISH_VARIANTS = { "es_ar", "es_cl", "es_ec", "es_mx", "es_uy", "es_ve" };
+
 	private static void checkLanguageFiles() throws Exception {
 		Path dir = Path.of("src", "main", "resources", "assets", "dndsheets", "lang");
 		Map<String, Set<String>> keysByLang = new java.util.LinkedHashMap<>();
@@ -2909,7 +3043,7 @@ public class JsonContentSelfTest {
 		//que fallaba era el que no existía. No hay forma de declarar "es_* usa es_es" — la única salida es
 		//que el archivo esté con cada nombre, y que las copias no se separen del original.
 		String spanish = Files.readString(dir.resolve("es_es.json"));
-		for (String variant : new String[] { "es_ar", "es_cl", "es_ec", "es_mx", "es_uy", "es_ve" }) {
+		for (String variant : SPANISH_VARIANTS) {
 			Path copy = dir.resolve(variant + ".json");
 			assertTrue(Files.exists(copy), "falta " + variant + ".json: corre tools/sync_lang_variants.py");
 			assertTrue(Files.readString(copy).equals(spanish), variant + ".json se ha separado de es_es.json"

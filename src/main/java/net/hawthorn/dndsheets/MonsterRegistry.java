@@ -98,7 +98,13 @@ public class MonsterRegistry {
 		//encuentro y la devuelve al acabar, así que el monstruo resuelve su turno con las reglas de 5e
 		//(MonsterActionManager.autoAct) y no con la IA de vanilla. Es decir: la IA es para FUERA del
 		//combate, que es donde hoy no había nada.
-		boolean keepsOwnAi
+		boolean keepsOwnAi,
+		//"ownClock": true saca a esta criatura del ORDEN de turnos sin sacarla del combate. Sigue contando
+		//para el fin del encuentro, sigue recibiendo daño con todas las reglas de 5e y sigue parándose si
+		//la dejan paralizada o aturdida — lo único que ignora es tener que esperar su turno: actúa por su
+		//cuenta cada 6 segundos, que es lo que dura un asalto de 5e (ver OwnClockManager). No es "sin
+		//reglas", es "sin cola": la economía de acciones es la misma, solo que desincronizada.
+		boolean ownClock
 	) {
 		public int abilityModifier(String key) {
 			Integer score = abilities.get(key.toLowerCase(Locale.ROOT));
@@ -182,7 +188,7 @@ public class MonsterRegistry {
 		REGISTRY.replace(new MonsterStatBlock(block.id(), block.name(), entityId, block.ac(), block.maxHp(),
 			block.abilities(), block.proficiencyBonus(), block.attacks(), block.spells(), block.damageAffinities(),
 			block.nonmagicalAffinities(), block.type(), block.legendaryResistances(), block.legendaryActions(),
-			block.attacksPerTurn(), block.appearance(), block.keepsOwnAi()));
+			block.attacksPerTurn(), block.appearance(), block.keepsOwnAi(), block.ownClock()));
 		return true;
 	}
 
@@ -231,6 +237,7 @@ public class MonsterRegistry {
 		int hp = json.has("hp") ? json.get("hp").getAsInt() : 1;
 		int prof = json.has("proficiencyBonus") ? json.get("proficiencyBonus").getAsInt() : 2;
 		boolean keepsOwnAi = json.has("ai") && json.get("ai").getAsBoolean();
+		boolean ownClock = json.has("ownClock") && json.get("ownClock").getAsBoolean();
 
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		JsonObject abilitiesJson = json.has("abilities") ? json.getAsJsonObject("abilities") : null;
@@ -283,7 +290,7 @@ public class MonsterRegistry {
 		int attacksPerTurn = json.has("multiattack") ? Math.max(1, Math.min(6, json.get("multiattack").getAsInt())) : 1;
 		Appearance appearance = parseAppearance(json.has("appearance") ? json.getAsJsonObject("appearance") : null);
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, appearance, keepsOwnAi);
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, appearance, keepsOwnAi, ownClock);
 	}
 
 	private static Map<String, String> readAffinities(JsonObject json, String field) {
@@ -328,6 +335,7 @@ public class MonsterRegistry {
 		if (block.attacksPerTurn() > 1) json.addProperty("multiattack", block.attacksPerTurn());
 		json.addProperty("baseEntity", block.baseEntityId());
 		if (block.keepsOwnAi()) json.addProperty("ai", true);
+		if (block.ownClock()) json.addProperty("ownClock", true);
 		json.addProperty("ac", block.ac());
 		json.addProperty("hp", block.maxHp());
 		json.addProperty("proficiencyBonus", block.proficiencyBonus());
@@ -390,6 +398,12 @@ public class MonsterRegistry {
 		tag.putString("monster", monsterId);
 		tag.putInt("currentHp", currentHp);
 		entity.getPersistentData().put("dndsheets", tag);
+	}
+
+	/** Si esta criatura juega fuera del orden de turnos. Ver {@code OwnClockManager}. */
+	public static boolean isOffClock(Entity entity) {
+		MonsterStatBlock block = statBlockOf(entity);
+		return block != null && block.ownClock();
 	}
 
 	public static String monsterIdOf(Entity entity) {
@@ -540,7 +554,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		for (String key : Combatant.ABILITIES) abilities.put(key, 10);
 
-		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0, 1, Appearance.DEFAULT, false));
+		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0, 1, Appearance.DEFAULT, false, false));
 		return spawnAt(level, x, y, z, id);
 	}
 
@@ -583,8 +597,9 @@ public class MonsterRegistry {
 		entity.moveTo(x, y, z, 0, 0);
 		entity.setCustomName(Component.literal(block.name()));
 		entity.setCustomNameVisible(true);
-		//Congelado salvo que el bloque pida lo contrario con "ai": true — ver keepsOwnAi.
-		if (entity instanceof Mob mob) mob.setNoAi(!block.keepsOwnAi());
+		//Congelado salvo que el bloque pida lo contrario con "ai": true — ver keepsOwnAi. Un jefe con
+		//reloj propio la necesita encendida por definición: se mueve por su cuenta durante todo el combate.
+		if (entity instanceof Mob mob) mob.setNoAi(!block.keepsOwnAi() && !block.ownClock());
 		applyAppearance(entity, block.appearance());
 		tagAsMonster(entity, monsterId, block.maxHp());
 		if (configure != null) configure.accept(entity);
@@ -611,6 +626,40 @@ public class MonsterRegistry {
 	 * fuente de botín: si el yelmo que le pusiste para que se distinga de sus tres hermanos cae al suelo al
 	 * matarlo, has convertido una decisión visual en una recompensa que el DM no había repartido.</p>
 	 */
+	/**
+	 * <p>Le pega un bloque de estadísticas a una criatura que <b>ya existe</b>. Desde ese momento
+	 * {@code Combatant.of} la resuelve como cualquier monstruo del bestiario: CA, PG, resistencias,
+	 * ataques, condiciones y turno propio, porque el vínculo es la misma etiqueta NBT persistente que
+	 * escribe {@link #spawnAt}.</p>
+	 *
+	 * <p>Existe para poder construir la criatura donde mejor se construya —un mod de NPC da piel, pose,
+	 * diálogos y objetivos que este mod no tiene— y declararle aquí qué es. Por eso mismo es
+	 * <b>conservador</b> con lo que ya traía puesto:</p>
+	 * <ul>
+	 *   <li><b>Los PG sí</b> se fijan a los del bloque. Heredar los 20 del aldeano que era hace un segundo
+	 *       para un capitán de 52 no es conservar nada, es un bloque mal aplicado.</li>
+	 *   <li><b>El nombre no</b>, si ya tenía uno propio: quien la construyó le puso el que quería, y ese
+	 *       es más específico que el de la especie.</li>
+	 *   <li><b>El equipo, solo las ranuras que el bloque declara</b> ({@code equip} ignora las vacías), así
+	 *       que un bloque que solo dice "espada" le pone la espada y le deja su armadura.</li>
+	 *   <li><b>La IA no se toca.</b> Si sabía patrullar, sigue sabiendo; el modo turnos la apaga mientras
+	 *       dure el combate y se la devuelve al acabar (ver {@code TurnManager.freeze}).</li>
+	 * </ul>
+	 */
+	public static void applyStatBlock(Entity target, MonsterStatBlock block) {
+		tagAsMonster(target, block.id(), block.maxHp());
+		if (target instanceof net.minecraft.world.entity.LivingEntity living
+				&& living.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH) != null) {
+			living.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(block.maxHp());
+			living.setHealth(block.maxHp());
+		}
+		if (!target.hasCustomName()) {
+			target.setCustomName(Component.literal(block.name()));
+			target.setCustomNameVisible(true);
+		}
+		applyAppearance(target, block.appearance());
+	}
+
 	private static void applyAppearance(Entity entity, Appearance look) {
 		if (look == null || look.isDefault()) return;
 		if (look.glowing()) entity.setGlowingTag(true);

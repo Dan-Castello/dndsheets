@@ -8,11 +8,17 @@ declarar "es_* usa es_es": la unica salida es que el archivo este con cada nombr
 
 Correlo despues de tocar es_es.json. JsonContentSelfTest.checkLanguageFiles falla si no lo hiciste.
 """
-import io, os, shutil
+import io, os, re, shutil
 
 LANG = os.path.join("src", "main", "resources", "assets", "dndsheets", "lang")
-# Las 6 restantes de las 7 que trae 1.20.1. "esan" queda fuera a proposito: es asturiano, otro idioma.
-VARIANTS = ["es_ar", "es_cl", "es_ec", "es_mx", "es_uy", "es_ve"]
+# La lista NO vive aqui: vive en JsonContentSelfTest.SPANISH_VARIANTS, que es quien falla el build si
+# falta una copia. Dos listas que hay que acordarse de tocar a la vez son exactamente el fallo que este
+# script existe para no repetir.
+TEST = os.path.join("src", "test", "java", "net", "hawthorn", "dndsheets", "JsonContentSelfTest.java")
+DECL = re.search(r"SPANISH_VARIANTS = \{([^}]*)\}", io.open(TEST, encoding="utf-8").read())
+if DECL is None:
+    raise SystemExit("no encuentro SPANISH_VARIANTS en " + TEST)
+VARIANTS = re.findall(r'"([a-z_]+)"', DECL.group(1))
 
 source = os.path.join(LANG, "es_es.json")
 for name in VARIANTS:

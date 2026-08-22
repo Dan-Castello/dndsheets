@@ -342,6 +342,15 @@ public class TurnManager {
 	 * más tarde (no se encola nada). El llamador debe comprobar el resultado ANTES de gastar cualquier
 	 * recurso (espacios de conjuro, etc.), para no cobrar por una acción que se va a descartar.</p>
 	 */
+	/**
+	 * <p>Si puede actuar por sus <b>condiciones</b>, sin preguntar de quién es el turno. Es la mitad de
+	 * {@link #tryAct} que un jefe con reloj propio sí tiene que respetar: ignora la cola, no las reglas —
+	 * paralizado, aturdido, petrificado o inconsciente lo paran igual que a cualquiera.</p>
+	 */
+	public static boolean canActIgnoringTurn(Entity actor) {
+		return !isIncapacitated(actor);
+	}
+
 	public static boolean tryAct(Entity actor) {
 		//Antes que nada del modo turnos, y también fuera de combate: una condición que incapacita
 		//(paralizado, aturdido, petrificado, inconsciente) impide actuar aunque no haya iniciativa activa.
@@ -584,6 +593,16 @@ public class TurnManager {
 			freeze(level, order.get(i));
 		}
 
+		//Y los que no hacen cola arrancan su propio reloj, con el aviso en pantalla a la mesa. Va aquí,
+		//con la iniciativa ya montada, porque el aviso solo tiene sentido cuando el combate ha empezado.
+		for (TurnEntry entry : order) {
+			Entity offClock = level.getEntity(entry.entityId());
+			if (offClock != null) OwnClockManager.start(level, offClock);
+		}
+
+		//Si a quien le toca abrir resulta llevar reloj propio, se pasa al siguiente: nunca es su turno.
+		for (int skipped = 0; skipped < order.size() && isOffClock(level, current()); skipped++) step(level);
+
 		StringBuilder orderText = new StringBuilder();
 		for (int i = 0; i < order.size(); i++) {
 			if (i > 0) orderText.append(", ");
@@ -781,13 +800,10 @@ public class TurnManager {
 		due.forEach(Runnable::run);
 	}
 
-	private static void advance(ServerLevel level) {
-		turnToken++; //Cualquier auto-avance encolado antes de este avance real queda invalidado.
-		TurnEntry finishing = current();
-		//Acciones legendarias: en 5e un jefe actúa AL TERMINAR el turno de otro, y este es ese momento
-		//exacto. Va antes de mover el índice para que "el que acaba de jugar" siga siendo quien es.
-		LegendaryActionManager.onTurnEnded(level, finishing, order);
-		if (finishing != null) freeze(level, finishing); //Se ancla donde termine su turno.
+	//Un puesto del orden. Sale de advance() porque saltar a un jefe con reloj propio tiene que descontar
+	//asalto igual que cualquier otro avance: si el salto no pasara por aquí, una ronda con el dragón al
+	//final nunca terminaría de contar.
+	private static void step(ServerLevel level) {
 		currentIndex++;
 		if (currentIndex >= order.size()) {
 			currentIndex = 0;
@@ -797,6 +813,27 @@ public class TurnManager {
 			tickWeaponBuffs(level);
 			SummonManager.endRound(level);
 		}
+	}
+
+	private static boolean isOffClock(ServerLevel level, TurnEntry entry) {
+		if (entry == null) return false;
+		Entity entity = level.getEntity(entry.entityId());
+		return entity != null && MonsterRegistry.isOffClock(entity);
+	}
+
+	private static void advance(ServerLevel level) {
+		turnToken++; //Cualquier auto-avance encolado antes de este avance real queda invalidado.
+		TurnEntry finishing = current();
+		//Acciones legendarias: en 5e un jefe actúa AL TERMINAR el turno de otro, y este es ese momento
+		//exacto. Va antes de mover el índice para que "el que acaba de jugar" siga siendo quien es.
+		LegendaryActionManager.onTurnEnded(level, finishing, order);
+		if (finishing != null) freeze(level, finishing); //Se ancla donde termine su turno.
+		step(level);
+		//Los jefes con reloj propio siguen EN la lista —si no, el combate terminaría creyendo que ya no
+		//queda ningún enemigo mientras el dragón sigue vivo (ver allEnemiesDefeated)— pero nunca les toca:
+		//actúan por su cuenta cada 6 segundos. Ver OwnClockManager. El tope de vueltas es por si alguna vez
+		//TODOS fueran de reloj propio: mejor una ronda vacía que un bucle infinito en el hilo del servidor.
+		for (int skipped = 0; skipped < order.size() && isOffClock(level, current()); skipped++) step(level);
 		beginTurn(level);
 	}
 
@@ -824,6 +861,8 @@ public class TurnManager {
 	private static void freeze(ServerLevel level, TurnEntry entry) {
 		Entity entity = level.getEntity(entry.entityId());
 		if (entity != null) {
+			//Un jefe con reloj propio no se ancla ni se congela: moverse por su cuenta es justo lo que es.
+			if (MonsterRegistry.isOffClock(entity)) return;
 			movementAnchors.pin(level, entry.entityId(), entity.position());
 			//El criterio es "¿este mob tiene la IA encendida?", no "¿es de otro mod?". Antes eran lo mismo
 			//—los propios se invocaban SIEMPRE con NoAI— y dejaron de serlo con "ai": true en el bloque de

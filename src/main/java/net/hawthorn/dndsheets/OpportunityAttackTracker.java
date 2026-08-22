@@ -46,7 +46,10 @@ class OpportunityAttackTracker {
 		for (TurnManager.TurnEntry entry : order) {
 			if (entry.entityId() == mover.getId()) continue;
 			Entity entity = level.getEntity(entry.entityId());
-			if (entity != null && MonsterRegistry.statBlockOf(entity) != null && entity.position().distanceTo(mover.position()) <= MELEE_REACH) {
+			//Un jefe con reloj propio queda fuera: se mueve constantemente, así que provocaría ataques de
+			//oportunidad sin parar y el combate se convertiría en un goteo de tiradas de reacción.
+			if (entity != null && MonsterRegistry.statBlockOf(entity) != null && !MonsterRegistry.isOffClock(entity)
+					&& entity.position().distanceTo(mover.position()) <= MELEE_REACH) {
 				withinReach.add(entry.entityId());
 			}
 		}
@@ -70,6 +73,8 @@ class OpportunityAttackTracker {
 			if (entry.entityId() == mover.getId()) continue;
 			Entity entity = level.getEntity(entry.entityId());
 			if (entity == null || !entity.isAlive() || MonsterRegistry.statBlockOf(entity) == null) continue;
+			if (MonsterRegistry.isOffClock(entity)) continue; //Fuera del orden, fuera de las reacciones.
+
 
 			boolean nowInReach = entity.position().distanceTo(mover.position()) <= MELEE_REACH;
 			if (nowInReach) {
