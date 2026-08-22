@@ -1908,7 +1908,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_black_dragon", "name": "Dragon Negro Anciano", "type": "dragón", "multiattack": 3, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_black_dragon", "name": "Dragon Negro Anciano", "type": "dragón", "multiattack": 3, "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
     "ac": 22, "hp": 367,
     "abilities": { "str": 27, "dex": 14, "con": 25, "int": 16, "wis": 15, "cha": 19 },
     "proficiencyBonus": 7,
@@ -1920,7 +1920,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_blue_dragon", "name": "Dragon Azul Anciano", "type": "dragón", "multiattack": 3, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_blue_dragon", "name": "Dragon Azul Anciano", "type": "dragón", "multiattack": 3, "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
     "ac": 22, "hp": 481,
     "abilities": { "str": 29, "dex": 10, "con": 27, "int": 18, "wis": 17, "cha": 21 },
     "proficiencyBonus": 7,
@@ -1932,7 +1932,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_brass_dragon", "name": "Dragon de Laton Anciano", "type": "dragón", "multiattack": 3, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_brass_dragon", "name": "Dragon de Laton Anciano", "type": "dragón", "multiattack": 3, "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
     "ac": 20, "hp": 297,
     "abilities": { "str": 27, "dex": 10, "con": 25, "int": 16, "wis": 15, "cha": 19 },
     "proficiencyBonus": 6,
@@ -1944,7 +1944,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_bronze_dragon", "name": "Dragon de Bronce Anciano", "type": "dragón", "multiattack": 3, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_bronze_dragon", "name": "Dragon de Bronce Anciano", "type": "dragón", "multiattack": 3, "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
     "ac": 22, "hp": 444,
     "abilities": { "str": 29, "dex": 10, "con": 27, "int": 18, "wis": 17, "cha": 21 },
     "proficiencyBonus": 7,
@@ -1956,7 +1956,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_copper_dragon", "name": "Dragon de Cobre Anciano", "type": "dragón", "multiattack": 3, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_copper_dragon", "name": "Dragon de Cobre Anciano", "type": "dragón", "multiattack": 3, "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
     "ac": 21, "hp": 350,
     "abilities": { "str": 27, "dex": 12, "con": 25, "int": 20, "wis": 17, "cha": 19 },
     "proficiencyBonus": 7,
@@ -1968,7 +1968,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_gold_dragon", "name": "Dragon de Oro Anciano", "type": "dragón", "multiattack": 3, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_gold_dragon", "name": "Dragon de Oro Anciano", "type": "dragón", "multiattack": 3, "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
     "ac": 22, "hp": 546,
     "abilities": { "str": 30, "dex": 14, "con": 29, "int": 18, "wis": 17, "cha": 28 },
     "proficiencyBonus": 7,
@@ -1980,7 +1980,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_green_dragon", "name": "Dragon Verde Anciano", "type": "dragón", "multiattack": 3, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_green_dragon", "name": "Dragon Verde Anciano", "type": "dragón", "multiattack": 3, "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
     "ac": 21, "hp": 385,
     "abilities": { "str": 27, "dex": 12, "con": 25, "int": 20, "wis": 17, "cha": 19 },
     "proficiencyBonus": 7,
@@ -1992,7 +1992,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_red_dragon", "name": "Dragon Rojo Anciano", "type": "dragón", "multiattack": 3, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_red_dragon", "name": "Dragon Rojo Anciano", "type": "dragón", "multiattack": 3, "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
     "ac": 22, "hp": 546,
     "abilities": { "str": 30, "dex": 10, "con": 29, "int": 18, "wis": 15, "cha": 23 },
     "proficiencyBonus": 7,
@@ -2004,7 +2004,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_silver_dragon", "name": "Dragon de Plata Anciano", "type": "dragón", "multiattack": 3, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_silver_dragon", "name": "Dragon de Plata Anciano", "type": "dragón", "multiattack": 3, "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
     "ac": 22, "hp": 487,
     "abilities": { "str": 30, "dex": 10, "con": 29, "int": 18, "wis": 15, "cha": 23 },
     "proficiencyBonus": 7,
@@ -2016,7 +2016,7 @@
     ]
   },
   {
-    "id": "dndsheets:ancient_white_dragon", "name": "Dragon Blanco Anciano", "type": "dragón", "multiattack": 3, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:ancient_white_dragon", "name": "Dragon Blanco Anciano", "type": "dragón", "multiattack": 3, "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
     "ac": 20, "hp": 333,
     "abilities": { "str": 26, "dex": 10, "con": 26, "int": 10, "wis": 13, "cha": 14 },
     "proficiencyBonus": 6,
@@ -2627,7 +2627,7 @@
     ]
   },
   {
-    "id": "dndsheets:kraken", "name": "Kraken", "type": "monstruosidad", "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:glow_squid",
+    "id": "dndsheets:kraken", "name": "Kraken", "type": "monstruosidad", "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:glow_squid",
     "ac": 18, "hp": 472,
     "abilities": { "str": 30, "dex": 11, "con": 25, "int": 22, "wis": 18, "cha": 20 },
     "proficiencyBonus": 7,
@@ -2649,7 +2649,7 @@
     ]
   },
   {
-    "id": "dndsheets:lich", "name": "Liche", "type": "no-muerto", "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:skeleton", "appearance": { "mainHand": "minecraft:blaze_rod", "helmet": "minecraft:golden_helmet" },
+    "id": "dndsheets:lich", "name": "Liche", "type": "no-muerto", "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:skeleton", "appearance": { "mainHand": "minecraft:blaze_rod", "helmet": "minecraft:golden_helmet" },
     "ac": 17, "hp": 135,
     "abilities": { "str": 11, "dex": 16, "con": 16, "int": 20, "wis": 14, "cha": 16 },
     "proficiencyBonus": 7,
@@ -2923,7 +2923,7 @@
     ]
   },
   {
-    "id": "dndsheets:solar", "name": "Solar", "type": "celestial", "legendaryActions": 3, "baseEntity": "minecraft:allay", "appearance": { "glowing": true },
+    "id": "dndsheets:solar", "name": "Solar", "type": "celestial", "ownClock": true, "legendaryActions": 3, "baseEntity": "minecraft:allay", "appearance": { "glowing": true },
     "ac": 21, "hp": 243,
     "abilities": { "str": 26, "dex": 22, "con": 26, "int": 25, "wis": 25, "cha": 30 },
     "proficiencyBonus": 7,
@@ -2988,7 +2988,7 @@
     ]
   },
   {
-    "id": "dndsheets:tarrasque", "name": "Tarrasca", "type": "monstruosidad", "multiattack": 3, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
+    "id": "dndsheets:tarrasque", "name": "Tarrasca", "type": "monstruosidad", "multiattack": 3, "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:ravager",
     "ac": 25, "hp": 676,
     "abilities": { "str": 30, "dex": 11, "con": 30, "int": 3, "wis": 11, "cha": 11 },
     "proficiencyBonus": 9,
