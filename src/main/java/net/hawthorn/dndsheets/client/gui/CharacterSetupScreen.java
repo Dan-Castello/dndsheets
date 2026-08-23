@@ -1,13 +1,10 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import com.google.gson.JsonObject;
-import net.hawthorn.dndsheets.CharacterOptionsRegistry;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.RollIndex;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.network.BrowseActionMessage;
-import net.hawthorn.dndsheets.network.CharacterOptionsRequestMessage;
-import net.hawthorn.dndsheets.network.PresetListRequestMessage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -51,19 +48,20 @@ public class CharacterSetupScreen extends ListPickerScreen {
 	protected void buildRows() {
 		JsonObject sheet = SheetLoader.getClientSheet();
 
+		//La raza la elige Origins (ver Modularity Map / dndsheets_species), no un picker propio: este botón
+		//abre el selector real de Origins y sincroniza solo, unos segundos después (ver SpeciesCommand.choose).
 		addRow(step("gui.dndsheets.character_setup.race", field(sheet, "characterRace")),
-			button -> DndsheetsMod.PACKET_HANDLER.sendToServer(
-				new CharacterOptionsRequestMessage(CharacterOptionsRegistry.RACE)));
+			button -> openOriginPicker("dndspecies choose"));
 
-		//La clase se elige por PRESET y no por la lista de nombres: el preset escribe además el dado de
-		//golpe, las seis características, el equipo inicial y los rasgos de la clase. Elegir solo el texto
-		//deja una ficha que dice "Mago" y sigue teniendo 10 en todo.
+		//La clase también la elige Origins (capa origins-classes:class, reemplazada entera con las 12 clases
+		//del SRD — ver Modularity Map / dndsheets_species): mismo patrón que Raza, y sigue aplicando el
+		//PRESET real (dado de golpe, características, equipo inicial, rasgos), no solo el nombre.
 		addRow(step("gui.dndsheets.character_setup.class", field(sheet, "characterClass")),
-			button -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage()));
+			button -> openOriginPicker("dndspecies chooseclass"));
 
+		//El trasfondo lo elige Origins también (ver Modularity Map / dndsheets_species), mismo patrón que Raza.
 		addRow(step("gui.dndsheets.character_setup.background", field(sheet, "background")),
-			button -> DndsheetsMod.PACKET_HANDLER.sendToServer(
-				new CharacterOptionsRequestMessage(CharacterOptionsRegistry.BACKGROUND)));
+			button -> openOriginPicker("dndspecies choosebackground"));
 
 		//La subclase solo aparece cuando ya se puede elegir: enseñar un paso bloqueado a un personaje de
 		//nivel 1 es prometerle algo que la pantalla luego le niega. Que se pueda o no lo sabe el servidor
@@ -92,5 +90,12 @@ public class CharacterSetupScreen extends ListPickerScreen {
 	private static String field(JsonObject sheet, String key) {
 		return sheet != null && sheet.has(key) && sheet.get(key).isJsonPrimitive()
 			? sheet.get(key).getAsString() : "";
+	}
+
+	//Cierra esta pantalla ANTES de que llegue el selector de Origins: dejarla abierta encima le robaba el
+	//clic/teclado al selector, que quedaba inutilizable hasta cerrar la ficha a mano.
+	private static void openOriginPicker(String command) {
+		Minecraft.getInstance().player.connection.sendCommand(command);
+		Minecraft.getInstance().setScreen(null);
 	}
 }

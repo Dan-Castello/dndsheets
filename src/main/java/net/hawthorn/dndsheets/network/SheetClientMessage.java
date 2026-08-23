@@ -31,7 +31,10 @@ public class SheetClientMessage {
 	}
 
 	public static void handle(byte[] data) {
-		String json = new String(data);
+		//UTF-8 explícito: sin esto, un jugador y otro maquina en un mismo LAN pueden tener codificaciones
+		//por defecto distintas, y un nombre de raza/trasfondo con tilde llega ilegible o directamente rompe
+		//el JSON (ver el mismo fix en cada .getBytes()/new String(...) del transporte de hojas).
+		String json = new String(data, java.nio.charset.StandardCharsets.UTF_8);
 		JsonObject sheet = JsonParser.parseString(json).getAsJsonObject();
 		SheetLoader.setClient(sheet);
 		//Y si la hoja está ABIERTA en pantalla, se vuelve a rellenar. Sin esto, cambiar de personaje (o

@@ -146,7 +146,7 @@ public class LevelUpManager {
 		SheetLoader.applyClassHitPoints(target, sheet);
 		SheetLoader.saveServer(sheet, target.getStringUUID());
 		DndsheetsMod.PACKET_HANDLER.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> target),
-			new net.hawthorn.dndsheets.network.SheetClientMessage(sheet.toString().getBytes()));
+			new net.hawthorn.dndsheets.network.SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 
 		String name = SheetLoader.characterNameOf(sheet, target);
 		ChatFeedback.broadcast(target, Component.translatable("chat.dndsheets.levelup.improved", name,
@@ -172,7 +172,7 @@ public class LevelUpManager {
 		SheetLoader.applyClassHitPoints(target, sheet);
 		SheetLoader.saveServer(sheet, target.getStringUUID());
 		DndsheetsMod.PACKET_HANDLER.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> target),
-			new net.hawthorn.dndsheets.network.SheetClientMessage(sheet.toString().getBytes()));
+			new net.hawthorn.dndsheets.network.SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 
 		String name = SheetLoader.characterNameOf(sheet, target);
 		ChatFeedback.broadcast(target, Component.translatable("chat.dndsheets.levelup.feat_taken", name,

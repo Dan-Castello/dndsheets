@@ -1,0 +1,23 @@
+{
+	"replace": true,
+	"order": 1,
+	"enabled": true,
+	"origins": [
+		"dndsheets_species:fighter",
+		"dndsheets_species:wizard",
+		"dndsheets_species:rogue",
+		"dndsheets_species:cleric",
+		"dndsheets_species:paladin",
+		"dndsheets_species:barbarian",
+		"dndsheets_species:ranger",
+		"dndsheets_species:bard",
+		"dndsheets_species:druid",
+		"dndsheets_species:warlock",
+		"dndsheets_species:sorcerer",
+		"dndsheets_species:monk"
+	],
+	"allow_random": true,
+	"exclude_random": [],
+	"allow_random_unchoosable": false,
+	"hidden": false
+}

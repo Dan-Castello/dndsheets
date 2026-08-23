@@ -104,7 +104,12 @@ public class MonsterRegistry {
 		//la dejan paralizada o aturdida — lo único que ignora es tener que esperar su turno: actúa por su
 		//cuenta cada 6 segundos, que es lo que dura un asalto de 5e (ver OwnClockManager). No es "sin
 		//reglas", es "sin cola": la economía de acciones es la misma, solo que desincronizada.
-		boolean ownClock
+		boolean ownClock,
+		//"flies": true — la criatura tiene velocidad de vuelo en su bloque de estadísticas del SRD (águila
+		//gigante, búho gigante, pteranodonte...). Solo lo usa DruidWildShapeManager: transformarse en una
+		//bestia voladora concede vuelo de verdad (no solo el modelo), y volver la quita, igual que con la CA
+		//y las características físicas. Ausente = false = como se comportaba todo el bestiario antes de esto.
+		boolean flies
 	) {
 		public int abilityModifier(String key) {
 			Integer score = abilities.get(key.toLowerCase(Locale.ROOT));
@@ -188,7 +193,7 @@ public class MonsterRegistry {
 		REGISTRY.replace(new MonsterStatBlock(block.id(), block.name(), entityId, block.ac(), block.maxHp(),
 			block.abilities(), block.proficiencyBonus(), block.attacks(), block.spells(), block.damageAffinities(),
 			block.nonmagicalAffinities(), block.type(), block.legendaryResistances(), block.legendaryActions(),
-			block.attacksPerTurn(), block.appearance(), block.keepsOwnAi(), block.ownClock()));
+			block.attacksPerTurn(), block.appearance(), block.keepsOwnAi(), block.ownClock(), block.flies()));
 		return true;
 	}
 
@@ -238,6 +243,7 @@ public class MonsterRegistry {
 		int prof = json.has("proficiencyBonus") ? json.get("proficiencyBonus").getAsInt() : 2;
 		boolean keepsOwnAi = json.has("ai") && json.get("ai").getAsBoolean();
 		boolean ownClock = json.has("ownClock") && json.get("ownClock").getAsBoolean();
+		boolean flies = json.has("flies") && json.get("flies").getAsBoolean();
 
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		JsonObject abilitiesJson = json.has("abilities") ? json.getAsJsonObject("abilities") : null;
@@ -290,7 +296,7 @@ public class MonsterRegistry {
 		int attacksPerTurn = json.has("multiattack") ? Math.max(1, Math.min(6, json.get("multiattack").getAsInt())) : 1;
 		Appearance appearance = parseAppearance(json.has("appearance") ? json.getAsJsonObject("appearance") : null);
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, appearance, keepsOwnAi, ownClock);
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, appearance, keepsOwnAi, ownClock, flies);
 	}
 
 	private static Map<String, String> readAffinities(JsonObject json, String field) {
@@ -554,7 +560,7 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		for (String key : Combatant.ABILITIES) abilities.put(key, 10);
 
-		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0, 1, Appearance.DEFAULT, false, false));
+		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0, 1, Appearance.DEFAULT, false, false, false));
 		return spawnAt(level, x, y, z, id);
 	}
 

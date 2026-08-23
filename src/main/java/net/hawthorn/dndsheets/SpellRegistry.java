@@ -263,4 +263,19 @@ public class SpellRegistry {
 		CompoundTag dndTag = tag.getCompound("dndsheets");
 		return dndTag.contains("quickSpell") ? dndTag.getString("quickSpell") : null;
 	}
+
+	//Con cientos de hechizos no es viable un báculo distinto por cada uno: el que entrega /dndspells staff
+	//lleva {dndsheets:{staffConfigurable:true}} además de quickSpell, así que el Grimorio (ver
+	//GrimoireScreen, StaffBindMessage) puede reescribirle el hechizo en vez de crear un ítem nuevo.
+	public static boolean isConfigurableStaff(ItemStack stack) {
+		CompoundTag tag = stack.getTag();
+		return tag != null && tag.contains("dndsheets") && tag.getCompound("dndsheets").getBoolean("staffConfigurable");
+	}
+
+	/** @return false si el ítem no es un báculo reconfigurable (nada que reescribir). */
+	public static boolean bindStaff(ItemStack stack, String spellId) {
+		if (!isConfigurableStaff(stack)) return false;
+		stack.getTag().getCompound("dndsheets").putString("quickSpell", spellId);
+		return true;
+	}
 }

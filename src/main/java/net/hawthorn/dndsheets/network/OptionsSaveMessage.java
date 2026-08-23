@@ -43,8 +43,6 @@ public class OptionsSaveMessage {
 
 	private static Path dirFor(String category) {
 		return switch (category) {
-			case CharacterOptionsRegistry.RACE -> DndPaths.RACES_DIR;
-			case CharacterOptionsRegistry.BACKGROUND -> DndPaths.BACKGROUNDS_DIR;
 			case CharacterOptionsRegistry.CLASS -> DndPaths.CLASSES_DIR;
 			default -> null;
 		};

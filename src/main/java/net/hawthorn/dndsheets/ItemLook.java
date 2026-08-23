@@ -45,7 +45,8 @@ public enum ItemLook {
 	TURN_UNDEAD,
 	HELP,
 	STAFF,
-	SUMMON_CARD;
+	SUMMON_CARD,
+	SHOVE;
 
 	/** El valor que el modelo de {@code token.json} busca en su lista de overrides. */
 	public int customModelData() {

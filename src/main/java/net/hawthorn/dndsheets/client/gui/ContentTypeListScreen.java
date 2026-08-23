@@ -33,8 +33,8 @@ public class ContentTypeListScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.content_type.traits"), b -> request(ContentType.TRAIT));
 		addRow(Component.translatable("gui.dndsheets.content_type.encounters"), b -> request(ContentType.ENCOUNTER));
 		addRow(Component.translatable("gui.dndsheets.content_type.feats"), b -> request(ContentType.FEAT));
-		addRow(Component.translatable("gui.dndsheets.content_type.races"), b -> requestOptions(CharacterOptionsRegistry.RACE));
-		addRow(Component.translatable("gui.dndsheets.content_type.backgrounds"), b -> requestOptions(CharacterOptionsRegistry.BACKGROUND));
+		//Raza y Trasfondo ya no tienen editor in-game: Origins elige, /dndspecies load/loadbackground
+		//homebrewean por archivo (ver dndsheets_species). Sin fila acá para no prometer pantallas que ya no existen.
 		addRow(Component.translatable("gui.dndsheets.content_type.classes"), b -> requestOptions(CharacterOptionsRegistry.CLASS));
 	}
 

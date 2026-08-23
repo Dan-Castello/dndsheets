@@ -4,6 +4,7 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -208,6 +209,10 @@ public class SpellCastManager {
 		int abilityMod = CombatManager.abilityModifier(casterSheet, ABILITY_SHEET_KEY.getOrDefault(spell.castingAbility(), "intelligence"));
 
 		CombatFx.spellCast(caster);
+		//Rastro cosmético entre quien lanza y el punto de impacto — ver CombatFx.spellTravel. Zona/autolanzado/
+		//invocación no tienen un punto único al que viajar, se quedan solo con el destello de casteo.
+		if (target != null) CombatFx.spellTravel(caster, target, spell.damageType());
+		else if (impactPoint != null) CombatFx.spellTravel(caster, impactPoint, spell.damageType());
 		//El nivel del espacio no se sabe hasta gastarlo: se pidió uno de 3º, pero si estaban agotados salió
 		//por uno de 4º y el conjuro sube con él. De ahí que la subida de nivel se aplique DESPUÉS de gastar
 		//y no antes, con el nivel real y no con el pedido.
@@ -245,6 +250,12 @@ public class SpellCastManager {
 			//Gemelar un hechizo que ya reparte daño a todo un radio no tendría sentido (5e tampoco lo deja);
 			//se ignora el flag pendiente en vez de consumirlo, para no gastarlo en un lanzado que no aplica.
 			for (Entity aoeTarget : aoeTargets) castSaveSpell(caster, casterName, spell, aoeTarget, proficiency, abilityMod);
+			//Superficies (ver SurfaceManager): fuego que deja el suelo ardiendo, agua real que lo apaga o
+			//conduce un rayo. Después de resolver el golpe, no antes — necesita saber a quién ya alcanzó de
+			//lleno para no cobrarle el chispazo de agua+rayo dos veces al mismo objetivo.
+			if (caster.level() instanceof ServerLevel surfaceLevel && !spell.originatesAtCaster()) {
+				SurfaceManager.onAoeImpact(surfaceLevel, impactPoint, spell.damageType(), aoeTargets);
+			}
 		} else if ("save".equals(spell.mode())) {
 			castSaveSpell(caster, casterName, spell, target, proficiency, abilityMod);
 			castTwinnedIfPending(caster, casterName, spell, target, proficiency, abilityMod);

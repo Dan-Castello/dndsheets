@@ -101,7 +101,7 @@ public class MonsterActionManager {
 		//le dice qué es. Ver MonsterBindMessage.
 		if (block == null) {
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> serverDm),
-				new net.hawthorn.dndsheets.network.MonsterBindMessage(target.getId(), ""));
+				new net.hawthorn.dndsheets.network.MonsterBindMessage(target.getId(), new ArrayList<>(MonsterRegistry.ids())));
 			return;
 		}
 
@@ -413,7 +413,7 @@ public class MonsterActionManager {
 		//plano — la misma asimetría de siempre, en la fuente en vez de en el objetivo.
 		Combatant attackerCombatant = Combatant.of(monsterEntity);
 		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(new JsonObject(), "1d20 + " + toHitMod,
-			AttackRules.advantageAgainst(targetCombatant, melee,
+			AttackRules.advantageAgainst(monsterEntity, targetCombatant, melee,
 				attackerCombatant != null ? attackerCombatant.ownAttackAdvantage() : DiceManager.Advantage.NORMAL));
 		if (attackRoll.outcome().result() == null) return;
 		CombatFx.diceTick(monsterEntity);

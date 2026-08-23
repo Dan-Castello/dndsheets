@@ -16,6 +16,7 @@ import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.hawthorn.dndsheets.network.TutorialOpenMessage;
+import net.hawthorn.dndsheets.api.event.CharacterSwitchedEvent;
 import net.hawthorn.dndsheets.api.event.SheetValidateEvent;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -117,7 +118,7 @@ public class SheetLoader {
 		applyClassHitPoints(entity, SheetLoader.getServerSheet(uuidString));
 
 		try {
-			byte[] data = SheetLoader.getServerSheet(uuidString).toString().getBytes();
+			byte[] data = SheetLoader.getServerSheet(uuidString).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> entity), new SheetClientMessage(data));
 			DeathSaveManager.resendState(entity, SheetLoader.getServerSheet(uuidString));
 			//Reconectarse durante un combate le da al jugador un entityId nuevo; sin esto quedaba bloqueado
@@ -168,20 +169,29 @@ public class SheetLoader {
 		DruidWildShapeManager.clearFor(player);
 		RangerHunterMarkManager.clearFor(player);
 		DeathSaveManager.clearFor(player);
-		DungeonToolManager.clearFor(player);
+		//DungeonToolManager.clearFor(player) vivía aquí — se mudó al addon de mazmorras, que ahora
+		//escucha este mismo PlayerLoggedOutEvent por su cuenta (ver Modularity Map).
 		MonsterActionManager.clearFor(player);
 	}
 
 	//Sin esto no había ninguna forma de enterarse de la tecla H (u P para operadores) salvo que alguien te
 	//lo dijera aparte — se manda una sola vez por login real (no en cada respawn/cambio de dimensión, que
 	//también dispara EntityJoinLevelEvent, por eso esto vive en PlayerLoggedInEvent y no ahí).
+	//
+	//Con un ratito de retraso (20 ticks) y no en el mismo tick del login: a un jugador que se une por LAN
+	//(no el host, cuyo mundo integrado ya estaba cargado) el mensaje le llegaba ANTES de que su cliente
+	//terminara de abrir la pantalla de chat — el host lo veía porque su partida ya estaba en marcha, quien
+	//se conectaba de verdad se lo perdía en silencio. El mismo hueco que resuelve
+	//DndsheetsMod.queueServerWork para los efectos en cadena de hechizos.
 	@SubscribeEvent
 	public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
-		player.sendSystemMessage(Component.translatable("chat.dndsheets.welcome.sheet_key").withStyle(ChatFormatting.GRAY));
-		if (player.hasPermissions(2)) {
-			player.sendSystemMessage(Component.translatable("chat.dndsheets.welcome.dm_key").withStyle(ChatFormatting.GRAY));
-		}
+		DndsheetsMod.queueServerWork(20, () -> {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.welcome.sheet_key").withStyle(ChatFormatting.GRAY));
+			if (player.hasPermissions(2)) {
+				player.sendSystemMessage(Component.translatable("chat.dndsheets.welcome.dm_key").withStyle(ChatFormatting.GRAY));
+			}
+		});
 	}
 
 	private static final UUID CLASS_HP_MODIFIER_ID = UUID.fromString("6f2f8f0a-3b1a-4c8e-9d2a-1a2b3c4d5e6f");
@@ -444,7 +454,7 @@ public class SheetLoader {
 	 */
 	public static void saveAndSync(ServerPlayer player, JsonObject sheet) {
 		saveServer(sheet, player.getStringUUID());
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes()));
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 	}
 
 	//Save the given sheet into a JSON file, making a new one if it doesn't exist, and updates the "sheets" HashMap.
@@ -636,7 +646,7 @@ public class SheetLoader {
 		makeNew("New Sheet", playerUuid);
 		JsonObject fresh = getServerSheet(playerUuid);
 		applyClassHitPoints(player, fresh);
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(fresh.toString().getBytes()));
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(fresh.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 	}
 
 	/**
@@ -725,7 +735,8 @@ public class SheetLoader {
 		//seguir al que te pones: dejar a un moribundo para llevarte a otro la cierra, y volver con él la
 		//reabre. Sin esto, el estado era correcto en los datos e invisible en pantalla.
 		DeathSaveManager.resendState(player, target);
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(target.toString().getBytes()));
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(target.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+		MinecraftForge.EVENT_BUS.post(new CharacterSwitchedEvent(player, characterId, target));
 		return true;
 	}
 

@@ -554,7 +554,7 @@ public class SheetCommand {
 	//de salida, así que arreglarlo acá cierra el hueco para gold/level/slots/advantage/damageAffinity/pact
 	//a la vez, sin tener que acordarse en cada uno.
 	private static void sendSheetUpdate(ServerPlayer target, JsonObject sheet) {
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes()));
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 		SheetLoader.saveServer(sheet, target.getStringUUID());
 	}
 }

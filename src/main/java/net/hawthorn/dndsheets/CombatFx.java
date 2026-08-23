@@ -176,6 +176,41 @@ public class CombatFx {
 		}
 	}
 
+	//Rastro de partículas entre quien lanza y el punto de impacto, siguiendo la misma partícula núcleo que
+	//ya usa el tipo de daño en hit()/spellImpact() — antes de esto, lanzar un hechizo se veía como dos
+	//chispazos sin conexión (uno al lanzador, otro al objetivo, teletransportados entre sí), sin nada que
+	//sugiriera que algo VIAJÓ de uno a otro. No es una entidad de verdad con física propia: el impacto ya
+	//lo decide la tirada de dados de SpellCastManager, así que el rastro es puramente cosmético, siempre
+	//"acierta" el punto que la regla ya calculó — un proyectil con colisión real competiría con esa tirada
+	//en vez de ilustrarla.
+	//ponytail: partículas escalonadas por tick en vez de una entidad de proyectil con renderer propio —
+	//si algún día hace falta que el rastro esquive obstáculos o se vea desde ángulos raros, esa es la
+	//migración natural, pero hoy nadie lo pidió.
+	public static void spellTravel(ServerPlayer caster, Entity target, String damageType) {
+		spellTravel(caster, target.getX(), target.getY() + target.getBbHeight() / 2, target.getZ(), damageType);
+	}
+
+	public static void spellTravel(ServerPlayer caster, Vec3 to, String damageType) {
+		spellTravel(caster, to.x, to.y, to.z, damageType);
+	}
+
+	private static void spellTravel(ServerPlayer caster, double toX, double toY, double toZ, String damageType) {
+		if (!(caster.level() instanceof ServerLevel level)) return;
+		HitFx fx = FX_BY_DAMAGE_TYPE.getOrDefault(damageType, DEFAULT_FX);
+		Vec3 from = caster.getEyePosition().add(caster.getLookAngle().scale(0.6));
+		Vec3 to = new Vec3(toX, toY, toZ);
+
+		//Repartido en 8 pasos: bastante para leerse como movimiento continuo a 20 ticks/segundo, sin
+		//saturar la cola de trabajo diferido con un caso que pasa por SpellCastManager decenas de veces
+		//por combate.
+		int steps = 8;
+		for (int i = 1; i <= steps; i++) {
+			Vec3 point = from.lerp(to, i / (double) steps);
+			DndsheetsMod.queueServerWork(i, () ->
+				level.sendParticles(fx.particle(), point.x, point.y, point.z, 2, 0.03, 0.03, 0.03, 0.01));
+		}
+	}
+
 	public static void actionBar(ServerPlayer player, Component message) {
 		player.connection.send(new ClientboundSetActionBarTextPacket(message));
 	}

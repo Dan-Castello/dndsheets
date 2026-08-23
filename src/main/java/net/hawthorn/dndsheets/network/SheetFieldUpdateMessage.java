@@ -34,7 +34,7 @@ public class SheetFieldUpdateMessage {
 	}
 
 	public static void handle(byte[] data) {
-		JsonObject patch = JsonParser.parseString(new String(data)).getAsJsonObject();
+		JsonObject patch = JsonParser.parseString(new String(data, java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
 		SheetLoader.applyClientDelta(patch);
 	}
 }

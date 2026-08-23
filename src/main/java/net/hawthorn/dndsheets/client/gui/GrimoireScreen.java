@@ -6,8 +6,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
+import net.hawthorn.dndsheets.SpellRegistry;
 import net.hawthorn.dndsheets.SpellSlots;
 import net.hawthorn.dndsheets.network.SpellCastMessage;
+import net.hawthorn.dndsheets.network.StaffBindMessage;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -18,8 +21,10 @@ import java.util.List;
 
 /**
  * <p>Ventana aparte para lanzar hechizos conocidos, en vez de una 4ª pestaña en la hoja de personaje
- * (no hay textura de fondo para eso todavía). Se abre desde el botón "Grimorio" de la pestaña Main.
- * Apunta al objetivo que estés mirando (ver {@link net.hawthorn.dndsheets.SpellCastManager}).</p>
+ * (no hay textura de fondo para eso todavía). Se abre desde el botón "Grimorio" de la pestaña Main, o
+ * directo con la tecla propia (ver {@code DndsheetsModKeyMappings.GRIMOIRE}) sin pasar por la ficha —no
+ * depende de nada que solo viva ahí, lee todo de {@link SheetLoader#getClientSheet}. Apunta al objetivo
+ * que estés mirando (ver {@link net.hawthorn.dndsheets.SpellCastManager}).</p>
  *
  * <p>El nombre y nivel de cada hechizo se leen directamente de la hoja (los guarda {@code /dndspells
  * learn} junto al id), no de {@code SpellRegistry}: ese registro solo vive en memoria del servidor, así
@@ -43,11 +48,17 @@ public class GrimoireScreen extends ListPickerScreen {
 	private KnownSpell selected;
 	private Button castButton;
 	private Button slotLevelButton;
+	private Button bindButton;
 	/** Nivel de espacio elegido para el hechizo seleccionado; 0 = el más bajo que sirva. */
 	private int chosenSlotLevel;
 
 	protected GrimoireScreen(Screen parent) {
 		super(Component.translatable("gui.dndsheets.grimoire.title"), parent);
+	}
+
+	/** {@code parent} null cuando se abre suelto (tecla directa): sin "&lt; Atrás", Escape cierra a secas. */
+	public static void open(Screen parent) {
+		Minecraft.getInstance().setScreen(new GrimoireScreen(parent));
 	}
 
 	@Override
@@ -60,11 +71,11 @@ public class GrimoireScreen extends ListPickerScreen {
 		return SUBTITLE_Y + SLOT_ROW_STEP + 14;
 	}
 
-	//Deja hueco fijo bajo la lista para las dos filas que no se desplazan con los hechizos: elegir nivel de
-	//espacio y lanzar.
+	//Deja hueco fijo bajo la lista para las tres filas que no se desplazan con los hechizos: elegir nivel de
+	//espacio, lanzar y vincular al báculo en mano.
 	@Override
 	protected int listHeight() {
-		return super.listHeight() - 2 * (BUTTON_HEIGHT + SPACING);
+		return super.listHeight() - 3 * (BUTTON_HEIGHT + SPACING);
 	}
 
 	@Override
@@ -74,6 +85,7 @@ public class GrimoireScreen extends ListPickerScreen {
 		int left = (this.width - buttonWidth()) / 2;
 		int slotY = listTop() + listHeight() + SPACING;
 		int castY = slotY + BUTTON_HEIGHT + SPACING;
+		int bindY = castY + BUTTON_HEIGHT + SPACING;
 
 		//Lanzar a nivel superior es una DECISIÓN, no algo que el servidor pueda adivinar: gastar un espacio
 		//de 5º en una Bola de Fuego a cambio de más dados solo lo sabe quien lanza. Un botón que cicla en vez
@@ -90,6 +102,15 @@ public class GrimoireScreen extends ListPickerScreen {
 			if (selected == null) return;
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new SpellCastMessage(selected.id(), chosenSlotLevel));
 		}, left, castY, buttonWidth(), BUTTON_HEIGHT));
+
+		//Con cientos de hechizos no es viable un báculo por cada uno (ver SpellCommand.buildStaffStack): el
+		//que se entrega es reconfigurable, y este botón le reescribe el quickSpell al que llevas en la mano
+		//principal en vez de crear un ítem nuevo. Solo activo si de verdad sostenés uno configurable.
+		bindButton = this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.grimoire.bind_staff"), button -> {
+			if (selected == null) return;
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new StaffBindMessage(selected.id()));
+		}, left, bindY, buttonWidth(), BUTTON_HEIGHT));
+
 		updateButtons();
 	}
 
@@ -125,6 +146,19 @@ public class GrimoireScreen extends ListPickerScreen {
 			//"cambiar" y no "subir": el ciclo vuelve al nivel del hechizo al llegar arriba, y en el nivel
 			//más alto disponible el único clic posible es precisamente el que baja.
 			: "Espacio: nv. " + chosenSlotLevel + (canChoose ? "  (clic para cambiar)" : "")));
+
+		boolean holdingConfigurableStaff = isHoldingConfigurableStaff();
+		bindButton.active = selected != null && holdingConfigurableStaff;
+		bindButton.setMessage(Component.literal(
+			!holdingConfigurableStaff ? "Sostén un báculo reconfigurable para vincularlo"
+			: selected == null ? "Elige un hechizo para vincularlo al báculo"
+			: "Vincular al báculo: " + selected.name()));
+	}
+
+	//Solo se comprueba al construir los botones y al elegir un hechizo (ver init/buildRows), no cada
+	//fotograma: cambiar de báculo con el Grimorio abierto no es un caso que valga la pena perseguir en vivo.
+	private static boolean isHoldingConfigurableStaff() {
+		return SpellRegistry.isConfigurableStaff(Minecraft.getInstance().player.getMainHandItem());
 	}
 
 	/**

@@ -87,7 +87,7 @@ public class SheetServerMessage {
 		String uuid = entity.getStringUUID();
 		JsonObject incoming;
 		try {
-			incoming = JsonParser.parseString(new String(data)).getAsJsonObject();
+			incoming = JsonParser.parseString(new String(data, java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
 		} catch (JsonSyntaxException | IllegalStateException e) {
 			//Payload de un cliente (cualquiera, no solo op) que no es JSON válido o no es un objeto: se
 			//descarta el mensaje en vez de tumbar el hilo principal del servidor con una excepción sin capturar.

@@ -259,9 +259,15 @@ public class TurnManager {
 	 * <p>Si es un objetivo válido de las reglas de combate, sea enemigo o no. Un PNJ con ficha
 	 * ({@link Combatant#characterIdOf}) es atacable y curable con reglas de 5e completas sin ser un
 	 * enemigo — separar las dos preguntas es lo que permite tener aliados sin romper el fin de combate.</p>
+	 *
+	 * <p>Un JUGADOR real también cuenta, aunque no lleve la etiqueta NBT de PNJ (esa es solo para atar una
+	 * entidad del mundo a una ficha, no como se identifica a un jugador — eso ya es {@code Combatant.of}
+	 * por UUID). Sin esto, golpear a otro jugador nunca pasaba por {@code onAttackEntity}'s bloque de
+	 * turnos: {@code CombatManager} caía directo al golpe flojo de Minecraft, sin gastar turno ni acción,
+	 * así que se podía pegar sin límite en PvP mientras el modo turnos sí frenaba a todo lo demás.</p>
 	 */
 	public static boolean isCombatTarget(Entity entity) {
-		return isMonster(entity) || Combatant.characterIdOf(entity) != null;
+		return isMonster(entity) || entity instanceof Player || Combatant.characterIdOf(entity) != null;
 	}
 
 	//Público: llamado justo tras markDefeated cuando un monstruo se borra A MANO en mitad de combate (Vara
@@ -469,7 +475,10 @@ public class TurnManager {
 
 		record Rolled(int entityId, String name, int score, boolean isMonster, String playerUuid) {}
 		List<Rolled> rolled = new ArrayList<>();
-		for (Entity entity : level.getEntities((Entity) null, box, e -> e instanceof Player || isMonster(e))) {
+		//Un espectador no participa: está mirando, no jugando, y no puede ni recibir daño ni actuar en 5e.
+		//Sin este filtro, un DM/observador en modo espectador cerca del combate entraba a la iniciativa
+		//igual que cualquier PJ y se quedaba ocupando un turno que nadie iba a jugar nunca.
+		for (Entity entity : level.getEntities((Entity) null, box, e -> (e instanceof Player p && !p.isSpectator()) || isMonster(e))) {
 			String playerUuid = entity instanceof Player player ? player.getStringUUID() : null;
 			rolled.add(new Rolled(entity.getId(), nameOf(entity), rollInitiative(entity), isMonster(entity), playerUuid));
 		}
@@ -575,6 +584,7 @@ public class TurnManager {
 		order.clear();
 		effects.clear();
 		ZoneManager.clear(); //Sin orden de turnos no hay asaltos que contar, así que no hay muro que mantener.
+		SurfaceManager.clear(); //Mismo motivo: sin asaltos que contar, tampoco hay charco de fuego que mantener.
 		actedThisTurn.clear();
 		reactionUsed.clear();
 		TurnActionManager.clearAll(); //Fuera de combate, esquivar/correr/desengancharse no significan nada.
@@ -635,6 +645,7 @@ public class TurnManager {
 		order.clear();
 		effects.clear();
 		ZoneManager.clear(); //Sin orden de turnos no hay asaltos que contar, así que no hay muro que mantener.
+		SurfaceManager.clear(); //Mismo motivo: sin asaltos que contar, tampoco hay charco de fuego que mantener.
 		actedThisTurn.clear();
 		reactionUsed.clear();
 		TurnActionManager.clearAll(); //Fuera de combate, esquivar/correr/desengancharse no significan nada.
@@ -698,8 +709,8 @@ public class TurnManager {
 	//Reconectarse (crash, relog) le da al jugador un entityId nuevo — Minecraft nunca reutiliza el viejo.
 	//Sin esto, su puesto en order quedaba huérfano para siempre: auto-skip perpetuo (ver beginTurn) y
 	//tryAct(nuevoEntity) nunca coincidía con el id guardado, bloqueándolo de actuar por el resto del
-	//encuentro. Se llama desde SheetLoader.clientJoinedServer en cada join; no hace nada si no hay
-	//combate activo o si el jugador no tenía puesto en order.
+	//encuentro. Se llama desde SheetLoader.clientJoinedServer en cada join Y en cada respawn (mismo
+	//EntityJoinLevelEvent), no hace nada si no hay combate activo o si el jugador no tenía puesto en order.
 	public static void reconcilePlayerEntity(ServerPlayer player) {
 		if (!active) return;
 		String uuid = player.getStringUUID();
@@ -715,6 +726,15 @@ public class TurnManager {
 			if (actedThisTurn.remove(oldId)) actedThisTurn.add(newId);
 			if (reactionUsed.remove(oldId)) reactionUsed.add(newId);
 			opportunityAttacks.rekey(oldId, newId);
+			//Un jugador que muere de verdad (onPlayerRealDeath) queda en confirmedDefeated para siempre —
+			//correcto mientras siga muerto, pero nada lo sacaba de ahí si lo revivían y volvía a entrar: el
+			//id VIEJO se queda huérfano en el set (no lo pisa nada de lo de arriba) y el NUEVO nunca se
+			//marca, así que en teoría ya no cuenta como derrotado, pero tampoco lo trata como que sigue en
+			//el combate — quedaba en un limbo. Reconciliar solo pasa con un ServerPlayer recién unido o
+			//reaparecido, es decir, vivo ahora mismo: se le quita la marca de derrotado de los dos ids, viejo
+			//y nuevo, para que vuelva a contar en el encuentro igual que si nunca hubiera muerto.
+			confirmedDefeated.remove(oldId);
+			confirmedDefeated.remove(newId);
 			return; //Un solo puesto por UUID en el orden, no hace falta seguir buscando.
 		}
 	}
@@ -810,6 +830,7 @@ public class TurnManager {
 			round++;
 			fireDueRoundCallbacks();
 			ZoneManager.endRound(level); //Asalto completo: los muros descuentan duración y se redibujan.
+			SurfaceManager.endRound(level); //Mismo asalto: los charcos de fuego descuentan duración y se redibujan.
 			tickWeaponBuffs(level);
 			SummonManager.endRound(level);
 		}
@@ -918,6 +939,7 @@ public class TurnManager {
 		tickEffects(level, entity, entry);
 		//Muros persistentes: 5e los resuelve justo aquí, al empezar el turno de quien está dentro.
 		ZoneManager.onTurnStart(level, entity);
+		SurfaceManager.onTurnStart(level, entity); //Mismo momento: si hay un charco de fuego bajo los pies, arde ahora.
 		if (!entity.isAlive()) { //El propio efecto de estado (veneno...) pudo haberlo matado recién.
 			scheduleAutoAdvance(level, entry.entityId());
 			return;
@@ -1009,7 +1031,29 @@ public class TurnManager {
 		boolean actioned = entry != null && actedThisTurn.contains(entry.entityId());
 		Vec3 origin = entry != null ? movementAnchors.originOf(entry.entityId()) : Vec3.ZERO;
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.ALL.noArg(),
-			new TurnStateMessage(active, round, name, entityId, actioned, origin.x, origin.y, origin.z));
+			new TurnStateMessage(active, round, name, entityId, actioned, origin.x, origin.y, origin.z, rosterOf(level)));
+	}
+
+	//La fila de iniciativa entera para el HUD (ver TurnStateMessage.RosterRow): quién va, quién ya actuó,
+	//quién cayó y qué condiciones lleva encima cada uno — todo lo que en una mesa real se ve con solo mirar
+	//el tablero, y que antes solo existía disperso en el chat.
+	private static List<TurnStateMessage.RosterRow> rosterOf(ServerLevel level) {
+		List<TurnStateMessage.RosterRow> rows = new ArrayList<>(order.size());
+		for (TurnEntry entry : order) {
+			List<String> conditionLabels = List.of();
+			Entity entity = level.getEntity(entry.entityId());
+			if (entity != null) {
+				Combatant combatant = Combatant.of(entity);
+				if (combatant != null && !combatant.conditions().isEmpty()) {
+					conditionLabels = new ArrayList<>(combatant.conditions().size());
+					for (Condition condition : combatant.conditions()) conditionLabels.add(condition.label());
+				}
+			}
+			rows.add(new TurnStateMessage.RosterRow(entry.entityId(), entry.name(), entry.isMonster(),
+				confirmedDefeated.contains(entry.entityId()), actedThisTurn.contains(entry.entityId()),
+				reactionUsed.contains(entry.entityId()), conditionLabels));
+		}
+		return rows;
 	}
 
 	private static void tickEffects(ServerLevel level, Entity entity, TurnEntry entry) {

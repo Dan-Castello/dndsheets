@@ -1,11 +1,13 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
-import net.hawthorn.dndsheets.network.DungeonPieceListRequestMessage;
 import net.hawthorn.dndsheets.network.BrowseActionMessage;
+import net.hawthorn.dndsheets.network.MonsterSpawnListRequestMessage;
 import net.hawthorn.dndsheets.network.PresetListRequestMessage;
 import net.hawthorn.dndsheets.network.SheetSummaryRequestMessage;
+import net.hawthorn.dndsheets.network.SpellGiveListRequestMessage;
 import net.hawthorn.dndsheets.network.TraitListRequestMessage;
+import net.hawthorn.dndsheets.network.WeaponGiveListRequestMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
@@ -34,18 +36,24 @@ public class DmPanelScreen extends ListPickerScreen {
 			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.LIST_PARTY)));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.turn_mode"), b -> TurnControlScreen.open());
 		addRow(Component.translatable("gui.dndsheets.dm_panel.spawn_npc"), b -> SpawnGenericScreen.open());
-		addRow(Component.translatable("gui.dndsheets.dm_panel.spawn_monster"), b -> MonsterSpawnListScreen.open());
+		addRow(Component.translatable("gui.dndsheets.dm_panel.spawn_monster"),
+			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new MonsterSpawnListRequestMessage()));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.grant_trait"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_trait"),
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new TraitListRequestMessage(uuid))));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.give_item"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_item"), GiveItemListScreen::open));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.give_weapon"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_weapon"), WeaponGiveListScreen::open));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.give_spell"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_spell"), SpellGiveListScreen::open));
+		addRow(Component.translatable("gui.dndsheets.dm_panel.give_weapon"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_weapon"),
+			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new WeaponGiveListRequestMessage(uuid))));
+		addRow(Component.translatable("gui.dndsheets.dm_panel.give_spell"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_spell"),
+			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new SpellGiveListRequestMessage(uuid))));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.sheet_adjust"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_sheet"),
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetSummaryRequestMessage(uuid))));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.apply_preset"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_preset"),
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage(uuid))));
+		//El toolkit de mazmorras vive en su propio addon (dndsheets_dungeon) desde PROJECT_CONTEXT.md /
+		//Modularity Map: este panel ya no conoce sus mensajes de red, solo dispara su comando — mismo
+		//patrón que "journal" más abajo. Si el addon no está instalado, Brigadier ya rechaza el comando.
 		addRow(Component.translatable("gui.dndsheets.dm_panel.dungeons"),
-			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new DungeonPieceListRequestMessage()));
+			b -> Minecraft.getInstance().player.connection.sendCommand("dnddungeon gui"));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.compendium"), b -> CompendiumScreen.open());
 		//El diario se abre por comando (/dndjournal) y no desde aquí con un mensaje: el servidor ya sabe
 		//qué puede leer cada uno, y pedirlo desde el cliente sería un viaje de más para el mismo resultado.

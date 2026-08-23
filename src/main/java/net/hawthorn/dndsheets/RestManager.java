@@ -229,7 +229,7 @@ public class RestManager {
 		FighterSecondWindManager.resetOnRest(player); //5e lo recupera con cualquiera de los dos descansos, no solo el largo.
 		ClericTurnUndeadManager.resetOnRest(player);  //Canalizar Divinidad, igual: se recupera con el descanso corto.
 
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes()));
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 	}
 
 	//"server" puede ser null (p.ej. un jugador desconectándose a mitad de shutdown); en ese caso simplemente

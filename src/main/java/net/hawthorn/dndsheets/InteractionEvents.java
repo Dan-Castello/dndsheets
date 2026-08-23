@@ -17,13 +17,14 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
  * borraba su estado en la primera pasada y salía temprano en la segunda, así que "movido" salía una sola
  * vez mientras "seleccionado" salía dos— y por eso conviene llamar a esto SIEMPRE, no solo donde se note.</p>
  */
-final class InteractionEvents {
+public final class InteractionEvents {
 
 	private InteractionEvents() {
 	}
 
-	/** "Este clic derecho ya está atendido": cancela y corta el reintento del cliente con la otra mano. */
-	static void consume(PlayerInteractEvent event) {
+	/** "Este clic derecho ya está atendido": cancela y corta el reintento del cliente con la otra mano.
+	 *  Pública: la usa también el addon del toolkit de mazmorras (módulo aparte, ver DungeonToolManager). */
+	public static void consume(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		event.setCancellationResult(InteractionResult.SUCCESS);
 	}

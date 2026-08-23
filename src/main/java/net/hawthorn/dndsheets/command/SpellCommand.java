@@ -133,12 +133,15 @@ public class SpellCommand {
 			target.getInventory().add(buildStaffStack(spellId, spell, null));
 		}
 
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes()));
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 	}
 
 	//Un báculo (o cualquier ítem base) etiquetado {dndsheets:{quickSpell:"id"}} lo lanza de un clic
 	//derecho sin pasar por el Grimorio (ver QuickSpellManager), usando siempre las estadísticas y
-	//espacios de conjuro reales del portador, no un "cargador" propio del báculo.
+	//espacios de conjuro reales del portador, no un "cargador" propio del báculo. Con cientos de hechizos
+	//en el juego no es viable un báculo distinto por cada uno, así que el que se entrega es RECONFIGURABLE:
+	//sostenerlo y elegir "Vincular al báculo" en el Grimorio le reescribe el hechizo (ver StaffBindMessage),
+	//sin crear un ítem nuevo por cada cambio.
 	private static int staff(CommandContext<CommandSourceStack> ctx, String itemId) throws CommandSyntaxException {
 		String spellId = ResourceLocationArgument.getId(ctx, "hechizoId").toString();
 		SpellRegistry.Spell spell = SpellRegistry.get(spellId);
@@ -171,6 +174,7 @@ public class SpellCommand {
 		if (ownStaff) net.hawthorn.dndsheets.ItemLook.STAFF.applyTo(stack);
 		CompoundTag dndTag = new CompoundTag();
 		dndTag.putString("quickSpell", spellId);
+		dndTag.putBoolean("staffConfigurable", true);
 		stack.getOrCreateTag().put("dndsheets", dndTag);
 		stack.setHoverName(Component.literal("Báculo de " + spell.name()));
 		return stack;

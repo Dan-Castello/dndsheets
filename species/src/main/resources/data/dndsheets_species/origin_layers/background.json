@@ -1,0 +1,24 @@
+{
+	"replace": false,
+	"order": 2,
+	"enabled": true,
+	"origins": [
+		"dndsheets_species:acolyte",
+		"dndsheets_species:charlatan",
+		"dndsheets_species:criminal",
+		"dndsheets_species:entertainer",
+		"dndsheets_species:folk_hero",
+		"dndsheets_species:guild_artisan",
+		"dndsheets_species:hermit",
+		"dndsheets_species:noble",
+		"dndsheets_species:outlander",
+		"dndsheets_species:sage",
+		"dndsheets_species:sailor",
+		"dndsheets_species:soldier",
+		"dndsheets_species:urchin"
+	],
+	"allow_random": true,
+	"exclude_random": [],
+	"allow_random_unchoosable": false,
+	"hidden": false
+}

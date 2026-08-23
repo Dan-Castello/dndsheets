@@ -7,6 +7,9 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * <p>Quién ve a quién transformado. La forma vive en la hoja del druida, pero <b>dibujarlo</b> es cosa de
  * los clientes de los demás, y la hoja de un jugador no se le manda a nadie más — así que la forma tiene
@@ -29,12 +32,36 @@ public class WildShapeWatcher {
 	/** Cuenta a todo el mundo en qué se ha convertido este jugador. Id vacío = ha vuelto a su forma. */
 	public static void broadcast(ServerPlayer player, String monsterId) {
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.ALL.noArg(),
-			new WildShapeMessage(WildShapeMessage.Kind.SHAPE, player.getUUID(), monsterId));
+			new WildShapeMessage(WildShapeMessage.Kind.SHAPE, player.getUUID(), baseEntityIdOf(monsterId)));
 	}
 
+	/**
+	 * <p>El registro de monstruos solo vive de verdad en el servidor: un cliente que sea un proceso aparte
+	 * (cualquier invitado por LAN que no sea quien abrió el mundo) lo ve siempre vacío. Por eso el SHAPE que
+	 * viaja al resto no lleva el id del monstruo — llevaría al renderer de vuelta a consultar ese registro
+	 * vacío — sino la entidad base ya resuelta aquí, que es lo único que {@code WildShapeRenderer} necesita
+	 * para elegir el modelo.</p>
+	 */
+	private static String baseEntityIdOf(String monsterId) {
+		if (monsterId == null || monsterId.isEmpty()) return "";
+		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(monsterId);
+		return block != null ? block.baseEntityId() : "";
+	}
+
+	/** Resuelve el bestiario EN EL SERVIDOR, que es donde de verdad vive: ver el comentario de WildShapeMessage. */
 	public static void openPicker(ServerPlayer player) {
+		List<String> ids = DruidWildShapeManager.beastIds();
+		List<String> names = new ArrayList<>();
+		List<Integer> hps = new ArrayList<>();
+		List<Integer> acs = new ArrayList<>();
+		for (String id : ids) {
+			MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(id);
+			names.add(block.name());
+			hps.add(block.maxHp());
+			acs.add(block.ac());
+		}
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
-			new WildShapeMessage(WildShapeMessage.Kind.OPEN_PICKER, player.getUUID(), ""));
+			new WildShapeMessage(player.getUUID(), ids, names, hps, acs));
 	}
 
 	/**
@@ -52,7 +79,7 @@ public class WildShapeWatcher {
 			if (shape == null) continue;
 			//Al que llega, la forma de cada uno; y si el que llega venía transformado, a todos la suya.
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> joined),
-				new WildShapeMessage(WildShapeMessage.Kind.SHAPE, other.getUUID(), shape));
+				new WildShapeMessage(WildShapeMessage.Kind.SHAPE, other.getUUID(), baseEntityIdOf(shape)));
 			if (other == joined) broadcast(joined, shape);
 		}
 	}

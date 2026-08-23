@@ -286,7 +286,7 @@ public class CombatManager {
 	private static AttackOutcome resolveAttack(Player attacker, JsonObject attackerSheet, Combatant target,
 			IdentifiedWeapon weapon, String ability, String damageType, boolean melee) {
 		//Todas las fuentes en UNA sola llamada, nunca combinadas por partes: ver AttackRules.advantageAgainst.
-		DiceManager.Advantage advantage = AttackRules.advantageAgainst(target, melee,
+		DiceManager.Advantage advantage = AttackRules.advantageAgainst(attacker, target, melee,
 			consumeAdvantage(attackerSheet),
 			new Combatant.PlayerCombatant(attacker, attackerSheet).ownAttackAdvantage());
 

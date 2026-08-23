@@ -55,6 +55,10 @@ public class DruidWildShapeManager {
 	private static final String RETURN_HP = "wildShapeReturnHp";
 	private static final String OLD_AC = "wildShapeOldAc";
 	private static final String OLD_ABILITY = "wildShapeOld_";
+	//Si podía volar ANTES de transformarse (creativo/espectador), no por la forma — para no quitarle un
+	//permiso que ya tenía al volver. Va en la hoja y no en memoria por la misma razón que todo lo demás
+	//aquí: sobrevive a una desconexión a mitad de los 10 asaltos.
+	private static final String OLD_MAYFLY = "wildShapeOldMayfly";
 
 	/** Las que cambia la forma. Int/Sab/Car se quedan: en 5e la bestia no te vuelve tonto. */
 	private static final List<String> PHYSICAL = List.of("str", "dex", "con");
@@ -122,11 +126,30 @@ public class DruidWildShapeManager {
 			return;
 		}
 
+		//5e: transformarse es una acción. Se comprueba DESPUÉS de validar la bestia (elegir mal no debería
+		//gastar nada) pero ANTES de tocar la hoja. tryAct devuelve true sola fuera de combate (TurnManager.
+		//active==false), así que esto no restringe nada fuera de un encuentro — solo cuenta en turnos.
+		if (!TurnManager.tryAct(player)) {
+			TurnManager.notifyCantAct(player);
+			return;
+		}
+
 		//La vida a la que vuelve es la que tiene AHORA, antes de tocar nada. En 5e vuelves con los PG que
 		//tenías al transformarte, y el daño que se llevó la bestia se queda con la bestia.
 		writeShape(sheet, block, (int) Math.ceil(player.getHealth()));
 		setMaxHealth(player, block.maxHp());
 		player.setHealth(block.maxHp());
+
+		//Velocidad de vuelo de verdad (águila gigante, búho gigante...), no solo el modelo — sin esto el
+		//jugador seguía cayendo como cualquier persona con el cuerpo de un ave. Se guarda si YA podía volar
+		//antes (creativo/espectador) para no quitárselo al volver; revert() lo restaura.
+		sheet.addProperty(OLD_MAYFLY, player.getAbilities().mayfly);
+		if (block.flies()) {
+			player.getAbilities().mayfly = true;
+			player.getAbilities().flying = true;
+			player.onUpdateAbilities();
+		}
+
 		SheetLoader.saveAndSync(player, sheet);
 		WildShapeWatcher.broadcast(player, monsterId);
 		CombatFx.activate(player);
@@ -159,6 +182,15 @@ public class DruidWildShapeManager {
 		//Nunca por debajo de 1: la forma que cae no mata al druida, lo devuelve (5e). Quien lo quiera
 		//muerto tendrá que volver a bajarlo, ya en su cuerpo.
 		player.setHealth(Math.max(1f, Math.min(player.getMaxHealth(), back)));
+
+		//Aterriza siempre (flying=false): si volvía de una bestia voladora, deja de planear en el aire de
+		//golpe, que es 5e de verdad. mayfly vuelve a lo que tenía ANTES de transformarse — no se le quita un
+		//permiso de creativo/espectador que ya era suyo, ni se le deja uno que la forma le dio prestado.
+		boolean restoreMayfly = sheet.has(OLD_MAYFLY) && sheet.get(OLD_MAYFLY).getAsBoolean();
+		sheet.remove(OLD_MAYFLY);
+		player.getAbilities().mayfly = restoreMayfly;
+		player.getAbilities().flying = false;
+		player.onUpdateAbilities();
 
 		SheetLoader.saveAndSync(player, sheet);
 		WildShapeWatcher.broadcast(player, "");

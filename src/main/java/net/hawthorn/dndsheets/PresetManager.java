@@ -45,6 +45,7 @@ public class PresetManager {
 			if (previous != null) {
 				removeMatching(player, stack -> isTaggedWeapon(stack, previous.startingWeaponId()));
 				removeMatching(player, stack -> isClassResourceItem(stack, previous.id()));
+				removeMatching(player, stack -> isStartingGearItem(stack, previous.id()));
 			}
 		}
 
@@ -59,17 +60,20 @@ public class PresetManager {
 
 			//Por el mismo camino que el arma: buildWeaponStack resuelve primero un id de ítem de Minecraft
 			//tal cual, así que una cota de malla no necesita nada especial y un id del mod sigue valiendo.
-			//No se retira al cambiar de preset, a propósito: es equipo vanilla sin etiqueta, y el comentario
-			//de arriba explica por qué borrar lo que no lleva marca es peor que dejar un sobrante.
+			//Se marca con el mismo criterio que el arma y el ítem de recurso (etiqueta NBT propia) para que
+			//SÍ se pueda retirar al cambiar a otro preset — antes no llevaba marca y quedaba pegado para
+			//siempre, así que probar varios presets iba llenando el inventario de equipo inicial acumulado.
 			for (String gearId : preset.startingGear()) {
-				player.getInventory().add(Config.buildWeaponStack(gearId, 1));
+				ItemStack gear = Config.buildWeaponStack(gearId, 1);
+				gear.getOrCreateTagElement("dndsheets").putString("startingGear", preset.id());
+				player.getInventory().add(gear);
 			}
 
 			ItemStack resourceItem = classResourceItem(preset.id());
 			if (resourceItem != null) player.getInventory().add(resourceItem);
 		}
 
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes()));
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 		//Ya no hace falta cerrar y reabrir: la hoja abierta se repinta sola al llegar la hoja completa (ver
 		//CharacterSheetScreen.refreshIfOpen). El aviso viejo pedía un paso que ya no existe.
 		player.sendSystemMessage(Component.translatable("chat.dndsheets.preset.applied", preset.name()).withStyle(ChatFeedback.RESOURCE));
@@ -118,6 +122,12 @@ public class PresetManager {
 		String flag = resourceFlagFor(presetId);
 		if (flag == null || stack.isEmpty() || !stack.hasTag()) return false;
 		return stack.getTag().getCompound("dndsheets").getBoolean(flag);
+	}
+
+	private static boolean isStartingGearItem(ItemStack stack, String presetId) {
+		if (presetId == null || stack.isEmpty() || !stack.hasTag()) return false;
+		CompoundTag dndTag = stack.getTag().getCompound("dndsheets");
+		return dndTag.contains("startingGear") && presetId.equals(dndTag.getString("startingGear"));
 	}
 
 	private static void removeMatching(ServerPlayer player, Predicate<ItemStack> matches) {

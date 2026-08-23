@@ -31,7 +31,8 @@ public enum GiveableItem {
 	TURN_ITEMS("Ítems de turno (siguiente/deshacer)", () -> List.of(TurnItemManager.buildNextTurnStack(), TurnItemManager.buildUndoTurnStack())),
 	DM_WAND("Vara de DM", () -> List.of(MonsterCommand.buildDmToolStack())),
 	MOVE_WAND("Vara de Movimiento", () -> List.of(MonsterCommand.buildMoveToolStack())),
-	NOTEBOOK("Cuaderno del DM", () -> List.of(NotesCommand.buildNotebookStack()));
+	NOTEBOOK("Cuaderno del DM", () -> List.of(NotesCommand.buildNotebookStack())),
+	SHOVE("Empujar (acción, cuerpo a cuerpo)", () -> List.of(ShoveManager.buildShoveStack()));
 
 	private final String label;
 	private final Supplier<List<ItemStack>> stacks;

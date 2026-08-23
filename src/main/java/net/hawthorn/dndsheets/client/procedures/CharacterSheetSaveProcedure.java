@@ -96,7 +96,7 @@ public class CharacterSheetSaveProcedure {
 
 		}
 
-		byte[] data = sheet.toString().getBytes();
+		byte[] data = sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
 		DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetServerMessage(data));
 	}
 
@@ -122,7 +122,7 @@ public class CharacterSheetSaveProcedure {
 		RollIndex rollIndex = new RollIndex(category, index);
 		rollIndex.saveInSheet(sheet, expression);
 
-		byte[] data = sheet.toString().getBytes();
+		byte[] data = sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
 		DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetServerMessage(data));
 	}
 
@@ -149,7 +149,7 @@ public class CharacterSheetSaveProcedure {
 		RollIndex rollIndex = new RollIndex(category, index, subIndex);
 		rollIndex.saveInSheet(sheet, info);
 
-		byte[] data = sheet.toString().getBytes();
+		byte[] data = sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
 		DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetServerMessage(data));
 	}
 }

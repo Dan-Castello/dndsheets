@@ -1,0 +1,84 @@
+plugins {
+    id 'eclipse'
+    id 'net.minecraftforge.gradle' version '6.0.54'
+    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+}
+
+version = '1.0.0'
+group = 'net.hawthorn.dndsheets.dungeon'
+archivesBaseName = 'dndsheets-dungeon'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft {
+    mappings channel: 'parchment', version: '2023.09.03-1.20.1'
+
+    copyIdeResources = true
+
+    runs {
+        client {
+            workingDirectory project.file('runClient')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                // El addon no arranca solo — necesita el core cargado en el mismo cliente de
+                // desarrollo. Fuente directa del sourceSet del proyecto raíz, no el jar publicado:
+                // así un cambio en cualquiera de los dos módulos se ve sin tener que compilar el otro.
+                dndsheets {
+                    source project(':').sourceSets.main
+                }
+                dndsheets_dungeon {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('runServer')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                dndsheets {
+                    source project(':').sourceSets.main
+                }
+                dndsheets_dungeon {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.22'
+
+    // Dependencia DURA con el core: el toolkit de mazmorras no es un mod independiente de verdad,
+    // solo toca tres cosas del core (DndsheetsMod.LOGGER/PRETTY_GSON/MODID, DndPaths, TomeButton) y
+    // extiende su framework de GUI compartido (SmallFormScreen/ListPickerScreen/ModalDialogScreen/
+    // GuiStyle). Compila contra el sourceSet del proyecto raíz, no un jar publicado por separado.
+    implementation project(':')
+}
+
+jar {
+    archiveClassifier = ''
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// Mismo patron que el core (ver build.gradle raiz): logica pura (DungeonManager.buildPoolJsons,
+// GridToStructure) probada de pie, sin runtime de Forge.
+tasks.register('testDungeonSelf', JavaExec) {
+    dependsOn compileTestJava
+    group = 'verification'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'net.hawthorn.dndsheets.dungeon.DungeonSelfTest'
+    workingDir = rootDir
+}
+
+check.dependsOn testDungeonSelf

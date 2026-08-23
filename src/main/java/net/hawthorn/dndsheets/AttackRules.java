@@ -56,14 +56,32 @@ final class AttackRules {
 	 * (desventaja), atacado por alguien con ventaja pendiente: la respuesta correcta es normal, y anidando
 	 * salía ventaja. Por eso las fuentes del atacante entran aquí y no se combinan fuera.</p>
 	 */
-	static DiceManager.Advantage advantageAgainst(Combatant target, boolean melee, DiceManager.Advantage... fromAttacker) {
-		DiceManager.Advantage[] sources = new DiceManager.Advantage[fromAttacker.length + 2];
+	static DiceManager.Advantage advantageAgainst(Entity attacker, Combatant target, boolean melee, DiceManager.Advantage... fromAttacker) {
+		DiceManager.Advantage[] sources = new DiceManager.Advantage[fromAttacker.length + 3];
 		sources[0] = target.advantageAgainst(melee);
 		//Esquivar se resuelve aquí y no dentro de advantageAgainst porque no es una condición del objetivo,
 		//es una acción que gastó este asalto: Combatant no sabe de turnos ni debería.
 		sources[1] = TurnActionManager.isDodging(target.entity()) ? DiceManager.Advantage.DISADVANTAGE : DiceManager.Advantage.NORMAL;
-		System.arraycopy(fromAttacker, 0, sources, 2, fromAttacker.length);
+		sources[2] = heightAdvantage(attacker, target.entity());
+		System.arraycopy(fromAttacker, 0, sources, 3, fromAttacker.length);
 		return DiceManager.combineAdvantage(sources);
+	}
+
+	//No es una regla del SRD: es "ventaja por altura" de Baldur's Gate 3, pedida a propósito para que el
+	//combate premie posicionarse en terreno alto igual que en ese juego. Simétrica — atacar bien desde
+	//arriba da ventaja, atacar bien desde abajo da desventaja — y entra por el mismo sitio que las demás
+	//fuentes, así que vale tanto si ataca un jugador como un monstruo sin tener que repetirla en los dos
+	//lados (ver el porqué de esta clase entera, arriba).
+	private static final double HEIGHT_THRESHOLD_BLOCKS = 2.0;
+
+	private static DiceManager.Advantage heightAdvantage(Entity attacker, Entity target) {
+		//null en pruebas sin mundo detrás (FakeCombatant.entity()) y, en el juego real, cualquier Combatant
+		//que no venga de una entidad de verdad: sin altura que comparar, no aporta nada.
+		if (attacker == null || target == null) return DiceManager.Advantage.NORMAL;
+		double diff = attacker.getY() - target.getY();
+		if (diff >= HEIGHT_THRESHOLD_BLOCKS) return DiceManager.Advantage.ADVANTAGE;
+		if (diff <= -HEIGHT_THRESHOLD_BLOCKS) return DiceManager.Advantage.DISADVANTAGE;
+		return DiceManager.Advantage.NORMAL;
 	}
 
 	/**

@@ -1,0 +1,20 @@
+{
+	"replace": false,
+	"order": 0,
+	"enabled": true,
+	"origins": [
+		"dndsheets_species:human",
+		"dndsheets_species:elf",
+		"dndsheets_species:dwarf",
+		"dndsheets_species:halfling",
+		"dndsheets_species:dragonborn",
+		"dndsheets_species:gnome",
+		"dndsheets_species:half_elf",
+		"dndsheets_species:half_orc",
+		"dndsheets_species:tiefling"
+	],
+	"allow_random": true,
+	"exclude_random": [],
+	"allow_random_unchoosable": false,
+	"hidden": false
+}

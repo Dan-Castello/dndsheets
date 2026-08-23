@@ -100,6 +100,6 @@ public class TraitCommand {
 		SheetLoader.validateSheet(sheet);
 		TraitRegistry.grant(sheet, traitId);
 
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes()));
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 	}
 }

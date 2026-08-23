@@ -1,0 +1,95 @@
+plugins {
+    id 'eclipse'
+    id 'net.minecraftforge.gradle' version '6.0.54'
+    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+}
+
+version = '1.0.0'
+group = 'net.hawthorn.dndsheets.species'
+archivesBaseName = 'dndsheets-species'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft {
+    mappings channel: 'parchment', version: '2023.09.03-1.20.1'
+
+    copyIdeResources = true
+
+    runs {
+        client {
+            workingDirectory project.file('runClient')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                // Igual que dungeon/build.gradle: el addon no arranca solo, necesita el core. Origins
+                // NO se agrega aquí a propósito — usa Mixins reales sobre clases vanilla (verificado
+                // con javap sobre origins-forge-1.20.1-1.10.0.9-all.jar), y este proyecto ya documentó
+                // en el build.gradle raíz por qué ningún mod con mixins carga en runClient con mappings
+                // parchment (SRG vs. nombres reales). Esta integración se prueba en instalación real,
+                // igual que Curios y Patchouli.
+                dndsheets {
+                    source project(':').sourceSets.main
+                }
+                dndsheets_species {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('runServer')
+
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                dndsheets {
+                    source project(':').sourceSets.main
+                }
+                dndsheets_species {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.22'
+
+    // Dependencia DURA con el core (ver dungeon/build.gradle para el mismo patrón): compila contra su
+    // sourceSet, no un jar publicado por separado.
+    implementation project(':')
+
+    // Origins/Apoli: SOLO compileOnly. En runtime hace falta que el mod esté instalado para que
+    // /dndspecies sync tenga algo que leer (ver RaceOriginBridge), pero no se puede probar en
+    // runClient (mixins + parchment, ver comentario arriba) así que no tiene sentido arrastrarlo como
+    // runtimeOnly aquí. Se referencian los jars locales en dependencies/ — evaluados a mano (ver
+    // Library Audit): son la única build vigente para Forge 1.20.1 de este ecosistema.
+    compileOnly files(
+        "${rootDir}/dependencies/origins-forge-1.20.1-1.10.0.9-all.jar",
+        "${rootDir}/dependencies/apoli-forge-1.20.1-2.9.0.8.jar"
+    )
+}
+
+jar {
+    archiveClassifier = ''
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// Mismo patron que el core y que dungeon: logica pura (RaceRegistry.apply) probada de pie, sin
+// runtime de Forge.
+tasks.register('testSpeciesSelf', JavaExec) {
+    dependsOn compileTestJava
+    group = 'verification'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'net.hawthorn.dndsheets.species.SpeciesSelfTest'
+    workingDir = rootDir
+}
+
+check.dependsOn testSpeciesSelf

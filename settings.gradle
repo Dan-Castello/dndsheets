@@ -12,3 +12,15 @@ pluginManagement {
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.5.0'
 }
+
+rootProject.name = 'dndsheets'
+
+// Addon separado con su propio modid ("dndsheets_dungeon"), dependencia DURA del core: ver
+// dungeon/build.gradle y PROJECT_CONTEXT.md (split core/addons). No comparte sourceSet con el
+// core — compila contra su jar via `implementation project(':')`.
+include 'dungeon'
+
+// Addon separado con su propio modid ("dndsheets_species"), dependencia DURA del core Y de Origins
+// (ver species/build.gradle): Origins elige la raza, este addon aplica el Aumento de Característica
+// y los rasgos SRD con el propio código de dndsheets — Origins nunca escribe la ficha directo.
+include 'species'

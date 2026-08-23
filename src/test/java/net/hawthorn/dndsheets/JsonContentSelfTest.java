@@ -52,7 +52,6 @@ public class JsonContentSelfTest {
 		checkMulticlass(); //También después de checkPresets(): los nombres de las clases salen de ahí.
 		checkDice();
 		checkAttackAndDamageRolls();
-		checkDungeonPools();
 		checkConditions();
 		checkAoeShapes();
 		checkCombatantRules();
@@ -84,7 +83,6 @@ public class JsonContentSelfTest {
 		checkParchmentTextHasNoShadow();
 		checkVision();
 		checkEncounters();
-		checkStructureImport();
 		checkSkillProficiency();
 		checkCharacterSetup();
 		checkPortabilityCoupling();
@@ -957,7 +955,7 @@ public class JsonContentSelfTest {
 			"test:oso", "Oso pardo", "minecraft:polar_bear", 11, 34,
 			Map.of("str", 19, "dex", 10, "con", 16, "int", 2, "wis", 13, "cha", 7), 2,
 			List.of(), List.of(), Map.of(), Map.of(),
-			CreatureType.BEAST, 0, 0, 1, null, false, false);
+			CreatureType.BEAST, 0, 0, 1, null, false, false, false);
 
 		//Caso 1: un druida normal, sin CA fijada a mano por el DM.
 		JsonObject sheet = JsonParser.parseString(
@@ -1383,44 +1381,6 @@ public class JsonContentSelfTest {
 		assertTrue(invalid.result() == null, "una expresión inválida debería devolver result() == null, no lanzar");
 	}
 
-	//Única lógica con ramas reales de la feature de mazmorras (ver DungeonManager): agrupar por pool,
-	//acotar weight a [1,150] (StructureTemplatePool.DIRECT_CODEC lo exige, un valor fuera de rango tumba
-	//el parseo del archivo entero) y saltar piezas con structureId corrupto. El resto (copiar el .nbt,
-	///reload, JigsawPlacement.generateJigsaw) son llamadas finas a APIs vanilla, no hace falta re-testearlas.
-	private static void checkDungeonPools() {
-		List<DungeonPieceRegistry.DungeonPiece> pieces = List.of(
-			new DungeonPieceRegistry.DungeonPiece("entrance", "dndsheets_dm:rooms/entrance", "start", 200, ""),
-			new DungeonPieceRegistry.DungeonPiece("corridor1", "dndsheets_dm:rooms/corridor1", "corridor", 3, ""),
-			new DungeonPieceRegistry.DungeonPiece("corridor2", "dndsheets_dm:rooms/corridor2", "corridor", 0, ""),
-			new DungeonPieceRegistry.DungeonPiece("broken", "esto no es un id valido", "corridor", 5, "")
-		);
-
-		Map<String, JsonObject> pools = DungeonManager.buildPoolJsons(pieces);
-		assertTrue(pools.size() == 2, "buildPoolJsons debería producir 2 pools (start, corridor), dio " + pools.size());
-
-		JsonObject start = pools.get("start");
-		assertTrue(start != null && "minecraft:empty".equals(start.get("fallback").getAsString()), "el pool start debería tener fallback=minecraft:empty");
-		JsonArray startElements = start.getAsJsonArray("elements");
-		assertTrue(startElements.size() == 1, "el pool start debería tener 1 elemento");
-		JsonObject startWrapper = startElements.get(0).getAsJsonObject();
-		assertTrue(startWrapper.get("weight").getAsInt() == 150, "el peso 200 debería acotarse a 150");
-		JsonObject startElement = startWrapper.getAsJsonObject("element");
-		assertTrue("minecraft:single_pool_element".equals(startElement.get("element_type").getAsString()), "element_type debería ser minecraft:single_pool_element");
-		assertTrue("dndsheets_dm:rooms/entrance".equals(startElement.get("location").getAsString()), "location debería ser el structureId de la pieza");
-		assertTrue("minecraft:empty".equals(startElement.get("processors").getAsString()), "processors debería ser minecraft:empty");
-		assertTrue("rigid".equals(startElement.get("projection").getAsString()), "projection debería ser rigid");
-
-		JsonObject corridor = pools.get("corridor");
-		JsonArray corridorElements = corridor.getAsJsonArray("elements");
-		//"broken" tiene un structureId inválido y se salta: solo corridor1 y corridor2 quedan.
-		assertTrue(corridorElements.size() == 2, "el pool corridor debería tener 2 elementos (la pieza con structureId inválido se salta), dio " + corridorElements.size());
-		boolean foundClampedZero = false;
-		for (JsonElement el : corridorElements) {
-			if (el.getAsJsonObject().get("weight").getAsInt() == 1) foundClampedZero = true;
-		}
-		assertTrue(foundClampedZero, "el peso 0 debería acotarse a 1");
-	}
-
 	/**
 	 * <p>La tabla de condiciones de 5e ({@link Condition}) y la regla de que ventaja y desventaja se anulan
 	 * ({@link DiceManager#combineAdvantage}). Ninguna de las dos toca clases de Minecraft, así que se
@@ -1643,7 +1603,7 @@ public class JsonContentSelfTest {
 			List.of(), List.of(),
 			Map.of("fuego", "vulnerable"),          //Incondicional.
 			Map.of("cortante", "immune"),           //Solo frente a armas no mágicas.
-			CreatureType.HUMANOID, 0, 0, 1, null, false, false);  //Un licántropo es humanoide en 5e, también en forma de bestia.
+			CreatureType.HUMANOID, 0, 0, 1, null, false, false, false);  //Un licántropo es humanoide en 5e, también en forma de bestia.
 		Combatant beast = new Combatant.MonsterCombatant(null, conditional);
 		assertTrue(beast.damageMultiplier("cortante", false) == 0.0, "cortante no mágico debería rebotar en el licántropo");
 		assertTrue(beast.damageMultiplier("cortante", true) == 1.0, "cortante mágico debería atravesarlo entero");
@@ -2118,13 +2078,17 @@ public class JsonContentSelfTest {
 
 		//A distancia, un derribado da DESVENTAJA. Con un atacante que trae VENTAJA, las dos fuentes se
 		//anulan: la respuesta de 5e es normal, "sin importar cuántas haya de cada".
-		assertTrue(AttackRules.advantageAgainst(derribado, false, DiceManager.Advantage.ADVANTAGE) == DiceManager.Advantage.NORMAL,
+		//Atacante null a propósito: FakeCombatant.entity() también es null, así que no hay altura real que
+		//comparar entre los dos y heightAdvantage se queda en NORMAL — estas tres afirmaciones prueban las
+		//demás fuentes, no la de altura. heightAdvantage en sí (getY() real de dos entidades) no se puede
+		//probar aquí: este harness corre sin runtime de Forge y una Entity real no se puede construir sin él.
+		assertTrue(AttackRules.advantageAgainst(null, derribado, false, DiceManager.Advantage.ADVANTAGE) == DiceManager.Advantage.NORMAL,
 			"ventaja del atacante contra la desventaja de disparar a alguien derribado debería anularse");
 		//Y de cerca, las dos son ventaja: no hay nada que anular.
-		assertTrue(AttackRules.advantageAgainst(derribado, true, DiceManager.Advantage.ADVANTAGE) == DiceManager.Advantage.ADVANTAGE,
+		assertTrue(AttackRules.advantageAgainst(null, derribado, true, DiceManager.Advantage.ADVANTAGE) == DiceManager.Advantage.ADVANTAGE,
 			"de cerca, un derribado da ventaja y se suma a la del atacante");
 		//Sin nada del atacante, manda el estado del objetivo tal cual.
-		assertTrue(AttackRules.advantageAgainst(derribado, true) == DiceManager.Advantage.ADVANTAGE,
+		assertTrue(AttackRules.advantageAgainst(null, derribado, true) == DiceManager.Advantage.ADVANTAGE,
 			"sin fuentes del atacante debería quedar lo que dé el objetivo");
 
 		//Y la propiedad que las tres afirmaciones de arriba NO pueden ver: que las fuentes entren en UNA
@@ -2487,29 +2451,6 @@ public class JsonContentSelfTest {
 	 * se quitan ANTES de filtrar caracteres, porque descomponer después convierte la letra en separador. En
 	 * un mod en español eso no es un caso raro, es la mitad de los nombres.</p>
 	 */
-	private static void checkStructureImport() {
-		assertTrue(DungeonManager.structureNameFor("Casa Grande (v2)").equals("casa_grande_v2"),
-			"un nombre de archivo normal tiene que salir como ruta válida");
-		assertTrue(DungeonManager.structureNameFor("Capitán").equals("capitan"),
-			"los acentos se quitan, no se convierten en separador");
-		assertTrue(DungeonManager.structureNameFor("torre").equals("torre"), "lo que ya vale no se toca");
-		assertTrue(DungeonManager.structureNameFor("___torre___").equals("torre"),
-			"un separador suelto al principio o al final no es parte del nombre");
-		//Un nombre entero en caracteres no latinos no puede dar una ruta vacía: eso sería un id inválido.
-		for (String odd : List.of("", "   ", "!!!", "日本")) {
-			assertTrue(DungeonManager.structureNameFor(odd).equals("estructura"),
-				"un nombre del que no queda nada usable tiene que caer en uno por defecto");
-		}
-		assertTrue(DungeonManager.structureNameFor(null).equals("estructura"), "y sin nombre, tampoco vale null");
-
-		for (String name : List.of("Casa Grande (v2)", "Capitán", "___torre___", "MAYÚSCULAS Y ESPACIOS")) {
-			assertTrue(DungeonManager.structureNameFor(name).matches("[a-z0-9_]+"),
-				"\"" + name + "\" no da una ruta que ResourceLocation acepte");
-		}
-
-		System.out.println("checkStructureImport: OK, cualquier nombre de archivo acaba siendo una ruta válida.");
-	}
-
 	/**
 	 * <p>Encuentros: un grupo de monstruos guardado antes de la sesión y soltado de una vez. Lo que se fija
 	 * aquí es la sintaxis de la composición —la misma en el JSON y en el formulario del creador in-game— y

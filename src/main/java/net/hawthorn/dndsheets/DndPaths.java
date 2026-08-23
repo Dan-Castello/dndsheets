@@ -83,20 +83,19 @@ public class DndPaths {
 		autoLoadAll(PRESETS_DIR, PresetRegistry::loadFile, "presets");
 		autoLoadAll(ENCOUNTERS_DIR, EncounterRegistry::loadFile, "encuentros");
 		autoLoadAll(FEATS_DIR, FeatRegistry::loadFile, "dotes");
-		//Categorías del selector de Raza/Trasfondo/Clase (ver CharacterOptionsRegistry): reemplazan la
-		//lista por defecto entera si hay un .json en la carpeta, no la extienden.
-		autoLoadAll(RACES_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.RACE, file), "razas");
-		autoLoadAll(BACKGROUNDS_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.BACKGROUND, file), "trasfondos");
+		//RACES_DIR y BACKGROUNDS_DIR ya no los carga esto: raza y trasfondo se mudaron al addon
+		//dndsheets_species (Origins elige, el addon aplica el SRD) — ver RaceRegistry/BackgroundRegistry,
+		//que escuchan su propio ServerStartingEvent sobre esas mismas carpetas. Solo Clase sigue acá.
 		autoLoadAll(CLASSES_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.CLASS, file), "clases");
 
 		//Lo ÚLTIMO que toca el bestiario: cambia el modelo de lo que ya esté registrado, venga del pack del
 		//mod, de un datapack o del DM. Si fuese antes, la carga siguiente lo pisaría.
 		MonsterSkins.applyAll();
 
-		//Por-mundo, no bajo ROOT: las piezas de mazmorra referencian .nbt publicados en el datapack DE LA
-		//PARTIDA actual (ver DungeonManager), así que necesitan la ruta real del server.getWorldPath(...) en
-		//vez de la carpeta de instancia compartida que usa el resto de esta clase.
-		DungeonPieceRegistry.load(event.getServer());
+		//La carga de piezas de mazmorra vivía aquí (por-mundo, con la ruta real de
+		//server.getWorldPath(...)) hasta que el toolkit de mazmorras se mudó a su propio addon
+		//(dndsheets_dungeon, ver Modularity Map). Ese addon escucha este mismo evento por su cuenta —
+		//este mod ya no puede importar su clase sin invertir la dependencia core→addon.
 	}
 
 	//Archivo único donde el creador de contenido in-game (ver ContentPackFile) guarda todo lo que un DM crea

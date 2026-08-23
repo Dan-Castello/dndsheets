@@ -242,7 +242,7 @@
     ]
   },
   {
-    "id": "dndsheets:bat", "name": "Murcielago", "type": "bestia", "baseEntity": "minecraft:bat",
+    "id": "dndsheets:bat", "name": "Murcielago", "type": "bestia", "flies": true, "baseEntity": "minecraft:bat",
     "ac": 12, "hp": 1,
     "abilities": { "str": 2, "dex": 15, "con": 8, "int": 2, "wis": 12, "cha": 4 },
     "proficiencyBonus": 2,
@@ -289,7 +289,7 @@
     ]
   },
   {
-    "id": "dndsheets:blood_hawk", "name": "Halcon Sanguinario", "type": "bestia", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:blood_hawk", "name": "Halcon Sanguinario", "type": "bestia", "flies": true, "baseEntity": "minecraft:parrot",
     "ac": 12, "hp": 7,
     "abilities": { "str": 6, "dex": 14, "con": 10, "int": 3, "wis": 14, "cha": 5 },
     "proficiencyBonus": 2,
@@ -565,7 +565,7 @@
     ]
   },
   {
-    "id": "dndsheets:eagle", "name": "Aguila", "type": "bestia", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:eagle", "name": "Aguila", "type": "bestia", "flies": true, "baseEntity": "minecraft:parrot",
     "ac": 12, "hp": 3,
     "abilities": { "str": 6, "dex": 15, "con": 10, "int": 2, "wis": 14, "cha": 7 },
     "proficiencyBonus": 2,
@@ -594,7 +594,7 @@
     ]
   },
   {
-    "id": "dndsheets:flying_snake", "name": "Serpiente Voladora", "type": "bestia", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:flying_snake", "name": "Serpiente Voladora", "type": "bestia", "flies": true, "baseEntity": "minecraft:parrot",
     "ac": 14, "hp": 5,
     "abilities": { "str": 4, "dex": 18, "con": 11, "int": 2, "wis": 12, "cha": 5 },
     "proficiencyBonus": 2,
@@ -666,7 +666,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_bat", "name": "Murcielago Gigante", "type": "bestia", "baseEntity": "minecraft:bat",
+    "id": "dndsheets:giant_bat", "name": "Murcielago Gigante", "type": "bestia", "flies": true, "baseEntity": "minecraft:bat",
     "ac": 13, "hp": 22,
     "abilities": { "str": 15, "dex": 16, "con": 11, "int": 2, "wis": 12, "cha": 6 },
     "proficiencyBonus": 2,
@@ -712,7 +712,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_eagle", "name": "Aguila Gigante", "type": "bestia", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:giant_eagle", "name": "Aguila Gigante", "type": "bestia", "flies": true, "baseEntity": "minecraft:parrot",
     "ac": 13, "hp": 26,
     "abilities": { "str": 16, "dex": 17, "con": 13, "int": 8, "wis": 14, "cha": 10 },
     "proficiencyBonus": 2,
@@ -786,7 +786,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_owl", "name": "Buho Gigante", "type": "bestia", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:giant_owl", "name": "Buho Gigante", "type": "bestia", "flies": true, "baseEntity": "minecraft:parrot",
     "ac": 12, "hp": 19,
     "abilities": { "str": 13, "dex": 15, "con": 12, "int": 8, "wis": 13, "cha": 10 },
     "proficiencyBonus": 2,
@@ -840,7 +840,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_vulture", "name": "Buitre Gigante", "type": "bestia", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:giant_vulture", "name": "Buitre Gigante", "type": "bestia", "flies": true, "baseEntity": "minecraft:parrot",
     "ac": 10, "hp": 22,
     "abilities": { "str": 15, "dex": 10, "con": 15, "int": 6, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -850,7 +850,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_wasp", "name": "Avispa Gigante", "type": "bestia", "baseEntity": "minecraft:bee",
+    "id": "dndsheets:giant_wasp", "name": "Avispa Gigante", "type": "bestia", "flies": true, "baseEntity": "minecraft:bee",
     "ac": 12, "hp": 13,
     "abilities": { "str": 10, "dex": 14, "con": 10, "int": 1, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -975,7 +975,7 @@
     ]
   },
   {
-    "id": "dndsheets:hawk", "name": "Halcon", "type": "bestia", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:hawk", "name": "Halcon", "type": "bestia", "flies": true, "baseEntity": "minecraft:parrot",
     "ac": 13, "hp": 1,
     "abilities": { "str": 5, "dex": 16, "con": 8, "int": 2, "wis": 14, "cha": 6 },
     "proficiencyBonus": 2,
@@ -1222,7 +1222,7 @@
     ]
   },
   {
-    "id": "dndsheets:owl", "name": "Buho", "type": "bestia", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:owl", "name": "Buho", "type": "bestia", "flies": true, "baseEntity": "minecraft:parrot",
     "ac": 11, "hp": 1,
     "abilities": { "str": 3, "dex": 13, "con": 8, "int": 2, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -1335,7 +1335,7 @@
     ]
   },
   {
-    "id": "dndsheets:raven", "name": "Cuervo", "type": "bestia", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:raven", "name": "Cuervo", "type": "bestia", "flies": true, "baseEntity": "minecraft:parrot",
     "ac": 12, "hp": 1,
     "abilities": { "str": 2, "dex": 14, "con": 8, "int": 2, "wis": 12, "cha": 6 },
     "proficiencyBonus": 2,
@@ -1511,7 +1511,7 @@
     ]
   },
   {
-    "id": "dndsheets:stirge", "name": "Estirge", "type": "bestia", "baseEntity": "minecraft:bat",
+    "id": "dndsheets:stirge", "name": "Estirge", "type": "bestia", "flies": true, "baseEntity": "minecraft:bat",
     "ac": 14, "hp": 2,
     "abilities": { "str": 4, "dex": 16, "con": 11, "int": 2, "wis": 8, "cha": 6 },
     "proficiencyBonus": 2,
@@ -1520,7 +1520,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_bats", "name": "Enjambre de Murcielagos", "type": "bestia", "baseEntity": "minecraft:bat",
+    "id": "dndsheets:swarm_of_bats", "name": "Enjambre de Murcielagos", "type": "bestia", "flies": true, "baseEntity": "minecraft:bat",
     "ac": 12, "hp": 22,
     "abilities": { "str": 5, "dex": 15, "con": 10, "int": 2, "wis": 12, "cha": 4 },
     "proficiencyBonus": 2,
@@ -1590,7 +1590,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_ravens", "name": "Enjambre de Cuervos", "type": "bestia", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:swarm_of_ravens", "name": "Enjambre de Cuervos", "type": "bestia", "flies": true, "baseEntity": "minecraft:parrot",
     "ac": 12, "hp": 24,
     "abilities": { "str": 6, "dex": 14, "con": 8, "int": 3, "wis": 12, "cha": 6 },
     "proficiencyBonus": 2,
@@ -1610,7 +1610,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_wasps", "name": "Enjambre de Avispas", "type": "bestia", "baseEntity": "minecraft:bee",
+    "id": "dndsheets:swarm_of_wasps", "name": "Enjambre de Avispas", "type": "bestia", "flies": true, "baseEntity": "minecraft:bee",
     "ac": 12, "hp": 22,
     "abilities": { "str": 3, "dex": 13, "con": 10, "int": 1, "wis": 7, "cha": 1 },
     "proficiencyBonus": 2,
@@ -1658,7 +1658,7 @@
     ]
   },
   {
-    "id": "dndsheets:vulture", "name": "Buitre", "type": "bestia", "baseEntity": "minecraft:parrot",
+    "id": "dndsheets:vulture", "name": "Buitre", "type": "bestia", "flies": true, "baseEntity": "minecraft:parrot",
     "ac": 10, "hp": 5,
     "abilities": { "str": 7, "dex": 10, "con": 13, "int": 2, "wis": 12, "cha": 4 },
     "proficiencyBonus": 2,

@@ -27,7 +27,8 @@ import java.util.List;
  */
 @Mod.EventBusSubscriber
 public class CharacterOptionsCommand {
-	private static final String[] CATEGORIES = {CharacterOptionsRegistry.RACE, CharacterOptionsRegistry.BACKGROUND, CharacterOptionsRegistry.CLASS};
+	//RACE y BACKGROUND ya no viven acá (ver /dndspecies load / loadbackground en dndsheets_species).
+	private static final String[] CATEGORIES = {CharacterOptionsRegistry.CLASS};
 
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
@@ -47,8 +48,6 @@ public class CharacterOptionsCommand {
 
 	private static Path dirFor(String category) {
 		return switch (category) {
-			case CharacterOptionsRegistry.RACE -> DndPaths.RACES_DIR;
-			case CharacterOptionsRegistry.BACKGROUND -> DndPaths.BACKGROUNDS_DIR;
 			case CharacterOptionsRegistry.CLASS -> DndPaths.CLASSES_DIR;
 			default -> null;
 		};

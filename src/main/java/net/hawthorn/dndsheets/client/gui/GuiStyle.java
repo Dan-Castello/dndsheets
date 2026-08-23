@@ -17,15 +17,17 @@ import net.minecraft.client.gui.GuiGraphics;
  * <p>El relleno es casi opaco a propósito: el fondo del mundo sigue viéndose desenfocado detrás, pero
  * sin competir con el texto. Un panel translúcido sobre un bioma nevado deja el texto blanco ilegible.</p>
  */
-final class GuiStyle {
+public final class GuiStyle {
 
 	//--- Colores de texto ---
-	/** Pergamino, no blanco puro: el blanco absoluto sobre cuero oscuro vibra y cansa la vista. */
-	static final int TITLE_COLOR = 0xFFE9D8B4;
-	static final int SUBTITLE_COLOR = 0xFFB9A88C;
-	static final int MUTED_COLOR = 0xFF8C8071;
-	/** Latón envejecido, para lo que debe destacar sin gritar (marcas, valores activos). */
-	static final int ACCENT_COLOR = 0xFFC9A227;
+	/** Pergamino, no blanco puro: el blanco absoluto sobre cuero oscuro vibra y cansa la vista.
+	 *  Público: lo usa también el HUD de turnos (client.TurnHudOverlay), fuera de este paquete. */
+	public static final int TITLE_COLOR = 0xFFE9D8B4;
+	public static final int SUBTITLE_COLOR = 0xFFB9A88C;
+	/** Público: es el único color de GuiStyle que consume el addon del toolkit de mazmorras (módulo aparte). */
+	public static final int MUTED_COLOR = 0xFF8C8071;
+	/** Latón envejecido, para lo que debe destacar sin gritar (marcas, valores activos). Público, ver arriba. */
+	public static final int ACCENT_COLOR = 0xFFC9A227;
 
 	//--- Colores del panel ---
 	private static final int FILL_COLOR = 0xF21A140E;   //Cuero oscuro, casi opaco.
@@ -41,9 +43,11 @@ final class GuiStyle {
 
 	/**
 	 * <p>Panel de fondo. La firma no cambia respecto a la versión anterior: las más de cuarenta pantallas
-	 * que lo llaman siguen funcionando sin tocarlas.</p>
+	 * que lo llaman siguen funcionando sin tocarlas. Público: también lo usa el HUD de turnos (client.
+	 * TurnHudOverlay) para que el tablero de iniciativa tenga el mismo aspecto de tomo que el resto del mod
+	 * en vez de un overlay que no pertenece a nada.</p>
 	 */
-	static void panel(GuiGraphics guiGraphics, int left, int top, int right, int bottom) {
+	public static void panel(GuiGraphics guiGraphics, int left, int top, int right, int bottom) {
 		//Contorno exterior primero, un píxel por fuera del bisel: separa el panel del mundo desenfocado
 		//sin necesidad de sombra difusa, que a la escala de píxel de Minecraft se ve sucia.
 		guiGraphics.fill(left - 1, top - 1, right + 1, bottom + 1, EDGE_COLOR);
@@ -83,7 +87,7 @@ final class GuiStyle {
 	 * <p>Filete horizontal de latón, para separar un título de su contenido. Público para las pantallas
 	 * que quieran marcar secciones sin inventarse cada una su propio color de línea.</p>
 	 */
-	static void rule(GuiGraphics guiGraphics, int left, int right, int y) {
+	public static void rule(GuiGraphics guiGraphics, int left, int right, int y) {
 		guiGraphics.fill(left, y, right, y + 1, BEVEL_LIGHT);
 	}
 }

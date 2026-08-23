@@ -9,6 +9,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.network.NetworkEvent;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -24,24 +25,42 @@ import java.util.function.Supplier;
  * servidor la manda con {@code monsterId} vacío, que significa "abre el selector para esta criatura", y
  * el cliente la devuelve con el id elegido, que significa "pégaselo". Los dos campos que hacen falta son
  * los mismos en ambas direcciones, así que separarlas habría sido copiar el buffer dos veces.</p>
+ *
+ * <p>{@code ids} solo viaja en el sentido servidor → cliente: el bestiario para llenar el selector, ya
+ * resuelto aquí. El registro de monstruos solo vive en el servidor, y un DM que sea un cliente aparte
+ * (invitado por LAN) lo vería siempre vacío si el selector intentara leerlo directo.</p>
  */
 public class MonsterBindMessage {
 	final int entityId;
 	final String monsterId;
+	final List<String> ids;
 
+	/** Cliente → servidor: "pégale este bloque a esta entidad". */
 	public MonsterBindMessage(int entityId, String monsterId) {
+		this(entityId, monsterId, List.of());
+	}
+
+	/** Servidor → cliente: "abre el selector para esta entidad, con este bestiario". */
+	public MonsterBindMessage(int entityId, List<String> ids) {
+		this(entityId, "", ids);
+	}
+
+	private MonsterBindMessage(int entityId, String monsterId, List<String> ids) {
 		this.entityId = entityId;
 		this.monsterId = monsterId;
+		this.ids = ids;
 	}
 
 	public MonsterBindMessage(FriendlyByteBuf buffer) {
 		this.entityId = buffer.readInt();
 		this.monsterId = buffer.readUtf();
+		this.ids = buffer.readList(FriendlyByteBuf::readUtf);
 	}
 
 	public static void buffer(MonsterBindMessage message, FriendlyByteBuf buffer) {
 		buffer.writeInt(message.entityId);
 		buffer.writeUtf(message.monsterId);
+		buffer.writeCollection(message.ids, FriendlyByteBuf::writeUtf);
 	}
 
 	public static void handler(MonsterBindMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
@@ -51,7 +70,7 @@ public class MonsterBindMessage {
 			//Servidor -> cliente. Si llegara al revés (cliente modificado), handleOnClient no hace nada en
 			//el servidor y el paquete se queda en nada, que es el comportamiento correcto.
 			NetworkUtil.handleOnClient(context, () ->
-				net.hawthorn.dndsheets.client.gui.MonsterBindListScreen.open(message.entityId));
+				net.hawthorn.dndsheets.client.gui.MonsterBindListScreen.open(message.entityId, message.ids));
 			return;
 		}
 

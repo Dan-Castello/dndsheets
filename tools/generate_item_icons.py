@@ -436,6 +436,26 @@ ICONS = {
   '................',
   '................',
  ],
+ #Mismo puno redondeado que 'rage' (misma silueta, ya probada a 16x16), en acero en vez de fuego: la
+ #misma idea de golpe/fuerza, aplicada a empujar en vez de arder.
+ 'shove': [
+  '................',
+  '....KKKKKKK.....',
+  '...KSSSSSSSK....',
+  '..KSsSSSSSsSK...',
+  '..KSSKSSSKSSK...',
+  '..KSSSSSSSSSK...',
+  '..KSSKKKKKSSK...',
+  '..KSKWWWWWKSK...',
+  '..KSKWKKKWKSK...',
+  '...KSWWWWWSK....',
+  '....KSSSSSK.....',
+  '.....KSSSK......',
+  '......KSK.......',
+  '.......K........',
+  '................',
+  '................',
+ ],
 }
 
 # Orden EXACTO del enum ItemLook: el CustomModelData es su posicion + 1 y viaja dentro de cada
@@ -443,7 +463,7 @@ ICONS = {
 LOOKS = [
     'dm_wand', 'move_wand', 'rest_kit', 'turn_next', 'turn_undo', 'turn_actions',
     'rage', 'second_wind', 'inspiration', 'wild_shape', 'twinned', 'smite', 'hunters_mark',
-    'shield', 'counterspell', 'turn_undead', 'help', 'staff', 'summon_card',
+    'shield', 'counterspell', 'turn_undead', 'help', 'staff', 'summon_card', 'shove',
 ]
 # Se sujetan como una vara: el modelo "handheld" los inclina en la mano en vez de dejarlos planos.
 HANDHELD = {'dm_wand', 'move_wand', 'staff', 'smite'}

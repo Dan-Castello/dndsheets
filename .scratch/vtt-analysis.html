@@ -1,0 +1,419 @@
+<title>Estado del Campamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #eceee9;
+  --surface: #ffffff;
+  --surface-2: #f4f5f0;
+  --ink: #1e231f;
+  --ink-muted: #55605a;
+  --ink-faint: #838d84;
+  --accent: #a8752f;
+  --accent-soft: #a8752f1a;
+  --accent-2: #3c7269;
+  --accent-2-soft: #3c72691a;
+  --gap: #a8472f;
+  --gap-soft: #a8472f14;
+  --rule: #d7d9d0;
+  --rule-strong: #c1c4b9;
+  --shadow: 0 1px 2px rgba(30,35,31,0.06), 0 8px 24px rgba(30,35,31,0.05);
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body: 'Source Sans 3', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Cascadia Code', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171a;
+    --surface: #1b1f22;
+    --surface-2: #20252a;
+    --ink: #e9e7df;
+    --ink-muted: #a5aa9f;
+    --ink-faint: #767d75;
+    --accent: #d3a35f;
+    --accent-soft: #d3a35f22;
+    --accent-2: #6cb0a4;
+    --accent-2-soft: #6cb0a422;
+    --gap: #e08a6f;
+    --gap-soft: #e08a6f1c;
+    --rule: #2b3034;
+    --rule-strong: #3a3f43;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 28px rgba(0,0,0,0.35);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171a;
+  --surface: #1b1f22;
+  --surface-2: #20252a;
+  --ink: #e9e7df;
+  --ink-muted: #a5aa9f;
+  --ink-faint: #767d75;
+  --accent: #d3a35f;
+  --accent-soft: #d3a35f22;
+  --accent-2: #6cb0a4;
+  --accent-2-soft: #6cb0a422;
+  --gap: #e08a6f;
+  --gap-soft: #e08a6f1c;
+  --rule: #2b3034;
+  --rule-strong: #3a3f43;
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 28px rgba(0,0,0,0.35);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16.5px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 64px 28px 120px;
+}
+
+/* -- Masthead -- */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.eyebrow::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  background: var(--accent);
+  display: inline-block;
+}
+h1.title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(2.3rem, 5vw, 3.1rem);
+  line-height: 1.06;
+  letter-spacing: -0.01em;
+  margin: 14px 0 10px;
+  text-wrap: balance;
+}
+.subtitle {
+  font-size: 1.14rem;
+  color: var(--ink-muted);
+  max-width: 62ch;
+  margin: 0 0 28px;
+}
+.meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 44px;
+}
+.meta-chip {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-muted);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: var(--surface);
+}
+
+/* -- Sections -- */
+section { margin: 56px 0; }
+.section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.section-num {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+h2 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.62rem;
+  margin: 0;
+  text-wrap: balance;
+}
+.section-dek {
+  color: var(--ink-muted);
+  max-width: 66ch;
+  margin: 10px 0 26px;
+}
+p { margin: 0 0 16px; max-width: 68ch; }
+strong { font-weight: 650; }
+code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.05em 0.4em;
+}
+
+/* -- Verdict cards (strength / gap) -- */
+.verdict-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 22px 0 8px;
+}
+@media (max-width: 640px) { .verdict-grid { grid-template-columns: 1fr; } }
+.vcard {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+.vcard-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.vcard.strength { border-left: 3px solid var(--accent-2); }
+.vcard.strength .vcard-label { color: var(--accent-2); }
+.vcard.gap { border-left: 3px solid var(--gap); }
+.vcard.gap .vcard-label { color: var(--gap); }
+.vcard ul { margin: 0; padding-left: 18px; }
+.vcard li { margin-bottom: 7px; }
+.vcard li:last-child { margin-bottom: 0; }
+.vcard li b { font-weight: 650; }
+
+/* -- Comparison matrix -- */
+.matrix-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  margin: 8px 0 6px;
+}
+table.matrix {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 640px;
+  background: var(--surface);
+  font-size: 0.95rem;
+}
+table.matrix th, table.matrix td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+table.matrix thead th {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--rule-strong);
+}
+table.matrix tbody th {
+  font-weight: 650;
+  white-space: nowrap;
+}
+table.matrix tbody tr:last-child td, table.matrix tbody tr:last-child th { border-bottom: none; }
+.mk { font-family: var(--font-mono); font-size: 0.86em; }
+.mk.yes { color: var(--accent-2); }
+.mk.no { color: var(--gap); }
+.mk.part { color: var(--accent); }
+
+/* -- Priority list -- */
+.priority-list { counter-reset: pnum; margin: 24px 0 0; }
+.pitem {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 16px;
+  padding: 18px 0;
+  border-top: 1px solid var(--rule);
+}
+.pitem:last-child { border-bottom: 1px solid var(--rule); }
+.pnum {
+  counter-increment: pnum;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.pnum::before { content: counter(pnum, decimal-leading-zero); }
+.ptitle { font-weight: 650; margin-bottom: 4px; }
+.ptag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-left: 10px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+.ptag.high { background: var(--gap-soft); color: var(--gap); }
+.ptag.mid { background: var(--accent-soft); color: var(--accent); }
+.ptag.low { background: var(--accent-2-soft); color: var(--accent-2); }
+.pbody { color: var(--ink-muted); max-width: 64ch; }
+.pbody code { font-size: 0.85em; }
+
+/* -- Callout -- */
+.callout {
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--rule));
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin: 22px 0;
+}
+.callout p:last-child { margin-bottom: 0; }
+.callout .callout-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+footer {
+  margin-top: 72px;
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+}
+</style>
+
+<div class="page">
+
+  <div class="eyebrow">dndsheets · lectura de campamento, segunda pasada</div>
+  <h1 class="title">La mesa ya sabe mostrarlo</h1>
+  <p class="subtitle">Dónde está parado el mod hoy frente a Foundry VTT, TaleSpire y la sensación de juego de Baldur's Gate 3 — con lo verificado en el código real, no en la lista de funciones que a uno le gustaría tener.</p>
+  <div class="meta-row">
+    <span class="meta-chip">alcance: core + addon dungeon + addon species</span>
+    <span class="meta-chip">base: SRD 5.1</span>
+    <span class="meta-chip">comparado contra: Foundry VTT · TaleSpire · Baldur's Gate 3</span>
+  </div>
+
+  <div class="callout">
+    <div class="callout-label">qué cambió desde la primera lectura</div>
+    <p>Los tres puntos de más impacto de la ronda anterior ya están en el mod: <b>HUD de combate visual</b> (tablero de iniciativa, condiciones, economía de acción — reemplazó al texto plano), <b>panel de efectos activos</b> persistente (condiciones, concentración, PG temporales, fuera de combate también), y las dos mecánicas de BG3 más citadas, <b>ventaja por altura</b> y <b>empujar</b>. Quedan los dos ítems más caros de la lista original: disparadores configurables y niebla de guerra — ninguno se tocó todavía.</p>
+  </div>
+
+  <section>
+    <div class="section-head"><span class="section-num">01</span><h2>El activo real: reglas que se resuelven solas</h2></div>
+    <p class="section-dek">Antes de comparar contra nadie, vale decir qué hay: no es una hoja de personaje bonita pegada a Minecraft. Es un motor de reglas de 5e que corre de verdad — tiradas, condiciones, espacios de conjuro, resistencias, todo automático — con Minecraft como tablero.</p>
+
+    <div class="verdict-grid">
+      <div class="vcard strength">
+        <div class="vcard-label">✦ ya funciona solo</div>
+        <ul>
+          <li>Ataque, daño, ventaja/desventaja, crítico, salvaciones y <b>14 condiciones del SRD con efecto mecánico real</b> (no solo un ícono que el DM tiene que recordar qué hace)</li>
+          <li>Concentración, muerte por salvaciones, espacios de conjuro con sobrelanzado por nivel</li>
+          <li>Iniciativa que <b>arranca sola</b> con el primer golpe — nadie escribe "tiremos iniciativa"</li>
+          <li>Acciones legendarias, multiataque, monstruos "de reloj propio" (actúan cada 6s sin esperar cola)</li>
+          <li>Resistencia/inmunidad a daño mágico y no mágico, cobertura, formas de área (cono/línea/esfera/muro) que salen del punto correcto</li>
+          <li><b>Nuevo</b> — tablero de iniciativa visible siempre (<code>TurnHudOverlay</code>), con condiciones por combatiente, quién ya actuó y economía de acción propia</li>
+          <li><b>Nuevo</b> — panel de efectos activos persistente (<code>ResourceHudOverlay</code>): condiciones, concentración, PG temporales, fuera de combate también</li>
+          <li><b>Nuevo</b> — ventaja por altura y Empujar, la combinación táctica de BG3 (tirar a alguien de una cornisa) ya es posible de verdad</li>
+          <li><b>Nuevo</b> — superficies (<code>SurfaceManager</code>): un impacto de fuego deja el suelo ardiendo unos asaltos, y el agua REAL del mundo lo apaga o conduce un chispazo de rayo a quien esté parado en ella</li>
+        </ul>
+      </div>
+      <div class="vcard gap">
+        <div class="vcard-label">✕ todavía no</div>
+        <ul>
+          <li>Nada de <b>macros o scripting</b> para que un DM automatice algo sin recompilar Java</li>
+          <li>Visión por luz/oscuridad, no por línea de visión detrás de un muro</li>
+          <li>Sin buscador de contenido unificado — cada tipo (hechizo, monstruo, clase) tiene su propia pantalla suelta</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="section-num">02</span><h2>Contra Foundry VTT: automatización de base, no de módulo</h2></div>
+    <p class="section-dek">El sistema 5e de Foundry, tal cual viene, es más una hoja de personaje digital que un árbitro — la automatización de ataques/condiciones/recursos que la comunidad da por sentada llega recién con módulos como Midi-QOL y DAE encima. Este mod trae eso <b>de fábrica</b>, sin instalar nada aparte.</p>
+    <p>Lo que Foundry sigue ganando es todo lo que se construyó alrededor en años de módulos: un editor de macros accesible sin programar, compendios buscables por texto libre, e iluminación/visión que calcula oclusión real contra paredes dibujadas en la escena. Su "active effects" ya tiene equivalente propio (ver arriba) — de los tres puntos originales, ese es el que se cerró. Los otros dos siguen siendo trabajo de UI/motor que no se hizo todavía, no una limitación de diseño.</p>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="section-num">03</span><h2>Contra TaleSpire: el terreno ya es jugable, falta ocultarlo</h2></div>
+    <p class="section-dek">TaleSpire vende mesa en 3D con miniaturas — el mod tiene ya un análogo genuino en el addon de mazmorras (pools de piezas por jigsaw, captura de una construcción propia como pieza reutilizable, trazado en el mundo) y es <b>más flexible</b> en un sentido concreto: cualquier build de un jugador se puede volver contenido reutilizable, no hay que limitarse a una biblioteca de assets fija.</p>
+    <p>TaleSpire oculta la mesa fuera del alcance de cámara de cada miniatura — niebla de guerra de verdad. Minecraft no tiene ese concepto nativo, y pelea contra cómo el juego carga el mundo, no contra una pantalla que falta: era la brecha más cara de las tres comparaciones. <b>Decisión: suspendida.</b> El mod ya tiene un sistema de visión propio (<code>VisionManager</code> — cortes de luz, visión en la oscuridad, ceguera) que resuelve la misma pregunta de mesa ("¿qué puede ver mi personaje ahora mismo?") sin necesitar ocultar el mundo entero por detrás; construir niebla de guerra encima sería mantener dos sistemas para el mismo problema. Si en algún momento hace falta ocultar mapa explícitamente (no solo lo que un personaje ve), esto se retoma — hasta entonces, la visión existente es la respuesta.</p>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="section-num">04</span><h2>Contra Baldur's Gate 3: la sensación de juego, no el guion</h2></div>
+    <p class="section-dek">BG3 es una campaña única con cámaras cinemáticas, voces y compañeros con relación propia — perseguir eso 1 a 1 es un objetivo equivocado para un mod pensado para que un DM humano lleve su propia mesa. Lo que sí es transferible es cómo BG3 <b>muestra</b> el combate.</p>
+
+    <div class="callout">
+      <div class="callout-label">resuelto desde la primera lectura</div>
+      <p>El HUD de turnos ya no son líneas de texto sueltas: <code>TurnHudOverlay</code> muestra el tablero de iniciativa entero (orden, condiciones, quién actuó) y la economía de acción propia como estado, no como número perdido en el chat, con el mismo tratamiento visual que el resto de las pantallas del mod. <code>AttackRules.advantageAgainst</code> ahora suma ventaja por altura, y <code>ShoveManager</code> resuelve Empujar como prueba enfrentada de verdad — la combinación "empujarlo desde arriba" que definía la mitad de este punto ya funciona.</p>
+    </div>
+
+    <p>Las cinco de la lista original ya están. La versión que se construyó de superficies usa el agua REAL del mundo en vez de trackear una segunda "superficie de agua" aparte — Minecraft ya sabe dónde hay agua, así que apagar fuego y conducir un rayo consultan el bloque de verdad. Queda pendiente el otro combo icónico de BG3, fuego+aceite, porque no hay contenido en el bestiario/hechizos que hoy deje un charco de aceite — es una decisión de contenido, no de motor, así que se puede sumar el día que haga falta sin tocar <code>SurfaceManager</code>.</p>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="section-num">05</span><h2>Matriz rápida</h2></div>
+    <div class="matrix-wrap">
+      <table class="matrix">
+        <thead>
+          <tr><th>Frente</th><th>dndsheets hoy</th><th>Foundry</th><th>TaleSpire</th><th>BG3</th></tr>
+        </thead>
+        <tbody>
+          <tr><th>Reglas 5e automáticas</th><td class="mk yes">de fábrica</td><td class="mk part">con módulos</td><td class="mk no">manual</td><td class="mk yes">de fábrica</td></tr>
+          <tr><th>Terreno propio/reutilizable</th><td class="mk yes">jigsaw + captura</td><td class="mk no">assets 2D</td><td class="mk part">biblioteca fija</td><td class="mk no">n/a</td></tr>
+          <tr><th>Niebla de guerra</th><td class="mk part">suspendida — usa visión</td><td class="mk yes">sí</td><td class="mk yes">sí</td><td class="mk yes">sí</td></tr>
+          <tr><th>HUD de combate glanceable</th><td class="mk yes">tablero + panel</td><td class="mk part">por módulo</td><td class="mk part">básico</td><td class="mk yes">íconos/barras</td></tr>
+          <tr><th>Efectos activos visibles</th><td class="mk yes">panel propio</td><td class="mk yes">"active effects"</td><td class="mk no">—</td><td class="mk yes">sí</td></tr>
+          <tr><th>Macros sin programar</th><td class="mk no">—</td><td class="mk yes">sí</td><td class="mk no">—</td><td class="mk no">n/a</td></tr>
+          <tr><th>Alto / empujar</th><td class="mk yes">sí</td><td class="mk no">—</td><td class="mk no">—</td><td class="mk yes">sí</td></tr>
+          <tr><th>Superficies interactivas</th><td class="mk part">fuego+agua, falta aceite</td><td class="mk no">—</td><td class="mk no">—</td><td class="mk yes">sí</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head"><span class="section-num">06</span><h2>Por dónde seguir</h2></div>
+    <p class="section-dek">De los cinco puntos originales, tres ya están hechos (HUD visual, panel de efectos, superficies — ver arriba) y uno queda suspendido a propósito. Solo queda uno abierto de verdad.</p>
+
+    <div class="priority-list">
+      <div class="pitem">
+        <div class="pnum"></div>
+        <div>
+          <div class="ptitle">Disparadores configurables por JSON<span class="ptag high">único pendiente</span></div>
+          <div class="pbody">No un lenguaje de scripting completo — un formato acotado ("si pasa X, aplica Y") que le dé al DM algo del poder de un macro de Foundry sin pedirle que compile Java. Necesita una decisión de diseño antes de escribir código: qué tipo de disparador vale más (¿reacciones de monstruo tipo "al llegar a 0 PG hace X"? ¿algo más general para contenido homebrew?).</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:28px;">
+      <div class="callout-label">suspendido hasta nuevo aviso</div>
+      <p><b>Niebla de guerra.</b> Era la más cara de las opciones originales, y con la visión ya existente (<code>VisionManager</code>) cubriendo la misma pregunta de mesa, mantener dos sistemas para lo mismo no vale la pena. Fuera de la lista de trabajo — no se retoma salvo que aparezca una necesidad concreta que la visión actual no resuelva.</p>
+    </div>
+  </section>
+
+  <footer>
+    Basado en lectura directa del código en esta sesión — CombatManager, TurnManager, TurnHudOverlay, ResourceHudOverlay, AttackRules, ShoveManager, SurfaceManager, VisionManager, y el addon de mazmorras. No incluye nada que no se haya verificado en el repositorio.
+  </footer>
+
+</div>

@@ -35,12 +35,13 @@ public class AbilityItemDispatcher {
 		CompoundTag dndTag = dndTagOf(event.getItemStack());
 		if (dndTag == null) return;
 
-		//Los dos ítems que NECESITAN una criatura delante, y por eso solo existen en este evento: la Marca
-		//del Cazador marca a quien señalas y la Inspiración se la das a otro jugador. Van antes que el
-		//reparto común porque este evento es el único donde su clic significa algo.
+		//Los ítems que NECESITAN una criatura delante, y por eso solo existen en este evento: la Marca
+		//del Cazador marca a quien señalas, la Inspiración se la das a otro jugador, y Empujar necesita
+		//saber a quién. Van antes que el reparto común porque este evento es el único donde su clic significa algo.
 		if (dndTag.getBoolean("hunterMark")) RangerHunterMarkManager.tryUse(event);
 		else if (dndTag.getBoolean("bardicInspiration")) BardInspirationManager.tryUse(event);
 		else if (dndTag.getBoolean("helpAction")) HelpActionManager.tryUse(event);
+		else if (dndTag.getBoolean("shove")) ShoveManager.tryUse(event);
 		else dispatch(event, dndTag);
 	}
 

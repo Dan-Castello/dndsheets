@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT License"
+
+[[mods]]
+modId="dndsheets_dungeon"
+version="1.0.0"
+displayName="D&D Sheets: Dungeon Toolkit"
+authors="Hawthorn, Cosmic"
+description="Herramientas del DM para trazar y generar mazmorras en 5e. Extension separada de D&D Sheets."
+
+[[dependencies.dndsheets_dungeon]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1]"
+    ordering="NONE"
+    side="BOTH"
+
+# Dependencia DURA a proposito (ver Modularity Map / PROJECT_CONTEXT.md): el toolkit de mazmorras
+# no funciona sin el core -- usa su logger, sus rutas de datos, su boton de tomo y su base de GUI
+# compartida. No tiene sentido fingir que es opcional.
+[[dependencies.dndsheets_dungeon]]
+    modId="dndsheets"
+    mandatory=true
+    versionRange="[1.0.2,)"
+    ordering="AFTER"
+    side="BOTH"

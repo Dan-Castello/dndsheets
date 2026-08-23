@@ -1,0 +1,35 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="MIT License"
+
+[[mods]]
+modId="dndsheets_species"
+version="1.0.0"
+displayName="D&D Sheets: Species"
+authors="Hawthorn, Cosmic"
+description="Aplica el Aumento de Caracteristica y los rasgos del SRD cuando el jugador elige su raza con Origins."
+
+[[dependencies.dndsheets_species]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1]"
+    ordering="NONE"
+    side="BOTH"
+
+# Dependencia DURA a proposito (ver Modularity Map / Library Audit): sin el core no hay a que ficha
+# aplicarle nada.
+[[dependencies.dndsheets_species]]
+    modId="dndsheets"
+    mandatory=true
+    versionRange="[1.0.2,)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Dependencia DURA a proposito: Origins es quien elige la raza. Sin el instalado, /dndspecies sync no
+# tiene de donde leer y falla con un mensaje claro (ver RaceOriginBridge), no en silencio.
+[[dependencies.dndsheets_species]]
+    modId="origins"
+    mandatory=true
+    versionRange="[1.10.0,)"
+    ordering="AFTER"
+    side="BOTH"

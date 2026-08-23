@@ -2,6 +2,12 @@
 **/build/
 !src/**/build/
 
+# Cliente/servidor de desarrollo del addon del toolkit de mazmorras (ver dungeon/build.gradle):
+# nuevo, sin nada versionado adentro todavia, asi que se ignora entero en vez de replicar la lista
+# fina de abajo entrada por entrada.
+dungeon/runClient/
+dungeon/runServer/
+
 runClient/logs/
 runServer/logs/
 runClient/crash-reports/

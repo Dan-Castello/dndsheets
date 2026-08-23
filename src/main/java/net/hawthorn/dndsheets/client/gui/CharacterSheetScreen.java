@@ -6,7 +6,6 @@ import net.hawthorn.dndsheets.client.gui.components.TomeField;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.mojang.blaze3d.platform.InputConstants;
-import net.hawthorn.dndsheets.CharacterOptionsRegistry;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.RollIndex;
 import net.hawthorn.dndsheets.SheetLoader;
@@ -14,7 +13,6 @@ import net.hawthorn.dndsheets.client.gui.components.AdjustableImageButton;
 import net.hawthorn.dndsheets.client.gui.components.RollScrollWidget;
 import net.hawthorn.dndsheets.init.DndsheetsModKeyMappings;
 import net.hawthorn.dndsheets.network.AdvancedRollEditorOpenMessage;
-import net.hawthorn.dndsheets.network.CharacterOptionsRequestMessage;
 import net.hawthorn.dndsheets.network.PresetListRequestMessage;
 import net.hawthorn.dndsheets.network.RollEditorOpenMessage;
 import net.hawthorn.dndsheets.client.procedures.CharacterSheetSaveProcedure;
@@ -307,17 +305,6 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	//Ámbar quemado para lo que se rellena solo. El ámbar claro de antes (0xFFD37F) estaba pensado para un
 	//fondo oscuro; sobre pergamino no tenía contraste suficiente para leerse.
 	private static final int AUTO_FIELD_COLOR = 0x8A5A12;
-
-	//Raza/Trasfondo/Clase eran texto libre: un jugador nuevo no tiene forma de adivinar qué escribir, y en
-	//el caso de Clase encima importa de verdad (Config.hitDieFor, WarlockPactMagicManager,
-	//WizardArcaneRecoveryManager y WeaponDefault.allowsClass comparan por subcadena contra characterClass;
-	//un typo o "Warlock" en vez de "Brujo" hacía fallar esa detección en silencio). Ahora se eligen con un
-	//GUI de lista pedido al servidor (ver CharacterOptionsRegistry/CharacterOptionListScreen), en vez de
-	//escribirse a mano o recorrerse a clicks uno por uno.
-	private void requestOptionPicker(String category) {
-		CharacterSheetSaveProcedure.execute(guistate); //Como al abrir Presets: no perder ediciones sin guardar de otros campos al navegar fuera.
-		DndsheetsMod.PACKET_HANDLER.sendToServer(new CharacterOptionsRequestMessage(category));
-	}
 
 	public enum PanelStatus {
 		MAIN,
@@ -1291,7 +1278,13 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			@Override
 			public boolean mouseClicked(double mx, double my, int button) {
 				if (!this.isMouseOver(mx, my)) return false;
-				requestOptionPicker(CharacterOptionsRegistry.RACE);
+				//La raza la elige Origins, no un picker propio (ver Modularity Map / dndsheets_species): esto
+				//abre el selector real de Origins y sincroniza solo después (ver SpeciesCommand.choose).
+				//La ficha se cierra ANTES de que llegue el selector: dejarla abierta encima le robaba el
+				//clic/teclado al selector de Origins, que quedaba inutilizable hasta cerrar la ficha a mano.
+				CharacterSheetSaveProcedure.execute(guistate);
+				net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndspecies choose");
+				CharacterSheetScreen.this.onClose();
 				return true;
 			}
 		};
@@ -1304,7 +1297,11 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			@Override
 			public boolean mouseClicked(double mx, double my, int button) {
 				if (!this.isMouseOver(mx, my)) return false;
-				requestOptionPicker(CharacterOptionsRegistry.BACKGROUND);
+				//El trasfondo lo elige Origins, no un picker propio (ver Modularity Map / dndsheets_species):
+				//esto abre el selector real de Origins y sincroniza solo después. Mismo cierre que Raza.
+				CharacterSheetSaveProcedure.execute(guistate);
+				net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndspecies choosebackground");
+				CharacterSheetScreen.this.onClose();
 				return true;
 			}
 		};
@@ -1317,7 +1314,11 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			@Override
 			public boolean mouseClicked(double mx, double my, int button) {
 				if (!this.isMouseOver(mx, my)) return false;
-				requestOptionPicker(CharacterOptionsRegistry.CLASS);
+				//La clase también la elige Origins (capa origins-classes:class, ver Modularity Map /
+				//dndsheets_species): mismo patrón que Raza/Trasfondo, sigue aplicando el PRESET real.
+				CharacterSheetSaveProcedure.execute(guistate);
+				net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndspecies chooseclass");
+				CharacterSheetScreen.this.onClose();
 				return true;
 			}
 		};
@@ -1359,7 +1360,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private void initBottomButtons() {
 		//NOTA: sin hueco dibujado en la textura todavía. Puestos en el margen inferior, debajo de Nivel/
 		//Hambre, para no pisar el círculo de Iniciativa (que ocupa la zona x=270-345, y=90-200).
-		grimoireButton = TomeButton.of(Component.translatable("gui.dndsheets.character_sheet.grimoire"), b -> this.minecraft.setScreen(new GrimoireScreen(this)), this.leftPos + GRIMOIRE_OFFSET_X, this.topPos + GRIMOIRE_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
+		grimoireButton = TomeButton.of(Component.translatable("gui.dndsheets.character_sheet.grimoire"), b -> GrimoireScreen.open(this), this.leftPos + GRIMOIRE_OFFSET_X, this.topPos + GRIMOIRE_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
 		guistate.put("button:grimoire", grimoireButton);
 		this.addRenderableWidget(grimoireButton);
 

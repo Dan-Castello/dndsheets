@@ -45,8 +45,6 @@ public class CharacterOptionListScreen extends ListPickerScreen {
 
 	private static String titleFor(String category) {
 		return switch (category) {
-			case CharacterOptionsRegistry.RACE -> "Elige una raza";
-			case CharacterOptionsRegistry.BACKGROUND -> "Elige un trasfondo";
 			case CharacterOptionsRegistry.CLASS -> "Elige una clase";
 			default -> "Elige una opción";
 		};
@@ -54,7 +52,6 @@ public class CharacterOptionListScreen extends ListPickerScreen {
 
 	private static String sheetFieldFor(String category) {
 		return switch (category) {
-			case CharacterOptionsRegistry.RACE -> "characterRace";
 			case CharacterOptionsRegistry.CLASS -> "characterClass";
 			default -> "background";
 		};
@@ -72,7 +69,7 @@ public class CharacterOptionListScreen extends ListPickerScreen {
 				JsonObject sheet = SheetLoader.getClientSheet();
 				if (sheet != null) {
 					sheet.addProperty(sheetFieldFor(category), option);
-					DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetServerMessage(sheet.toString().getBytes()));
+					DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetServerMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 				}
 				this.onClose();
 			});

@@ -93,7 +93,21 @@ public class DndsheetsMod {
 	//compendio lo traduzca el CLIENTE en su idioma en vez de que el servidor le fije el suyo. Cambia el
 	//formato en el cable sin cambiar ni el numero de mensajes ni su orden — o sea que NI NETWORK_SHAPE ni
 	//NETWORK_ORDER lo ven, y por eso existe ahora tambien NETWORK_WIRE (ver abajo).
-	private static final String PROTOCOL_VERSION = "10";
+	//Sube a "16": se registran 7 mensajes nuevos al FINAL (DungeonTraceCaptureMessage,
+	//MonsterSpawnListRequestMessage, MonsterSpawnListMessage, SpellGiveListRequestMessage,
+	//SpellGiveListMessage, WeaponGiveListRequestMessage, WeaponGiveListMessage), y MonsterBindMessage y
+	//WildShapeMessage ganan campos nuevos en el cable (bestiario resuelto en servidor).
+	//Sube a "17": el toolkit de mazmorras se muda a su propio addon/mod (dndsheets_dungeon) con su
+	//propio canal — SALEN 10 mensajes de este canal (DungeonGenerateMessage,
+	//DungeonJigsawConfigureMessage, DungeonJigsawConfigureOpenMessage, DungeonPieceAddOpenMessage,
+	//DungeonPieceCaptureMessage, DungeonPieceListMessage, DungeonPieceListRequestMessage,
+	//DungeonPieceRemoveMessage, DungeonPieceUpdateMessage, DungeonTraceCaptureMessage). Un cliente
+	//viejo que aun los mande a este canal no encuentra receptor: correcto, porque ese addon ya no
+	//escucha aqui, escucha en su propio canal "dndsheets_dungeon".
+	//Sube a "18": nuevo mensaje StaffBindMessage (báculos de hechizo reconfigurables desde el Grimorio).
+	//Sube a "19": TurnStateMessage gana el tablero de iniciativa completo (roster con condiciones/estado
+	//por combatiente), para el HUD de turnos profesional.
+	private static final String PROTOCOL_VERSION = "19";
 
 	/**
 	 * <p>Cuántas piezas cruzan el cable: mensajes registrados más constantes de los enums que viajan por
@@ -105,7 +119,7 @@ public class DndsheetsMod {
 	 * la mano igual para desalinearse después. Un número que hay que tocar a mano no impide el error, pero
 	 * lo convierte en una decisión en vez de un olvido.</p>
 	 */
-	public static final int NETWORK_SHAPE = 109;
+	public static final int NETWORK_SHAPE = 107;
 
 	/**
 	 * <p>El orden exacto en que las piezas cruzan el cable, resumido en un hash. {@link #NETWORK_SHAPE}
@@ -117,7 +131,7 @@ public class DndsheetsMod {
 	 * fuente y tumba el build cuando no cuadra. Si mueves algo a propósito, sube {@link #PROTOCOL_VERSION}
 	 * y pega aquí el número que te diga el fallo.</p>
 	 */
-	public static final int NETWORK_ORDER = -929442425;
+	public static final int NETWORK_ORDER = 1324783977;
 
 	/**
 	 * <p>Que se escribe y se lee en el cable, resumido en un hash: la secuencia de llamadas
@@ -129,7 +143,7 @@ public class DndsheetsMod {
 	 * dos numeros intactos y aun asi rompio la compatibilidad: un cliente viejo leería un texto donde el
 	 * servidor nuevo escribe un Component, y se desincroniza a mitad del paquete.</p>
 	 */
-	public static final int NETWORK_WIRE = 2124062058;
+	public static final int NETWORK_WIRE = -1901055770;
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 
@@ -154,15 +168,6 @@ public class DndsheetsMod {
 		addNetworkMessage(ContentEntryRemoveMessage.class, ContentEntryRemoveMessage::buffer, ContentEntryRemoveMessage::new, ContentEntryRemoveMessage::handler);
 		addNetworkMessage(ContentEntrySaveMessage.class, ContentEntrySaveMessage::buffer, ContentEntrySaveMessage::new, ContentEntrySaveMessage::handler);
 		addNetworkMessage(DeathSaveGiveUpMessage.class, DeathSaveGiveUpMessage::buffer, DeathSaveGiveUpMessage::new, DeathSaveGiveUpMessage::handler);
-		addNetworkMessage(DungeonGenerateMessage.class, DungeonGenerateMessage::buffer, DungeonGenerateMessage::new, DungeonGenerateMessage::handler);
-		addNetworkMessage(DungeonJigsawConfigureMessage.class, DungeonJigsawConfigureMessage::buffer, DungeonJigsawConfigureMessage::new, DungeonJigsawConfigureMessage::handler);
-		addNetworkMessage(DungeonJigsawConfigureOpenMessage.class, DungeonJigsawConfigureOpenMessage::buffer, DungeonJigsawConfigureOpenMessage::new, DungeonJigsawConfigureOpenMessage::handler);
-		addNetworkMessage(DungeonPieceAddOpenMessage.class, DungeonPieceAddOpenMessage::buffer, DungeonPieceAddOpenMessage::new, DungeonPieceAddOpenMessage::handler);
-		addNetworkMessage(DungeonPieceCaptureMessage.class, DungeonPieceCaptureMessage::buffer, DungeonPieceCaptureMessage::new, DungeonPieceCaptureMessage::handler);
-		addNetworkMessage(DungeonPieceListMessage.class, DungeonPieceListMessage::buffer, DungeonPieceListMessage::new, DungeonPieceListMessage::handler);
-		addNetworkMessage(DungeonPieceListRequestMessage.class, DungeonPieceListRequestMessage::buffer, DungeonPieceListRequestMessage::new, DungeonPieceListRequestMessage::handler);
-		addNetworkMessage(DungeonPieceRemoveMessage.class, DungeonPieceRemoveMessage::buffer, DungeonPieceRemoveMessage::new, DungeonPieceRemoveMessage::handler);
-		addNetworkMessage(DungeonPieceUpdateMessage.class, DungeonPieceUpdateMessage::buffer, DungeonPieceUpdateMessage::new, DungeonPieceUpdateMessage::handler);
 		addNetworkMessage(DeathSaveRollMessage.class, DeathSaveRollMessage::buffer, DeathSaveRollMessage::new, DeathSaveRollMessage::handler);
 		addNetworkMessage(MonsterActionChooseMessage.class, MonsterActionChooseMessage::buffer, MonsterActionChooseMessage::new, MonsterActionChooseMessage::handler);
 		addNetworkMessage(GiveItemMessage.class, GiveItemMessage::buffer, GiveItemMessage::new, GiveItemMessage::handler);
@@ -214,6 +219,13 @@ public class DndsheetsMod {
 		addNetworkMessage(BrowseListMessage.class, BrowseListMessage::buffer, BrowseListMessage::new, BrowseListMessage::handler);
 		addNetworkMessage(MonsterBindMessage.class, MonsterBindMessage::buffer, MonsterBindMessage::new, MonsterBindMessage::handler);
 		addNetworkMessage(WildShapeMessage.class, WildShapeMessage::buffer, WildShapeMessage::new, WildShapeMessage::handler);
+		addNetworkMessage(MonsterSpawnListRequestMessage.class, MonsterSpawnListRequestMessage::buffer, MonsterSpawnListRequestMessage::new, MonsterSpawnListRequestMessage::handler);
+		addNetworkMessage(MonsterSpawnListMessage.class, MonsterSpawnListMessage::buffer, MonsterSpawnListMessage::new, MonsterSpawnListMessage::handler);
+		addNetworkMessage(SpellGiveListRequestMessage.class, SpellGiveListRequestMessage::buffer, SpellGiveListRequestMessage::new, SpellGiveListRequestMessage::handler);
+		addNetworkMessage(SpellGiveListMessage.class, SpellGiveListMessage::buffer, SpellGiveListMessage::new, SpellGiveListMessage::handler);
+		addNetworkMessage(WeaponGiveListRequestMessage.class, WeaponGiveListRequestMessage::buffer, WeaponGiveListRequestMessage::new, WeaponGiveListRequestMessage::handler);
+		addNetworkMessage(WeaponGiveListMessage.class, WeaponGiveListMessage::buffer, WeaponGiveListMessage::new, WeaponGiveListMessage::handler);
+		addNetworkMessage(StaffBindMessage.class, StaffBindMessage::buffer, StaffBindMessage::new, StaffBindMessage::handler);
 	}
 
 	//Patrón repetido en los mensajes cliente(DM)->servidor que actúan sobre OTRO jugador (SheetAdjustMessage,
@@ -238,7 +250,7 @@ public class DndsheetsMod {
 	//hoja JSON completa — para cambios acotados como consumir ventaja/inspiración o gastar un espacio de
 	//conjuro, que antes reenviaban toda la hoja en cada golpe/hechizo.
 	public static void sendSheetFieldUpdate(ServerPlayer player, JsonObject patch) {
-		PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetFieldUpdateMessage(patch.toString().getBytes()));
+		PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetFieldUpdateMessage(patch.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 	}
 
 	//Mutable a propósito (ticksLeft se decrementa in place cada tick): un record forzaría reconstruir/

@@ -2,6 +2,7 @@
 package net.hawthorn.dndsheets.init;
 
 import net.hawthorn.dndsheets.client.gui.DmPanelScreen;
+import net.hawthorn.dndsheets.client.gui.GrimoireScreen;
 import net.hawthorn.dndsheets.network.CharacterSheetOpenMessage;
 import org.lwjgl.glfw.GLFW;
 
@@ -49,10 +50,26 @@ public class DndsheetsModKeyMappings {
 		}
 	};
 
+	//Directo al Grimorio, sin pasar por la ficha (H) primero: no depende de nada que solo viva ahí (ver
+	//GrimoireScreen), así que abrirlo suelto es tan válido como abrirlo desde el botón "Grimorio".
+	public static final KeyMapping GRIMOIRE = new KeyMapping("key.dndsheets.grimoire", GLFW.GLFW_KEY_G, "key.categories.dndsheets") {
+		private boolean isDownOld = false;
+
+		@Override
+		public void setDown(boolean isDown) {
+			super.setDown(isDown);
+			if (isDownOld != isDown && isDown) {
+				GrimoireScreen.open(null);
+			}
+			isDownOld = isDown;
+		}
+	};
+
 	@SubscribeEvent
 	public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
 		event.register(CHARACTER);
 		event.register(DM_PANEL);
+		event.register(GRIMOIRE);
 	}
 
 	@Mod.EventBusSubscriber({Dist.CLIENT})
@@ -62,6 +79,7 @@ public class DndsheetsModKeyMappings {
 			if (Minecraft.getInstance().screen == null) {
 				CHARACTER.consumeClick();
 				DM_PANEL.consumeClick();
+				GRIMOIRE.consumeClick();
 			}
 		}
 	}

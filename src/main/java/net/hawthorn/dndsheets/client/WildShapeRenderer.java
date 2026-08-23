@@ -1,6 +1,5 @@
 package net.hawthorn.dndsheets.client;
 
-import net.hawthorn.dndsheets.MonsterRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -39,14 +38,22 @@ public class WildShapeRenderer {
 	//Una entidad de mentira por tipo, reusada: construir una por fotograma y por jugador significa
 	//construir sesenta por segundo y tirarlas, que es exactamente cómo se hace un mod que va a tirones.
 	private static final Map<EntityType<?>, LivingEntity> dummies = new HashMap<>();
+	//Último tickCount en que se avanzó walkAnimation.update() para cada tipo de bestia (ver más abajo):
+	//solo hace falta una vez por tick, no una por fotograma.
+	private static final Map<EntityType<?>, Integer> lastAnimatedTick = new HashMap<>();
 
 	private WildShapeRenderer() {
 	}
 
-	/** Un id vacío significa que ha vuelto a su forma. Lo manda {@code WildShapeWatcher}. */
-	public static void setShape(UUID player, String monsterId) {
-		if (monsterId == null || monsterId.isEmpty()) shapes.remove(player);
-		else shapes.put(player, monsterId);
+	/**
+	 * <p>Un id vacío significa que ha vuelto a su forma. Lo manda {@code WildShapeWatcher}, y lo que manda
+	 * es la ENTIDAD BASE de la bestia (p. ej. {@code minecraft:wolf}), no el id del monstruo: el registro
+	 * de monstruos solo vive en el servidor, y este cliente puede ser un proceso aparte que nunca lo vio
+	 * cargarse.</p>
+	 */
+	public static void setShape(UUID player, String baseEntityId) {
+		if (baseEntityId == null || baseEntityId.isEmpty()) shapes.remove(player);
+		else shapes.put(player, baseEntityId);
 	}
 
 	@SubscribeEvent
@@ -66,8 +73,22 @@ public class WildShapeRenderer {
 		dummy.setXRot(player.getXRot());
 		dummy.xRotO = player.xRotO;
 		dummy.tickCount = player.tickCount;
-		dummy.walkAnimation.setSpeed(player.walkAnimation.speed());
-		dummy.walkAnimation.update(player.walkAnimation.position(), 1.0f);
+
+		//BUG real de las patas: update() NO toma una posición, toma una VELOCIDAD objetivo hacia la que
+		//suaviza (y el segundo argumento es el factor de suavizado, no el partialTick del renderizado) —
+		//aquí se le pasaba walkAnimation.position() (un acumulador que crece solo con el tiempo, sin relación
+		//con qué tan rápido caminás) con un suavizado de 1.0 (sin suavizar nada), así que la "velocidad" de
+		//la bestia quedaba clavada en ese número creciente y el modelo agitaba las patas sin parar, caminaras
+		//o no. Además esto corría una vez por FOTOGRAMA en vez de una vez por TICK como hace Minecraft de
+		//verdad (update() acumula posición en cada llamada), así que a más FPS más rápido se veía la
+		//animación — de ahí el "descontrol" también estando quieto, con solo un pelín de velocidad residual.
+		//Se guarda el último tick ya animado por tipo de bestia (el dummy se reusa entre jugadores de la
+		//misma especie) para no volver a acumular dos veces el mismo tick.
+		EntityType<?> dummyType = dummy.getType();
+		if (!Integer.valueOf(player.tickCount).equals(lastAnimatedTick.get(dummyType))) {
+			dummy.walkAnimation.update(player.walkAnimation.speed(), 0.4f);
+			lastAnimatedTick.put(dummyType, player.tickCount);
+		}
 		dummy.setShiftKeyDown(player.isShiftKeyDown());
 		dummy.setInvisible(player.isInvisible());
 
@@ -77,12 +98,10 @@ public class WildShapeRenderer {
 			event.getPackedLight());
 	}
 
-	private static LivingEntity dummyFor(String monsterId) {
-		if (monsterId == null) return null;
-		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(monsterId);
-		if (block == null) return null;
+	private static LivingEntity dummyFor(String baseEntityId) {
+		if (baseEntityId == null) return null;
 
-		ResourceLocation loc = ResourceLocation.tryParse(block.baseEntityId());
+		ResourceLocation loc = ResourceLocation.tryParse(baseEntityId);
 		EntityType<?> type = loc == null ? null : ForgeRegistries.ENTITY_TYPES.getValue(loc);
 		if (type == null) return null;
 
