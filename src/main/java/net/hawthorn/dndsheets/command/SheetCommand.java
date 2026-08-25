@@ -59,7 +59,7 @@ public class SheetCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndsheet")
-			.requires(source -> source.hasPermission(2))
+			.requires(source -> DndsheetsMod.canActAsDm(source))
 			.then(Commands.literal("setslots")
 				.then(Commands.argument("jugadores", EntityArgument.players())
 					.then(Commands.argument("maximo", IntegerArgumentType.integer())
@@ -363,23 +363,40 @@ public class SheetCommand {
 		}
 
 		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) {
-			JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
-			if (sheet == null) continue;
-
-			String currentClassId = sheet.has("appliedPresetId") ? sheet.get("appliedPresetId").getAsString() : "";
-			java.util.Map<String, Integer> levels = net.hawthorn.dndsheets.ClassLevels.addLevel(
-				sheet, classId, currentClassId, SheetLoader.characterLevelOf(sheet));
-
-			//applyLevel escribe el nivel total y concede lo que toque; el reparto ya está en la hoja, así que
-			//los PG y los espacios se recalculan solos leyéndolo.
-			applyLevel(target, net.hawthorn.dndsheets.ClassLevels.total(levels));
-			target.sendSystemMessage(Component.translatable("chat.dndsheets.character.now_you_are", net.hawthorn.dndsheets.ClassLevels.describe(levels)).withStyle(net.minecraft.ChatFormatting.GREEN));
-		}
+		for (ServerPlayer target : targets) applyMulticlass(target, classId);
 
 		ctx.getSource().sendSuccess(() -> Component.literal("Nivel de " + classId + " concedido a "
 			+ targets.size() + " jugador(es)."), true);
 		return targets.size();
+	}
+
+	/**
+	 * <p>Sube un nivel <b>en una clase concreta</b> para UN jugador. Es lo mismo que {@code applyLevel}
+	 * salvo en la única cosa que la multiclase cambia: de qué clase es el nivel que se gana.</p>
+	 *
+	 * <p>Pasa por {@link #applyLevel} igual que todo lo demás, así que la Mejora de Característica se
+	 * concede por el mismo sitio y en los mismos niveles totales — un guerrero 3 / mago 1 la recibe al
+	 * llegar a 4, que es lo que dice 5e. Escribir el nivel por otro camino habría sido la forma de
+	 * perderla.</p>
+	 *
+	 * <p>Público: también lo usa {@code network.MulticlassMessage} (botón "Multiclasear" de la propia
+	 * ficha). Devuelve {@code false} sin tocar nada si {@code classId} no existe en {@code
+	 * PresetRegistry} o el jugador no tiene hoja — el llamador decide qué hacer con eso.</p>
+	 */
+	public static boolean applyMulticlass(ServerPlayer target, String classId) {
+		if (net.hawthorn.dndsheets.PresetRegistry.get(classId) == null) return false;
+		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
+		if (sheet == null) return false;
+
+		String currentClassId = sheet.has("appliedPresetId") ? sheet.get("appliedPresetId").getAsString() : "";
+		java.util.Map<String, Integer> levels = net.hawthorn.dndsheets.ClassLevels.addLevel(
+			sheet, classId, currentClassId, SheetLoader.characterLevelOf(sheet));
+
+		//applyLevel escribe el nivel total y concede lo que toque; el reparto ya está en la hoja, así que
+		//los PG y los espacios se recalculan solos leyéndolo.
+		applyLevel(target, net.hawthorn.dndsheets.ClassLevels.total(levels));
+		target.sendSystemMessage(Component.translatable("chat.dndsheets.character.now_you_are", net.hawthorn.dndsheets.ClassLevels.describe(levels)).withStyle(net.minecraft.ChatFormatting.GREEN));
+		return true;
 	}
 
 	private static int giveInspirationItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

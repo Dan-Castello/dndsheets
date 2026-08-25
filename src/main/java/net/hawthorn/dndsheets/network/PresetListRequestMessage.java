@@ -17,21 +17,35 @@ import java.util.function.Supplier;
 //jugador solo existía como /dndpresets apply tecleado a mano).
 public class PresetListRequestMessage {
 	String targetUuid;
+	//true: la lista vuelve a abrir PresetScreen en modo multiclase (sube un nivel EN la clase elegida)
+	//en vez de reemplazar el preset entero — ver PresetScreen y MulticlassMessage. Solo tiene sentido con
+	//targetUuid vacío: el botón "Multiclasear" de la ficha es sobre uno mismo, no sobre otro jugador.
+	boolean multiclass;
 
 	public PresetListRequestMessage() {
 		this.targetUuid = "";
+		this.multiclass = false;
 	}
 
 	public PresetListRequestMessage(String targetUuid) {
 		this.targetUuid = targetUuid;
+		this.multiclass = false;
+	}
+
+	/** Botón "Multiclasear" de la propia ficha: siempre self (targetUuid vacío). */
+	public PresetListRequestMessage(boolean multiclass) {
+		this.targetUuid = "";
+		this.multiclass = multiclass;
 	}
 
 	public PresetListRequestMessage(FriendlyByteBuf buffer) {
 		this.targetUuid = buffer.readUtf();
+		this.multiclass = buffer.readBoolean();
 	}
 
 	public static void buffer(PresetListRequestMessage message, FriendlyByteBuf buffer) {
 		buffer.writeUtf(message.targetUuid);
+		buffer.writeBoolean(message.multiclass);
 	}
 
 	public static void handler(PresetListRequestMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
@@ -41,7 +55,7 @@ public class PresetListRequestMessage {
 			if (player == null) return;
 
 			if (!message.targetUuid.isEmpty()) {
-				if (!player.hasPermissions(2)) return;
+				if (!DndsheetsMod.canActAsDm(player)) return;
 				try {
 					if (player.getServer().getPlayerList().getPlayer(UUID.fromString(message.targetUuid)) == null) return;
 				} catch (IllegalArgumentException e) {
@@ -53,7 +67,7 @@ public class PresetListRequestMessage {
 
 			List<String> ids = PresetManager.presetIds();
 			List<String> names = PresetManager.presetNames(ids);
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new PresetListMessage(message.targetUuid, ids, names));
+			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new PresetListMessage(message.targetUuid, message.multiclass, ids, names));
 		});
 	}
 }

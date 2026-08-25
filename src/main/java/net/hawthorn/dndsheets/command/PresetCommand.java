@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.hawthorn.dndsheets.DndPaths;
+import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.PresetManager;
 import net.hawthorn.dndsheets.PresetRegistry;
 import net.minecraft.commands.CommandSourceStack;
@@ -44,7 +45,7 @@ public class PresetCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndpresets")
-			.requires(source -> source.hasPermission(2))
+			.requires(source -> DndsheetsMod.canActAsDm(source))
 			.then(Commands.literal("load")
 				.then(Commands.argument("archivo", StringArgumentType.word())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(DndPaths.jsonFileNames(PRESETS_DIR), builder))
@@ -83,7 +84,20 @@ public class PresetCommand {
 	}
 
 	private static int apply(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		String presetId = ResourceLocationArgument.getId(ctx, "presetId").toString();
+		net.minecraft.resources.ResourceLocation parsed = ResourceLocationArgument.getId(ctx, "presetId");
+		String presetId = parsed.toString();
+		//Los presets de fábrica no llevan namespace ("fighter", "wizard"...) — a diferencia de armas,
+		//hechizos, monstruos y encuentros, que sí van como "dndsheets:algo". ResourceLocationArgument le
+		//completa "minecraft:" a cualquier palabra sin ":" (es lo que hace ResourceLocation con cualquier
+		//id sin namespace, no es nada específico de este comando), así que escribir "fighter" —lo mismo
+		//que sugiere el autocompletado— nunca coincidía con nada: PresetRegistry solo tiene "fighter", no
+		//"minecraft:fighter". Si el namespace que puso el parser es justo el default y con eso no se
+		//encuentra nada, se reintenta con el id pelado antes de rendirse — un preset de un addon con su
+		//propio namespace real (p.ej. "miaddon:preset_de_ejemplo") nunca entra en este caso, porque para
+		//esos el usuario SÍ escribe un ":" y el namespace que parsea Brigadier no es "minecraft".
+		if (PresetRegistry.get(presetId) == null && parsed.getNamespace().equals(net.minecraft.resources.ResourceLocation.DEFAULT_NAMESPACE)) {
+			presetId = parsed.getPath();
+		}
 		if (PresetRegistry.get(presetId) == null) {
 			ctx.getSource().sendFailure(Component.literal("No conozco el preset \"" + presetId + "\". Cárgalo con /dndpresets load."));
 			return 0;

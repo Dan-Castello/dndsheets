@@ -265,7 +265,11 @@ public class GrimoireScreen extends ListPickerScreen {
 			String id = entry.has("id") ? entry.get("id").getAsString() : "";
 			String name = entry.has("name") ? entry.get("name").getAsString() : id;
 			int level = entry.has("level") ? entry.get("level").getAsInt() : 0;
-			result.add(new KnownSpell(id, name, name + " (nv. " + level + ")", level));
+			//Mismo criterio que ya usa updateButtons() para el botón de lanzar: un truco no tiene "nivel 0",
+			//tiene la etiqueta que 5e le da. Antes la lista entera decía "(nv. 0)" para cada truco, que no
+			//significa nada en la mesa y no distinguía un truco de un hechizo real con solo mirar la lista.
+			String levelLabel = level == 0 ? " (truco)" : " (nv. " + level + ")";
+			result.add(new KnownSpell(id, name, name + levelLabel, level));
 		}
 		return result;
 	}

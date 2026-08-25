@@ -127,7 +127,8 @@ public class GuideBook {
 				"gui.dndsheets.guide.page.dm_dungeons_1",
 				"gui.dndsheets.guide.page.dm_dungeons_2",
 				"gui.dndsheets.guide.page.dm_dungeons_3",
-				"gui.dndsheets.guide.page.dm_dungeons_4"),
+				"gui.dndsheets.guide.page.dm_dungeons_4",
+				"gui.dndsheets.guide.page.dm_dungeons_5"),
 			new Entry("gui.dndsheets.guide.entry.contenido",
 				"gui.dndsheets.guide.page.dm_content_packs",
 				"gui.dndsheets.guide.page.dm_content_packs_2",
@@ -173,8 +174,15 @@ public class GuideBook {
 		List<IndexLine> index = new ArrayList<>();
 		index.add(rubric("gui.dndsheets.guide.index"));
 
+		//Antes escondía los capítulos dmOnly (Panel, Varas, Mazmorras...) a quien no tuviera permiso de
+		//operador — la misma razón que ya valía para Patchouli, arriba, ahora también aplica acá: "es cómo
+		//se usa el mod, no el secreto de nadie". Con el modo Solo (ver Config.soloMode/DndsheetsMod.
+		//canActAsDm) cualquiera puede terminar siendo quien invoca monstruos o genera una mazmorra, y el
+		//cliente no tiene forma barata de saber si ese modo está encendido para decidir qué mostrar —así
+		//que la única guía de mazmorras que existe se quedaba invisible justo para quien más la necesita.
+		// includeDmPages queda como parámetro (no se borra la forma del mensaje que lo trae) pero ya no
+		//filtra nada; ver TutorialOpenMessage si algún día hace falta limpiarlo del todo.
 		for (Chapter chapter : CHAPTERS) {
-			if (chapter.dmOnly() && !includeDmPages) continue;
 			index.add(new IndexLine(Component.empty(), -1));
 			index.add(rubric(chapter.titleKey()));
 			for (Entry entry : chapter.entries()) {
