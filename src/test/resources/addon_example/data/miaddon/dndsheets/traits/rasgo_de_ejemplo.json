@@ -1,0 +1,8 @@
+{
+  "id": "miaddon:rasgo_de_ejemplo",
+  "name": "Rasgo de Ejemplo",
+  "unarmedAbility": "str",
+  "unarmedDiceByLevel": [
+    { "level": 1, "dice": "1d4" }
+  ]
+}

@@ -57,7 +57,17 @@ public class BarbarianRageManager {
 	}
 
 	public static void activate(ServerPlayer player) {
-		if (!raging.add(player.getUUID())) return; //Ya estaba en furia: no reinicia el contador ni duplica el mensaje.
+		if (raging.contains(player.getUUID())) return; //Ya estaba en furia: no reinicia el contador ni duplica el mensaje, y no gasta nada de nuevo.
+
+		//5e de verdad: "puedes entrar en furia como una acción adicional". No estaba gateado en absoluto
+		//—activar la Furia no costaba ni acción ni acción adicional—, la única acción adicional real del
+		//SRD que este motor todavía no cobraba. Va antes de tocar el set "raging": si no puede gastar la
+		//acción adicional, no debe quedar marcado como que ya entró en furia.
+		if (!TurnManager.tryActBonus(player)) {
+			TurnManager.notifyCantActBonus(player);
+			return;
+		}
+		raging.add(player.getUUID());
 
 		UUID uuid = player.getUUID();
 		MinecraftServer server = player.getServer();

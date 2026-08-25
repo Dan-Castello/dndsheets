@@ -7,6 +7,7 @@ import net.hawthorn.dndsheets.DiceManager;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.RollIndex;
 import net.hawthorn.dndsheets.SheetLoader;
+import net.hawthorn.dndsheets.VisionManager;
 import net.hawthorn.dndsheets.init.DndsheetsModSounds;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -81,6 +82,13 @@ public class RollAnnouncerProcedure {
 		DiceManager.Advantage advantage = hasAttackRoll ? CombatManager.consumeAdvantage(sheet) : DiceManager.Advantage.NORMAL;
 		int inspiration = hasAttackRoll ? BardInspirationManager.consumeAttackBonus(sheet) : 0;
 
+		//Penumbra: desventaja en Percepción, y en NINGUNA otra de las 18 habilidades — es la regla exacta
+		//del SRD (ver Light), no "desventaja en todo lo que hagas a oscuras". Solo mira al jugador que tira,
+		//así que un DM tirando por un PNJ (roller no ServerPlayer, o sin ficha) no dispara nada.
+		boolean isPerceptionCheck = roll.getCategory() == RollIndex.Category.SKILLS && index == RollIndex.PERCEPTION_SKILL_INDEX;
+		boolean perceptionDisadvantage = isPerceptionCheck && roller instanceof ServerPlayer serverRoller
+			&& VisionManager.inDimLight(serverRoller);
+
 		List<String> resultRolls = new ArrayList<>();
 		boolean attackBonusApplied = false;
 		for (String expression : expressions) {
@@ -90,6 +98,8 @@ public class RollAnnouncerProcedure {
 				String withInspiration = inspiration > 0 ? expression + " + " + inspiration : expression;
 				outcome = DiceManager.rollAttack(sheet, withInspiration, advantage).outcome();
 				attackBonusApplied = true; //Solo la primera tirada "1d20" del grupo consume el recurso, igual que un ataque físico real.
+			} else if (perceptionDisadvantage && expression.trim().toLowerCase().startsWith("1d20")) {
+				outcome = DiceManager.rollWithAdvantage(sheet, expression, DiceManager.Advantage.DISADVANTAGE);
 			} else {
 				outcome = DiceManager.roll(sheet, expression);
 			}
@@ -145,7 +155,7 @@ public class RollAnnouncerProcedure {
 		Set<ServerPlayer> recipients = new HashSet<>();
 		if (roller instanceof ServerPlayer serverRoller) recipients.add(serverRoller);
 		for (ServerPlayer player : world.getServer().getPlayerList().getPlayers()) {
-			if (player.hasPermissions(2)) recipients.add(player);
+			if (DndsheetsMod.canActAsDm(player)) recipients.add(player);
 		}
 		for (ServerPlayer player : recipients) player.sendSystemMessage(message);
 	}

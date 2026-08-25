@@ -1,0 +1,8 @@
+{
+  "id": "miaddon:hacha_de_ejemplo",
+  "name": "Hacha de Ejemplo",
+  "dice": "1d8",
+  "ability": "str",
+  "damageType": "cortante",
+  "hands": "one"
+}

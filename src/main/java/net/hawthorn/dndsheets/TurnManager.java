@@ -305,6 +305,13 @@ public class TurnManager {
 	//ya que /dndturns start mete a todos los jugadores conectados en el radio.
 	private static final Set<Integer> reactionUsed = new HashSet<>();
 
+	//Acción adicional: recurso DISTINTO de actedThisTurn — el SRD la trata aparte de la acción (Forma
+	//Salvaje, Segundo Aliento, Palabra Curativa...), y antes de esto el motor las colapsaba en una sola:
+	//gastar la acción adicional consumía la acción completa entera (ver DruidWildShapeManager, que usaba
+	//tryAct en vez de esto). Mismo ciclo de vida que actedThisTurn (se limpia en start/end/beginTurn/
+	//reconcilePlayerEntity) pero sin disparar scheduleAutoAdvance: gastarla no termina el turno.
+	private static final Set<Integer> bonusActionUsed = new HashSet<>();
+
 	//Ataques de oportunidad del modo turnos — ver OpportunityAttackTracker (hallazgo F3).
 	private static final OpportunityAttackTracker opportunityAttacks = new OpportunityAttackTracker();
 
@@ -376,6 +383,22 @@ public class TurnManager {
 		return acted;
 	}
 
+	/**
+	 * <p>Igual que {@link #tryAct} pero para la acción ADICIONAL: mismo gating de turno/incapacidad, mismo
+	 * "una vez y se acabó", pero un recurso aparte (v. {@link #bonusActionUsed}) que NO hace avanzar el
+	 * turno al gastarse — a diferencia de la acción, la adicional no es lo único que se puede hacer en un
+	 * turno.</p>
+	 */
+	public static boolean tryActBonus(Entity actor) {
+		if (isIncapacitated(actor)) return false;
+		if (!active) return true;
+		TurnEntry currentEntry = current();
+		if (currentEntry == null || currentEntry.entityId() != actor.getId()) return false;
+		boolean acted = bonusActionUsed.add(actor.getId());
+		if (acted && actor.level() instanceof ServerLevel level) broadcastTurnState(level);
+		return acted;
+	}
+
 	//Mensaje uniforme para cuando tryAct() devuelve false, distinguiendo "no te toca" de "ya actuaste".
 	public static void notifyCantAct(Entity actor) {
 		if (!(actor instanceof Player player)) return;
@@ -392,6 +415,25 @@ public class TurnManager {
 		boolean isCurrentActor = currentEntry != null && currentEntry.entityId() == actor.getId();
 		Component reason = isCurrentActor
 			? Component.translatable("chat.dndsheets.turn.already_acted")
+			: Component.translatable("chat.dndsheets.turn.not_your_turn",
+				currentEntry != null ? currentEntry.name() : Component.translatable("chat.dndsheets.turn.other_combatant"));
+		player.sendSystemMessage(reason.copy().withStyle(ChatFormatting.RED));
+	}
+
+	/** Mismo mensaje que {@link #notifyCantAct}, salvo el caso "ya gastaste" — ese es de la acción ADICIONAL, no la acción. */
+	public static void notifyCantActBonus(Entity actor) {
+		if (!(actor instanceof Player player)) return;
+		Combatant combatant = Combatant.of(actor);
+		if (combatant != null && combatant.cannotAct()) {
+			String blocking = combatant.conditions().stream()
+				.filter(Condition::preventsActions).findFirst().map(Condition::label).orElse("");
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.condition.cant_act", blocking).withStyle(ChatFormatting.RED));
+			return;
+		}
+		TurnEntry currentEntry = current();
+		boolean isCurrentActor = currentEntry != null && currentEntry.entityId() == actor.getId();
+		Component reason = isCurrentActor
+			? Component.translatable("chat.dndsheets.turn.already_used_bonus_action")
 			: Component.translatable("chat.dndsheets.turn.not_your_turn",
 				currentEntry != null ? currentEntry.name() : Component.translatable("chat.dndsheets.turn.other_combatant"));
 		player.sendSystemMessage(reason.copy().withStyle(ChatFormatting.RED));
@@ -587,6 +629,7 @@ public class TurnManager {
 		SurfaceManager.clear(); //Mismo motivo: sin asaltos que contar, tampoco hay charco de fuego que mantener.
 		actedThisTurn.clear();
 		reactionUsed.clear();
+		bonusActionUsed.clear();
 		TurnActionManager.clearAll(); //Fuera de combate, esquivar/correr/desengancharse no significan nada.
 		opportunityAttacks.clear();
 		movementAnchors.clear();
@@ -648,6 +691,7 @@ public class TurnManager {
 		SurfaceManager.clear(); //Mismo motivo: sin asaltos que contar, tampoco hay charco de fuego que mantener.
 		actedThisTurn.clear();
 		reactionUsed.clear();
+		bonusActionUsed.clear();
 		TurnActionManager.clearAll(); //Fuera de combate, esquivar/correr/desengancharse no significan nada.
 		opportunityAttacks.clear();
 		movementAnchors.clear();
@@ -725,6 +769,7 @@ public class TurnManager {
 			if (effects.containsKey(oldId)) effects.put(newId, effects.remove(oldId));
 			if (actedThisTurn.remove(oldId)) actedThisTurn.add(newId);
 			if (reactionUsed.remove(oldId)) reactionUsed.add(newId);
+			if (bonusActionUsed.remove(oldId)) bonusActionUsed.add(newId);
 			opportunityAttacks.rekey(oldId, newId);
 			//Un jugador que muere de verdad (onPlayerRealDeath) queda en confirmedDefeated para siempre —
 			//correcto mientras siga muerto, pero nada lo sacaba de ahí si lo revivían y volvía a entrar: el
@@ -920,6 +965,7 @@ public class TurnManager {
 		TurnEntry entry = current();
 		if (entry == null) return;
 		actedThisTurn.remove(entry.entityId()); //Turno nuevo, acción nueva disponible.
+		bonusActionUsed.remove(entry.entityId()); //Turno nuevo, acción adicional nueva disponible.
 		//Esquivar dura "hasta el comienzo de tu próximo turno", que es exactamente aquí. Correr y
 		//Desengancharse solo valían durante su propio turno, así que caducan en el mismo sitio.
 		TurnActionManager.clearFor(entry.entityId());
@@ -1051,7 +1097,7 @@ public class TurnManager {
 			}
 			rows.add(new TurnStateMessage.RosterRow(entry.entityId(), entry.name(), entry.isMonster(),
 				confirmedDefeated.contains(entry.entityId()), actedThisTurn.contains(entry.entityId()),
-				reactionUsed.contains(entry.entityId()), conditionLabels));
+				reactionUsed.contains(entry.entityId()), bonusActionUsed.contains(entry.entityId()), conditionLabels));
 		}
 		return rows;
 	}

@@ -51,6 +51,7 @@ public class JsonContentSelfTest {
 		checkSubclasses();
 		checkMulticlass(); //También después de checkPresets(): los nombres de las clases salen de ahí.
 		checkDice();
+		checkRollLog();
 		checkAttackAndDamageRolls();
 		checkConditions();
 		checkAoeShapes();
@@ -77,6 +78,7 @@ public class JsonContentSelfTest {
 		checkCharacterAfterDelete();
 		checkCharacterLevelIsPerCharacter();
 		checkAttackPathsShareRules();
+		checkEnvironmentalDamage();
 		checkDefaultsRefresh();
 		checkTabTextures();
 		checkInteractHandlers();
@@ -88,7 +90,7 @@ public class JsonContentSelfTest {
 		checkPortabilityCoupling();
 		checkImportedContent();
 
-		System.out.println("JsonContentSelfTest: OK, los 5 JSON de ejemplo parsean con los registros reales.");
+		System.out.println("JsonContentSelfTest: OK, los 7 JSON de ejemplo (uno por tipo de contenido) parsean con los registros reales.");
 	}
 
 	/**
@@ -1382,6 +1384,32 @@ public class JsonContentSelfTest {
 	}
 
 	/**
+	 * <p>El log de tiradas ({@link RollLog}), enganchado en {@link DiceManager#roll} — se comprueba
+	 * grabando tiradas reales y no con datos de mentira, porque el propio hook vive dentro de
+	 * {@code DiceManager.roll} y no en un método aparte que se pudiera llamar a mano.</p>
+	 */
+	private static void checkRollLog() {
+		JsonObject withName = new JsonObject();
+		withName.addProperty("characterName", "Elara la Gris");
+		DiceManager.roll(withName, "1d1 + 2"); //Entra al log: characterName presente, tirada válida.
+
+		JsonObject anonymous = new JsonObject(); //Sin characterName — el caso de un monstruo (bloque vacío).
+		DiceManager.roll(anonymous, "1d1 + 3");
+
+		DiceManager.roll(withName, "999999d6"); //Rechazada por conteo absurdo: no debería anotarse.
+
+		List<RollLog.Entry> recent = RollLog.recent();
+		assertTrue(recent.size() >= 2, "las dos tiradas válidas de arriba deberían estar en el log");
+		//Más reciente primero: la última cosa que se tiró (anónima) tiene que salir antes que "Elara".
+		assertTrue(recent.get(0).actor().equals("?"), "sin characterName en la hoja, el autor debería quedar como \"?\", no vacío ni null");
+		assertTrue(recent.get(1).actor().equals("Elara la Gris"), "con characterName en la hoja, el autor debería ser ese nombre");
+		assertTrue(recent.get(0).formatted() != null && !recent.get(0).formatted().isEmpty(),
+			"cada entrada debería traer el desglose ya formateado, el mismo que ya se ve en el chat");
+
+		System.out.println("checkRollLog: OK, cada tirada válida queda anotada con quién tira (o \"?\" si no se sabe) y su desglose.");
+	}
+
+	/**
 	 * <p>La tabla de condiciones de 5e ({@link Condition}) y la regla de que ventaja y desventaja se anulan
 	 * ({@link DiceManager#combineAdvantage}). Ninguna de las dos toca clases de Minecraft, así que se
 	 * comprueban de pie aquí mismo; el resto de {@link Combatant} sí necesita una entidad real y se queda
@@ -2063,6 +2091,29 @@ public class JsonContentSelfTest {
 	}
 
 	/**
+	 * <p>Daño de entorno (lava, caída) ligado a resistencias de 5e — sin esto, empujar a alguien resistente
+	 * al fuego a la lava le hacía el mismo daño que a cualquiera. No hay forma de disparar un
+	 * {@code LivingHurtEvent} real sin un servidor completo detrás (este self-test no arranca uno, a
+	 * diferencia de {@code checkAttackPathsShareRules}, que sí puede probar con un {@code FakeCombatant}
+	 * las reglas puras); se verifica por código fuente, mismo patrón que {@code checkDmGuardIsShared}.
+	 */
+	private static void checkEnvironmentalDamage() throws Exception {
+		String combatManager = readSource("CombatManager.java");
+		String handler = methodBody(combatManager, "onEnvironmentalDamage(");
+		assertTrue(handler.contains("effectiveDamageMultiplier("),
+			"onEnvironmentalDamage debería escalar por Combatant.effectiveDamageMultiplier, no aplicar el daño de Minecraft tal cual");
+		assertTrue(handler.contains("source.getEntity() != null"),
+			"debería descartar el daño con atacante (ya se resuelve por otro camino) para no escalarlo dos veces");
+
+		String mapping = methodBody(combatManager, "environmentalDamageType(");
+		for (String tipo : List.of("LAVA", "FALL")) {
+			assertTrue(mapping.contains("DamageTypes." + tipo),
+				"environmentalDamageType debería reconocer " + tipo);
+		}
+		System.out.println("checkEnvironmentalDamage: OK, lava/fuego y caída/contundente escalan por resistencia real.");
+	}
+
+	/**
 	 * <p>Que TODAS las fuentes de ventaja se junten de una vez y no por partes.</p>
 	 *
 	 * <p>Casi se cuela al unificar las dos rutas: {@code combineAdvantage} colapsa a "normal" cuando hay
@@ -2555,7 +2606,23 @@ public class JsonContentSelfTest {
 			"lift() tiene que comprobar la fuente antes de quitar la ceguera: si no, salir a la luz cura "
 				+ "también la ceguera que acaba de echarte un conjuro o un DM.");
 
-		System.out.println("checkVision: OK, los cortes de luz, la visión en la oscuridad y de quién es cada ceguera.");
+		//La otra mitad de la penumbra, la que Light.java documentaba como "no hace nada mecánico" hasta
+		//ahora: desventaja de Percepción de verdad. DiceManager.rollWithAdvantage es pura (no necesita
+		//mundo), así que esto SÍ se puede probar de extremo a extremo, a diferencia de inDimLight (que lee
+		//el nivel de luz real del bloque y sí lo necesita).
+		JsonObject flatSheet = new JsonObject(); //"1d1" (sin modificador) hace la tirada determinista.
+		DiceManager.RollOutcome disadvantaged = DiceManager.rollWithAdvantage(flatSheet, "1d20", DiceManager.Advantage.DISADVANTAGE);
+		assertTrue(disadvantaged.formatted() != null && disadvantaged.formatted().contains("desventaja"),
+			"rollWithAdvantage en desventaja debería anunciarlo, igual que ya hace rollAttack");
+
+		//Y que la única llamadora la use SOLO para Percepción — ni para las otras 17 habilidades, ni para
+		//pruebas/salvaciones/ataques, que ya tienen su propia fuente de ventaja.
+		String announcer = readSource("procedures/RollAnnouncerProcedure.java");
+		assertTrue(announcer.contains("VisionManager.inDimLight("), "la penumbra debería consultarse antes de tirar Percepción");
+		assertTrue(announcer.contains("RollIndex.PERCEPTION_SKILL_INDEX"),
+			"debería mirar el índice de Percepción, no un número suelto que se desincronice de SKILL_KEYS");
+
+		System.out.println("checkVision: OK, los cortes de luz, la visión en la oscuridad, de quién es cada ceguera, y la desventaja de Percepción por penumbra.");
 	}
 
 	/**
@@ -3592,6 +3659,45 @@ public class JsonContentSelfTest {
 		assertTrue(block.type() == CreatureType.CONSTRUCT && block.attacksPerTurn() == 2 && !block.attacks().isEmpty(),
 			"el monstruo del addon debería traer tipo, multiataque y ataques");
 
+		//Los 5 tipos restantes (de los 7 de ContentType): antes esta fixture solo probaba spells y monsters,
+		//exactamente el hueco que ya costó caro una vez (historial del proyecto, ítem 41 — "la primera
+		//versión del check parseaba el ejemplo directo y pasaba con el loader roto"). Mismo patrón: por el
+		//CARGADOR (loadJson), no por parse() a secas.
+		JsonObject weapon = JsonParser.parseString(Files.readString(
+			addon.resolve("data/miaddon/dndsheets/weapons/hacha_de_ejemplo.json"))).getAsJsonObject();
+		java.util.List<String> weaponIds = new java.util.ArrayList<>();
+		assertTrue(Config.loadJson(weapon, "ejemplo", weaponIds::add) == 1 && weaponIds.contains("miaddon:hacha_de_ejemplo"),
+			"el arma del addon debería cargar una entrada, y avisar de su id");
+		assertTrue(Config.loadedWeaponIds().contains("miaddon:hacha_de_ejemplo"), "y quedar registrada de verdad");
+
+		JsonObject trait = JsonParser.parseString(Files.readString(
+			addon.resolve("data/miaddon/dndsheets/traits/rasgo_de_ejemplo.json"))).getAsJsonObject();
+		java.util.List<String> traitIds = new java.util.ArrayList<>();
+		assertTrue(TraitRegistry.loadJson(trait, "ejemplo", traitIds::add) == 1 && traitIds.contains("miaddon:rasgo_de_ejemplo"),
+			"el rasgo del addon debería cargar una entrada, y avisar de su id");
+		assertTrue(TraitRegistry.get("miaddon:rasgo_de_ejemplo") != null, "y quedar registrado de verdad");
+
+		JsonObject preset = JsonParser.parseString(Files.readString(
+			addon.resolve("data/miaddon/dndsheets/presets/preset_de_ejemplo.json"))).getAsJsonObject();
+		java.util.List<String> presetIds = new java.util.ArrayList<>();
+		assertTrue(PresetRegistry.loadJson(preset, "ejemplo", presetIds::add) == 1 && presetIds.contains("miaddon:preset_de_ejemplo"),
+			"el preset del addon debería cargar una entrada, y avisar de su id");
+		assertTrue(PresetRegistry.get("miaddon:preset_de_ejemplo") != null, "y quedar registrado de verdad");
+
+		JsonObject encounter = JsonParser.parseString(Files.readString(
+			addon.resolve("data/miaddon/dndsheets/encounters/encuentro_de_ejemplo.json"))).getAsJsonObject();
+		java.util.List<String> encounterIds = new java.util.ArrayList<>();
+		assertTrue(EncounterRegistry.loadJson(encounter, "ejemplo", encounterIds::add) == 1 && encounterIds.contains("miaddon:encuentro_de_ejemplo"),
+			"el encuentro del addon debería cargar una entrada, y avisar de su id");
+		assertTrue(EncounterRegistry.get("miaddon:encuentro_de_ejemplo") != null, "y quedar registrado de verdad");
+
+		JsonObject feat = JsonParser.parseString(Files.readString(
+			addon.resolve("data/miaddon/dndsheets/feats/dote_de_ejemplo.json"))).getAsJsonObject();
+		java.util.List<String> featIds = new java.util.ArrayList<>();
+		assertTrue(FeatRegistry.loadJson(feat, "ejemplo", featIds::add) == 1 && featIds.contains("miaddon:dote_de_ejemplo"),
+			"la dote del addon debería cargar una entrada, y avisar de su id");
+		assertTrue(FeatRegistry.get("miaddon:dote_de_ejemplo") != null, "y quedar registrada de verdad");
+
 		//Y que el cargador siga enganchado a la recarga de datapacks: sin esto, los archivos están bien
 		//escritos y no los lee nadie.
 		String loader = readSource("ContentDatapackLoader.java");
@@ -3602,7 +3708,7 @@ public class JsonContentSelfTest {
 				"un addon debería poder traer " + folder + " igual que el resto");
 		}
 
-		System.out.println("checkAddonContentLoads: OK, un addon añade contenido con solo poner JSON en su carpeta.");
+		System.out.println("checkAddonContentLoads: OK, un addon añade contenido con solo poner JSON en su carpeta, en los 7 tipos.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {

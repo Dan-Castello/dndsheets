@@ -94,7 +94,7 @@ public class TurnHudOverlay {
 		int contentTop = top + PADDING;
 
 		int height = ROW_HEIGHT + 4 + (end - start) * ROW_HEIGHT + (truncated ? ROW_HEIGHT : 0);
-		if (myRow != null) height += 4 + 3 * ROW_HEIGHT;
+		if (myRow != null) height += 4 + 4 * ROW_HEIGHT; //Acción, Acción adicional, Reacción, Movimiento.
 		int bottom = contentTop + height + PADDING - 4;
 
 		GuiStyle.panel(guiGraphics, left, top, right, bottom);
@@ -175,7 +175,11 @@ public class TurnHudOverlay {
 		boolean myTurn = myRow.entityId() == TurnHudState.currentEntityId();
 		boolean actionAvailable = myTurn && !TurnHudState.actionUsed();
 
+		boolean bonusActionAvailable = myTurn && !myRow.bonusActionUsed();
+
 		drawEconomyLine(guiGraphics, font, "Acción", actionAvailable, myTurn, left, right, y);
+		y += ROW_HEIGHT;
+		drawEconomyLine(guiGraphics, font, "Acción adicional", bonusActionAvailable, myTurn, left, right, y);
 		y += ROW_HEIGHT;
 		drawEconomyLine(guiGraphics, font, "Reacción", !myRow.reactionUsed(), true, left, right, y);
 		y += ROW_HEIGHT;

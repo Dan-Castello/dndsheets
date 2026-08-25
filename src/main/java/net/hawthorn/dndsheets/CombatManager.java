@@ -270,6 +270,53 @@ public class CombatManager {
 		ChatFeedback.broadcast(attacker, outcome.message());
 	}
 
+	/**
+	 * <p>Empujar a alguien a lava, o dejarlo caer, ya hacía daño de Minecraft — pero nunca pasaba por las
+	 * resistencias de 5e ({@link Combatant#effectiveDamageMultiplier}), la ventaja de plataforma más
+	 * grande sin explotar de todo el motor: el mundo físico real (lava, altura) y las reglas de 5e nunca
+	 * se hablaban. Cubre jugador, PNJ y monstruo por igual —a diferencia de {@link #onLivingHurt} de
+	 * arriba, que solo mira PvP— porque cualquiera con {@link Combatant#of} no nulo puede tener una
+	 * resistencia de verdad.</p>
+	 *
+	 * <p>{@code source.getEntity() == null} es la marca de "sin atacante": un golpe de otro combatiente ya
+	 * se resolvió por su propio camino ({@link #onLivingHurt}, o el ataque de un monstruo en
+	 * {@code MonsterActionManager}), y tocarlo de nuevo aquí lo escalaría dos veces.</p>
+	 *
+	 * <p><b>Alcance deliberado:</b> solo aplica el multiplicador de resistencia al daño que Minecraft ya
+	 * calculó — NO reemplaza la fórmula de caída del SRD (1d6 por 10 pies) por la de Minecraft, que es más
+	 * granular y no hay evidencia de que una mesa la prefiera menos.</p>
+	 */
+	@SubscribeEvent
+	public static void onEnvironmentalDamage(LivingHurtEvent event) {
+		if (event.getEntity().level().isClientSide()) return;
+		DamageSource source = event.getSource();
+		if (source.getEntity() != null) return; //Tiene atacante: no es entorno, ya se resuelve por otro camino.
+
+		Combatant combatant = Combatant.of(event.getEntity());
+		if (combatant == null) return; //Sin ficha, Minecraft normal.
+
+		String damageType = environmentalDamageType(source);
+		if (damageType == null) return; //Ahogo, vacío, hambre... nada que el SRD module por resistencia.
+
+		int scaled = DamageTypes.applyMultiplier((int) event.getAmount(), combatant.effectiveDamageMultiplier(damageType, false));
+		event.setAmount(scaled);
+	}
+
+	//net.minecraft.world.damagesource.DamageTypes sin importar: el mismo nombre simple ya lo ocupa
+	//net.hawthorn.dndsheets.DamageTypes (mismo paquete, usado sin calificar en todo este archivo) — un
+	//import de la clase vanilla chocaría con esa resolución implícita.
+	private static String environmentalDamageType(DamageSource source) {
+		if (source.is(net.minecraft.world.damagesource.DamageTypes.LAVA)
+			|| source.is(net.minecraft.world.damagesource.DamageTypes.IN_FIRE)
+			|| source.is(net.minecraft.world.damagesource.DamageTypes.ON_FIRE)
+			|| source.is(net.minecraft.world.damagesource.DamageTypes.HOT_FLOOR)) return "fuego";
+		if (source.is(net.minecraft.world.damagesource.DamageTypes.FALL)
+			|| source.is(net.minecraft.world.damagesource.DamageTypes.FALLING_BLOCK)
+			|| source.is(net.minecraft.world.damagesource.DamageTypes.FALLING_ANVIL)
+			|| source.is(net.minecraft.world.damagesource.DamageTypes.FALLING_STALACTITE)) return "contundente";
+		return null;
+	}
+
 	private record AttackOutcome(boolean hit, int damage, MutableComponent message) {}
 
 	/**

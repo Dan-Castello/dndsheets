@@ -75,21 +75,34 @@ public class DiceManager {
 	//modificador no cambia entre una tirada y otra. El crítico se detecta mirando el primer dado
 	//realmente tirado dentro de la tirada elegida (ver firstDieValue).
 	public static AttackRoll rollAttack(JsonObject sheet, String expression, Advantage advantage) {
-		//Una tirada de ataque tiene que TENER un dado. La libreria no rechaza una expresion que no entiende:
-		//le saca un numero igual, y ese numero entraba como si fuera el d20 — un dado mal escrito en un pack
-		//de contenido daba CRITICO AUTOMATICO cada vez que ese numero caia en 20. Se filtra con el mismo
-		//patron que ya usa el propio parser, asi que lo que aqui se considera "un dado" y lo que se tira
-		//despues no pueden separarse.
+		return toAttackRoll(sheet, rollWithAdvantage(sheet, expression, advantage));
+	}
+
+	/**
+	 * <p>El "roll twice, keep higher/lower" de ventaja/desventaja, sin el envoltorio de crítico de
+	 * {@link #rollAttack} — misma mecánica de 5e para CUALQUIER d20 (ataque, salvación, prueba de
+	 * habilidad), separada de aquí para que una prueba de habilidad (que no tiene crítico automático en
+	 * el SRD) pueda usarla sin heredar {@code criticalHit}/{@code criticalMiss}, que solo significan algo
+	 * en un ataque. Ver {@code VisionManager}/{@code RollAnnouncerProcedure} para el primer uso fuera de
+	 * ataques: la desventaja de Percepción por penumbra.</p>
+	 */
+	public static RollOutcome rollWithAdvantage(JsonObject sheet, String expression, Advantage advantage) {
+		//Tiene que TENER un dado. La libreria no rechaza una expresion que no entiende: le saca un numero
+		//igual, y ese numero entraba como si fuera el d20 — un dado mal escrito en un pack de contenido daba
+		//CRITICO AUTOMATICO cada vez que ese numero caia en 20 (relevante solo para rollAttack, pero el
+		//filtro de "hay un dado de verdad" aplica igual a cualquier d20). Se filtra con el mismo patron que
+		//ya usa el propio parser, asi que lo que aqui se considera "un dado" y lo que se tira despues no
+		//pueden separarse.
 		if (!DICE_NOTATION_PATTERN.matcher(expression.toLowerCase()).find()) {
-			return new AttackRoll(roll(sheet, expression), false, false);
+			return roll(sheet, expression);
 		}
 
 		RollOutcome first = roll(sheet, expression);
-		if (advantage == Advantage.NORMAL) return toAttackRoll(sheet, first);
+		if (advantage == Advantage.NORMAL) return first;
 
 		RollOutcome second = roll(sheet, expression);
-		if (first.result() == null) return toAttackRoll(sheet, second);
-		if (second.result() == null) return toAttackRoll(sheet, first);
+		if (first.result() == null) return second;
+		if (second.result() == null) return first;
 
 		boolean keepFirst = advantage == Advantage.ADVANTAGE
 			? first.result().getValue() >= second.result().getValue()
@@ -97,7 +110,7 @@ public class DiceManager {
 		RollOutcome kept = keepFirst ? first : second;
 		RollOutcome discarded = keepFirst ? second : first;
 		String label = advantage == Advantage.ADVANTAGE ? "ventaja" : "desventaja";
-		return toAttackRoll(sheet, new RollOutcome(kept.result(), kept.formatted() + " (" + label + ", se descarta " + discarded.formatted() + ")"));
+		return new RollOutcome(kept.result(), kept.formatted() + " (" + label + ", se descarta " + discarded.formatted() + ")");
 	}
 
 	private static AttackRoll toAttackRoll(JsonObject sheet, RollOutcome outcome) {
@@ -217,7 +230,9 @@ public class DiceManager {
 			expression = wrapDiceTermsInParens(expression);
 			DiceExpression ex = DiceExpression.parse(expression);
 			DiceResult result = ex.roll();
-			return new RollOutcome(result, prettyPrintWithNotation(result, expression));
+			RollOutcome outcome = new RollOutcome(result, prettyPrintWithNotation(result, expression));
+			RollLog.record(sheet, outcome);
+			return outcome;
 		} catch (Throwable e) {
 			//Throwable, no solo Exception: un conteo de dados absurdo en un JSON de contenido (arma,
 			//hechizo, monstruo, rasgo) puede hacer que la librería de dados reserve memoria sin límite y

@@ -17,10 +17,9 @@ package net.hawthorn.dndsheets;
  * caiga en penumbra no es casualidad ni ajuste fino — es exactamente lo que dice el SRD de la luz de la
  * luna, y sale solo de usar el número de vanilla en vez de inventar uno.</p>
  *
- * <p><b>Lo que NO se modela a propósito:</b> la penumbra da desventaja en las pruebas de Percepción que
- * dependen de la vista, y aquí no hace nada mecánico. Es la mitad menos visible de la regla y la que más
- * código pediría (habría que interceptar cada prueba), así que se queda fuera hasta que alguien la eche de
- * menos en una mesa de verdad.</p>
+ * <p>La penumbra da desventaja en las pruebas de Percepción que dependen de la vista — ver
+ * {@link VisionManager#inDimLight} y su único llamador, {@code RollAnnouncerProcedure}, que la convierte
+ * en desventaja real solo para esa habilidad, no para las otras 17.</p>
  */
 public enum Light {
 	BRIGHT, DIM, DARK;

@@ -341,6 +341,10 @@ public class RollIndex {
 
     public static final int SKILL_COUNT = 18;
 
+    //Derivado del array de arriba, no un "12" suelto en RollAnnouncerProcedure: si algún día SKILL_KEYS
+    //cambia de orden, este índice se mueve solo con él en vez de quedar apuntando a otra habilidad.
+    public static final int PERCEPTION_SKILL_INDEX = java.util.Arrays.asList(SKILL_KEYS).indexOf("perception");
+
     /** El token que la calculadora de tiradas ya entiende como "suma tu bono de competencia". */
     public static final String PROFICIENCY_TOKEN = "$prof";
 

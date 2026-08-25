@@ -34,7 +34,7 @@ public class TurnStateMessage {
 	 * viene ni recalcular nada, solo mostrar lo que el servidor ya decidió que es cierto ahora.</p>
 	 */
 	public record RosterRow(int entityId, String name, boolean isMonster, boolean defeated, boolean acted,
-							 boolean reactionUsed, List<String> conditions) {
+							 boolean reactionUsed, boolean bonusActionUsed, List<String> conditions) {
 	}
 
 	public TurnStateMessage(boolean active, int round, String currentName, int currentEntityId, boolean actionUsed,
@@ -61,7 +61,7 @@ public class TurnStateMessage {
 		this.originZ = buffer.readDouble();
 		this.roster = buffer.readList(buf -> new RosterRow(
 			buf.readVarInt(), buf.readUtf(), buf.readBoolean(), buf.readBoolean(), buf.readBoolean(),
-			buf.readBoolean(), buf.readList(FriendlyByteBuf::readUtf)));
+			buf.readBoolean(), buf.readBoolean(), buf.readList(FriendlyByteBuf::readUtf)));
 	}
 
 	public static void buffer(TurnStateMessage message, FriendlyByteBuf buffer) {
@@ -80,6 +80,7 @@ public class TurnStateMessage {
 			buf.writeBoolean(row.defeated());
 			buf.writeBoolean(row.acted());
 			buf.writeBoolean(row.reactionUsed());
+			buf.writeBoolean(row.bonusActionUsed());
 			buf.writeCollection(row.conditions(), FriendlyByteBuf::writeUtf);
 		});
 	}

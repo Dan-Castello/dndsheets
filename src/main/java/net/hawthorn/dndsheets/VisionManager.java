@@ -105,6 +105,24 @@ public final class VisionManager {
 			.withStyle(ChatFormatting.DARK_GRAY));
 	}
 
+	/**
+	 * <p>Si esta persona está en penumbra AHORA MISMO: ni luz brillante, ni tan oscura como para contar como
+	 * ciega ({@link Condition#CEGADO}, que ya tiene su propia mecánica completa). Es la mitad de la regla de
+	 * luz que {@link Light} documentaba como deliberadamente sin efecto ("da desventaja en las pruebas de
+	 * Percepción que dependen de la vista, y aquí no hace nada mecánico") — ver
+	 * {@code RollAnnouncerProcedure}, el único llamador, para dónde se convierte en desventaja de verdad.</p>
+	 *
+	 * <p>Mismo gate que el resto de esta clase: apagado si {@code visionRules} está desactivado, o si quien
+	 * pregunta está en creativo/espectador. Sin esto, la desventaja de Percepción encendería sola aunque el
+	 * DM nunca haya activado la regla de visión.</p>
+	 */
+	public static boolean inDimLight(ServerPlayer player) {
+		if (!Config.visionRules() || player.isCreative() || player.isSpectator()) return false;
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		boolean darkvision = CharacterRules.darkvisionFeetFor(sheet) > 0;
+		return rawLightAround(player).withDarkvision(darkvision) == Light.DIM;
+	}
+
 	/** Devuelve a este jugador a la vista, si es que se la habíamos quitado nosotros. */
 	private static void lift(ServerPlayer player, Combatant combatant) {
 		remove(player, MobEffects.DARKNESS);
