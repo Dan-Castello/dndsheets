@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.hawthorn.dndsheets.CharacterOptionsRegistry;
 import net.hawthorn.dndsheets.DndPaths;
+import net.hawthorn.dndsheets.DndsheetsMod;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
@@ -33,7 +34,7 @@ public class CharacterOptionsCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndoptions")
-			.requires(source -> source.hasPermission(2))
+			.requires(source -> DndsheetsMod.canActAsDm(source))
 			.then(Commands.literal("load")
 				.then(Commands.argument("categoria", StringArgumentType.word())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(CATEGORIES, builder))

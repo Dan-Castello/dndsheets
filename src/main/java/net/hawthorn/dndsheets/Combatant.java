@@ -561,7 +561,13 @@ public interface Combatant {
 
 		@Override public int currentHp() { return MonsterRegistry.currentHpOf(monster); }
 
-		@Override public int maxHp() { return block.maxHp(); }
+		//Escalado por dificultad (Config.scaleMonsterMaxHp): es el único sitio que lee el máximo de un
+		//monstruo ya existente, así que escalar acá basta para que la barra de PG cuadre con lo que de
+		//verdad tiene, sin tocar el bloque de estadísticas compartido (block.maxHp() sigue siendo el valor
+		//crudo del SRD, igual para todas las instancias). El PG inicial al invocar se escala aparte, en
+		//MonsterRegistry.spawnAt/applyStatBlock, con el mismo método — si algún día quedan desincronizados,
+		//un monstruo recién invocado aparecería con menos PG de los que su propia barra anuncia.
+		@Override public int maxHp() { return Config.scaleMonsterMaxHp(block.maxHp()); }
 
 		@Override public int abilityModifier(String ability) { return block.abilityModifier(ability); }
 

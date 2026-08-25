@@ -66,7 +66,7 @@ public class MonsterActionManager {
 		//manejador corriese DOS veces por clic — el mensaje de chat duplicado. Sigue valiendo llevar la
 		//vara en la mano secundaria: entonces la pasada que coincide es la de esa mano.
 		if (!MonsterRegistry.isDmTool(event.getItemStack())) return;
-		if (!dm.hasPermissions(2)) return; //La Vara de DM solo funciona en manos de un op, aunque un jugador la consiga.
+		if (!DndsheetsMod.canActAsDm(dm)) return; //La Vara de DM solo funciona en manos de un op (o cualquiera en modo solo, ver DndsheetsMod.canActAsDm), aunque un jugador la consiga.
 
 		//A un jugador la vara no le hace nada: tiene su propia hoja, y el clic sigue su curso normal.
 		if (target instanceof Player) return;
@@ -139,7 +139,7 @@ public class MonsterActionManager {
 		//manejador corriese DOS veces por clic — el mensaje de chat duplicado. Sigue valiendo llevar la
 		//vara en la mano secundaria: entonces la pasada que coincide es la de esa mano.
 		if (!MonsterRegistry.isMoveTool(event.getItemStack())) return;
-		if (!dm.hasPermissions(2)) return;
+		if (!DndsheetsMod.canActAsDm(dm)) return;
 
 		Entity target = event.getTarget();
 		if (MonsterRegistry.statBlockOf(target) == null) return;
@@ -438,7 +438,9 @@ public class MonsterActionManager {
 
 		//Un ataque natural de monstruo no es mágico salvo que su bloque lo diga, y el esquema todavía no lo dice.
 		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), targetCombatant.effectiveDamageMultiplier(attack.damageType(), false));
-		targetCombatant.takeDamage(finalAmount); //Cubre PG temporales, concentración y muerte en un solo sitio.
+		//Escalado por dificultad (Config.scaleMonsterDamage): DESPUÉS de resistencias, no antes — la
+		//dificultad de mesa no debe volver inútil una inmunidad de verdad ni viceversa.
+		targetCombatant.takeDamage(Config.scaleMonsterDamage(finalAmount)); //Cubre PG temporales, concentración y muerte en un solo sitio.
 		CombatFx.hit(target, critical, attack.damageType());
 		ChatFeedback.broadcast(monsterEntity, ChatFeedback.withCover(ChatFeedback.attackResult(block.name(), targetName, attack.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()), result.cover()));
 
@@ -486,8 +488,10 @@ public class MonsterActionManager {
 			save.legendaryResistance(), MonsterRegistry.legendaryResistancesLeft(target)));
 
 		//Una sola implementación de "aplicar daño de conjuro": afinidades, PG temporales, concentración y
-		//muerte. Un conjuro siempre cuenta como mágico.
-		if (save.finalDamage() > 0) SpellCastManager.applyDamage(target, save.finalDamage(), spell.damageType());
+		//muerte. Un conjuro siempre cuenta como mágico. Escalado por dificultad igual que el ataque físico
+		//de arriba — SaveRules.resolve es compartido con el jugador lanzando el mismo hechizo, así que la
+		//dificultad de monstruo no puede vivir ahí; se aplica acá, solo del lado del monstruo.
+		if (save.finalDamage() > 0) SpellCastManager.applyDamage(target, Config.scaleMonsterDamage(save.finalDamage()), spell.damageType());
 		//Mismo criterio que SpellCastManager.castSaveSpell: la condición la decide la salvación, no el daño.
 		//Un aliento paralizante que no hace daño debe paralizar igual, y uno que sí lo hace no debe imponer
 		//su condición a quien superó la tirada.

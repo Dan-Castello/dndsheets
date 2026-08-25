@@ -9,6 +9,7 @@ import net.hawthorn.dndsheets.Combatant;
 import net.hawthorn.dndsheets.CombatFx;
 import net.hawthorn.dndsheets.MonsterRegistry;
 import net.hawthorn.dndsheets.DndPaths;
+import net.hawthorn.dndsheets.DndsheetsMod;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
@@ -48,7 +49,7 @@ public class MonsterCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndmonsters")
-			.requires(source -> source.hasPermission(2))
+			.requires(source -> DndsheetsMod.canActAsDm(source))
 			.then(Commands.literal("load")
 				.then(Commands.argument("archivo", StringArgumentType.word())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(DndPaths.jsonFileNames(MONSTERS_DIR), builder))

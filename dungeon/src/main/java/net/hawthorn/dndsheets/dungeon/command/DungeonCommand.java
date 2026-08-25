@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.hawthorn.dndsheets.DndPaths;
+import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.dungeon.DndsheetsDungeonMod;
 import net.hawthorn.dndsheets.dungeon.DungeonManager;
 import net.hawthorn.dndsheets.dungeon.DungeonPieceRegistry;
@@ -36,7 +37,7 @@ public class DungeonCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dnddungeon")
-			.requires(source -> source.hasPermission(2))
+			.requires(source -> DndsheetsMod.canActAsDm(source))
 			.then(Commands.literal("piece")
 				.then(Commands.literal("capture")
 					.then(Commands.argument("id", StringArgumentType.word())

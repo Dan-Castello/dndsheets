@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.dungeon;
 
 import net.hawthorn.dndsheets.dungeon.DndsheetsDungeonMod;
+import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.InteractionEvents;
 import net.hawthorn.dndsheets.MonsterRegistry;
 
@@ -64,7 +65,7 @@ public class DungeonToolManager {
 		if (event.getLevel().isClientSide()) return;
 
 		Player dm = event.getEntity();
-		if (!dm.hasPermissions(2)) return;
+		if (!DndsheetsMod.canActAsDm(dm)) return;
 		if (!(dm instanceof ServerPlayer serverDm)) return;
 
 		String structureId = structureBlock.getStructureName();
@@ -116,7 +117,7 @@ public class DungeonToolManager {
 		if (event.getLevel().isClientSide()) return;
 
 		Player dm = event.getEntity();
-		if (!dm.hasPermissions(2)) return;
+		if (!DndsheetsMod.canActAsDm(dm)) return;
 		if (!(dm instanceof ServerPlayer serverDm)) return;
 
 		//Solo cuenta como "configurado" si es DE NUESTRO namespace — un jigsaw recién colocado trae

@@ -6,6 +6,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.hawthorn.dndsheets.Config;
+import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.VisionManager;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -25,7 +26,7 @@ public class VisionCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndvision")
-			.requires(source -> source.hasPermission(2))
+			.requires(source -> DndsheetsMod.canActAsDm(source))
 			.then(Commands.literal("on").executes(ctx -> set(ctx, true)))
 			.then(Commands.literal("off").executes(ctx -> set(ctx, false)))
 			.executes(VisionCommand::status));

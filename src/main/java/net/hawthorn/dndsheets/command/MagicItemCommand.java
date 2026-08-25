@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.hawthorn.dndsheets.DndPaths;
+import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.MagicItemRegistry;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.minecraft.ChatFormatting;
@@ -58,13 +59,13 @@ public class MagicItemCommand {
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(MagicItemRegistry.ids(), builder))
 					.executes(ctx -> setAttuned(ctx, false))))
 			.then(Commands.literal("give")
-				.requires(source -> source.hasPermission(2))
+				.requires(source -> DndsheetsMod.canActAsDm(source))
 				.then(Commands.argument("jugadores", EntityArgument.players())
 					.then(Commands.argument("id", StringArgumentType.string())
 						.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(MagicItemRegistry.ids(), builder))
 						.executes(MagicItemCommand::give))))
 			.then(Commands.literal("load")
-				.requires(source -> source.hasPermission(2))
+				.requires(source -> DndsheetsMod.canActAsDm(source))
 				.then(Commands.argument("archivo", StringArgumentType.string())
 					.executes(MagicItemCommand::load))));
 	}

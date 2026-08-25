@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets.command;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.hawthorn.dndsheets.AbilityItem;
+import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.ItemLook;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -30,7 +31,7 @@ public class NotesCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndnotes")
-			.requires(source -> source.hasPermission(2))
+			.requires(source -> DndsheetsMod.canActAsDm(source))
 			.then(Commands.literal("give")
 				.then(Commands.argument("jugadores", EntityArgument.players())
 					.executes(NotesCommand::give))));

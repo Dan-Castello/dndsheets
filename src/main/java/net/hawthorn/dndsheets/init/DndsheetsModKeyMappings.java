@@ -34,16 +34,19 @@ public class DndsheetsModKeyMappings {
 		}
 	};
 
-	//Solo abre el Panel de DM si el propio cliente ya sabe que es operador (nivel de permiso sincronizado
-	//por el servidor) — un jugador normal que pulse la tecla no ve nada. El servidor vuelve a comprobarlo
-	//en cada mensaje que el panel manda (defensa en profundidad, un cliente modificado no basta).
+	//La tecla abre el panel siempre: el cliente no tiene forma barata de saber si el modo solo
+	//(Config.soloMode()) está encendido —a diferencia del nivel de permiso, que sí le sincroniza el
+	//servidor—, así que ya no filtramos acá quién puede verlo. El gate real vive del lado servidor, en
+	//cada mensaje que el panel manda (DndsheetsMod.canActAsDm / NetworkUtil.handleOnServerAsDm) — un
+	//jugador sin permiso y sin modo solo puede abrir el panel, pero cada acción que intente se rechaza
+	//igual que antes.
 	public static final KeyMapping DM_PANEL = new KeyMapping("key.dndsheets.dmpanel", GLFW.GLFW_KEY_P, "key.categories.dndsheets") {
 		private boolean isDownOld = false;
 
 		@Override
 		public void setDown(boolean isDown) {
 			super.setDown(isDown);
-			if (isDownOld != isDown && isDown && Minecraft.getInstance().player != null && Minecraft.getInstance().player.hasPermissions(2)) {
+			if (isDownOld != isDown && isDown && Minecraft.getInstance().player != null) {
 				DmPanelScreen.open();
 			}
 			isDownOld = isDown;

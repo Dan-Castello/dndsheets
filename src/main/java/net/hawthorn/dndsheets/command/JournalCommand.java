@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets.command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.JournalManager;
 import net.hawthorn.dndsheets.network.BrowseActionMessage;
 import net.minecraft.ChatFormatting;
@@ -42,27 +43,27 @@ public class JournalCommand {
 			.executes(JournalCommand::open)
 			.then(Commands.literal("list").executes(JournalCommand::open))
 			.then(Commands.literal("publish")
-				.requires(source -> source.hasPermission(2))
+				.requires(source -> DndsheetsMod.canActAsDm(source))
 				.then(Commands.argument("titulo", StringArgumentType.greedyString())
 					.executes(JournalCommand::publish)))
 			.then(Commands.literal("share")
-				.requires(source -> source.hasPermission(2))
+				.requires(source -> DndsheetsMod.canActAsDm(source))
 				.then(Commands.argument("id", StringArgumentType.word())
 					.suggests(JournalCommand::suggestIds)
 					.then(Commands.argument("jugadores", EntityArgument.players())
 						.executes(JournalCommand::share))))
 			.then(Commands.literal("party")
-				.requires(source -> source.hasPermission(2))
+				.requires(source -> DndsheetsMod.canActAsDm(source))
 				.then(Commands.argument("id", StringArgumentType.word())
 					.suggests(JournalCommand::suggestIds)
 					.executes(ctx -> setParty(ctx, true))))
 			.then(Commands.literal("hide")
-				.requires(source -> source.hasPermission(2))
+				.requires(source -> DndsheetsMod.canActAsDm(source))
 				.then(Commands.argument("id", StringArgumentType.word())
 					.suggests(JournalCommand::suggestIds)
 					.executes(ctx -> setParty(ctx, false))))
 			.then(Commands.literal("delete")
-				.requires(source -> source.hasPermission(2))
+				.requires(source -> DndsheetsMod.canActAsDm(source))
 				.then(Commands.argument("id", StringArgumentType.word())
 					.suggests(JournalCommand::suggestIds)
 					.executes(JournalCommand::delete))));

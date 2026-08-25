@@ -24,6 +24,8 @@ import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.world.entity.Entity;
 
 import net.hawthorn.dndsheets.init.DndsheetsModSounds;
 import net.hawthorn.dndsheets.init.DndsheetsModMenus;
@@ -107,7 +109,11 @@ public class DndsheetsMod {
 	//Sube a "18": nuevo mensaje StaffBindMessage (báculos de hechizo reconfigurables desde el Grimorio).
 	//Sube a "19": TurnStateMessage gana el tablero de iniciativa completo (roster con condiciones/estado
 	//por combatiente), para el HUD de turnos profesional.
-	private static final String PROTOCOL_VERSION = "19";
+	//Sube a "20": RosterRow gana bonusActionUsed (acción adicional separada de la acción, ver TurnManager).
+	//Sube a "21": botón "Multiclasear" en la ficha (F25 del audit). Se registra MulticlassMessage al
+	//final, y PresetListRequestMessage/PresetListMessage ganan un campo "multiclass" en el cable (mismo
+	//viaje de ida y vuelta, ahora con un flag más) para que PresetScreen sepa en qué modo abrirse.
+	private static final String PROTOCOL_VERSION = "21";
 
 	/**
 	 * <p>Cuántas piezas cruzan el cable: mensajes registrados más constantes de los enums que viajan por
@@ -119,7 +125,7 @@ public class DndsheetsMod {
 	 * la mano igual para desalinearse después. Un número que hay que tocar a mano no impide el error, pero
 	 * lo convierte en una decisión en vez de un olvido.</p>
 	 */
-	public static final int NETWORK_SHAPE = 107;
+	public static final int NETWORK_SHAPE = 108;
 
 	/**
 	 * <p>El orden exacto en que las piezas cruzan el cable, resumido en un hash. {@link #NETWORK_SHAPE}
@@ -131,7 +137,7 @@ public class DndsheetsMod {
 	 * fuente y tumba el build cuando no cuadra. Si mueves algo a propósito, sube {@link #PROTOCOL_VERSION}
 	 * y pega aquí el número que te diga el fallo.</p>
 	 */
-	public static final int NETWORK_ORDER = 1324783977;
+	public static final int NETWORK_ORDER = -1791371131;
 
 	/**
 	 * <p>Que se escribe y se lee en el cable, resumido en un hash: la secuencia de llamadas
@@ -143,7 +149,7 @@ public class DndsheetsMod {
 	 * dos numeros intactos y aun asi rompio la compatibilidad: un cliente viejo leería un texto donde el
 	 * servidor nuevo escribe un Component, y se desincroniza a mitad del paquete.</p>
 	 */
-	public static final int NETWORK_WIRE = -1901055770;
+	public static final int NETWORK_WIRE = -1445920284;
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 
@@ -226,14 +232,34 @@ public class DndsheetsMod {
 		addNetworkMessage(WeaponGiveListRequestMessage.class, WeaponGiveListRequestMessage::buffer, WeaponGiveListRequestMessage::new, WeaponGiveListRequestMessage::handler);
 		addNetworkMessage(WeaponGiveListMessage.class, WeaponGiveListMessage::buffer, WeaponGiveListMessage::new, WeaponGiveListMessage::handler);
 		addNetworkMessage(StaffBindMessage.class, StaffBindMessage::buffer, StaffBindMessage::new, StaffBindMessage::handler);
+		addNetworkMessage(MulticlassMessage.class, MulticlassMessage::buffer, MulticlassMessage::new, MulticlassMessage::handler);
+	}
+
+	/**
+	 * <p>Único punto donde el mod pregunta "¿puede esta fuente actuar como DM?" — operador de verdad, O modo
+	 * solo encendido ({@link Config#soloMode()}). Reemplaza cada {@code hasPermission(2)}/
+	 * {@code hasPermissions(2)} suelto del mod: en modo solo no hay jerarquía nueva que inventar (ni "líder
+	 * de grupo", ni permisos por acción) — todos los jugadores conectados quedan igual de confiables entre
+	 * sí, el mismo nivel de confianza que ya hace falta para compartir el mismo mundo. La única excepción
+	 * real es {@code SheetServerMessage} (checks/saves/skills de la propia hoja), que no es un gate de "sos
+	 * DM" sino de integridad de datos ya calculados solos, y no pasa por aquí.</p>
+	 */
+	public static boolean canActAsDm(CommandSourceStack source) {
+		return source.hasPermission(2) || Config.soloMode();
+	}
+
+	/** Misma pregunta que {@link #canActAsDm(CommandSourceStack)}, para los call sites que solo tienen la entidad a mano. */
+	public static boolean canActAsDm(Entity entity) {
+		return entity.hasPermissions(2) || Config.soloMode();
 	}
 
 	//Patrón repetido en los mensajes cliente(DM)->servidor que actúan sobre OTRO jugador (SheetAdjustMessage,
-	//TraitGrantMessage, PresetApplyToMessage): comprobar que quien envía el mensaje es un operador y que el
-	//jugador objetivo sigue conectado, antes de delegar. Llamar dentro de context.enqueueWork(...).
+	//TraitGrantMessage, PresetApplyToMessage): comprobar que quien envía el mensaje es un operador (o que el
+	//modo solo está encendido, ver canActAsDm) y que el jugador objetivo sigue conectado, antes de delegar.
+	//Llamar dentro de context.enqueueWork(...).
 	public static void withDmTarget(NetworkEvent.Context context, String targetUuid, Consumer<ServerPlayer> action) {
 		ServerPlayer dm = context.getSender();
-		if (dm == null || !dm.hasPermissions(2)) return;
+		if (dm == null || !canActAsDm(dm)) return;
 		UUID uuid;
 		try {
 			uuid = UUID.fromString(targetUuid);

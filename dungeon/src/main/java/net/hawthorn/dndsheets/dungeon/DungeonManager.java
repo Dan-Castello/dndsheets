@@ -2,6 +2,7 @@ package net.hawthorn.dndsheets.dungeon;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.DndPaths;
+import net.hawthorn.dndsheets.SheetLoader;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -17,14 +18,24 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.JigsawBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.PoolElementStructurePiece;
+import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructurePiece;
+import net.minecraft.world.level.levelgen.structure.pieces.StructurePiecesBuilder;
 import net.minecraft.world.level.levelgen.structure.pools.JigsawPlacement;
 import net.minecraft.world.level.levelgen.structure.pools.StructureTemplatePool;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplateManager;
 import net.minecraft.world.level.storage.LevelResource;
+import net.minecraft.util.RandomSource;
 import net.minecraftforge.fml.ModList;
 
 import java.io.IOException;
@@ -402,11 +413,42 @@ public class DungeonManager {
 			return false;
 		}
 
-		boolean success = JigsawPlacement.generateJigsaw(dm.serverLevel(), holder.get(), new ResourceLocation(START_JIGSAW_NAME), maxDepth, pos, false);
-		if (!success) {
+		//No se llama a JigsawPlacement.generateJigsaw (que hace exactamente esto pero se queda con las
+		//piezas para sí misma) porque EncounterPopulator necesita el bounding box real de cada sala para
+		//poblarla — y como la colocación jigsaw es aleatoria, es IMPOSIBLE volver a calcular ese layout
+		//después con una segunda llamada: saldría un dungeon distinto al que de verdad se acaba de plantar
+		//en el mundo. Así que replicamos su cuerpo (confirmado leyendo su fuente mapeada) usando el mismo
+		//JigsawPlacement.addPieces público, en vez de duplicar la generación.
+		ServerLevel level = dm.serverLevel();
+		ChunkGenerator chunkGenerator = level.getChunkSource().getGenerator();
+		StructureTemplateManager structureTemplateManager = level.getStructureManager();
+		StructureManager structureManager = level.structureManager();
+		RandomSource random = level.getRandom();
+		Structure.GenerationContext context = new Structure.GenerationContext(level.registryAccess(), chunkGenerator,
+			chunkGenerator.getBiomeSource(), level.getChunkSource().randomState(), structureTemplateManager,
+			level.getSeed(), new ChunkPos(pos), level, biome -> true);
+
+		Optional<Structure.GenerationStub> stub = JigsawPlacement.addPieces(context, holder.get(),
+			Optional.of(new ResourceLocation(START_JIGSAW_NAME)), maxDepth, pos, false, Optional.empty(), 128);
+		if (stub.isEmpty()) {
 			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.generation_failed", START_JIGSAW_NAME));
+			return false;
 		}
-		return success;
+
+		StructurePiecesBuilder piecesBuilder = stub.get().getPiecesBuilder();
+		List<BoundingBox> roomBounds = new ArrayList<>();
+		for (StructurePiece piece : piecesBuilder.build().pieces()) {
+			if (!(piece instanceof PoolElementStructurePiece poolPiece)) continue;
+			poolPiece.place(level, structureManager, chunkGenerator, random, BoundingBox.infinite(), pos, false);
+			roomBounds.add(poolPiece.getBoundingBox());
+		}
+
+		//El personaje de quien genera es la única referencia de nivel que tenemos a mano — un grupo sin DM
+		//que genera su propia mazmorra normalmente lo hace con el propio personaje activo.
+		int playerLevel = SheetLoader.characterLevelOf(SheetLoader.getServerSheet(dm.getStringUUID()), dm);
+		EncounterPopulator.populate(level, roomBounds, playerLevel);
+
+		return true;
 	}
 
 	private static void ensurePackMcmeta(Path packRoot) {

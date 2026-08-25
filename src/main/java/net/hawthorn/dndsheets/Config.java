@@ -42,6 +42,8 @@ public class Config {
 	private static final ForgeConfigSpec.ConfigValue<List<? extends String>> WEAPON_DAMAGE_ENTRIES;
 	private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ENCHANT_BONUS_ENTRIES;
 	private static final ForgeConfigSpec.BooleanValue VISION_RULES;
+	private static final ForgeConfigSpec.BooleanValue SOLO_MODE;
+	private static final ForgeConfigSpec.ConfigValue<String> DIFFICULTY_PRESET;
 
 	static {
 		ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -86,6 +88,28 @@ public class Config {
 		);
 		VISION_RULES = builder.define("visionRules", false);
 
+		builder.comment(
+			"Modo solo (sin DM): cuando está activo, CUALQUIER jugador conectado puede hacer todo lo que hoy",
+			"exige un operador —invocar monstruos, controlar turnos a mano, aplicarse un preset de clase,",
+			"encender/apagar reglas de mesa, e incluso aplicar condiciones o ajustar la hoja de OTRO jugador—.",
+			"No hay jerarquía nueva ni 'líder de grupo': en modo solo todos quedan igual de confiables entre",
+			"sí, el mismo nivel de confianza que ya hace falta para compartir el mismo mundo de Minecraft.",
+			"",
+			"Se enciende y se apaga en caliente con /dndsolo, igual que visionRules con /dndvision — pero ESE",
+			"comando exige nivel de permiso 4 (dueño del server/consola), no 2: decide QUIÉN tiene poder",
+			"administrativo total sobre otros jugadores, así que pide el mismo acceso que ya hace falta para",
+			"nombrar operadores, no el nivel 2 que este mismo flag vuelve irrelevante en cuanto se enciende."
+		);
+		SOLO_MODE = builder.define("soloMode", false);
+
+		builder.comment(
+			"Dificultad de los monstruos: 'facil' (×0.75 PG y daño), 'normal' (×1.0, como siempre) o 'dificil'",
+			"(×1.5 PG y daño). Solo escala al MONSTRUO —lo que un jugador hace nunca cambia—, así que sirve",
+			"como mando de dificultad self-service para un grupo sin DM que arbitre 'esto está siendo muy",
+			"duro' a ojo. Se cambia en caliente con /dnddifficulty, igual que visionRules con /dndvision."
+		);
+		DIFFICULTY_PRESET = builder.defineInList("difficultyPreset", "normal", List.of("facil", "normal", "dificil"));
+
 		SPEC = builder.build();
 	}
 
@@ -115,6 +139,50 @@ public class Config {
 	public static void setVisionRules(boolean enabled) {
 		VISION_RULES.set(enabled);
 		VISION_RULES.save();
+	}
+
+	/** Si el modo solo (sin DM) está activo. Ver {@link net.hawthorn.dndsheets.DndsheetsMod#canActAsDm}. */
+	public static boolean soloMode() {
+		return SOLO_MODE.get();
+	}
+
+	/** Mismo patrón que {@link #setVisionRules} — lo enciende/apaga y lo deja escrito en el toml. */
+	public static void setSoloMode(boolean enabled) {
+		SOLO_MODE.set(enabled);
+		SOLO_MODE.save();
+	}
+
+	public static String difficultyPreset() {
+		return DIFFICULTY_PRESET.get();
+	}
+
+	/** Mismo patrón que {@link #setVisionRules}. {@code preset} debe ser "facil", "normal" o "dificil". */
+	public static void setDifficultyPreset(String preset) {
+		DIFFICULTY_PRESET.set(preset);
+		DIFFICULTY_PRESET.save();
+	}
+
+	private static double difficultyMultiplier() {
+		return switch (difficultyPreset()) {
+			case "facil" -> 0.75;
+			case "dificil" -> 1.5;
+			default -> 1.0;
+		};
+	}
+
+	/**
+	 * <p>PG máximos de un monstruo, escalados por dificultad. Único punto que aplica el multiplicador —
+	 * úsalo en todo lugar que calcule cuántos PG tiene un monstruo (spawn y {@code Combatant.maxHp()}),
+	 * nunca leas {@code block.maxHp()} directo para eso, o quedan desincronizados: el monstruo aparece
+	 * con menos PG de los que su propia barra dice que tiene.</p>
+	 */
+	public static int scaleMonsterMaxHp(int rawMaxHp) {
+		return Math.max(1, (int) Math.round(rawMaxHp * difficultyMultiplier()));
+	}
+
+	/** Mismo multiplicador que {@link #scaleMonsterMaxHp}, aplicado al daño que un monstruo INFLIGE. */
+	public static int scaleMonsterDamage(int rawDamage) {
+		return Math.max(0, (int) Math.round(rawDamage * difficultyMultiplier()));
 	}
 
 	private static boolean isValidEntry(Object entry) {

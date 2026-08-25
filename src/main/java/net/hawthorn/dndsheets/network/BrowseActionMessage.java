@@ -73,7 +73,7 @@ public class BrowseActionMessage {
 				case LIST_PARTY -> {
 					//Se comprueba aquí y no solo al pintar el botón: un cliente modificado puede mandar el
 					//mensaje igual, y el permiso tiene que valer del lado del servidor para significar algo.
-					if (sender.hasPermissions(2)) sendParty(sender);
+					if (DndsheetsMod.canActAsDm(sender)) sendParty(sender);
 				}
 				//El compendio es de consulta y no revela nada que el jugador no pueda ver ya en su Grimorio
 				//o en la ficha de un monstruo al pelearlo: no se gatea por operador.
@@ -101,7 +101,7 @@ public class BrowseActionMessage {
 				case DELETE -> {
 					//El permiso solo abre la puerta a los PNJ del DM; el propio SheetLoader sigue negándose a
 					//borrar el personaje de otro jugador, tenga el permiso que tenga quien lo pida.
-					String error = SheetLoader.deleteCharacter(sender, message.characterId, sender.hasPermissions(2));
+					String error = SheetLoader.deleteCharacter(sender, message.characterId, DndsheetsMod.canActAsDm(sender));
 					if (error == null) {
 						sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.deleted", message.characterId).withStyle(ChatFormatting.GREEN));
 						sendOwnCharacters(sender);
@@ -219,7 +219,7 @@ public class BrowseActionMessage {
 	public static void sendJournal(ServerPlayer player) {
 		List<String> ids = new ArrayList<>();
 		List<Component> labels = new ArrayList<>();
-		boolean isDm = player.hasPermissions(2);
+		boolean isDm = DndsheetsMod.canActAsDm(player);
 		for (net.hawthorn.dndsheets.JournalManager.Entry entry : net.hawthorn.dndsheets.JournalManager.readableBy(player)) {
 			ids.add(entry.id());
 			//La etiqueta de visibilidad solo se le enseña al DM: a un jugador no le aporta nada saber que

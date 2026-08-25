@@ -43,7 +43,7 @@ public class JournalManager {
 			String uuid = player.getStringUUID();
 			//El autor siempre puede leer lo suyo, y un operador ve todo: el DM tiene que poder repasar lo
 			//que reparti� sin tener que compartírselo a sí mismo.
-			return uuid.equals(authorUuid) || sharedWith.contains(uuid) || player.hasPermissions(2);
+			return uuid.equals(authorUuid) || sharedWith.contains(uuid) || DndsheetsMod.canActAsDm(player);
 		}
 
 		/** Etiqueta de a quién alcanza, para que el DM lo vea sin abrir la entrada. */

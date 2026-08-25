@@ -5,6 +5,7 @@ import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -66,11 +67,11 @@ public class CharacterCommand {
 					.suggests((ctx, builder) -> suggestCharacters(builder, deletableIds(ctx)))
 					.executes(CharacterCommand::delete)))
 			.then(Commands.literal("npc")
-				.requires(source -> source.hasPermission(2))
+				.requires(source -> DndsheetsMod.canActAsDm(source))
 				.then(Commands.argument("nombre", StringArgumentType.greedyString())
 					.executes(CharacterCommand::createNpc)))
 			.then(Commands.literal("spawn")
-				.requires(source -> source.hasPermission(2))
+				.requires(source -> DndsheetsMod.canActAsDm(source))
 				.then(Commands.argument("id", StringArgumentType.word())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(npcIds(), builder))
 					.executes(ctx -> spawn(ctx, "minecraft:villager", false))
@@ -146,7 +147,7 @@ public class CharacterCommand {
 		//El nombre se lee ANTES de borrar: después, la hoja ya no está en memoria y el mensaje diría el id.
 		String name = SheetLoader.nameOfCharacter(characterId);
 		boolean wasNpc = SheetLoader.ownerOf(characterId, SheetLoader.getCharacterSheet(characterId)) == null;
-		String error = SheetLoader.deleteCharacter(player, characterId, ctx.getSource().hasPermission(2));
+		String error = SheetLoader.deleteCharacter(player, characterId, DndsheetsMod.canActAsDm(ctx.getSource()));
 		if (error != null) {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.character.delete_failed"));
 			return 0;
@@ -172,7 +173,7 @@ public class CharacterCommand {
 		} catch (CommandSyntaxException ignored) {
 			//Consola: no tiene personajes propios, solo puede tocar PNJ.
 		}
-		if (ctx.getSource().hasPermission(2)) ids.addAll(SheetLoader.npcIds());
+		if (DndsheetsMod.canActAsDm(ctx.getSource())) ids.addAll(SheetLoader.npcIds());
 		return ids;
 	}
 

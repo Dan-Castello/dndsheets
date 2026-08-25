@@ -607,7 +607,10 @@ public class MonsterRegistry {
 		//reloj propio la necesita encendida por definición: se mueve por su cuenta durante todo el combate.
 		if (entity instanceof Mob mob) mob.setNoAi(!block.keepsOwnAi() && !block.ownClock());
 		applyAppearance(entity, block.appearance());
-		tagAsMonster(entity, monsterId, block.maxHp());
+		//Escalado por dificultad, mismo método que Combatant.MonsterCombatant.maxHp() — así el monstruo
+		//nace con el PG que su propia barra va a anunciar, en vez de aparecer "ya golpeado" en fácil o
+		//"de más" en difícil.
+		tagAsMonster(entity, monsterId, Config.scaleMonsterMaxHp(block.maxHp()));
 		if (configure != null) configure.accept(entity);
 
 		level.addFreshEntity(entity);
@@ -653,11 +656,13 @@ public class MonsterRegistry {
 	 * </ul>
 	 */
 	public static void applyStatBlock(Entity target, MonsterStatBlock block) {
-		tagAsMonster(target, block.id(), block.maxHp());
+		//Mismo escalado por dificultad que spawnAt — ver el comentario de ahí.
+		int scaledMaxHp = Config.scaleMonsterMaxHp(block.maxHp());
+		tagAsMonster(target, block.id(), scaledMaxHp);
 		if (target instanceof net.minecraft.world.entity.LivingEntity living
 				&& living.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH) != null) {
-			living.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(block.maxHp());
-			living.setHealth(block.maxHp());
+			living.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(scaledMaxHp);
+			living.setHealth(scaledMaxHp);
 		}
 		if (!target.hasCustomName()) {
 			target.setCustomName(Component.literal(block.name()));

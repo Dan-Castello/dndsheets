@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.network;
 
+import net.hawthorn.dndsheets.DndsheetsMod;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
@@ -30,7 +31,7 @@ public final class NetworkUtil {
 	public static void handleOnServerAsDm(NetworkEvent.Context context, java.util.function.Consumer<net.minecraft.server.level.ServerPlayer> action) {
 		handleOnServer(context, () -> {
 			net.minecraft.server.level.ServerPlayer dm = context.getSender();
-			if (dm == null || !dm.hasPermissions(2)) return;
+			if (dm == null || !DndsheetsMod.canActAsDm(dm)) return;
 			action.accept(dm);
 		});
 	}

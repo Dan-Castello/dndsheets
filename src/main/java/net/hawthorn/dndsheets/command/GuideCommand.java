@@ -28,7 +28,7 @@ public class GuideCommand {
 	private static int open(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
-			new TutorialOpenMessage(player.hasPermissions(2)));
+			new TutorialOpenMessage(DndsheetsMod.canActAsDm(player)));
 		return 1;
 	}
 }

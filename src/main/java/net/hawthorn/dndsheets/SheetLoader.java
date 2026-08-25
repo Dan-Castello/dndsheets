@@ -136,7 +136,7 @@ public class SheetLoader {
 		if (brandNew) {
 			UUID playerId = uuid;
 			MinecraftServer server = entity.getServer();
-			boolean isDm = entity.hasPermissions(2);
+			boolean isDm = DndsheetsMod.canActAsDm(entity);
 			DndsheetsMod.queueServerWork(60, () -> {
 				ServerPlayer stillHere = server.getPlayerList().getPlayer(playerId);
 				if (stillHere != null) {
@@ -188,7 +188,7 @@ public class SheetLoader {
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
 		DndsheetsMod.queueServerWork(20, () -> {
 			player.sendSystemMessage(Component.translatable("chat.dndsheets.welcome.sheet_key").withStyle(ChatFormatting.GRAY));
-			if (player.hasPermissions(2)) {
+			if (DndsheetsMod.canActAsDm(player)) {
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.welcome.dm_key").withStyle(ChatFormatting.GRAY));
 			}
 		});
