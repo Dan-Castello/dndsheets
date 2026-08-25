@@ -96,18 +96,42 @@ public class RollScrollWidget extends AbstractScrollWidget {
     }
 
     /**
+     * <p>Vacía la lista interna y devuelve los widgets de cada fila para que el screen los saque de sí
+     * mismo con {@code removeWidget} (este widget no controla ese registro — ver el comentario de
+     * {@link #addListItem}). Sin esto, repoblar la lista tras una hoja nueva del servidor (cambiar de
+     * raza, aplicar un preset, descansar, subir de nivel...) apilaba filas viejas encima de las nuevas
+     * para siempre: cada fila de más quedaba con un botón de borrar cuyo índice ya no correspondía a
+     * nada real en el array de la hoja, y tarde o temprano reventaba con
+     * {@code IndexOutOfBoundsException} al borrar.</p>
+     */
+    public List<AbstractWidget> clearAndCollectWidgets() {
+        List<AbstractWidget> widgets = new ArrayList<>();
+        for (ListItem item : list) {
+            widgets.add(item.nameBox);
+            widgets.addAll(item.rollButtons);
+            widgets.addAll(item.editButtons);
+            widgets.add(item.deleteButton);
+        }
+        list.clear();
+        return widgets;
+    }
+
+    /**
      * <p>This is asking for the delete button so it knows which list item to target.</p>
      * <p>This releases control over the widgets in the list item. If you want them to disappear, make sure you use the screen's removeWidget() method.</p>
      * @param button
      */
     public int removeListItem(Button button) {
-        int toRemove = 0;
+        int toRemove = -1; //Antes se quedaba en 0 si no encontraba el botón, que es un índice real: borraba
+        //la fila equivocada en silencio en vez de avisar que ese botón no era de esta lista.
         for (int i = 0; i < list.size(); i++) {
             ListItem item = list.get(i);
             if (item.deleteButton == button) {
                 toRemove = i;
+                break;
             }
         }
+        if (toRemove < 0) return -1;
         list.remove(toRemove);
         if (list.size() < scrollCutoff) {
             this.setScrollAmount(0);

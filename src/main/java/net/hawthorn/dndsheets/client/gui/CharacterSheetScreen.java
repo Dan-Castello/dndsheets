@@ -13,7 +13,6 @@ import net.hawthorn.dndsheets.client.gui.components.AdjustableImageButton;
 import net.hawthorn.dndsheets.client.gui.components.RollScrollWidget;
 import net.hawthorn.dndsheets.init.DndsheetsModKeyMappings;
 import net.hawthorn.dndsheets.network.AdvancedRollEditorOpenMessage;
-import net.hawthorn.dndsheets.network.PresetListRequestMessage;
 import net.hawthorn.dndsheets.network.RollEditorOpenMessage;
 import net.hawthorn.dndsheets.client.procedures.CharacterSheetSaveProcedure;
 import net.minecraft.client.gui.components.*;
@@ -1029,6 +1028,18 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	 * @param category
 	 * @param index
 	 */
+	/**
+	 * <p>Saca del screen todos los widgets de las filas actuales de {@code scrollList} y vacía la lista.
+	 * Llamado por {@code CharacterSheetLoadProcedure} ANTES de repoblar desde una hoja nueva del
+	 * servidor (cambiar de raza, aplicar un preset, descansar, subir de nivel) — sin esto, cada hoja
+	 * nueva apilaba filas de ataques encima de las viejas en vez de reemplazarlas, y el botón de borrar
+	 * de una fila de más terminaba con un índice que ya no existía en el array real (ver
+	 * {@link RollScrollWidget#clearAndCollectWidgets}).</p>
+	 */
+	public void clearScrollList(RollScrollWidget scrollList) {
+		scrollList.clearAndCollectWidgets().forEach(this::removeWidget);
+	}
+
 	public void addToScrollList(RollScrollWidget scrollList, JsonObject obj, int category, int index, PanelStatus panel) {
 		if (!obj.has("rolls")) return;
 		JsonArray rolls = obj.getAsJsonArray("rolls");
@@ -1100,11 +1111,12 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			rollButtons.forEach(this::removeWidget);
 			editButtons.forEach(this::removeWidget);
 			this.removeWidget(e);
+			if (removedIndex < 0) return; //Este botón ya no correspondía a ninguna fila real de la lista.
 
 			JsonObject sheet = SheetLoader.getClientSheet();
 			SheetLoader.validateSheet(sheet);
 			JsonArray arr = sheet.getAsJsonArray(RollIndex.Category.fromInt(category).toString());
-			arr.remove(removedIndex);
+			if (removedIndex < arr.size()) arr.remove(removedIndex); //Defensa en profundidad: ver clearScrollList.
 		});
 		deleteButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.character_sheet.delete_row")));
 		this.addWidget(deleteButton);
@@ -1364,9 +1376,12 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		guistate.put("button:grimoire", grimoireButton);
 		this.addRenderableWidget(grimoireButton);
 
+		//Antes mandaba PresetListRequestMessage directo (solo "aplicar preset"); ahora abre un menú fijo de
+		//dos filas porque no hay hueco para un quinto botón de página en esta fila (ver el comentario de
+		//BOTTOM_BUTTON_WIDTH más arriba) — "Multiclasear" es la segunda fila de ese menú.
 		presetsButton = TomeButton.of(Component.translatable("gui.dndsheets.character_sheet.presets"), b -> {
 			CharacterSheetSaveProcedure.execute(guistate);
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage());
+			PresetActionMenuScreen.open(this);
 		}, this.leftPos + PRESETS_OFFSET_X, this.topPos + PRESETS_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
 		guistate.put("button:presets", presetsButton);
 		this.addRenderableWidget(presetsButton);

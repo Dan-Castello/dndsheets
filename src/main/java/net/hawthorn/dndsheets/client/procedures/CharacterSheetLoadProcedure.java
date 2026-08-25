@@ -117,6 +117,10 @@ public class CharacterSheetLoadProcedure {
 		}
 
 		if (guistate.get("scrolllist:attack_rolls") instanceof RollScrollWidget _tf && sheet.has("attacks")) {
+			//Esta hoja puede no ser la primera que llega mientras la ficha sigue abierta (cambiar de raza,
+			//aplicar un preset, descansar, subir de nivel...): sin limpiar antes, cada llegada apilaba las
+			//filas de ataques encima de las anteriores en vez de reemplazarlas. Ver CharacterSheetScreen#clearScrollList.
+			screen.clearScrollList(_tf);
 			autoPopulateWeapons(sheet);
 
 			JsonArray arr = sheet.getAsJsonArray("attacks");
