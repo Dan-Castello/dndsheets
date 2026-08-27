@@ -103,7 +103,7 @@ public class TurnHudOverlay {
 		int textRight = right - PADDING;
 		int y = contentTop;
 
-		guiGraphics.drawString(font, "Ronda " + TurnHudState.round(), textLeft, y, GuiStyle.ACCENT_COLOR);
+		guiGraphics.drawString(font, Component.translatable("hud.dndsheets.round", TurnHudState.round()), textLeft, y, GuiStyle.ACCENT_COLOR);
 		y += ROW_HEIGHT;
 		GuiStyle.rule(guiGraphics, textLeft, textRight, y);
 		y += 4;
@@ -114,7 +114,7 @@ public class TurnHudOverlay {
 			y += ROW_HEIGHT;
 		}
 		if (truncated) {
-			String more = "+" + hidden + (hidden == 1 ? " combatiente oculto" : " combatientes ocultos");
+			Component more = Component.translatable(hidden == 1 ? "hud.dndsheets.hidden_one" : "hud.dndsheets.hidden_many", hidden);
 			guiGraphics.drawString(font, more, textLeft, y, GuiStyle.MUTED_COLOR);
 			y += ROW_HEIGHT;
 		}
@@ -147,6 +147,17 @@ public class TurnHudOverlay {
 			: isCurrent ? GuiStyle.TITLE_COLOR
 			: row.isMonster() ? ENEMY_COLOR : GuiStyle.SUBTITLE_COLOR;
 
+		//Barra de vida de 1px bajo el nombre: el dato que en una mesa real da el propio muñeco sobre la
+		//mesa ("¿cómo va ese ogro?") y que aquí solo existía preguntando por chat. maxHp 0 = combatiente
+		//fuera de las reglas o descargado: sin barra, igual que antes.
+		if (row.maxHp() > 0 && !row.defeated()) {
+			int barY = y + ROW_HEIGHT - 2;
+			double fraction = Math.min(1.0, Math.max(0.0, row.currentHp() / (double) row.maxHp()));
+			int fillColor = row.currentHp() * 2 >= row.maxHp() ? GOOD_COLOR : ENEMY_COLOR;
+			guiGraphics.fill(left, barY, right, barY + 1, MOVEMENT_TRACK_COLOR);
+			guiGraphics.fill(left, barY, left + (int) Math.round((right - left) * fraction), barY + 1, fillColor);
+		}
+
 		net.minecraft.network.chat.MutableComponent name = Component.literal(marker + row.name());
 		if (row.defeated()) name = name.withStyle(ChatFormatting.STRIKETHROUGH);
 		guiGraphics.drawString(font, name, left, y, nameColor);
@@ -177,17 +188,17 @@ public class TurnHudOverlay {
 
 		boolean bonusActionAvailable = myTurn && !myRow.bonusActionUsed();
 
-		drawEconomyLine(guiGraphics, font, "Acción", actionAvailable, myTurn, left, right, y);
+		drawEconomyLine(guiGraphics, font, Component.translatable("hud.dndsheets.action"), actionAvailable, myTurn, left, right, y);
 		y += ROW_HEIGHT;
-		drawEconomyLine(guiGraphics, font, "Acción adicional", bonusActionAvailable, myTurn, left, right, y);
+		drawEconomyLine(guiGraphics, font, Component.translatable("hud.dndsheets.bonus_action"), bonusActionAvailable, myTurn, left, right, y);
 		y += ROW_HEIGHT;
-		drawEconomyLine(guiGraphics, font, "Reacción", !myRow.reactionUsed(), true, left, right, y);
+		drawEconomyLine(guiGraphics, font, Component.translatable("hud.dndsheets.reaction"), !myRow.reactionUsed(), true, left, right, y);
 		y += ROW_HEIGHT;
 
 		double speedBlocks = speedBlocksFromClientSheet();
 		double distanceMoved = minecraft.player.position().distanceTo(new Vec3(TurnHudState.originX(), TurnHudState.originY(), TurnHudState.originZ()));
 		double remaining = Math.max(0, speedBlocks - distanceMoved);
-		String moveText = "Movimiento: " + Math.round(remaining) + "/" + Math.round(speedBlocks);
+		Component moveText = Component.translatable("hud.dndsheets.movement", Math.round(remaining), Math.round(speedBlocks));
 		guiGraphics.drawString(font, moveText, left, y, MOVEMENT_COLOR);
 
 		int barWidth = right - left;
@@ -200,10 +211,11 @@ public class TurnHudOverlay {
 	//"disponible" solo se pinta en verde cuando de verdad se puede gastar ya mismo (la reacción siempre que
 	//no se haya usado; la acción solo en el propio turno) — fuera de eso, apagado, para no prometer un
 	//clic que TurnManager va a rechazar.
-	private static void drawEconomyLine(GuiGraphics guiGraphics, Font font, String label, boolean available,
+	private static void drawEconomyLine(GuiGraphics guiGraphics, Font font, Component label, boolean available,
 										 boolean usable, int left, int right, int y) {
 		guiGraphics.drawString(font, label, left, y, GuiStyle.SUBTITLE_COLOR);
-		String state = available ? "disponible" : usable ? "usada" : "—";
+		Component state = available ? Component.translatable("hud.dndsheets.available")
+			: usable ? Component.translatable("hud.dndsheets.used") : Component.literal("—");
 		int color = available ? GOOD_COLOR : GuiStyle.MUTED_COLOR;
 		guiGraphics.drawString(font, state, right - font.width(state), y, color);
 	}

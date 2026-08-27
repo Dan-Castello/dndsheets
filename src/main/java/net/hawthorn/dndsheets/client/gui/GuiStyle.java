@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * <p>Identidad visual compartida por las pantallas "planas" del mod (paneles de lista, formularios
@@ -30,7 +31,15 @@ public final class GuiStyle {
 	public static final int ACCENT_COLOR = 0xFFC9A227;
 
 	//--- Colores del panel ---
-	private static final int FILL_COLOR = 0xF21A140E;   //Cuero oscuro, casi opaco.
+	//El relleno es una textura de cuero tileable (generada por tools/make_panel_texture.py, ruido
+	//rosa por FFT: sin costuras por construcción, color medio = el antiguo FILL_COLOR 0x1A140E) con
+	//un gradiente de profundidad translúcido encima — la luz cae de arriba, como en el bisel. La
+	//textura da el poro; el gradiente, el volumen; el contraste del texto no cambia respecto a lo
+	//ya probado porque el tono medio es el mismo.
+	private static final ResourceLocation LEATHER = new ResourceLocation("dndsheets", "textures/screens/panel_leather.png");
+	private static final int LEATHER_TILE = 64;
+	private static final int DEPTH_TOP = 0x2EFFD9A0;    //Luz cálida arriba, translúcida.
+	private static final int DEPTH_BOTTOM = 0x66000000; //Sombra abajo, translúcida.
 	private static final int BEVEL_LIGHT = 0xFF6B5636;  //Latón gastado: luz arriba e izquierda.
 	private static final int BEVEL_DARK = 0xFF0B0906;   //Sombra abajo y derecha.
 	private static final int EDGE_COLOR = 0xFF2E2418;   //Contorno exterior, un tono sobre el relleno.
@@ -51,7 +60,25 @@ public final class GuiStyle {
 		//Contorno exterior primero, un píxel por fuera del bisel: separa el panel del mundo desenfocado
 		//sin necesidad de sombra difusa, que a la escala de píxel de Minecraft se ve sucia.
 		guiGraphics.fill(left - 1, top - 1, right + 1, bottom + 1, EDGE_COLOR);
-		guiGraphics.fill(left, top, right, bottom, FILL_COLOR);
+
+		//Cuero tileado con la misma leve transparencia que tenía el relleno plano (0xF2): el mundo
+		//sigue insinuándose detrás sin competir con el texto. setColor afecta al blit siguiente y se
+		//restaura siempre — dejarlo puesto teñiría todo lo que la pantalla pinte después. El blend se
+		//activa a mano: blit() dibuja con el estado que haya (fill() lo gestiona solo, blit() no), y
+		//sin blend el alpha de setColor se ignora en silencio.
+		com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+		com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc();
+		guiGraphics.setColor(1.0F, 1.0F, 1.0F, 0.95F);
+		for (int tileY = top; tileY < bottom; tileY += LEATHER_TILE) {
+			for (int tileX = left; tileX < right; tileX += LEATHER_TILE) {
+				int tileW = Math.min(LEATHER_TILE, right - tileX);
+				int tileH = Math.min(LEATHER_TILE, bottom - tileY);
+				guiGraphics.blit(LEATHER, tileX, tileY, 0, 0, tileW, tileH, LEATHER_TILE, LEATHER_TILE);
+			}
+		}
+		guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+
+		guiGraphics.fillGradient(left, top, right, bottom, DEPTH_TOP, DEPTH_BOTTOM);
 
 		//Bisel de Minecraft: claro arriba/izquierda, oscuro abajo/derecha. Dos píxeles, no uno — a GUI
 		//Scale 2 (lo normal) un bisel de un píxel desaparece.
@@ -89,5 +116,18 @@ public final class GuiStyle {
 	 */
 	public static void rule(GuiGraphics guiGraphics, int left, int right, int y) {
 		guiGraphics.fill(left, y, right, y + 1, BEVEL_LIGHT);
+	}
+
+	/**
+	 * <p>El mismo filete con un rombo de latón en el centro — el adorno de cabecera de un manual de
+	 * D&amp;D, en cinco fills. Para el filete bajo el TÍTULO de una pantalla; las separaciones internas
+	 * siguen usando {@link #rule}, porque un adorno repetido por sección deja de ser un adorno.</p>
+	 */
+	public static void ruleOrnate(GuiGraphics guiGraphics, int left, int right, int y) {
+		rule(guiGraphics, left, right, y);
+		int cx = (left + right) / 2;
+		guiGraphics.fill(cx - 2, y - 1, cx + 3, y + 2, BEVEL_LIGHT);
+		guiGraphics.fill(cx - 1, y - 1, cx + 2, y + 2, STUD_COLOR);
+		guiGraphics.fill(cx, y - 2, cx + 1, y + 3, STUD_COLOR);
 	}
 }

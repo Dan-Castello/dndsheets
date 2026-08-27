@@ -16,7 +16,7 @@ import java.util.Map;
  * net.hawthorn.dndsheets.client.gui.CharacterSheetScreen} (un jugador nuevo no tenía forma de adivinar
  * qué escribir, y encima importaba de verdad — ver {@link Config#hitDieFor},
  * {@link WarlockPactMagicManager}, {@link WizardArcaneRecoveryManager}, que comparan por subcadena).
- * Ahora se elige con un GUI de lista (ver {@code network.CharacterOptionsRequestMessage} y
+ * Ahora se elige con un GUI de lista (ver {@code BrowseActionMessage.CHARACTER_OPTIONS} y
  * {@code client.gui.CharacterOptionListScreen}), en vez de escribirla a mano.</p>
  *
  * <p><b>Raza y Trasfondo ya no viven acá</b>: se mudaron al addon {@code dndsheets_species} (modid
@@ -32,6 +32,12 @@ import java.util.Map;
  */
 public class CharacterOptionsRegistry {
 	public static final String CLASS = "class";
+	//Raza y trasfondo se mudaron al addon species (Origins elige, el addon aplica las mecánicas), pero
+	//el core solo también es una configuración soportada y sin estas listas sus pasos de creación
+	//mandaban un comando que no existe. Son el RESPALDO nombre-solo (SRD 5.1: 9 razas; el trasfondo del
+	//SRD 5.1 es únicamente Acólito) — sin Aumento de Característica ni rasgos, que son cosa del addon.
+	public static final String RACE = "race";
+	public static final String BACKGROUND = "background";
 
 	private static final Map<String, List<String>> OPTIONS = new LinkedHashMap<>();
 
@@ -40,6 +46,10 @@ public class CharacterOptionsRegistry {
 			"Bárbaro", "Bardo", "Clérigo", "Druida", "Guerrero", "Monje",
 			"Paladín", "Explorador", "Pícaro", "Hechicero", "Brujo", "Mago"
 		));
+		OPTIONS.put(RACE, List.of(
+			"Enano", "Elfo", "Mediano", "Humano", "Dracónido", "Gnomo", "Semielfo", "Semiorco", "Tiefling"
+		));
+		OPTIONS.put(BACKGROUND, List.of("Acólito"));
 	}
 
 	public static boolean isValidCategory(String category) {

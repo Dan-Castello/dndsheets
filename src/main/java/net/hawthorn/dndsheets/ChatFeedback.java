@@ -79,26 +79,65 @@ public class ChatFeedback {
 		return text.copy().withStyle(ChatFormatting.GRAY);
 	}
 
+	/** Marca del resumen dentro de una insertion. Público: {@code client.CombatLogOverlay} lo extrae. */
+	public static final String SUMMARY_PREFIX = "dndlog:";
+
+	//Resumen de UNA línea para el panel en pantalla (CombatLogOverlay), colgado DENTRO del propio
+	//Component como "insertion" de un trozo vacío: el chat no lo pinta, la red lo serializa gratis con
+	//el estilo, y el overlay lo extrae — una sola fuente de verdad (este archivo) y cero mensajes
+	//nuevos. Solo datos (nombres, números, símbolos), nunca prosa: las palabras viven en las claves
+	//traducibles de la línea completa, y un resumen con palabras fijas repetiría el bug #15.
+	private static MutableComponent withSummary(MutableComponent full, String summary) {
+		return full.append(Component.literal("").withStyle(style -> style.withInsertion(SUMMARY_PREFIX + summary)));
+	}
+
+	//"15 = 13[1d20] + 2" → "15": el total es lo único que el resumen necesita del desglose.
+	private static String totalOf(String rollText) {
+		if (rollText == null) return "";
+		int equals = rollText.indexOf('=');
+		return (equals > 0 ? rollText.substring(0, equals) : rollText).trim();
+	}
+
+	//"20 = 18[1d20] + 2 (Iniciativa)" → "Iniciativa": algunos llamadores pegan el contexto al final de
+	//la propia expresión en vez de pasarlo aparte, y sin rescatarlo el resumen quedaba en "Mago · 22" a
+	//secas — el número sin saber de qué era.
+	private static String contextOf(String rollText) {
+		if (rollText == null) return "";
+		int open = rollText.lastIndexOf('(');
+		int close = rollText.lastIndexOf(')');
+		return open >= 0 && close > open ? rollText.substring(open + 1, close).trim() : "";
+	}
+
 	//[Tirada] Fulano tira Fuerza: 15=15[1d20]+2
 	public static MutableComponent roll(String characterName, String context, String rollText) {
 		MutableComponent msg = tag("chat.dndsheets.tag.roll", ROLL_TAG).append(name(characterName));
 		msg.append(dim(context != null && !context.isBlank()
 			? Component.translatable("chat.dndsheets.roll.with_context", context)
 			: Component.translatable("chat.dndsheets.roll.no_context")));
-		return msg.append(Component.literal(rollText).withStyle(ROLL, ChatFormatting.BOLD));
+		msg.append(Component.literal(rollText).withStyle(ROLL, ChatFormatting.BOLD));
+		String summaryContext = context != null && !context.isBlank() ? context : contextOf(rollText);
+		return withSummary(msg, characterName + " · " + totalOf(rollText)
+			+ (summaryContext.isBlank() ? "" : " · " + summaryContext));
 	}
 
 	//[Tirada] Fulano tira: 15=15[1d20]+2 (Fuerza) y 7=7[1d6]+2 (Daño)  — botones con varias tiradas a la vez.
 	public static MutableComponent multiRoll(String characterName, java.util.List<String> contexts, java.util.List<String> rollTexts) {
 		MutableComponent msg = tag("chat.dndsheets.tag.roll", ROLL_TAG).append(name(characterName))
 			.append(dim(Component.translatable("chat.dndsheets.roll.multi_intro")));
+		StringBuilder totals = new StringBuilder();
 		for (int i = 0; i < rollTexts.size(); i++) {
 			if (i > 0) msg.append(dim(Component.translatable("chat.dndsheets.roll.and")));
 			msg.append(Component.literal(rollTexts.get(i)).withStyle(ROLL, ChatFormatting.BOLD));
 			String context = i < contexts.size() ? contexts.get(i) : null;
 			if (context != null && !context.isBlank()) msg.append(dim(Component.translatable("chat.dndsheets.roll.context_paren", context)));
+			if (totals.length() > 0) totals.append(" / ");
+			totals.append(totalOf(rollTexts.get(i)));
+			//El contexto también en el resumen — la mayoría de las tiradas simples entra por AQUÍ (una
+			//lista de un elemento), y sin esto el panel enseñaba "Mago · 22" sin decir 22 de QUÉ.
+			String pieceContext = context != null && !context.isBlank() ? context : contextOf(rollTexts.get(i));
+			if (!pieceContext.isBlank()) totals.append(rollTexts.size() == 1 ? " · " : " ").append(pieceContext);
 		}
-		return msg;
+		return withSummary(msg, characterName + " · " + totals);
 	}
 
 	//[Tirada] La tirada no funcionó: <motivo>
@@ -108,10 +147,11 @@ public class ChatFeedback {
 
 	//[Combate] Fulano golpea con Espada: 7=7[1d6]+4  (muñeco de pruebas, sin CA de por medio)
 	public static MutableComponent damageOnly(String characterName, String weaponName, String rollText) {
-		return tag("chat.dndsheets.tag.combat", COMBAT_TAG)
+		return withSummary(tag("chat.dndsheets.tag.combat", COMBAT_TAG)
 			.append(name(characterName))
 			.append(dim(Component.translatable("chat.dndsheets.combat.hits_with", weaponName)))
-			.append(Component.literal(rollText).withStyle(DAMAGE, ChatFormatting.BOLD));
+			.append(Component.literal(rollText).withStyle(DAMAGE, ChatFormatting.BOLD)),
+			characterName + " · " + weaponName + " · " + totalOf(rollText));
 	}
 
 	//[Combate] Fulano ataca a Mengano con Espada: 15 vs CA 13 → ¡Impacto! Daño: 7=7[1d6]+4
@@ -128,7 +168,9 @@ public class ChatFeedback {
 		} else {
 			msg.append(Component.translatable("chat.dndsheets.combat.miss").withStyle(MISS, ChatFormatting.ITALIC));
 		}
-		return msg;
+		//"✓ 6" = impactó por 6 de daño; "—" = falló. Solo símbolos ya usados por el resto del mod.
+		return withSummary(msg, attackerName + " ▶ " + targetName + " · " + totalOf(rollText)
+			+ (hit ? " ✓ " + totalOf(damageText) : " —"));
 	}
 
 	//Igual que arriba, más una nota de Inspiración de Bardo pegada a la MISMA línea (0 = sin inspiración,
@@ -164,12 +206,13 @@ public class ChatFeedback {
 
 	//[Magia] Fulano cura a Mengano con Curar Heridas: 8=8[1d8]+3 PG
 	public static MutableComponent healResult(String casterName, String targetName, String spellName, String healText) {
-		return tag("chat.dndsheets.tag.magic", MAGIC_TAG)
+		return withSummary(tag("chat.dndsheets.tag.magic", MAGIC_TAG)
 			.append(name(casterName))
 			.append(dim(Component.translatable("chat.dndsheets.magic.heals")))
 			.append(name(targetName))
 			.append(dim(Component.translatable("chat.dndsheets.magic.with_spell", spellName)))
-			.append(Component.translatable("chat.dndsheets.magic.heal_amount", healText).withStyle(GOOD, ChatFormatting.BOLD));
+			.append(Component.translatable("chat.dndsheets.magic.heal_amount", healText).withStyle(GOOD, ChatFormatting.BOLD)),
+			casterName + " ▶ " + targetName + " · +" + totalOf(healText));
 	}
 
 	//[Magia] Fulano lanza Bola de Fuego contra Mengano: salvación 12 vs CD 15 → Falla la salvación. Daño: 24
@@ -184,7 +227,9 @@ public class ChatFeedback {
 			msg.append(dim(Component.translatable("chat.dndsheets.magic.damage_label")));
 			msg.append(Component.literal(damageText).withStyle(DAMAGE, ChatFormatting.BOLD));
 		}
-		return msg;
+		//"12/CD 15 ✓" = salvó; "— 24" = falló y comió 24. Mismos símbolos que el resumen de ataque.
+		return withSummary(msg, spellName + " ▶ " + targetName + " · " + totalOf(saveRollText) + "/CD " + dc
+			+ (saved ? " ✓" : " —") + (damageText != null ? " " + totalOf(damageText) : ""));
 	}
 
 	//[Muerte] ¡Fulano ha caído a 0 PG y necesita salvaciones de muerte!
@@ -196,14 +241,15 @@ public class ChatFeedback {
 
 	//[Muerte] Fulano tira salvación de muerte: 15 → Éxitos ●●○ Fallos ○○○
 	public static MutableComponent deathSaveRoll(String characterName, int rollValue, int successes, int failures) {
-		return tag("chat.dndsheets.tag.death", DANGER)
+		return withSummary(tag("chat.dndsheets.tag.death", DANGER)
 			.append(name(characterName))
 			.append(dim(Component.translatable("chat.dndsheets.death.save_roll")))
 			.append(Component.literal(String.valueOf(rollValue)).withStyle(ROLL, ChatFormatting.BOLD))
 			.append(dim(Component.translatable("chat.dndsheets.death.successes")))
 			.append(Component.literal(marks(successes)).withStyle(GOOD))
 			.append(dim(Component.translatable("chat.dndsheets.death.failures")))
-			.append(Component.literal(marks(failures)).withStyle(DAMAGE));
+			.append(Component.literal(marks(failures)).withStyle(DAMAGE)),
+			characterName + " · " + rollValue + " · " + marks(successes) + "/" + marks(failures));
 	}
 
 	private static String marks(int count) {

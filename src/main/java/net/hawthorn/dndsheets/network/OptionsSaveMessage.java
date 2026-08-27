@@ -66,9 +66,9 @@ public class OptionsSaveMessage {
 			CharacterOptionsRegistry.replace(message.category, values);
 
 			dm.sendSystemMessage(Component.translatable("chat.dndsheets.options.updated", message.category, values.size()));
-			JsonArray echo = new JsonArray();
-			for (String value : values) echo.add(value);
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), new OptionsListMessage(message.category, echo.toString()));
+			//El eco relee el registro, que se acaba de reemplazar dos líneas arriba: mismo contenido que
+			//el array recibido, sin reconstruirlo aquí a mano.
+			BrowseActionMessage.sendOptions(dm, BrowseListMessage.Kind.MANAGE_OPTIONS, message.category);
 		});
 	}
 }

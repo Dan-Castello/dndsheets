@@ -3,12 +3,12 @@
   "ownerUuid": "380df991-f603-344c-a090-369bad2a924a",
   "active": true,
   "characterLevel": 1,
-  "strength": "12",
-  "dexterity": "10",
-  "constitution": "14",
-  "intelligence": "8",
-  "wisdom": "15",
-  "charisma": "13",
+  "strength": "8",
+  "dexterity": "14",
+  "constitution": "12",
+  "intelligence": "15",
+  "wisdom": "13",
+  "charisma": "10",
   "proficiencyBonus": "2",
   "checks": [
     "1d20 + $str",
@@ -49,13 +49,25 @@
   ],
   "attacks": [
     {
-      "name": "Martillo de Guerra",
-      "itemId": "dndsheets:warhammer",
+      "name": "Guja",
+      "itemId": "dndsheets:glaive",
       "rolls": [
         [
           {
             "context": "Daño",
-            "expression": "1d8 + $str"
+            "expression": "1d10 + $str"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "Daga",
+      "itemId": "dndsheets:dagger",
+      "rolls": [
+        [
+          {
+            "context": "Daño",
+            "expression": "1d4 + $dex"
           }
         ]
       ]
@@ -66,13 +78,13 @@
   "spellSlotsCurrent": 2,
   "spellSlotsMax": 2,
   "schemaVersion": 1,
-  "hitDiceTypes": "1d8",
-  "hitPointsMax": "10",
-  "armorClass": "15",
-  "hitPoints": "10",
-  "background": "Noble",
+  "hitDiceTypes": "1d6",
+  "hitPointsMax": "7",
+  "armorClass": "12",
+  "hitPoints": "7",
+  "background": "Humano",
   "hitPointsTemp": "0",
-  "characterClass": "Clérigo",
+  "characterClass": "Mago",
   "characterRace": "Enano",
   "speed": "",
   "level": "1",
@@ -84,5 +96,9 @@
   },
   "inventory": "{items:[]}",
   "nextAttackAdvantage": "normal",
-  "appliedPresetId": "cleric"
+  "appliedPresetId": "wizard",
+  "conditions": [],
+  "downed": false,
+  "deathSaveSuccesses": 0,
+  "deathSaveFailures": 0
 }

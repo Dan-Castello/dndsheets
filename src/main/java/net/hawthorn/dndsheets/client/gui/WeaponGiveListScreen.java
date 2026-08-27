@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 //Lista de armas cargadas para entregar a un jugador ya elegido (equivalente en GUI a /dndweapons give) —
-//abierta vía WeaponGiveListRequestMessage/WeaponGiveListMessage. Los ids vienen resueltos del servidor y
+//abierta vía BrowseActionMessage.GIVE_WEAPONS/BrowseListMessage. Los ids vienen resueltos del servidor y
 //no del registro del cliente: el registro solo vive en el servidor, y un DM que sea un proceso aparte
 //(invitado por LAN) lo vería siempre vacío.
 public class WeaponGiveListScreen extends ListPickerScreen {

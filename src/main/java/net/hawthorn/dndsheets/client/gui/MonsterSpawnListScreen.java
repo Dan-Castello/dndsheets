@@ -9,9 +9,9 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 //Lista de monstruos cargados para invocar en la posición del DM (equivalente en GUI a /dndmonsters spawn
-//<id>) — abierta desde el Panel de DM vía MonsterSpawnListRequestMessage. Para un NPC en blanco sigue
+//<id>) — abierta desde el Panel de DM vía BrowseActionMessage.SPAWN_MONSTERS. Para un NPC en blanco sigue
 //estando "Invocar NPC genérico" (SpawnGenericScreen), sin cambios. Los ids vienen resueltos del servidor
-//(ver MonsterSpawnListMessage) y no del registro del cliente: el registro solo vive en el servidor, y un
+//(ver BrowseListMessage kind SPAWN_MONSTER) y no del registro del cliente: el registro solo vive en el servidor, y un
 //DM que sea un proceso aparte (invitado por LAN) lo vería siempre vacío.
 public class MonsterSpawnListScreen extends ListPickerScreen {
 	private final List<String> ids;

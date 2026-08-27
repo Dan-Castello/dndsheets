@@ -1,7 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
-import net.hawthorn.dndsheets.network.PresetListRequestMessage;
+import net.hawthorn.dndsheets.network.BrowseActionMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -14,9 +14,9 @@ import net.minecraft.network.chat.Component;
  * {@code BOTTOM_BUTTON_WIDTH} ahí) —, así que el "Presets" ya existente se convierte en la puerta de las
  * dos acciones en vez de sumar un botón más.</p>
  *
- * <p>Las dos filas piden la MISMA lista de presets al servidor ({@code PresetListRequestMessage}) y
- * abren la MISMA {@link PresetScreen}; lo único que cambia es el flag {@code multiclass} que viaja de
- * ida y vuelta con la petición, así que esa pantalla sabe qué mensaje mandar al elegir una fila.</p>
+ * <p>Las dos filas piden la MISMA lista de presets al servidor ({@code BrowseActionMessage} con
+ * LIST_PRESETS o LIST_PRESETS_MULTICLASS) y abren la MISMA {@link PresetScreen}; lo único que cambia
+ * es el modo, que viaja de ida y vuelta, así que esa pantalla sabe qué mensaje mandar al elegir una fila.</p>
  */
 public class PresetActionMenuScreen extends ListPickerScreen {
 	private PresetActionMenuScreen(Screen parent) {
@@ -30,8 +30,8 @@ public class PresetActionMenuScreen extends ListPickerScreen {
 	@Override
 	protected void buildRows() {
 		addRow(Component.translatable("gui.dndsheets.preset.menu_apply"),
-			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage()));
+			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.LIST_PRESETS)));
 		addRow(Component.translatable("gui.dndsheets.preset.menu_multiclass"),
-			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new PresetListRequestMessage(true)));
+			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.LIST_PRESETS_MULTICLASS)));
 	}
 }

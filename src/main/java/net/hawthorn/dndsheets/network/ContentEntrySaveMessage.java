@@ -63,8 +63,7 @@ public class ContentEntrySaveMessage {
 			}
 
 			dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.saved", entry.get("id").getAsString()));
-			String arrayJson = ContentPackFile.readArrayText(message.type.dmCreatedFile());
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), new ContentEntryListMessage(message.type, arrayJson));
+			BrowseActionMessage.sendContentEntries(dm, message.type.name());
 		});
 	}
 }

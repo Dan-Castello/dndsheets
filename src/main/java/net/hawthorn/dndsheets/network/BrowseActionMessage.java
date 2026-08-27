@@ -36,7 +36,12 @@ import java.util.function.Supplier;
 public class BrowseActionMessage {
 
 	//Al final, nunca en medio: writeEnum viaja por ordinal (ver la invariante 2 de PROJECT_CONTEXT.md).
-	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL, JOURNAL_DETAIL, DELETE, CREATE, SKILL_TOGGLE, LIST_SUBCLASSES, SUBCLASS_CHOOSE, LIST_FEATS, FEAT_CHOOSE }
+	//Desde GIVE_WEAPONS hacia abajo son las antiguas parejas *ListRequestMessage (ocho clases casi
+	//idénticas: pedir una lista que solo vive en memoria del servidor), fundidas aquí — invariante 3.
+	//characterId, que ya era texto libre, carga el uuid del objetivo, la categoría o el ContentType.
+	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL, JOURNAL_DETAIL, DELETE, CREATE, SKILL_TOGGLE, LIST_SUBCLASSES, SUBCLASS_CHOOSE, LIST_FEATS, FEAT_CHOOSE,
+		GIVE_WEAPONS, GIVE_SPELLS, GRANT_TRAITS, LIST_PRESETS, LIST_PRESETS_MULTICLASS, SPAWN_MONSTERS,
+		MANAGE_OPTIONS, CONTENT_ENTRIES, CHARACTER_OPTIONS, LIST_ENCOUNTERS }
 
 	final Action action;
 	//Lo usan SWITCH y DELETE (un id), CREATE (el nombre del personaje nuevo) y SKILL_TOGGLE (el índice de
@@ -127,6 +132,39 @@ public class BrowseActionMessage {
 						sender.sendSystemMessage(Component.translatable("chat.dndsheets.levelup.feat_unavailable").withStyle(ChatFormatting.RED));
 					}
 				}
+				//Los cuatro "dar/conceder a otro jugador" del Panel de DM: mismo candado servidor-side que
+				//LIST_PARTY (un cliente modificado puede mandar lo que quiera), lista del registro que toca,
+				//y el uuid del objetivo viaja de vuelta en context para la pantalla que se abre.
+				case GIVE_WEAPONS -> {
+					if (DndsheetsMod.canActAsDm(sender)) BrowseListMessage.send(sender, BrowseListMessage.Kind.GIVE_WEAPON,
+						new ArrayList<>(net.hawthorn.dndsheets.Config.loadedWeaponIds()), List.of(), message.characterId);
+				}
+				case GIVE_SPELLS -> {
+					if (DndsheetsMod.canActAsDm(sender)) BrowseListMessage.send(sender, BrowseListMessage.Kind.GIVE_SPELL,
+						new ArrayList<>(net.hawthorn.dndsheets.SpellRegistry.ids()), List.of(), message.characterId);
+				}
+				case GRANT_TRAITS -> {
+					if (DndsheetsMod.canActAsDm(sender)) sendTraits(sender, message.characterId);
+				}
+				case LIST_PRESETS -> sendPresets(sender, message.characterId, false);
+				//El botón "Multiclasear" de la ficha es sobre uno mismo, nunca sobre otro jugador.
+				case LIST_PRESETS_MULTICLASS -> sendPresets(sender, "", true);
+				case SPAWN_MONSTERS -> {
+					if (DndsheetsMod.canActAsDm(sender)) BrowseListMessage.send(sender, BrowseListMessage.Kind.SPAWN_MONSTER,
+						new ArrayList<>(net.hawthorn.dndsheets.MonsterRegistry.ids()), List.of(), "");
+				}
+				case MANAGE_OPTIONS -> {
+					if (DndsheetsMod.canActAsDm(sender)) sendOptions(sender, BrowseListMessage.Kind.MANAGE_OPTIONS, message.characterId);
+				}
+				case CONTENT_ENTRIES -> {
+					if (DndsheetsMod.canActAsDm(sender)) sendContentEntries(sender, message.characterId);
+				}
+				//Sin permiso especial: cualquier jugador elige su propia raza/trasfondo/clase. Es el camino de
+				//respaldo cuando el addon species (que delega en Origins) no está instalado.
+				case CHARACTER_OPTIONS -> sendCharacterOptions(sender, message.characterId);
+				case LIST_ENCOUNTERS -> {
+					if (DndsheetsMod.canActAsDm(sender)) sendEncounters(sender);
+				}
 				case SWITCH -> {
 					if (SheetLoader.switchCharacter(sender, message.characterId)) {
 						JsonObject sheet = SheetLoader.getCharacterSheet(message.characterId);
@@ -139,6 +177,81 @@ public class BrowseActionMessage {
 				}
 			}
 		});
+	}
+
+	private static void sendTraits(ServerPlayer dm, String targetUuid) {
+		List<String> ids = new ArrayList<>(net.hawthorn.dndsheets.TraitRegistry.ids());
+		List<Component> names = new ArrayList<>(ids.size());
+		for (String id : ids) {
+			net.hawthorn.dndsheets.TraitRegistry.Trait trait = net.hawthorn.dndsheets.TraitRegistry.get(id);
+			names.add(Component.literal(trait != null ? trait.name() : id));
+		}
+		BrowseListMessage.send(dm, BrowseListMessage.Kind.GRANT_TRAIT, ids, names, targetUuid);
+	}
+
+	//La validación que traía PresetListRequestMessage, intacta: con objetivo ajeno hace falta permiso de
+	//DM y que el jugador exista; un uuid malformado de un cliente roto se descarta en vez de tumbar el
+	//hilo del servidor con la excepción sin capturar.
+	private static void sendPresets(ServerPlayer player, String targetUuid, boolean multiclass) {
+		if (!targetUuid.isEmpty()) {
+			if (!DndsheetsMod.canActAsDm(player)) return;
+			try {
+				if (player.getServer().getPlayerList().getPlayer(java.util.UUID.fromString(targetUuid)) == null) return;
+			} catch (IllegalArgumentException e) {
+				return;
+			}
+		}
+		List<String> ids = net.hawthorn.dndsheets.PresetManager.presetIds();
+		List<Component> names = new ArrayList<>(ids.size());
+		for (String name : net.hawthorn.dndsheets.PresetManager.presetNames(ids)) names.add(Component.literal(name));
+		BrowseListMessage.send(player,
+			multiclass ? BrowseListMessage.Kind.PRESET_MULTICLASS : BrowseListMessage.Kind.PRESET,
+			ids, names, targetUuid);
+	}
+
+	/**
+	 * <p>La lista viva de una categoría de {@code CharacterOptionsRegistry} como array JSON en etiqueta
+	 * única (mismo truco que DETAIL). Público: también la reenvían como eco {@code OptionsSaveMessage} y
+	 * los guardados del creador de contenido, que antes duplicaban este envío cada uno por su lado.</p>
+	 */
+	public static void sendOptions(ServerPlayer player, BrowseListMessage.Kind kind, String category) {
+		if (!net.hawthorn.dndsheets.CharacterOptionsRegistry.isValidCategory(category)) return;
+		com.google.gson.JsonArray array = new com.google.gson.JsonArray();
+		for (String value : net.hawthorn.dndsheets.CharacterOptionsRegistry.get(category)) array.add(value);
+		BrowseListMessage.send(player, kind, List.of(), List.of(Component.literal(array.toString())), category);
+	}
+
+	/** Público: también lo reenvían como eco los guardados/borrados del creador de contenido. */
+	public static void sendContentEntries(ServerPlayer dm, String typeName) {
+		net.hawthorn.dndsheets.ContentType type;
+		try {
+			type = net.hawthorn.dndsheets.ContentType.valueOf(typeName);
+		} catch (IllegalArgumentException e) {
+			return;
+		}
+		String arrayJson = net.hawthorn.dndsheets.ContentPackFile.readArrayText(type.dmCreatedFile());
+		BrowseListMessage.send(dm, BrowseListMessage.Kind.CONTENT_ENTRY, List.of(),
+			List.of(Component.literal(arrayJson)), type.name());
+	}
+
+	//Cada fila viaja con su descripción de composición ("goblin x4, lobo x2") para que el DM elija
+	//sabiendo qué invoca; el clic del cliente dispara el /dndencounters spawn de siempre.
+	private static void sendEncounters(ServerPlayer dm) {
+		List<String> ids = new ArrayList<>(net.hawthorn.dndsheets.EncounterRegistry.ids());
+		java.util.Collections.sort(ids);
+		List<Component> labels = new ArrayList<>(ids.size());
+		for (String id : ids) {
+			net.hawthorn.dndsheets.EncounterRegistry.Encounter encounter = net.hawthorn.dndsheets.EncounterRegistry.get(id);
+			labels.add(Component.literal(encounter == null ? id
+				: id + " · " + net.hawthorn.dndsheets.EncounterRegistry.describe(encounter)));
+		}
+		BrowseListMessage.send(dm, BrowseListMessage.Kind.ENCOUNTER, ids, labels, "");
+	}
+
+	private static void sendCharacterOptions(ServerPlayer player, String category) {
+		if (!net.hawthorn.dndsheets.CharacterOptionsRegistry.isValidCategory(category)) return;
+		BrowseListMessage.send(player, BrowseListMessage.Kind.CHARACTER_OPTION,
+			net.hawthorn.dndsheets.CharacterOptionsRegistry.get(category), List.of(), category);
 	}
 
 	private static void sendFeats(ServerPlayer player) {
@@ -295,7 +408,9 @@ public class BrowseActionMessage {
 				//Ficha borrada con el cuerpo todavía en el mundo: Combatant.of cae a monstruo o a null. Sin
 				//ficha ya no es un PNJ, así que tampoco es del grupo.
 				if (!(Combatant.of(entity) instanceof Combatant.NpcCombatant combatant)) continue;
-				ids.add(characterId);
+				//Id vacío a propósito: la fila de un PNJ no es clicable (Ajustes de hoja resuelve por
+				//jugador conectado, y un PNJ no lo es) — ver PartyScreen.
+				ids.add("");
 				labels.add(partyRow(combatant).copy()
 					.append(Component.translatable("gui.dndsheets.party.npc_tag").withStyle(ChatFormatting.DARK_GRAY)));
 			}

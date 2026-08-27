@@ -60,7 +60,7 @@ minecraft {
 //
 //     ./gradlew build   ->   build/libs/dndsheets-1.0.2.jar   ->   instalacion normal de 1.20.1
 //
-// Ahi todo es de produccion y todo casa. Los jars apartados estan en runClient/mods-disabled.
+// Ahi todo es de produccion y todo casa.
 // tools/preflight_mods.py sigue sirviendo para la instalacion real: dice que falta antes de arrancar.
 
 configurations {
@@ -104,10 +104,10 @@ dependencies {
     // con Curios, solo que un paso mas alla: puesto a mano en runClient/mods, Patchouli muere al
     // arrancar llamando a Minecraft.m_91087_() (el nombre SRG de getInstance) desde su
     // BookCrashHandler; pasado por fg.deobf, esa llamada se arregla pero fallan sus mixins, y
-    // activar mixin.env.remapRefMap para arreglarlos rompe los mixins de los ONCE mods de
-    // produccion que estan en runClient/mods —Citadel el primero—, que son los que de verdad hay
-    // que probar. Un cliente de desarrollo no puede tener a la vez mods deobfeados y mods de
-    // produccion con mixins.
+    // activar mixin.env.remapRefMap para arreglarlos rompe los mixins de cualquier otro mod de
+    // produccion con mixins que se cargue en el mismo cliente —Citadel el primero cuando se probo—.
+    // Un cliente de desarrollo no puede tener a la vez mods deobfeados y mods de produccion con
+    // mixins, y por eso runClient/mods se queda vacio (ver arriba).
     //
     // Asi que la Guia de Patchouli se prueba en una instalacion normal con el jar construido. Lo que
     // si se comprueba aqui es su estructura: checkPatchouliBook exige que cada pagina de la Guia este

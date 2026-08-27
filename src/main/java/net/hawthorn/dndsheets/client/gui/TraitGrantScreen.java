@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * <p>Último paso de conceder un rasgo desde el Panel de DM: la lista (ids + nombres) la manda el
- * servidor en {@code TraitListMessage} (pedida por {@code TraitListRequestMessage} tras elegir el
+ * servidor en {@code BrowseListMessage} kind GRANT_TRAIT (pedida con {@code BrowseActionMessage.GRANT_TRAITS} tras elegir el
  * jugador objetivo en {@link PlayerPickerScreen}), porque el registro de rasgos solo vive en memoria del
  * servidor — mismo patrón que {@link PresetScreen}.</p>
  */

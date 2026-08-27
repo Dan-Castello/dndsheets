@@ -31,7 +31,15 @@ public final class NetworkUtil {
 	public static void handleOnServerAsDm(NetworkEvent.Context context, java.util.function.Consumer<net.minecraft.server.level.ServerPlayer> action) {
 		handleOnServer(context, () -> {
 			net.minecraft.server.level.ServerPlayer dm = context.getSender();
-			if (dm == null || !DndsheetsMod.canActAsDm(dm)) return;
+			if (dm == null) return;
+			//Se avisa en vez de descartar en silencio: el Panel de DM se abre para cualquiera a propósito
+			//(el cliente no puede saber si el modo solo está encendido — ver DndsheetsModKeyMappings), así
+			//que sin esto cada botón "no hacía nada" para un jugador sin permiso, que se lee como mod roto.
+			if (!DndsheetsMod.canActAsDm(dm)) {
+				dm.sendSystemMessage(net.minecraft.network.chat.Component
+					.translatable("chat.dndsheets.dm_required").withStyle(net.minecraft.ChatFormatting.RED));
+				return;
+			}
 			action.accept(dm);
 		});
 	}

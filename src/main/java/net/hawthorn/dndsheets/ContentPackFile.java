@@ -91,7 +91,7 @@ public final class ContentPackFile {
 	}
 
 	//Texto crudo del array (posiblemente vacío "[]") — lo que manda el servidor al cliente para listar
-	//entradas ya creadas (ver network.ContentEntryListMessage/OptionsListMessage): el cliente no tiene
+	//entradas ya creadas (ver BrowseListMessage kinds CONTENT_ENTRY/MANAGE_OPTIONS): el cliente no tiene
 	//acceso al sistema de archivos del servidor, así que el JSON viaja entero por red en vez de un id suelto.
 	public static String readArrayText(Path file) {
 		return readArray(file).toString();

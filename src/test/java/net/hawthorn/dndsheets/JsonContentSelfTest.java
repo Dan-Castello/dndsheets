@@ -2166,8 +2166,10 @@ public class JsonContentSelfTest {
 	 * pantalla exista y no la abra nadie.</p>
 	 */
 	private static void checkCharacterSetup() throws Exception {
+		//El selector de opciones vive ahora en el case CHARACTER_OPTION de BrowseListMessage (la antigua
+		//CharacterOptionsListMessage se fundió ahí en la migración de las parejas List/ListRequest).
 		String handler = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
-			"network", "CharacterOptionsListMessage.java"));
+			"network", "BrowseListMessage.java"));
 		assertTrue(!handler.contains("instanceof CharacterSheetScreen"),
 			"la lista de opciones tiene que volver a la pantalla que la pidió, sea cual sea: si vuelve solo "
 				+ "a la hoja, elegir una raza desde la lista de pasos echa al jugador de la configuración.");
@@ -2970,6 +2972,34 @@ public class JsonContentSelfTest {
 				+ " en el otro idioma. Component.translatable(\"chat.dndsheets....\", args...).");
 		assertTrue(enComandos <= 86, "las respuestas de comando con texto fijo han subido a " + enComandos
 			+ " (eran 86): no anadas mas, pasalas a Component.translatable con su clave");
+
+		//Los dos HUD (TurnHudOverlay, ResourceHudOverlay) pintan con drawString(String) y por eso el patron
+		//de arriba (anclado a Component.literal) nunca los vio: se quedaron ENTEROS en espanol fijo siendo
+		//lo unico permanentemente visible del mod. Aqui se barre cualquier literal con prosa en los
+		//*Overlay.java del cliente, venga por el metodo que venga. Se saltan lineas de comentario porque
+		//este archivo escanea fuente, no bytecode, y los comentarios del proyecto son prosa en espanol.
+		//[^"\n] y no [^"]: una clase negada cruza saltos de linea, y con ellos el "interior" del match
+		//puede ir de la comilla de cierre de un literal a la de apertura del siguiente, tragandose codigo
+		//(y prosa de comentario) de por medio. Confinado a una linea, solo matchea literales de verdad.
+		java.util.regex.Pattern prosaCruda = java.util.regex.Pattern
+			.compile("\"[^\"\n]*[a-záéíóúñ] [a-záéíóúñ][^\"\n]*\"|\"[^\"\n]*[áéíóúñÁÉÍÓÚÑ¿¡][^\"\n]*\"");
+		java.util.Set<String> overlaysConProsa = new java.util.TreeSet<>();
+		for (Path fuente : fuentes) {
+			if (!fuente.getFileName().toString().endsWith("Overlay.java")) continue;
+			StringBuilder sinComentarios = new StringBuilder();
+			for (String linea : Files.readAllLines(fuente)) {
+				String recortada = linea.strip();
+				if (recortada.startsWith("//") || recortada.startsWith("*") || recortada.startsWith("/*")) continue;
+				int comentario = linea.indexOf("//");
+				sinComentarios.append(comentario < 0 ? linea : linea.substring(0, comentario)).append('\n');
+			}
+			if (prosaCruda.matcher(sinComentarios).find()) overlaysConProsa.add(fuente.getFileName().toString());
+		}
+		assertTrue(overlaysConProsa.isEmpty(),
+			"estos overlays del HUD pintan texto fijo en un solo idioma: " + overlaysConProsa
+				+ ".\n  El HUD es lo unico SIEMPRE visible: usa Component.translatable(\"hud.dndsheets....\","
+				+ " args...) (o .getString() si la linea se cachea como String) y anade la clave a"
+				+ " en_us.json Y a es_es.json.");
 
 		System.out.println("checkChatMessagesAreTranslatable: OK, nada de lo que ve un jugador lleva texto"
 			+ " fijo; quedan " + enComandos + " respuestas de comando (solo las ve quien las escribe).");

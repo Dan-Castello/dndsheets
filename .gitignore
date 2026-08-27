@@ -103,3 +103,6 @@ runClient/screenshots/
 
 # Grafo de conocimiento generado por /graphify (graph.json pesa ~5 MB, se reconstruye).
 graphify-out/
+
+# Bytecode de Python de los scripts de tools/: regenerable, y ata el repo a la version de Python local.
+__pycache__/

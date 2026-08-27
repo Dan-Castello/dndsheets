@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.client.gui.components.ButtonListWidget;
+import net.hawthorn.dndsheets.client.gui.components.SectionHeader;
 import net.hawthorn.dndsheets.client.gui.components.TomeButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -48,12 +49,22 @@ public abstract class ListPickerScreen extends Screen {
 	private static final int TITLE_Y = BACK_BUTTON_TOP + (BACK_BUTTON_HEIGHT - 8) / 2;
 	private static final int SEARCH_HEIGHT = 16;
 	private static final int SEARCH_GAP = 6;
+	//A partir de cuántas filas aparece el buscador SOLO, sin que la pantalla lo pida: con este alto de
+	//fila, ~14 es donde una lista deja de verse entera de un vistazo en la ventana por defecto. Antes
+	//era opt-in por pantalla (searchable()) y justo las listas largas del Panel de DM no lo pedían.
+	private static final int AUTO_SEARCH_MIN_ROWS = 14;
 
 	private final Screen parent;
 	private ButtonListWidget list;
 	private EditBox searchBox;
-	//Todas las filas creadas por buildRows(), no solo las visibles — con buscador, list.replaceRows(...)
-	//solo recibe el subconjunto que coincide con el texto tipeado (ver applyFilter()).
+	private boolean searchActive;
+	//Sobrevive a rebuildWidgets(): varias pantallas se reconstruyen cuando llega la hoja del servidor
+	//(refreshIfOpen), y sin esto cada llegada borraba lo tipeado en el buscador a mitad de búsqueda.
+	private String lastQuery = "";
+	//Todas las filas creadas por buildRows(), no solo las visibles — list.replaceRows(...) recibe el
+	//subconjunto que coincide con el texto tipeado (ver applyFilter()). Una etiqueta null marca una
+	//cabecera de sección: nunca coincide con una búsqueda, así que al filtrar desaparecen y quedan
+	//solo resultados.
 	private final List<Button> allButtons = new ArrayList<>();
 	private final List<String> allLabels = new ArrayList<>();
 
@@ -73,7 +84,7 @@ public abstract class ListPickerScreen extends Screen {
 		return 200;
 	}
 
-	/** true agrega una caja de búsqueda arriba de la lista que filtra las filas por texto — ver {@link #addRow}. */
+	/** true fuerza la caja de búsqueda aunque la lista sea corta. Con {@value #AUTO_SEARCH_MIN_ROWS}+ filas aparece sola — ver {@code init()}. */
 	protected boolean searchable() {
 		return false;
 	}
@@ -85,7 +96,7 @@ public abstract class ListPickerScreen extends Screen {
 	}
 
 	protected int listTop() {
-		return searchable() ? LIST_TOP + SEARCH_HEIGHT + SEARCH_GAP : LIST_TOP;
+		return searchActive ? LIST_TOP + SEARCH_HEIGHT + SEARCH_GAP : LIST_TOP;
 	}
 
 	/** Alto disponible para la lista. Sobrescribir para dejar hueco a un botón fijo debajo. */
@@ -107,34 +118,46 @@ public abstract class ListPickerScreen extends Screen {
 		//pantallas que cuelgan de esta base, igual que GuiStyle hizo con sus marcos.
 		Button button = TomeButton.of(label, onPress, 0, 0, buttonWidth(), BUTTON_HEIGHT);
 		this.addWidget(button);
-		//Sin buscador: se agrega directo, como siempre. Con buscador, applyFilter() decide qué entra a
-		//"list" después de que buildRows() termine de llamar a addRow() para todas las filas.
-		if (searchable()) {
-			allButtons.add(button);
-			allLabels.add(label.getString().toLowerCase(Locale.ROOT));
-		} else {
-			list.addRow(button);
-		}
+		//Siempre a la colección, nunca directo a "list": la lista visible se arma en applyFilter()
+		//DESPUÉS de buildRows(), que es cuando ya se sabe cuántas filas hay (y con eso, si hay buscador).
+		allButtons.add(button);
+		allLabels.add(label.getString().toLowerCase(Locale.ROOT));
 		return button;
+	}
+
+	/** Cabecera de sección: un rótulo entre filetes, no clicable y excluido del buscador. Para menús largos (ver Panel de DM). */
+	protected final void addHeader(Component label) {
+		Button header = new SectionHeader(label, buttonWidth(), BUTTON_HEIGHT);
+		this.addWidget(header);
+		allButtons.add(header);
+		allLabels.add(null);
 	}
 
 	@Override
 	protected void init() {
 		allButtons.clear();
 		allLabels.clear();
-		list = new ButtonListWidget((this.width - buttonWidth()) / 2, listTop(), buttonWidth(), listHeight(), BUTTON_HEIGHT + SPACING);
 
-		if (searchable()) {
+		buildRows();
+
+		searchActive = searchable() || allButtons.size() >= AUTO_SEARCH_MIN_ROWS;
+		if (searchActive) {
 			searchBox = new EditBox(this.font, (this.width - buttonWidth()) / 2, LIST_TOP, buttonWidth(), SEARCH_HEIGHT, Component.translatable("gui.dndsheets.common.search"));
 			searchBox.setHint(Component.translatable("gui.dndsheets.common.search_hint"));
-			searchBox.setResponder(text -> applyFilter());
+			//setValue ANTES de setResponder: el responder llama a applyFilter, y "list" aún no existe en
+			//este punto del init — el filtrado con el texto restaurado lo hace el applyFilter de abajo.
+			searchBox.setValue(lastQuery);
+			searchBox.setResponder(text -> {
+				lastQuery = text;
+				applyFilter();
+			});
 			this.addRenderableWidget(searchBox);
 			this.setInitialFocus(searchBox);
 		} else {
 			searchBox = null;
 		}
 
-		buildRows();
+		list = new ButtonListWidget((this.width - buttonWidth()) / 2, listTop(), buttonWidth(), listHeight(), BUTTON_HEIGHT + SPACING);
 		applyFilter();
 		this.addRenderableWidget(list);
 
@@ -144,15 +167,18 @@ public abstract class ListPickerScreen extends Screen {
 		}
 	}
 
-	//No-op sin buscador (allButtons se queda vacío, cada addRow ya fue directo a "list"). Con buscador,
-	//reconstruye la lista visible cada vez que cambia el texto — O(n²) por el contains() de replaceRows,
-	//aceptable para listas de contenido cargado (decenas de filas, no miles).
+	//Reconstruye la lista visible con lo que coincide con el texto tipeado (todo, si no hay buscador o
+	//está vacío) — O(n²) por el contains() de replaceRows, aceptable para listas de contenido cargado
+	//(decenas de filas, no miles). Las cabeceras (etiqueta null) solo aparecen sin filtro: en una
+	//búsqueda quedan solo resultados, sin rótulos de secciones vaciadas.
 	private void applyFilter() {
-		if (!searchable()) return;
-		String query = searchBox.getValue().trim().toLowerCase(Locale.ROOT);
+		String query = searchBox == null ? "" : searchBox.getValue().trim().toLowerCase(Locale.ROOT);
 		List<Button> visible = new ArrayList<>();
 		for (int i = 0; i < allButtons.size(); i++) {
-			if (query.isEmpty() || allLabels.get(i).contains(query)) visible.add(allButtons.get(i));
+			String label = allLabels.get(i);
+			if (label == null ? query.isEmpty() : (query.isEmpty() || label.contains(query))) {
+				visible.add(allButtons.get(i));
+			}
 		}
 		list.replaceRows(visible);
 	}
@@ -197,8 +223,9 @@ public abstract class ListPickerScreen extends Screen {
 		int titleLeft = parent != null ? left + 4 + BACK_BUTTON_WIDTH : left;
 		guiGraphics.drawCenteredString(this.font, this.title, (titleLeft + right) / 2, TITLE_Y, GuiStyle.TITLE_COLOR);
 		//Filete bajo el título: separa la cabecera del contenido sin gastar una fila entera de alto, que es
-		//lo que costaría un separador de verdad en una lista con scroll.
-		GuiStyle.rule(guiGraphics, left + 8, right - 8, 28);
+		//lo que costaría un separador de verdad en una lista con scroll. Ornamentado (rombo central) solo
+		//aquí — las separaciones internas usan el filete liso (ver GuiStyle.ruleOrnate).
+		GuiStyle.ruleOrnate(guiGraphics, left + 8, right - 8, 28);
 
 		Component empty = emptyMessage();
 		if (empty != null) {

@@ -32,9 +32,14 @@ public class TurnStateMessage {
 	 * <p>Una fila del tablero. {@code conditions} son etiquetas ya resueltas a texto (ver
 	 * {@code Condition#label}), no el enum: el cliente no tiene por qué saber de qué tipo de combatiente
 	 * viene ni recalcular nada, solo mostrar lo que el servidor ya decidió que es cierto ahora.</p>
+	 *
+	 * <p>{@code currentHp}/{@code maxHp} valen 0/0 si el combatiente no se pudo leer (entidad descargada,
+	 * fuera de las reglas): el cliente no pinta barra de vida cuando {@code maxHp} es 0. Van al FINAL del
+	 * payload a propósito — invariante 2, los campos nuevos nunca se insertan en medio.</p>
 	 */
 	public record RosterRow(int entityId, String name, boolean isMonster, boolean defeated, boolean acted,
-							 boolean reactionUsed, boolean bonusActionUsed, List<String> conditions) {
+							 boolean reactionUsed, boolean bonusActionUsed, List<String> conditions,
+							 int currentHp, int maxHp) {
 	}
 
 	public TurnStateMessage(boolean active, int round, String currentName, int currentEntityId, boolean actionUsed,
@@ -61,7 +66,8 @@ public class TurnStateMessage {
 		this.originZ = buffer.readDouble();
 		this.roster = buffer.readList(buf -> new RosterRow(
 			buf.readVarInt(), buf.readUtf(), buf.readBoolean(), buf.readBoolean(), buf.readBoolean(),
-			buf.readBoolean(), buf.readBoolean(), buf.readList(FriendlyByteBuf::readUtf)));
+			buf.readBoolean(), buf.readBoolean(), buf.readList(FriendlyByteBuf::readUtf),
+			buf.readVarInt(), buf.readVarInt()));
 	}
 
 	public static void buffer(TurnStateMessage message, FriendlyByteBuf buffer) {
@@ -82,6 +88,8 @@ public class TurnStateMessage {
 			buf.writeBoolean(row.reactionUsed());
 			buf.writeBoolean(row.bonusActionUsed());
 			buf.writeCollection(row.conditions(), FriendlyByteBuf::writeUtf);
+			buf.writeVarInt(row.currentHp());
+			buf.writeVarInt(row.maxHp());
 		});
 	}
 

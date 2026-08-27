@@ -3,8 +3,7 @@ package net.hawthorn.dndsheets.client.gui;
 import net.hawthorn.dndsheets.CharacterOptionsRegistry;
 import net.hawthorn.dndsheets.ContentType;
 import net.hawthorn.dndsheets.DndsheetsMod;
-import net.hawthorn.dndsheets.network.ContentEntryListRequestMessage;
-import net.hawthorn.dndsheets.network.OptionsListRequestMessage;
+import net.hawthorn.dndsheets.network.BrowseActionMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -39,10 +38,10 @@ public class ContentTypeListScreen extends ListPickerScreen {
 	}
 
 	private static void request(ContentType type) {
-		DndsheetsMod.PACKET_HANDLER.sendToServer(new ContentEntryListRequestMessage(type));
+		DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.CONTENT_ENTRIES, type.name()));
 	}
 
 	private static void requestOptions(String category) {
-		DndsheetsMod.PACKET_HANDLER.sendToServer(new OptionsListRequestMessage(category));
+		DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.MANAGE_OPTIONS, category));
 	}
 }

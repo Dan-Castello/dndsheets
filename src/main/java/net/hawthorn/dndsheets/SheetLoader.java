@@ -129,10 +129,11 @@ public class SheetLoader {
 			DndsheetsMod.LOGGER.error("Fallo al enviar la hoja al jugador que se conectó.", e);
 		}
 
-		//Primer ingreso al mundo: abre la Guía sola, con un pequeño retraso para no pelear con la pantalla
-		//de carga del mundo (todavía visible en el cliente justo cuando dispara este evento). Reengancha al
-		//jugador por UUID al disparar en vez de capturar "entity" directo — mismo patrón que
-		//BarbarianRageManager.activate — por si se desconecta durante los ~3 segundos de espera.
+		//Primer ingreso al mundo: un toast de esquina con la tecla de la ficha (ver TutorialOpenMessage —
+		//antes abría la Guía entera sola, que se cerraba por reflejo sin leerse). El retraso sigue: no
+		//pelear con la pantalla de carga del mundo. Reengancha al jugador por UUID al disparar en vez de
+		//capturar "entity" directo — mismo patrón que BarbarianRageManager.activate — por si se
+		//desconecta durante los ~3 segundos de espera.
 		if (brandNew) {
 			UUID playerId = uuid;
 			MinecraftServer server = entity.getServer();
@@ -140,7 +141,7 @@ public class SheetLoader {
 			DndsheetsMod.queueServerWork(60, () -> {
 				ServerPlayer stillHere = server.getPlayerList().getPlayer(playerId);
 				if (stillHere != null) {
-					DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> stillHere), new TutorialOpenMessage(isDm));
+					DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> stillHere), new TutorialOpenMessage(isDm, true));
 				}
 			});
 		}

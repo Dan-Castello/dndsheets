@@ -64,7 +64,7 @@ dependencies {
     implementation project(':')
 
     // Origins/Apoli: SOLO compileOnly. En runtime hace falta que el mod esté instalado para que
-    // /dndspecies sync tenga algo que leer (ver RaceOriginBridge), pero no se puede probar en
+    // /dndspecies sync tenga algo que leer (ver OriginBridge), pero no se puede probar en
     // runClient (mixins + parchment, ver comentario arriba) así que no tiene sentido arrastrarlo como
     // runtimeOnly aquí. Se referencian los jars locales en dependencies/ — evaluados a mano (ver
     // Library Audit): son la única build vigente para Forge 1.20.1 de este ecosistema.

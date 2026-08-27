@@ -27,4 +27,20 @@ enchantmentDamageBonus = ["minecraft:sharpness;1", "minecraft:smite;1", "minecra
 #Minecraft fuera de la mesa (minar de noche, entrar en una cueva). Se enciende y se apaga en
 #caliente con /dndvision, que escribe aquí.
 visionRules = false
+#Modo solo (sin DM): cuando está activo, CUALQUIER jugador conectado puede hacer todo lo que hoy
+#exige un operador —invocar monstruos, controlar turnos a mano, aplicarse un preset de clase,
+#encender/apagar reglas de mesa, e incluso aplicar condiciones o ajustar la hoja de OTRO jugador—.
+#No hay jerarquía nueva ni 'líder de grupo': en modo solo todos quedan igual de confiables entre
+#sí, el mismo nivel de confianza que ya hace falta para compartir el mismo mundo de Minecraft.
+#
+#Se enciende y se apaga en caliente con /dndsolo, igual que visionRules con /dndvision — pero ESE
+#comando exige nivel de permiso 4 (dueño del server/consola), no 2: decide QUIÉN tiene poder
+#administrativo total sobre otros jugadores, así que pide el mismo acceso que ya hace falta para
+#nombrar operadores, no el nivel 2 que este mismo flag vuelve irrelevante en cuanto se enciende.
+soloMode = false
+#Dificultad de los monstruos: 'facil' (×0.75 PG y daño), 'normal' (×1.0, como siempre) o 'dificil'
+#(×1.5 PG y daño). Solo escala al MONSTRUO —lo que un jugador hace nunca cambia—, así que sirve
+#como mando de dificultad self-service para un grupo sin DM que arbitre 'esto está siendo muy
+#duro' a ojo. Se cambia en caliente con /dnddifficulty, igual que visionRules con /dndvision.
+difficultyPreset = "normal"
 

@@ -51,9 +51,15 @@ import java.util.Set;
  * <p>Todo mutador de estado (start/next/cancel) pasa por un guardado de un solo tick de servidor, para
  * no duplicar un avance si el mismo comando se dispara dos veces por accidente — mismo problema que ya
  * se resolvió para el lanzado de hechizos en {@link SpellCastManager}.</p>
+ *
+ * <p>Techo conocido: todo el estado de aquí abajo es estático y único por servidor, así que solo puede
+ * haber UN combate en modo turnos a la vez en todo el servidor (da igual la dimensión o la distancia).
+ * Decisión deliberada: un servidor de este mod es una mesa. Si algún día dos grupos juegan encuentros
+ * simultáneos, esto se convierte en estado por-encuentro (una instancia por combate, elegida por
+ * proximidad/dimensión) — reescritura grande, no un parche.</p>
  */
 @Mod.EventBusSubscriber
-public class TurnManager {
+public class TurnManager { //ponytail: un combate por servidor; estado por-encuentro si algún día hay 2 mesas.
 	//isMonster se fija al armar la iniciativa (startAt), no se reinfiere después: si el
 	//combatiente se borra del mundo a mitad de encuentro (DM, Vara de DM...) ya no habría forma de
 	//preguntarle a MonsterRegistry qué era. Ver allEnemiesDefeated, que depende de este flag. playerUuid es
@@ -1070,7 +1076,24 @@ public class TurnManager {
 	//Servidor -> todos los clientes: estado actual del modo turnos, para el HUD (ver client.TurnHudOverlay).
 	//Se manda cada vez que algo visible cambia (arranca, avanza, alguien gasta/deshace su acción) — ningún
 	//cliente tiene que pedirlo, siempre llega solo.
+	//El nivel donde vive el combate activo, recordado para el latido de onCombatHeartbeat: el estado de
+	//esta clase no guarda dimensión (un combate por servidor, ver el techo en el javadoc de la clase) y
+	//los PG del tablero cambian por caminos que no pasan por ningún evento de turno (reacciones,
+	//multiataque, daño de zona). Se limpia solo: broadcastTurnState corre también al terminar el combate.
+	private static ServerLevel combatLevel;
+
+	//Refresco de PG/condiciones una vez por segundo mientras hay combate: perseguir cada punto de daño
+	//por separado significaría engancharse a todos los caminos de daño (y olvidarse de alguno); un
+	//latido de 20 ticks sobre un mensaje que ya existe es más simple y fuera de combate no corre nada.
+	@SubscribeEvent
+	public static void onCombatHeartbeat(TickEvent.ServerTickEvent event) {
+		if (!active || event.phase != TickEvent.Phase.END || combatLevel == null) return;
+		if (combatLevel.getGameTime() % 20 != 0) return;
+		broadcastTurnState(combatLevel);
+	}
+
 	private static void broadcastTurnState(ServerLevel level) {
+		combatLevel = active ? level : null;
 		TurnEntry entry = current();
 		String name = entry != null ? entry.name() : "";
 		int entityId = entry != null ? entry.entityId() : -1;
@@ -1087,17 +1110,31 @@ public class TurnManager {
 		List<TurnStateMessage.RosterRow> rows = new ArrayList<>(order.size());
 		for (TurnEntry entry : order) {
 			List<String> conditionLabels = List.of();
+			int currentHp = 0;
+			int maxHp = 0;
 			Entity entity = level.getEntity(entry.entityId());
 			if (entity != null) {
 				Combatant combatant = Combatant.of(entity);
-				if (combatant != null && !combatant.conditions().isEmpty()) {
-					conditionLabels = new ArrayList<>(combatant.conditions().size());
-					for (Condition condition : combatant.conditions()) conditionLabels.add(condition.label());
+				if (combatant != null) {
+					if (!combatant.conditions().isEmpty()) {
+						conditionLabels = new ArrayList<>(combatant.conditions().size());
+						for (Condition condition : combatant.conditions()) conditionLabels.add(condition.label());
+					}
+					currentHp = combatant.currentHp();
+					maxHp = combatant.maxHp();
+				} else if (entity instanceof LivingEntity living) {
+					//Mob de compatibilidad sin bloque de estadísticas (fuera de las reglas, invariante 9):
+					//sus PG de vanilla, SOLO para mostrar en el tablero y el nombre flotante — ninguna regla
+					//decide con esto. Sin este respaldo, un encuentro de creepers/esqueletos vanilla salía
+					//entero sin barra de vida, que era lo primero que se notaba en pantalla.
+					currentHp = (int) Math.ceil(living.getHealth());
+					maxHp = (int) Math.ceil(living.getMaxHealth());
 				}
 			}
 			rows.add(new TurnStateMessage.RosterRow(entry.entityId(), entry.name(), entry.isMonster(),
 				confirmedDefeated.contains(entry.entityId()), actedThisTurn.contains(entry.entityId()),
-				reactionUsed.contains(entry.entityId()), bonusActionUsed.contains(entry.entityId()), conditionLabels));
+				reactionUsed.contains(entry.entityId()), bonusActionUsed.contains(entry.entityId()), conditionLabels,
+				currentHp, maxHp));
 		}
 		return rows;
 	}

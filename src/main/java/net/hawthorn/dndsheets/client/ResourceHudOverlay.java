@@ -7,6 +7,7 @@ import net.hawthorn.dndsheets.client.gui.GuiStyle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -54,14 +55,14 @@ public class ResourceHudOverlay {
 		int spellSlotsMax = sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
 		if (spellSlotsMax > 0) {
 			int slots = sheet.has("spellSlotsCurrent") ? sheet.get("spellSlotsCurrent").getAsInt() : 0;
-			lines.add(new Line("Conjuros: " + slots + "/" + spellSlotsMax, 0xFF55FFFF));
+			lines.add(new Line(Component.translatable("hud.dndsheets.spell_slots", slots, spellSlotsMax).getString(), 0xFF55FFFF));
 		}
 
 		//PG temporales: un colchón que Minecraft no representa (su barra de vida es solo la real), así que
 		//sin esto un jugador con PG temporales no tenía forma de saber cuántos le quedan de ese colchón
 		//hasta que un golpe se los empieza a comer.
 		int temporaryHp = sheet.has("temporaryHp") ? sheet.get("temporaryHp").getAsInt() : 0;
-		if (temporaryHp > 0) lines.add(new Line("PG temporales: " + temporaryHp, 0xFF7FE0A0));
+		if (temporaryHp > 0) lines.add(new Line(Component.translatable("hud.dndsheets.temp_hp", temporaryHp).getString(), 0xFF7FE0A0));
 
 		//Las condiciones activas, en rojo y arriba del todo de lo demás. Estaban SOLO en el Panel de DM, así
 		//que un jugador paralizado no tenía forma de saberlo: sus clics dejaban de hacer nada y eso se lee
@@ -77,7 +78,7 @@ public class ResourceHudOverlay {
 		String held = heldEffects(sheet);
 		if (!held.isEmpty()) lines.add(new Line(held, 0xFFFFD9A0));
 
-		if (sheet.has("gold")) lines.add(new Line("Oro: " + sheet.get("gold").getAsInt(), 0xFFFFD700));
+		if (sheet.has("gold")) lines.add(new Line(Component.translatable("hud.dndsheets.gold", sheet.get("gold").getAsInt()).getString(), 0xFFFFD700));
 
 		cachedLines = lines.toArray(new Line[0]);
 	}
@@ -126,21 +127,21 @@ public class ResourceHudOverlay {
 			if (labels.length() > 0) labels.append(", ");
 			labels.append(at < 0 ? entry : entry.substring(0, at));
 		}
-		return labels.length() == 0 ? "" : "Estados: " + labels;
+		return labels.length() == 0 ? "" : Component.translatable("hud.dndsheets.conditions", labels.toString()).getString();
 	}
 
 	/** Los "llevo esto encima" que cambian la próxima tirada: concentración, dado de inspiración, castigo armado, ventaja pendiente. */
 	private static String heldEffects(JsonObject sheet) {
 		StringBuilder held = new StringBuilder();
-		if (sheet.has("concentratingOn")) append(held, "Concentrado: " + sheet.get("concentratingOn").getAsString());
-		if (sheet.has("bardicInspiration")) append(held, "Inspiración +" + sheet.get("bardicInspiration").getAsInt());
-		if (sheet.has("smitePending")) append(held, "Castigo armado");
+		if (sheet.has("concentratingOn")) append(held, Component.translatable("hud.dndsheets.concentrating", sheet.get("concentratingOn").getAsString()).getString());
+		if (sheet.has("bardicInspiration")) append(held, Component.translatable("hud.dndsheets.inspiration", sheet.get("bardicInspiration").getAsInt()).getString());
+		if (sheet.has("smitePending")) append(held, Component.translatable("hud.dndsheets.smite_armed").getString());
 		//"normal" es el valor de reposo, no una ventaja pendiente: enseñarlo sería una línea permanente que
 		//no dice nada y que acabaría ignorándose junto con las que sí importan.
 		if (sheet.has("nextAttackAdvantage")) {
 			String advantage = sheet.get("nextAttackAdvantage").getAsString();
-			if ("advantage".equals(advantage)) append(held, "Ventaja");
-			else if ("disadvantage".equals(advantage)) append(held, "Desventaja");
+			if ("advantage".equals(advantage)) append(held, Component.translatable("hud.dndsheets.advantage").getString());
+			else if ("disadvantage".equals(advantage)) append(held, Component.translatable("hud.dndsheets.disadvantage").getString());
 		}
 		return held.toString();
 	}

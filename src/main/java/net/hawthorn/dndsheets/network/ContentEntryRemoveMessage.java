@@ -49,8 +49,7 @@ public class ContentEntryRemoveMessage {
 			message.type.remove(message.id);
 
 			dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.deleted", message.id));
-			String arrayJson = ContentPackFile.readArrayText(message.type.dmCreatedFile());
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), new ContentEntryListMessage(message.type, arrayJson));
+			BrowseActionMessage.sendContentEntries(dm, message.type.name());
 		});
 	}
 }

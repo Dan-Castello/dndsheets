@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 //Lista de hechizos cargados, dos filas cada uno (equivalente en GUI a /dndspells learn y /dndspells
-//staff), para un jugador ya elegido — abierta vía SpellGiveListRequestMessage/SpellGiveListMessage. Los
+//staff), para un jugador ya elegido — abierta vía BrowseActionMessage.GIVE_SPELLS/BrowseListMessage. Los
 //ids vienen resueltos del servidor y no del registro del cliente: el registro solo vive en el servidor, y
 //un DM que sea un proceso aparte (invitado por LAN) lo vería siempre vacío.
 public class SpellGiveListScreen extends ListPickerScreen {

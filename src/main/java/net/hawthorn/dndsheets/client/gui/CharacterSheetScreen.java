@@ -1294,9 +1294,18 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				//abre el selector real de Origins y sincroniza solo después (ver SpeciesCommand.choose).
 				//La ficha se cierra ANTES de que llegue el selector: dejarla abierta encima le robaba el
 				//clic/teclado al selector de Origins, que quedaba inutilizable hasta cerrar la ficha a mano.
+				//Sin el addon species el comando no existe (error de Brigadier en el chat, ningún selector):
+				//se cae al selector de lista propio, que vuelve a ESTA ficha al elegir (parent capturado por
+				//el handler; el contenedor nunca se cierra en ese camino — ver CharacterOptionListScreen).
 				CharacterSheetSaveProcedure.execute(guistate);
-				net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndspecies choose");
-				CharacterSheetScreen.this.onClose();
+				if (CharacterSetupScreen.speciesLoaded()) {
+					net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndspecies choose");
+					CharacterSheetScreen.this.onClose();
+				} else {
+					DndsheetsMod.PACKET_HANDLER.sendToServer(new net.hawthorn.dndsheets.network.BrowseActionMessage(
+						net.hawthorn.dndsheets.network.BrowseActionMessage.Action.CHARACTER_OPTIONS,
+						net.hawthorn.dndsheets.CharacterOptionsRegistry.RACE));
+				}
 				return true;
 			}
 		};
@@ -1310,10 +1319,17 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			public boolean mouseClicked(double mx, double my, int button) {
 				if (!this.isMouseOver(mx, my)) return false;
 				//El trasfondo lo elige Origins, no un picker propio (ver Modularity Map / dndsheets_species):
-				//esto abre el selector real de Origins y sincroniza solo después. Mismo cierre que Raza.
+				//esto abre el selector real de Origins y sincroniza solo después. Mismo patrón que Raza,
+				//respaldo sin species incluido.
 				CharacterSheetSaveProcedure.execute(guistate);
-				net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndspecies choosebackground");
-				CharacterSheetScreen.this.onClose();
+				if (CharacterSetupScreen.speciesLoaded()) {
+					net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndspecies choosebackground");
+					CharacterSheetScreen.this.onClose();
+				} else {
+					DndsheetsMod.PACKET_HANDLER.sendToServer(new net.hawthorn.dndsheets.network.BrowseActionMessage(
+						net.hawthorn.dndsheets.network.BrowseActionMessage.Action.CHARACTER_OPTIONS,
+						net.hawthorn.dndsheets.CharacterOptionsRegistry.BACKGROUND));
+				}
 				return true;
 			}
 		};
@@ -1327,10 +1343,17 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			public boolean mouseClicked(double mx, double my, int button) {
 				if (!this.isMouseOver(mx, my)) return false;
 				//La clase también la elige Origins (capa origins-classes:class, ver Modularity Map /
-				//dndsheets_species): mismo patrón que Raza/Trasfondo, sigue aplicando el PRESET real.
+				//dndsheets_species): mismo patrón que Raza/Trasfondo, sigue aplicando el PRESET real. Sin
+				//species el respaldo NO es la lista de nombres sino el selector de presets — el mecanismo
+				//real del core (dado de golpe, características, equipo), igual que en CharacterSetupScreen.
 				CharacterSheetSaveProcedure.execute(guistate);
-				net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndspecies chooseclass");
-				CharacterSheetScreen.this.onClose();
+				if (CharacterSetupScreen.speciesLoaded()) {
+					net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndspecies chooseclass");
+					CharacterSheetScreen.this.onClose();
+				} else {
+					DndsheetsMod.PACKET_HANDLER.sendToServer(new net.hawthorn.dndsheets.network.BrowseActionMessage(
+						net.hawthorn.dndsheets.network.BrowseActionMessage.Action.LIST_PRESETS));
+				}
 				return true;
 			}
 		};

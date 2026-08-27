@@ -113,7 +113,13 @@ public class DndsheetsMod {
 	//Sube a "21": botón "Multiclasear" en la ficha (F25 del audit). Se registra MulticlassMessage al
 	//final, y PresetListRequestMessage/PresetListMessage ganan un campo "multiclass" en el cable (mismo
 	//viaje de ida y vuelta, ahora con un flag más) para que PresetScreen sepa en qué modo abrirse.
-	private static final String PROTOCOL_VERSION = "21";
+	//Sube a "22": tres cosas en un mismo lote. (1) RosterRow gana currentHp/maxHp al final del payload
+	//(barra de vida en el tablero de turnos y en el nombre flotante). (2) BrowseListMessage gana el
+	//campo context al final. (3) La renumeración deliberada: las 8 parejas List/ListRequest (16 clases,
+	//incluida la pareja CharacterOptions* que ya no mandaba nadie) se funden como acciones/kinds nuevos
+	//de BrowseActionMessage/BrowseListMessage y sus registros se borran — todos los ids posteriores
+	//cambian, que es exactamente lo que este handshake convierte en un fallo limpio de conexión.
+	private static final String PROTOCOL_VERSION = "22";
 
 	/**
 	 * <p>Cuántas piezas cruzan el cable: mensajes registrados más constantes de los enums que viajan por
@@ -125,19 +131,19 @@ public class DndsheetsMod {
 	 * la mano igual para desalinearse después. Un número que hay que tocar a mano no impide el error, pero
 	 * lo convierte en una decisión en vez de un olvido.</p>
 	 */
-	public static final int NETWORK_SHAPE = 108;
+	public static final int NETWORK_SHAPE = 112;
 
 	/**
 	 * <p>El orden exacto en que las piezas cruzan el cable, resumido en un hash. {@link #NETWORK_SHAPE}
 	 * cuenta cuántas hay, y por eso no ve el fallo que la invariante 1 nombra primero: <b>reordenar</b> dos
 	 * entradas ya registradas no cambia la cuenta. Borrar baja el número, insertar en medio lo sube, pero
-	 * intercambiar dos deja 104 igual — y los ids se renumeran en silencio.</p>
+	 * intercambiar dos deja {@link #NETWORK_SHAPE} igual — y los ids se renumeran en silencio.</p>
 	 *
 	 * <p>Tampoco lo usa el juego: {@code JsonContentSelfTest.checkNetworkShape} rehace el hash desde la
 	 * fuente y tumba el build cuando no cuadra. Si mueves algo a propósito, sube {@link #PROTOCOL_VERSION}
 	 * y pega aquí el número que te diga el fallo.</p>
 	 */
-	public static final int NETWORK_ORDER = -1791371131;
+	public static final int NETWORK_ORDER = 1366669976;
 
 	/**
 	 * <p>Que se escribe y se lee en el cable, resumido en un hash: la secuencia de llamadas
@@ -149,7 +155,7 @@ public class DndsheetsMod {
 	 * dos numeros intactos y aun asi rompio la compatibilidad: un cliente viejo leería un texto donde el
 	 * servidor nuevo escribe un Component, y se desincroniza a mitad del paquete.</p>
 	 */
-	public static final int NETWORK_WIRE = -1445920284;
+	public static final int NETWORK_WIRE = -2020662340;
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 
@@ -158,19 +164,15 @@ public class DndsheetsMod {
 		messageID++;
 	}
 
-	//Registro centralizado de las ~40 clases de network/: antes cada una se autorregistraba con su propio
+	//Registro centralizado de las 60+ clases de network/: antes cada una se autorregistraba con su propio
 	//@Mod.EventBusSubscriber + método registerMessage(FMLCommonSetupEvent) — ~5 líneas de boilerplate
-	//idéntico repetidas 40 veces. SimpleChannel exige que cada clase siga teniendo su propio buffer/
+	//idéntico repetidas por clase. SimpleChannel exige que cada clase siga teniendo su propio buffer/
 	//constructor/handler (no se puede genericar eso), pero el PUNTO donde se registran sí es uno solo.
 	private static void registerNetworkMessages(FMLCommonSetupEvent event) {
 		addNetworkMessage(AddCustomAttackMessage.class, AddCustomAttackMessage::buffer, AddCustomAttackMessage::new, AddCustomAttackMessage::handler);
 		addNetworkMessage(AdvancedRollEditorOpenMessage.class, AdvancedRollEditorOpenMessage::buffer, AdvancedRollEditorOpenMessage::new, AdvancedRollEditorOpenMessage::handler);
-		addNetworkMessage(CharacterOptionsListMessage.class, CharacterOptionsListMessage::buffer, CharacterOptionsListMessage::new, CharacterOptionsListMessage::handler);
-		addNetworkMessage(CharacterOptionsRequestMessage.class, CharacterOptionsRequestMessage::buffer, CharacterOptionsRequestMessage::new, CharacterOptionsRequestMessage::handler);
 		addNetworkMessage(CharacterSheetOpenMessage.class, CharacterSheetOpenMessage::buffer, CharacterSheetOpenMessage::new, CharacterSheetOpenMessage::handler);
 		addNetworkMessage(ClearCustomAttacksMessage.class, ClearCustomAttacksMessage::buffer, ClearCustomAttacksMessage::new, ClearCustomAttacksMessage::handler);
-		addNetworkMessage(ContentEntryListMessage.class, ContentEntryListMessage::buffer, ContentEntryListMessage::new, ContentEntryListMessage::handler);
-		addNetworkMessage(ContentEntryListRequestMessage.class, ContentEntryListRequestMessage::buffer, ContentEntryListRequestMessage::new, ContentEntryListRequestMessage::handler);
 		addNetworkMessage(ContentEntryRemoveMessage.class, ContentEntryRemoveMessage::buffer, ContentEntryRemoveMessage::new, ContentEntryRemoveMessage::handler);
 		addNetworkMessage(ContentEntrySaveMessage.class, ContentEntrySaveMessage::buffer, ContentEntrySaveMessage::new, ContentEntrySaveMessage::handler);
 		addNetworkMessage(DeathSaveGiveUpMessage.class, DeathSaveGiveUpMessage::buffer, DeathSaveGiveUpMessage::new, DeathSaveGiveUpMessage::handler);
@@ -180,14 +182,10 @@ public class DndsheetsMod {
 		addNetworkMessage(MonsterActionOpenMessage.class, MonsterActionOpenMessage::buffer, MonsterActionOpenMessage::new, MonsterActionOpenMessage::handler);
 		addNetworkMessage(MonsterSaveTemplateMessage.class, MonsterSaveTemplateMessage::buffer, MonsterSaveTemplateMessage::new, MonsterSaveTemplateMessage::handler);
 		addNetworkMessage(MonsterSpawnMessage.class, MonsterSpawnMessage::buffer, MonsterSpawnMessage::new, MonsterSpawnMessage::handler);
-		addNetworkMessage(OptionsListMessage.class, OptionsListMessage::buffer, OptionsListMessage::new, OptionsListMessage::handler);
-		addNetworkMessage(OptionsListRequestMessage.class, OptionsListRequestMessage::buffer, OptionsListRequestMessage::new, OptionsListRequestMessage::handler);
 		addNetworkMessage(OptionsSaveMessage.class, OptionsSaveMessage::buffer, OptionsSaveMessage::new, OptionsSaveMessage::handler);
 		addNetworkMessage(PassivePerceptionRequestMessage.class, PassivePerceptionRequestMessage::buffer, PassivePerceptionRequestMessage::new, PassivePerceptionRequestMessage::handler);
 		addNetworkMessage(PresetApplyMessage.class, PresetApplyMessage::buffer, PresetApplyMessage::new, PresetApplyMessage::handler);
 		addNetworkMessage(PresetApplyToMessage.class, PresetApplyToMessage::buffer, PresetApplyToMessage::new, PresetApplyToMessage::handler);
-		addNetworkMessage(PresetListMessage.class, PresetListMessage::buffer, PresetListMessage::new, PresetListMessage::handler);
-		addNetworkMessage(PresetListRequestMessage.class, PresetListRequestMessage::buffer, PresetListRequestMessage::new, PresetListRequestMessage::handler);
 		addNetworkMessage(RemoveCustomAttackMessage.class, RemoveCustomAttackMessage::buffer, RemoveCustomAttackMessage::new, RemoveCustomAttackMessage::handler);
 		addNetworkMessage(RestProposeMessage.class, RestProposeMessage::buffer, RestProposeMessage::new, RestProposeMessage::handler);
 		addNetworkMessage(RestVoteCloseMessage.class, RestVoteCloseMessage::buffer, RestVoteCloseMessage::new, RestVoteCloseMessage::handler);
@@ -210,8 +208,6 @@ public class DndsheetsMod {
 			net.hawthorn.dndsheets.network.AbilityImprovementMessage::new, net.hawthorn.dndsheets.network.AbilityImprovementMessage::handler);
 		addNetworkMessage(SpellGiveMessage.class, SpellGiveMessage::buffer, SpellGiveMessage::new, SpellGiveMessage::handler);
 		addNetworkMessage(TraitGrantMessage.class, TraitGrantMessage::buffer, TraitGrantMessage::new, TraitGrantMessage::handler);
-		addNetworkMessage(TraitListMessage.class, TraitListMessage::buffer, TraitListMessage::new, TraitListMessage::handler);
-		addNetworkMessage(TraitListRequestMessage.class, TraitListRequestMessage::buffer, TraitListRequestMessage::new, TraitListRequestMessage::handler);
 		addNetworkMessage(TurnControlMessage.class, TurnControlMessage::buffer, TurnControlMessage::new, TurnControlMessage::handler);
 		addNetworkMessage(TurnEffectApplyMessage.class, TurnEffectApplyMessage::buffer, TurnEffectApplyMessage::new, TurnEffectApplyMessage::handler);
 		addNetworkMessage(TurnStateMessage.class, TurnStateMessage::buffer, TurnStateMessage::new, TurnStateMessage::handler);
@@ -221,16 +217,12 @@ public class DndsheetsMod {
 		//A PARTIR DE AQUÍ, POR ORDEN DE INCORPORACIÓN, NO ALFABÉTICO. El id de red de cada mensaje es su
 		//orden de registro, así que meter uno nuevo en su hueco alfabético (Roster... iría entre Rest... y
 		//Sheet...) renumeraría en silencio todos los de después. Añade siempre al final de esta lista.
+		//(Los ids ya se renumeraron UNA vez, a propósito y con PROTOCOL_VERSION subida, cuando las 8
+		//parejas List/ListRequest se fundieron en BrowseAction/BrowseList y sus 16 clases se borraron.)
 		addNetworkMessage(BrowseActionMessage.class, BrowseActionMessage::buffer, BrowseActionMessage::new, BrowseActionMessage::handler);
 		addNetworkMessage(BrowseListMessage.class, BrowseListMessage::buffer, BrowseListMessage::new, BrowseListMessage::handler);
 		addNetworkMessage(MonsterBindMessage.class, MonsterBindMessage::buffer, MonsterBindMessage::new, MonsterBindMessage::handler);
 		addNetworkMessage(WildShapeMessage.class, WildShapeMessage::buffer, WildShapeMessage::new, WildShapeMessage::handler);
-		addNetworkMessage(MonsterSpawnListRequestMessage.class, MonsterSpawnListRequestMessage::buffer, MonsterSpawnListRequestMessage::new, MonsterSpawnListRequestMessage::handler);
-		addNetworkMessage(MonsterSpawnListMessage.class, MonsterSpawnListMessage::buffer, MonsterSpawnListMessage::new, MonsterSpawnListMessage::handler);
-		addNetworkMessage(SpellGiveListRequestMessage.class, SpellGiveListRequestMessage::buffer, SpellGiveListRequestMessage::new, SpellGiveListRequestMessage::handler);
-		addNetworkMessage(SpellGiveListMessage.class, SpellGiveListMessage::buffer, SpellGiveListMessage::new, SpellGiveListMessage::handler);
-		addNetworkMessage(WeaponGiveListRequestMessage.class, WeaponGiveListRequestMessage::buffer, WeaponGiveListRequestMessage::new, WeaponGiveListRequestMessage::handler);
-		addNetworkMessage(WeaponGiveListMessage.class, WeaponGiveListMessage::buffer, WeaponGiveListMessage::new, WeaponGiveListMessage::handler);
 		addNetworkMessage(StaffBindMessage.class, StaffBindMessage::buffer, StaffBindMessage::new, StaffBindMessage::handler);
 		addNetworkMessage(MulticlassMessage.class, MulticlassMessage::buffer, MulticlassMessage::new, MulticlassMessage::handler);
 	}

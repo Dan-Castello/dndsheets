@@ -50,18 +50,25 @@ public class CharacterSetupScreen extends ListPickerScreen {
 
 		//La raza la elige Origins (ver Modularity Map / dndsheets_species), no un picker propio: este botón
 		//abre el selector real de Origins y sincroniza solo, unos segundos después (ver SpeciesCommand.choose).
+		//Sin el addon species instalado (el core solo también es una configuración soportada), cae al
+		//selector de lista del propio mod — ver openOriginPicker.
 		addRow(step("gui.dndsheets.character_setup.race", field(sheet, "characterRace")),
-			button -> openOriginPicker("dndspecies choose"));
+			button -> openOriginPicker("dndspecies choose", net.hawthorn.dndsheets.CharacterOptionsRegistry.RACE));
 
 		//La clase también la elige Origins (capa origins-classes:class, reemplazada entera con las 12 clases
 		//del SRD — ver Modularity Map / dndsheets_species): mismo patrón que Raza, y sigue aplicando el
 		//PRESET real (dado de golpe, características, equipo inicial, rasgos), no solo el nombre.
+		//Sin species, el respaldo de la clase NO es la lista de nombres sino el selector de presets: es
+		//el mecanismo real del core (dado de golpe, características, equipo), no una etiqueta.
 		addRow(step("gui.dndsheets.character_setup.class", field(sheet, "characterClass")),
-			button -> openOriginPicker("dndspecies chooseclass"));
+			button -> {
+				if (speciesLoaded()) openOriginPicker("dndspecies chooseclass");
+				else DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.LIST_PRESETS));
+			});
 
 		//El trasfondo lo elige Origins también (ver Modularity Map / dndsheets_species), mismo patrón que Raza.
 		addRow(step("gui.dndsheets.character_setup.background", field(sheet, "background")),
-			button -> openOriginPicker("dndspecies choosebackground"));
+			button -> openOriginPicker("dndspecies choosebackground", net.hawthorn.dndsheets.CharacterOptionsRegistry.BACKGROUND));
 
 		//La subclase solo aparece cuando ya se puede elegir: enseñar un paso bloqueado a un personaje de
 		//nivel 1 es prometerle algo que la pantalla luego le niega. Que se pueda o no lo sabe el servidor
@@ -80,11 +87,15 @@ public class CharacterSetupScreen extends ListPickerScreen {
 			button -> SkillProficiencyScreen.open(this));
 	}
 
-	/** Un paso con lo que ya tiene puesto, o en gris con un "—" si sigue sin elegir. */
-	private static Component step(String name, String value) {
+	/** Un paso con su marca de progreso: "✔" verde si ya está elegido, "○" gris si falta. */
+	private static Component step(String nameKey, String value) {
+		//translatable(nameKey) y no literal: aquí llegaba la CLAVE ("gui.dndsheets.character_setup.race")
+		//y se pintaba cruda en la fila — el único sitio del mod donde el jugador leía una clave de
+		//traducción en pantalla.
+		String name = Component.translatable(nameKey).getString();
 		return value.isBlank()
-			? Component.literal(name + ": —").withStyle(ChatFormatting.GRAY)
-			: Component.literal(name + ": " + value);
+			? Component.literal("○ " + name + ": —").withStyle(ChatFormatting.GRAY)
+			: Component.literal("✔ ").withStyle(ChatFormatting.GREEN).append(Component.literal(name + ": " + value));
 	}
 
 	private static String field(JsonObject sheet, String key) {
@@ -93,9 +104,58 @@ public class CharacterSetupScreen extends ListPickerScreen {
 	}
 
 	//Cierra esta pantalla ANTES de que llegue el selector de Origins: dejarla abierta encima le robaba el
-	//clic/teclado al selector, que quedaba inutilizable hasta cerrar la ficha a mano.
+	//clic/teclado al selector, que quedaba inutilizable hasta cerrar la ficha a mano. Sin el addon
+	//species, el comando no existiría (error de Brigadier en el chat y ningún selector): quien llama
+	//cae al selector de lista propio, que captura esta pantalla como padre y vuelve a ella al elegir.
+	/** Público: también decide en los campos Raza/Clase/Trasfondo de la FICHA (CharacterSheetScreen),
+	 *  que son la otra puerta al mismo viaje a Origins y tenían el mismo agujero sin el addon. */
+	public static boolean speciesLoaded() {
+		return net.minecraftforge.fml.ModList.get().isLoaded("dndsheets_species");
+	}
+
+	private void openOriginPicker(String command, String fallbackCategory) {
+		if (speciesLoaded()) {
+			openOriginPicker(command);
+		} else {
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(
+				BrowseActionMessage.Action.CHARACTER_OPTIONS, fallbackCategory));
+		}
+	}
+
 	private static void openOriginPicker(String command) {
+		ReturnFromOrigins.expect();
 		Minecraft.getInstance().player.connection.sendCommand(command);
 		Minecraft.getInstance().setScreen(null);
+	}
+
+	/**
+	 * <p>El viaje a Origins deja la pantalla en null a propósito (ver {@link #openOriginPicker}); esto
+	 * trae al jugador DE VUELTA al checklist cuando el selector de Origins se cierra, en vez de dejarlo
+	 * delante del mundo preguntándose qué sigue — con tres pasos que expulsan, era el momento de mayor
+	 * abandono de la creación de personaje. El selector se reconoce por el paquete de su clase
+	 * ({@code io.github.apace100} = Origins/Apoli): el core no compila contra Origins (esa dependencia
+	 * es del addon species), así que el nombre es el único identificador disponible aquí.</p>
+	 */
+	@net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = DndsheetsMod.MODID, value = net.minecraftforge.api.distmarker.Dist.CLIENT)
+	public static class ReturnFromOrigins {
+		private static boolean pending = false;
+
+		static void expect() {
+			pending = true;
+		}
+
+		@net.minecraftforge.eventbus.api.SubscribeEvent
+		public static void onScreenClosed(net.minecraftforge.client.event.ScreenEvent.Closing event) {
+			if (!pending) return;
+			if (!event.getScreen().getClass().getName().startsWith("io.github.apace100")) return;
+			//tell() y no setScreen directo: esto corre DENTRO del cierre de la otra pantalla, y navegar en
+			//el mismo instante pisa el setScreen que la está cerrando. Un frame después, si Origins abrió
+			//otra pantalla propia (flujos encadenados), se le cede el paso y se reintenta en su cierre.
+			Minecraft.getInstance().tell(() -> {
+				if (!pending || Minecraft.getInstance().screen != null) return;
+				pending = false; //ponytail: si el jugador nunca vuelve a cerrar un selector de Origins, el flag queda armado hasta el siguiente; se acepta — limpiarlo exigiría rastrear toda navegación.
+				CharacterSetupScreen.open(null);
+			});
+		}
 	}
 }
