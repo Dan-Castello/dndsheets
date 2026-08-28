@@ -82,7 +82,7 @@ public class MonsterActionManager {
 			//criatura de otro mod a la que todavía no se le ha dado ficha no es nuestra para borrarla, y
 			//un agachado + clic de más se llevaría por delante el NPC que alguien acaba de construir.
 			if (block == null && !isArmorStand) return;
-			Component deletedName = block != null ? Component.literal(block.name()) : Component.translatable("chat.dndsheets.monster.the_armor_stand");
+			Component deletedName = block != null ? ContentNames.of(block.name()) : Component.translatable("chat.dndsheets.monster.the_armor_stand");
 			TurnManager.markDefeated(target.getId()); //Borrado a mano por el DM: ya no es un enemigo en pie, cuenta igual que muerto para el fin automático de combate.
 			target.remove(Entity.RemovalReason.DISCARDED);
 			if (dm instanceof ServerPlayer serverDm) {
@@ -220,7 +220,7 @@ public class MonsterActionManager {
 		//En modo turnos, un monstruo también gasta su única acción del turno: si el DM insiste en hacerlo
 		//actuar de nuevo antes de que le vuelva a tocar, se ignora igual que le pasaría a un jugador.
 		if (!TurnManager.tryAct(monsterEntity)) {
-			dm.sendSystemMessage(net.minecraft.network.chat.Component.translatable("chat.dndsheets.monster.cant_act", block.name()).withStyle(ChatFormatting.RED));
+			dm.sendSystemMessage(net.minecraft.network.chat.Component.translatable("chat.dndsheets.monster.cant_act", ContentNames.of(block.name())).withStyle(ChatFormatting.RED));
 			return;
 		}
 
@@ -388,7 +388,7 @@ public class MonsterActionManager {
 
 		Combatant combatant = Combatant.of(target);
 		String targetName = combatant != null ? combatant.name() : target.getName().getString();
-		ChatFeedback.broadcast(monsterEntity, Component.translatable(messageKey, block.name(), targetName).withStyle(ChatFormatting.DARK_PURPLE));
+		ChatFeedback.broadcast(monsterEntity, Component.translatable(messageKey, ContentNames.of(block.name()), targetName).withStyle(ChatFormatting.DARK_PURPLE));
 		resolveAttack(block, monsterEntity, randomOf(attacks), target);
 	}
 
@@ -463,7 +463,7 @@ public class MonsterActionManager {
 
 		String counterer = CounterspellManager.findCounterer(monsterEntity.level(), monsterEntity.position(), monsterEntity);
 		if (counterer != null) {
-			ChatFeedback.broadcast(monsterEntity, Component.translatable("chat.dndsheets.spell.counterspelled", block.name(), spell.name(), counterer).withStyle(ChatFormatting.DARK_PURPLE));
+			ChatFeedback.broadcast(monsterEntity, Component.translatable("chat.dndsheets.spell.counterspelled", ContentNames.of(block.name()), ContentNames.of(spell.name()), counterer).withStyle(ChatFormatting.DARK_PURPLE));
 			return;
 		}
 

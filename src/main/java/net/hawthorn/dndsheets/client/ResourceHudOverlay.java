@@ -133,7 +133,7 @@ public class ResourceHudOverlay {
 	/** Los "llevo esto encima" que cambian la próxima tirada: concentración, dado de inspiración, castigo armado, ventaja pendiente. */
 	private static String heldEffects(JsonObject sheet) {
 		StringBuilder held = new StringBuilder();
-		if (sheet.has("concentratingOn")) append(held, Component.translatable("hud.dndsheets.concentrating", sheet.get("concentratingOn").getAsString()).getString());
+		if (sheet.has("concentratingOn")) append(held, Component.translatable("hud.dndsheets.concentrating", net.hawthorn.dndsheets.ContentNames.of(sheet.get("concentratingOn").getAsString())).getString());
 		if (sheet.has("bardicInspiration")) append(held, Component.translatable("hud.dndsheets.inspiration", sheet.get("bardicInspiration").getAsInt()).getString());
 		if (sheet.has("smitePending")) append(held, Component.translatable("hud.dndsheets.smite_armed").getString());
 		//"normal" es el valor de reposo, no una ventaja pendiente: enseñarlo sería una línea permanente que

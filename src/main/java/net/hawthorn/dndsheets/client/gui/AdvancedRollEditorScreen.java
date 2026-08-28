@@ -18,8 +18,6 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -28,9 +26,6 @@ import java.util.List;
 
 public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRollEditorMenu> {
 	private final static HashMap<String, Object> guistate = AdvancedRollEditorMenu.guistate;
-	private final Level world;
-	private final int x, y, z;
-	private final Player entity;
 	EditBox rollExpression1, rollExpression2, rollContext1, rollContext2;
 	List<Button> adderButtons = new ArrayList<>();
 
@@ -46,11 +41,6 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 
 	public AdvancedRollEditorScreen(AdvancedRollEditorMenu container, Inventory inventory, Component text) {
 		super(container, inventory, text);
-		this.world = container.world;
-		this.x = container.x;
-		this.y = container.y;
-		this.z = container.z;
-		this.entity = container.entity;
 		this.imageWidth = 350;
 		this.imageHeight = 224;
 	}
@@ -91,7 +81,7 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 			data.add(new AbstractMap.SimpleEntry<>(rollContext1.getValue(), rollExpression1.getValue()));
 			data.add(new AbstractMap.SimpleEntry<>(rollContext2.getValue(), rollExpression2.getValue()));
 			CharacterSheetSaveProcedure.execute(data, workingCategory, workingIndex, workingSubIndex);
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new CharacterSheetOpenMessage(0,0));
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new CharacterSheetOpenMessage());
 			return true;
 		}
 		if (rollExpression1.isFocused())

@@ -98,7 +98,10 @@ public class GuideBook {
 				"gui.dndsheets.guide.page.vision_2",
 				"gui.dndsheets.guide.page.distance"),
 			new Entry("gui.dndsheets.guide.entry.magia",
-				"gui.dndsheets.guide.page.spells")),
+				"gui.dndsheets.guide.page.spells",
+				"gui.dndsheets.guide.page.spell_prepare",
+				"gui.dndsheets.guide.page.spell_casting_time",
+				"gui.dndsheets.guide.page.spell_schools")),
 
 		//El libro de Patchouli enseña las páginas de DM a todo el mundo: un manual con índice no puede
 		//esconder medio índice sin quedar raro, y lo que hay ahí es cómo se usa el mod, no el secreto de

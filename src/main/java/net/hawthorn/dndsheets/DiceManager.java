@@ -14,9 +14,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
-//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
-//expone a que cambien de firma sin aviso.
+//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
+//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
+//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
+//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
 public class DiceManager {
 
 	//Motor de TODAS las tiradas del mod: estos Pattern/Logger se compilaban/re-obtenían en cada tirada

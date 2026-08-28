@@ -1,7 +1,8 @@
 package net.hawthorn.dndsheets.command;
 
+import net.hawthorn.dndsheets.ContentNames;
+
 import com.google.gson.JsonObject;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.hawthorn.dndsheets.DndPaths;
@@ -28,11 +29,8 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * <p>Carga hechizos desde JSON en {@code <carpeta del mundo>/dndsheets/spells/<archivo>.json} (ver
@@ -50,11 +48,8 @@ public class SpellCommand {
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndspells")
 			.requires(source -> DndsheetsMod.canActAsDm(source))
-			.then(Commands.literal("load")
-				.then(Commands.argument("archivo", StringArgumentType.word())
-					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(DndPaths.jsonFileNames(SPELLS_DIR), builder))
-					.executes(SpellCommand::load)))
-			.then(Commands.literal("list").executes(SpellCommand::list))
+			.then(ContentCommands.loadBranch(SPELLS_DIR, SpellRegistry::loadFile, "hechizos"))
+			.then(ContentCommands.listBranch(SpellRegistry::ids, "Hechizos"))
 			.then(Commands.literal("learn")
 				.then(Commands.argument("jugadores", EntityArgument.players())
 					.then(Commands.argument("hechizoId", ResourceLocationArgument.id())
@@ -70,30 +65,7 @@ public class SpellCommand {
 							.executes(ctx -> staff(ctx, ResourceLocationArgument.getId(ctx, "itemBase").toString())))))));
 	}
 
-	private static int load(CommandContext<CommandSourceStack> ctx) {
-		String fileName = StringArgumentType.getString(ctx, "archivo");
-		Path file = SPELLS_DIR.resolve(fileName + ".json");
 
-		if (!Files.exists(file)) {
-			ctx.getSource().sendFailure(Component.literal("No encontré " + file.toAbsolutePath()));
-			return 0;
-		}
-
-		try {
-			int count = SpellRegistry.loadFile(file);
-			ctx.getSource().sendSuccess(() -> Component.literal("Cargados " + count + " hechizos desde " + fileName + ".json"), true);
-			return count;
-		} catch (IOException | RuntimeException e) {
-			ctx.getSource().sendFailure(Component.literal("No pude leer " + fileName + ".json: " + e.getMessage()));
-			return 0;
-		}
-	}
-
-	private static int list(CommandContext<CommandSourceStack> ctx) {
-		Set<String> ids = SpellRegistry.ids();
-		ctx.getSource().sendSuccess(() -> Component.literal("Hechizos cargados (" + ids.size() + "): " + String.join(", ", ids)), false);
-		return ids.size();
-	}
 
 	private static int learn(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		String spellId = ResourceLocationArgument.getId(ctx, "hechizoId").toString();
@@ -106,7 +78,7 @@ public class SpellCommand {
 		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
 		for (ServerPlayer target : targets) learnForPlayer(target, spellId, spell);
 
-		ctx.getSource().sendSuccess(() -> Component.literal(targets.size() + " jugador(es) aprendieron " + spell.name() + "."), true);
+		ctx.getSource().sendSuccess(() -> Component.literal(targets.size() + " jugador(es) aprendieron ").append(ContentNames.of(spell.name())).append("."), true);
 		return targets.size();
 	}
 
@@ -156,7 +128,7 @@ public class SpellCommand {
 		for (ServerPlayer target : targets) {
 			target.getInventory().add(stack.copy());
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Entregado el Báculo de " + spell.name() + " a " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.literal("Entregado el Báculo de ").append(ContentNames.of(spell.name())).append(" a " + targets.size() + " jugador(es)."), true);
 		return targets.size();
 	}
 
@@ -176,7 +148,10 @@ public class SpellCommand {
 		dndTag.putString("quickSpell", spellId);
 		dndTag.putBoolean("staffConfigurable", true);
 		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.literal("Báculo de " + spell.name()));
+		//La MISMA clave que usa StaffBindMessage al revincular el báculo en juego: son el mismo objeto por
+		//dos caminos, y aquí se había escrito "Báculo de " a mano. Un cliente en inglés recibía un báculo
+		//en español que además dejaba de llamarse igual en cuanto lo revinculaba.
+		stack.setHoverName(Component.translatable("chat.dndsheets.staff.item_name", ContentNames.of(spell.name())));
 		return stack;
 	}
 }

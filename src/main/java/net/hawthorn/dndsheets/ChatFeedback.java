@@ -62,8 +62,12 @@ public class ChatFeedback {
 		return text == null ? null : text.replace('§', '?');
 	}
 
+	//ContentNames y no literal: por aqui pasan tanto el nombre de un PERSONAJE (texto libre de la hoja)
+	//como el de un MONSTRUO (viene del pack de contenido y puede ser una clave de idioma). El primero no
+	//se parece a ninguna clave y se pinta igual que antes; el segundo se resuelve en el idioma de quien
+	//lee. Distinguirlos aqui haria falta pasar de donde viene cada uno por media docena de firmas.
 	private static MutableComponent name(String text) {
-		return Component.literal(stripFormatting(text)).withStyle(NAME, ChatFormatting.BOLD);
+		return ContentNames.of(stripFormatting(text)).withStyle(NAME, ChatFormatting.BOLD);
 	}
 
 	private static MutableComponent dim(String text) {
@@ -149,9 +153,9 @@ public class ChatFeedback {
 	public static MutableComponent damageOnly(String characterName, String weaponName, String rollText) {
 		return withSummary(tag("chat.dndsheets.tag.combat", COMBAT_TAG)
 			.append(name(characterName))
-			.append(dim(Component.translatable("chat.dndsheets.combat.hits_with", weaponName)))
+			.append(dim(Component.translatable("chat.dndsheets.combat.hits_with", ContentNames.of(weaponName))))
 			.append(Component.literal(rollText).withStyle(DAMAGE, ChatFormatting.BOLD)),
-			characterName + " · " + weaponName + " · " + totalOf(rollText));
+			characterName + " · " + ContentNames.plain(weaponName) + " · " + totalOf(rollText));
 	}
 
 	//[Combate] Fulano ataca a Mengano con Espada: 15 vs CA 13 → ¡Impacto! Daño: 7=7[1d6]+4
@@ -160,7 +164,7 @@ public class ChatFeedback {
 			.append(name(attackerName))
 			.append(dim(Component.translatable("chat.dndsheets.combat.attacks")))
 			.append(name(targetName))
-			.append(dim(Component.translatable("chat.dndsheets.combat.with_weapon_vs_ac", weaponName, rollText, ac)));
+			.append(dim(Component.translatable("chat.dndsheets.combat.with_weapon_vs_ac", ContentNames.of(weaponName), rollText, ac)));
 		if (hit) {
 			msg.append(Component.translatable("chat.dndsheets.combat.hit").withStyle(HIT, ChatFormatting.BOLD));
 			msg.append(dim(Component.translatable("chat.dndsheets.combat.damage_label")));
@@ -169,7 +173,7 @@ public class ChatFeedback {
 			msg.append(Component.translatable("chat.dndsheets.combat.miss").withStyle(MISS, ChatFormatting.ITALIC));
 		}
 		//"✓ 6" = impactó por 6 de daño; "—" = falló. Solo símbolos ya usados por el resto del mod.
-		return withSummary(msg, attackerName + " ▶ " + targetName + " · " + totalOf(rollText)
+		return withSummary(msg, ContentNames.plain(attackerName) + " ▶ " + ContentNames.plain(targetName) + " · " + totalOf(rollText)
 			+ (hit ? " ✓ " + totalOf(damageText) : " —"));
 	}
 
@@ -210,16 +214,16 @@ public class ChatFeedback {
 			.append(name(casterName))
 			.append(dim(Component.translatable("chat.dndsheets.magic.heals")))
 			.append(name(targetName))
-			.append(dim(Component.translatable("chat.dndsheets.magic.with_spell", spellName)))
+			.append(dim(Component.translatable("chat.dndsheets.magic.with_spell", ContentNames.of(spellName))))
 			.append(Component.translatable("chat.dndsheets.magic.heal_amount", healText).withStyle(GOOD, ChatFormatting.BOLD)),
-			casterName + " ▶ " + targetName + " · +" + totalOf(healText));
+			casterName + " ▶ " + ContentNames.plain(targetName) + " · +" + totalOf(healText));
 	}
 
 	//[Magia] Fulano lanza Bola de Fuego contra Mengano: salvación 12 vs CD 15 → Falla la salvación. Daño: 24
 	public static MutableComponent saveResult(String casterName, String targetName, String spellName, String saveRollText, int dc, boolean saved, Component outcomeLabel, String damageText) {
 		MutableComponent msg = tag("chat.dndsheets.tag.magic", MAGIC_TAG)
 			.append(name(casterName))
-			.append(dim(Component.translatable("chat.dndsheets.magic.casts_against", spellName)))
+			.append(dim(Component.translatable("chat.dndsheets.magic.casts_against", ContentNames.of(spellName))))
 			.append(name(targetName))
 			.append(dim(Component.translatable("chat.dndsheets.magic.save_vs_dc", saveRollText, dc)));
 		msg.append(outcomeLabel.copy().withStyle(saved ? HIT : MISS, saved ? ChatFormatting.BOLD : ChatFormatting.ITALIC));
@@ -228,7 +232,7 @@ public class ChatFeedback {
 			msg.append(Component.literal(damageText).withStyle(DAMAGE, ChatFormatting.BOLD));
 		}
 		//"12/CD 15 ✓" = salvó; "— 24" = falló y comió 24. Mismos símbolos que el resumen de ataque.
-		return withSummary(msg, spellName + " ▶ " + targetName + " · " + totalOf(saveRollText) + "/CD " + dc
+		return withSummary(msg, ContentNames.plain(spellName) + " ▶ " + ContentNames.plain(targetName) + " · " + totalOf(saveRollText) + "/CD " + dc
 			+ (saved ? " ✓" : " —") + (damageText != null ? " " + totalOf(damageText) : ""));
 	}
 

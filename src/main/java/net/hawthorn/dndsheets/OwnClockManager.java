@@ -116,7 +116,7 @@ public final class OwnClockManager {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(boss);
 		if (block == null) return;
 
-		Component title = Component.literal(block.name()).withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD);
+		Component title = ContentNames.of(block.name()).withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD);
 		Component subtitle = Component.translatable(subtitleKey(block.type())).withStyle(ChatFormatting.GRAY);
 
 		for (ServerPlayer player : level.players()) {

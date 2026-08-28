@@ -64,21 +64,55 @@ public class ZoneManager {
 	//Duración por defecto: 1 minuto de 5e = 10 asaltos, que es lo que dura la mayoría de los muros.
 	public static final int DEFAULT_ROUNDS = 10;
 
-	public static void place(ServerPlayer caster, SpellRegistry.Spell spell, int saveDc) {
-		//Base a la altura de los pies y no de los ojos: el muro nace del suelo, y con la altura contada
-		//desde los ojos su mitad inferior quedaría enterrada.
-		//Una zona que NO sigue al lanzador se coloca un par de bloques hacia donde mira; una que sí
-		//(Guardianes Espirituales) nace centrada en él y se recentra al cerrar cada asalto.
-		Vec3 direction = caster.getViewVector(1.0f).normalize();
-		Vec3 origin = spell.followsCaster() ? caster.position() : caster.position().add(direction.scale(2.0));
-		active.add(new Zone(caster.getUUID(), spell.name(), origin, direction, spell.aoeRadius(),
-			spell.aoeShape(), spell.followsCaster(),
-			spell.dice(), spell.damageType(), spell.saveAbility(), saveDc, spell.halfOnSave(), DEFAULT_ROUNDS));
+	/**
+	 * @param aimPoint dónde apunta el lanzador (choque del rayo con el terreno), o {@code null} para
+	 *                 colocarla justo delante. Una zona que sigue al lanzador (Guardianes Espirituales) lo
+	 *                 ignora: nace centrada en él y se recentra al cerrar cada asalto.
+	 */
+	public static void place(ServerPlayer caster, SpellRegistry.Spell spell, int saveDc, Vec3 aimPoint) {
+		Zone zone = zoneAt(caster, spell, saveDc, aimPoint);
+		active.add(zone);
 
-		if (caster.level() instanceof ServerLevel level) draw(level, active.get(active.size() - 1));
+		if (caster.level() instanceof ServerLevel level) draw(level, zone);
 		ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.zone_placed",
-			SheetLoader.characterNameOf(SheetLoader.getServerSheet(caster.getStringUUID()), caster), spell.name())
+			SheetLoader.characterNameOf(SheetLoader.getServerSheet(caster.getStringUUID()), caster), ContentNames.of(spell.name()))
 			.withStyle(ChatFormatting.DARK_PURPLE));
+	}
+
+	/**
+	 * <p>Agachado + clic con un báculo de zona: dibuja dónde caería <b>sin colocarla</b> — no gasta espacio
+	 * de conjuro, ni acción, ni entra en {@code active}.</p>
+	 *
+	 * <p>Sale de {@link #zoneAt} y se pinta con el mismo {@link #draw} que la de verdad, y eso no es un
+	 * ahorro de líneas: una previsualización calculada aparte es una que puede mentir. Un muro que se
+	 * enseña dos bloques a la izquierda de donde va a caer es peor que no enseñar nada, porque encima te
+	 * hace confiar.</p>
+	 */
+	public static void preview(ServerPlayer caster, SpellRegistry.Spell spell, Vec3 aimPoint) {
+		if (caster.level() instanceof ServerLevel level) draw(level, zoneAt(caster, spell, 0, aimPoint));
+	}
+
+	//La zona que saldría de este lanzamiento, sin colocarla: lo que place() registra y lo que preview()
+	//enseña salen de aquí, para que no puedan discrepar.
+	private static Zone zoneAt(ServerPlayer caster, SpellRegistry.Spell spell, int saveDc, Vec3 aimPoint) {
+		//El eje de una zona es HORIZONTAL, siempre: la zona se levanta DEL SUELO. Con el vector de vista a
+		//secas, apuntar al suelo —que es justamente como se coloca una— inclinaba el eje hacia abajo, así
+		//que el muro se hundía en el terreno y su "along" (ver SpellCastManager.inShape) dejaba de cuadrar
+		//con nadie: la zona se colocaba, se anunciaba en el chat y no golpeaba a nadie nunca.
+		Vec3 flat = new Vec3(caster.getViewVector(1.0f).x, 0, caster.getViewVector(1.0f).z);
+		//Mirando en vertical exacta no queda dirección horizontal que normalizar: se cae al giro del cuerpo.
+		Vec3 direction = flat.lengthSqr() < 1.0e-6 ? Vec3.directionFromRotation(0, caster.getYRot()) : flat.normalize();
+
+		//Donde se apunta, no un par de bloques por delante. Colocarla siempre a dos pasos convertía el muro
+		//en algo que solo se podía poner encima de uno mismo: no había forma de tapar un pasillo a diez
+		//bloques ni de cortar el paso por delante de un enemigo, que es para lo que existe el conjuro.
+		//La base queda a la altura de los pies y no de los ojos —el punto apuntado ES el choque del rayo con
+		//el suelo—, que es lo que un muro necesita para no nacer con su mitad inferior enterrada.
+		Vec3 ahead = caster.position().add(direction.scale(2.0));
+		Vec3 origin = spell.followsCaster() ? caster.position() : aimPoint != null ? aimPoint : ahead;
+		return new Zone(caster.getUUID(), spell.name(), origin, direction, spell.aoeRadius(),
+			spell.aoeShape(), spell.followsCaster(),
+			spell.dice(), spell.damageType(), spell.saveAbility(), saveDc, spell.halfOnSave(), DEFAULT_ROUNDS);
 	}
 
 	/**

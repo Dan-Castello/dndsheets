@@ -8,8 +8,6 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.network.CharacterSheetOpenMessage;
 import net.hawthorn.dndsheets.client.procedures.CharacterSheetSaveProcedure;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -27,9 +25,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 
 public class RollEditorScreen extends AbstractContainerScreen<RollEditorMenu> {
 	private final static HashMap<String, Object> guistate = RollEditorMenu.guistate;
-	private final Level world;
-	private final int x, y, z;
-	private final Player entity;
 	EditBox rollExpression;
 	List<Button> adderButtons = new ArrayList<>();
 
@@ -43,11 +38,6 @@ public class RollEditorScreen extends AbstractContainerScreen<RollEditorMenu> {
 
 	public RollEditorScreen(RollEditorMenu container, Inventory inventory, Component text) {
 		super(container, inventory, text);
-		this.world = container.world;
-		this.x = container.x;
-		this.y = container.y;
-		this.z = container.z;
-		this.entity = container.entity;
 		this.imageWidth = 200;
 		this.imageHeight = 175;
 	}
@@ -74,7 +64,7 @@ public class RollEditorScreen extends AbstractContainerScreen<RollEditorMenu> {
 	public boolean keyPressed(int key, int b, int c) {
 		if (key == 256) {
 			CharacterSheetSaveProcedure.execute(rollExpression.getValue(), workingCategory, workingIndex);
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new CharacterSheetOpenMessage(0,0));
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new CharacterSheetOpenMessage());
 			return true;
 		}
 		if (rollExpression.isFocused())

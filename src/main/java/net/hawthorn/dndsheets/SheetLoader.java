@@ -33,15 +33,17 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import net.minecraftforge.fml.event.lifecycle.FMLDedicatedServerSetupEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
-//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
-//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
-//expone a que cambien de firma sin aviso.
+//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
+//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
+//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
+//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
 public class SheetLoader {
 
 	public static final Path GAME_DIR = FMLPaths.GAMEDIR.get();
@@ -70,6 +72,28 @@ public class SheetLoader {
 	 */
 	private static final Map<String, String> activeCharacter = new HashMap<>();
 	private static JsonObject current = null; //Currently active character sheet. Important for populating GUIs when they're opened and knowing which to save to.
+
+	/**
+	 * <p>Ids de personaje con cambios pendientes de escribir a disco. {@link #saveServer} apunta aquí y el
+	 * final del tick escribe ({@link #flushDirty}).</p>
+	 *
+	 * <p><b>Por qué no se escribe en el acto.</b> {@code saveServer} serializa la hoja ENTERA con sangría y
+	 * la vuelca con un {@code Files.writeString} síncrono, en el hilo del servidor. Tiene 25 llamadores, y
+	 * dos están en el camino caliente del combate: {@code Combatant.setConditionSources} (toda alta o baja
+	 * de condición, de cualquier combatiente) y {@code setTemporaryHp}. Una ronda de seis combatientes eran
+	 * decenas de serializaciones y decenas de escrituras a disco, varias de ellas sobre la MISMA hoja
+	 * dentro de la resolución de un solo ataque.</p>
+	 *
+	 * <p><b>Por qué es seguro.</b> Lo que había que evitar era confiar en el autoguardado de 5 minutos, que
+	 * ya costó perder cambios del DM (bug #5). Esto no es eso: la ventana pasa de "inmediato" a "el final de
+	 * este tick", 50 ms, y todas las escrituras de una misma resolución se funden en una. Las LECTURAS no
+	 * cambian en absoluto — {@code sheets} se actualiza síncrono, igual que antes, así que
+	 * {@code getServerSheet} nunca ve nada viejo.</p>
+	 *
+	 * <p>{@code LinkedHashSet}: no repite id (que es el punto) y conserva el orden de marcado, para que el
+	 * log de un fallo de escritura salga en el orden en que pasaron las cosas.</p>
+	 */
+	private static final Set<String> dirty = new LinkedHashSet<>();
 
 	@SubscribeEvent
 	public static void init(FMLCommonSetupEvent event) {
@@ -166,6 +190,7 @@ public class SheetLoader {
 	public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
 		ConcentrationManager.clearFor(player);
+		CastingManager.clearFor(player);
 		BarbarianRageManager.clearFor(player);
 		DruidWildShapeManager.clearFor(player);
 		RangerHunterMarkManager.clearFor(player);
@@ -287,6 +312,13 @@ public class SheetLoader {
 		scheduleAutosave();
 	}
 
+	//Instancia y no static, por el mismo motivo que los dos de al lado: ServerTickEvent es del bus FORGE.
+	@SubscribeEvent
+	public void onServerTick(TickEvent.ServerTickEvent event) {
+		if (event.phase != TickEvent.Phase.END) return;
+		flushDirty();
+	}
+
 	private static void scheduleAutosave() {
 		DndsheetsMod.queueServerWork(AUTOSAVE_INTERVAL_TICKS, () -> {
 			saveAll();
@@ -302,6 +334,10 @@ public class SheetLoader {
 		saveAll();
 	}
 
+	//Escribe TODAS, no solo las marcadas en "dirty", y eso es a propósito: la red de seguridad de este
+	//autoguardado es justamente para los sitios que cambian una hoja en memoria SIN pasar por saveServer
+	//—que es el agujero por el que existe (ver el comentario de arriba)—, y esos no marcan nada. Volcar
+	//solo lo marcado lo convertiría en un no-op y devolvería el fallo que vino a tapar.
 	private static void saveAll() {
 		//saveCharacter y NO saveServer: las claves de "sheets" ya son ids de personaje, y saveServer las
 		//volvería a pasar por activeCharacterOf. Para un jugador con un segundo personaje puesto, eso
@@ -465,22 +501,25 @@ public class SheetLoader {
 	public static void saveServer(JsonObject sheet, String uuid) {
 		String characterId = activeCharacterOf(uuid);
 		sheets.put(characterId, sheet);
+		//A disco al final del tick, no aquí: ver el comentario de "dirty". El id se resuelve AHORA y no en
+		//el volcado, para que un cambio de personaje entremedias no redirija la escritura a otra hoja.
+		dirty.add(characterId);
+	}
 
-		Path file = SHEETS_DIR.resolve(characterId + ".json").toAbsolutePath();
-		
-		try {
-			Files.createDirectories(SHEETS_DIR);
-			//writeString y no deleteIfExists + newOutputStream(CREATE): CREATE a secas NO trunca (solo
-			//implica TRUNCATE_EXISTING cuando no pasas ninguna opcion), asi que sin el borrado previo una
-			//hoja que ENCOGE —quitar una condicion, gastar un espacio que borra la clave— dejaba pegada la
-			//cola del contenido anterior y el JSON quedaba corrupto. writeString trunca de por si, en una
-			//llamada en vez de tres, y sin la copia extra que hacia getBytes().
-			Files.writeString(file, DndsheetsMod.PRETTY_GSON.toJson(sheet));
-		} catch (IOException e) {
-			//El mapa en memoria ya se actualizó arriba, así que sin este log el jugador ve su hoja "guardada"
-			//mientras el archivo real en disco puede no reflejarlo, sin ningún aviso.
-			DndsheetsMod.LOGGER.error("No se pudo guardar la hoja de " + uuid + " en disco.", e);
+	/**
+	 * <p>Escribe las hojas marcadas y vacía la lista. Corre al final de cada tick del servidor y no hace
+	 * nada —ni siquiera mira el disco— si no hay ninguna marcada, que es la inmensa mayoría de los ticks.</p>
+	 */
+	private static void flushDirty() {
+		for (String characterId : dirty) {
+			JsonObject sheet = sheets.get(characterId);
+			//Se borró entre la marca y el volcado. Sin esto, escribir aquí recrearía el archivo que
+			//deleteCharacter acaba de apartar y el personaje "resucitaría" — el mismo fallo que ya
+			//documenta ensureHasCharacter, por otro camino.
+			if (sheet == null) continue;
+			writeCharacterFile(characterId, sheet);
 		}
+		dirty.clear();
 	}
 
 	//Loads each JSON file under the "charactersheets" folder in the Minecraft instance into JSON objects, filling the "sheets" HashMap.
@@ -609,6 +648,8 @@ public class SheetLoader {
 		if (!own && !(owner == null && isDm)) return "no_es_tuyo";
 
 		sheets.remove(characterId);
+		//Junto al remove, no solo en el guard de flushDirty: lo que no existe en memoria no se escribe.
+		dirty.remove(characterId);
 		activeCharacter.remove(requesterUuid, characterId);
 		Path file = SHEETS_DIR.resolve(characterId + ".json").toAbsolutePath();
 		try {
@@ -699,6 +740,7 @@ public class SheetLoader {
 		//invocaciones (ver ConcentrationManager.stopConcentrating).
 		if (previous != null && previous != target) {
 			ConcentrationManager.stopConcentrating(player);
+			CastingManager.clearFor(player);
 			BarbarianRageManager.clearFor(player);
 			DruidWildShapeManager.clearFor(player);
 			RangerHunterMarkManager.clearFor(player);
@@ -822,15 +864,31 @@ public class SheetLoader {
 		saveCharacter(characterId, sheet);
 	}
 
-	//Mismo cuerpo que saveServer pero sin resolver el id: aquí ya se sabe sobre qué personaje se escribe, y
-	//pasarlo por activeCharacterOf lo redirigiría al personaje activo de su dueño.
+	//Como saveServer pero sin resolver el id NI diferir: aquí ya se sabe sobre qué personaje se escribe
+	//(pasarlo por activeCharacterOf lo redirigiría al personaje activo de su dueño), y sus llamadores
+	//—crear, borrar, cambiar de personaje, apagar el servidor— son momentos puntuales en los que el
+	//archivo tiene que estar en disco antes de seguir, no cambios de combate que convenga agrupar.
 	private static void saveCharacter(String characterId, JsonObject sheet) {
 		sheets.put(characterId, sheet);
+		//Ya queda escrito, así que una marca pendiente sobre este mismo id no tiene nada que aportar.
+		dirty.remove(characterId);
+		writeCharacterFile(characterId, sheet);
+	}
+
+	/** El único sitio de todo el mod que toca el disco para una hoja. */
+	private static void writeCharacterFile(String characterId, JsonObject sheet) {
 		Path file = SHEETS_DIR.resolve(characterId + ".json").toAbsolutePath();
 		try {
 			Files.createDirectories(SHEETS_DIR);
-			Files.writeString(file, DndsheetsMod.PRETTY_GSON.toJson(sheet)); //Trunca; ver saveServer.
+			//writeString y no deleteIfExists + newOutputStream(CREATE): CREATE a secas NO trunca (solo
+			//implica TRUNCATE_EXISTING cuando no pasas ninguna opcion), asi que sin el borrado previo una
+			//hoja que ENCOGE —quitar una condicion, gastar un espacio que borra la clave— dejaba pegada la
+			//cola del contenido anterior y el JSON quedaba corrupto. writeString trunca de por si, en una
+			//llamada en vez de tres, y sin la copia extra que hacia getBytes().
+			Files.writeString(file, DndsheetsMod.PRETTY_GSON.toJson(sheet));
 		} catch (IOException e) {
+			//El mapa en memoria ya está actualizado, así que sin este log el jugador ve su hoja "guardada"
+			//mientras el archivo real en disco puede no reflejarlo, sin ningún aviso.
 			DndsheetsMod.LOGGER.error("No se pudo guardar el personaje " + characterId + " en disco.", e);
 		}
 	}

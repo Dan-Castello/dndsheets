@@ -27,7 +27,12 @@ public class ContentFormScreen extends SmallFormScreen {
 
 	public record FieldSpec(String key, String label, FieldKind kind, String defaultValue, String[] cycleOptions, int maxLength) {
 		public static FieldSpec text(String key, String label, String defaultValue) {
-			return new FieldSpec(key, label, FieldKind.TEXT, defaultValue, null, 64);
+			return text(key, label, defaultValue, 64);
+		}
+
+		/** Con tope propio: para las casillas que llevan una LISTA separada por comas, donde 64 se queda corto. */
+		public static FieldSpec text(String key, String label, String defaultValue, int maxLength) {
+			return new FieldSpec(key, label, FieldKind.TEXT, defaultValue, null, maxLength);
 		}
 
 		public static FieldSpec intField(String key, String label, String defaultValue) {
@@ -68,8 +73,9 @@ public class ContentFormScreen extends SmallFormScreen {
 			String initial = prefill.getOrDefault(field.key(), field.defaultValue());
 			//El id no se puede editar una vez creado: ContentEntrySaveMessage hace upsert por id, así que
 			//cambiarlo en un formulario de EDICIÓN dejaría la entrada vieja huérfana en dm_created.json en
-			//vez de renombrarla. En modo edición (hay prefill) se muestra fijo, no como campo editable.
-			if (field.key().equals("id") && !prefill.isEmpty()) continue;
+			//vez de renombrarla. Lo que marca "edición" es traer YA un id, no traer prefill: el diseñador de
+			//encuentros abre este formulario con la composición rellena y el id todavía por poner.
+			if (field.key().equals("id") && prefill.containsKey("id")) continue;
 			if (field.kind() == FieldKind.CYCLE) {
 				int startIndex = Math.max(0, indexOf(field.cycleOptions(), initial));
 				cycleFields.put(field.key(), addCycleButton(field.label(), field.cycleOptions(), field.cycleOptions(), startIndex));

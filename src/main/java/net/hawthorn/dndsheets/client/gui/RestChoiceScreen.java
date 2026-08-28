@@ -1,7 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
-import net.hawthorn.dndsheets.network.RestProposeMessage;
+import net.hawthorn.dndsheets.network.RestMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -25,12 +25,12 @@ public class RestChoiceScreen extends ModalDialogScreen {
 	@Override
 	protected void init() {
 		addModalButton(20, 30, WIDTH - 40, 20, Component.translatable("gui.dndsheets.rest_choice.short"), button -> {
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new RestProposeMessage(false));
+			DndsheetsMod.PACKET_HANDLER.sendToServer(RestMessage.propose(false));
 			this.onClose();
 		});
 
 		addModalButton(20, 54, WIDTH - 40, 20, Component.translatable("gui.dndsheets.rest_choice.long"), button -> {
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new RestProposeMessage(true));
+			DndsheetsMod.PACKET_HANDLER.sendToServer(RestMessage.propose(true));
 			this.onClose();
 		});
 	}

@@ -14,28 +14,41 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * <p>Lista las entradas de {@code dm_created.json} de un tipo (creador de contenido in-game): una fila por
- * entrada que abre su editor (donde vive el botón "Borrar", ver {@link SmallFormScreen#showDeleteButton()}),
- * más "+ Añadir" al final. Solo sabe de armas/hechizos/presets por ahora (ver {@code ContentTypeForms}) —
- * rasgos y monstruos usan flujos propios ({@code TraitEditScreen}, captura de plantilla desde
- * {@code MonsterActionScreen}), no este formulario genérico.</p>
+ * <p>Gestiona el contenido de un tipo: una fila por entrada que abre su editor (donde vive el botón
+ * "Borrar", ver {@link SmallFormScreen#showDeleteButton()}), más "+ Añadir". Solo sabe de armas/hechizos/
+ * presets/dotes/encuentros (ver {@code ContentTypeForms}) — rasgos y monstruos usan flujos propios
+ * ({@code TraitEditScreen}, captura de plantilla desde {@code MonsterActionScreen}).</p>
+ *
+ * <p><b>Dos secciones, no una.</b> Arriba lo que creó el DM ({@code dm_created.json}); debajo lo que trae
+ * el pack. Antes solo salía lo primero, así que abrir "Encuentros" sin haber creado ninguno daba una
+ * pantalla vacía teniendo cinco encuentros cargados y jugables: se lee como que esto no gestiona nada.
+ * Editar uno del pack guarda TU versión con el mismo id en tu archivo, y esa es la que gana al cargar
+ * (ver el orden de {@code DndPaths.autoLoadAll}) — el pack no se toca, porque se reescribe desde el jar
+ * en cada arranque.</p>
  */
 public class ContentEntryListScreen extends ListPickerScreen {
 	private final ContentType type;
 	private final List<JsonObject> entries;
+	private final List<JsonObject> fromPacks;
 
-	private ContentEntryListScreen(ContentType type, List<JsonObject> entries, Screen parent) {
+	private ContentEntryListScreen(ContentType type, List<JsonObject> entries, List<JsonObject> fromPacks, Screen parent) {
 		super(Component.translatable(specFor(type).titleKey()), parent);
 		this.type = type;
 		this.entries = entries;
+		this.fromPacks = fromPacks;
 	}
 
 	//Mismo criterio que DungeonPieceListScreen.open: el parent es lo que esté en pantalla en ese momento
 	//(la pantalla que pidió la lista, o esta misma pantalla si es un eco tras guardar/borrar).
-	public static void open(ContentType type, String arrayJson) {
+	public static void open(ContentType type, String arrayJson, String packsJson) {
+		Minecraft.getInstance().setScreen(new ContentEntryListScreen(type, parse(arrayJson), parse(packsJson),
+			Minecraft.getInstance().screen));
+	}
+
+	private static List<JsonObject> parse(String arrayJson) {
 		List<JsonObject> entries = new ArrayList<>();
 		for (JsonElement el : JsonParser.parseString(arrayJson).getAsJsonArray()) entries.add(el.getAsJsonObject());
-		Minecraft.getInstance().setScreen(new ContentEntryListScreen(type, entries, Minecraft.getInstance().screen));
+		return entries;
 	}
 
 	/**
@@ -79,12 +92,28 @@ public class ContentEntryListScreen extends ListPickerScreen {
 
 	@Override
 	protected void buildRows() {
-		for (JsonObject entry : entries) {
-			String id = entry.has("id") ? entry.get("id").getAsString() : "?";
-			String name = entry.has("name") ? entry.get("name").getAsString() : id;
-			addRow(Component.literal(id.equals(name) ? id : id + " — " + name), b -> openEditor(entry));
-		}
+		for (JsonObject entry : entries) addEntryRow(entry);
 		addRow(Component.translatable("gui.dndsheets.content_entry.add"), b -> openCreateForm());
+
+		if (fromPacks.isEmpty()) return;
+		addHeader(Component.translatable("gui.dndsheets.content_entry.from_pack"));
+		//Los ids que ya tienes tuyos no se repiten abajo: tu versión es la que manda, y verla dos veces
+		//—una editable y otra no— solo invita a editar la que no cuenta.
+		java.util.Set<String> mine = new java.util.HashSet<>();
+		for (JsonObject entry : entries) if (entry.has("id")) mine.add(entry.get("id").getAsString());
+		for (JsonObject entry : fromPacks) {
+			if (entry.has("id") && mine.contains(entry.get("id").getAsString())) continue;
+			addEntryRow(entry);
+		}
+	}
+
+	private void addEntryRow(JsonObject entry) {
+		String id = entry.has("id") ? entry.get("id").getAsString() : "?";
+		String name = entry.has("name") ? entry.get("name").getAsString() : id;
+		//El nombre del pack es una clave de idioma ("content.dndsheets.encounter.cripta"): se traduce, que
+		//es lo que el DM reconoce. Lo que él escribe es texto suyo y ContentNames lo deja tal cual.
+		Component label = Component.literal(id + " — ").append(net.hawthorn.dndsheets.ContentNames.of(name));
+		addRow(id.equals(name) ? Component.literal(id) : label, b -> openEditor(entry));
 	}
 
 	//TRAIT tiene sus propias listas anidadas (nivel/dado) que no encajan en ContentFormScreen — ver
@@ -117,6 +146,7 @@ public class ContentEntryListScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return entries.isEmpty() ? Component.translatable("gui.dndsheets.content_entry.empty") : null;
+		return entries.isEmpty() && fromPacks.isEmpty()
+			? Component.translatable("gui.dndsheets.content_entry.empty") : null;
 	}
 }

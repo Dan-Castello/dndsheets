@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.Combatant;
 import net.hawthorn.dndsheets.DamageTypes;
+import net.hawthorn.dndsheets.MagicSchool;
 import net.hawthorn.dndsheets.client.gui.ContentFormScreen.FieldSpec;
 
 import java.util.LinkedHashMap;
@@ -27,6 +28,12 @@ import java.util.Map;
  */
 final class ContentTypeForms {
 	private static final String[] BOOL_OPTIONS = {"si", "no"};
+
+	//Tope de las casillas que llevan una LISTA separada por comas. Los 64 caracteres del campo de texto
+	//normal dan para un nombre, no para tres ids con namespace: "dndsheets:goblin x4, dndsheets:wolf x2,
+	//dndsheets:dire_wolf" ya se pasa, y lo que sobra se pierde sin avisar. Un encuentro así se guarda con
+	//el último id cortado y solo se descubre al invocarlo, como "un monstruo que no existe".
+	private static final int LIST_LENGTH = 256;
 
 	private ContentTypeForms() {
 	}
@@ -79,7 +86,7 @@ final class ContentTypeForms {
 			FieldSpec.cycle("damageType", "Tipo de daño", DamageTypes.CANONICAL),
 			FieldSpec.cycle("hands", "Manos", new String[]{"one", "two", "versatile"}),
 			FieldSpec.text("versatileDice", "Dado versátil (si aplica)", ""),
-			FieldSpec.text("classes", "Clases permitidas (vacío = todas, separadas por coma)", "")
+			FieldSpec.text("classes", "Clases permitidas (vacío = todas, separadas por coma)", "", LIST_LENGTH)
 		);
 	}
 
@@ -113,6 +120,7 @@ final class ContentTypeForms {
 			FieldSpec.text("id", "Id (espacioDeNombres:ruta)", ""),
 			FieldSpec.text("name", "Nombre", ""),
 			FieldSpec.intField("level", "Nivel (0 = truco)", "0"),
+			FieldSpec.cycle("school", "Escuela de magia", MagicSchool.KEYS),
 			FieldSpec.cycle("mode", "Modo", new String[]{"attack", "save", "heal"}),
 			FieldSpec.cycle("castingAbility", "Característica de lanzamiento", Combatant.ABILITIES),
 			FieldSpec.cycle("saveAbility", "Característica de salvación (si modo=save)", Combatant.ABILITIES),
@@ -124,7 +132,7 @@ final class ContentTypeForms {
 
 	static Map<String, String> spellPrefill(JsonObject entry) {
 		Map<String, String> map = new LinkedHashMap<>();
-		for (String key : new String[]{"id", "name", "mode", "castingAbility", "saveAbility", "dice", "damageType"}) {
+		for (String key : new String[]{"id", "name", "school", "mode", "castingAbility", "saveAbility", "dice", "damageType"}) {
 			putIfPresent(map, entry, key);
 		}
 		if (entry.has("level")) map.put("level", entry.get("level").getAsString());
@@ -137,6 +145,7 @@ final class ContentTypeForms {
 		entry.addProperty("id", values.get("id"));
 		addIfNotBlank(entry, "name", values.get("name"));
 		entry.addProperty("level", parseIntOr(values.get("level"), 0));
+		addIfNotBlank(entry, "school", values.get("school"));
 		entry.addProperty("mode", values.get("mode"));
 		entry.addProperty("castingAbility", values.get("castingAbility"));
 		if ("save".equals(values.get("mode"))) entry.addProperty("saveAbility", values.get("saveAbility"));
@@ -155,10 +164,10 @@ final class ContentTypeForms {
 			FieldSpec.cycle("hitDiceType", "Dado de golpe", new String[]{"1d6", "1d8", "1d10", "1d12"}),
 			FieldSpec.text("abilities", "Fue,Des,Con,Int,Sab,Car (separadas por coma)", "10, 10, 10, 10, 10, 10"),
 			FieldSpec.text("startingWeapon", "Arma inicial (id, opcional)", ""),
-			FieldSpec.text("startingGear", "Equipo inicial (ids, separados por coma)", ""),
+			FieldSpec.text("startingGear", "Equipo inicial (ids, separados por coma)", "", LIST_LENGTH),
 			FieldSpec.intField("spellSlotsMax", "Espacios de conjuro máx.", "0"),
-			FieldSpec.text("traits", "Rasgos concedidos (ids, separados por coma)", ""),
-			FieldSpec.text("spells", "Hechizos conocidos (ids, separados por coma)", "")
+			FieldSpec.text("traits", "Rasgos concedidos (ids, separados por coma)", "", LIST_LENGTH),
+			FieldSpec.text("spells", "Hechizos conocidos (ids, separados por coma)", "", LIST_LENGTH)
 		);
 	}
 
@@ -213,8 +222,8 @@ final class ContentTypeForms {
 			FieldSpec.text("description", "Descripción", ""),
 			//Las mismas seis en el mismo orden que el preset: aquí son el BONO que suma, no la puntuación.
 			FieldSpec.text("abilities", "Bonos Fue,Des,Con,Int,Sab,Car (separados por coma)", "0, 0, 0, 0, 0, 0"),
-			FieldSpec.text("traits", "Rasgos concedidos (ids, separados por coma)", ""),
-			FieldSpec.text("spells", "Hechizos concedidos (ids, separados por coma)", ""),
+			FieldSpec.text("traits", "Rasgos concedidos (ids, separados por coma)", "", LIST_LENGTH),
+			FieldSpec.text("spells", "Hechizos concedidos (ids, separados por coma)", "", LIST_LENGTH),
 			//Sin este campo, editar aquí un Don Épico importado le borraba el nivel 19: el formulario
 			//reescribe la entrada entera, así que lo que no pregunta lo pierde.
 			FieldSpec.text("minLevel", "Nivel mínimo", "1")
@@ -269,7 +278,7 @@ final class ContentTypeForms {
 			FieldSpec.text("id", "Id", ""),
 			FieldSpec.text("name", "Nombre", ""),
 			//La misma sintaxis que en el JSON: un parser y una forma de escribirlo, no dos.
-			FieldSpec.text("monsters", "Monstruos (id x cantidad, separados por coma)", "")
+			FieldSpec.text("monsters", "Monstruos (id x cantidad, separados por coma)", "", LIST_LENGTH)
 		);
 	}
 

@@ -119,7 +119,31 @@ public class DndsheetsMod {
 	//incluida la pareja CharacterOptions* que ya no mandaba nadie) se funden como acciones/kinds nuevos
 	//de BrowseActionMessage/BrowseListMessage y sus registros se borran — todos los ids posteriores
 	//cambian, que es exactamente lo que este handshake convierte en un fallo limpio de conexión.
-	private static final String PROTOCOL_VERSION = "22";
+	//Sube a "24": se limpia la cadena de coordenadas que traía MCreator, y dos mensajes adelgazan.
+	//(1) CharacterSheetOpenMessage pierde type/pressedms: los tres llamadores mandaban (0, 0) y el handler
+	//solo tenía rama para type == 0. (2) SheetRollButtonMessage pierde x/y/z: solo servían para colocar el
+	//sonido del dado, y venían de la posición del jugador AL ABRIR la ficha (sonaba donde estabas antes,
+	//no donde tiras); ahora se leen del jugador que manda el paquete, que el servidor ya tiene.
+	//Quitar campos rompe igual que añadirlos —un cliente viejo escribe ints que el servidor nuevo ya no
+	//lee y el buffer se desincroniza a mitad—, así que sube la versión.
+	//(3) En el mismo salto, la invariante 3 aplicada a dos grupos que aún no la seguían: los cuatro
+	//mensajes de la votación de descanso (RestPropose/RestVoteOpen/RestVoteResponse/RestVoteClose) se
+	//funden en RestMessage con un Kind, y los dos de salvaciones de muerte (DeathSaveRoll/
+	//DeathSaveGiveUp) en DeathSaveMessage. Seis registros menos y dos nuevos: TODOS los ids posteriores
+	//se renumeran, que es justo lo que este handshake convierte en un fallo limpio de conexión.
+	//Se mueven los tres números: NETWORK_SHAPE (114 → 116, seis mensajes menos pero seis constantes de
+	//enum más), NETWORK_ORDER y NETWORK_WIRE.
+	//Sube a "25": el diseñador de encuentros. Dos constantes de enum AL FINAL de sus listas
+	//(BrowseActionMessage.DESIGN_ENCOUNTER y BrowseListMessage.ENCOUNTER_DESIGN, invariante 2), sin
+	//mensajes nuevos: el bestiario con su coste en PX y los umbrales del grupo viajan en el context que
+	//BrowseListMessage ya tenía. Un cliente viejo no manda ni entiende esos dos ordinales, así que sube
+	//igual — NETWORK_SHAPE (116 → 118) y NETWORK_ORDER se mueven; el cable en sí no cambia.
+	//Sigue en "25", mismo lote sin publicar: TurnStateMessage pierde currentName. Era un writeUtf con el
+	//nombre del combatiente de turno, a TODOS los clientes en CADA cambio de turno, que aterrizaba en
+	//TurnHudState.currentName y no lo leía nadie — el HUD saca los nombres de las filas del roster. Se
+	//quita de las tres capas (mensaje, estado del cliente y TurnManager.broadcastTurnState). Mueve
+	//NETWORK_WIRE; ni la cuenta ni el orden cambian.
+	private static final String PROTOCOL_VERSION = "25";
 
 	/**
 	 * <p>Cuántas piezas cruzan el cable: mensajes registrados más constantes de los enums que viajan por
@@ -131,7 +155,7 @@ public class DndsheetsMod {
 	 * la mano igual para desalinearse después. Un número que hay que tocar a mano no impide el error, pero
 	 * lo convierte en una decisión en vez de un olvido.</p>
 	 */
-	public static final int NETWORK_SHAPE = 112;
+	public static final int NETWORK_SHAPE = 118;
 
 	/**
 	 * <p>El orden exacto en que las piezas cruzan el cable, resumido en un hash. {@link #NETWORK_SHAPE}
@@ -143,7 +167,7 @@ public class DndsheetsMod {
 	 * fuente y tumba el build cuando no cuadra. Si mueves algo a propósito, sube {@link #PROTOCOL_VERSION}
 	 * y pega aquí el número que te diga el fallo.</p>
 	 */
-	public static final int NETWORK_ORDER = 1366669976;
+	public static final int NETWORK_ORDER = 2092874090;
 
 	/**
 	 * <p>Que se escribe y se lee en el cable, resumido en un hash: la secuencia de llamadas
@@ -155,7 +179,7 @@ public class DndsheetsMod {
 	 * dos numeros intactos y aun asi rompio la compatibilidad: un cliente viejo leería un texto donde el
 	 * servidor nuevo escribe un Component, y se desincroniza a mitad del paquete.</p>
 	 */
-	public static final int NETWORK_WIRE = -2020662340;
+	public static final int NETWORK_WIRE = 197534065;
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 
@@ -175,8 +199,7 @@ public class DndsheetsMod {
 		addNetworkMessage(ClearCustomAttacksMessage.class, ClearCustomAttacksMessage::buffer, ClearCustomAttacksMessage::new, ClearCustomAttacksMessage::handler);
 		addNetworkMessage(ContentEntryRemoveMessage.class, ContentEntryRemoveMessage::buffer, ContentEntryRemoveMessage::new, ContentEntryRemoveMessage::handler);
 		addNetworkMessage(ContentEntrySaveMessage.class, ContentEntrySaveMessage::buffer, ContentEntrySaveMessage::new, ContentEntrySaveMessage::handler);
-		addNetworkMessage(DeathSaveGiveUpMessage.class, DeathSaveGiveUpMessage::buffer, DeathSaveGiveUpMessage::new, DeathSaveGiveUpMessage::handler);
-		addNetworkMessage(DeathSaveRollMessage.class, DeathSaveRollMessage::buffer, DeathSaveRollMessage::new, DeathSaveRollMessage::handler);
+		addNetworkMessage(DeathSaveMessage.class, DeathSaveMessage::buffer, DeathSaveMessage::new, DeathSaveMessage::handler);
 		addNetworkMessage(MonsterActionChooseMessage.class, MonsterActionChooseMessage::buffer, MonsterActionChooseMessage::new, MonsterActionChooseMessage::handler);
 		addNetworkMessage(GiveItemMessage.class, GiveItemMessage::buffer, GiveItemMessage::new, GiveItemMessage::handler);
 		addNetworkMessage(MonsterActionOpenMessage.class, MonsterActionOpenMessage::buffer, MonsterActionOpenMessage::new, MonsterActionOpenMessage::handler);
@@ -187,10 +210,7 @@ public class DndsheetsMod {
 		addNetworkMessage(PresetApplyMessage.class, PresetApplyMessage::buffer, PresetApplyMessage::new, PresetApplyMessage::handler);
 		addNetworkMessage(PresetApplyToMessage.class, PresetApplyToMessage::buffer, PresetApplyToMessage::new, PresetApplyToMessage::handler);
 		addNetworkMessage(RemoveCustomAttackMessage.class, RemoveCustomAttackMessage::buffer, RemoveCustomAttackMessage::new, RemoveCustomAttackMessage::handler);
-		addNetworkMessage(RestProposeMessage.class, RestProposeMessage::buffer, RestProposeMessage::new, RestProposeMessage::handler);
-		addNetworkMessage(RestVoteCloseMessage.class, RestVoteCloseMessage::buffer, RestVoteCloseMessage::new, RestVoteCloseMessage::handler);
-		addNetworkMessage(RestVoteOpenMessage.class, RestVoteOpenMessage::buffer, RestVoteOpenMessage::new, RestVoteOpenMessage::handler);
-		addNetworkMessage(RestVoteResponseMessage.class, RestVoteResponseMessage::buffer, RestVoteResponseMessage::new, RestVoteResponseMessage::handler);
+		addNetworkMessage(RestMessage.class, RestMessage::buffer, RestMessage::new, RestMessage::handler);
 		addNetworkMessage(RollEditorOpenMessage.class, RollEditorOpenMessage::buffer, RollEditorOpenMessage::new, RollEditorOpenMessage::handler);
 		addNetworkMessage(ScreenActionMessage.class, ScreenActionMessage::buffer, ScreenActionMessage::new, ScreenActionMessage::handler);
 		addNetworkMessage(SheetAdjustMessage.class, SheetAdjustMessage::buffer, SheetAdjustMessage::new, SheetAdjustMessage::handler);

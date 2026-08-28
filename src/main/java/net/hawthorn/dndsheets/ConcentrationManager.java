@@ -102,6 +102,11 @@ public class ConcentrationManager {
 	//Llamado desde cada punto del mod donde un jugador recibe daño real (ver SpellCastManager.applyDamage,
 	//CombatManager.onLivingHurt, MonsterActionManager.resolveAttack/resolveSpell).
 	public static void onDamageTaken(ServerPlayer player, int damage) {
+		//Un conjuro a medio conjurar se interrumpe por la MISMA regla y con la misma CD (ver CastingManager),
+		//así que se engancha aquí y no en los cuatro caminos de daño por separado: este método es el punto
+		//por el que todos pasan ya, y uno nuevo que alguien añada mañana pasará también sin acordarse.
+		CastingManager.onDamageTaken(player, damage);
+
 		Concentrating current = concentratingOn.get(player.getUUID());
 		if (current == null || damage <= 0) return;
 

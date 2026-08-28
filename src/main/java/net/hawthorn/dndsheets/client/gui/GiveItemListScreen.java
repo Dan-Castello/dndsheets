@@ -29,7 +29,7 @@ public class GiveItemListScreen extends ListPickerScreen {
 	@Override
 	protected void buildRows() {
 		for (GiveableItem item : GiveableItem.values()) {
-			addRow(Component.literal(item.label()), b -> {
+			addRow(net.hawthorn.dndsheets.ContentNames.of(item.label()), b -> {
 				DndsheetsMod.PACKET_HANDLER.sendToServer(new GiveItemMessage(item, targetUuid));
 				this.onClose();
 			});

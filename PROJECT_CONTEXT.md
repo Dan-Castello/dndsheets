@@ -65,8 +65,15 @@ src/main/java/net/hawthorn/dndsheets/     Core module.
                              TraitRegistry), and cross-cutting pieces (SheetLoader, CombatManager,
                              TurnManager, Config). ~83 clases planas en este paquete raíz — no hay
                              subpaquetes de dominio; es el punto más denso del repo.
-  api/                       DndSheetsApi — the ONLY surface other mods should call (versioned,
-                             API_VERSION). Everything else can change signature without notice.
+  api/event/                 CharacterSwitchedEvent, SheetValidateEvent — Forge events other mods
+                             subscribe to. The one thing here meant for outside consumption, and the
+                             one with a real consumer (the `species` addon). The rest of the mod has
+                             NO stability contract: signatures can change without notice.
+                             (`DndSheetsApi`/`RollResult`/`WeaponRegistration` lived here until they
+                             were deleted — 233 lines of versioned facade with zero callers anywhere,
+                             the addons included: both reach through `SheetLoader`/`DndsheetsMod`
+                             instead. An API written before a consumer exists can't be checked against
+                             anything; write it when something needs it.)
   client/gui/, client/gui/components/, client/procedures/, command/, network/, init/,
   world/inventory/, procedures/    Same shape as always — see invariant 7 for screens, invariant 1/2
                              for network.
@@ -151,6 +158,13 @@ with no other paper trail:
   integrated. Their jars (plus stale local copies of Curios/Patchouli, which now come from Maven as
   `compileOnly`) were deleted from `dependencies/`; this paragraph is the record of that evaluation.
   `dependencies/` holds only what a build file actually references: Origins and Apoli.
+  **Re-evaluated 2026-08-26 for the magic pass and rejected again, on purpose:** Iron's Spells was taken
+  as an *architectural reference* (schools with their own identity, a visible wind-up before the effect,
+  a spell window that is more than a list) and every one of those was reimplemented natively — see "El
+  sistema de magia" below. Depending on it would have cost a mixin-based hard dependency that
+  `runClient` cannot load here (same SRG/Parchment wall as everything else in this list), a licence that
+  forbids redistributing its assets, and a mana-based engine competing with 5e spell slots. Nothing was
+  copied from it: zero of its code, zero of its assets.
 - **Why none of these run in `runClient`:** every one of them (plus Oculus, LionfishAPI, Citadel,
   tried the same way) mixes into vanilla classes using SRG names (`f_19803_`, `m_91087_`), and this
   dev environment runs Parchment mappings, where those names don't exist. `fg.deobf` fixes the jar's
@@ -193,6 +207,83 @@ proceso (~18 campos), así que solo puede existir UN encuentro en modo turnos a 
 servidor. Decisión deliberada (un servidor = una mesa): si algún día dos grupos juegan encuentros
 simultáneos, eso es estado por-encuentro y una reescritura grande, no un parche. Está anotado con un
 comentario `ponytail:` en la propia clase.
+
+## El sistema de magia
+
+Las reglas ya estaban (modos, áreas con geometría real, upcasting, concentración, contrahechizo,
+espacios por nivel); lo que faltaba era todo lo que hace que lanzar un conjuro **se note**. Pasada del
+2026-08-26.
+
+- **`MagicSchool`** — las 8 escuelas de 5e, mismo molde exacto que `CreatureType` (enum, `parse`
+  tolerante a acentos/inglés/guiones, `UNKNOWN` que nunca filtra ni dispara nada). **No gatea ninguna
+  regla**: decide con qué partículas y sonido se LANZA un conjuro. El tipo de daño ya distinguía el
+  impacto, pero medio SRD no hace daño, y hasta ahora los 87 conjuros arrancaban con el mismo remolino
+  morado. `CombatFx.FX_BY_SCHOOL` reutiliza el `HitFx`/`playCombo` de los impactos, sin estructura
+  paralela. **Cero assets nuevos**: todo son `ParticleTypes`/`SoundEvents` de vanilla.
+- **Partículas DIRIGIDAS — la palanca visual de todo lo demás.** `sendParticles` con `count=0` no
+  reparte al azar dentro de una caja: manda UNA partícula cuyo `dx/dy/dz` es su **vector de velocidad**.
+  Toda esta clase se pintaba con `count>0`, y eso es exactamente por qué cada conjuro salía como una
+  nubecita quieta — nada se movía en una dirección concreta. Sobre `directed()` se construyen
+  `burstRing` (onda expansiva), `burstShell` (cáscara esférica repartida con el ángulo áureo, no por
+  latitud/longitud, que amontona la mitad de los puntos en los polos) y `basisFor`/`onCircle` (círculos
+  y hélices alrededor de una dirección cualquiera, no solo de los ejes del mundo).
+  Las cuatro fases de un conjuro son ahora distintas entre sí: **carga** (hélice de dos brazos cuyo radio
+  DECRECE —al revés que una explosión— más motas que caen hacia dentro y un tono que sube), **disparo**
+  (núcleo que revienta + chorro cónico hacia donde mira + tres anillos de onda a los pies, que se quedan
+  donde se lanzó y no siguen al lanzador), **viaje** (núcleo con velocidad + dos hebras en hélice) e
+  **impacto** (cáscara que se expande + anillo en el suelo; superar la salvación es una cáscara que se
+  cierra hacia dentro, o sea un escudo). `CombatFx.shapeOutline` dibuja el cono y la línea con la misma
+  geometría que `SpellCastManager.inShape` usa para decidir a quién alcanzan: hasta ahora esas dos formas
+  **no pintaban nada en absoluto**, ni al lanzarse ni en la previsualización.
+- **El orden de las fases importa y ya se rompió una vez**: `CombatFx.spellCast` (el fogonazo) vivía en
+  `prepare()`, o sea antes de la carga — con tiempo de lanzamiento se veía estallido → hélice → impacto,
+  la secuencia al revés. Vive en `resolve()`; un conjuro instantáneo resuelve en el mismo tick, así que
+  para él no cambia nada.
+- **`SpellCastManager` está partido en dos**: `prepare()` valida y **cobra** (objetivo, espacio, turno,
+  contrahechizo) y `resolve()` aplica el efecto, con un `CastRequest` entre medias. El corte no es
+  estético: es lo que permite que pase tiempo real entre las dos mitades.
+- **`CastingManager`** — conjuros que tardan en salir. `castTicks` en el JSON, o derivado del nivel por
+  `Config.castTicksPerLevel/castTicksMax`; **0 = el lanzado instantáneo de siempre** y esa es la puerta
+  de salida (invariante 9). Se interrumpe por daño (salvación de CON con **la misma fórmula que la
+  concentración**, `máx(10, daño/2)`, enganchada en `ConcentrationManager.onDamageTaken` porque es el
+  punto por el que ya pasan los cuatro caminos de daño), por quedar incapacitado y por moverse. El
+  espacio se pierde igual, como con el contrahechizo. Estado en RAM, **nunca en la hoja**: un conjuro a
+  medias no debe sobrevivir a un reinicio, y por eso `notifyClient` manda el parche sin tocar el
+  `JsonObject` (el self-test de la invariante 4 lo cazó, con razón).
+- **`TurnManager.holdAutoAdvance`/`resumeAutoAdvance`** — sin esto el turno pasaba a mitad del
+  lanzamiento y el conjuro resolvía en el turno de otro. Reutiliza el `turnToken++` de `undoAction`.
+- **Animación: solo primera persona, y es una decisión.** `client/SpellCastAnimator` mueve la mano por
+  `RenderHandEvent`. La pose en tercera persona exigiría escribir en `HumanoidModel.rightArmPose`, que
+  `PlayerRenderer.setModelProperties` reescribe **después** de `RenderPlayerEvent.Pre` — sin mixin no
+  hay dónde engancharse, y aquí no entran mixins. Lo que ven los demás es la carga de partículas de
+  `CombatFx.spellCharge`, que es de servidor.
+- **El gasto de espacio se ANUNCIA.** Se descontaba en silencio y el único rastro era un número del HUD
+  que baja; con un truco —que por regla no gasta nada— la conclusión razonable desde fuera es "esto
+  ignora los espacios de conjuro". Ahora se nombra el nivel gastado y lo que queda de ese nivel, y un
+  truco dice explícitamente que es a voluntad. Reportado tal cual jugando.
+- **Preparación de hechizos** — `"prepared"` por entrada en `sheet.spells[]`, límite
+  `CharacterRules.preparedLimitFor` (mod de la característica de la clase + nivel, mínimo 1; 0 apaga la
+  regla entera para quien no lanza). **Ausente = preparado**, o cada lanzador existente se quedaría mudo
+  al actualizar (invariante 8, fijado por `checkPreparedSpells`). El límite lo hace cumplir el servidor.
+  **"No está preparado" y "no se puede lanzar" no son la misma pregunta**, y confundirlas ya rompió el
+  báculo una vez: `/dndspells staff` lanza por diseño un conjuro que su portador nunca aprendió, así que
+  no está en su hoja y `isPrepared` devolvía false. El guardia pregunta por `preparationAllows` — la
+  lista solo manda sobre lo que la hoja SÍ conoce.
+- **Grimorio v2** — secciones por nivel con `addHeader`, y **la escuela y el "sin preparar" van dentro
+  de la etiqueta de cada fila** en vez de en botones de filtro: el buscador automático de
+  `ListPickerScreen` ya filtra por el texto de la etiqueta, así que escribir "evoc" filtra por escuela
+  gratis. Cero widgets nuevos para eso.
+- **Red: cero clases nuevas.** Preparar/despreparar son dos constantes al final de
+  `BrowseActionMessage.Action` (invariantes 2 y 3), con el id del conjuro en el campo de texto libre que
+  ya existía. `PROTOCOL_VERSION` 23, `NETWORK_SHAPE` 114, `NETWORK_ORDER` 1236403559.
+
+**Saltado a propósito** (añadir cuando alguien lo pida jugando, no antes): entidad de proyectil con
+física propia (el dado decide el impacto, no la puntería — el rastro ilustra la regla en vez de competir
+con ella), `DeferredRegister<ParticleType>` y `.ogg` propios, rueda radial de hechizos (ninguna de las
+cuatro bases de la invariante 7 la soporta; la tecla `R` de lanzado rápido cubre el uso), lista de
+favoritos en la hoja, y campo `description` por conjuro (el compendio ya compone la descripción desde
+las estadísticas). **Y el candado de "solo puedes recomponer preparados tras un descanso largo": no está
+puesto.** Se puede preparar y despreparar en cualquier momento; el límite sí se respeta siempre.
 
 ## Architecture and the patterns worth reusing
 
@@ -463,6 +554,27 @@ cualquier literal con prosa en `*Overlay.java`.
 9. La Guía se abría sola a los 3s del primer ingreso (se cerraba por reflejo) → toast de esquina con
    la tecla (`TutorialOpenMessage.firstJoin`); `/dndguide` sigue abriendo el libro.
 
+### List D — pasada de magia 2026-08-26
+
+Defectos encontrados al recorrer el sistema de hechizos para la pasada de arriba, todos ya arreglados:
+
+1. `chat.dndsheets.spell.zone_tick` recibía 5 argumentos y su cadena usaba 2 → quien estaba dentro de una
+   zona no veía ni la salvación, ni la CD, ni el daño recibido. El texto correcto seguía intacto en la
+   clave huérfana `spell.wall_tick`, de la que se renombró.
+2. `chat.dndsheets.spell.zone_placed` pasaba 2 argumentos y usaba 1 → se anunciaba el personaje pero no
+   qué conjuro había desplegado. `checkPlaceholderParity` no los vio nunca: compara los dos idiomas entre
+   sí, no la cadena contra sus argumentos en el código.
+3. Cuatro claves huérfanas sin ningún uso en Java (`spell.no_slots`, `spell.wall_placed`,
+   `spell.wall_tick`, `spell.wall_faded`) → borradas tras recuperar de ellas el texto del punto 1.
+4. `SpellCastManager.findAoeTargets(caster, center, radius)` (la sobrecarga de 3 argumentos) no la
+   llamaba nadie → borrada.
+5. Un comentario `ponytail:` cortado a mitad de frase en `SpellCastManager` → terminado.
+6. El javadoc de `CounterspellManager` decía que "el pool de espacios es plano, sin niveles por ranura";
+   dejó de ser cierto cuando `SpellSlots` pasó a tabla por nivel, y desde entonces sí cobra un espacio de
+   3º. Lo que de verdad falta es la prueba de característica contra conjuros más altos → corregido.
+7. `GrimoireScreen` tenía prosa en castellano dentro de `Component.literal` (los cuatro botones): el lint
+   del bug #15 no lo alcanza porque está anclado a chat y a `*Overlay.java` → todo a claves.
+
 Older, already-resolved technical debt (naming, duplication, dead code — not user-facing bugs) lived
 in a separate ledger, `AUDIT_REPORT_2026.md`, now closed and removed; one item (F26, test coverage
 for `rollAttack`/`rollDamage`) is still open.
@@ -665,6 +777,10 @@ before someone does it.
   through the core's normal path — see "Modularity Map".
 - Adding or evaluating a soft dependency → "Library Audit" for the compileOnly/isolation pattern and
   why it can't be tested in `runClient`.
+- Añadir un sonido → "Atribución > Audio". Solo CC0, mono (Minecraft reproduce un `.ogg` estéreo SIN
+  dirección), y su línea en esa lista o `checkAudioAssets` tumba el build. Referenciar un `SoundEvents.*`
+  de vanilla no cuesta licencia ninguna y sigue siendo la vía por defecto: solo se envía un fichero
+  propio cuando vanilla no tiene nada que suene a eso.
 - Anything DM-facing that hands out an item/teaches a spell/spawns a monster → there's almost
   certainly an existing `GiveableItem`-style pattern or DM Panel row to extend.
 - Cómo se ve un monstruo → `MonsterRegistry.Appearance` (equipo, cría, brillo) y `baseEntity`, que
@@ -706,6 +822,31 @@ Las **dotes** que se envían (`feats.json`) derivan del **System Reference Docum
 
 Hubo que ir a buscarlo porque el SRD 5.1 traía **una sola dote** (Luchador). El SRD 5.2 publicó la
 lista entera, y de ahí salen las 15 restantes.
+
+### Audio
+
+**Toda pista de sonido enviada en el jar va listada aquí, con su licencia.** No es cortesía: es la
+condición para redistribuirla, igual que con el SRD. *Machine-enforced:* `JsonContentSelfTest.checkAudioAssets`
+tumba el build si aparece un `.ogg` en `assets/dndsheets/sounds/` que no tenga su línea en esta lista,
+así que borrar la entrada rompe la compilación en vez de crear un problema legal en silencio.
+
+El formato de cada línea lo lee el self-test: `` - `fichero.ogg` — LICENCIA, procedencia.``
+
+- `dice.ogg` — CC0 1.0, obra original del proyecto. (estéreo)
+
+**Solo CC0.** Es una decisión, no lo que había a mano: CC-BY también permitiría redistribuir, pero
+obliga a mantener viva una lista de créditos por fichero, y una atribución que nadie comprueba se pudre.
+El SRD sobrevive en este repo porque hay un self-test que tumba el build si desaparece la cita; un CC-BY
+sin ese mismo candado es una promesa que un refactor rompe seis meses después. CC0 no crea el problema.
+Quedan descartadas por incompatibles con la redistribución en un modpack (ver R4): CC-BY-NC, Sampling+,
+y las bibliotecas tipo Zapsplat cuyos términos prohíben redistribuir el fichero como asset.
+
+**Mono, o no hay audio posicional.** Minecraft reproduce un `.ogg` estéreo sin dirección: se oiría igual
+un conjuro al lado que a treinta bloques. Es la trampa clásica y `checkAudioAssets` la comprueba leyendo
+la cabecera de identificación Vorbis, así que no depende de que nadie se acuerde. La marca `(estéreo)`
+en la línea de atribución es la excepción explícita — hoy solo la usa `dice.ogg`, que venía del commit
+inicial (era MCreator) a 24 kHz y dos canales. Re-exportarlo en mono desde su original es una mejora
+pendiente, no una regresión: es como sonaba desde el principio.
 
 ### Qué NO está incluido, y no va a estarlo
 

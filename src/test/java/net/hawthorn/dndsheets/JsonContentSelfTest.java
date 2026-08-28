@@ -59,6 +59,8 @@ public class JsonContentSelfTest {
 		checkCharacterRules();
 		checkSpellSlots();
 		checkUpcasting();
+		checkMagicSchools();
+		checkPreparedSpells();
 		checkSpellTargeting();
 		checkInitiatorGoesFirst();
 		checkCover();
@@ -81,6 +83,7 @@ public class JsonContentSelfTest {
 		checkEnvironmentalDamage();
 		checkDefaultsRefresh();
 		checkTabTextures();
+		checkAudioAssets();
 		checkInteractHandlers();
 		checkParchmentTextHasNoShadow();
 		checkVision();
@@ -89,6 +92,7 @@ public class JsonContentSelfTest {
 		checkCharacterSetup();
 		checkPortabilityCoupling();
 		checkImportedContent();
+		checkContentNamesAreTranslated();
 
 		System.out.println("JsonContentSelfTest: OK, los 7 JSON de ejemplo (uno por tipo de contenido) parsean con los registros reales.");
 	}
@@ -194,6 +198,97 @@ public class JsonContentSelfTest {
 				+ " y el manejador correría dos veces por clic");
 
 		System.out.println("checkInteractHandlers: OK, los " + abilityFlags.size() + " ítems de capacidad se despachan y la cadena está sin duplicar.");
+	}
+
+	/**
+	 * <p><b>Todo audio enviado va atribuido, registrado y en mono.</b> Tres cosas que fallan en silencio y
+	 * que nadie mira dos veces:</p>
+	 *
+	 * <ol>
+	 * <li><b>Licencia.</b> Un {@code .ogg} sin línea en "Atribución &gt; Audio" de PROJECT_CONTEXT.md no es
+	 *     un descuido de documentación: es material redistribuyéndose en cada jar sin constancia de bajo qué
+	 *     condiciones. El SRD ya se comprueba así; el audio entraba sin ningún control.</li>
+	 * <li><b>Registro.</b> Un sonido declarado en {@code sounds.json} cuyo fichero no existe suena a
+	 *     silencio con un aviso en el log que nadie lee; un fichero sin declarar es peso muerto en el jar.</li>
+	 * <li><b>Mono.</b> Minecraft reproduce un {@code .ogg} estéreo <b>sin dirección</b>. Es la trampa
+	 *     clásica del audio en mods y no se nota jugando salvo que la busques: el conjuro suena igual al
+	 *     lado que a treinta bloques. Se lee de la cabecera de identificación Vorbis, así que no depende de
+	 *     que quien añada el fichero se acuerde de exportarlo bien.</li>
+	 * </ol>
+	 */
+	private static void checkAudioAssets() throws Exception {
+		Path sounds = Path.of("src", "main", "resources", "assets", "dndsheets", "sounds");
+		List<Path> files;
+		try (Stream<Path> walk = Files.walk(sounds)) {
+			files = walk.filter(f -> f.toString().endsWith(".ogg")).sorted().toList();
+		}
+		assertTrue(!files.isEmpty(), "no hay ningún .ogg en " + sounds + ": ¿se movió la carpeta?");
+
+		String doc = Files.readString(Path.of("PROJECT_CONTEXT.md"));
+		JsonObject declared = JsonParser.parseString(Files.readString(
+			Path.of("src", "main", "resources", "assets", "dndsheets", "sounds.json"))).getAsJsonObject();
+
+		//Los nombres que sounds.json dice que existen ("dndsheets:dice" -> dice.ogg).
+		Set<String> registered = new java.util.TreeSet<>();
+		for (String key : declared.keySet()) {
+			for (JsonElement entry : declared.getAsJsonObject(key).getAsJsonArray("sounds")) {
+				String name = entry.isJsonObject() ? entry.getAsJsonObject().get("name").getAsString() : entry.getAsString();
+				registered.add(name.contains(":") ? name.substring(name.indexOf(':') + 1) : name);
+			}
+		}
+
+		Set<String> present = new java.util.TreeSet<>();
+		for (Path file : files) {
+			String name = file.getFileName().toString();
+			present.add(name.substring(0, name.length() - ".ogg".length()));
+
+			//1) Licencia. La línea la define el propio bloque: - `fichero.ogg` — LICENCIA, procedencia.
+			int line = doc.indexOf("- `" + name + "`");
+			assertTrue(line >= 0, name + " se envía en el jar pero no está en la sección Atribución > Audio de"
+				+ " PROJECT_CONTEXT.md. Es la condición para poder redistribuirlo, igual que con el SRD:"
+				+ " añade su línea con la licencia y de dónde salió.");
+			String attribution = doc.substring(line, doc.indexOf(10, line));
+			assertTrue(attribution.contains("CC0"), name + " no declara CC0: " + (char) 34 + attribution + (char) 34
+				+ ". Solo entra audio CC0 (ver el bloque): CC-BY obligaría a mantener créditos por fichero,"
+				+ " y CC-BY-NC o Sampling+ son incompatibles con redistribuir el modpack.");
+
+			//3) Mono, salvo excepción anotada EN la misma línea (que es lo que la hace visible).
+			int channels = vorbisChannels(Files.readAllBytes(file));
+			assertTrue(channels == 1 || attribution.contains("(estéreo)"),
+				name + " tiene " + channels + " canales. Minecraft reproduce un .ogg estéreo SIN dirección:"
+				+ " sonaría igual al lado que a treinta bloques. Expórtalo en mono, o anota (estéreo) en su"
+				+ " línea de atribución si de verdad tiene que ser ambiental.");
+		}
+
+		//2) Registro en los dos sentidos.
+		Set<String> sinFichero = new java.util.TreeSet<>(registered);
+		sinFichero.removeAll(present);
+		assertTrue(sinFichero.isEmpty(), "sounds.json declara sonidos sin fichero: " + sinFichero
+			+ ". Suenan a silencio con un aviso en el log que no lee nadie.");
+
+		Set<String> sinRegistrar = new java.util.TreeSet<>(present);
+		sinRegistrar.removeAll(registered);
+		assertTrue(sinRegistrar.isEmpty(), "estos .ogg viajan en el jar sin estar en sounds.json: " + sinRegistrar
+			+ ". O se registran, o se borran: hoy son peso muerto que nadie puede reproducir.");
+
+		System.out.println("checkAudioAssets: OK, " + files.size() + " pista(s) de audio, todas CC0, registradas y con sus canales comprobados.");
+	}
+
+	/**
+	 * <p>Canales de un OGG Vorbis, leídos de su cabecera de identificación: el paquete empieza por el byte
+	 * {@code 0x01} seguido de {@code "vorbis"}, luego 4 bytes de versión y entonces el número de canales.</p>
+	 *
+	 * <p>Se parsea a mano —son doce bytes— en vez de traerse una librería de audio al classpath del build
+	 * para responder una pregunta de sí o no.</p>
+	 */
+	private static int vorbisChannels(byte[] data) {
+		byte[] marker = {1, 'v', 'o', 'r', 'b', 'i', 's'};
+		for (int i = 0; i + marker.length + 5 < data.length; i++) {
+			boolean found = true;
+			for (int k = 0; k < marker.length && found; k++) found = data[i + k] == marker[k];
+			if (found) return data[i + marker.length + 4] & 0xFF;
+		}
+		return -1; //Ni siquiera es un Vorbis reconocible: el assert de arriba lo cantará igual.
 	}
 
 	private static void checkTabTextures() throws Exception {
@@ -1470,7 +1565,7 @@ public class JsonContentSelfTest {
 	 * se abre hacia atrás simplemente alcanza al grupo propio en vez de al enemigo, y eso solo se descubre
 	 * en mitad de una sesión.</p>
 	 */
-	private static void checkAoeShapes() {
+	private static void checkAoeShapes() throws Exception {
 		net.minecraft.world.phys.Vec3 origin = new net.minecraft.world.phys.Vec3(0, 0, 0);
 		net.minecraft.world.phys.Vec3 forward = new net.minecraft.world.phys.Vec3(1, 0, 0); //Mirando a +X.
 
@@ -1525,7 +1620,33 @@ public class JsonContentSelfTest {
 		assertTrue(!SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(-6, 0, 0)),
 			"el muro no se extiende hacia atrás del lanzador");
 
-		System.out.println("checkAoeShapes: OK, línea y cono salen del lanzador, y el muro es superficie y no cilindro.");
+		//El eje de una zona tiene que ser HORIZONTAL, y esta es la razón de que ZoneManager.place aplane el
+		//vector de vista. Una zona se coloca mirando al suelo —no hay otra forma de apuntarla—, y con el eje
+		//inclinado "along" deja de medir distancia horizontal: el muro se estira por el suelo mucho más allá
+		//de la longitud que declara (a 45° de picado, la mitad otra vez), y además se dibuja hundiéndose en
+		//el terreno. No falla ni avisa: simplemente el muro no mide lo que dice.
+		net.minecraft.world.phys.Vec3 mirandoAlSuelo = new net.minecraft.world.phys.Vec3(0.7, -0.7, 0).normalize();
+		net.minecraft.world.phys.Vec3 masAllaDelFinal = new net.minecraft.world.phys.Vec3(16, 0, 0);
+		assertTrue(SpellCastManager.inShape("wall", origin, mirandoAlSuelo, 12, masAllaDelFinal),
+			"con el eje picado, un muro de 12 alcanza a 16 bloques: por eso ZoneManager.place lo aplana");
+		assertTrue(!SpellCastManager.inShape("wall", origin, forward, 12, masAllaDelFinal),
+			"con el eje horizontal el muro mide lo que dice medir");
+
+		//La otra mitad: la zona nace DONDE SE APUNTA. Colocarla siempre dos bloques por delante del lanzador
+		//dejaba fuera de alcance cualquier pasillo o puerta que se quisiera tapar.
+		String zoneManager = Files.readString(
+			Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "ZoneManager.java"));
+		assertTrue(zoneManager.contains("Vec3 aimPoint") && zoneManager.contains("aimPoint != null ? aimPoint"),
+			"una zona se coloca en el punto apuntado, no siempre delante del lanzador");
+
+		//Y lo que enseña el clic agachado sale del MISMO sitio que lo que coloca el clic normal. Una
+		//previsualización calculada por su cuenta puede desviarse de la colocación real sin que falle nada:
+		//el muro se enseña donde no va a caer, y encima te hace confiar.
+		assertTrue(zoneManager.contains("private static Zone zoneAt(")
+				&& zoneManager.contains("draw(level, zoneAt(") && zoneManager.contains("zoneAt(caster, spell, saveDc, aimPoint)"),
+			"la previsualización y la colocación de una zona salen las dos de zoneAt: si no, la primera puede mentir");
+
+		System.out.println("checkAoeShapes: OK, línea y cono salen del lanzador, el muro es superficie y no cilindro, y una zona se apunta al suelo con eje horizontal.");
 	}
 
 	/**
@@ -1861,6 +1982,146 @@ public class JsonContentSelfTest {
 	 * {@link #checkSpells()} porque no comprueba el contenido del pack, sino la aritmética de
 	 * {@code Spell.upcastTo} — que es la que decide cuánto daño hace de verdad una Bola de Fuego de 5º.</p>
 	 */
+	/**
+	 * <p>Escuelas de magia (ver {@link MagicSchool}). No gatean ninguna regla —solo deciden con qué se ve y
+	 * se oye el lanzamiento— pero tienen dos formas de romperse en silencio, y las dos son caras: una
+	 * escuela mal escrita en un pack de un DM que se lleve por delante el conjuro entero, y un componente
+	 * nuevo del record que las copias de {@code Spell} se dejen por el camino.</p>
+	 */
+	private static void checkMagicSchools() throws Exception {
+		//Tolerante a como lo escriba quien escriba el pack: acentos, mayúsculas, guiones y el nombre inglés
+		//del SRD son la misma escuela. Rechazarlos no protegería de nada — dejaría el conjuro sin escuela.
+		assertTrue(MagicSchool.parse("evocación") == MagicSchool.EVOCATION, "con acento");
+		assertTrue(MagicSchool.parse("EVOCACION") == MagicSchool.EVOCATION, "en mayúsculas");
+		assertTrue(MagicSchool.parse("evocation") == MagicSchool.EVOCATION, "en inglés, como lo publica el SRD");
+		assertTrue(MagicSchool.parse("  no-muerto ") == MagicSchool.UNKNOWN, "una palabra que no es escuela no adivina");
+		assertTrue(MagicSchool.parse(null) == MagicSchool.UNKNOWN && MagicSchool.parse("") == MagicSchool.UNKNOWN,
+			"ausente y vacío son lo mismo: sin escuela");
+		//La cadena vacía va primera en el ciclador del editor: "sin escuela" es el valor por defecto de un
+		//conjuro, y tiene que ser lo primero que ofrezca el botón y no algo a lo que haya que dar la vuelta.
+		assertTrue(MagicSchool.KEYS.length == MagicSchool.values().length && MagicSchool.KEYS[0].isEmpty(),
+			"KEYS debería cubrir el enum entero y empezar por la opción vacía");
+
+		//Un pack anterior a este campo se comporta EXACTAMENTE como antes (invariante 8): sin escuela, y
+		//CombatFx.spellCast cae al remolino morado de siempre.
+		SpellRegistry.Spell viejo = SpellRegistry.parse(com.google.gson.JsonParser.parseString(
+			"{\"id\":\"x\",\"level\":1,\"dice\":\"1d6\"}").getAsJsonObject());
+		assertTrue(viejo.school() == MagicSchool.UNKNOWN, "un hechizo sin \"school\" no debería inventarse una");
+
+		//El defecto silencioso al ampliar un record: las dos copias que devuelve Spell reconstruyen los 21
+		//componentes a mano, así que un componente nuevo que no se propague se pierde SIN fallar nada — el
+		//conjuro simplemente arranca con el efecto genérico en cuanto lo subes de nivel.
+		SpellRegistry.Spell fireball = spellFromPack("dndsheets:fireball");
+		assertTrue(fireball.school() == MagicSchool.EVOCATION, "Bola de Fuego es de evocación en el SRD");
+		assertTrue(fireball.upcastTo(5).school() == MagicSchool.EVOCATION, "upcastTo no debería perder la escuela");
+		SpellRegistry.Spell fireBolt = spellFromPack("dndsheets:fire_bolt");
+		assertTrue(fireBolt.atCasterLevel(17).school() == MagicSchool.EVOCATION, "atCasterLevel tampoco");
+
+		//Y el pack enviado las trae todas: una escuela mal escrita cae a UNKNOWN en silencio, así que sin
+		//esta comprobación un dedazo en spells.json solo se notaría jugando, mirando partículas.
+		JsonArray bulk = readShippedPack("spells.json");
+		for (JsonElement el : bulk) {
+			JsonObject json = el.getAsJsonObject();
+			String id = json.get("id").getAsString();
+			assertTrue(json.has("school"), "hechizo sin escuela en spells.json: " + id);
+			assertTrue(MagicSchool.parse(json.get("school").getAsString()) != MagicSchool.UNKNOWN,
+				"escuela no reconocida en spells.json: " + id + " -> " + json.get("school").getAsString());
+		}
+		//Tiempo de lanzamiento (ver CastingManager). Vive en el record y no en una clase aparte por la misma
+		//razón que upcastTo/atCasterLevel: es aritmética pura y el self-test la alcanza sin un Forge vivo.
+		//Lo que hay que fijar aquí es que la puerta de salida siga existiendo: castTicksPerLevel a 0 tiene
+		//que devolver el lanzamiento instantáneo de siempre para TODA la mesa (invariante 9), y un truco no
+		//puede tardar nunca — es el ataque a voluntad de un lanzador.
+		assertTrue(fireball.castTicksAt(3, 20) == 9, "un conjuro de 3er nivel a 3 ticks/nivel debería tardar 9");
+		assertTrue(fireball.castTicksAt(3, 5) == 5, "y el techo manda sobre la fórmula");
+		assertTrue(fireball.castTicksAt(0, 20) == 0, "castTicksPerLevel a 0 devuelve el lanzamiento instantáneo de siempre");
+		assertTrue(fireBolt.castTicksAt(3, 20) == 0, "un truco es instantáneo pase lo que pase");
+		//Un castTicks explícito en el JSON manda sobre la configuración, incluido un 0: así se escribe un
+		//conjuro que NO puede interrumpirse (Escudo, Contrahechizo) sin tocar la config de la mesa.
+		SpellRegistry.Spell fijo = SpellRegistry.parse(com.google.gson.JsonParser.parseString(
+			"{\"id\":\"y\",\"level\":5,\"castTicks\":0}").getAsJsonObject());
+		assertTrue(fijo.castTicksAt(3, 20) == 0, "un 0 escrito a mano no debe ser \"no declarado\"");
+		SpellRegistry.Spell lento = SpellRegistry.parse(com.google.gson.JsonParser.parseString(
+			"{\"id\":\"z\",\"level\":1,\"castTicks\":40}").getAsJsonObject());
+		assertTrue(lento.castTicksAt(3, 20) == 40, "lo escrito a mano se salta también el techo de la config");
+		assertTrue(lento.upcastTo(3).castTicksAt(3, 20) == 40, "y sobrevive a subir el conjuro de nivel");
+
+		System.out.println("checkMagicSchools: OK, las 8 escuelas parsean tolerantes, sobreviven a las copias de Spell y las traen los " + bulk.size() + " hechizos enviados.");
+	}
+
+	/**
+	 * <p>Preparación de hechizos. Lo que hay que fijar aquí no es la fórmula —esa se lee de un vistazo— sino
+	 * la <b>compatibilidad hacia atrás</b>: hasta ahora cualquier hechizo conocido era lanzable, y hay
+	 * personajes escritos así en disco. Si "sin campo {@code prepared}" pasara a significar "sin preparar",
+	 * cada lanzador existente se quedaría mudo de golpe al actualizar, sin que fallara nada (invariante 8).</p>
+	 */
+	private static void checkPreparedSpells() {
+		//Modificador de la característica de la clase + nivel, mínimo 1. Un mago de nivel 5 con INT 16 (+3)
+		//prepara 8. La clase se reconoce por el nombre MOSTRADO, que es lo que guarda la hoja.
+		JsonObject mago = new JsonObject();
+		mago.addProperty("characterClass", "Mago");
+		mago.addProperty("characterLevel", 5);
+		mago.addProperty("intelligence", "16");
+		assertTrue(SpellRegistry.preparedLimitFor(mago) == 8, "un mago nv.5 con INT 16 prepara 8, no " + SpellRegistry.preparedLimitFor(mago));
+
+		//Nunca cero para un lanzador: un mago de nivel 1 con INT 8 (-1) sigue preparando uno.
+		JsonObject pobre = new JsonObject();
+		pobre.addProperty("characterClass", "Mago");
+		pobre.addProperty("characterLevel", 1);
+		pobre.addProperty("intelligence", "8");
+		assertTrue(SpellRegistry.preparedLimitFor(pobre) == 1, "el mínimo es 1, no un lanzador sin nada que preparar");
+
+		//Quien no lanza no tiene lista: límite 0 APAGA la regla entera, no la pone en "no puedes preparar
+		//nada". Es lo mismo que hace CreatureType con un tipo desconocido: nada se dispara por adivinar.
+		JsonObject barbaro = new JsonObject();
+		barbaro.addProperty("characterClass", "Bárbaro");
+		barbaro.addProperty("characterLevel", 5);
+		assertTrue(SpellRegistry.preparedLimitFor(barbaro) == 0, "un bárbaro no tiene lista de preparados");
+		assertTrue(SpellRegistry.preparedLimitFor(new JsonObject()) == 0, "ni una hoja sin clase");
+
+		//La característica sale de la CLASE, no del conjuro: un clérigo prepara con Sabiduría aunque el
+		//conjuro concreto que mire se tire con otra cosa.
+		assertTrue("wis".equals(SpellSlots.castingAbilityFor("Clérigo")), "el clérigo lanza con Sabiduría");
+		assertTrue("cha".equals(SpellSlots.castingAbilityFor("warlock")), "y el brujo con Carisma, también por el id inglés");
+		assertTrue(SpellSlots.castingAbilityFor("Guerrero") == null, "una clase que no lanza no tiene característica de lanzamiento");
+
+		//El corazón de la compatibilidad: una hoja anterior a este campo.
+		JsonObject hoja = new JsonObject();
+		hoja.add("spells", new JsonArray());
+		SpellRegistry.register(SpellRegistry.parse(com.google.gson.JsonParser.parseString(
+			"{\"id\":\"t:cantrip\",\"level\":0,\"dice\":\"1d8\"}").getAsJsonObject()));
+		SpellRegistry.register(SpellRegistry.parse(com.google.gson.JsonParser.parseString(
+			"{\"id\":\"t:spell\",\"level\":2,\"dice\":\"1d8\"}").getAsJsonObject()));
+		SpellRegistry.learn(hoja, "t:cantrip");
+		SpellRegistry.learn(hoja, "t:spell");
+
+		assertTrue(SpellRegistry.isPrepared(hoja, "t:spell"), "sin el campo, un hechizo cuenta como PREPARADO");
+		assertTrue(SpellRegistry.preparedCount(hoja) == 1, "y cuenta para el límite, sin contar el truco");
+		assertTrue(SpellRegistry.isPrepared(hoja, "t:cantrip"), "un truco está siempre preparado: es a voluntad");
+		assertTrue(!SpellRegistry.setPrepared(hoja, "t:cantrip", false),
+			"y no se puede desmarcar, o el lanzador se quedaría sin su ataque a voluntad");
+		assertTrue(SpellRegistry.isPrepared(hoja, "t:cantrip"), "el intento no debería haber cambiado nada");
+
+		assertTrue(SpellRegistry.setPrepared(hoja, "t:spell", false), "un hechizo de nivel sí se desmarca");
+		assertTrue(!SpellRegistry.isPrepared(hoja, "t:spell") && SpellRegistry.preparedCount(hoja) == 0,
+			"y entonces deja de contar y deja de poder lanzarse");
+		assertTrue(!SpellRegistry.isPrepared(hoja, "t:desconocido"), "lo que no se conoce no está preparado");
+
+		//Y la otra mitad, que es la que se rompió al escribir esto la primera vez: "no está preparado" y "no
+		//se puede lanzar" NO son la misma pregunta. El báculo (/dndspells staff) lanza por diseño un conjuro
+		//que su portador nunca aprendió — usa los espacios y las características del portador, pero el
+		//conjuro no está en su hoja. Colgar el guardia de isPrepared dejó el báculo inservible para todo
+		//conjuro de nivel: desconocido devolvía false y el lanzado se rechazaba sin que nadie hubiera
+		//desmarcado nada. La lista de preparados solo manda sobre lo que la hoja SÍ conoce.
+		assertTrue(SpellRegistry.preparationAllows(hoja, "t:desconocido"),
+			"un conjuro que la hoja no conoce no lo gestiona la lista de preparados: es el báculo");
+		assertTrue(!SpellRegistry.preparationAllows(hoja, "t:spell"),
+			"pero uno conocido y desmarcado a mano sí queda bloqueado");
+		assertTrue(SpellRegistry.preparationAllows(hoja, "t:cantrip"), "y un truco pasa siempre");
+
+		System.out.println("checkPreparedSpells: OK, el limite es mod+nivel, los trucos no se preparan y una hoja sin el campo sigue pudiendo lanzarlo todo.");
+	}
+
 	private static void checkUpcasting() throws Exception {
 		SpellRegistry.Spell fireball = spellFromPack("dndsheets:fireball");
 		assertTrue("8d6".equals(fireball.upcastTo(3).dice()), "a su propio nivel no debería cambiar nada");
@@ -1936,6 +2197,17 @@ public class JsonContentSelfTest {
 		//como siempre en vez de volverse inmune a media lista de conjuros por no estar clasificado.
 		assertTrue(holdPerson.affects(CreatureType.UNKNOWN) && blight.affects(CreatureType.UNKNOWN),
 			"sin saber qué hay delante, la restricción no se aplica");
+
+		//Apuntar es libre: a quién se puede apuntar no lo decide el bando. El gate viejo (solo jugadores y
+		//enemigos, y rechazo si no había nadie en la mira) dejaba fuera a las vacas, a los aldeanos y al
+		//terreno, así que un hechizo no se podía disparar al aire ni a un área vacía. Es de las cosas que
+		//solo se notan jugando, y solo si se te ocurre intentarlo — de ahí que se fije aquí.
+		String castManager = Files.readString(
+			Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "SpellCastManager.java"));
+		assertTrue(castManager.contains("entity instanceof LivingEntity"),
+			"objetivo de hechizo = cualquier criatura viva, no solo jugadores y enemigos");
+		assertTrue(!castManager.contains("spell.no_target") && !castManager.contains("spell.no_aoe_targets"),
+			"lanzar al terreno, al aire o a un área vacía se resuelve, no se rechaza");
 
 		System.out.println("checkSpellTargeting: OK, los conjuros con objetivo restringido distinguen a quién afectan.");
 	}
@@ -2544,8 +2816,130 @@ public class JsonContentSelfTest {
 		}
 		assertTrue(checked > 0, "el pack de encuentros que se envía está vacío");
 
+		//Un id sin namespace ("emboscada_de_prueba", lo que escribe cualquiera en el creador de contenido)
+		//llega a los comandos como "minecraft:emboscada_de_prueba": ResourceLocationArgument le pone el
+		//namespace por defecto a toda palabra sin ":". El registro guarda el id TAL CUAL viene del JSON, así
+		//que sin la red de NamedRegistry.get nada de lo creado in-game se puede invocar —ni tecleando el
+		//comando ni desde el Panel de DM, que manda ese mismo comando. Ya había pasado una vez con los
+		//presets y volvió a pasar con los encuentros, de ahí que se compruebe.
+		EncounterRegistry.register(new EncounterRegistry.Encounter(
+			"emboscada_de_prueba", "emboscada de prueba", java.util.List.of()));
+		assertTrue(EncounterRegistry.get("minecraft:emboscada_de_prueba") != null,
+			"un id sin namespace debería encontrarse aunque el comando le haya puesto \"minecraft:\" delante");
+		assertTrue(EncounterRegistry.get("minecraft:no_existe") == null,
+			"y lo que no está sigue sin estar: la red no puede inventarse entradas");
+		EncounterRegistry.remove("emboscada_de_prueba");
+
+		checkEncounterBudget();
+		checkFormPrefillIsNotTruncated();
+		checkContentManagerSeesPacks();
+
 		System.out.println("checkEncounters: OK, la sintaxis de composición y " + checked
 			+ " monstruos de los encuentros que se envían existen.");
+	}
+
+	/**
+	 * <p>El menú de contenido enseña TAMBIÉN lo que trae el pack, no solo lo que creó el DM. Mientras miraba
+	 * un único archivo, abrir "Encuentros" sin haber creado ninguno daba una pantalla vacía con cinco
+	 * encuentros cargados y jugables detrás — que es como se descubrió: "no hay manera de gestionar nada".</p>
+	 */
+	private static void checkContentManagerSeesPacks() throws Exception {
+		Path dir = Files.createTempDirectory("dndsheets-content");
+		Path mine = dir.resolve("dm_created.json");
+		Files.writeString(mine, "[{\"id\": \"mio\"}]");
+		Files.writeString(dir.resolve(ContentDefaults.FILE), "[{\"id\": \"del_pack\"}]");
+		//Un .json.old (los hay en runClient) no es un pack: se queda fuera, como en la carga de verdad.
+		Files.writeString(dir.resolve("viejo.json.old"), "[{\"id\": \"jubilado\"}]");
+
+		String packs = ContentPackFile.readOtherArraysText(dir, mine);
+		assertTrue(packs.contains("del_pack"), "el menú de contenido debería ver el pack del mod: " + packs);
+		assertTrue(!packs.contains("mio"), "lo que creó el DM va en su sección, no repetido en la del pack");
+		assertTrue(!packs.contains("jubilado"), "un .json.old no se carga en el juego y tampoco se lista");
+		assertTrue(ContentPackFile.readArrayText(mine).contains("mio"), "y su archivo se sigue leyendo aparte");
+
+		System.out.println("checkContentManagerSeesPacks: OK, el gestor de contenido ve las dos fuentes.");
+	}
+
+	/**
+	 * <p>Lo que un formulario RELLENA no se puede recortar. {@code EditBox.setMaxLength} corta el valor que
+	 * ya tiene la casilla ({@code value.substring(0, max)}), sin avisar y sin que se vea —el texto largo ya
+	 * no cabía a la vista igual—, así que una composición de encuentro traída del diseñador se guardaba con
+	 * el último id partido a la mitad y solo se descubría al invocarla, como "un monstruo que no existe",
+	 * a kilómetros de donde estaba el fallo. Se comprueba sobre la fuente porque estas dos son clases de
+	 * pantalla y no se pueden instanciar sin un cliente arrancado.</p>
+	 */
+	private static void checkFormPrefillIsNotTruncated() throws Exception {
+		String form = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
+			"client", "gui", "FormPanelScreen.java"));
+		assertTrue(form.contains("setMaxLength(Math.max(maxLength, defaultValue.length()))"),
+			"FormPanelScreen no debe dejar que el tope recorte lo que la propia pantalla acaba de rellenar");
+		//Y el ORDEN, que es donde estaba el fallo de verdad: setValue recorta a lo que valga maxLength en ese
+		//momento, y un EditBox nace con el 32 de vanilla. Rellenar antes de subir el tope cortaba TODOS los
+		//formularios prellenados a 32 caracteres, no solo el de encuentros. Poner el tope después parece
+		//equivalente leyéndolo y no lo es.
+		int max = form.indexOf("box.setMaxLength(");
+		int value = form.indexOf("box.setValue(defaultValue)");
+		assertTrue(max > 0 && value > 0 && max < value,
+			"en registerBox el tope va ANTES del valor: al revés, setValue corta a los 32 de vanilla");
+
+		String forms = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
+			"client", "gui", "ContentTypeForms.java"));
+		assertTrue(forms.contains("LIST_LENGTH = 256"),
+			"las casillas de lista necesitan un tope propio: 64 no da ni para tres ids con namespace");
+		//Línea a línea: "traits" y "spells" salen en dos formularios (presets y dotes) y las dos cuentan.
+		int lists = 0;
+		for (String line : forms.split("\n")) {
+			for (String field : new String[] {"monsters", "traits", "spells", "startingGear", "classes"}) {
+				if (!line.contains("FieldSpec.text(\"" + field + "\"")) continue;
+				assertTrue(line.contains("LIST_LENGTH"),
+					"la casilla \"" + field + "\" lleva una lista separada por comas y necesita LIST_LENGTH: " + line.trim());
+				lists++;
+			}
+		}
+		assertTrue(lists >= 7, "deberían seguir existiendo las casillas de lista, encontré " + lists);
+
+		System.out.println("checkFormPrefillIsNotTruncated: OK, los formularios de contenido no cortan listas.");
+	}
+
+	/**
+	 * <p>El presupuesto de PX que usa el diseñador de encuentros ({@link EncounterBudget}). Lo que se fija
+	 * acá es la CADENA entera —bloque del bestiario → VD estimada → PX → veredicto— porque cada eslabón es
+	 * una tabla del DMG copiada a mano y un dedazo en una casilla no rompe nada visible: el mod sigue
+	 * funcionando y solo miente sobre la dificultad, que es exactamente lo que nadie revisa.</p>
+	 */
+	private static void checkEncounterBudget() throws Exception {
+		assertTrue(EncounterBudget.averageDice("2d6+3") == 10, "2d6+3 promedia 10");
+		assertTrue(EncounterBudget.averageDice("1d8-1") == 3.5, "1d8-1 promedia 3,5");
+		assertTrue(EncounterBudget.averageDice("") == 0 && EncounterBudget.averageDice(null) == 0,
+			"sin dados no hay daño, no una excepción");
+
+		//El goblin del SRD es VD 1/4 = 50 PX. Se estima desde su propio bloque (7 PG, CA 15, cimitarra
+		//1d6+2), así que esto revienta si se descuadra cualquiera de las tres tablas de la estimación.
+		MonsterRegistry.MonsterStatBlock goblin = null;
+		for (JsonElement el : readShippedPack("monsters.json")) {
+			if ("dndsheets:goblin".equals(el.getAsJsonObject().get("id").getAsString())) {
+				goblin = MonsterRegistry.parse(el.getAsJsonObject());
+			}
+		}
+		assertTrue(goblin != null, "el goblin debería seguir en el bestiario que se envía");
+		assertTrue(EncounterBudget.xp(goblin) == 50, "el goblin debería estimarse en VD 1/4 (50 PX) y da "
+			+ EncounterBudget.xp(goblin) + " PX");
+
+		//Cuatro personajes de nivel 1: 100/200/300/400 (DMG). Cuatro goblins son 200 PX, que con el x2 de
+		//"tres a seis monstruos" quedan en 400 ajustados: la emboscada clásica es MORTAL a nivel 1, y esa
+		//es justo la respuesta que el diseñador existe para dar.
+		int[] thresholds = EncounterBudget.thresholds(java.util.List.of(1, 1, 1, 1));
+		assertTrue(java.util.Arrays.equals(thresholds, new int[] {100, 200, 300, 400}),
+			"los umbrales de cuatro personajes de nivel 1 deberían ser 100/200/300/400 y son "
+				+ java.util.Arrays.toString(thresholds));
+		assertTrue(EncounterBudget.multiplier(4, 4) == 2, "de tres a seis monstruos, x2");
+		assertTrue(EncounterBudget.multiplier(4, 2) == 2.5, "con menos de tres personajes, una fila más arriba");
+		assertTrue(EncounterBudget.rate(200, 4, 4, thresholds) == 4,
+			"cuatro goblins contra cuatro personajes de nivel 1 son un encuentro mortal");
+		assertTrue(EncounterBudget.rate(50, 1, 4, thresholds) == 0, "un goblin suelto es trivial para cuatro");
+		//Sin nadie conectado no hay grupo contra el que medir: -1 y la pantalla calla, en vez de decir
+		//"mortal" porque todos los umbrales valen cero.
+		assertTrue(EncounterBudget.rate(200, 4, 0, new int[4]) == -1, "sin grupo no hay veredicto");
 	}
 
 	/**
@@ -2924,6 +3318,78 @@ public class JsonContentSelfTest {
 	 * un idioma. Se permite {@code Component.literal(variable)}, donde el texto ya viene resuelto de otro
 	 * sitio, porque ahi no hay nada que traducir aqui.</p>
 	 */
+	/**
+	 * <p>Los nombres de los packs de serie viajan como CLAVE de idioma ({@code "name":
+	 * "content.dndsheets.weapon.dagger"}) para que cada cliente los lea en el suyo. Eso solo funciona si
+	 * TODOS los sitios que los pintan los resuelven: si uno se olvida, ahi sale la clave cruda —
+	 * "content.dndsheets.attack.cimitarra" en mitad del chat de combate. Es un fallo que no rompe nada,
+	 * no avisa, y solo se ve jugando esa escena concreta.</p>
+	 *
+	 * <p>Dos mitades: que las claves que usan los packs existan en los dos idiomas, y que ningun sitio
+	 * meta un nombre de contenido en un {@code Component} sin pasar por {@link ContentNames}.</p>
+	 */
+	private static void checkContentNamesAreTranslated() throws Exception {
+		Path langDir = Path.of("src", "main", "resources", "assets", "dndsheets", "lang");
+		JsonObject en = JsonParser.parseString(Files.readString(langDir.resolve("en_us.json"))).getAsJsonObject();
+		JsonObject es = JsonParser.parseString(Files.readString(langDir.resolve("es_es.json"))).getAsJsonObject();
+
+		Set<String> sinClave = new java.util.TreeSet<>();
+		int usadas = 0;
+		try (Stream<Path> walk = Files.walk(Path.of("src", "main", "resources", "dndsheets", "defaults"))) {
+			for (Path pack : walk.filter(f -> f.toString().endsWith(".json")).sorted().toList()) {
+				java.util.regex.Matcher m = java.util.regex.Pattern
+					.compile("\"(content\\.dndsheets\\.[a-z0-9_.]+)\"").matcher(Files.readString(pack));
+				while (m.find()) {
+					usadas++;
+					if (!en.has(m.group(1)) || !es.has(m.group(1))) sinClave.add(m.group(1));
+				}
+			}
+		}
+		assertTrue(sinClave.isEmpty(), "estos packs usan claves que no estan en los dos idiomas: " + sinClave
+			+ ".\n  Reejecuta tools/content_lang_keys.py y luego tools/sync_lang_variants.py.");
+
+		//Segunda mitad: nadie mete un nombre de contenido en un Component sin resolverlo. Se mira solo la
+		//linea donde se construye el Component (o se bautiza un ItemStack/entidad, o se anade una fila de
+		//lista), que es donde el nombre se convierte en texto en pantalla.
+		List<Path> fuentes;
+		try (Stream<Path> walk = Files.walk(Path.of("src", "main", "java"))) {
+			fuentes = walk.filter(f -> f.toString().endsWith(".java")).sorted().toList();
+		}
+		//Los accesores de contenido, no cualquier name(): enum.name() y Screen.getName() no son esto.
+		java.util.regex.Pattern crudo = java.util.regex.Pattern.compile(
+			"(?<!ContentNames\\.of\\()(?<!ContentNames\\.plain\\()"
+			+ "\\b(spell|block|item|magicItem|weapon|trait|feat|encounter|attack|subclass|selected)"
+			+ "\\.(name|label|displayName)\\(\\)");
+		//Donde un nombre se convierte en algo que se ve. Los tres primeros construyen un Component; el
+		//cuarto es la concatenacion en String —pegar el nombre dentro de una formula de tirada o del
+		//rotulo del tracker de turnos—, que es por donde se colaron CombatManager y TurnManager: en esas
+		//lineas no hay ningun Component a la vista y el patron de arriba no las miraba.
+		java.util.regex.Pattern pinta = java.util.regex.Pattern.compile(
+			"Component\\.(literal|translatable)\\(|setHoverName\\(|setCustomName\\(|addRow\\(|"
+			+ "\\+ ?\\w+\\.(name|label|displayName)\\(\\)|\\.(name|label|displayName)\\(\\) ?\\+");
+		Set<String> crudos = new java.util.TreeSet<>();
+		for (Path fuente : fuentes) {
+			String[] lineas = Files.readString(fuente).split("\n");
+			for (int i = 0; i < lineas.length; i++) {
+				String linea = lineas[i];
+				if (linea.trim().startsWith("//") || linea.trim().startsWith("*")) continue;
+				//Salida explicita para el caso en que el nombre YA venia resuelto de antes (el Grimorio arma
+				//su etiqueta concatenando, asi que resuelve al construirla y no al pintarla). Se marca en la
+				//linea para que se vea en el diff quien se salta la regla y por que.
+				if (linea.contains("i18n-ok")) continue;
+				if (!pinta.matcher(linea).find()) continue;
+				if (crudo.matcher(linea).find()) {
+					crudos.add(fuente.getFileName().toString() + ":" + (i + 1));
+				}
+			}
+		}
+		assertTrue(crudos.isEmpty(), "estos sitios pintan un nombre de pack sin resolver la clave de idioma: "
+			+ crudos + ".\n  Envuelvelo en ContentNames.of(...) (o .plain(...) si el destino es un String).");
+
+		System.out.println("checkContentNamesAreTranslated: OK, " + usadas
+			+ " nombres de contenido son claves con sus dos idiomas y ningun sitio los pinta crudos.");
+	}
+
 	private static void checkChatMessagesAreTranslatable() throws Exception {
 		List<Path> fuentes;
 		try (Stream<Path> walk = Files.walk(Path.of("src", "main", "java"))) {
@@ -2972,6 +3438,25 @@ public class JsonContentSelfTest {
 				+ " en el otro idioma. Component.translatable(\"chat.dndsheets....\", args...).");
 		assertTrue(enComandos <= 86, "las respuestas de comando con texto fijo han subido a " + enComandos
 			+ " (eran 86): no anadas mas, pasalas a Component.translatable con su clave");
+
+		//El nombre de un item NO es una respuesta de comando, aunque se construya dentro de un fichero de
+		///command/: la respuesta la lee quien escribio el comando y se va con el scroll, pero el nombre se
+		//hornea en el NBT del ItemStack y lo lee todo el que lo vea, para siempre. Por esa exencion se
+		//colo "Baculo de " (SpellCommand) y por el patron de prosa se colo "Invocar: "
+		//(MonsterRegistry, que no tiene minuscula-espacio). Aqui no hay exencion ni patron de prosa: un
+		//setHoverName con literal de texto es siempre un fallo. Con variable sigue valiendo — ahi el
+		//nombre viene del pack de contenido, que es dato del DM y no algo que traducir en este repo.
+		java.util.regex.Pattern nombreFijo = java.util.regex.Pattern
+			.compile("setHoverName\\(\\s*Component\\.literal\\(\"");
+		java.util.Set<String> nombresFijos = new java.util.TreeSet<>();
+		for (Path fuente : fuentes) {
+			if (nombreFijo.matcher(Files.readString(fuente)).find()) nombresFijos.add(fuente.getFileName().toString());
+		}
+
+		assertTrue(nombresFijos.isEmpty(),
+			"estos archivos bautizan un item con texto fijo: " + nombresFijos
+				+ ".\n  El nombre viaja en el NBT y lo ve todo el mundo, asi que no vale ni dentro de"
+				+ " /command/. Component.translatable(\"chat.dndsheets....\", nombreDelPack).");
 
 		//Los dos HUD (TurnHudOverlay, ResourceHudOverlay) pintan con drawString(String) y por eso el patron
 		//de arriba (anclado a Component.literal) nunca los vio: se quedaron ENTEROS en espanol fijo siendo

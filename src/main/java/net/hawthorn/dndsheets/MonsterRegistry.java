@@ -32,9 +32,10 @@ import java.util.Set;
  * son mobs vanilla reales con {@code NoAI:1} y una etiqueta NBT persistente {@code {dndsheets:{monster:"id",
  * currentHp:N}}} que los liga a su bloque de estadísticas y trackea su vida real de D&amp;D.</p>
  */
-//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
-//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
-//expone a que cambien de firma sin aviso.
+//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
+//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
+//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
+//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
 public class MonsterRegistry {
 	/**
 	 * <p>Cómo se VE un monstruo, con piezas de Minecraft y sin traer ningún modelo nuevo.</p>
@@ -544,7 +545,11 @@ public class MonsterRegistry {
 		CompoundTag dndTag = new CompoundTag();
 		dndTag.putString("monsterSpawn", monsterId);
 		stack.getOrCreateTag().put("dndsheets", dndTag);
-		stack.setHoverName(Component.literal("Invocar: " + (block != null ? block.name() : monsterId)));
+		//"Invocar: " estaba escrito a mano aquí. El lint de textos fijos no lo vio porque busca una minúscula
+		//seguida de espacio y esto lleva dos puntos en medio — ver checkChatMessagesAreTranslatable, que
+		//ahora además prohíbe cualquier literal dentro de un setHoverName.
+		stack.setHoverName(Component.translatable("chat.dndsheets.monster.summon_card_name",
+			ContentNames.of(block != null ? block.name() : monsterId)));
 		return stack;
 	}
 
@@ -601,7 +606,7 @@ public class MonsterRegistry {
 		if (entity == null) return null;
 
 		entity.moveTo(x, y, z, 0, 0);
-		entity.setCustomName(Component.literal(block.name()));
+		entity.setCustomName(ContentNames.of(block.name()));
 		entity.setCustomNameVisible(true);
 		//Congelado salvo que el bloque pida lo contrario con "ai": true — ver keepsOwnAi. Un jefe con
 		//reloj propio la necesita encendida por definición: se mueve por su cuenta durante todo el combate.
@@ -665,7 +670,7 @@ public class MonsterRegistry {
 			living.setHealth(scaledMaxHp);
 		}
 		if (!target.hasCustomName()) {
-			target.setCustomName(Component.literal(block.name()));
+			target.setCustomName(ContentNames.of(block.name()));
 			target.setCustomNameVisible(true);
 		}
 		applyAppearance(target, block.appearance());

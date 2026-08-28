@@ -10,17 +10,15 @@ import java.util.List;
 public class TurnHudState {
 	private static boolean active = false;
 	private static int round = 0;
-	private static String currentName = "";
 	private static int currentEntityId = -1;
 	private static boolean actionUsed = false;
 	private static double originX, originY, originZ;
 	private static List<TurnStateMessage.RosterRow> roster = List.of();
 
-	public static void update(boolean active, int round, String currentName, int currentEntityId, boolean actionUsed,
+	public static void update(boolean active, int round, int currentEntityId, boolean actionUsed,
 							   double originX, double originY, double originZ, List<TurnStateMessage.RosterRow> roster) {
 		TurnHudState.active = active;
 		TurnHudState.round = round;
-		TurnHudState.currentName = currentName;
 		TurnHudState.currentEntityId = currentEntityId;
 		TurnHudState.actionUsed = actionUsed;
 		TurnHudState.originX = originX;
@@ -31,7 +29,6 @@ public class TurnHudState {
 
 	public static boolean active() { return active; }
 	public static int round() { return round; }
-	public static String currentName() { return currentName; }
 	public static int currentEntityId() { return currentEntityId; }
 	public static boolean actionUsed() { return actionUsed; }
 	public static double originX() { return originX; }

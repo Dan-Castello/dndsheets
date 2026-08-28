@@ -1,5 +1,7 @@
 package net.hawthorn.dndsheets.network;
 
+import net.hawthorn.dndsheets.ContentNames;
+
 import net.hawthorn.dndsheets.SpellRegistry;
 import net.hawthorn.dndsheets.command.SpellCommand;
 import net.minecraft.network.FriendlyByteBuf;
@@ -47,10 +49,10 @@ public class SpellGiveMessage {
 			net.hawthorn.dndsheets.DndsheetsMod.withDmTarget(context, message.targetUuid, target -> {
 				if (message.asStaff) {
 					target.getInventory().add(SpellCommand.buildStaffStack(message.spellId, spell, null));
-					target.sendSystemMessage(Component.translatable("chat.dndsheets.spell.staff_received", spell.name()));
+					target.sendSystemMessage(Component.translatable("chat.dndsheets.spell.staff_received", ContentNames.of(spell.name())));
 				} else {
 					SpellCommand.learnForPlayer(target, message.spellId, spell);
-					target.sendSystemMessage(Component.translatable("chat.dndsheets.spell.learned", spell.name()));
+					target.sendSystemMessage(Component.translatable("chat.dndsheets.spell.learned", ContentNames.of(spell.name())));
 				}
 			});
 		});

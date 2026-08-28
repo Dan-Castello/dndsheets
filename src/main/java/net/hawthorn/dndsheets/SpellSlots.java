@@ -59,6 +59,25 @@ public final class SpellSlots {
 		return Caster.NONE;
 	}
 
+	/**
+	 * <p>Con qué característica lanza una clase, en clave corta ({@code "int"}/{@code "wis"}/{@code "cha"}),
+	 * o {@code null} si esa clase no lanza nada. Hermana de {@link #casterFor} y con su misma tolerancia:
+	 * por subcadena, en minúsculas, contra el id inglés y el nombre traducido, porque la hoja guarda en
+	 * {@code characterClass} lo que se muestra ("Mago", no "wizard").</p>
+	 *
+	 * <p>La usa el límite de hechizos preparados ({@code CharacterRules.preparedLimitFor}). El conjuro trae
+	 * su propia {@code castingAbility} para RESOLVERSE, que es otra pregunta: cuántos puedes preparar
+	 * depende de tu clase, no de con qué se tira cada uno.</p>
+	 */
+	public static String castingAbilityFor(String characterClass) {
+		if (characterClass == null) return null;
+		String c = characterClass.toLowerCase(Locale.ROOT);
+		if (contains(c, "wizard", "mago")) return "int";
+		if (contains(c, "cleric", "clérigo", "clerigo", "druid", "druida", "ranger", "explorador")) return "wis";
+		if (contains(c, "bard", "bardo", "sorcerer", "hechicero", "warlock", "brujo", "paladin", "paladín")) return "cha";
+		return null;
+	}
+
 	private static boolean contains(String haystack, String... needles) {
 		for (String needle : needles) {
 			if (haystack.contains(needle)) return true;

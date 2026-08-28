@@ -17,9 +17,10 @@ import java.util.Set;
  * (clase, dado de golpe, características) en vez de escribirlos a mano campo por campo, y concede los
  * rasgos (pasivas/habilidades) que tenga configurados — ver {@link TraitRegistry}.</p>
  */
-//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
-//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
-//expone a que cambien de firma sin aviso.
+//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
+//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
+//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
+//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
 public class PresetRegistry {
 	/**
 	 * <p>Una subclase (arquetipo): la segunda mitad de lo que es un personaje en 5e, elegida unos niveles

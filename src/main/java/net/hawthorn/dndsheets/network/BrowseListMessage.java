@@ -27,7 +27,7 @@ public class BrowseListMessage {
 	//fundidas aquí en la migración que borró ~16 clases de este paquete.
 	public enum Kind { MINE, PARTY, CONTENT, DETAIL, JOURNAL, SUBCLASS, FEAT,
 		GIVE_WEAPON, GIVE_SPELL, GRANT_TRAIT, PRESET, PRESET_MULTICLASS, SPAWN_MONSTER,
-		MANAGE_OPTIONS, CONTENT_ENTRY, CHARACTER_OPTION, ENCOUNTER }
+		MANAGE_OPTIONS, CONTENT_ENTRY, CHARACTER_OPTION, ENCOUNTER, ENCOUNTER_DESIGN }
 
 	final Kind kind;
 	final List<String> ids;
@@ -101,6 +101,9 @@ public class BrowseListMessage {
 				case CHARACTER_OPTION -> net.hawthorn.dndsheets.client.gui.CharacterOptionListScreen.open(
 					net.minecraft.client.Minecraft.getInstance().screen, message.context, message.ids);
 				case ENCOUNTER -> openEncounters(message);
+				//Bestiario + presupuesto del grupo: la pantalla se queda con la carga y recalcula sola.
+				case ENCOUNTER_DESIGN -> net.hawthorn.dndsheets.client.gui.EncounterDesignerScreen.open(
+					message.ids, message.labels, message.context);
 			}
 		});
 	}
@@ -125,7 +128,8 @@ public class BrowseListMessage {
 			return; //Un context que no es un ContentType: mensaje corrupto o versión cruzada, se descarta.
 		}
 		net.hawthorn.dndsheets.client.gui.ContentEntryListScreen.open(type,
-			message.labels.isEmpty() ? "[]" : message.labels.get(0).getString());
+			message.labels.isEmpty() ? "[]" : message.labels.get(0).getString(),
+			message.labels.size() < 2 ? "[]" : message.labels.get(1).getString());
 	}
 
 	private static List<String> plainLabels(List<Component> labels) {

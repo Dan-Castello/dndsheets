@@ -75,7 +75,7 @@ public class ConsumableManager {
 		SheetLoader.saveServer(sheet, player.getStringUUID());
 		CombatFx.spellCast(player);
 		ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.item.consumed",
-			SheetLoader.characterNameOf(sheet, player), item.name(), happened.toString())
+			SheetLoader.characterNameOf(sheet, player), ContentNames.of(item.name()), happened.toString())
 			.withStyle(ChatFormatting.GREEN));
 
 		//Se gasta al final, ya con el efecto aplicado: si algo hubiera fallado antes, el jugador conserva

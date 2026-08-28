@@ -1,8 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
-import net.hawthorn.dndsheets.network.RestVoteCloseMessage;
-import net.hawthorn.dndsheets.network.RestVoteOpenMessage;
+import net.hawthorn.dndsheets.network.RestMessage;
 import net.hawthorn.dndsheets.network.ScreenActionMessage;
 import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.minecraft.ChatFormatting;
@@ -112,7 +111,7 @@ public class RestManager {
 		for (ServerPlayer player : nearby) pendingVoters.add(player.getUUID());
 
 		for (ServerPlayer player : nearby) {
-			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new RestVoteOpenMessage(proposerName, type.label));
+			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), RestMessage.voteOpen(proposerName, type.label));
 		}
 		notifyVoters(server, Component.translatable("chat.dndsheets.rest.proposed", proposerName, type.label).withStyle(ChatFormatting.AQUA));
 
@@ -170,7 +169,7 @@ public class RestManager {
 		if (pendingType == null || !(event.getEntity() instanceof ServerPlayer player)) return;
 		if (pendingOrigin != null && player.position().distanceToSqr(pendingOrigin) > TurnManager.DEFAULT_RADIUS * TurnManager.DEFAULT_RADIUS) return;
 		pendingVoters.add(player.getUUID());
-		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new RestVoteOpenMessage(pendingProposerName, pendingType.label));
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), RestMessage.voteOpen(pendingProposerName, pendingType.label));
 	}
 
 	/**
@@ -240,7 +239,7 @@ public class RestManager {
 		if (server != null) {
 			for (UUID uuid : pendingVoters) {
 				ServerPlayer voter = server.getPlayerList().getPlayer(uuid);
-				if (voter != null) DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> voter), new RestVoteCloseMessage());
+				if (voter != null) DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> voter), RestMessage.voteClose());
 			}
 		}
 		pendingType = null;

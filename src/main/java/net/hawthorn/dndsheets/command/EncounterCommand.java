@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.command;
 
-import com.mojang.brigadier.arguments.StringArgumentType;
+import net.hawthorn.dndsheets.ContentNames;
+
 import com.mojang.brigadier.context.CommandContext;
 import net.hawthorn.dndsheets.DndPaths;
 import net.hawthorn.dndsheets.DndsheetsMod;
@@ -17,8 +18,6 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 
@@ -47,10 +46,7 @@ public class EncounterCommand {
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndencounters")
 			.requires(source -> DndsheetsMod.canActAsDm(source))
-			.then(Commands.literal("load")
-				.then(Commands.argument("archivo", StringArgumentType.word())
-					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(DndPaths.jsonFileNames(ENCOUNTERS_DIR), builder))
-					.executes(EncounterCommand::load)))
+			.then(ContentCommands.loadBranch(ENCOUNTERS_DIR, EncounterRegistry::loadFile, "encuentros"))
 			.then(Commands.literal("list").executes(EncounterCommand::list))
 			.then(Commands.literal("spawn")
 				.then(Commands.argument("encuentroId", ResourceLocationArgument.id())
@@ -62,24 +58,6 @@ public class EncounterCommand {
 						.executes(ctx -> spawn(ctx, Vec3Argument.getVec3(ctx, "donde")))))));
 	}
 
-	private static int load(CommandContext<CommandSourceStack> ctx) {
-		String fileName = StringArgumentType.getString(ctx, "archivo");
-		Path file = ENCOUNTERS_DIR.resolve(fileName + ".json");
-
-		if (!Files.exists(file)) {
-			ctx.getSource().sendFailure(Component.literal("No encontré " + file.toAbsolutePath()));
-			return 0;
-		}
-
-		try {
-			int count = EncounterRegistry.loadFile(file);
-			ctx.getSource().sendSuccess(() -> Component.literal("Cargados " + count + " encuentros desde " + fileName + ".json"), true);
-			return count;
-		} catch (IOException | RuntimeException e) {
-			ctx.getSource().sendFailure(Component.literal("No pude leer " + fileName + ".json: " + e.getMessage()));
-			return 0;
-		}
-	}
 
 	private static int list(CommandContext<CommandSourceStack> ctx) {
 		Set<String> ids = EncounterRegistry.ids();
@@ -91,8 +69,8 @@ public class EncounterCommand {
 		}
 		for (String id : ids) {
 			EncounterRegistry.Encounter encounter = EncounterRegistry.get(id);
-			ctx.getSource().sendSuccess(() -> Component.literal(
-				id + " — " + encounter.name() + ": " + EncounterRegistry.describe(encounter)), false);
+			ctx.getSource().sendSuccess(() -> Component.literal(id + " — ").append(ContentNames.of(encounter.name()))
+				.append(": " + EncounterRegistry.describe(encounter)), false);
 		}
 		return ids.size();
 	}
@@ -110,16 +88,16 @@ public class EncounterCommand {
 		int total = encounter.total();
 
 		if (spawned == 0) {
-			ctx.getSource().sendFailure(Component.literal(
-				"No se invocó nada: los monstruos de \"" + encounter.name() + "\" no existen. Míralos con /dndmonsters list."));
+			ctx.getSource().sendFailure(Component.literal("No se invocó nada: los monstruos de \"").append(ContentNames.of(encounter.name()))
+				.append("\" no existen. Míralos con /dndmonsters list."));
 			return 0;
 		}
 
 		//Se dice cuántos faltan y no solo cuántos salieron: un encuentro al que le falta el jefe porque su id
 		//está mal escrito se juega igual y nadie se entera hasta después.
 		String missing = spawned < total ? " (faltan " + (total - spawned) + ", ids que no existen)" : "";
-		ctx.getSource().sendSuccess(() -> Component.literal(
-			encounter.name() + ": " + spawned + " monstruos" + missing + ". La iniciativa arranca sola con el primer golpe."), true);
+		ctx.getSource().sendSuccess(() -> ContentNames.of(encounter.name()).append(
+			": " + spawned + " monstruos" + missing + ". La iniciativa arranca sola con el primer golpe."), true);
 		return spawned;
 	}
 }

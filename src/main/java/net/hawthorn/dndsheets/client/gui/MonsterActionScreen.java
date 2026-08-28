@@ -42,7 +42,7 @@ public class MonsterActionScreen extends ListPickerScreen {
 			//Elegir la acción abre el selector de jugador (mismo componente que ya usa el Panel de DM para
 			//"a quién") antes de mandar el mensaje — antes esto siempre resolvía contra el jugador más
 			//cercano al monstruo, sin dejar elegir a quién de verdad apuntar.
-			addRow(Component.literal(actionNames.get(i)), b ->
+			addRow(net.hawthorn.dndsheets.ContentNames.of(actionNames.get(i)), b ->
 				PlayerPickerScreen.open(Component.translatable("gui.dndsheets.monster_action.pick_target"), uuid ->
 					DndsheetsMod.PACKET_HANDLER.sendToServer(new MonsterActionChooseMessage(entityId, actionIndex, uuid))
 				)

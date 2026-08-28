@@ -1,7 +1,8 @@
 package net.hawthorn.dndsheets.command;
 
+import net.hawthorn.dndsheets.ContentNames;
+
 import com.google.gson.JsonObject;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.hawthorn.dndsheets.DndPaths;
@@ -21,11 +22,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * <p>Carga rasgos (pasivas/habilidades de clase) desde JSON en
@@ -40,11 +38,8 @@ public class TraitCommand {
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndtraits")
 			.requires(source -> DndsheetsMod.canActAsDm(source))
-			.then(Commands.literal("load")
-				.then(Commands.argument("archivo", StringArgumentType.word())
-					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(DndPaths.jsonFileNames(TRAITS_DIR), builder))
-					.executes(TraitCommand::load)))
-			.then(Commands.literal("list").executes(TraitCommand::list))
+			.then(ContentCommands.loadBranch(TRAITS_DIR, TraitRegistry::loadFile, "rasgos"))
+			.then(ContentCommands.listBranch(TraitRegistry::ids, "Rasgos"))
 			.then(Commands.literal("grant")
 				.then(Commands.argument("jugadores", EntityArgument.players())
 					.then(Commands.argument("rasgoId", ResourceLocationArgument.id())
@@ -52,30 +47,7 @@ public class TraitCommand {
 						.executes(TraitCommand::grant)))));
 	}
 
-	private static int load(CommandContext<CommandSourceStack> ctx) {
-		String fileName = StringArgumentType.getString(ctx, "archivo");
-		Path file = TRAITS_DIR.resolve(fileName + ".json");
 
-		if (!Files.exists(file)) {
-			ctx.getSource().sendFailure(Component.literal("No encontré " + file.toAbsolutePath()));
-			return 0;
-		}
-
-		try {
-			int count = TraitRegistry.loadFile(file);
-			ctx.getSource().sendSuccess(() -> Component.literal("Cargados " + count + " rasgos desde " + fileName + ".json"), true);
-			return count;
-		} catch (IOException | RuntimeException e) {
-			ctx.getSource().sendFailure(Component.literal("No pude leer " + fileName + ".json: " + e.getMessage()));
-			return 0;
-		}
-	}
-
-	private static int list(CommandContext<CommandSourceStack> ctx) {
-		Set<String> ids = TraitRegistry.ids();
-		ctx.getSource().sendSuccess(() -> Component.literal("Rasgos cargados (" + ids.size() + "): " + String.join(", ", ids)), false);
-		return ids.size();
-	}
 
 	private static int grant(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		String traitId = ResourceLocationArgument.getId(ctx, "rasgoId").toString();
@@ -87,7 +59,7 @@ public class TraitCommand {
 
 		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
 		for (ServerPlayer target : targets) grantToPlayer(target, traitId);
-		ctx.getSource().sendSuccess(() -> Component.literal(targets.size() + " jugador(es) recibieron el rasgo " + trait.name() + "."), true);
+		ctx.getSource().sendSuccess(() -> Component.literal(targets.size() + " jugador(es) recibieron el rasgo ").append(ContentNames.of(trait.name())).append("."), true);
 		return targets.size();
 	}
 

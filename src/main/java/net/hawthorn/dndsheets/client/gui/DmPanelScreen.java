@@ -4,6 +4,7 @@ import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.BrowseActionMessage;
 import net.hawthorn.dndsheets.network.SheetSummaryRequestMessage;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -15,12 +16,18 @@ import net.minecraft.network.chat.Component;
  * monstruo señalado y no tiene sentido pedirlo aparte aquí.</p>
  */
 public class DmPanelScreen extends ListPickerScreen {
-	private DmPanelScreen() {
-		super(Component.translatable("gui.dndsheets.dm_panel.title"));
+	private DmPanelScreen(Screen parent) {
+		super(Component.translatable("gui.dndsheets.dm_panel.title"), parent);
 	}
 
+	/** Desde la tecla de acceso rápido: pantalla raíz, Escape cierra el menú. */
 	public static void open() {
-		Minecraft.getInstance().setScreen(new DmPanelScreen());
+		open(null);
+	}
+
+	/** Desde el Menú del jugador (ver {@link PlayerPanelScreen}): "&lt; Atrás" vuelve allí. */
+	public static void open(Screen parent) {
+		Minecraft.getInstance().setScreen(new DmPanelScreen(parent));
 	}
 
 	//Cinco secciones con cabecera (ver ListPickerScreen.addHeader) en vez de 17 filas planas: con tantas
@@ -43,6 +50,10 @@ public class DmPanelScreen extends ListPickerScreen {
 		///dndencounters spawn de siempre — antes solo existía tecleado a mano.
 		addRow(Component.translatable("gui.dndsheets.dm_panel.encounters"),
 			b -> send(BrowseActionMessage.Action.LIST_ENCOUNTERS, ""));
+		//Armar uno nuevo viendo la dificultad que le sale al grupo, en vez de escribir "goblin x4" a ciegas
+		//en el creador de contenido — ver EncounterDesignerScreen.
+		addRow(Component.translatable("gui.dndsheets.dm_panel.design_encounter"),
+			b -> send(BrowseActionMessage.Action.DESIGN_ENCOUNTER, ""));
 
 		addHeader(Component.translatable("gui.dndsheets.dm_panel.section_give"));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.grant_trait"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_trait"),

@@ -95,6 +95,23 @@ final class CharacterRules {
 		return 1;
 	}
 
+	/**
+	 * <p><b>Cuántos hechizos puede llevar preparados.</b> En 5e: modificador de la característica de
+	 * lanzamiento de su clase + su nivel, mínimo 1. Los trucos no cuentan (son a voluntad, no se preparan).</p>
+	 *
+	 * <p>Devuelve 0 para quien no lanza nada, y eso es lo que apaga la regla entera: sin clase lanzadora no
+	 * hay lista que preparar, así que todo lo que sepa se puede lanzar igual que antes de que esto
+	 * existiera. Es la misma forma que el resto del mod — nada se dispara por adivinar.</p>
+	 */
+	static int preparedLimitFor(JsonObject sheet) {
+		if (sheet == null || !sheet.has("characterClass")) return 0;
+		String ability = SpellSlots.castingAbilityFor(sheet.get("characterClass").getAsString());
+		if (ability == null) return 0;
+
+		int score = intField(sheet, abilityFieldFor(ability), 10);
+		return Math.max(1, Math.floorDiv(score - 10, 2) + levelOf(sheet));
+	}
+
 	//Las características se guardan como cadena en la hoja, y una hoja vieja puede tener ahí cualquier cosa.
 	private static int intField(JsonObject sheet, String key, int fallback) {
 		if (sheet == null || !sheet.has(key)) return fallback;

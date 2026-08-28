@@ -41,8 +41,8 @@ import org.apache.logging.log4j.Logger;
 
 public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheetMenu> {
 	private final static HashMap<String, Object> guistate = CharacterSheetMenu.guistate;
-	private final Level world;
-	private final int x, y, z;
+	//El jugador que mira la ficha: los PG/PG máx/PG temp/nivel/hambre se leen en vivo de él (ver
+	//containerTick). Es el único de los cinco campos que MCreator copiaba del menú que alguien leía.
 	private final Player entity;
 	//private: verificado que ningún otro archivo del mod lee/escribe estos dos campos (solo se usan dentro
 	//de esta clase) — no había motivo para que fueran public static y quedaran mutables desde cualquier
@@ -63,9 +63,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	EditBox level;          // Sincronizado en vivo desde entity.experienceLevel (XP real de Minecraft)
 	EditBox hunger;         // Sincronizado en vivo desde entity.getFoodData().getFoodLevel()
 	Button grimoireButton;  // Abre el Grimorio (ver GrimoireScreen), sin tocar la hoja
-	Button presetsButton;
-	Button charactersButton; // Pide al servidor la lista de personajes (ver CharacterListScreen): cambiar, crear y borrar
-	Button guideButton;     // Abre la guía del mod (ver GuideBook), páginas de DM incluidas si el cliente es op
+	Button menuButton;      // Abre el Menú del jugador (ver PlayerPanelScreen): personajes, presets, diario, guía...
 
 	EditBox hitDice;
 	EditBox hitDiceTypes;
@@ -196,12 +194,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private static final int BOTTOM_ROW_Y = ROW4_Y + FIELD_H + 12;
 	private final int GRIMOIRE_OFFSET_X = 10;
 	private final int GRIMOIRE_OFFSET_Y = BOTTOM_ROW_Y;
-	private final int PRESETS_OFFSET_X = GRIMOIRE_OFFSET_X + BOTTOM_BUTTON_STEP;
-	private final int PRESETS_OFFSET_Y = BOTTOM_ROW_Y;
-	private final int CHARACTERS_OFFSET_X = PRESETS_OFFSET_X + BOTTOM_BUTTON_STEP;
-	private final int CHARACTERS_OFFSET_Y = BOTTOM_ROW_Y;
-	private final int GUIDE_OFFSET_X = CHARACTERS_OFFSET_X + BOTTOM_BUTTON_STEP;
-	private final int GUIDE_OFFSET_Y = BOTTOM_ROW_Y;
+	private final int MENU_OFFSET_X = GRIMOIRE_OFFSET_X + BOTTOM_BUTTON_STEP;
+	private final int MENU_OFFSET_Y = BOTTOM_ROW_Y;
 
 	/*
 		RETÍCULA DE LA PESTAÑA DE HABILIDADES
@@ -314,10 +308,6 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 	public CharacterSheetScreen(CharacterSheetMenu container, Inventory inventory, Component text) {
 		super(container, inventory, text);
-		this.world = container.world;
-		this.x = container.x;
-		this.y = container.y;
-		this.z = container.z;
 		this.entity = container.entity;
 		this.imageWidth = SHEET_WIDTH;
 		this.imageHeight = SHEET_HEIGHT;
@@ -890,8 +880,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		//Shift+clic en el dado = tirada privada (Sigilo, Investigación...): solo le llega a quien tira y a
 		//los operadores conectados, en vez de a todo el mundo cerca — ver RollAnnouncerProcedure.sendPrivately.
 		boolean isPrivate = hasShiftDown();
-		DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetRollButtonMessage(category, index, subIndex, x, y, z, isPrivate));
-		SheetRollButtonMessage.handle(entity, category, index, subIndex, x, y, z, isPrivate);
+		DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetRollButtonMessage(category, index, subIndex, isPrivate));
+		SheetRollButtonMessage.handle(entity, category, index, subIndex, isPrivate);
 
 	}
 
@@ -1399,30 +1389,17 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		guistate.put("button:grimoire", grimoireButton);
 		this.addRenderableWidget(grimoireButton);
 
-		//Antes mandaba PresetListRequestMessage directo (solo "aplicar preset"); ahora abre un menú fijo de
-		//dos filas porque no hay hueco para un quinto botón de página en esta fila (ver el comentario de
-		//BOTTOM_BUTTON_WIDTH más arriba) — "Multiclasear" es la segunda fila de ese menú.
-		presetsButton = TomeButton.of(Component.translatable("gui.dndsheets.character_sheet.presets"), b -> {
-			CharacterSheetSaveProcedure.execute(guistate);
-			PresetActionMenuScreen.open(this);
-		}, this.leftPos + PRESETS_OFFSET_X, this.topPos + PRESETS_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
-		guistate.put("button:presets", presetsButton);
-		this.addRenderableWidget(presetsButton);
-
-		//Cambiar, crear y borrar personaje viven los tres en CharacterListScreen, así que aquí basta UNA
-		//puerta: tres botones más en una fila que ya iba justa costarían el ancho de los que ya están, y la
-		//lista es donde se ve cuál llevas puesto —que es la mitad de la decisión al cambiar—.
-		charactersButton = TomeButton.of(Component.translatable("gui.dndsheets.character_sheet.characters"), b -> {
-			CharacterSheetSaveProcedure.execute(guistate); //Como con Presets: no perder lo escrito al navegar fuera.
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new net.hawthorn.dndsheets.network.BrowseActionMessage(
-				net.hawthorn.dndsheets.network.BrowseActionMessage.Action.LIST_MINE));
-		}, this.leftPos + CHARACTERS_OFFSET_X, this.topPos + CHARACTERS_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
-		this.addRenderableWidget(charactersButton);
-
-		boolean isDm = this.minecraft.player != null && this.minecraft.player.hasPermissions(2);
-		guideButton = TomeButton.of(Component.translatable("gui.dndsheets.guide.button"), b -> GuideBook.open(isDm), this.leftPos + GUIDE_OFFSET_X, this.topPos + GUIDE_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
-		guistate.put("button:guide", guideButton);
-		this.addRenderableWidget(guideButton);
+		//Un botón donde había tres (Presets, Personajes, Guía). No es solo ahorro de sitio: esos tres eran
+		//TODO lo que el jugador podía abrir sin saberse un comando, y ya no cabía un cuarto en esta fila
+		//(ver BOTTOM_BUTTON_WIDTH). Detrás hay una lista con secciones y buscador que crece sin pelearse
+		//con la retícula de la ficha — ver PlayerPanelScreen. El Grimorio se queda suelto porque es el
+		//único que se pulsa en mitad de un turno.
+		menuButton = TomeButton.of(Component.translatable("gui.dndsheets.character_sheet.menu"), b -> {
+			CharacterSheetSaveProcedure.execute(guistate); //No perder lo escrito al navegar fuera.
+			PlayerPanelScreen.open(this);
+		}, this.leftPos + MENU_OFFSET_X, this.topPos + MENU_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
+		guistate.put("button:menu", menuButton);
+		this.addRenderableWidget(menuButton);
 	}
 
 	private void initSkillPanel() {

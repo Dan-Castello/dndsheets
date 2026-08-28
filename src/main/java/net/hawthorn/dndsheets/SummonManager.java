@@ -85,7 +85,7 @@ public class SummonManager {
 		if (summoned == null) return null;
 
 		ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.summoned",
-			SheetLoader.characterNameOf(SheetLoader.getServerSheet(caster.getStringUUID()), caster), spell.name())
+			SheetLoader.characterNameOf(SheetLoader.getServerSheet(caster.getStringUUID()), caster), ContentNames.of(spell.name()))
 			.withStyle(ChatFormatting.GOLD));
 		return summoned;
 	}

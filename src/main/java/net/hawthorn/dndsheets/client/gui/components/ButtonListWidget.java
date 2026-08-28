@@ -23,11 +23,19 @@ import java.util.List;
  */
 public class ButtonListWidget extends AbstractScrollWidget {
 	private final List<Button> rows = new ArrayList<>();
-	private final int rowHeight;
+	//Hueco entre filas. La ALTURA la pone cada botón (getHeight), no esta lista: así una cabecera de
+	//sección puede medir la mitad que una fila sin que este widget tenga que saber qué es una cabecera.
+	//Cuando todas las filas medían lo mismo, las cinco cabeceras del Panel de DM costaban cinco filas de
+	//lista y lo empujaban a hacer scroll con diecisiete acciones que, por alto, sí cabían.
+	private final int spacing;
 
-	public ButtonListWidget(int x, int y, int width, int height, int rowHeight) {
+	public ButtonListWidget(int x, int y, int width, int height, int spacing) {
 		super(x, y, width, height, Component.empty());
-		this.rowHeight = rowHeight;
+		this.spacing = spacing;
+	}
+
+	private int stepOf(Button row) {
+		return row.getHeight() + spacing;
 	}
 
 	public void addRow(Button button) {
@@ -55,12 +63,16 @@ public class ButtonListWidget extends AbstractScrollWidget {
 
 	@Override
 	protected int getInnerHeight() {
-		return rows.size() * rowHeight;
+		int total = 0;
+		for (Button row : rows) total += stepOf(row);
+		return total;
 	}
 
+	//Media fila por muesca de rueda, tomando la primera como referencia: con filas de dos altos distintos
+	//no hay "la" altura, y el paso del scroll no necesita ser exacto, solo cómodo.
 	@Override
 	protected double scrollRate() {
-		return rowHeight / 2.0;
+		return rows.isEmpty() ? 12 : stepOf(rows.get(0)) / 2.0;
 	}
 
 	@Override
@@ -82,22 +94,22 @@ public class ButtonListWidget extends AbstractScrollWidget {
 	protected void renderContents(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		if (rows.isEmpty()) return;
 		int scroll = (int) this.scrollAmount();
-		//Rango de filas realmente visibles calculado directo (no recorriendo todas para comparar límites):
-		//antes se llamaba setX/setY en CADA botón de la lista en CADA frame, visible o no — con listas
-		//largas (muchos jugadores conectados, muchos monstruos/rasgos cargados) eso se notaba al desplazar.
-		//Ahora solo se posiciona/renderiza lo que cae dentro del rango, con un margen de una fila de cada
-		//lado para que no haga "pop" justo en el borde del recorte (scissor).
-		int first = Math.max(0, scroll / rowHeight - 1);
-		int last = Math.min(rows.size() - 1, (scroll + this.height) / rowHeight + 1);
-
-		for (int i = 0; i < rows.size(); i++) {
-			Button button = rows.get(i);
-			boolean rowVisible = i >= first && i <= last;
+		//Se sigue posicionando y dibujando SOLO lo que cae dentro del recorte (antes se llamaba setX/setY
+		//en cada botón de cada frame, visible o no, y con listas largas se notaba al desplazar). Lo que
+		//cambia con alturas por fila es que el rango ya no sale de una división: se acumula el alto al
+		//recorrer, que es el mismo recorrido que este bucle hacía igualmente.
+		int offset = 0;
+		for (Button button : rows) {
+			int step = stepOf(button);
+			int top = offset - scroll;
+			offset += step;
+			//Un paso de margen por arriba y por abajo, para que no haga "pop" justo en el borde.
+			boolean rowVisible = top + step >= -step && top <= this.height + step;
 			button.visible = rowVisible;
 			button.active = rowVisible;
 			if (!rowVisible) continue;
 			button.setX(this.getX());
-			button.setY(this.getY() + i * rowHeight - scroll);
+			button.setY(this.getY() + top);
 			button.render(guiGraphics, mouseX, mouseY, partialTicks);
 		}
 	}

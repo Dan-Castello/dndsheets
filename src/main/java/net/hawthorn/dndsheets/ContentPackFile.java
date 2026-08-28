@@ -12,7 +12,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -97,9 +96,29 @@ public final class ContentPackFile {
 		return readArray(file).toString();
 	}
 
-	public static List<String> readStringArray(Path file) {
-		List<String> result = new ArrayList<>();
-		for (JsonElement el : readArray(file)) result.add(el.getAsString());
-		return result;
+	/**
+	 * <p>Las entradas de los DEMÁS archivos del tipo —el pack del mod y cualquier .json que el DM haya
+	 * dejado a mano— en un solo array, para poder enseñarlas junto a las suyas en el creador de contenido.</p>
+	 *
+	 * <p>Sin esto, ese menú solo listaba {@code dm_created.json}: un DM que abría "Encuentros" antes de
+	 * crear ninguno veía una pantalla vacía pese a tener cinco encuentros cargados y jugables, y la lectura
+	 * evidente de eso es "esto no gestiona nada". Se enseñan aparte y no mezclados porque no se comportan
+	 * igual: {@code mod_defaults.json} se reescribe desde el jar en cada arranque, así que editar uno no es
+	 * cambiar el archivo del pack sino <b>guardar tu versión</b> en el tuyo, que es la que gana al cargar
+	 * (ver el orden de {@code DndPaths.autoLoadAll}).</p>
+	 */
+	public static String readOtherArraysText(Path dir, Path exclude) {
+		JsonArray all = new JsonArray();
+		try (java.util.stream.Stream<Path> files = Files.list(dir)) {
+			for (Path file : files.filter(p -> p.toString().endsWith(".json") && !p.equals(exclude))
+					.sorted(java.util.Comparator.comparing(p -> p.getFileName().toString()))
+					.toList()) {
+				all.addAll(readArray(file));
+			}
+		} catch (IOException e) {
+			DndsheetsMod.LOGGER.warn("dndsheets: no pude listar {}: {}", dir, e.toString());
+		}
+		return all.toString();
 	}
+
 }

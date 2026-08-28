@@ -1,5 +1,7 @@
 package net.hawthorn.dndsheets.network;
 
+import net.hawthorn.dndsheets.ContentNames;
+
 import net.hawthorn.dndsheets.SpellRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
@@ -47,8 +49,8 @@ public class StaffBindMessage {
 			ItemStack stack = player.getMainHandItem();
 			if (!SpellRegistry.bindStaff(stack, message.spellId)) return;
 
-			stack.setHoverName(Component.translatable("chat.dndsheets.staff.item_name", spell.name()));
-			player.sendSystemMessage(Component.translatable("chat.dndsheets.staff.bound", spell.name()).withStyle(ChatFormatting.GREEN));
+			stack.setHoverName(Component.translatable("chat.dndsheets.staff.item_name", ContentNames.of(spell.name())));
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.staff.bound", ContentNames.of(spell.name())).withStyle(ChatFormatting.GREEN));
 		});
 	}
 }

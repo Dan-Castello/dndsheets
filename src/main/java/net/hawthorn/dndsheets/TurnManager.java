@@ -458,6 +458,29 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		});
 	}
 
+	/**
+	 * <p>Retiene el auto-avance ya encolado por la acción que se acaba de gastar. Lo usa
+	 * {@link CastingManager} al empezar un conjuro con tiempo de lanzamiento: {@link #tryAct} encoló el
+	 * avance para el tick siguiente, y sin esto el conjuro resolvería con el turno de otro ya empezado.</p>
+	 *
+	 * <p>Es el mismo mecanismo que {@link #undoAction} —subir el token invalida lo encolado— y no un
+	 * sistema nuevo. Sube el token de TODO lo pendiente, pero en el instante en que se llama lo único
+	 * pendiente es el avance del propio lanzador, que acaba de gastar su acción una línea antes.</p>
+	 */
+	public static void holdAutoAdvance() {
+		turnToken++;
+	}
+
+	/**
+	 * <p>Le devuelve el auto-avance al turno cuando el lanzamiento retenido termina (resuelto o
+	 * interrumpido, da igual: la acción se gastó de todos modos). Si mientras tanto el turno ya cambió de
+	 * dueño, o el combate acabó, no hay nada que reprogramar.</p>
+	 */
+	public static void resumeAutoAdvance(ServerLevel level, Entity actor) {
+		if (!active || !isCurrentActor(actor) || !actedThisTurn.contains(actor.getId())) return;
+		scheduleAutoAdvance(level, actor.getId());
+	}
+
 	//Usado por los ítems de comodidad (TurnItemManager): solo quien tiene el turno puede usarlos.
 	public static boolean isCurrentActor(Entity actor) {
 		TurnEntry currentEntry = current();
@@ -537,7 +560,11 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		if (initiator != null) moveToFront(rolled, Rolled::entityId, initiator.getId());
 
 		List<TurnEntry> combatants = new ArrayList<>();
-		for (Rolled r : rolled) combatants.add(new TurnEntry(r.entityId(), r.name() + " (" + r.score() + ")", r.isMonster(), r.playerUuid()));
+		for (Rolled r : rolled) //ponytail: el nombre y la iniciativa van pegados en un solo String, asi que la clave se
+			//resuelve AQUI, en el idioma del servidor, y no en el HUD de cada cliente. Separarlos pide
+			//cambiar la forma de TurnEntry y del mensaje que lo lleva; el resto de caminos al tracker
+			//(addLateMonster) si manda el nombre limpio y ese lo resuelve el cliente.
+			combatants.add(new TurnEntry(r.entityId(), ContentNames.plain(r.name()) + " (" + r.score() + ")", r.isMonster(), r.playerUuid()));
 
 		if (combatants.isEmpty()) return 0;
 
@@ -665,7 +692,7 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		StringBuilder orderText = new StringBuilder();
 		for (int i = 0; i < order.size(); i++) {
 			if (i > 0) orderText.append(", ");
-			orderText.append(i + 1).append(". ").append(order.get(i).name());
+			orderText.append(i + 1).append(". ").append(ContentNames.plain(order.get(i).name()));
 		}
 		broadcast(level, Component.translatable("chat.dndsheets.turn.order_announce", orderText.toString()).withStyle(ChatFormatting.GOLD));
 		//Ayuda para quien nunca jugó D&D: la primera vez que arranca un encuentro, explica la regla en una
@@ -1095,12 +1122,11 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 	private static void broadcastTurnState(ServerLevel level) {
 		combatLevel = active ? level : null;
 		TurnEntry entry = current();
-		String name = entry != null ? entry.name() : "";
 		int entityId = entry != null ? entry.entityId() : -1;
 		boolean actioned = entry != null && actedThisTurn.contains(entry.entityId());
 		Vec3 origin = entry != null ? movementAnchors.originOf(entry.entityId()) : Vec3.ZERO;
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.ALL.noArg(),
-			new TurnStateMessage(active, round, name, entityId, actioned, origin.x, origin.y, origin.z, rosterOf(level)));
+			new TurnStateMessage(active, round, entityId, actioned, origin.x, origin.y, origin.z, rosterOf(level)));
 	}
 
 	//La fila de iniciativa entera para el HUD (ver TurnStateMessage.RosterRow): quién va, quién ya actuó,

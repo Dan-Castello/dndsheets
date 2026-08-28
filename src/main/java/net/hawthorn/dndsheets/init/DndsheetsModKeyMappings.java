@@ -27,8 +27,8 @@ public class DndsheetsModKeyMappings {
 			super.setDown(isDown);
 			if (isDownOld != isDown && isDown) {
 
-				DndsheetsMod.PACKET_HANDLER.sendToServer(new CharacterSheetOpenMessage(0, 0));
-				CharacterSheetOpenMessage.pressAction(Minecraft.getInstance().player, 0, 0);
+				DndsheetsMod.PACKET_HANDLER.sendToServer(new CharacterSheetOpenMessage());
+				CharacterSheetOpenMessage.pressAction(Minecraft.getInstance().player);
 			}
 			isDownOld = isDown;
 		}
@@ -68,11 +68,29 @@ public class DndsheetsModKeyMappings {
 		}
 	};
 
+	//Lanzado rápido: repite lo último lanzado desde el Grimorio sin abrirlo. No es una barra de favoritos
+	//—eso sería una lista propia en la hoja, con su red y su pantalla— sino la comodidad que de verdad se
+	//pide en combate: el mismo truco, otra vez, sin menú. Para atar un hechizo CONCRETO a algo permanente
+	//ya está el báculo reconfigurable (ver GrimoireScreen "Vincular al báculo").
+	public static final KeyMapping QUICK_CAST = new KeyMapping("key.dndsheets.quickcast", GLFW.GLFW_KEY_R, "key.categories.dndsheets") {
+		private boolean isDownOld = false;
+
+		@Override
+		public void setDown(boolean isDown) {
+			super.setDown(isDown);
+			if (isDownOld != isDown && isDown) {
+				GrimoireScreen.castLast();
+			}
+			isDownOld = isDown;
+		}
+	};
+
 	@SubscribeEvent
 	public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
 		event.register(CHARACTER);
 		event.register(DM_PANEL);
 		event.register(GRIMOIRE);
+		event.register(QUICK_CAST);
 	}
 
 	@Mod.EventBusSubscriber({Dist.CLIENT})
@@ -83,6 +101,7 @@ public class DndsheetsModKeyMappings {
 				CHARACTER.consumeClick();
 				DM_PANEL.consumeClick();
 				GRIMOIRE.consumeClick();
+				QUICK_CAST.consumeClick();
 			}
 		}
 	}

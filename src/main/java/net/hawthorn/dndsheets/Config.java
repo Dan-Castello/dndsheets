@@ -33,9 +33,10 @@ import java.util.Map;
  * editarla (o traducirla, o ampliarla a mano) en bloque sin tocar el código ni recompilar.</p>
  */
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
-//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
-//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
-//expone a que cambien de firma sin aviso.
+//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
+//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
+//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
+//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
 public class Config {
 	public static final ForgeConfigSpec SPEC;
 	private static final ForgeConfigSpec.ConfigValue<List<? extends String>> HIT_DICE_ENTRIES;
@@ -44,6 +45,8 @@ public class Config {
 	private static final ForgeConfigSpec.BooleanValue VISION_RULES;
 	private static final ForgeConfigSpec.BooleanValue SOLO_MODE;
 	private static final ForgeConfigSpec.ConfigValue<String> DIFFICULTY_PRESET;
+	private static final ForgeConfigSpec.IntValue CAST_TICKS_PER_LEVEL;
+	private static final ForgeConfigSpec.IntValue CAST_TICKS_MAX;
 
 	static {
 		ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -87,6 +90,23 @@ public class Config {
 			"caliente con /dndvision, que escribe aquí."
 		);
 		VISION_RULES = builder.define("visionRules", false);
+
+		builder.comment(
+			"Tiempo de lanzamiento de los conjuros, en ticks (20 ticks = 1 segundo).",
+			"",
+			"Un conjuro con tiempo de lanzamiento no sale en el mismo instante: el lanzador se carga de",
+			"partículas de su escuela, la barra de acción enseña el progreso, y recibir daño obliga a una",
+			"salvación de Constitución para no perderlo (el espacio de conjuro se gasta igual, como con el",
+			"Contrahechizo). Es lo único de este mod que hace que conjurar OCUPE tiempo real.",
+			"",
+			"Se calcula como nivel del conjuro x castTicksPerLevel, con castTicksMax de techo. Los trucos son",
+			"siempre instantáneos. Un conjuro puede fijar su propio \"castTicks\" en el JSON y entonces manda",
+			"ese (así se escribe un Escudo o un Contrahechizo, que tienen que salir ya).",
+			"",
+			"castTicksPerLevel = 0 devuelve el lanzamiento instantáneo de siempre para toda la mesa."
+		);
+		CAST_TICKS_PER_LEVEL = builder.defineInRange("castTicksPerLevel", 3, 0, 40);
+		CAST_TICKS_MAX = builder.defineInRange("castTicksMax", 20, 0, 200);
 
 		builder.comment(
 			"Modo solo (sin DM): cuando está activo, CUALQUIER jugador conectado puede hacer todo lo que hoy",
@@ -139,6 +159,16 @@ public class Config {
 	public static void setVisionRules(boolean enabled) {
 		VISION_RULES.set(enabled);
 		VISION_RULES.save();
+	}
+
+	/** Ticks de lanzamiento por nivel de conjuro; 0 = todo instantáneo. Ver {@code SpellRegistry.Spell#castTicksAt}. */
+	public static int castTicksPerLevel() {
+		return CAST_TICKS_PER_LEVEL.get();
+	}
+
+	/** Techo del tiempo de lanzamiento, en ticks. Ver {@code SpellRegistry.Spell#castTicksAt}. */
+	public static int castTicksMax() {
+		return CAST_TICKS_MAX.get();
 	}
 
 	/** Si el modo solo (sin DM) está activo. Ver {@link net.hawthorn.dndsheets.DndsheetsMod#canActAsDm}. */
@@ -299,9 +329,9 @@ public class Config {
 	 * que se vuelva a cargar el mismo archivo.</p>
 	 *
 	 * <p>F22 del audit: de los 5 overloads posicionales que había antes (hasta 10 parámetros String),
-	 * solo este de 10 parámetros tenía llamadas reales (ver {@link #loadFile} y
-	 * {@link net.hawthorn.dndsheets.api.DndSheetsApi#registerWeapon}, que ya resuelve los campos
-	 * opcionales con {@link net.hawthorn.dndsheets.api.WeaponRegistration}) — el resto se eliminó.</p>
+	 * solo este de 10 parámetros tenía llamadas reales (ver {@link #loadFile}) — el resto se eliminó.
+	 * El otro llamador era la fachada {@code DndSheetsApi.registerWeapon}, borrada por no tener ninguno
+	 * a su vez.</p>
 	 */
 	public static void registerWeapon(String id, String dice, String ability, String damageType, String hands, String versatileDice, List<String> classes, String displayName, String baseItemId, Integer customModelData) {
 		List<String> normalizedClasses = new java.util.ArrayList<>();
@@ -426,7 +456,7 @@ public class Config {
 		dndTag.putString("weapon", weaponId);
 		stack.getOrCreateTag().put("dndsheets", dndTag);
 		if (giveInfo != null) {
-			stack.setHoverName(Component.literal(giveInfo.displayName()));
+			stack.setHoverName(ContentNames.of(giveInfo.displayName()));
 			//Reskin por resource pack: un modelo custom en assets/minecraft/models/item/<baseItem>.json puede
 			//mapear este número a un modelo/textura distinta, sin que el arma tenga que compartir la del
 			//ítem base que la representa (p.ej. una "Daga" que ya no se ve como una espada de hierro).

@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 public class TurnStateMessage {
 	boolean active;
 	int round;
-	String currentName;
 	int currentEntityId;
 	boolean actionUsed;
 	double originX, originY, originZ;
@@ -42,11 +41,10 @@ public class TurnStateMessage {
 							 int currentHp, int maxHp) {
 	}
 
-	public TurnStateMessage(boolean active, int round, String currentName, int currentEntityId, boolean actionUsed,
+	public TurnStateMessage(boolean active, int round, int currentEntityId, boolean actionUsed,
 							 double originX, double originY, double originZ, List<RosterRow> roster) {
 		this.active = active;
 		this.round = round;
-		this.currentName = currentName;
 		this.currentEntityId = currentEntityId;
 		this.actionUsed = actionUsed;
 		this.originX = originX;
@@ -58,7 +56,6 @@ public class TurnStateMessage {
 	public TurnStateMessage(FriendlyByteBuf buffer) {
 		this.active = buffer.readBoolean();
 		this.round = buffer.readVarInt();
-		this.currentName = buffer.readUtf();
 		this.currentEntityId = buffer.readVarInt();
 		this.actionUsed = buffer.readBoolean();
 		this.originX = buffer.readDouble();
@@ -73,7 +70,6 @@ public class TurnStateMessage {
 	public static void buffer(TurnStateMessage message, FriendlyByteBuf buffer) {
 		buffer.writeBoolean(message.active);
 		buffer.writeVarInt(message.round);
-		buffer.writeUtf(message.currentName);
 		buffer.writeVarInt(message.currentEntityId);
 		buffer.writeBoolean(message.actionUsed);
 		buffer.writeDouble(message.originX);
@@ -96,7 +92,7 @@ public class TurnStateMessage {
 	public static void handler(TurnStateMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
 		NetworkUtil.handleOnClient(context, () ->
-			TurnHudState.update(message.active, message.round, message.currentName, message.currentEntityId,
+			TurnHudState.update(message.active, message.round, message.currentEntityId,
 				message.actionUsed, message.originX, message.originY, message.originZ, message.roster));
 	}
 }

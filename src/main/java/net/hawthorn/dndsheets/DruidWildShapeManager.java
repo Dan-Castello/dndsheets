@@ -163,7 +163,7 @@ public class DruidWildShapeManager {
 			if (stillHere != null) revert(stillHere, true);
 		});
 
-		player.sendSystemMessage(Component.translatable("chat.dndsheets.wildshape.start", block.name()).withStyle(ChatFeedback.RESOURCE));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.wildshape.start", ContentNames.of(block.name())).withStyle(ChatFeedback.RESOURCE));
 	}
 
 	/**

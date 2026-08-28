@@ -58,18 +58,24 @@ public class SpellCastManager {
 		return "save".equals(spell.mode()) && spell.aoeRadius() > 0 && !spell.isZone();
 	}
 
-	//Agachado + clic con un báculo de área (Bola de Fuego y similares): muestra dónde caería el radio real
-	//SIN lanzar el hechizo (no gasta espacio de conjuro ni acción de turno) — mismo anillo de partículas que
-	//aoeRing() ya dibuja al impactar de verdad, solo que aquí es un vistazo antes de comprometerse al clic
-	//normal. Ver CombatFx.aoeRing para por qué es un anillo en el punto de impacto y no una previsualización
-	//de apuntado en 3D.
+	//Agachado + clic con un báculo de área o de zona: enseña dónde caería SIN lanzar el hechizo (no gasta
+	//espacio de conjuro ni acción de turno), antes de comprometerse al clic normal.
 	public static void previewAoe(ServerPlayer caster, String spellId) {
 		SpellRegistry.Spell spell = SpellRegistry.get(spellId);
-		if (spell == null || !isAoe(spell)) return;
-		//Previsualización solo para la esfera: el anillo marca dónde cae, y en una línea o un cono el área
-		//nace en el lanzador, así que un anillo en el punto de impacto mentiría sobre a quién alcanza.
-		if (spell.originatesAtCaster()) return;
-		CombatFx.aoeRing(caster.level(), findImpactPoint(caster), spell.aoeRadius());
+		if (spell == null) return;
+		//Una zona es la que MÁS falta hace previsualizar y era la única que no lo hacía: isAoe() la excluye
+		//a propósito (no se resuelve al lanzarla, se coloca), así que el clic agachado no pintaba nada y el
+		//muro se colocaba a ciegas — para diez asaltos y con el espacio ya gastado, sin poder recolocarlo.
+		if (spell.isZone()) {
+			ZoneManager.preview(caster, spell, spell.followsCaster() ? null : findImpactPoint(caster));
+			return;
+		}
+		if (!isAoe(spell)) return;
+		//Cada forma se previsualiza con SU geometría. Antes esto se rendía con el cono y la línea (un anillo
+		//en el punto de impacto mentiría sobre a quién alcanzan), así que las dos formas donde MÁS falta hace
+		//ver el área —el grupo propio está justo detrás— eran precisamente las únicas sin previsualización.
+		if (spell.originatesAtCaster()) CombatFx.shapeOutline(caster, spell.aoeShape(), spell.aoeRadius(), spell.damageType());
+		else CombatFx.aoeRing(caster.level(), findImpactPoint(caster), spell.aoeRadius());
 	}
 
 	/**
@@ -79,6 +85,14 @@ public class SpellCastManager {
 	 */
 	private static int spendSlot(ServerPlayer caster, JsonObject casterSheet, int spellLevel, int minSlotLevel) {
 		int spent = SpellSlots.spend(casterSheet, spellLevel, minSlotLevel);
+		//Decirlo, no solo hacerlo. El espacio se descontaba en silencio: el único rastro era un número del
+		//HUD que baja, y con un truco (que por regla NO gasta nada) la conclusión razonable desde fuera es
+		//"esto ignora los espacios de conjuro". Nombrar el nivel gastado y lo que queda DE ESE NIVEL es lo
+		//que convierte el recurso en algo que se siente. Solo a quien lanza: es su contabilidad.
+		if (spent > 0) {
+			caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.slot_spent",
+				spent, SpellSlots.currentSlots(casterSheet)[spent]).withStyle(ChatFormatting.DARK_AQUA));
+		}
 		//Persistir, no solo avisar: el espacio gastado es estado de la hoja (invariante 4). Antes solo salía
 		//el parche al cliente, así que cerrar el servidor antes del autosave devolvía el espacio ya gastado.
 		//Se guarda con saveServer y no con saveAndSync porque el parche por campo de abajo ya sincroniza, y
@@ -93,17 +107,50 @@ public class SpellCastManager {
 		handleCastRequest(caster, spellId, 0);
 	}
 
-	/** @param slotLevel nivel de espacio elegido por el jugador, o 0 para el más bajo que sirva. */
+	/**
+	 * <p>Un lanzamiento son dos mitades: {@link #prepare} valida y <b>cobra</b> (objetivo, espacio de
+	 * conjuro, turno, contrahechizo), y {@link #resolve} aplica el efecto. Estaban fundidas en un solo
+	 * método de ~170 líneas hasta que el tiempo de lanzamiento (ver {@link CastingManager}) obligó a que
+	 * pasara tiempo real entre las dos. El corte no es estético: es el que permite que un conjuro que
+	 * tarda en salir se pueda interrumpir DESPUÉS de haber costado su acción y su espacio, que es
+	 * exactamente lo que pasa en la mesa.</p>
+	 *
+	 * @param slotLevel nivel de espacio elegido por el jugador, o 0 para el más bajo que sirva.
+	 */
 	public static void handleCastRequest(ServerPlayer caster, String spellId, int slotLevel) {
+		CastRequest request = prepare(caster, spellId, slotLevel);
+		if (request == null) return;
+
+		//castTicks 0 (el valor por defecto, y el de todo pack escrito antes de que el campo existiera)
+		//resuelve aquí mismo, en el mismo tick: exactamente el comportamiento de siempre.
+		int castTicks = request.spell().castTicksAt(Config.castTicksPerLevel(), Config.castTicksMax());
+		if (castTicks <= 0) {
+			resolve(caster, request);
+			return;
+		}
+		CastingManager.begin(caster, request, castTicks);
+	}
+
+	/**
+	 * <p>Lo que hace falta para resolver un conjuro cuyo coste YA se pagó. Viaja entero por
+	 * {@link CastingManager} mientras dura el lanzamiento, así que el objetivo y el punto de impacto son
+	 * los de cuando se apuntó — apuntar otra vez al resolver dejaría que un conjuro corrigiera su puntería
+	 * solo mientras el lanzador gira la cámara.</p>
+	 */
+	record CastRequest(SpellRegistry.Spell spell, Entity target, List<Entity> aoeTargets, Vec3 impactPoint,
+		boolean isAoe, int proficiency, int abilityMod, String casterName) {}
+
+	/** @return null si el lanzamiento se rechaza; en ese caso no se ha cobrado nada que no diga el comentario. */
+	private static CastRequest prepare(ServerPlayer caster, String spellId, int slotLevel) {
 		long now = caster.level().getGameTime();
 		Long last = lastCastTick.put(caster.getUUID(), now);
-		if (last != null && last == now) return;
+		if (last != null && last == now) return null;
 
 		SpellRegistry.Spell spell = SpellRegistry.get(spellId);
-		if (spell == null) return;
+		if (spell == null) return null;
 
 		JsonObject casterSheet = SheetLoader.getServerSheet(caster.getStringUUID());
-		if (casterSheet == null) return;
+		if (casterSheet == null) return null;
 
 		//Los trucos (nivel 0) son a voluntad en 5e: ni piden espacio ni lo gastan. Spell.level() existía
 		//desde el principio y aquí no se miraba, así que un truco consumía espacio como cualquier otro Y
@@ -116,6 +163,17 @@ public class SpellCastManager {
 		//vez de convertirse en un gasto que la regla no permite.
 		int requestedLevel = needsSlot ? Math.max(spell.level(), Math.min(slotLevel, SpellSlots.MAX_SPELL_LEVEL)) : 0;
 
+		//Sin preparar no se lanza, y se comprueba lo primero de todo: no cuesta espacio, ni acción, ni
+		//siquiera buscar objetivo. Mismo criterio que el objetivo del tipo equivocado más abajo — castigar
+		//con un recurso por una regla que el mod conoce y el jugador no puede ver sería el peor final
+		//posible. Tres cosas pasan siempre: un truco (no se prepara), una hoja sin el campo (invariante 8) y
+		//un conjuro que la hoja NO conoce — ese último es el báculo, que lanza sin haber aprendido nada.
+		if (needsSlot && !SpellRegistry.preparationAllows(casterSheet, spellId)) {
+			caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.not_prepared", ContentNames.of(spell.name()))
+				.withStyle(ChatFormatting.GRAY));
+			return null;
+		}
+
 		//Se comprueba aquí sin gastar, y se gasta más abajo: si el hechizo se rechaza por falta de objetivo
 		//o porque no es tu turno, no se puede haber cobrado ya el espacio.
 		if (!SpellSlots.hasSlotFor(casterSheet, requestedLevel)) {
@@ -124,7 +182,7 @@ public class SpellCastManager {
 			//o superior, y decirlo es la diferencia entre una regla y un fallo aparente.
 			caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_slots_of_level", requestedLevel)
 				.withStyle(ChatFormatting.RED));
-			return;
+			return null;
 		}
 
 		//Bola de Fuego y similares (mode:"save" + aoeRadius>0): no hace falta estar mirando directamente a
@@ -135,8 +193,9 @@ public class SpellCastManager {
 		Vec3 impactPoint = null;
 
 		if (spell.isZone() || spell.isSelfTargeted() || spell.isSummon()) {
-			//Ni objetivo ni punto de impacto: la zona se coloca, y buff/temphp/summon son sobre uno mismo.
-			//Se sigue igual con el resto del flujo (turno, contrahechizo, espacio de conjuro).
+			//Sin objetivo, pero una zona SÍ tiene punto: se coloca donde se apunta (ver ZoneManager.place).
+			//buff/temphp/summon son sobre uno mismo y no necesitan ni lo uno ni lo otro.
+			if (spell.isZone() && !spell.followsCaster()) impactPoint = findImpactPoint(caster);
 		} else if (isAoe) {
 			impactPoint = findImpactPoint(caster);
 			aoeTargets = findAoeTargets(caster, impactPoint, spell.aoeRadius(), spell.aoeShape());
@@ -146,30 +205,30 @@ public class SpellCastManager {
 			//capturar una variable que cambia.
 			SpellRegistry.Spell cast = spell;
 			aoeTargets.removeIf(entity -> !cast.affects(MonsterRegistry.typeOf(entity)));
-			if (aoeTargets.isEmpty()) {
-				caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_aoe_targets").withStyle(ChatFormatting.GRAY));
-				return;
-			}
+			//Un área vacía se lanza igual. Rechazarla obligaba a tener a alguien dentro del radio para poder
+			//tirar una Bola de Fuego, o sea que no se podía prender un bosque, abrir un boquete ni cubrir una
+			//retirada — cosas que en la mesa se hacen constantemente. El espacio se gasta y el mundo reacciona
+			//(ver SurfaceManager al resolver); simplemente no hay a quién dañar.
 		} else {
 			target = findTarget(caster);
 			if (target == null) {
 				//Un hechizo de curación sin nadie a la vista se lanza sobre uno mismo (Curar Heridas sobre
-				//el propio lanzador es el caso más común); el resto de modos sí necesita apuntar a alguien.
-				if ("heal".equals(spell.mode())) {
-					target = caster;
-				} else {
-					caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.no_target").withStyle(ChatFormatting.GRAY));
-					return;
-				}
+				//el propio lanzador es el caso más común).
+				//Todo lo demás se lanza AL TERRENO O AL AIRE en vez de rechazarse. Exigir una criatura en la
+				//mira convertía el hechizo en un arma teledirigida: no se podía disparar de aviso, prender una
+				//puerta, iluminar una sala ni fallar a propósito, y apuntar al suelo daba el mismo "no hay
+				//objetivo" que no apuntar a nada. En la mesa apuntar es libre y el hechizo sale igual.
+				if ("heal".equals(spell.mode())) target = caster;
+				else impactPoint = findImpactPoint(caster);
 			}
-			//Objetivo del tipo equivocado: se avisa y NO se cobra el espacio, igual que cuando no hay nadie
-			//delante. Cobrarlo castigaría por una regla que el mod conoce y el jugador no puede ver: en la
-			//mesa, el DM diría "eso no es un humanoide" antes de que gastes nada.
-			CreatureType targetType = MonsterRegistry.typeOf(target);
-			if (!spell.affects(targetType)) {
+			//Objetivo del tipo equivocado: se avisa y NO se cobra el espacio. Cobrarlo castigaría por una
+			//regla que el mod conoce y el jugador no puede ver: en la mesa, el DM diría "eso no es un
+			//humanoide" antes de que gastes nada.
+			CreatureType targetType = target != null ? MonsterRegistry.typeOf(target) : null;
+			if (targetType != null && !spell.affects(targetType)) {
 				caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.wrong_target_type",
-					spell.name(), nameOf(target), targetType.label()).withStyle(ChatFormatting.GRAY));
-				return;
+					ContentNames.of(spell.name()), nameOf(target), targetType.label()).withStyle(ChatFormatting.GRAY));
+				return null;
 			}
 		}
 
@@ -177,18 +236,20 @@ public class SpellCastManager {
 		//(a diferencia de un golpe con arma, ver CombatManager.autoStartCombatIfNeeded) — tryAct de abajo
 		//deja pasar cualquier cosa mientras no haya combate activo, así que el hechizo se resolvía "gratis",
 		//sin turno ni congelamiento para nadie. Curar no cuenta: sanar a alguien no es una agresión.
-		//Un muro no tiene ni objetivo ni lista de area, asi que no hay a quien "atacar" para arrancar el
-		//combate: lo arrancara el primero que empiece su turno dentro. Sin este guardia, la linea de abajo
-		//desreferenciaba null en cuanto alguien colocaba un muro.
-		if (!"heal".equals(spell.mode()) && !spell.isZone() && !spell.isSelfTargeted() && !spell.isSummon()) {
-			CombatManager.autoStartCombatIfNeeded(isAoe ? aoeTargets.get(0) : target, caster);
+		//Un lanzado que no alcanza a nadie no agrede a nadie, así que tampoco arranca el modo turnos: no hay
+		//a quién meter en la iniciativa. Son tres casos —un muro (que lo arrancará el primero que empiece su
+		//turno dentro), un área vacía y un hechizo al aire o al terreno— y este es además el guardia que
+		//evita desreferenciar null en los tres.
+		Entity aggressed = isAoe ? (aoeTargets.isEmpty() ? null : aoeTargets.get(0)) : target;
+		if (aggressed != null && !"heal".equals(spell.mode()) && !spell.isZone() && !spell.isSelfTargeted() && !spell.isSummon()) {
+			CombatManager.autoStartCombatIfNeeded(aggressed, caster);
 		}
 
 		//El turno se comprueba al final, ya con todo validado (hay objetivo, hay espacios): así, si se
 		//rechaza por turno, no se cobró ningún recurso por una acción que ni siquiera se intentó de verdad.
 		if (!TurnManager.tryAct(caster)) {
 			TurnManager.notifyCantAct(caster);
-			return;
+			return null;
 		}
 
 		String casterName = SheetLoader.characterNameOf(casterSheet, caster);
@@ -201,18 +262,19 @@ public class SpellCastManager {
 			//El espacio se gasta igual aunque lo anulen (en 5e el hechizo se considera usado), pero un truco
 			//no tiene espacio que gastar. Se gasta el que se pidió: contrarrestarlo no te devuelve el de 5º.
 			if (needsSlot) spendSlot(caster, casterSheet, spell.level(), requestedLevel);
-			ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.counterspelled", casterName, spell.name(), counterer).withStyle(ChatFormatting.DARK_PURPLE));
-			return;
+			ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.counterspelled", casterName, ContentNames.of(spell.name()), counterer).withStyle(ChatFormatting.DARK_PURPLE));
+			return null;
 		}
 
 		int proficiency = casterSheet.has("proficiencyBonus") ? safeInt(casterSheet.get("proficiencyBonus").getAsString()) : 2;
 		int abilityMod = CombatManager.abilityModifier(casterSheet, ABILITY_SHEET_KEY.getOrDefault(spell.castingAbility(), "intelligence"));
 
-		CombatFx.spellCast(caster);
-		//Rastro cosmético entre quien lanza y el punto de impacto — ver CombatFx.spellTravel. Zona/autolanzado/
-		//invocación no tienen un punto único al que viajar, se quedan solo con el destello de casteo.
-		if (target != null) CombatFx.spellTravel(caster, target, spell.damageType());
-		else if (impactPoint != null) CombatFx.spellTravel(caster, impactPoint, spell.damageType());
+		//Un truco es a voluntad y no gasta espacio: se dice explícitamente porque el silencio se lee como
+		//que el mod no lleva la cuenta. Es la otra mitad del mensaje de spendSlot.
+		if (!needsSlot) {
+			caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.cantrip_free", ContentNames.of(spell.name()))
+				.withStyle(ChatFormatting.DARK_AQUA));
+		}
 		//El nivel del espacio no se sabe hasta gastarlo: se pidió uno de 3º, pero si estaban agotados salió
 		//por uno de 4º y el conjuro sube con él. De ahí que la subida de nivel se aplique DESPUÉS de gastar
 		//y no antes, con el nivel real y no con el pedido.
@@ -220,6 +282,39 @@ public class SpellCastManager {
 		//Y lo que no se puede subir gastando un espacio sube con quien lanza: un truco de daño gana un dado a
 		//los niveles 5, 11 y 17. No hace falta un if — para todo lo demás devuelve el mismo conjuro.
 		spell = spell.atCasterLevel(SheetLoader.characterLevelOf(casterSheet, caster));
+
+		return new CastRequest(spell, target, aoeTargets, impactPoint, isAoe, proficiency, abilityMod, casterName);
+	}
+
+	/**
+	 * <p>Aplica el efecto de un conjuro ya pagado. Corre en el mismo tick que {@link #prepare} cuando el
+	 * conjuro es instantáneo, y {@code castTicks} después cuando no lo es.</p>
+	 */
+	static void resolve(ServerPlayer caster, CastRequest request) {
+		SpellRegistry.Spell spell = request.spell();
+		Entity target = request.target();
+		List<Entity> aoeTargets = request.aoeTargets();
+		Vec3 impactPoint = request.impactPoint();
+		boolean isAoe = request.isAoe();
+		int proficiency = request.proficiency();
+		int abilityMod = request.abilityMod();
+		String casterName = request.casterName();
+
+		//Se relee en vez de viajar dentro del CastRequest: entre prepare y resolve puede haber pasado un
+		//segundo entero, y en ese segundo el jugador puede haber cambiado de personaje (SheetLoader.sheets
+		//va indexado por id de personaje, no por jugador). Escribir sobre el JsonObject viejo guardaría los
+		//PG temporales o la mejora de arma en la hoja equivocada.
+		JsonObject casterSheet = SheetLoader.getServerSheet(caster.getStringUUID());
+		if (casterSheet == null) return;
+
+		//El fogonazo de disparo y el rastro salen al RESOLVER, no al empezar. Estaban en prepare(), o sea
+		//ANTES de la carga: con tiempo de lanzamiento el jugador veía estallido → hélice de carga → impacto,
+		//la secuencia al revés y sin recompensa al final. Un conjuro instantáneo (castTicks 0) resuelve en
+		//este mismo tick, así que para él no cambia nada.
+		CombatFx.spellCast(caster, spell.school());
+		//Zona/autolanzado/invocación no tienen un punto único al que viajar (ver CombatFx.spellTravel).
+		if (target != null) CombatFx.spellTravel(caster, target, spell.damageType());
+		else if (impactPoint != null) CombatFx.spellTravel(caster, impactPoint, spell.damageType());
 
 		if (spell.concentration()) ConcentrationManager.startConcentrating(caster, spell.name());
 
@@ -231,22 +326,25 @@ public class SpellCastManager {
 			//grant() solo toca el JsonObject, y el guardado de spendSlot ya paso antes que esto.
 			SheetLoader.saveServer(casterSheet, caster.getStringUUID());
 			ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.buff_granted",
-				casterName, spell.name(), spell.dice()).withStyle(ChatFormatting.GOLD));
+				casterName, ContentNames.of(spell.name()), spell.dice()).withStyle(ChatFormatting.GOLD));
 		} else if ("temphp".equals(spell.mode())) {
 			Combatant self = Combatant.of(caster);
 			DiceManager.RollOutcome roll = DiceManager.roll(casterSheet, spell.dice());
 			if (self != null && roll.result() != null) {
 				self.grantTemporaryHp(roll.result().getValue());
 				ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.temp_hp_granted",
-					casterName, spell.name(), roll.result().getValue()).withStyle(ChatFormatting.GOLD));
+					casterName, ContentNames.of(spell.name()), roll.result().getValue()).withStyle(ChatFormatting.GOLD));
 			}
 		} else if (spell.isZone()) {
-			ZoneManager.place(caster, spell, 8 + proficiency + abilityMod);
+			ZoneManager.place(caster, spell, 8 + proficiency + abilityMod, impactPoint);
 		} else if (isAoe) {
 			//Antes no había ninguna representación visual del radio: te enterabas de a quién golpeó leyendo
 			//el chat, después del hecho — un anillo de partículas en el radio real usado deja ver el alcance
 			//de la explosión, no solo el punto de impacto (ver CombatFx.aoeRing).
-			if (!spell.originatesAtCaster()) CombatFx.aoeRing(caster.level(), impactPoint, spell.aoeRadius());
+			//Esfera: anillo en el punto de impacto. Cono y línea: su contorno real desde el lanzador, que
+			//hasta ahora no pintaba nada (ver CombatFx.shapeOutline).
+			if (spell.originatesAtCaster()) CombatFx.shapeOutline(caster, spell.aoeShape(), spell.aoeRadius(), spell.damageType());
+			else CombatFx.aoeRing(caster.level(), impactPoint, spell.aoeRadius());
 			//Gemelar un hechizo que ya reparte daño a todo un radio no tendría sentido (5e tampoco lo deja);
 			//se ignora el flag pendiente en vez de consumirlo, para no gastarlo en un lanzado que no aplica.
 			for (Entity aoeTarget : aoeTargets) castSaveSpell(caster, casterName, spell, aoeTarget, proficiency, abilityMod);
@@ -256,6 +354,8 @@ public class SpellCastManager {
 			if (caster.level() instanceof ServerLevel surfaceLevel && !spell.originatesAtCaster()) {
 				SurfaceManager.onAoeImpact(surfaceLevel, impactPoint, spell.damageType(), aoeTargets);
 			}
+		} else if (target == null) {
+			castAtPoint(caster, casterName, spell, impactPoint);
 		} else if ("save".equals(spell.mode())) {
 			castSaveSpell(caster, casterName, spell, target, proficiency, abilityMod);
 			castTwinnedIfPending(caster, casterName, spell, target, proficiency, abilityMod);
@@ -265,6 +365,23 @@ public class SpellCastManager {
 		} else {
 			castAttackSpell(caster, casterName, spell, target, proficiency, abilityMod);
 			castTwinnedIfPending(caster, casterName, spell, target, proficiency, abilityMod);
+		}
+	}
+
+	/**
+	 * <p>El hechizo salió y no alcanzó a nadie: no hay tirada de ataque ni salvación que resolver, pero
+	 * <b>sí</b> pasó — el espacio ya está gastado y el mundo reacciona igual que bajo un área. El fuego
+	 * prende el suelo, el rayo electrifica el agua ({@link SurfaceManager}), que es lo que convierte
+	 * "fallar" en una jugada y no en un mensaje de error.</p>
+	 */
+	private static void castAtPoint(ServerPlayer caster, String casterName, SpellRegistry.Spell spell, Vec3 impactPoint) {
+		if (impactPoint == null) return;
+		//Radio 1: el anillo marca dónde cayó, sin mentir sobre un área de efecto que este hechizo no tiene.
+		CombatFx.aoeRing(caster.level(), impactPoint, 1.0);
+		ChatFeedback.broadcast(caster, Component.translatable("chat.dndsheets.spell.hits_ground",
+			casterName, ContentNames.of(spell.name())).withStyle(ChatFormatting.GRAY));
+		if (caster.level() instanceof ServerLevel level) {
+			SurfaceManager.onAoeImpact(level, impactPoint, spell.damageType(), List.of());
 		}
 	}
 
@@ -301,7 +418,7 @@ public class SpellCastManager {
 		Entity best = null;
 		double bestDistSq = Double.MAX_VALUE;
 		for (Entity candidate : caster.level().getEntities((Entity) null, box,
-				e -> e != caster && e != excluding && e.isAlive() && (e instanceof Player || TurnManager.isMonster(e)))) {
+				e -> e != excluding && isSpellTarget(caster, e))) {
 			double distSq = candidate.position().distanceToSqr(caster.position());
 			if (distSq < bestDistSq) {
 				bestDistSq = distSq;
@@ -357,13 +474,6 @@ public class SpellCastManager {
 		return blockHit.getLocation();
 	}
 
-	//Radio esférico como antes de a quién puede llegar la explosión, pero ahora con oclusión de terreno
-	//real: un objetivo dentro del radio solo cuenta si hay línea de visión libre de bloques sólidos desde
-	//el punto de impacto hasta él (una pared lo protege, igual que en 5e de verdad).
-	private static List<Entity> findAoeTargets(ServerPlayer caster, Vec3 center, double radius) {
-		return findAoeTargets(caster, center, radius, "sphere");
-	}
-
 	/**
 	 * <p>Objetivos dentro del área, con oclusión de terreno real: uno dentro de la forma solo cuenta si
 	 * hay línea de visión libre de bloques sólidos desde el origen del efecto hasta él (una pared lo
@@ -383,7 +493,7 @@ public class SpellCastManager {
 		//hace inShape más abajo. Buscar de más aquí es barato y evita geometría de cajas orientadas.
 		AABB box = new AABB(origin, origin).inflate(radius);
 		List<Entity> candidates = caster.level().getEntities((Entity) null, box,
-			entity -> entity != caster && entity.isAlive() && (entity instanceof Player || TurnManager.isMonster(entity)));
+			entity -> isSpellTarget(caster, entity));
 
 		List<Entity> hit = new ArrayList<>();
 		for (Entity entity : candidates) {
@@ -440,13 +550,28 @@ public class SpellCastManager {
 
 	//ponytail: un solo rayo al centro de la hitbox del objetivo, no varios puntos de su volumen ni un
 	//cálculo de cobertura parcial — alcanza para "un muro entero bloquea, un hueco en la pared no", que es
-	//.
+	//lo que un área necesita decidir. La cobertura PARCIAL ya la calcula Cover con sus cinco rayos para las
+	//tiradas de ataque y las salvaciones; aquí solo se pregunta si el efecto llega o no llega.
 	private static boolean hasClearPath(ServerPlayer caster, Vec3 from, Vec3 to) {
 		return !Cover.isBlocked(caster.level(), from, to, caster);
 	}
 
+	/**
+	 * <p>Objetivo válido de un hechizo: <b>cualquier criatura viva</b>. Antes eran solo jugadores y
+	 * enemigos, y eso dejaba media mesa intocable — una vaca, un aldeano, un caballo o un lobo domesticado
+	 * no se podían quemar, curar ni dormir, y el hechizo se rechazaba como si no hubiera nadie delante. En
+	 * 5e apuntar es libre: la regla decide qué le pasa al objetivo, no si se puede apuntar.</p>
+	 *
+	 * <p>El resto del camino ya sabía tratar a una criatura sin ficha ni bloque de estadísticas (CA 10 en
+	 * {@link #armorClassOfEntity}, salvación con d20 pelado en {@code SaveRules}, salud vanilla en
+	 * {@link #applyDamage} y {@link #healTarget}), así que no hacía falta nada más que dejarla entrar.</p>
+	 */
+	private static boolean isSpellTarget(ServerPlayer caster, Entity entity) {
+		return entity != caster && entity.isAlive() && entity instanceof LivingEntity;
+	}
+
 	//Mismo raycast que usa Minecraft internamente para saber a qué le pegó una flecha, reutilizado para
-	//apuntar el hechizo a quien el lanzador tenga delante (jugador o monstruo invocado).
+	//apuntar el hechizo a lo que el lanzador tenga delante.
 	private static Entity findTarget(ServerPlayer caster) {
 		Vec3 eyePos = caster.getEyePosition(1.0f);
 		Vec3 viewVec = caster.getViewVector(1.0f);
@@ -454,7 +579,7 @@ public class SpellCastManager {
 		AABB searchBox = caster.getBoundingBox().expandTowards(viewVec.scale(RANGE)).inflate(1.0);
 
 		EntityHitResult hit = ProjectileUtil.getEntityHitResult(caster.level(), caster, eyePos, endPos, searchBox,
-			entity -> entity != caster && entity.isAlive() && (entity instanceof Player || TurnManager.isMonster(entity)));
+			entity -> isSpellTarget(caster, entity));
 		return hit != null ? hit.getEntity() : null;
 	}
 

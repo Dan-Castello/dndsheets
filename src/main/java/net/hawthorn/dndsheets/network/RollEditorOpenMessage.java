@@ -1,15 +1,18 @@
-
 package net.hawthorn.dndsheets.network;
 
-import net.hawthorn.dndsheets.DndsheetsMod;
-import net.hawthorn.dndsheets.procedures.RollEditorOpenProcedure;
+import net.hawthorn.dndsheets.world.inventory.RollEditorMenu;
+
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.Level;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkHooks;
 
 import java.util.function.Supplier;
 
+/** Cliente -&gt; servidor: abre el editor de tiradas, o lo cierra si ya estaba abierto. */
 public class RollEditorOpenMessage {
 
 	public RollEditorOpenMessage() {
@@ -27,14 +30,13 @@ public class RollEditorOpenMessage {
 	}
 
 	public static void pressAction(Player entity) {
-		Level world = entity.level();
-		double x = entity.getX();
-		double y = entity.getY();
-		double z = entity.getZ();
-		// security measure to prevent arbitrary chunk generation
-		if (!world.hasChunkAt(entity.blockPosition()))
-			return;
+		if (entity == null) return;
 
-		RollEditorOpenProcedure.execute(world, x, y, z, entity);
+		if (entity.containerMenu instanceof RollEditorMenu) {
+			entity.closeContainer();
+		} else if (entity instanceof ServerPlayer player) {
+			NetworkHooks.openScreen(player, new SimpleMenuProvider(
+				(id, inventory, viewer) -> new RollEditorMenu(id, inventory, null), Component.literal("RollEditor")));
+		}
 	}
 }

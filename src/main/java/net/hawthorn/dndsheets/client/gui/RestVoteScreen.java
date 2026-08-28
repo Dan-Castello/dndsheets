@@ -1,7 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
-import net.hawthorn.dndsheets.network.RestVoteResponseMessage;
+import net.hawthorn.dndsheets.network.RestMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -36,12 +36,12 @@ public class RestVoteScreen extends ModalDialogScreen {
 	@Override
 	protected void init() {
 		addModalButton(20, 60, (WIDTH - 50) / 2, 20, Component.translatable("gui.dndsheets.rest_vote.accept"), button -> {
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new RestVoteResponseMessage(true));
+			DndsheetsMod.PACKET_HANDLER.sendToServer(RestMessage.voteResponse(true));
 			this.onClose();
 		});
 
 		addModalButton(30 + (WIDTH - 50) / 2, 60, (WIDTH - 50) / 2, 20, Component.translatable("gui.dndsheets.rest_vote.reject"), button -> {
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new RestVoteResponseMessage(false));
+			DndsheetsMod.PACKET_HANDLER.sendToServer(RestMessage.voteResponse(false));
 			this.onClose();
 		});
 	}

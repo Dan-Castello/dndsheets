@@ -1,5 +1,7 @@
 package net.hawthorn.dndsheets.command;
 
+import net.hawthorn.dndsheets.ContentNames;
+
 import com.google.gson.JsonObject;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -81,7 +83,7 @@ public class MagicItemCommand {
 			MagicItemRegistry.MagicItem item = MagicItemRegistry.get(id);
 			//Se marca cuál tiene mecánicas reales y cuál es puramente narrativo: sin eso, un DM no sabría
 			//cuáles va a aplicar el motor y cuáles tiene que narrar él.
-			ctx.getSource().sendSuccess(() -> Component.literal("  " + item.name() + " [" + id + "]"
+			ctx.getSource().sendSuccess(() -> Component.literal("  ").append(ContentNames.of(item.name())).append(" [" + id + "]"
 				+ (item.hasMechanics() ? "" : " (narrativo)")).withStyle(ChatFormatting.GRAY), false);
 		}
 		return MagicItemRegistry.ids().size();
@@ -93,7 +95,7 @@ public class MagicItemCommand {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.magic.no_such_item"));
 			return 0;
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal(item.name() + " — " + item.rarity()
+		ctx.getSource().sendSuccess(() -> ContentNames.of(item.name()).append(" — " + item.rarity()
 			+ (item.attunement() ? " (requiere sintonización)" : "")).withStyle(ChatFormatting.GOLD), false);
 		if (!item.description().isBlank()) {
 			ctx.getSource().sendSuccess(() -> Component.literal(item.description()).withStyle(ChatFormatting.GRAY), false);
@@ -121,8 +123,8 @@ public class MagicItemCommand {
 			return 0;
 		}
 		SheetLoader.saveServer(sheet, player.getStringUUID());
-		ctx.getSource().sendSuccess(() -> Component.literal((attune ? "Sintonizado con " : "Dejaste de sintonizar ")
-			+ item.name() + ".").withStyle(ChatFormatting.GREEN), false);
+		ctx.getSource().sendSuccess(() -> Component.literal(attune ? "Sintonizado con " : "Dejaste de sintonizar ")
+			.append(ContentNames.of(item.name())).append(".").withStyle(ChatFormatting.GREEN), false);
 		return 1;
 	}
 
@@ -142,12 +144,12 @@ public class MagicItemCommand {
 
 		for (ServerPlayer target : targets) {
 			ItemStack stack = MagicItemRegistry.tag(new ItemStack(base), id);
-			stack.setHoverName(Component.literal(magicItem.name()).withStyle(ChatFormatting.AQUA));
+			stack.setHoverName(ContentNames.of(magicItem.name()).withStyle(ChatFormatting.AQUA));
 			target.getInventory().add(stack);
-			target.sendSystemMessage(Component.translatable("chat.dndsheets.item.received_magic", magicItem.name(), (magicItem.attunement() ? ". Sintonízalo con /dnditems attune " + id : "."))
+			target.sendSystemMessage(Component.translatable("chat.dndsheets.item.received_magic", ContentNames.of(magicItem.name()), (magicItem.attunement() ? ". Sintonízalo con /dnditems attune " + id : "."))
 				.withStyle(ChatFormatting.GREEN));
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Entregado " + magicItem.name() + " a "
+		ctx.getSource().sendSuccess(() -> Component.literal("Entregado ").append(ContentNames.of(magicItem.name())).append(" a "
 			+ targets.size() + " jugador(es)."), true);
 		return targets.size();
 	}

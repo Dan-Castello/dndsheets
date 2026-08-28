@@ -405,7 +405,7 @@ public class CombatManager {
 		target.takeDamage(outcome.damage()); //Si llega a 0, mata al mob y lo saca del orden de turnos — ver Combatant.MonsterCombatant.
 		if (target.isDefeated()) {
 			//Sufijo en la MISMA línea del golpe que acaba de anunciarse, no una segunda línea de chat aparte.
-			message.append(Component.translatable("chat.dndsheets.combat.defeated_suffix", target.name()).withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
+			message.append(Component.translatable("chat.dndsheets.combat.defeated_suffix", ContentNames.of(target.name())).withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
 		}
 		ChatFeedback.broadcast(attacker, message);
 	}
@@ -636,7 +636,10 @@ public class CombatManager {
 			DiceManager.DamageResult extra = DiceManager.rollDamage(sheet, buff.dice(), critical);
 			if (extra.formatted() != null) {
 				amount += extra.amount();
-				formatted = formatted + " + " + buff.name() + " " + extra.formatted();
+				//El buff lleva el nombre del conjuro que lo concedio, que desde la migracion es una clave de
+				//idioma. Aqui se resuelve en texto plano porque va DENTRO de la formula de la tirada, que
+				//es un String — ver ContentNames.plain y su techo.
+				formatted = formatted + " + " + ContentNames.plain(buff.name()) + " " + extra.formatted();
 			}
 		}
 

@@ -28,7 +28,7 @@ public class CompendiumQuery {
 
 	/** Categorías del compendio. El valor viaja como texto en el mensaje, así que se compara en minúsculas. */
 	public enum Category {
-		SPELLS("hechizos"), MONSTERS("monstruos"), ITEMS("objetos"), WEAPONS("armas");
+		SPELLS("hechizos"), MONSTERS("monstruos"), ITEMS("objetos"), WEAPONS("armas"), TRAITS("rasgos");
 
 		public final String label;
 		Category(String label) { this.label = label; }
@@ -59,7 +59,7 @@ public class CompendiumQuery {
 					if (spell == null) continue;
 					ids.add(prefix + id);
 					labels.add(Component.translatable("gui.dndsheets.compendium.spell_line",
-						spell.name(), spell.level(), spell.dice()));
+						ContentNames.of(spell.name()), spell.level(), spell.dice()));
 				}
 			}
 			case MONSTERS -> {
@@ -68,7 +68,7 @@ public class CompendiumQuery {
 					if (block == null) continue;
 					ids.add(prefix + id);
 					labels.add(Component.translatable("gui.dndsheets.compendium.monster_line",
-						block.name(), block.ac(), block.maxHp()));
+						ContentNames.of(block.name()), block.ac(), block.maxHp()));
 				}
 			}
 			case ITEMS -> {
@@ -80,7 +80,22 @@ public class CompendiumQuery {
 					//consultarlos, y sin ella un DM no sabe qué esperar al entregarlo.
 					labels.add(Component.translatable(item.hasMechanics()
 						? "gui.dndsheets.compendium.item_line"
-						: "gui.dndsheets.compendium.item_line_narrative", item.name(), item.rarity()));
+						: "gui.dndsheets.compendium.item_line_narrative", ContentNames.of(item.name()), item.rarity()));
+				}
+			}
+			//Los rasgos eran el unico contenido que el jugador no podia mirar desde ninguna parte: la hoja
+			//guarda sus ids ("traits") pero TraitRegistry vive solo en el servidor, asi que sin esto un
+			//monje no tenia forma de saber con que dado pega a mano desnuda. Se marcan los que lleva
+			//puestos quien mira, que es la mitad de la pregunta y aqui sale gratis: la hoja esta al lado.
+			case TRAITS -> {
+				java.util.Set<String> mine = grantedTraitIds(viewer);
+				for (String id : sorted(TraitRegistry.ids())) {
+					TraitRegistry.Trait trait = TraitRegistry.get(id);
+					if (trait == null) continue;
+					ids.add(prefix + id);
+					labels.add(Component.translatable(mine.contains(id)
+						? "gui.dndsheets.compendium.trait_line_mine"
+						: "gui.dndsheets.compendium.trait_line", ContentNames.of(trait.name())));
 				}
 			}
 			case WEAPONS -> {
@@ -111,6 +126,7 @@ public class CompendiumQuery {
 			case MONSTERS -> describeMonster(id);
 			case ITEMS -> describeItem(id);
 			case WEAPONS -> describeWeapon(id);
+			case TRAITS -> describeTrait(id);
 		};
 		if (detail == null) return;
 
@@ -123,7 +139,7 @@ public class CompendiumQuery {
 	private static MutableComponent describeSpell(String id) {
 		SpellRegistry.Spell spell = SpellRegistry.get(id);
 		if (spell == null) return null;
-		MutableComponent text = Component.literal(spell.name());
+		MutableComponent text = ContentNames.of(spell.name());
 		text.append("\n").append(Component.translatable(KEY + "spell_head", spell.level(),
 			Component.translatable(KEY + modeKey(spell))));
 		text.append("\n").append(Component.translatable(KEY + "spell_cast", spell.castingAbility()));
@@ -161,7 +177,7 @@ public class CompendiumQuery {
 	private static MutableComponent describeMonster(String id) {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(id);
 		if (block == null) return null;
-		MutableComponent text = Component.literal(block.name());
+		MutableComponent text = ContentNames.of(block.name());
 		text.append("\n").append(Component.translatable(KEY + "monster_head",
 			block.ac(), block.maxHp(), block.proficiencyBonus()));
 		text.append("\n").append(Component.translatable(KEY + "monster_abilities",
@@ -169,7 +185,7 @@ public class CompendiumQuery {
 			block.abilities().get("int"), block.abilities().get("wis"), block.abilities().get("cha")));
 		for (MonsterRegistry.MonsterAttack attack : block.attacks()) {
 			text.append("\n").append(Component.translatable(KEY + "monster_attack",
-				attack.name(), attack.dice(), attack.damageType(), attack.toHitAbility()));
+				ContentNames.of(attack.name()), attack.dice(), attack.damageType(), attack.toHitAbility()));
 		}
 		if (!block.damageAffinities().isEmpty()) {
 			text.append("\n").append(Component.translatable(KEY + "affinities", block.damageAffinities().toString()));
@@ -180,10 +196,36 @@ public class CompendiumQuery {
 		return text;
 	}
 
+	//Un rasgo no tiene texto de descripcion en el registro (ver TraitRegistry.Trait): lo que hace es lo
+	//que declara en dados por nivel, asi que la ficha ES esa tabla. Sin dados declarados queda solo el
+	//nombre, que sigue siendo mas de lo que se veia antes.
+	private static MutableComponent describeTrait(String id) {
+		TraitRegistry.Trait trait = TraitRegistry.get(id);
+		if (trait == null) return null;
+		MutableComponent text = ContentNames.of(trait.name());
+		for (TraitRegistry.LevelDice entry : trait.unarmedDiceByLevel()) {
+			text.append("\n").append(Component.translatable(KEY + "trait_unarmed",
+				entry.level(), entry.dice(), trait.unarmedAbility()));
+		}
+		for (TraitRegistry.LevelDice entry : trait.sneakAttackDiceByLevel()) {
+			text.append("\n").append(Component.translatable(KEY + "trait_sneak", entry.level(), entry.dice()));
+		}
+		return text;
+	}
+
+	/** Ids de rasgos de la hoja de quien mira, para marcar en la lista cuales lleva puestos. */
+	private static java.util.Set<String> grantedTraitIds(ServerPlayer viewer) {
+		com.google.gson.JsonObject sheet = SheetLoader.getServerSheet(viewer.getStringUUID());
+		if (sheet == null || !sheet.has("traits")) return java.util.Set.of();
+		java.util.Set<String> ids = new java.util.HashSet<>();
+		for (com.google.gson.JsonElement element : sheet.getAsJsonArray("traits")) ids.add(element.getAsString());
+		return ids;
+	}
+
 	private static MutableComponent describeItem(String id) {
 		MagicItemRegistry.MagicItem item = MagicItemRegistry.get(id);
 		if (item == null) return null;
-		MutableComponent text = Component.literal(item.name());
+		MutableComponent text = ContentNames.of(item.name());
 		text.append("\n").append(Component.literal(item.rarity()));
 		if (item.attunement()) text.append(Component.translatable(KEY + "attunement"));
 		if (item.acBonus() != 0) text.append("\n").append(Component.translatable(KEY + "ac_bonus", item.acBonus()));

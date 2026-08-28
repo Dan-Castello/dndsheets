@@ -39,7 +39,7 @@ public class TraitGrantScreen extends ListPickerScreen {
 	protected void buildRows() {
 		for (int i = 0; i < names.size(); i++) {
 			String traitId = ids.get(i);
-			addRow(Component.literal(names.get(i)), b -> {
+			addRow(net.hawthorn.dndsheets.ContentNames.of(names.get(i)), b -> {
 				DndsheetsMod.PACKET_HANDLER.sendToServer(new TraitGrantMessage(targetUuid, traitId));
 				this.onClose();
 			});

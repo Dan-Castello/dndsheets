@@ -3,7 +3,9 @@ package net.hawthorn.dndsheets.client.gui.components;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.Mth;
 
 /**
@@ -34,6 +36,9 @@ public class TomeButton extends Button {
 	private static final int TEXT_DISABLED = 0xFF6E6455;
 
 	private static final int RAIL_WIDTH = 2;
+	/** Aire entre el texto y los bordes, para que lo recortado no quede pegado al bisel. */
+	private static final int TEXT_PADDING = 2;
+	private static final String ELLIPSIS = "...";
 
 	public TomeButton(int x, int y, int width, int height, Component message, OnPress onPress) {
 		super(x, y, width, height, message, onPress, DEFAULT_NARRATION);
@@ -69,8 +74,30 @@ public class TomeButton extends Button {
 		Minecraft minecraft = Minecraft.getInstance();
 		//El texto se centra en el hueco QUE QUEDA tras el filete, no en el botón entero: centrarlo en el
 		//botón lo dejaría visiblemente descuadrado hacia la izquierda.
-		int textLeft = left + 1 + RAIL_WIDTH;
-		guiGraphics.drawCenteredString(minecraft.font, this.getMessage(),
-			textLeft + (right - textLeft) / 2, top + (this.height - 8) / 2, color | alpha);
+		int textLeft = left + 1 + RAIL_WIDTH + TEXT_PADDING;
+		int textRight = right - TEXT_PADDING;
+		int available = textRight - textLeft;
+		Component message = this.getMessage();
+
+		//drawCenteredString a secas no recorta NADA: una etiqueta más ancha que la fila —"Bandit Ambush ·
+		//Bandit x4, Bandit Captain · Deadly", y media lista del compendio— se salía por los dos lados y se
+		//leía cortada por los dos extremos, sin principio ni final.
+		if (this.isHoveredOrFocused()) {
+			//Encima: la de vanilla, que la recorta a la fila y la pasea de lado a lado hasta el final. Solo
+			//en la fila señalada, porque cinco etiquetas deslizándose a la vez no se leen, se miran.
+			renderScrollingString(guiGraphics, minecraft.font, message, textLeft, top, textRight, bottom, color | alpha);
+			return;
+		}
+		int y = top + (this.height - 8) / 2;
+		if (minecraft.font.width(message) <= available) {
+			guiGraphics.drawCenteredString(minecraft.font, message, textLeft + available / 2, y, color | alpha);
+			return;
+		}
+		//Y en reposo, el principio con puntos suspensivos: el nombre está al principio, y unos puntos dicen
+		//"hay más" —que es justo lo que un corte a hueso no dice—.
+		FormattedText trimmed = FormattedText.composite(
+			minecraft.font.substrByWidth(message, available - minecraft.font.width(ELLIPSIS)), FormattedText.of(ELLIPSIS));
+		guiGraphics.drawString(minecraft.font, Language.getInstance().getVisualOrder(trimmed),
+			textLeft, y, color | alpha);
 	}
 }

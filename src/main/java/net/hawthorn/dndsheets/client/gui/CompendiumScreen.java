@@ -29,6 +29,9 @@ public class CompendiumScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.compendium.monsters"), b -> request("monsters"));
 		addRow(Component.translatable("gui.dndsheets.compendium.items"), b -> request("items"));
 		addRow(Component.translatable("gui.dndsheets.compendium.weapons"), b -> request("weapons"));
+		//Los rasgos entran los ultimos porque son la categoria mas corta, pero es la unica que el jugador
+		//no podia consultar de ninguna otra forma: marca ademas cuales lleva puestos (ver CompendiumQuery).
+		addRow(Component.translatable("gui.dndsheets.compendium.traits"), b -> request("traits"));
 	}
 
 	private static void request(String category) {

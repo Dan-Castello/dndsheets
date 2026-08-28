@@ -11,7 +11,7 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
  * Minecraft (ítem al aire, bloque, entidad) porque cuál de los tres dispara depende de qué haya delante
  * del jugador, y el báculo debe funcionar igual en los tres casos.</p>
  *
- * <p>Agachado + clic con un báculo de área: en vez de lanzar, previsualiza dónde caería el radio
+ * <p>Agachado + clic con un báculo de área o de zona: en vez de lanzar, previsualiza dónde caería
  * ({@link SpellCastManager#previewAoe}) — de pie, el clic sigue lanzando de verdad como siempre.</p>
  */
 public class QuickSpellManager {

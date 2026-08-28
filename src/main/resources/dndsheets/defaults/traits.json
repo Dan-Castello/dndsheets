@@ -1,7 +1,7 @@
 [
   {
     "id": "monje:artes_marciales",
-    "name": "Artes Marciales",
+    "name": "content.dndsheets.trait.monje.artes_marciales",
     "unarmedAbility": "dex",
     "unarmedDiceByLevel": [
       { "level": 1, "dice": "1d4" },
@@ -12,7 +12,7 @@
   },
   {
     "id": "picaro:ataque_furtivo",
-    "name": "Ataque Furtivo",
+    "name": "content.dndsheets.trait.picaro.ataque_furtivo",
     "sneakAttackDiceByLevel": [
       { "level": 1, "dice": "1d6" },
       { "level": 3, "dice": "2d6" },

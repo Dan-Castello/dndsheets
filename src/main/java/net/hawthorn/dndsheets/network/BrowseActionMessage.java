@@ -1,5 +1,7 @@
 package net.hawthorn.dndsheets.network;
 
+import net.hawthorn.dndsheets.ContentNames;
+
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.Combatant;
 import net.hawthorn.dndsheets.CompendiumQuery;
@@ -41,7 +43,8 @@ public class BrowseActionMessage {
 	//characterId, que ya era texto libre, carga el uuid del objetivo, la categoría o el ContentType.
 	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL, JOURNAL_DETAIL, DELETE, CREATE, SKILL_TOGGLE, LIST_SUBCLASSES, SUBCLASS_CHOOSE, LIST_FEATS, FEAT_CHOOSE,
 		GIVE_WEAPONS, GIVE_SPELLS, GRANT_TRAITS, LIST_PRESETS, LIST_PRESETS_MULTICLASS, SPAWN_MONSTERS,
-		MANAGE_OPTIONS, CONTENT_ENTRIES, CHARACTER_OPTIONS, LIST_ENCOUNTERS }
+		MANAGE_OPTIONS, CONTENT_ENTRIES, CHARACTER_OPTIONS, LIST_ENCOUNTERS,
+		SPELL_PREPARE, SPELL_UNPREPARE, DESIGN_ENCOUNTER }
 
 	final Action action;
 	//Lo usan SWITCH y DELETE (un id), CREATE (el nombre del personaje nuevo) y SKILL_TOGGLE (el índice de
@@ -147,6 +150,11 @@ public class BrowseActionMessage {
 					if (DndsheetsMod.canActAsDm(sender)) sendTraits(sender, message.characterId);
 				}
 				case LIST_PRESETS -> sendPresets(sender, message.characterId, false);
+				//Preparar y despreparar son acciones sobre TU propia lista, como cambiar de personaje o
+				//marcar una competencia: sin operador. El límite lo pone el servidor (ver
+				//CharacterRules.preparedLimitFor), no la pantalla — un cliente modificado no se salta nada.
+				case SPELL_PREPARE -> setPrepared(sender, message.characterId, true);
+				case SPELL_UNPREPARE -> setPrepared(sender, message.characterId, false);
 				//El botón "Multiclasear" de la ficha es sobre uno mismo, nunca sobre otro jugador.
 				case LIST_PRESETS_MULTICLASS -> sendPresets(sender, "", true);
 				case SPAWN_MONSTERS -> {
@@ -164,6 +172,12 @@ public class BrowseActionMessage {
 				case CHARACTER_OPTIONS -> sendCharacterOptions(sender, message.characterId);
 				case LIST_ENCOUNTERS -> {
 					if (DndsheetsMod.canActAsDm(sender)) sendEncounters(sender);
+				}
+				//El diseñador arma un encuentro NUEVO, así que lo que necesita del servidor no es la lista de
+				//encuentros sino el bestiario con su coste en PX y los umbrales del grupo: con eso el cliente
+				//recalcula la dificultad a cada clic sin otro viaje por fila (ver EncounterDesignerScreen).
+				case DESIGN_ENCOUNTER -> {
+					if (DndsheetsMod.canActAsDm(sender)) sendEncounterDesign(sender);
 				}
 				case SWITCH -> {
 					if (SheetLoader.switchCharacter(sender, message.characterId)) {
@@ -184,7 +198,7 @@ public class BrowseActionMessage {
 		List<Component> names = new ArrayList<>(ids.size());
 		for (String id : ids) {
 			net.hawthorn.dndsheets.TraitRegistry.Trait trait = net.hawthorn.dndsheets.TraitRegistry.get(id);
-			names.add(Component.literal(trait != null ? trait.name() : id));
+			names.add(ContentNames.of(trait != null ? trait.name() : id));
 		}
 		BrowseListMessage.send(dm, BrowseListMessage.Kind.GRANT_TRAIT, ids, names, targetUuid);
 	}
@@ -229,9 +243,12 @@ public class BrowseActionMessage {
 		} catch (IllegalArgumentException e) {
 			return;
 		}
-		String arrayJson = net.hawthorn.dndsheets.ContentPackFile.readArrayText(type.dmCreatedFile());
+		//Dos arrays: lo que creó el DM (editable y borrable) y lo que viene del pack (se enseña para poder
+		//partir de ello — guardar una copia con el mismo id la deja mandando, ver ContentPackFile).
+		String mine = net.hawthorn.dndsheets.ContentPackFile.readArrayText(type.dmCreatedFile());
+		String fromPacks = net.hawthorn.dndsheets.ContentPackFile.readOtherArraysText(type.dir, type.dmCreatedFile());
 		BrowseListMessage.send(dm, BrowseListMessage.Kind.CONTENT_ENTRY, List.of(),
-			List.of(Component.literal(arrayJson)), type.name());
+			List.of(Component.literal(mine), Component.literal(fromPacks)), type.name());
 	}
 
 	//Cada fila viaja con su descripción de composición ("goblin x4, lobo x2") para que el DM elija
@@ -242,10 +259,51 @@ public class BrowseActionMessage {
 		List<Component> labels = new ArrayList<>(ids.size());
 		for (String id : ids) {
 			net.hawthorn.dndsheets.EncounterRegistry.Encounter encounter = net.hawthorn.dndsheets.EncounterRegistry.get(id);
-			labels.add(Component.literal(encounter == null ? id
-				: id + " · " + net.hawthorn.dndsheets.EncounterRegistry.describe(encounter)));
+			//El nombre del encuentro sale del pack, asi que va como Component; la composicion
+			//("goblin x4, lobo x2") la arma describe() en texto plano — ver ContentNames.plain.
+			if (encounter == null) {
+				labels.add(Component.literal(id));
+				continue;
+			}
+			net.minecraft.network.chat.MutableComponent label = ContentNames.of(encounter.name())
+				.append(" · " + net.hawthorn.dndsheets.EncounterRegistry.describe(encounter));
+			//Y qué tan dura le sale a los que están conectados ahora mismo: es la mitad de la pregunta al
+			//elegir de una lista de encuentros preparados, y hasta acá solo se veía la composición.
+			int rating = net.hawthorn.dndsheets.EncounterBudget.rate(encounter, dm.server);
+			if (rating >= 0) label.append(" · ").append(difficultyName(rating));
+			labels.add(label);
 		}
 		BrowseListMessage.send(dm, BrowseListMessage.Kind.ENCOUNTER, ids, labels, "");
+	}
+
+	/** La palabra del veredicto ("Media", "Mortal") — ver {@code EncounterBudget.RATINGS}. */
+	public static Component difficultyName(int rating) {
+		return Component.translatable("gui.dndsheets.encounter.difficulty." + net.hawthorn.dndsheets.EncounterBudget.RATINGS[rating]);
+	}
+
+	//El bestiario con su coste en PX estimado, más los umbrales del grupo conectado, en el context como
+	//JSON (mismo truco que sendOptions/sendContentEntries: una carga que no es una lista de filas viaja
+	//como texto en vez de inventarse un mensaje nuevo — invariante 3).
+	private static void sendEncounterDesign(ServerPlayer dm) {
+		List<String> ids = new ArrayList<>(net.hawthorn.dndsheets.MonsterRegistry.ids());
+		java.util.Collections.sort(ids);
+		List<Component> names = new ArrayList<>(ids.size());
+		com.google.gson.JsonArray xp = new com.google.gson.JsonArray();
+		for (String id : ids) {
+			net.hawthorn.dndsheets.MonsterRegistry.MonsterStatBlock block = net.hawthorn.dndsheets.MonsterRegistry.get(id);
+			names.add(ContentNames.of(block != null ? block.name() : id));
+			xp.add(net.hawthorn.dndsheets.EncounterBudget.xp(id));
+		}
+
+		List<Integer> levels = net.hawthorn.dndsheets.EncounterBudget.partyLevels(dm.server);
+		com.google.gson.JsonArray thresholds = new com.google.gson.JsonArray();
+		for (int threshold : net.hawthorn.dndsheets.EncounterBudget.thresholds(levels)) thresholds.add(threshold);
+		JsonObject payload = new JsonObject();
+		payload.add("xp", xp);
+		payload.add("t", thresholds);
+		payload.addProperty("p", levels.size());
+
+		BrowseListMessage.send(dm, BrowseListMessage.Kind.ENCOUNTER_DESIGN, ids, names, payload.toString());
 	}
 
 	private static void sendCharacterOptions(ServerPlayer player, String category) {
@@ -268,7 +326,7 @@ public class BrowseActionMessage {
 			ids.add(id);
 			//Las que ya tiene se mandan marcadas en vez de quitarlas: que una lista encoja sin explicación
 			//se lee como que falta contenido, y esto es justo lo contrario.
-			labels.add(Component.literal((taken.contains(id) ? "✔ " : "") + feat.name()));
+			labels.add(Component.literal(taken.contains(id) ? "✔ " : "").append(ContentNames.of(feat.name())));
 		}
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
 			new BrowseListMessage(BrowseListMessage.Kind.FEAT, ids, labels));
@@ -281,7 +339,7 @@ public class BrowseActionMessage {
 		for (net.hawthorn.dndsheets.PresetRegistry.Subclass subclass
 				: net.hawthorn.dndsheets.PresetRegistry.availableSubclasses(sheet)) {
 			ids.add(subclass.id());
-			labels.add(Component.literal(subclass.name()));
+			labels.add(ContentNames.of(subclass.name()));
 		}
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
 			new BrowseListMessage(BrowseListMessage.Kind.SUBCLASS, ids, labels));
@@ -300,6 +358,29 @@ public class BrowseActionMessage {
 			sheet.get("characterSubclass").getAsString()).withStyle(ChatFormatting.GREEN));
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
 			new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+	}
+
+	/**
+	 * <p>Marca o desmarca un hechizo como preparado en la hoja de quien lo pide. Preparar por encima del
+	 * límite se rechaza con un aviso; despreparar nunca se rechaza — bajar siempre es válido, y hace falta
+	 * poder bajar para poder cambiar de lista.</p>
+	 */
+	private static void setPrepared(ServerPlayer sender, String spellId, boolean prepared) {
+		JsonObject sheet = SheetLoader.getServerSheet(sender.getStringUUID());
+		if (sheet == null) return;
+
+		int limit = net.hawthorn.dndsheets.SpellRegistry.preparedLimitFor(sheet);
+		//Límite 0 = no es una clase lanzadora, así que no hay lista que gestionar y la regla no se dispara.
+		if (limit <= 0) return;
+		if (prepared && net.hawthorn.dndsheets.SpellRegistry.preparedCount(sheet) >= limit) {
+			sender.sendSystemMessage(Component.translatable("chat.dndsheets.spell.prepared_full", limit)
+				.withStyle(ChatFormatting.GRAY));
+			return;
+		}
+		if (!net.hawthorn.dndsheets.SpellRegistry.setPrepared(sheet, spellId, prepared)) return;
+		//Invariante 4: la lista de preparados es estado de la hoja y se pierde en el reinicio si no se
+		//guarda. saveAndSync y no saveServer porque la pantalla se repinta desde la hoja completa.
+		SheetLoader.saveAndSync(sender, sheet);
 	}
 
 	private static void toggleSkill(ServerPlayer player, String rawIndex) {

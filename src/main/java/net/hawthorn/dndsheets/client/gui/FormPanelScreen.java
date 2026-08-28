@@ -132,8 +132,15 @@ public abstract class FormPanelScreen extends Screen {
 
 	private EditBox registerBox(String label, String defaultValue, int maxLength, int x, int y, int width) {
 		EditBox box = new EditBox(this.font, x, y, width, FIELD_HEIGHT, Component.literal(label));
+		//El tope PRIMERO y el valor después, nunca al revés. Las dos llamadas recortan: setValue corta a lo
+		//que valga maxLength EN ESE MOMENTO, y un EditBox recién construido trae 32 —el defecto de vanilla—,
+		//así que rellenar antes de subir el tope cortaba todo formulario prellenado a 32 caracteres. Se veía
+		//dos pasos más allá y con otra cara: un encuentro guardado con "dndsheets:adult_bronze_dragon, d" se
+		//invocaba como "ids que no existen", sin nada que señalara a esta línea.
+		//El máximo, además, nunca por debajo de lo que la pantalla acaba de rellenar: un tope existe para lo
+		//que TECLEA el usuario, y lo que ya venía puesto no es "de más".
+		box.setMaxLength(Math.max(maxLength, defaultValue.length()));
 		box.setValue(defaultValue);
-		box.setMaxLength(maxLength);
 		this.addWidget(box);
 		if (editBoxes.isEmpty()) this.setInitialFocus(box);
 		editBoxes.add(box);
@@ -200,10 +207,6 @@ public abstract class FormPanelScreen extends Screen {
 
 		public String value() {
 			return options[index];
-		}
-
-		public int index() {
-			return index;
 		}
 	}
 

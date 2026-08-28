@@ -1,5 +1,7 @@
 package net.hawthorn.dndsheets.network;
 
+import net.hawthorn.dndsheets.ContentNames;
+
 import net.hawthorn.dndsheets.CombatFx;
 import net.hawthorn.dndsheets.MonsterRegistry;
 import net.minecraft.network.FriendlyByteBuf;
@@ -47,7 +49,7 @@ public class MonsterSpawnMessage {
 			}
 
 			CombatFx.monsterSpawn(entity);
-			dm.sendSystemMessage(Component.translatable("chat.dndsheets.monster.spawned", block.name(), block.ac(), block.maxHp()));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.monster.spawned", ContentNames.of(block.name()), block.ac(), block.maxHp()));
 		});
 	}
 }

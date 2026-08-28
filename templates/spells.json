@@ -1,9 +1,10 @@
 [
   {
-    "_note": "mode:\"attack\": tirada de ataque (1d20 + característica de lanzado + competencia) contra la CA real del objetivo, igual que un arma. Campos obligatorios: id, dice. level 0 = cantrip.",
+    "_note": "school (opcional): abjuracion, conjuracion, adivinacion, encantamiento, evocacion, ilusion, nigromancia o transmutacion. Se acepta en ingles y sin acentos. No cambia ninguna regla: decide con que particulas y sonido se LANZA el hechizo (el tipo de dano ya decide las del impacto). Sin ella, el efecto generico de siempre. mode:\"attack\": tirada de ataque (1d20 + característica de lanzado + competencia) contra la CA real del objetivo, igual que un arma. Campos obligatorios: id, dice. level 0 = cantrip.",
     "id": "dndsheets:fire_bolt",
     "name": "Rayo de Fuego",
     "level": 0,
+    "school": "evocacion",
     "mode": "attack",
     "castingAbility": "int",
     "dice": "1d10",
@@ -14,6 +15,7 @@
     "id": "dndsheets:sacred_flame",
     "name": "Llama Sagrada",
     "level": 0,
+    "school": "evocacion",
     "mode": "save",
     "castingAbility": "wis",
     "saveAbility": "dex",
@@ -26,6 +28,7 @@
     "id": "dndsheets:fireball",
     "name": "Bola de Fuego",
     "level": 3,
+    "school": "evocacion",
     "mode": "save",
     "castingAbility": "int",
     "saveAbility": "dex",
@@ -39,6 +42,7 @@
     "id": "dndsheets:spirit_guardians",
     "name": "Guardianes Espirituales",
     "level": 3,
+    "school": "evocacion",
     "mode": "save",
     "castingAbility": "wis",
     "saveAbility": "wis",
@@ -53,6 +57,7 @@
     "id": "dndsheets:cure_wounds",
     "name": "Curar Heridas",
     "level": 1,
+    "school": "evocacion",
     "mode": "heal",
     "castingAbility": "wis",
     "dice": "1d8 + $wis"

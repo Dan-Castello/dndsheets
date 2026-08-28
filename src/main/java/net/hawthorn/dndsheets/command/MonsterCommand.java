@@ -1,5 +1,7 @@
 package net.hawthorn.dndsheets.command;
 
+import net.hawthorn.dndsheets.ContentNames;
+
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -30,11 +32,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * <p>Carga bloques de estadísticas de monstruo desde JSON y los invoca como mobs vanilla reales sin IA
@@ -50,11 +49,8 @@ public class MonsterCommand {
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndmonsters")
 			.requires(source -> DndsheetsMod.canActAsDm(source))
-			.then(Commands.literal("load")
-				.then(Commands.argument("archivo", StringArgumentType.word())
-					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(DndPaths.jsonFileNames(MONSTERS_DIR), builder))
-					.executes(MonsterCommand::load)))
-			.then(Commands.literal("list").executes(MonsterCommand::list))
+			.then(ContentCommands.loadBranch(MONSTERS_DIR, MonsterRegistry::loadFile, "monstruos"))
+			.then(ContentCommands.listBranch(MonsterRegistry::ids, "Monstruos"))
 			.then(spawnNode())
 			.then(galleryNode())
 			.then(attackNode())
@@ -185,30 +181,7 @@ public class MonsterCommand {
 					.executes(MonsterCommand::clearAttacks)));
 	}
 
-	private static int load(CommandContext<CommandSourceStack> ctx) {
-		String fileName = StringArgumentType.getString(ctx, "archivo");
-		Path file = MONSTERS_DIR.resolve(fileName + ".json");
 
-		if (!Files.exists(file)) {
-			ctx.getSource().sendFailure(Component.literal("No encontré " + file.toAbsolutePath()));
-			return 0;
-		}
-
-		try {
-			int count = MonsterRegistry.loadFile(file);
-			ctx.getSource().sendSuccess(() -> Component.literal("Cargados " + count + " monstruos desde " + fileName + ".json"), true);
-			return count;
-		} catch (IOException | RuntimeException e) {
-			ctx.getSource().sendFailure(Component.literal("No pude leer " + fileName + ".json: " + e.getMessage()));
-			return 0;
-		}
-	}
-
-	private static int list(CommandContext<CommandSourceStack> ctx) {
-		Set<String> ids = MonsterRegistry.ids();
-		ctx.getSource().sendSuccess(() -> Component.literal("Monstruos cargados (" + ids.size() + "): " + String.join(", ", ids)), false);
-		return ids.size();
-	}
 
 	private static int spawn(CommandContext<CommandSourceStack> ctx, int count) {
 		String monsterId = ResourceLocationArgument.getId(ctx, "monstruoId").toString();
@@ -235,7 +208,8 @@ public class MonsterCommand {
 		}
 
 		int finalSpawned = spawned;
-		ctx.getSource().sendSuccess(() -> Component.literal("Invocados " + finalSpawned + " " + block.name() + " (CA " + block.ac() + ", " + block.maxHp() + " PG)."), true);
+		ctx.getSource().sendSuccess(() -> Component.literal("Invocados " + finalSpawned + " ").append(ContentNames.of(block.name()))
+			.append(" (CA " + block.ac() + ", " + block.maxHp() + " PG)."), true);
 		return spawned;
 	}
 

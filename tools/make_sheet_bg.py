@@ -126,12 +126,27 @@ def build(divider_x_logical=None):
     return img
 
 
+def save(img, path):
+    """Guarda con paleta de 256 colores en vez de RGB de 24 bits.
+
+    El fondo es pergamino, cuero y laton: todo gradientes suaves, ~370 colores distintos en 1,8
+    millones de pixeles. Cuantizar a 256 se lleva 8 niveles como mucho en el peor pixel y 0,003 de
+    media (sobre 255), y encima Minecraft REDUCE la imagen 4x al dibujarla, asi que ese error se
+    promedia hasta desaparecer. A cambio, un tercio menos de archivo: 5,7 MB -> 3,8 MB entre las tres,
+    que eran el 78% del peso de todos los recursos del mod.
+
+    Sin dither a proposito: el ruido de difusion es justo lo que NO sobrevive al downscale — se ve
+    como grano sucio, que es lo mismo que parchment_field ya evita generando vetas anchas.
+    """
+    img.quantize(colors=256, method=Image.MEDIANCUT, dither=Image.NONE).save(path, optimize=True)
+
+
 if __name__ == '__main__':
     import sys
     out = sys.argv[1]
     # La pestana principal lleva el filete: separa la columna de caracteristicas del resto. Las otras dos
     # no, porque su contenido ocupa el ancho entero.
-    build(divider_x_logical=138).save(out + '/character_sheet.png')
-    build().save(out + '/character_sheet_2.png')
-    build().save(out + '/character_sheet_3.png')
+    save(build(divider_x_logical=138), out + '/character_sheet.png')
+    save(build(), out + '/character_sheet_2.png')
+    save(build(), out + '/character_sheet_3.png')
     print('fondos generados en', out)

@@ -21,16 +21,18 @@ import java.util.Set;
  * mode:"save"} = el objetivo tira su propia salvación contra la CD del lanzador (8 + competencia +
  * car. de lanzamiento), igual que un hechizo de monstruo.</p>
  */
-//Interno: no forma parte de la API pública versionada del mod (ver net.hawthorn.dndsheets.api.DndSheetsApi
-//y su API_VERSION). Un mod externo que llame estos métodos directo en vez de a través de la fachada se
-//expone a que cambien de firma sin aviso.
+//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
+//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
+//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
+//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
 public class SpellRegistry {
 	public record Spell(
 		String id, String name, int level, String mode,
 		String castingAbility, String saveAbility, String dice, boolean halfOnSave, String damageType,
 		boolean concentration, int aoeRadius, String aoeShape, String summonEntityId, boolean followsCasterFlag,
 		String effectName, String effectDice, int effectTurns, String upcastDice,
-		java.util.Set<CreatureType> affectsTypes, java.util.Set<CreatureType> immuneTypes
+		java.util.Set<CreatureType> affectsTypes, java.util.Set<CreatureType> immuneTypes, MagicSchool school,
+		int declaredCastTicks
 	) {
 		/**
 		 * <p>Forma del área: {@code sphere} (por defecto), {@code line} o {@code cone}. La diferencia no es
@@ -121,7 +123,24 @@ public class SpellRegistry {
 
 			return new Spell(id, name, level, mode, castingAbility, saveAbility, repeatDice(dice, dice5eCount),
 				halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId, followsCasterFlag,
-				effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes);
+				effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes, school, declaredCastTicks);
+		}
+
+		/**
+		 * <p><b>Cuánto tarda este conjuro en salir</b>, en ticks, resuelto contra la configuración de la mesa.
+		 * Un {@code castTicks} escrito en el JSON manda siempre; si no lo hay, sale del nivel del conjuro.</p>
+		 *
+		 * <p>Un truco es instantáneo por definición: es el ataque a voluntad de un lanzador y no puede costar
+		 * más que un golpe con arma. Y {@code perLevel} a 0 devuelve el lanzamiento instantáneo de siempre
+		 * para todo el mundo, que es lo que hace que esta función sea opcional de verdad (invariante 9).</p>
+		 *
+		 * <p>Es aritmética pura y vive aquí, en el record, por la misma razón que {@link #upcastTo} y
+		 * {@link #atCasterLevel}: el self-test la alcanza sin un Forge corriendo.</p>
+		 */
+		public int castTicksAt(int perLevel, int max) {
+			if (declaredCastTicks >= 0) return declaredCastTicks;
+			if (level <= 0 || perLevel <= 0) return 0;
+			return Math.max(0, Math.min(level * perLevel, max));
 		}
 
 		public Spell upcastTo(int slotLevel) {
@@ -134,7 +153,7 @@ public class SpellRegistry {
 			String scaled = "0".equals(dice.trim()) ? added : dice + " + " + added;
 			return new Spell(id, name + " (nv. " + slotLevel + ")", level, mode, castingAbility, saveAbility,
 				scaled, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId,
-				followsCasterFlag, effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes);
+				followsCasterFlag, effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes, school, declaredCastTicks);
 		}
 	}
 
@@ -201,8 +220,89 @@ public class SpellRegistry {
 		entry.addProperty("id", spellId);
 		entry.addProperty("name", spell.name());
 		entry.addProperty("level", spell.level());
+		//La escuela viaja a la hoja además del nivel porque el Grimorio la PINTA y la hace buscable, y el
+		//cliente no tiene el registro (solo vive en memoria del servidor, ver el javadoc de la clase). Una
+		//hoja anterior a este campo simplemente no la enseña: no se pierde nada que ya se viera.
+		if (spell.school() != MagicSchool.UNKNOWN) entry.addProperty("school", spell.school().label());
 		known.add(entry);
 		return true;
+	}
+
+	// --- Hechizos preparados (ver CharacterRules.preparedLimitFor y GrimoireScreen) ---
+
+	/**
+	 * <p>¿Está preparado? <b>Un hechizo sin el campo cuenta como preparado</b>, y eso no es un detalle: es
+	 * lo que hace que ninguna hoja escrita antes de que existiera la preparación se quede con un lanzador
+	 * mudo de golpe (invariante 8). La lista se vuelve restrictiva solo cuando alguien empieza a
+	 * desmarcar cosas.</p>
+	 *
+	 * <p>Los trucos siempre lo están: son a voluntad y en 5e no se preparan.</p>
+	 */
+	public static boolean isPrepared(JsonObject sheet, String spellId) {
+		JsonObject entry = entryFor(sheet, spellId);
+		if (entry == null) return false;
+		if (levelOfEntry(entry) <= 0) return true;
+		return !entry.has("prepared") || entry.get("prepared").getAsBoolean();
+	}
+
+	/**
+	 * <p>¿Deja la lista de preparados lanzar esto? <b>Un hechizo que la hoja no conoce no lo gestiona esta
+	 * lista</b>, así que pasa: es el caso del báculo, que por diseño lanza un conjuro sin que su portador
+	 * lo haya aprendido (ver {@code SpellCommand.staff} — "usando siempre las estadísticas y espacios de
+	 * conjuro reales del portador"). Solo bloquea lo que la hoja conoce Y alguien ha desmarcado a mano.</p>
+	 *
+	 * <p>Es una pregunta distinta de {@link #isPrepared}, que responde "¿está marcado?" para pintarlo en el
+	 * Grimorio. Confundirlas dejó el báculo inservible para todo conjuro de nivel: desconocido devolvía
+	 * false y el lanzado se rechazaba sin haberlo desmarcado nadie.</p>
+	 */
+	public static boolean preparationAllows(JsonObject sheet, String spellId) {
+		JsonObject entry = entryFor(sheet, spellId);
+		return entry == null || isPrepared(sheet, spellId);
+	}
+
+	/** @return false si la hoja no conoce ese hechizo, o si es un truco (que no se prepara). */
+	public static boolean setPrepared(JsonObject sheet, String spellId, boolean prepared) {
+		JsonObject entry = entryFor(sheet, spellId);
+		if (entry == null || levelOfEntry(entry) <= 0) return false;
+		entry.addProperty("prepared", prepared);
+		return true;
+	}
+
+	/** Cuántos lleva preparados, sin contar trucos — es el número que se compara con el límite. */
+	public static int preparedCount(JsonObject sheet) {
+		if (sheet == null || !sheet.has("spells")) return 0;
+		int count = 0;
+		for (JsonElement el : sheet.getAsJsonArray("spells")) {
+			JsonObject entry = el.getAsJsonObject();
+			if (levelOfEntry(entry) <= 0) continue;
+			if (!entry.has("prepared") || entry.get("prepared").getAsBoolean()) count++;
+		}
+		return count;
+	}
+
+	/**
+	 * <p>Cuántos puede llevar preparados, o 0 si no es una clase lanzadora. La fórmula vive en
+	 * {@code CharacterRules} —que es donde vive el resto de aritmética de personaje— y se reexpone aquí
+	 * porque esa clase es package-private a propósito y quienes preguntan (el Grimorio y la capa de red)
+	 * están fuera del paquete. Así toda la API de preparados se pide en un solo sitio.</p>
+	 */
+	public static int preparedLimitFor(JsonObject sheet) {
+		return CharacterRules.preparedLimitFor(sheet);
+	}
+
+	private static JsonObject entryFor(JsonObject sheet, String spellId) {
+		if (sheet == null || !sheet.has("spells") || spellId == null) return null;
+		for (JsonElement el : sheet.getAsJsonArray("spells")) {
+			JsonObject entry = el.getAsJsonObject();
+			if (entry.has("id") && entry.get("id").getAsString().equals(spellId)) return entry;
+		}
+		return null;
+	}
+
+	//El nivel se lee de la HOJA y no del registro a propósito: el registro solo vive en memoria del
+	//servidor, y esto lo llama también el cliente (ver GrimoireScreen), donde no existe.
+	private static int levelOfEntry(JsonObject entry) {
+		return entry.has("level") ? entry.get("level").getAsInt() : 0;
 	}
 
 	public static Spell parse(JsonObject json) {
@@ -251,8 +351,19 @@ public class SpellRegistry {
 		java.util.Set<CreatureType> affectsTypes = CreatureType.parseAll(json.has("affectsTypes") ? json.getAsJsonArray("affectsTypes") : null);
 		java.util.Set<CreatureType> immuneTypes = CreatureType.parseAll(json.has("immuneTypes") ? json.getAsJsonArray("immuneTypes") : null);
 
+		//Escuela de magia (ver MagicSchool). Ausente = UNKNOWN, que es como estaban los 87 conjuros del pack
+		//hasta que existió el campo: se lanzan con el efecto genérico de siempre y nada más cambia. No gatea
+		//ninguna regla, solo decide con qué se ve y se oye el LANZAMIENTO (CombatFx.spellCast).
+		MagicSchool school = MagicSchool.parse(json.has("school") ? json.get("school").getAsString() : null);
+
+		//Cuánto tarda en salir, en ticks. -1 (ausente) NO es cero: es "no lo he decidido", y entonces lo decide
+		//la configuración a partir del nivel (ver castTicksAt). Un 0 explícito en el JSON sí significa
+		//instantáneo pase lo que pase, que es como se escribe un conjuro que no debe poder interrumpirse
+		//—Escudo, Contrahechizo— sin tocar la configuración de la mesa.
+		int declaredCastTicks = json.has("castTicks") ? Math.max(0, Math.min(json.get("castTicks").getAsInt(), 200)) : -1;
+
 		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId, followsCaster,
-			effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes);
+			effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes, school, declaredCastTicks);
 	}
 
 	//--- Báculo de lanzado rápido: cualquier ítem etiquetado {dndsheets:{quickSpell:"id"}} (mismo patrón que las armas personalizadas) ---

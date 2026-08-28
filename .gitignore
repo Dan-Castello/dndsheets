@@ -106,3 +106,18 @@ graphify-out/
 
 # Bytecode de Python de los scripts de tools/: regenerable, y ata el repo a la version de Python local.
 __pycache__/
+
+# Estado del cliente de desarrollo que el propio mod regenera. Estaba versionado y ensuciaba cada
+# `git status`: mod_defaults.json lo reescribe ContentDefaults EN CADA ARRANQUE y ademas reordena las
+# entradas, asi que un solo arranque daba un diff de 2.700 lineas sobre contenido identico. Lo que el DM
+# escribe a mano son los OTROS .json de esas carpetas, y esos no estan aqui.
+runClient/dndsheets/*/mod_defaults.json
+runClient/charactersheets/
+
+# Sobras del cliente de pruebas: copias que aparta el mod al borrar un personaje o al migrar un pack.
+*.json.deleted
+*.json.old
+
+# Configs de mods de terceros con los que se prueba (los propios mods ya se ignoran, arriba).
+runClient/config/embeddium-mixins.properties
+runClient/config/ferritecore-mixin.toml

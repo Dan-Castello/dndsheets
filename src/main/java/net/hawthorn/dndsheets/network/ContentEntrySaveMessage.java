@@ -51,6 +51,15 @@ public class ContentEntrySaveMessage {
 				dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.missing_id"));
 				return;
 			}
+			//Los comandos de contenido leen su id con ResourceLocationArgument, así que un id con mayúsculas
+			//o espacios ("Emboscada Goblin") se guarda bien y después NO se puede nombrar: Brigadier lo
+			//rechaza al parsear y el botón del Panel de DM que manda ese comando no hace nada ni explica por
+			//qué. Se corta acá, que es donde el DM todavía está mirando el formulario.
+			String id = entry.get("id").getAsString();
+			if (!net.minecraft.resources.ResourceLocation.isValidResourceLocation(id)) {
+				dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.bad_id", id));
+				return;
+			}
 
 			try {
 				ContentPackFile.upsert(message.type.dmCreatedFile(), "id", entry);

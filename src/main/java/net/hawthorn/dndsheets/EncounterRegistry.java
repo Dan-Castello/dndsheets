@@ -119,7 +119,7 @@ public class EncounterRegistry {
 		for (Member member : encounter.members()) {
 			MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(member.monsterId());
 			if (text.length() > 0) text.append(", ");
-			text.append(block != null ? block.name() : member.monsterId());
+			text.append(ContentNames.plain(block != null ? block.name() : member.monsterId()));
 			if (member.count() > 1) text.append(" x").append(member.count());
 		}
 		return text.length() == 0 ? "(vacío)" : text.toString();

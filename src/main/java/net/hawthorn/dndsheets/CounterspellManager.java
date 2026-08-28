@@ -20,9 +20,13 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
  *
  * <p><b>Simplificación deliberada</b>: en 5e real un Contrahechizo de nivel 3 anula automáticamente
  * hechizos de nivel 3 o menos, y contra hechizos más altos hace falta una prueba de característica (CD 10 +
- * nivel del hechizo) o gastar un espacio de nivel igual o mayor. Aquí el pool de espacios es plano, sin
- * niveles por ranura (mismo motivo que el dado fijo de Castigo Divino) — así que cualquier Contrahechizo
- * listo con un espacio disponible anula cualquier hechizo, sin tirada de por medio.</p>
+ * nivel del hechizo) o gastar un espacio de nivel igual o mayor. Aquí se cobra el espacio de nivel 3 que
+ * pide la regla, pero <b>no hay prueba contra hechizos más altos</b>: un Contrahechizo listo anula
+ * cualquier hechizo, sin tirada de por medio.</p>
+ *
+ * <p>Este párrafo decía que "el pool de espacios es plano, sin niveles por ranura". Dejó de ser cierto
+ * cuando {@code SpellSlots} pasó a llevar una tabla por nivel; lo que sigue faltando es solo la prueba de
+ * característica.</p>
  */
 public class CounterspellManager {
 

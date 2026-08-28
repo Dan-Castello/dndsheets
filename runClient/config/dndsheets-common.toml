@@ -43,4 +43,20 @@ soloMode = false
 #como mando de dificultad self-service para un grupo sin DM que arbitre 'esto está siendo muy
 #duro' a ojo. Se cambia en caliente con /dnddifficulty, igual que visionRules con /dndvision.
 difficultyPreset = "normal"
+#Tiempo de lanzamiento de los conjuros, en ticks (20 ticks = 1 segundo).
+#
+#Un conjuro con tiempo de lanzamiento no sale en el mismo instante: el lanzador se carga de
+#partículas de su escuela, la barra de acción enseña el progreso, y recibir daño obliga a una
+#salvación de Constitución para no perderlo (el espacio de conjuro se gasta igual, como con el
+#Contrahechizo). Es lo único de este mod que hace que conjurar OCUPE tiempo real.
+#
+#Se calcula como nivel del conjuro x castTicksPerLevel, con castTicksMax de techo. Los trucos son
+#siempre instantáneos. Un conjuro puede fijar su propio "castTicks" en el JSON y entonces manda
+#ese (así se escribe un Escudo o un Contrahechizo, que tienen que salir ya).
+#
+#castTicksPerLevel = 0 devuelve el lanzamiento instantáneo de siempre para toda la mesa.
+#Range: 0 ~ 40
+castTicksPerLevel = 3
+#Range: 0 ~ 200
+castTicksMax = 20
 

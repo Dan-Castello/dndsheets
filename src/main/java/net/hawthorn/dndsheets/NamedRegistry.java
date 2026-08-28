@@ -37,9 +37,27 @@ public class NamedRegistry<T> {
 		items.put(idOf.apply(item), item);
 	}
 
+	/**
+	 * <p>El id tal y como está guardado y, si no aparece, el mismo sin el {@code minecraft:} de delante.</p>
+	 *
+	 * <p>Todos los comandos de contenido leen su id con {@code ResourceLocationArgument}, y eso le completa
+	 * el namespace por defecto a cualquier palabra sin {@code ":"} — no es cosa de los comandos, es lo que
+	 * hace {@code ResourceLocation} con cualquier id pelado. Pero acá los ids se guardan <b>tal cual vienen
+	 * del JSON</b>, y lo que crea el DM in-game no lleva namespace ("emboscada_goblin", "fighter"): escribir
+	 * lo mismo que sugiere el autocompletado no encontraba nada, y los botones del Panel de DM —que mandan
+	 * ese comando— fallaban igual. Se parcheó una vez para los presets ({@code PresetCommand}) y volvió a
+	 * aparecer en encuentros, que es de donde salió esto: el arreglo va donde pasan TODAS las búsquedas.</p>
+	 *
+	 * <p>Un id de un addon con namespace propio ({@code miaddon:algo}) nunca entra por esta rama: ahí el
+	 * namespace es real y la primera búsqueda ya acierta.</p>
+	 */
 	public T get(String id) {
-		return items.get(id);
+		T item = items.get(id);
+		if (item != null || id == null) return item;
+		return id.startsWith(DEFAULT_NAMESPACE) ? items.get(id.substring(DEFAULT_NAMESPACE.length())) : null;
 	}
+
+	private static final String DEFAULT_NAMESPACE = "minecraft:";
 
 	public Set<String> ids() {
 		return items.keySet();

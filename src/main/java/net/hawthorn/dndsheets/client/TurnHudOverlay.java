@@ -158,7 +158,7 @@ public class TurnHudOverlay {
 			guiGraphics.fill(left, barY, left + (int) Math.round((right - left) * fraction), barY + 1, fillColor);
 		}
 
-		net.minecraft.network.chat.MutableComponent name = Component.literal(marker + row.name());
+		net.minecraft.network.chat.MutableComponent name = Component.literal(marker).append(net.hawthorn.dndsheets.ContentNames.of(row.name()));
 		if (row.defeated()) name = name.withStyle(ChatFormatting.STRIKETHROUGH);
 		guiGraphics.drawString(font, name, left, y, nameColor);
 

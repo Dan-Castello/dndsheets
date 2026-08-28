@@ -36,6 +36,10 @@ import java.util.Locale;
 public abstract class ListPickerScreen extends Screen {
 	protected static final int BUTTON_HEIGHT = 20;
 	protected static final int SPACING = 4;
+	//Una cabecera es un rótulo entre filetes: con el alto de una fila de botón sobraba hueco arriba y
+	//abajo, y cinco de ellas (Panel de DM) costaban cinco acciones de lista visibles. Ver ButtonListWidget,
+	//que ahora toma el alto de cada fila del propio botón.
+	private static final int HEADER_HEIGHT = 11;
 	private static final int LIST_TOP = 30;
 	private static final int PANEL_PADDING = 10;
 	private static final int BACK_BUTTON_WIDTH = 50;
@@ -127,7 +131,7 @@ public abstract class ListPickerScreen extends Screen {
 
 	/** Cabecera de sección: un rótulo entre filetes, no clicable y excluido del buscador. Para menús largos (ver Panel de DM). */
 	protected final void addHeader(Component label) {
-		Button header = new SectionHeader(label, buttonWidth(), BUTTON_HEIGHT);
+		Button header = new SectionHeader(label, buttonWidth(), HEADER_HEIGHT);
 		this.addWidget(header);
 		allButtons.add(header);
 		allLabels.add(null);
@@ -157,7 +161,7 @@ public abstract class ListPickerScreen extends Screen {
 			searchBox = null;
 		}
 
-		list = new ButtonListWidget((this.width - buttonWidth()) / 2, listTop(), buttonWidth(), listHeight(), BUTTON_HEIGHT + SPACING);
+		list = new ButtonListWidget((this.width - buttonWidth()) / 2, listTop(), buttonWidth(), listHeight(), SPACING);
 		applyFilter();
 		this.addRenderableWidget(list);
 

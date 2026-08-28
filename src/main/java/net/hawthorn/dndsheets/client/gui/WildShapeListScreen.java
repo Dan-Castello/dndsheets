@@ -50,7 +50,7 @@ public class WildShapeListScreen extends ListPickerScreen {
 	protected void buildRows() {
 		for (int i = 0; i < beastIds.size(); i++) {
 			String beastId = beastIds.get(i);
-			addRow(Component.translatable("gui.dndsheets.wildshape.row", beastNames.get(i), beastHps.get(i), beastAcs.get(i)),
+			addRow(Component.translatable("gui.dndsheets.wildshape.row", net.hawthorn.dndsheets.ContentNames.of(beastNames.get(i)), beastHps.get(i), beastAcs.get(i)),
 				b -> {
 					DndsheetsMod.PACKET_HANDLER.sendToServer(
 						new WildShapeMessage(WildShapeMessage.Kind.CHOOSE, Minecraft.getInstance().player.getUUID(), beastId));
