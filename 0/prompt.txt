@@ -1,0 +1,38 @@
+<pasted_content id="f09d">
+Identify obsolete, deprecated, redundant, or unused content.
+
+Objectives:
+
+Detect code marked as deprecated, @deprecated, obsolete, or discontinued.
+Identify functions, classes, methods, components, imports, variables, configurations, and dependencies that are no longer in use.
+Detect dead code, duplicate code, or code replaced by newer implementations.
+Identify documentation, comments, examples, and files that describe features that no longer exist or are no longer valid.
+Detect obsolete dependencies/versions and legacy configurations.
+Distinguish between:
+Obsolete and safe to remove.
+Obsolete but still in use.
+Verifiably unused.
+Potentially necessary and requires validation.
+Before removing any item, verify its references and dependencies to avoid breaking functionality.
+Do not remove code simply because it appears outdated. Require evidence that it is obsolete, unused, or replaced.
+Maintain compatibility with the project’s current architecture and conventions.
+After the cleanup, search for residual references to the removed content.
+
+Deliverables:
+
+A list of detected items.
+File and location of each item.
+Reason why it is considered obsolete.
+Evidence of use/non-use.
+Recommended replacement, if any.
+Risk of removal: low, medium, or high.
+Proposed action: REMOVE, REPLACE, KEEP, or REVIEW.
+Changes made, if removal is authorized.
+Final list of potential residual items requiring review
+
+
+Critical rule:
+DO NOT remove anything that might have external usage, implicit behavior, dynamic configuration, or undetectable dependencies without explicitly indicating so.
+
+When you're done, run the available tests, linting, type-checking, and/or build processes, and report any regressions.
+</pasted_content id="f09d">
