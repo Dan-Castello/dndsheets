@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.network.TurnStateMessage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -353,6 +354,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		return active;
 	}
 
+	@Nullable
 	private static TurnEntry current() {
 		return currentIndex >= 0 && currentIndex < order.size() ? order.get(currentIndex) : null;
 	}

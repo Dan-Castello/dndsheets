@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -69,6 +70,7 @@ public class MagicItemRegistry {
 
 	public static void register(MagicItem item) { REGISTRY.register(item); }
 
+	@Nullable
 	public static MagicItem get(String id) { return REGISTRY.get(id); }
 
 	public static Set<String> ids() { return REGISTRY.ids(); }
@@ -140,6 +142,7 @@ public class MagicItemRegistry {
 		return stack;
 	}
 
+	@Nullable
 	public static String magicItemIdOf(ItemStack stack) {
 		CompoundTag tag = stack.getTag();
 		if (tag == null || !tag.contains("dndsheets")) return null;

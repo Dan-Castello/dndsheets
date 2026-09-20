@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import javax.annotation.Nullable;
 
 /**
  * <p>Keeps the mod's built-in content pack up to date inside the world folder.</p>
@@ -65,6 +66,7 @@ public final class ContentDefaults {
 	 * with a {@code .old} extension so it stops auto-loading, and the log message says where it is and
 	 * what to do. Past that first time, a file with that name belongs to the DM and is never touched again.</p>
 	 */
+	@Nullable
 	private static Path retireLegacySeed(Path dir, String resourceFileName) throws IOException {
 		Path legacy = dir.resolve(resourceFileName);
 		if (Files.exists(dir.resolve(FILE)) || !Files.exists(legacy)) return null;

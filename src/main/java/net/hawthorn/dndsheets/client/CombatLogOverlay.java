@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.client.gui.GuiStyle;
 import net.minecraft.client.Minecraft;
@@ -71,6 +72,7 @@ public class CombatLogOverlay {
 		while (entries.size() > MAX_ENTRIES) entries.removeFirst();
 	}
 
+	@Nullable
 	private static String findSummary(Component component) {
 		String insertion = component.getStyle().getInsertion();
 		if (insertion != null && insertion.startsWith(net.hawthorn.dndsheets.ChatFeedback.SUMMARY_PREFIX)) {

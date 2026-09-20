@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -304,6 +305,7 @@ public class CombatManager {
 	//net.minecraft.world.damagesource.DamageTypes not imported: the same simple name is already taken by
 	//net.hawthorn.dndsheets.DamageTypes (same package, used unqualified throughout this file) — importing
 	//the vanilla class would clash with that implicit resolution.
+	@Nullable
 	private static String environmentalDamageType(DamageSource source) {
 		if (source.is(net.minecraft.world.damagesource.DamageTypes.LAVA)
 			|| source.is(net.minecraft.world.damagesource.DamageTypes.IN_FIRE)
@@ -329,6 +331,7 @@ public class CombatManager {
 	 * that can't be unified without breaking something — PvP is inside Minecraft's {@code LivingHurtEvent}
 	 * and uses {@code setAmount}, while a monster tracks its 5e HP separately from the vanilla health attribute.</p>
 	 */
+	@Nullable
 	private static AttackOutcome resolveAttack(Player attacker, JsonObject attackerSheet, Combatant target,
 			IdentifiedWeapon weapon, String ability, String damageType, boolean melee) {
 		//All sources in ONE single call, never combined piecemeal: see AttackRules.advantageAgainst.
@@ -437,6 +440,7 @@ public class CombatManager {
 		}
 	}
 
+	@Nullable
 	private static ItemStack findHeldWeapon(Player player) {
 		for (ItemStack candidate : new ItemStack[]{player.getMainHandItem(), player.getOffhandItem()}) {
 			if (candidate.isEmpty()) continue;
@@ -457,6 +461,7 @@ public class CombatManager {
 	//A punch only resolves as a real 5e attack if the character has a trait granting it its own die
 	//(e.g. a monk's Martial Arts) or Wild Shape is active; without that, it stays as Minecraft's usual
 	//weak hit, same as any unconfigured weapon.
+	@Nullable
 	private static IdentifiedWeapon identifyUnarmed(Player player) {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (unarmedProfileFor(player, sheet, SheetLoader.characterLevelOf(sheet, player)) == null) return null;
@@ -472,6 +477,7 @@ public class CombatManager {
 		return TraitRegistry.unarmedProfileFor(sheet, level);
 	}
 
+	@Nullable
 	private static ResolvedWeapon resolveWeapon(Player player, JsonObject sheet, IdentifiedWeapon weapon, int level) {
 		if (UNARMED_ID.equals(weapon.id())) {
 			TraitRegistry.UnarmedProfile profile = unarmedProfileFor(player, sheet, level);
@@ -520,6 +526,7 @@ public class CombatManager {
 		return combatant != null && combatant.cannotAttack(target);
 	}
 
+	@Nullable
 	private static String pactOf(JsonObject sheet) {
 		if (sheet == null || !sheet.has("warlockPact")) return null;
 		//Sheets saved when pacts were Spanish ("cadena"/"hoja"/"vara") still read.
@@ -543,6 +550,7 @@ public class CombatManager {
 	//Recognizes a bow/crossbow from ANOTHER mod by its own vanilla class (most bow mods extend
 	//BowItem/CrossbowItem to inherit drawing and firing) instead of requiring an exact id in the config —
 	//same spirit as Config.autoDetectWeapon, but by item type instead of by attribute.
+	@Nullable
 	private static ItemStack findGenericBowOrCrossbow(Player player) {
 		for (ItemStack candidate : new ItemStack[]{player.getMainHandItem(), player.getOffhandItem()}) {
 			if (candidate.getItem() instanceof net.minecraft.world.item.BowItem || candidate.getItem() instanceof net.minecraft.world.item.CrossbowItem) return candidate;
@@ -550,6 +558,7 @@ public class CombatManager {
 		return null;
 	}
 
+	@Nullable
 	private static IdentifiedWeapon identifyRangedWeapon(Player player, Projectile projectile) {
 		ItemStack weapon = findHeldWeapon(player);
 		if (weapon != null) return identifyWeapon(player, weapon);
@@ -568,6 +577,7 @@ public class CombatManager {
 		return computeDamageRoll(player, weapon, false, DiceManager.Advantage.NORMAL, null, null);
 	}
 
+	@Nullable
 	private static Roll computeDamageRoll(Player player, IdentifiedWeapon weapon, boolean critical, DiceManager.Advantage advantage, String attackAbility, Entity target) {
 		if (weapon == null) return null;
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
@@ -691,6 +701,7 @@ public class CombatManager {
 	}
 
 	//Prefers whatever the player has set for that weapon in their own "attacks" list (so editing it there also changes the auto-roll), falling back to the config default.
+	@Nullable
 	private static String findWeaponExpression(Player player, JsonObject sheet, IdentifiedWeapon weapon, int level, boolean offhandEmpty) {
 		String itemId = weapon.id();
 		if (UNARMED_ID.equals(itemId)) {

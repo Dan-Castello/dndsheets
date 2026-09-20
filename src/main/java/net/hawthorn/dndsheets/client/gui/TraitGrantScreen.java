@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.TraitGrantMessage;
 import net.minecraft.client.Minecraft;
@@ -46,6 +47,7 @@ public class TraitGrantScreen extends ListPickerScreen {
 		}
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return names.isEmpty() ? Component.translatable("gui.dndsheets.trait_grant.empty") : null;

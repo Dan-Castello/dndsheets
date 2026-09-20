@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 //Skeleton repeated in TraitRegistry/PresetRegistry/SpellRegistry/MonsterRegistry: an in-memory map of
 //id -> definition, hot-loaded by its /dnd... load command, lost on server restart unless the same file
@@ -52,6 +53,7 @@ public class NamedRegistry<T> {
 	 * <p>An id from an addon with its own namespace ({@code myaddon:something}) never falls into this
 	 * branch: there the namespace is real and the first lookup already succeeds.</p>
 	 */
+	@Nullable
 	public T get(String id) {
 		T item = items.get(id);
 		if (item != null || id == null) return item;

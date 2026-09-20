@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -68,6 +69,7 @@ public class DruidWildShapeManager {
 		"str", "strength", "dex", "dexterity", "con", "constitution");
 
 	/** The id of the beast they're shaped into, or {@code null} if not transformed. */
+	@Nullable
 	public static String shapeOf(JsonObject sheet) {
 		if (sheet == null || !sheet.has(SHAPE_ID)) return null;
 		String id = sheet.get(SHAPE_ID).getAsString();
@@ -97,6 +99,7 @@ public class DruidWildShapeManager {
 		return new TraitRegistry.UnarmedProfile(attack.dice(), attack.damageAbility());
 	}
 
+	@Nullable
 	private static MonsterRegistry.MonsterStatBlock blockOf(JsonObject sheet) {
 		String id = shapeOf(sheet);
 		return id == null ? null : MonsterRegistry.get(id);

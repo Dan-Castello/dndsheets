@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.BrowseActionMessage;
 import net.minecraft.ChatFormatting;
@@ -58,6 +59,7 @@ public class CompendiumListScreen extends ListPickerScreen {
 		}
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return ids.isEmpty() ? Component.translatable("gui.dndsheets.compendium.empty") : null;

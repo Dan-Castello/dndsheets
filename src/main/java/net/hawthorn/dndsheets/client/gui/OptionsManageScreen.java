@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets.client.gui;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.OptionsSaveMessage;
 import net.minecraft.client.Minecraft;
@@ -51,6 +52,7 @@ public class OptionsManageScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.options_manage.add"), b -> OptionsAddScreen.open(category, values));
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return values.isEmpty() ? Component.translatable("gui.dndsheets.options_manage.empty") : null;

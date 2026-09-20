@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.network.TurnStateMessage;
 
 import java.util.List;
@@ -37,6 +38,7 @@ public class TurnHudState {
 	public static List<TurnStateMessage.RosterRow> roster() { return roster; }
 
 	/** The local player's row, or {@code null} if they have no slot in the order (watching from outside). */
+	@Nullable
 	public static TurnStateMessage.RosterRow myRow(int myEntityId) {
 		for (TurnStateMessage.RosterRow row : roster) {
 			if (row.entityId() == myEntityId) return row;

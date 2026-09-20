@@ -3980,7 +3980,7 @@ public class JsonContentSelfTest {
 		Path networkDir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "network");
 		List<Path> mensajes;
 		try (Stream<Path> files = Files.list(networkDir)) {
-			mensajes = files.filter(f -> f.toString().endsWith(".java")).sorted().toList();
+			mensajes = files.filter(f -> f.toString().endsWith(".java") && !f.endsWith("package-info.java")).sorted().toList();
 		}
 
 		Set<String> copiado = new java.util.TreeSet<>();
@@ -4005,7 +4005,7 @@ public class JsonContentSelfTest {
 		Path networkDir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "network");
 		List<Path> mensajes;
 		try (Stream<Path> files = Files.list(networkDir)) {
-			mensajes = files.filter(f -> f.toString().endsWith(".java")).sorted().toList();
+			mensajes = files.filter(f -> f.toString().endsWith(".java") && !f.endsWith("package-info.java")).sorted().toList();
 		}
 
 		StringBuilder cable = new StringBuilder();

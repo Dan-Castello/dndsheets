@@ -1,4 +1,5 @@
 package net.hawthorn.dndsheets.dungeon.client.gui;
+import javax.annotation.Nullable;
 import net.minecraft.client.resources.language.I18n;
 import net.hawthorn.dndsheets.client.gui.ModalDialogScreen;
 import net.hawthorn.dndsheets.client.gui.GuiStyle;
@@ -232,6 +233,7 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 
 	//Empty = "use this piece's pool" (the same behavior that existed before a different one could be
 	//chosen), not a pool literally named "".
+	@Nullable
 	private String doorPoolOverride() {
 		String text = doorPoolBox.getValue().trim();
 		return text.isEmpty() ? null : text;
@@ -423,6 +425,7 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 	}
 
 	//Grid cell under a screen point, or null if it falls outside the canvas.
+	@Nullable
 	private int[] cellAt(double mouseX, double mouseY) {
 		int left = canvasLeft(), top = dialogTop() + CANVAS_Y;
 		int gx = (int) ((mouseX - left) / cell), gz = (int) ((mouseY - top) / cell);

@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.*;
+import javax.annotation.Nullable;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -378,6 +379,7 @@ public class SheetLoader {
 	 * <p>Also accepts a direct character id (an NPC, or a PC its owner isn't currently wearing): an id
 	 * with no binding resolves to itself, so no separate method is needed for that case.</p>
 	 */
+	@Nullable
 	public static JsonObject getServerSheet(String uuid) {
 		String characterId = activeCharacterOf(uuid);
 		if (sheets.containsKey(characterId)) {
@@ -642,6 +644,7 @@ public class SheetLoader {
 	 *
 	 * @param isDm whether the requester can delete sheets that aren't theirs (a DM's NPC).
 	 */
+	@Nullable
 	public static String deleteCharacter(ServerPlayer requester, String characterId, boolean isDm) {
 		JsonObject sheet = sheets.get(characterId);
 		if (sheet == null) return "not_found";
@@ -814,6 +817,7 @@ public class SheetLoader {
 	 *                   group — and are useless frozen. In combat the mod still takes over regardless:
 	 *                   {@code TurnManager.freeze} shuts that AI off for the duration of the encounter.
 	 */
+	@Nullable
 	public static net.minecraft.world.entity.Entity spawnNpc(net.minecraft.server.level.ServerLevel level,
 			double x, double y, double z, String characterId, String baseEntityId, boolean keepsOwnAi) {
 		JsonObject sheet = sheets.get(characterId);

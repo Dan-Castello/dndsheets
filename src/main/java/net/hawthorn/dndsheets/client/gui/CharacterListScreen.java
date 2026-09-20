@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.BrowseActionMessage;
 import net.minecraft.ChatFormatting;
@@ -99,6 +100,7 @@ public class CharacterListScreen extends ListPickerScreen {
 		}
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		//A player always has at least their default sheet, so this is only ever seen if something went

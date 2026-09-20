@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -502,6 +503,7 @@ public class Config {
 	 * @param itemId registry name of the held item, e.g. "minecraft:iron_sword".
 	 * @return the configured default damage die + ability for that item, or null if it isn't a recognized weapon.
 	 */
+	@Nullable
 	public static WeaponDefault weaponDefaultFor(String itemId) {
 		if (itemId == null) return null;
 		WeaponDefault fromJson = jsonWeapons.get(itemId);
@@ -532,6 +534,7 @@ public class Config {
 	 * registration (JSON or .toml) for a specific item still overrides this (see {@link #weaponDefaultFor},
 	 * which is checked first) — for example, to treat a modded dagger as Dexterity instead of Strength.</p>
 	 */
+	@Nullable
 	public static WeaponDefault autoDetectWeapon(ItemStack stack) {
 		if (stack == null || stack.isEmpty()) return null;
 		double bonus = 0;
@@ -562,6 +565,7 @@ public class Config {
 	 * @param enchantId registry name of the enchantment, e.g. "minecraft:sharpness".
 	 * @return the configured flat damage bonus per level of that enchantment, or null if it isn't configured.
 	 */
+	@Nullable
 	public static Integer enchantBonusPerLevelFor(String enchantId) {
 		if (enchantId == null) return null;
 		return enchantBonusPerLevel.get(enchantId);

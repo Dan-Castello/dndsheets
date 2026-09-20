@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.client.gui.components.TomeButton;
 
 import com.google.gson.JsonArray;
@@ -240,6 +241,7 @@ public class GrimoireScreen extends ListPickerScreen {
 		return chosenSlotLevel;
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return hasNoKnownSpells() ? Component.translatable("gui.dndsheets.grimoire.empty") : null;

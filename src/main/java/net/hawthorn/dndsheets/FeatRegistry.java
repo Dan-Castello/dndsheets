@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets;
 
+import javax.annotation.Nullable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -45,6 +46,7 @@ public class FeatRegistry {
 		REGISTRY.register(feat);
 	}
 
+	@Nullable
 	public static Feat get(String id) {
 		return REGISTRY.get(id);
 	}

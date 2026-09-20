@@ -2,6 +2,7 @@ package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -139,6 +140,7 @@ public class SpellCastManager {
 		boolean isAoe, int proficiency, int abilityMod, String casterName) {}
 
 	/** @return null if the cast is rejected; in that case nothing has been charged beyond what the comment says. */
+	@Nullable
 	private static CastRequest prepare(ServerPlayer caster, String spellId, int slotLevel) {
 		long now = caster.level().getGameTime();
 		Long last = lastCastTick.put(caster.getUUID(), now);
@@ -571,6 +573,7 @@ public class SpellCastManager {
 
 	//Same raycast Minecraft uses internally to know what an arrow hit, reused to aim the spell at whatever
 	//the caster has in front of them.
+	@Nullable
 	private static Entity findTarget(ServerPlayer caster) {
 		Vec3 eyePos = caster.getEyePosition(1.0f);
 		Vec3 viewVec = caster.getViewVector(1.0f);

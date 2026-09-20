@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -58,6 +59,7 @@ public class CompendiumEntryScreen extends ModalDialogScreen {
 	 *
 	 * @return null if the category has no action, or if the id wasn't provided.
 	 */
+	@Nullable
 	private String actionCommand(String target) {
 		String[] parts = entryId.split("[|]", 2);
 		if (parts.length != 2 || parts[1].isBlank()) return null;
@@ -134,6 +136,7 @@ public class CompendiumEntryScreen extends ModalDialogScreen {
 	}
 
 	/** The picker returns a UUID; the commands want a player name. The client already has the list of connected players. */
+	@Nullable
 	private static String playerNameOf(String uuid) {
 		net.minecraft.client.multiplayer.ClientPacketListener connection = Minecraft.getInstance().getConnection();
 		if (connection == null) return null;

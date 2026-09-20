@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.network.BrowseListMessage;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -33,6 +34,7 @@ public class CompendiumQuery {
 		public final String label;
 		Category(String label) { this.label = label; }
 
+		@Nullable
 		static Category of(String raw) {
 			for (Category category : values()) {
 				if (category.name().equalsIgnoreCase(raw) || category.label.equalsIgnoreCase(raw)) return category;
@@ -140,6 +142,7 @@ public class CompendiumQuery {
 
 	//Detail sheets are built as Component and not as String: that way labels ("Level", "AC", "Save")
 	//get resolved by the CLIENT in its own language. Each value is registry data and travels as-is.
+	@Nullable
 	private static MutableComponent describeSpell(String id) {
 		SpellRegistry.Spell spell = SpellRegistry.get(id);
 		if (spell == null) return null;
@@ -178,6 +181,7 @@ public class CompendiumQuery {
 		};
 	}
 
+	@Nullable
 	private static MutableComponent describeMonster(String id) {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(id);
 		if (block == null) return null;
@@ -203,6 +207,7 @@ public class CompendiumQuery {
 	//A trait has no description text in the registry (see TraitRegistry.Trait): what it does is whatever
 	//dice-per-level it declares, so the detail sheet IS that table. With no dice declared, only the name
 	//is left, which is still more than was visible before.
+	@Nullable
 	private static MutableComponent describeTrait(String id) {
 		TraitRegistry.Trait trait = TraitRegistry.get(id);
 		if (trait == null) return null;
@@ -226,6 +231,7 @@ public class CompendiumQuery {
 		return ids;
 	}
 
+	@Nullable
 	private static MutableComponent describeItem(String id) {
 		MagicItemRegistry.MagicItem item = MagicItemRegistry.get(id);
 		if (item == null) return null;
@@ -253,6 +259,7 @@ public class CompendiumQuery {
 		return text;
 	}
 
+	@Nullable
 	private static MutableComponent describeWeapon(String id) {
 		Config.WeaponDefault weapon = Config.weaponDefaultFor(id);
 		if (weapon == null) return null;

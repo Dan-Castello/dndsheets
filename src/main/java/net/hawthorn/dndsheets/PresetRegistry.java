@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets;
 
+import javax.annotation.Nullable;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
@@ -48,6 +49,7 @@ public class PresetRegistry {
 		REGISTRY.register(preset);
 	}
 
+	@Nullable
 	public static ClassPreset get(String id) {
 		return REGISTRY.get(id);
 	}

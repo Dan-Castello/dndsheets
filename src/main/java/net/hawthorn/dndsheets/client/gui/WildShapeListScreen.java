@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.WildShapeMessage;
 import net.minecraft.client.Minecraft;
@@ -59,6 +60,7 @@ public class WildShapeListScreen extends ListPickerScreen {
 		}
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return beastIds.isEmpty() ? Component.translatable("gui.dndsheets.wildshape.empty") : null;

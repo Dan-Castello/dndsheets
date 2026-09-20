@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets;
 
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -44,6 +45,7 @@ public class SummonManager {
 	 * inherits the summoner's casting ability score and proficiency, which is how 5e calculates a summoned
 	 * weapon's attack.</p>
 	 */
+	@Nullable
 	public static Entity summon(ServerPlayer caster, SpellRegistry.Spell spell, int proficiency, int abilityMod) {
 		if (!(caster.level() instanceof ServerLevel level)) return null;
 
@@ -95,6 +97,7 @@ public class SummonManager {
 	}
 
 	/** UUID of the player who summoned it, or {@code null} if that entity isn't a summon. */
+	@Nullable
 	public static String ownerOf(Entity entity) {
 		CompoundTag data = entity.getPersistentData();
 		if (!data.contains("dndsheets")) return null;

@@ -2,6 +2,7 @@ package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -260,6 +261,7 @@ public interface Combatant {
 		}
 
 		/** Text for chat, or {@code null} if the expression couldn't even be rolled. */
+		@Nullable
 		public String formatted() {
 			if (blockedBy != null) return "auto (" + blockedBy.displayLabel() + ")";
 			return outcome == null || outcome.result() == null ? null : outcome.formatted();
@@ -294,6 +296,7 @@ public interface Combatant {
 	 * stat block, a training armor stand, a player with no sheet loaded): the caller must fall back to
 	 * Minecraft's normal behavior, exactly as it did before.
 	 */
+	@Nullable
 	static Combatant of(Entity entity) {
 		if (entity instanceof Player player) {
 			JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
@@ -324,6 +327,7 @@ public interface Combatant {
 	}
 
 	/** Character id linked to that entity, or {@code null} if it carries no sheet. */
+	@Nullable
 	static String characterIdOf(Entity entity) {
 		CompoundTag data = entity.getPersistentData();
 		if (!data.contains("dndsheets")) return null;

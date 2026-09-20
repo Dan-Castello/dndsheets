@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -400,6 +401,7 @@ public class RollIndex {
         return true;
     }
 
+    @Nullable
     private static String skillExpression(JsonObject sheet, int index) {
         if (sheet == null || index < 0 || index >= SKILL_COUNT) return null;
         JsonArray skills = sheet.getAsJsonArray(Category.SKILLS.toString());

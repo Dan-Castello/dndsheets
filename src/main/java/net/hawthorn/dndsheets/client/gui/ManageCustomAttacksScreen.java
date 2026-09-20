@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.ClearCustomAttacksMessage;
 import net.hawthorn.dndsheets.network.RemoveCustomAttackMessage;
@@ -48,6 +49,7 @@ public class ManageCustomAttacksScreen extends ListPickerScreen {
 		});
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return customAttackNames.isEmpty() ? Component.translatable("gui.dndsheets.custom_attacks.empty") : null;

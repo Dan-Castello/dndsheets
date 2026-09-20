@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -63,6 +64,7 @@ public class PaladinSmiteManager {
 	//Public: CombatManager consumes this right after confirming a hit (not before: missing the attack
 	//shouldn't spend the slot). Returns null if there was no pending flag OR there were no slots left to spend.
 	//The target is passed in because the die depends on WHAT is being smitten, not just on what pays for it.
+	@Nullable
 	public static String consumeIfPending(JsonObject sheet, Entity target) {
 		if (sheet == null || !sheet.has("smitePending") || !sheet.get("smitePending").getAsBoolean()) return null;
 		sheet.remove("smitePending");

@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.BrowseActionMessage;
 import net.minecraft.client.Minecraft;
@@ -43,6 +44,7 @@ public class SubclassScreen extends ListPickerScreen {
 		}
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return ids.isEmpty()

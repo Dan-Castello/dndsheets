@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -42,6 +43,7 @@ final class SaveRules {
 	 *
 	 * @param baseDc caster's DC, before cover.
 	 */
+	@Nullable
 	static Outcome resolve(Entity caster, Entity target, String saveAbility, int baseDc, String dice, boolean halfOnSave) {
 		//Cover boosts DEXTERITY saves and only those: it's dodging that cover helps with, not
 		//withstanding poison or resisting suggestion. It's subtracted from the DC instead of added to the
@@ -77,6 +79,7 @@ final class SaveRules {
 			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null, label, legendary);
 	}
 
+	@Nullable
 	private static Combatant.SaveRoll rollSave(Entity target, String saveAbility) {
 		Combatant combatant = Combatant.of(target);
 		if (combatant != null) return combatant.rollSave(saveAbility);

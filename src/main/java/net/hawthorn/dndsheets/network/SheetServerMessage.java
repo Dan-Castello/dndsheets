@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.Config;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
@@ -125,6 +126,7 @@ public class SheetServerMessage {
 	//time CombatManager.abilityModifier/SheetLoader.sheetInt tried to read it as a number) and clamps
 	//numeric fields to NUMERIC_FIELD_BOUNDS. If the value isn't valid for the field, it's discarded
 	//entirely and the server's sheet keeps what it already had, instead of storing garbage.
+	@Nullable
 	private static JsonElement sanitizeIncoming(String key, JsonElement value) {
 		if (!value.isJsonPrimitive()) return null;
 		int[] bounds = NUMERIC_FIELD_BOUNDS.get(key);

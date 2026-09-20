@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.dungeon;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.DndPaths;
 import net.hawthorn.dndsheets.SheetLoader;
@@ -326,6 +327,7 @@ public class DungeonManager {
 	//after a real world reload (leave and rejoin, or restart the server) — generate() warns about this
 	//if the pool still doesn't show up. Returns null on success (of the WRITE, not of the pool already
 	//being ready to generate), or an error message to show the DM.
+	@Nullable
 	public static String publish(ServerPlayer dm) {
 		MinecraftServer server = dm.getServer();
 		Path packRoot = server.getWorldPath(LevelResource.DATAPACK_DIR).resolve(PACK_NAME);

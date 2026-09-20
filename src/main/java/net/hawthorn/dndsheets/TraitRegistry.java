@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * <p>Traits (class passives/features) hot-loaded by {@code /dndtraits load}, in memory
@@ -45,6 +46,7 @@ public class TraitRegistry {
 		REGISTRY.register(trait);
 	}
 
+	@Nullable
 	public static Trait get(String id) {
 		return REGISTRY.get(canonical(id));
 	}
@@ -130,6 +132,7 @@ public class TraitRegistry {
 	//Bare-handed strike: walks the granted traits looking for one that defines a die by level (e.g.
 	//Martial Arts); returns the highest applicable level, or null if none of the granted traits touch this
 	//(normal unmodified Minecraft behavior for punching).
+	@Nullable
 	public static UnarmedProfile unarmedProfileFor(JsonObject sheet, int level) {
 		if (sheet == null || !sheet.has("traits")) return null;
 
@@ -147,6 +150,7 @@ public class TraitRegistry {
 	//Sneak Attack: extra die added to the damage roll (not replacing it) when the attack was made with
 	//advantage. Null if none of the granted traits define it, or if the character hasn't yet reached the
 	//level of the table's first entry.
+	@Nullable
 	public static String sneakAttackDiceFor(JsonObject sheet, int level) {
 		if (sheet == null || !sheet.has("traits")) return null;
 

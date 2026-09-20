@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.CharacterOptionsRegistry;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
@@ -88,6 +89,7 @@ public class CharacterOptionListScreen extends ListPickerScreen {
 		}
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return options.isEmpty() ? Component.translatable("gui.dndsheets.character_option.empty") : null;

@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -102,6 +103,7 @@ public class ConsumableManager {
 	 * {@code Combatant.SheetBacked.damageMultiplier}, the single point through which every "how much
 	 * damage does it actually take?" question passes.</p>
 	 */
+	@Nullable
 	public static String activeAffinity(JsonObject sheet, String damageType) {
 		if (sheet == null || damageType == null || !sheet.has(KEY)) return null;
 		JsonObject stored = sheet.getAsJsonObject(KEY);

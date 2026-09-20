@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets;
 
+import javax.annotation.Nullable;
 import net.minecraft.network.chat.Component;
 import com.google.gson.*;
 import net.minecraft.nbt.CompoundTag;
@@ -119,6 +120,7 @@ public class JournalManager {
 	 * <p>Converts the Book and Quill the player is holding into a journal entry. Returns
 	 * {@code null} if they're not holding one or if it's blank.</p>
 	 */
+	@Nullable
 	public static Entry publishFromBook(ServerPlayer author, ItemStack book, String title) {
 		String body = readPages(book);
 		if (body == null || body.isBlank()) return null;
@@ -136,6 +138,7 @@ public class JournalManager {
 	 * signed one stores them as JSON components. The unsigned one is accepted, since that's the one the
 	 * mod hands out and the only one the player can keep editing.</p>
 	 */
+	@Nullable
 	private static String readPages(ItemStack book) {
 		CompoundTag tag = book.getTag();
 		if (tag == null || !tag.contains("pages")) return null;
@@ -160,6 +163,7 @@ public class JournalManager {
 		return candidate;
 	}
 
+	@Nullable
 	public static Entry get(String id) {
 		ensureLoaded();
 		return entries.get(id);

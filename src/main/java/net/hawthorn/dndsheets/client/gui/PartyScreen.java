@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.SheetSummaryRequestMessage;
 import net.minecraft.ChatFormatting;
@@ -55,6 +56,7 @@ public class PartyScreen extends ListPickerScreen {
 		}
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return rows.isEmpty() ? Component.translatable("gui.dndsheets.party.empty") : null;

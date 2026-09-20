@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets;
 import com.google.gson.JsonObject;
 
 import java.util.Locale;
+import javax.annotation.Nullable;
 
 /**
  * <p>Spell slots by spell level, which is how they work in 5e: a level-3 spell spends a
@@ -69,6 +70,7 @@ public final class SpellSlots {
 	 * own {@code castingAbility} for RESOLVING itself, which is a different question: how many you can
 	 * prepare depends on your class, not on what each one is rolled with.</p>
 	 */
+	@Nullable
 	public static String castingAbilityFor(String characterClass) {
 		if (characterClass == null) return null;
 		String c = characterClass.toLowerCase(Locale.ROOT);

@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.compat.PehkuiCompat;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.nbt.CompoundTag;
@@ -180,6 +181,7 @@ public class MonsterRegistry {
 		REGISTRY.replace(block);
 	}
 
+	@Nullable
 	public static MonsterStatBlock get(String id) {
 		return REGISTRY.get(id);
 	}
@@ -240,6 +242,7 @@ public class MonsterRegistry {
 			json.has("glowing") && json.get("glowing").getAsBoolean());
 	}
 
+	@Nullable
 	private static String str(JsonObject json, String key) {
 		return json.has(key) ? json.get(key).getAsString() : null;
 	}
@@ -426,6 +429,7 @@ public class MonsterRegistry {
 		return block != null && block.ownClock();
 	}
 
+	@Nullable
 	public static String monsterIdOf(Entity entity) {
 		CompoundTag data = entity.getPersistentData();
 		if (!data.contains("dndsheets")) return null;
@@ -433,6 +437,7 @@ public class MonsterRegistry {
 		return tag.contains("monster") ? tag.getString("monster") : null;
 	}
 
+	@Nullable
 	public static MonsterStatBlock statBlockOf(Entity entity) {
 		String id = monsterIdOf(entity);
 		return id == null ? null : get(id);
@@ -543,6 +548,7 @@ public class MonsterRegistry {
 
 	//--- Summon card: any item tagged {dndsheets:{monsterSpawn:"id"}} (used like a vanilla spawn egg) ---
 
+	@Nullable
 	public static String monsterSpawnIdOf(ItemStack stack) {
 		CompoundTag tag = stack.getTag();
 		if (tag == null || !tag.contains("dndsheets")) return null;
@@ -599,6 +605,7 @@ public class MonsterRegistry {
 	 *                  Tagging it afterwards put it into the initiative as an enemy, and then the combat never
 	 *                  ended for as long as it lasted.
 	 */
+	@Nullable
 	public static Entity spawnAt(ServerLevel level, double x, double y, double z, String monsterId,
 			java.util.function.Consumer<Entity> configure) {
 		MonsterStatBlock block = get(monsterId);

@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 
 /**
  * <p>Timed weapon buffs: a spell that adds damage dice to <em>every</em> weapon hit while it lasts
@@ -37,6 +38,7 @@ public class WeaponBuffManager {
 	 * this does NOT consume anything: a timed buff applies to every hit in the round, and decrementing it
 	 * here would limit it to a single hit, which is exactly the other one's mechanic.</p>
 	 */
+	@Nullable
 	public static Buff active(JsonObject sheet) {
 		if (sheet == null || !sheet.has(DICE_KEY)) return null;
 		if (!sheet.has(ROUNDS_KEY) || sheet.get(ROUNDS_KEY).getAsInt() <= 0) return null;

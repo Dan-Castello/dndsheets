@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client;
 
+import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
@@ -98,6 +99,7 @@ public class WildShapeRenderer {
 			event.getPackedLight());
 	}
 
+	@Nullable
 	private static LivingEntity dummyFor(String baseEntityId) {
 		if (baseEntityId == null) return null;
 

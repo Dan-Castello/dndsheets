@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * <p>Character rules that don't depend on Minecraft: whose each sheet is, which one its owner has
@@ -128,6 +129,7 @@ final class CharacterRules {
 	 * sheet's id <em>was</em> its player's UUID. That fallback is what makes it unnecessary to migrate
 	 * anything on disk.</p>
 	 */
+	@Nullable
 	static String ownerOf(String characterId, JsonObject sheet) {
 		if (sheet != null && sheet.has("ownerUuid")) {
 			String owner = sheet.get("ownerUuid").getAsString();
@@ -184,6 +186,7 @@ final class CharacterRules {
 	 * @return the id, or {@code null} if it's not recognized or if there's more than one candidate
 	 *         (ambiguous is as much a "no" as not finding it: picking one would pick wrong half the time).
 	 */
+	@Nullable
 	static String resolveCharacter(Map<String, JsonObject> sheets, List<String> candidateIds, String query) {
 		if (query == null) return null;
 		String needle = query.trim();
@@ -219,6 +222,7 @@ final class CharacterRules {
 		return prefixCount == 1 ? prefix : null;
 	}
 
+	@Nullable
 	private static String idInsideBrackets(List<String> candidateIds, String needle) {
 		int open = needle.lastIndexOf('[');
 		if (open <= 0 || !needle.endsWith("]")) return null;
@@ -249,6 +253,7 @@ final class CharacterRules {
 	}
 
 	/** Name of a sheet, or null if it doesn't have one: not all of them carry it, and comparing against null is worse than skipping it. */
+	@Nullable
 	static String nameOf(JsonObject sheet) {
 		return sheet != null && sheet.has("characterName") ? sheet.get("characterName").getAsString() : null;
 	}
@@ -266,6 +271,7 @@ final class CharacterRules {
 	 *
 	 * @param boundId the character registered as active, or {@code null} if none is registered.
 	 */
+	@Nullable
 	static String characterToWearAfter(Set<String> existingIds, String boundId, List<String> ownedIds) {
 		if (boundId != null && existingIds.contains(boundId)) return boundId;
 		for (String id : ownedIds) {
@@ -294,6 +300,7 @@ final class CharacterRules {
 	 * conversion used to be written by hand in {@code PresetRegistry.applyToSheet}, six lines in a row; by
 	 * the second thing that grants abilities —feats— that was already twelve.</p>
 	 */
+	@Nullable
 	static String abilityFieldFor(String ability) {
 		if (ability == null) return null;
 		return switch (ability.toLowerCase(Locale.ROOT)) {

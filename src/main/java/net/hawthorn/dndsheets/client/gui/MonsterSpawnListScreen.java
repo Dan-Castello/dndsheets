@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.MonsterSpawnMessage;
 import net.minecraft.client.Minecraft;
@@ -40,6 +41,7 @@ public class MonsterSpawnListScreen extends ListPickerScreen {
 		}
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return ids.isEmpty() ? Component.translatable("gui.dndsheets.monster_spawn.empty") : null;

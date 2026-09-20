@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
@@ -49,6 +50,7 @@ public class EncounterRegistry {
 		REGISTRY.register(encounter);
 	}
 
+	@Nullable
 	public static Encounter get(String id) {
 		return REGISTRY.get(id);
 	}
@@ -94,6 +96,7 @@ public class EncounterRegistry {
 	 * encounter: it's the same call {@link JsonRegistryLoader} already makes for each entry in a file —
 	 * losing one monster from an ambush is recoverable, losing the DM's entire file isn't.</p>
 	 */
+	@Nullable
 	static Member parseMember(String text) {
 		if (text == null) return null;
 		String trimmed = text.trim();

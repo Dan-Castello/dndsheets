@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets.client.gui;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.ContentType;
 import net.hawthorn.dndsheets.EncounterBudget;
 import net.minecraft.client.Minecraft;
@@ -112,6 +113,7 @@ public class EncounterDesignerScreen extends ListPickerScreen {
 					ContentType.ENCOUNTER.name())));
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return null; //Never empty: "+ Add monster" is always there.

@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.client.gui.components.ButtonListWidget;
 import net.hawthorn.dndsheets.client.gui.components.SectionHeader;
 import net.hawthorn.dndsheets.client.gui.components.TomeButton;
@@ -116,6 +117,7 @@ public abstract class ListPickerScreen extends Screen {
 	protected abstract void buildRows();
 
 	/** Text to show centered on screen if the list ends up empty. Null = show nothing. */
+	@Nullable
 	protected Component emptyMessage() {
 		return null;
 	}

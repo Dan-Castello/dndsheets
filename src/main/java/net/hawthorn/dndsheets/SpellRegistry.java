@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 
@@ -181,6 +182,7 @@ public class SpellRegistry {
 		REGISTRY.register(spell);
 	}
 
+	@Nullable
 	public static Spell get(String id) {
 		return REGISTRY.get(id);
 	}
@@ -294,6 +296,7 @@ public class SpellRegistry {
 		return CharacterRules.preparedLimitFor(sheet);
 	}
 
+	@Nullable
 	private static JsonObject entryFor(JsonObject sheet, String spellId) {
 		if (sheet == null || !sheet.has("spells") || spellId == null) return null;
 		for (JsonElement el : sheet.getAsJsonArray("spells")) {
@@ -372,6 +375,7 @@ public class SpellRegistry {
 
 	//--- Quick-cast staff: any item tagged {dndsheets:{quickSpell:"id"}} (same pattern as custom weapons) ---
 
+	@Nullable
 	public static String quickSpellIdOf(ItemStack stack) {
 		CompoundTag tag = stack.getTag();
 		if (tag == null || !tag.contains("dndsheets")) return null;

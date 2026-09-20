@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -183,6 +184,7 @@ public class CastingManager {
 		if (caster.level() instanceof ServerLevel level) TurnManager.resumeAutoAdvance(level, caster);
 	}
 
+	@Nullable
 	private static ServerPlayer casterOf(UUID id) {
 		net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
 		return server != null ? server.getPlayerList().getPlayer(id) : null;

@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import java.util.Locale;
+import javax.annotation.Nullable;
 
 /**
  * <p>The 14 conditions from 5e. Until now the mod could only express a "freely-named effect that deals
@@ -111,6 +112,7 @@ public enum Condition {
 	}
 
 	/** {@code null} if the text doesn't name any condition — a free-form effect ("fire", "bleeding"). */
+	@Nullable
 	public static Condition fromLabel(String label) {
 		if (label == null) return null;
 		for (Condition condition : values()) {

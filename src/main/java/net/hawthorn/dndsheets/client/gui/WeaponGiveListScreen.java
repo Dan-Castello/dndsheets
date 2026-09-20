@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.WeaponGiveMessage;
 import net.minecraft.client.Minecraft;
@@ -41,6 +42,7 @@ public class WeaponGiveListScreen extends ListPickerScreen {
 		}
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return ids.isEmpty() ? Component.translatable("gui.dndsheets.weapon_give.empty") : null;

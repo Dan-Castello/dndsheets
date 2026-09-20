@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets;
 
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -58,6 +59,7 @@ public class ChatFeedback {
 	//"§" in a name is Minecraft's formatting code, so it would bleed color/bold into the rest of the chat
 	//line for ALL players even inside a Component.literal. name() and dim() are the two points that all
 	//interpolated text in this whole file passes through.
+	@Nullable
 	private static String stripFormatting(String text) {
 		return text == null ? null : text.replace('§', '?');
 	}

@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -204,6 +205,7 @@ public class LevelUpManager {
 	}
 
 	//Only the six are accepted: anything else that comes in over the wire isn't an ability score.
+	@Nullable
 	private static String normalize(String raw) {
 		if (raw == null || raw.isEmpty()) return null;
 		String lower = raw.toLowerCase(Locale.ROOT);

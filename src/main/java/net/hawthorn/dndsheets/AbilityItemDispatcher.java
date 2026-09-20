@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets;
 
+import javax.annotation.Nullable;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -88,6 +89,7 @@ public class AbilityItemDispatcher {
 		return item != null && item.isConsumable();
 	}
 
+	@Nullable
 	private static CompoundTag dndTagOf(ItemStack stack) {
 		CompoundTag tag = stack.getTag();
 		if (tag == null || !tag.contains("dndsheets")) return null;

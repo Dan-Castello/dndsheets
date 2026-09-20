@@ -3,6 +3,7 @@ package net.hawthorn.dndsheets.client.gui;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.ContentType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -145,6 +146,7 @@ public class ContentEntryListScreen extends ListPickerScreen {
 		}
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return entries.isEmpty() && fromPacks.isEmpty()

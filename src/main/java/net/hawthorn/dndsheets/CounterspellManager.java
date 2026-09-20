@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets;
 
 import com.google.gson.JsonObject;
+import javax.annotation.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -52,6 +53,7 @@ public class CounterspellManager {
 	//Counterspell primed, a reaction available, and spell slots; if found, spends their slot and
 	//reaction and returns their name (the caller handles announcing the failure and not resolving the effect).
 	//Null if nobody could counter it.
+	@Nullable
 	public static String findCounterer(Level level, Vec3 origin, Entity caster) {
 		//A player's Counterspell only protects the party against an ENEMY caster (a DM's monster) —
 		//it used to not check where the spell came from, so ANY player's Counterspell would also negate

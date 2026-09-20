@@ -1,4 +1,5 @@
 package net.hawthorn.dndsheets.dungeon.client.gui;
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.client.gui.GuiStyle;
 import net.hawthorn.dndsheets.client.gui.ListPickerScreen;
 
@@ -55,6 +56,7 @@ public class DungeonPieceListScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.dungeon_pieces.generate"), b -> DungeonGenerateScreen.open());
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return pieces.isEmpty() ? Component.translatable("gui.dndsheets.dungeon_pieces.empty") : null;

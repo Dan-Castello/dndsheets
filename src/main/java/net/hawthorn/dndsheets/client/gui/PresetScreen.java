@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.MulticlassMessage;
 import net.hawthorn.dndsheets.network.PresetApplyMessage;
@@ -65,6 +66,7 @@ public class PresetScreen extends ListPickerScreen {
 		}
 	}
 
+	@Nullable
 	@Override
 	protected Component emptyMessage() {
 		return names.isEmpty() ? Component.translatable("gui.dndsheets.preset.empty") : null;
