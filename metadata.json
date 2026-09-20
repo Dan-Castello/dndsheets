@@ -3,7 +3,7 @@
   "checkpoint_id": "01M2ZYD5KTF39JNGY3GKQFQNKN",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 33,
+  "checkpoints_count": 35,
   "files_touched": [
     "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/DungeonManager.java",
     "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/DungeonPieceRegistry.java",
@@ -77,13 +77,20 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": "/1/prompt.txt"
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": "/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 256,
-    "cache_creation_tokens": 772818,
-    "cache_read_tokens": 22628106,
-    "output_tokens": 124240,
-    "api_call_count": 122
+    "input_tokens": 720,
+    "cache_creation_tokens": 1869992,
+    "cache_read_tokens": 97834579,
+    "output_tokens": 363170,
+    "api_call_count": 352
   }
 }
