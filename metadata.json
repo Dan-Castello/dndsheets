@@ -1,0 +1,57 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M2YJBF7240QCTNNS6XRF79KK",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 32,
+  "files_touched": [
+    "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonTraceScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/ChatFeedback.java",
+    "src/main/java/net/hawthorn/dndsheets/CombatManager.java",
+    "src/main/java/net/hawthorn/dndsheets/Combatant.java",
+    "src/main/java/net/hawthorn/dndsheets/CompendiumQuery.java",
+    "src/main/java/net/hawthorn/dndsheets/Condition.java",
+    "src/main/java/net/hawthorn/dndsheets/Config.java",
+    "src/main/java/net/hawthorn/dndsheets/ConsumableManager.java",
+    "src/main/java/net/hawthorn/dndsheets/ContentDefaults.java",
+    "src/main/java/net/hawthorn/dndsheets/DruidWildShapeManager.java",
+    "src/main/java/net/hawthorn/dndsheets/EncounterRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/FeatRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/JournalManager.java",
+    "src/main/java/net/hawthorn/dndsheets/LevelUpManager.java",
+    "src/main/java/net/hawthorn/dndsheets/MagicItemRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/MonsterRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/RollIndex.java",
+    "src/main/java/net/hawthorn/dndsheets/SaveRules.java",
+    "src/main/java/net/hawthorn/dndsheets/SummonManager.java",
+    "src/main/java/net/hawthorn/dndsheets/TurnManager.java",
+    "src/main/java/net/hawthorn/dndsheets/WeaponBuffManager.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/CharacterListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/CharacterOptionListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/CompendiumEntryScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/CompendiumListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ContentEntryListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/GrimoireScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/JournalScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ListPickerScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/TraitGrantScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/WildShapeListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/network/SheetServerMessage.java"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 232,
+    "cache_creation_tokens": 721716,
+    "cache_read_tokens": 21800624,
+    "output_tokens": 113680,
+    "api_call_count": 110
+  }
+}
