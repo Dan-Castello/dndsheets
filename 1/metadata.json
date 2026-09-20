@@ -1,9 +1,12 @@
 {
   "cli_version": "0.10.2",
   "checkpoint_id": "01M2YJBF7240QCTNNS6XRF79KK",
+  "session_id": "f90197a9-8244-4eeb-b81a-ab8ed3c1494e",
   "strategy": "manual-commit",
+  "created_at": "2026-09-20T04:49:27.2610518Z",
   "branch": "main",
-  "checkpoints_count": 34,
+  "checkpoints_count": 2,
+  "save_step_count": 3,
   "files_touched": [
     ".settings/org.eclipse.jdt.core.prefs",
     "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/DungeonManager.java",
@@ -87,27 +90,56 @@
     "src/main/java/net/hawthorn/dndsheets/world/inventory/package-info.java",
     "src/test/java/net/hawthorn/dndsheets/JsonContentSelfTest.java"
   ],
-  "sessions": [
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5",
+  "turn_id": "b1f0689bb1f7",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 464,
+    "cache_creation_tokens": 1097174,
+    "cache_read_tokens": 75206473,
+    "output_tokens": 238930,
+    "api_call_count": 230
+  },
+  "session_metrics": {
+    "turn_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-20T04:49:27.0535678Z",
+    "agent_lines": 58,
+    "agent_removed": 0,
+    "human_added": 16,
+    "human_modified": 9294,
+    "human_removed": 0,
+    "total_committed": 9346,
+    "total_lines_changed": 9368,
+    "agent_percentage": 0.6191289496157131,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
     {
-      "metadata": "/0/metadata.json",
-      "transcript": "/0/full.jsonl",
-      "compact_transcript": "/0/transcript.jsonl",
-      "content_hash": "/0/content_hash.txt",
-      "prompt": "/0/prompt.txt"
+      "checkpoint_number": 2,
+      "user_lines_added": 25,
+      "user_lines_removed": 12,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".settings/org.eclipse.jdt.core.prefs": 22,
+        ".vscode/settings.json": 3
+      },
+      "user_removed_per_file": {
+        ".settings/org.eclipse.jdt.core.prefs": 12
+      }
     },
     {
-      "metadata": "/1/metadata.json",
-      "transcript": "/1/full.jsonl",
-      "compact_transcript": "/1/transcript.jsonl",
-      "content_hash": "/1/content_hash.txt",
-      "prompt": "/1/prompt.txt"
+      "checkpoint_number": 3,
+      "user_lines_added": 3,
+      "user_lines_removed": 0,
+      "agent_lines_added": 22,
+      "agent_lines_removed": 12,
+      "user_added_per_file": {
+        ".vscode/settings.json": 3
+      }
     }
-  ],
-  "token_usage": {
-    "input_tokens": 696,
-    "cache_creation_tokens": 1818890,
-    "cache_read_tokens": 97007097,
-    "output_tokens": 352610,
-    "api_call_count": 340
-  }
+  ]
 }
