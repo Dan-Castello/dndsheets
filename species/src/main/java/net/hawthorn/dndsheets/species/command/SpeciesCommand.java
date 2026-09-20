@@ -29,27 +29,28 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 /**
- * <p>Punto de entrada del jugador para las tres capas de Origins que este addon llena con el SRD: Raza
- * ({@code dndsheets_species:race}), Clase ({@code origins-classes:class}, del addon de terceros
- * Origins:Classes, reemplazada entera) y Trasfondo ({@code dndsheets_species:background}). Sin
- * selectores propios, sin mensajes de red propios — todo por chat, a pedido explícito, nunca por tick.</p>
+ * <p>Player entry point for the three Origins layers this addon fills with the SRD: Race
+ * ({@code dndsheets_species:race}), Class ({@code origins-classes:class}, from the third-party
+ * Origins:Classes addon, replaced entirely) and Background ({@code dndsheets_species:background}). No
+ * custom selectors, no custom network messages — all via chat, on explicit request, never on tick.</p>
  *
- * <p><b>{@code choose}/{@code chooseclass}/{@code choosebackground} son el punto de entrada real</b> —
- * los botones "Raza"/"Trasfondo" de la ficha los usan. Abren el selector real de Origins
- * ({@code /origin gui @s <capa>}, comando real de Origins — ver {@link #openOriginGui}) y programan un
- * {@code sync} automático {@value #AUTO_SYNC_DELAY_TICKS} ticks después (~{@value #AUTO_SYNC_DELAY_SECONDS}
- * segundos: tiempo de sobra para mirar la lista y confirmar), sin que el jugador tenga que acordarse de
- * volver a apretar nada. Antes de esto un clic solo leía lo que YA hubiera elegido — para un personaje sin
- * nada elegido, o para cambiar de opinión con uno que ya tenía algo aplicado, no había ninguna forma de
- * llegar al selector real, solo de releer una y otra vez el mismo valor viejo.</p>
+ * <p><b>{@code choose}/{@code chooseclass}/{@code choosebackground} are the real entry point</b> —
+ * the sheet's "Race"/"Background" buttons use them. They open the real Origins selector
+ * ({@code /origin gui @s <layer>}, a real Origins command — see {@link #openOriginGui}) and schedule an
+ * automatic {@code sync} {@value #AUTO_SYNC_DELAY_TICKS} ticks later (~{@value #AUTO_SYNC_DELAY_SECONDS}
+ * seconds: plenty of time to look at the list and confirm), without the player having to remember to
+ * press anything again. Before this, a click only read whatever had ALREADY been chosen — for a
+ * character with nothing chosen yet, or to change one's mind on a character that already had something
+ * applied, there was no way to reach the real selector, only to re-read the same old value over and
+ * over.</p>
  *
- * <p>{@code sync}/{@code syncclass}/{@code syncbackground} siguen disponibles sueltos (recorrer el flujo
- * a mano, o forzar una relectura sin reabrir el selector).</p>
+ * <p>{@code sync}/{@code syncclass}/{@code syncbackground} remain available standalone (walking the flow
+ * by hand, or forcing a re-read without reopening the selector).</p>
  *
- * <p>ponytail: el retraso es una espera fija, no un evento de "elegiste algo" — Origins no expone
- * ninguno. Se verifica que el jugador siga en el MISMO personaje antes de aplicar, para no escribirle la
- * elección a otro si cambia de personaje en esos segundos; si algún día Origins expone un callback de
- * verdad, esta espera es lo primero que se puede borrar.</p>
+ * <p>ponytail: the delay is a fixed wait, not an "you chose something" event — Origins exposes none. It
+ * verifies the player is still on the SAME character before applying, so as not to write the choice to
+ * another one if they switch characters within those seconds; if Origins ever exposes a real callback,
+ * this wait is the first thing that can be deleted.</p>
  */
 @Mod.EventBusSubscriber
 public class SpeciesCommand {
@@ -71,18 +72,18 @@ public class SpeciesCommand {
 			.then(Commands.literal("choosebackground").executes(ctx -> choose(ctx, BACKGROUND_LAYER, SpeciesCommand::syncBackground)))
 			.then(Commands.literal("load")
 				.requires(source -> source.hasPermission(2))
-				.then(Commands.argument("archivo", StringArgumentType.word())
+				.then(Commands.argument("file", StringArgumentType.word())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(DndPaths.jsonFileNames(DndPaths.RACES_DIR), builder))
 					.executes(SpeciesCommand::load)))
 			.then(Commands.literal("loadbackground")
 				.requires(source -> source.hasPermission(2))
-				.then(Commands.argument("archivo", StringArgumentType.word())
+				.then(Commands.argument("file", StringArgumentType.word())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(DndPaths.jsonFileNames(DndPaths.BACKGROUNDS_DIR), builder))
 					.executes(SpeciesCommand::loadBackground))));
 	}
 
-	/** {@code /origin gui @s <capa>}: comando real de Origins (verificado en su propio bytecode), no
-	 *  inventado. Corre con el mismo {@link CommandSourceStack} del jugador — sin escalar permisos. */
+	/** {@code /origin gui @s <layer>}: a real Origins command (verified in its own bytecode), not
+	 *  made up. Runs with the player's own {@link CommandSourceStack} — no permission escalation. */
 	private static void openOriginGui(CommandSourceStack source, ResourceLocation layerId) {
 		source.getServer().getCommands().performPrefixedCommand(source, "origin gui @s " + layerId);
 	}
@@ -96,9 +97,9 @@ public class SpeciesCommand {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
 		openOriginGui(ctx.getSource(), layerId);
 
-		//Mismo personaje al que le pertenecía el clic, no el que esté activo cuando el retraso termine —
-		//si el jugador cambia de personaje mientras el selector de Origins sigue abierto, la sincronización
-		//automática no debe escribirle la elección al que quedó activo después.
+		//The same character the click belonged to, not whichever is active when the delay ends — if the
+		//player switches characters while the Origins selector is still open, the automatic sync must not
+		//write the choice to whichever one ended up active afterward.
 		String characterId = SheetLoader.activeCharacterOf(player.getStringUUID());
 		DndsheetsMod.queueServerWork(AUTO_SYNC_DELAY_TICKS, () -> {
 			if (player.isRemoved() || !characterId.equals(SheetLoader.activeCharacterOf(player.getStringUUID()))) return;
@@ -108,7 +109,7 @@ public class SpeciesCommand {
 	}
 
 	private static int load(CommandContext<CommandSourceStack> ctx) {
-		String fileName = StringArgumentType.getString(ctx, "archivo");
+		String fileName = StringArgumentType.getString(ctx, "file");
 		Path file = DndPaths.RACES_DIR.resolve(fileName + ".json");
 		try {
 			int count = RaceRegistry.loadFile(file);
@@ -121,7 +122,7 @@ public class SpeciesCommand {
 	}
 
 	private static int loadBackground(CommandContext<CommandSourceStack> ctx) {
-		String fileName = StringArgumentType.getString(ctx, "archivo");
+		String fileName = StringArgumentType.getString(ctx, "file");
 		Path file = DndPaths.BACKGROUNDS_DIR.resolve(fileName + ".json");
 		try {
 			int count = BackgroundRegistry.loadFile(file);
@@ -136,8 +137,8 @@ public class SpeciesCommand {
 	private static int sync(ServerPlayer player) {
 		Optional<String> raceId = OriginBridge.chosenOriginId(player, RACE_LAYER);
 		if (raceId.isEmpty()) {
-			//Personaje nuevo, todavía sin nada elegido en esta capa: en vez de solo avisar, se lo abre
-			//directo — es la misma pregunta que ya se hacía manualmente con /origin gui.
+			//New character, nothing chosen yet in this layer: instead of just warning, it's opened
+			//directly — it's the same prompt that used to be done manually with /origin gui.
 			player.sendSystemMessage(Component.translatable("chat.dndsheets_species.no_origin").withStyle(net.minecraft.ChatFormatting.RED));
 			openOriginGui(player.createCommandSourceStack(), RACE_LAYER);
 			return 0;
@@ -159,13 +160,13 @@ public class SpeciesCommand {
 			return 1;
 		}
 
-		//Invariante 4 de PROJECT_CONTEXT.md: toda mutación de hoja con jugador delante persiste. Mismo
-		//camino que usa el resto del mod (ver ConcentrationManager.notifyClient en el core).
+		//Invariant 4 from PROJECT_CONTEXT.md: every sheet mutation done with the player present persists.
+		//Same path the rest of the mod uses (see ConcentrationManager.notifyClient in the core).
 		SheetLoader.saveServer(sheet, player.getStringUUID());
-		//La ficha ENTERA, no un parche (ver PresetManager.applyPreset): CharacterSheetScreen.refreshIfOpen
-		//ignora a propósito los parches de SheetFieldUpdateMessage (llegan a mitad de combate y no deben
-		//tapar lo que el jugador esté escribiendo), así que un parche dejaba la pantalla abierta con el
-		//valor viejo hasta cerrarla y reabrirla — esto sí repinta.
+		//The WHOLE sheet, not a patch (see PresetManager.applyPreset): CharacterSheetScreen.refreshIfOpen
+		//deliberately ignores SheetFieldUpdateMessage patches (they arrive mid-combat and must not
+		//overwrite what the player is typing), so a patch would leave the screen open with the old value
+		//until closed and reopened — this does repaint it.
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 
 		player.sendSystemMessage(Component.translatable("chat.dndsheets_species.applied", result.race().name()));
@@ -200,7 +201,7 @@ public class SpeciesCommand {
 		}
 
 		SheetLoader.saveServer(sheet, player.getStringUUID());
-		//Ficha entera, mismo motivo que en sync() de arriba.
+		//Whole sheet, same reason as in sync() above.
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 
 		player.sendSystemMessage(Component.translatable("chat.dndsheets_species.background_applied", result.background().name()));
@@ -220,12 +221,12 @@ public class SpeciesCommand {
 			return 0;
 		}
 
-		//PresetManager.applyPreset ya hace todo: dado de golpe, características, equipo inicial, y le
-		//manda la hoja completa al cliente — no hay nada que reimplementar acá.
+		//PresetManager.applyPreset already does everything: hit die, ability scores, starting equipment,
+		//and sends the full sheet to the client — nothing to reimplement here.
 		PresetManager.applyPreset(player, classId.get());
 
-		//Invariante 4 (ver sync() arriba): applyPreset no persiste por sí solo, solo muta en memoria y
-		//avisa al cliente.
+		//Invariant 4 (see sync() above): applyPreset doesn't persist on its own, it only mutates in
+		//memory and notifies the client.
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (sheet != null) SheetLoader.saveServer(sheet, player.getStringUUID());
 

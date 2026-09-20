@@ -8,8 +8,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Servidor -> cliente (el DM): abre el formulario para configurar el jigsaw block al que le acaba de hacer
-//clic derecho con la Vara de DM, prellenado con lo que ya tuviera guardado (ver DungeonToolManager).
+//Server -> client (the DM): opens the form to configure the jigsaw block they just right-clicked
+//with the DM Wand, prefilled with whatever it already had saved (see DungeonToolManager).
 public class DungeonJigsawConfigureOpenMessage {
 	BlockPos pos;
 	String currentPool;

@@ -12,18 +12,19 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>Punto de entrada de las mazmorras desde el Panel de DM: lista las piezas ya capturadas (ver
- * {@link DungeonManager}) y da acceso a añadir una nueva o generar una mazmorra. La lista la manda el
- * servidor en {@code DungeonPieceListMessage} (pedida por {@code DungeonPieceListRequestMessage}) porque
- * el registro solo vive en memoria del servidor — mismo patrón que {@link TraitGrantScreen}/{@link PresetScreen}.</p>
+ * <p>Entry point for dungeons from the DM Panel: lists the already-captured pieces (see
+ * {@link DungeonManager}) and gives access to adding a new one or generating a dungeon. The list is
+ * sent by the server in {@code DungeonPieceListMessage} (requested via
+ * {@code DungeonPieceListRequestMessage}) because the registry only lives in the server's memory —
+ * same pattern as {@link TraitGrantScreen}/{@link PresetScreen}.</p>
  */
 public class DungeonPieceListScreen extends ListPickerScreen {
 	private static final int SUBTITLE_Y = 30;
 
 	private final List<DungeonPieceRegistry.DungeonPiece> pieces;
-	//DungeonManager.hasStartJigsaw por pieza, mismo orden que "pieces" — ver DungeonPieceListMessage. Deja
-	//ver de un vistazo qué piezas tienen el jigsaw de inicio, para detectar ANTES de generar el problema
-	//real que causaba fallos intermitentes: mezclar la pieza de entrada con piezas normales en el mismo pool.
+	//DungeonManager.hasStartJigsaw per piece, same order as "pieces" — see DungeonPieceListMessage. Lets
+	//you see at a glance which pieces have the starting jigsaw, so the real problem behind intermittent
+	//failures — mixing the entry piece with regular pieces in the same pool — can be spotted BEFORE generating.
 	private final List<Boolean> hasStart;
 
 	private DungeonPieceListScreen(List<DungeonPieceRegistry.DungeonPiece> pieces, List<Boolean> hasStart, Screen parent) {
@@ -45,9 +46,9 @@ public class DungeonPieceListScreen extends ListPickerScreen {
 	protected void buildRows() {
 		for (int i = 0; i < pieces.size(); i++) {
 			DungeonPieceRegistry.DungeonPiece piece = pieces.get(i);
-			String suffix = hasStart.get(i) ? " [inicio]" : "";
-			//Borrar vive en DungeonPieceEditScreen (botón propio) en vez de una fila aparte acá.
-			addRow(Component.literal(piece.id() + " — " + piece.pool() + " (peso " + piece.weight() + ")" + suffix),
+			Component suffix = hasStart.get(i) ? Component.translatable("gui.dndsheets.dungeon_pieces.start_tag") : Component.empty();
+			//Deletion lives in DungeonPieceEditScreen (its own button) instead of a separate row here.
+			addRow(Component.translatable("gui.dndsheets.dungeon_pieces.row", piece.id(), piece.pool(), piece.weight(), suffix),
 				b -> DungeonPieceEditScreen.open(piece));
 		}
 		addRow(Component.translatable("gui.dndsheets.dungeon_pieces.add"), b -> DungeonPieceAddScreen.open());

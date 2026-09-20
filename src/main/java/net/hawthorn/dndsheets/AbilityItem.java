@@ -7,20 +7,20 @@ import net.minecraft.network.chat.Component;
 import net.hawthorn.dndsheets.init.DndsheetsModItems;
 import net.minecraft.world.item.ItemStack;
 
-//Patrón repetido en los ítems "botón" de habilidad de clase (Furia, Segundo Aliento, Castigo Divino,
-//Escudo, Contrahechizo, Marca del Cazador, Forma Salvaje, Inspiración Bárdica, Hechizo Gemelo, ítems de
-//turno, Kit de Descanso...): un flag booleano bajo la etiqueta NBT "dndsheets" que activa la habilidad al
-//usar el ítem, más su nombre y lore.
+//Repeated pattern across the class-ability "button" items (Rage, Second Wind, Divine Smite,
+//Shield, Counterspell, Hunter's Mark, Wild Shape, Bardic Inspiration, Twinned Spell, turn items,
+//Rest Kit...): a boolean flag under the "dndsheets" NBT tag that activates the ability when the
+//item is used, plus its name and lore.
 public class AbilityItem {
 	public static ItemStack build(ItemLook look, String flag, Component name, Component... loreLines) {
 		return build(look.applyTo(new ItemStack(DndsheetsModItems.TOKEN.get())), flag, name, loreLines);
 	}
 
 	/**
-	 * <p>Sobre un ítem de vanilla, para lo que <b>tiene que seguir siendo</b> ese ítem. Hoy solo el
-	 * Cuaderno del DM: es un Libro y Pluma de verdad porque {@code /dndjournal publish} lee las páginas
-	 * que el DM escribió en él, y en una ficha del mod no se puede escribir. Darle un icono propio lo
-	 * habría dejado más bonito y roto.</p>
+	 * <p>Built on a vanilla item, for cases where it <b>has to stay</b> that item. Today only the DM's
+	 * Journal: it's a real Book and Quill because {@code /dndjournal publish} reads the pages the DM wrote
+	 * in it, and you can't write on one of the mod's sheets. Giving it a custom icon would have made it
+	 * prettier and broken.</p>
 	 */
 	public static ItemStack build(net.minecraft.world.item.Item item, String flag, Component name, Component... loreLines) {
 		return build(new ItemStack(item), flag, name, loreLines);

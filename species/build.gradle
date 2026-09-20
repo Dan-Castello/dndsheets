@@ -23,12 +23,12 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
 
             mods {
-                // Igual que dungeon/build.gradle: el addon no arranca solo, necesita el core. Origins
-                // NO se agrega aquí a propósito — usa Mixins reales sobre clases vanilla (verificado
-                // con javap sobre origins-forge-1.20.1-1.10.0.9-all.jar), y este proyecto ya documentó
-                // en el build.gradle raíz por qué ningún mod con mixins carga en runClient con mappings
-                // parchment (SRG vs. nombres reales). Esta integración se prueba en instalación real,
-                // igual que Curios y Patchouli.
+                // Same as dungeon/build.gradle: the addon doesn't start on its own, it needs the core. Origins
+                // is NOT added here on purpose — it uses real Mixins on vanilla classes (verified
+                // with javap on origins-forge-1.20.1-1.10.0.9-all.jar), and this project already documented
+                // in the root build.gradle why no mod with mixins loads in runClient with parchment mappings
+                // (SRG vs. real names). This integration is tested in a real install,
+                // just like Curios and Patchouli.
                 dndsheets {
                     source project(':').sourceSets.main
                 }
@@ -56,22 +56,56 @@ minecraft {
     }
 }
 
+repositories {
+    // Only for Origins. exclusiveContent: no other artifact is looked up here, so if this maven
+    // is down it doesn't drag down the rest of the build (same criterion as Curios' maven in the root).
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Modrinth"
+                url = "https://api.modrinth.com/maven"
+            }
+        }
+        filter { includeGroup "maven.modrinth" }
+    }
+}
+
+// Origins is downloaded; Apoli has NO coordinate of its own for Forge on any maven (verified: on Modrinth
+// it gives 404, and on CurseForge the version would have to be pinned by hand separately). It isn't needed: it travels
+// INSIDE Origins' jar as jarjar (META-INF/jarjar/apoli-forge-*.jar), and a nested jar does NOT enter
+// javac's classpath. It is extracted from that same jar instead of versioning a loose copy, which is what
+// used to be in dependencies/: this way the Apoli version compiled against can't
+// drift out of sync with the Origins that brings it, because it comes literally from inside.
+configurations {
+    originsDist
+    //extendsFrom and not "compileOnly configurations.originsDist": Gradle 8 forbids passing a Configuration
+    //as a dependency. This way the coordinate is written only once.
+    compileOnly.extendsFrom originsDist
+}
+
+def unpackApoli = tasks.register('unpackApoli', Copy) {
+    from { zipTree(configurations.originsDist.singleFile) }
+    include 'META-INF/jarjar/apoli-forge-*.jar'
+    eachFile { it.relativePath = new RelativePath(true, it.name) } //Flattens: without this it reproduces META-INF/jarjar/.
+    includeEmptyDirs = false
+    into layout.buildDirectory.dir('apoli')
+}
+
 dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.4.22'
 
-    // Dependencia DURA con el core (ver dungeon/build.gradle para el mismo patrón): compila contra su
-    // sourceSet, no un jar publicado por separado.
+    // HARD dependency on the core (see dungeon/build.gradle for the same pattern): it compiles against its
+    // sourceSet, not a separately published jar.
     implementation project(':')
 
-    // Origins/Apoli: SOLO compileOnly. En runtime hace falta que el mod esté instalado para que
-    // /dndspecies sync tenga algo que leer (ver OriginBridge), pero no se puede probar en
-    // runClient (mixins + parchment, ver comentario arriba) así que no tiene sentido arrastrarlo como
-    // runtimeOnly aquí. Se referencian los jars locales en dependencies/ — evaluados a mano (ver
-    // Library Audit): son la única build vigente para Forge 1.20.1 de este ecosistema.
-    compileOnly files(
-        "${rootDir}/dependencies/origins-forge-1.20.1-1.10.0.9-all.jar",
-        "${rootDir}/dependencies/apoli-forge-1.20.1-2.9.0.8.jar"
-    )
+    // Origins/Apoli: compileOnly ONLY. At runtime the mod must be installed so that
+    // /dndspecies sync has something to read (see OriginBridge), but it can't be tested in
+    // runClient (mixins + parchment, see comment above) so there's no point dragging it in as
+    // runtimeOnly here. jl3m2lR9 = Origins (Forge); vynFXywM = its version 1.20.1-1.10.0.9, the same one that
+    // used to live by hand in dependencies/. It is pinned by version id, not by range: a new version of
+    // Origins can't change under our feet what compiles here.
+    originsDist "maven.modrinth:jl3m2lR9:vynFXywM"
+    compileOnly fileTree(dir: layout.buildDirectory.dir('apoli'), include: '*.jar').builtBy(unpackApoli)
 }
 
 jar {
@@ -82,8 +116,8 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
-// Mismo patron que el core y que dungeon: logica pura (RaceRegistry.apply) probada de pie, sin
-// runtime de Forge.
+// Same pattern as the core and dungeon: pure logic (RaceRegistry.apply) tested standing up, without the
+// Forge runtime.
 tasks.register('testSpeciesSelf', JavaExec) {
     dependsOn compileTestJava
     group = 'verification'

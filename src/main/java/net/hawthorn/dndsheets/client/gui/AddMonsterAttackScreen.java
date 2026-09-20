@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.minecraft.client.resources.language.I18n;
 import net.hawthorn.dndsheets.Combatant;
 import net.hawthorn.dndsheets.DamageTypes;
 import net.hawthorn.dndsheets.DndsheetsMod;
@@ -10,17 +11,20 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Formulario para darle un ataque nuevo a UN monstruo ya invocado (ver
- * {@link net.hawthorn.dndsheets.MonsterRegistry#addCustomAttack}), abierto desde el botón
- * "+ Añadir ataque" de {@link MonsterActionScreen}. Habilidad de ataque/daño y tipo de daño se eligen
- * con botones cíclicos en vez de texto libre, para no depender de acordarse de escribir "str"/"dex" bien
- * — nombre y dado siguen siendo texto porque no tienen un catálogo fijo de opciones.</p>
+ * <p>Form to give a new attack to ONE monster already summoned (see
+ * {@link net.hawthorn.dndsheets.MonsterRegistry#addCustomAttack}), opened from the
+ * "+ Add attack" button of {@link MonsterActionScreen}. Attack/damage ability and damage type are chosen
+ * with cycle buttons instead of free text, so as not to depend on remembering to type "str"/"dex" right
+ * — name and dice stay as text because they don't have a fixed catalog of options.</p>
  */
 public class AddMonsterAttackScreen extends SmallFormScreen {
-	//Solo para mostrar en el botón cíclico (ver SmallFormScreen.addCycleButton) — el valor real que se
-	//guarda/manda al servidor sigue siendo el código corto de Combatant.ABILITIES, ese es el que espera el resto del
-	//código (MonsterRegistry.abilityModifier busca por "str"/"dex"/... en minúsculas).
-	private static final String[] ABILITY_LABELS = {"Fuerza", "Destreza", "Constitución", "Inteligencia", "Sabiduría", "Carisma"};
+	//Only for display on the cycle button (see SmallFormScreen.addCycleButton) — the real value that gets
+	//saved/sent to the server is still Combatant.ABILITIES' short code, which is what the rest of the
+	//code expects (MonsterRegistry.abilityModifier looks up by lowercase "str"/"dex"/...).
+	private static String[] abilityLabels() {
+		return java.util.stream.Stream.of("str", "dex", "con", "int", "wis", "cha")
+			.map(a -> I18n.get("gui.dndsheets.character_sheet.ability_" + a)).toArray(String[]::new);
+	}
 
 	private final int entityId;
 	private EditBox nameBox;
@@ -40,16 +44,16 @@ public class AddMonsterAttackScreen extends SmallFormScreen {
 
 	@Override
 	protected void buildForm() {
-		nameBox = addField("Nombre", "Ataque", 40);
-		diceBox = addField("Dado", "1d6", 20);
-		toHit = addCycleButton("Ataque con", Combatant.ABILITIES, ABILITY_LABELS);
-		damageAbility = addCycleButton("Daño con", Combatant.ABILITIES, ABILITY_LABELS);
-		damageType = addCycleButton("Tipo", DamageTypes.CANONICAL);
+		nameBox = addField(I18n.get("gui.dndsheets.form.name"), I18n.get("gui.dndsheets.form.attack"), 40);
+		diceBox = addField(I18n.get("gui.dndsheets.form.dice"), "1d6", 20);
+		toHit = addCycleButton(I18n.get("gui.dndsheets.form.attack_with"), Combatant.ABILITIES, abilityLabels());
+		damageAbility = addCycleButton(I18n.get("gui.dndsheets.form.damage_with"), Combatant.ABILITIES, abilityLabels());
+		damageType = addCycleButton(I18n.get("gui.dndsheets.form.type"), DamageTypes.CANONICAL);
 	}
 
 	@Override
 	protected void onConfirm() {
-		String name = nameBox.getValue().isBlank() ? "Ataque" : nameBox.getValue();
+		String name = nameBox.getValue().isBlank() ? I18n.get("gui.dndsheets.form.attack") : nameBox.getValue();
 		String dice = diceBox.getValue().isBlank() ? "1d6" : diceBox.getValue();
 		DndsheetsMod.PACKET_HANDLER.sendToServer(new AddCustomAttackMessage(entityId, name, toHit.value(), dice, damageAbility.value(), damageType.value()));
 	}

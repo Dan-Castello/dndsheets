@@ -24,22 +24,20 @@ public class CharacterSheetSaveProcedure {
 	public static void execute(HashMap<String, Object> guistate) {
 		if (guistate == null) return;
 		if (SheetLoader.getClientSheet() == null ) {
-			DndsheetsMod.LOGGER.warn("El cliente no tiene una hoja cargada; no hay nada que guardar.");
+			DndsheetsMod.LOGGER.warn("The client has no sheet loaded; nothing to save.");
 			return;
 		}
 		JsonObject sheet = SheetLoader.getClientSheet();
 		if (guistate.get("text:charactername") instanceof EditBox _tf) {
 			sheet.addProperty("characterName", _tf.getValue());
 		}
-		if (guistate.get("text:characterclass") instanceof EditBox _tf) {
-			sheet.addProperty("characterClass", _tf.getValue());
-		}
-		if (guistate.get("text:characterrace") instanceof EditBox _tf) {
-			sheet.addProperty("characterRace", _tf.getValue());
-		}
-		if (guistate.get("text:background") instanceof EditBox _tf) {
-			sheet.addProperty("background", _tf.getValue());
-		}
+		//Class/Race/Background are deliberately NOT saved from here. Those three fields stopped accepting
+		//free text (setEditable(false) in CharacterSheetScreen): a click opens the selector, and the one that
+		//writes the value into the sheet is the selector itself (CharacterOptionListScreen), the preset, or the
+		//species addon — always with its own round trip to the server. Copying them back from the box was the
+		//only way for an out-of-sync box to OVERWRITE a choice just made: this function runs on every dice
+		//click, on every button that navigates away, and when closing the sheet, so the box's last value would
+		//be resent to the server over and over. With no write, there's no race to lose.
 		if (guistate.get("text:hitpoints") instanceof EditBox _tf) {
 			sheet.addProperty("hitPoints", _tf.getValue());
 		}
@@ -109,12 +107,12 @@ public class CharacterSheetSaveProcedure {
 	 */
 	public static void execute(String expression, int category, int index) {
 		if (SheetLoader.getClientSheet() == null) {
-			DndsheetsMod.LOGGER.warn("El cliente no tiene una hoja cargada; no hay nada que guardar.");
+			DndsheetsMod.LOGGER.warn("The client has no sheet loaded; nothing to save.");
 			return;
 		}
 
 		if (RollIndex.Category.fromInt(category).isAdvanced()) {
-			DndsheetsMod.LOGGER.warn("Se intentó guardar una tirada avanzada sin subíndice; operación no permitida.");
+			DndsheetsMod.LOGGER.warn("Attempted to save an advanced roll without a subindex; operation not allowed.");
 			return;
 		}
 
@@ -136,12 +134,12 @@ public class CharacterSheetSaveProcedure {
 	 */
 	public static void execute(List<AbstractMap.SimpleEntry<String, String>> info, int category, int index, int subIndex) {
 		if (SheetLoader.getClientSheet() == null ) {
-			DndsheetsMod.LOGGER.warn("El cliente no tiene una hoja cargada; no hay nada que guardar.");
+			DndsheetsMod.LOGGER.warn("The client has no sheet loaded; nothing to save.");
 			return;
 		}
 
 		if (!RollIndex.Category.fromInt(category).isAdvanced()) {
-			DndsheetsMod.LOGGER.warn("Se intentó guardar una tirada básica con el método de tiradas avanzadas.");
+			DndsheetsMod.LOGGER.warn("Attempted to save a basic roll with the advanced-roll method.");
 			return;
 		}
 

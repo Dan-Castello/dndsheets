@@ -9,40 +9,40 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * <p>Cobertura de 5e: parapetarse detrás de algo sube la CA y las salvaciones de Destreza. Media
- * cobertura da +2, tres cuartos +5, y cobertura total significa que no se te puede apuntar siquiera.</p>
+ * <p>5e cover: ducking behind something raises AC and Dexterity saves. Half cover gives +2,
+ * three-quarters +5, and total cover means you can't even be targeted.</p>
  *
- * <p>Esta es la regla que el mod estaba en mejor posición del mundo para tener y no tenía. Roll20 y Foundry
- * calculan visibilidad con polígonos y capas de niebla <em>para simular</em> un espacio 3D; aquí el espacio
- * 3D es el juego. Un muro de piedra a media altura ya está ahí, con su geometría real, y hasta ahora no
- * significaba nada: disparabas a alguien agachado tras un bloque exactamente igual que a alguien de pie en
- * campo abierto.</p>
+ * <p>This is the rule the mod was in the best position in the world to have and didn't. Roll20 and Foundry
+ * compute visibility with polygons and fog layers <em>to simulate</em> a 3D space; here the 3D space
+ * IS the game. A stone wall at half height is already there, with real geometry, and until now it
+ * meant nothing: you'd shoot someone crouched behind a block exactly the same as someone standing in
+ * open ground.</p>
  *
- * <p><b>Cómo se mide.</b> Cinco rayos desde el ojo del atacante a cinco puntos del cuerpo del objetivo, y
- * la cobertura sale de cuántos chocan con un bloque. Los puntos van por dentro del volumen y no en sus
- * esquinas, para que el suelo bajo los pies del objetivo no cuente como parapeto. Y los dos laterales se
- * toman <b>perpendiculares a la línea de tiro</b>, no sobre los ejes del mundo: con las esquinas de la caja
- * alineadas a los ejes, disparar en diagonal medía el ancho equivocado y una esquina de pared daba media
- * cobertura o ninguna según hacia dónde mirara el mapa.</p>
+ * <p><b>How it's measured.</b> Five rays from the attacker's eye to five points on the target's body, and
+ * cover comes out of how many hit a block. The points sit inside the volume rather than at its
+ * corners, so the ground under the target's feet doesn't count as cover. And the two side points are
+ * taken <b>perpendicular to the line of fire</b>, not along the world axes: with the box's corners
+ * aligned to the axes, firing diagonally measured the wrong width and a wall corner gave half
+ * cover or none depending on which way the map happened to face.</p>
  */
 public enum Cover {
 	NONE(0),
 	HALF(2),
 	THREE_QUARTERS(5),
 	/**
-	 * <p>Sin línea de tiro: en 5e no se puede ni elegir como objetivo, y eso lo decide
-	 * {@link #blocksTargeting()}.</p>
+	 * <p>No line of sight: in 5e you can't even be chosen as a target, and that's what
+	 * {@link #blocksTargeting()} decides.</p>
 	 *
-	 * <p>Su bonificador es el de tres cuartos y no un infinito porque hay una ruta donde llega igual: una
-	 * flecha que YA impactó. Si el proyectil llegó, la cobertura no era total por mucho que digan cinco
-	 * rayos, así que se cobra como la mejor cobertura parcial en vez de hacer imposible un golpe que el
-	 * mundo acaba de permitir.</p>
+	 * <p>Its bonus is the three-quarters one and not infinite because there's a path where it still lands
+	 * anyway: an arrow that already hit. If the projectile got through, cover wasn't total no matter what
+	 * five rays say, so it's charged as the best partial cover instead of making impossible a hit the
+	 * world just allowed.</p>
 	 */
 	TOTAL(5);
 
-	/** Cuántos puntos del cuerpo se muestrean. Impar a propósito: no hay empate posible en la mitad. */
+	/** How many body points are sampled. Odd on purpose: no possible tie at the midpoint. */
 	private static final int SAMPLES = 5;
-	/** Qué parte del cuerpo se recorre desde el centro. Menos de la mitad, para no rozar suelo ni techo. */
+	/** How much of the body is spanned from the center. Less than half, to avoid grazing floor or ceiling. */
 	private static final double BODY_INSET = 0.4;
 
 	private final int bonus;
@@ -51,7 +51,7 @@ public enum Cover {
 		this.bonus = bonus;
 	}
 
-	/** Lo que suma a la CA del objetivo, y también a sus salvaciones de Destreza (en 5e es el mismo número). */
+	/** What it adds to the target's AC, and also to its Dexterity saves (in 5e it's the same number). */
 	public int bonus() {
 		return bonus;
 	}
@@ -60,30 +60,30 @@ public enum Cover {
 		return this == TOTAL;
 	}
 
-	public String label() {
+	public String langKey() {
 		return switch (this) {
 			case NONE -> "";
-			case HALF -> "media cobertura";
-			case THREE_QUARTERS -> "tres cuartos de cobertura";
-			case TOTAL -> "cobertura total";
+			case HALF -> "chat.dndsheets.combat.cover_half";
+			case THREE_QUARTERS -> "chat.dndsheets.combat.cover_three_quarters";
+			case TOTAL -> "chat.dndsheets.combat.cover_total";
 		};
 	}
 
 	/**
-	 * <p>Grado de cobertura a partir de cuántos puntos del cuerpo quedan tapados. Pura y aparte del mundo
-	 * para poder fijarla en el self-test: es la tabla de la regla, y una tabla mal puesta convierte un
-	 * parapeto en una pared o al revés.</p>
+	 * <p>Degree of cover from how many body points end up blocked. Pure and separate from the world
+	 * so it can be pinned down in the self-test: it's the rule's table, and a wrong table turns
+	 * cover into a wall or vice versa.</p>
 	 */
 	static Cover fromBlocked(int blocked, int total) {
 		if (total <= 0 || blocked <= 0) return NONE;
 		if (blocked >= total) return TOTAL;
-		//"Hasta la mitad tapado" es media cobertura; más que eso, tres cuartos. El SRD lo dice en fracciones
-		//del cuerpo, así que se compara en fracciones y no en un número de rayos, y cambiar SAMPLES no
-		//reescribe la regla.
+		//"Up to half blocked" is half cover; more than that, three-quarters. The SRD states it in
+		//fractions of the body, so it's compared in fractions rather than a number of rays, and changing
+		//SAMPLES doesn't rewrite the rule.
 		return blocked * 2 <= total ? HALF : THREE_QUARTERS;
 	}
 
-	/** Cobertura que le da el terreno al objetivo frente a este atacante. */
+	/** Cover the terrain gives the target against this attacker. */
 	public static Cover between(Entity attacker, Entity target) {
 		Level level = attacker.level();
 		Vec3 from = attacker.getEyePosition(1.0f);
@@ -91,11 +91,11 @@ public enum Cover {
 		Vec3 center = box.getCenter();
 
 		Vec3 toTarget = center.subtract(from);
-		if (toTarget.lengthSqr() < 1.0E-6) return NONE; //Encima del objetivo: no hay línea que medir.
+		if (toTarget.lengthSqr() < 1.0E-6) return NONE; //On top of the target: there's no line to measure.
 		Vec3 direction = toTarget.normalize();
-		//Perpendicular horizontal a la línea de tiro. Si se dispara en vertical puro no hay lados que medir
-		//y el producto vectorial sale nulo: entonces los dos laterales caen sobre el centro, que es
-		//exactamente lo correcto (desde arriba, el ancho del objetivo no lo tapa nada).
+		//Horizontal perpendicular to the line of fire. If firing straight up/down there are no sides to
+		//measure and the cross product comes out null: then both side points fall on the center, which
+		//is exactly correct (seen from above, nothing blocks the target's width).
 		Vec3 side = direction.cross(new Vec3(0, 1, 0));
 		side = side.lengthSqr() < 1.0E-6 ? Vec3.ZERO : side.normalize().scale((box.getXsize() + box.getZsize()) / 2 * BODY_INSET);
 		double lift = box.getYsize() * BODY_INSET;
@@ -116,9 +116,9 @@ public enum Cover {
 	}
 
 	/**
-	 * <p>¿Hay un bloque sólido entre estos dos puntos? Único sitio del mod que lo pregunta: lo usa la
-	 * cobertura y también {@code SpellCastManager} para decidir a quién alcanza un área, que antes tenía su
-	 * propia copia del mismo {@code clip}.</p>
+	 * <p>Is there a solid block between these two points? The one place in the mod that asks this: cover
+	 * uses it, and so does {@code SpellCastManager} to decide who an area reaches, which used to carry its
+	 * own copy of the same {@code clip}.</p>
 	 */
 	public static boolean isBlocked(Level level, Vec3 from, Vec3 to, Entity ignore) {
 		BlockHitResult hit = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, ignore));

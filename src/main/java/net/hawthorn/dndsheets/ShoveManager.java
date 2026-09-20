@@ -11,35 +11,34 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * <p>Empujar: la acción especial de cuerpo a cuerpo de 5e (sustituye un ataque, no es magia ni un rasgo de
- * clase) que trae la táctica de "ventaja por altura + empujón" de Baldur's Gate 3 — agregada a pedido
- * explícito, junto con {@link AttackRules#advantageAgainst} (altura). Contested check: Atletismo (Fuerza)
- * de quien empuja contra lo mejor entre Atletismo y Acrobacias de quien lo recibe, igual que el SRD.</p>
+ * <p>Shove: the 5e melee special action (replaces an attack, it's neither magic nor a class feature) that
+ * brings Baldur's Gate 3's "high-ground advantage + shove" tactic — added on explicit request, together
+ * with {@link AttackRules#advantageAgainst} (height). Contested check: the shover's Athletics (Strength)
+ * against the higher of the target's Athletics and Acrobatics, same as the SRD.</p>
  *
- * <p><b>Simplificaciones deliberadas</b> frente al SRD completo:</p>
+ * <p><b>Deliberate simplifications</b> compared to the full SRD:</p>
  * <ul>
- *   <li>Solo característica, sin competencia de habilidad: el bestiario no trae Atletismo/Acrobacias por
- *       monstruo, así que exigirla habría dejado la mitad de los objetivos posibles sin poder defenderse
- *       con su propio número. {@code ponytail}: si algún día el bloque de estadísticas trae habilidades,
- *       sumarla aquí es un solo cambio.</li>
- *   <li>El resultado es SIEMPRE empujar (nunca derribar): en la mesa lo elige quien empuja; aquí, para no
- *       necesitar una segunda pantalla de elección a mitad de un clic, se fija al que de verdad trae la
- *       fantasía de BG3 (tirar a alguien de una cornisa), y es el que además combina con la ventaja por
- *       altura que se acaba de agregar.</li>
- *   <li>El empujón es un impulso de físicas (puede tirar a alguien por un borde), no los 5 pies exactos del
- *       SRD medidos con regla — a propósito: es lo que hace que empujar desde terreno alto sea peligroso
- *       de verdad, que es justo la mecánica que se pidió traer.</li>
+ *   <li>Ability score only, no skill proficiency: the bestiary doesn't carry Athletics/Acrobatics per
+ *       monster, so requiring it would have left half the possible targets unable to defend with their own
+ *       number. {@code ponytail}: if the stat block ever carries skills, adding it here is a single change.</li>
+ *   <li>The outcome is ALWAYS a shove (never a knockdown): at the table the shover picks; here, to avoid
+ *       needing a second choice screen mid-click, it's fixed to the one that actually delivers the BG3
+ *       fantasy (knocking someone off a ledge), and it's also the one that combines with the height
+ *       advantage just added.</li>
+ *   <li>The push is a physics impulse (can knock someone off an edge), not the SRD's exact 5 feet measured
+ *       with a ruler — on purpose: it's what makes shoving from high ground genuinely dangerous, which is
+ *       exactly the mechanic that was requested.</li>
  * </ul>
  */
 class ShoveManager {
-	//Mismo criterio que un clic de ataque cuerpo a cuerpo: lo bastante cerca para considerarse "al alcance",
-	//sin medir 5 pies exactos (el mod no tiene grilla de combate real, ver PROJECT_CONTEXT.md).
+	//Same criterion as a melee attack click: close enough to count as "in reach", without measuring exact
+	//5 feet (the mod has no real combat grid, see PROJECT_CONTEXT.md).
 	private static final double MELEE_REACH = 4.0;
 	private static final float PUSH_STRENGTH = 0.9f;
 	private static final float PUSH_UP = 0.35f;
 
-	//Se activa desde AbilityItemDispatcher, igual que Marca del Cazador: necesita un objetivo concreto, así
-	//que vive en el evento EntityInteract y no en los otros dos.
+	//Triggered from AbilityItemDispatcher, same as Hunter's Mark: it needs a concrete target, so it lives
+	//in the EntityInteract event and not the other two.
 	static void tryUse(PlayerInteractEvent.EntityInteract event) {
 		InteractionEvents.consume(event);
 		if (!(event.getEntity() instanceof ServerPlayer attacker)) return;
@@ -50,9 +49,9 @@ class ShoveManager {
 			return;
 		}
 		Combatant target = Combatant.of(targetEntity);
-		if (target == null) return; //Sin representación en las reglas: nada que resolver.
+		if (target == null) return; //No representation in the rules: nothing to resolve.
 
-		//Empujar sustituye UN ataque del turno — mismo gasto de acción que golpear.
+		//Shoving replaces ONE attack of the turn — same action cost as hitting.
 		if (!TurnManager.tryAct(attacker)) {
 			TurnManager.notifyCantAct(attacker);
 			return;
@@ -85,8 +84,7 @@ class ShoveManager {
 
 		Vec3 direction = target.position().subtract(attacker.position());
 		double horizontal = Math.sqrt(direction.x * direction.x + direction.z * direction.z);
-		//Mismo punto que quien empuja (arriba/abajo en línea recta): empuja a un rumbo fijo en vez de
-		//dividir por cero.
+		//Same spot as the shover (straight up/down): pushes toward a fixed heading instead of dividing by zero.
 		double nx = horizontal < 1.0E-4 ? 0 : direction.x / horizontal;
 		double nz = horizontal < 1.0E-4 ? 1 : direction.z / horizontal;
 

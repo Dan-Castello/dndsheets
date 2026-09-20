@@ -3,28 +3,27 @@ package net.hawthorn.dndsheets;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * <p>El aspecto de cada ítem del mod: su textura propia, en vez de un ítem de vanilla renombrado.</p>
+ * <p>The look of each of the mod's items: its own texture, instead of a renamed vanilla item.</p>
  *
- * <p><b>Por qué hacía falta.</b> Todo lo que reparte este mod —la Vara de DM, los tótems de clase, los
- * báculos, las cartas de invocación— era un ítem de Minecraft con otro nombre: un palo, un tinte rojo, una
- * pata de conejo. Funcionaba, pero en la barra rápida de un jugador con doce cosas encima no se distingue
- * el Castigo Divino del polvo de piedraluminosa que tenía de antes, y "todo son lo mismo con otro nombre"
- * es exactamente el problema que se acaba de arreglar en el bestiario.</p>
+ * <p><b>Why it was needed.</b> Everything this mod hands out —the DM Wand, class totems, staves,
+ * summon cards— was a Minecraft item under another name: a stick, a red dye, a rabbit's foot. It
+ * worked, but in the hotbar of a player with a dozen things on it, you can't tell Divine Smite from
+ * the glowstone dust they already had, and "everything is the same thing with a different name" is
+ * exactly the problem that was just fixed in the bestiary.</p>
  *
- * <p><b>Cómo.</b> Un único ítem registrado ({@code dndsheets:token}) más
- * {@code CustomModelData}, que es la forma que da Minecraft para esto. Ventajas sobre las dos
- * alternativas: no se toca <b>ningún</b> modelo de vanilla —sobrescribir {@code minecraft:item/compass}
- * para poner aquí un icono le cambiaría la brújula a todo el mundo, y la de vanilla tiene 32 variantes por
- * ángulo—, y no se registran veinte ítems que aparecerían en {@code /give} dando objetos sin su etiqueta
- * NBT, o sea muertos.</p>
+ * <p><b>How.</b> A single registered item ({@code dndsheets:token}) plus {@code CustomModelData}, which
+ * is the mechanism Minecraft provides for this. Advantages over the two alternatives: <b>no</b> vanilla
+ * model gets touched —overriding {@code minecraft:item/compass} to put an icon here would change the
+ * compass for everyone, and the vanilla one has 32 angle variants—, and no twenty items get registered
+ * that would show up in {@code /give} handing out items without their NBT tag, i.e. dead ones.</p>
  *
- * <p><b>El número viaja por posición, así que esto es SOLO-AÑADIR.</b> El {@code CustomModelData} es
- * {@code ordinal() + 1} y queda escrito dentro de cada ItemStack que ya exista en el mundo de alguien.
- * Insertar una constante en medio le cambia el icono a todo lo repartido hasta hoy. Constantes nuevas, al
- * final. Es el mismo trato que los mensajes de red (invariante 1).</p>
+ * <p><b>The number travels by position, so this is APPEND-ONLY.</b> The {@code CustomModelData} is
+ * {@code ordinal() + 1} and gets written into every ItemStack that already exists in someone's world.
+ * Inserting a constant in the middle changes the icon of everything handed out so far. New constants
+ * go at the end. Same deal as the network messages (invariant 1).</p>
  *
- * <p>La textura de cada uno es {@code assets/dndsheets/textures/item/<nombre en minúsculas>.png}, dibujada
- * en {@code tools/generate_item_icons.py} — arte propio, porque el mod no puede redistribuir el de nadie.</p>
+ * <p>Each one's texture is {@code assets/dndsheets/textures/item/<lowercase name>.png}, drawn by
+ * {@code tools/generate_item_icons.py} — original art, because the mod can't redistribute anyone else's.</p>
  */
 public enum ItemLook {
 	DM_WAND,
@@ -48,17 +47,17 @@ public enum ItemLook {
 	SUMMON_CARD,
 	SHOVE;
 
-	/** El valor que el modelo de {@code token.json} busca en su lista de overrides. */
+	/** The value the {@code token.json} model looks up in its overrides list. */
 	public int customModelData() {
 		return ordinal() + 1;
 	}
 
-	/** {@code assets/dndsheets/textures/item/<esto>.png} y {@code .../models/item/<esto>.json}. */
+	/** {@code assets/dndsheets/textures/item/<this>.png} and {@code .../models/item/<this>.json}. */
 	public String textureName() {
 		return name().toLowerCase(java.util.Locale.ROOT);
 	}
 
-	/** Pinta este aspecto sobre un stack ya construido. */
+	/** Paints this look onto an already-built stack. */
 	public ItemStack applyTo(ItemStack stack) {
 		stack.getOrCreateTag().putInt("CustomModelData", customModelData());
 		return stack;

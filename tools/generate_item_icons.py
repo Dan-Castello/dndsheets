@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Dibuja los iconos de 16x16 de los items del mod.
+"""Draws the mod's 16x16 item icons.
 
-Las texturas son el resultado; ESTE archivo es la fuente. Se guarda en el repo por eso: un icono se
-retoca cambiando su funcion de aqui y volviendo a ejecutar, no abriendo un PNG en un editor que nadie
-tiene instalado. Arte propio y a mano: el mod no puede redistribuir arte de terceros.
+The textures are the result; THIS file is the source. It is kept in the repo for that reason: an icon is
+touched up by changing its function here and running again, not by opening a PNG in an editor nobody
+has installed. Original, hand-made art: the mod cannot redistribute third-party art.
 
     python tools/generate_item_icons.py
 
-Paleta unica para los veinte, para que se lean como una familia: pergamino y tinta de base, y un color
+A single palette for all twenty, so they read as a family: parchment and ink as the base, and one color
 por papel (rojo furia, oro divino, verde naturaleza, azul arcano, violeta metamagia, acero defensa).
 """
 import os
@@ -22,7 +22,7 @@ C = {
     'k': (60, 48, 38, 255),      # tinta suave
     'W': (242, 236, 224, 255),   # luz
     'P': (217, 201, 163, 255),   # pergamino
-    'p': (168, 148, 107, 255),   # pergamino sombra
+    'p': (168, 148, 107, 255),   # parchment shadow
     'R': (192, 58, 43, 255),     # rojo
     'r': (125, 33, 24, 255),
     'G': (232, 177, 58, 255),    # oro
@@ -50,7 +50,7 @@ class Canvas:
             self.px[y][x] = C[c] if isinstance(c, str) else c
 
     def rows(self, art, dx=0, dy=0):
-        """Pinta una rejilla ASCII; el punto es transparente."""
+        """Paints an ASCII grid; the dot is transparent."""
         for y, row in enumerate(art):
             for x, ch in enumerate(row):
                 if ch != '.':
@@ -73,8 +73,8 @@ class Canvas:
             f.write(png)
 
 
-# Cada icono son 16 filas de 16 caracteres. Silueta gruesa y un solo golpe de color:
-# a 16x16 y en una barra rapida, el detalle no se ve — la forma si.
+# Each icon is 16 rows of 16 characters. A thick silhouette and a single stroke of color:
+# at 16x16 and in a hotbar, detail is not seen — shape is.
 ICONS = {
  'token': [
   '................',
@@ -436,8 +436,8 @@ ICONS = {
   '................',
   '................',
  ],
- #Mismo puno redondeado que 'rage' (misma silueta, ya probada a 16x16), en acero en vez de fuego: la
- #misma idea de golpe/fuerza, aplicada a empujar en vez de arder.
+ #Same rounded fist as 'rage' (same silhouette, already proven at 16x16), in steel instead of fire: the
+ #same idea of a blow/strength, applied to shoving instead of burning.
  'shove': [
   '................',
   '....KKKKKKK.....',
@@ -458,14 +458,14 @@ ICONS = {
  ],
 }
 
-# Orden EXACTO del enum ItemLook: el CustomModelData es su posicion + 1 y viaja dentro de cada
-# ItemStack ya repartido. Solo se anade al final. El self-test compara esta lista con el enum.
+# EXACT order of the ItemLook enum: the CustomModelData is its position + 1 and travels inside each
+# already-distributed ItemStack. Only append at the end. The self-test compares this list with the enum.
 LOOKS = [
     'dm_wand', 'move_wand', 'rest_kit', 'turn_next', 'turn_undo', 'turn_actions',
     'rage', 'second_wind', 'inspiration', 'wild_shape', 'twinned', 'smite', 'hunters_mark',
     'shield', 'counterspell', 'turn_undead', 'help', 'staff', 'summon_card', 'shove',
 ]
-# Se sujetan como una vara: el modelo "handheld" los inclina en la mano en vez de dejarlos planos.
+# They are held like a wand: the "handheld" model tilts them in the hand instead of leaving them flat.
 HANDHELD = {'dm_wand', 'move_wand', 'staff', 'smite'}
 
 MODELS = os.path.join('src', 'main', 'resources', 'assets', 'dndsheets', 'models', 'item')
@@ -504,5 +504,5 @@ if __name__ == '__main__':
         c = Canvas()
         c.rows(art)
         c.png(os.path.join(OUT, name + '.png'))
-    print('escritos %d iconos en %s' % (len(ICONS), OUT))
+    print('wrote %d icons to %s' % (len(ICONS), OUT))
     print('escritos %d modelos en %s' % (write_models(), MODELS))

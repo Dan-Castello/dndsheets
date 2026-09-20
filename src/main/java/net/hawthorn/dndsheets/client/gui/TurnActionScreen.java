@@ -8,9 +8,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Las tres acciones de turno que no son atacar ni lanzar un conjuro, para quien usa el ítem de Acciones
- * de Turno. Cada botón dice lo que HACE la acción y no solo cómo se llama: "Esquivar" a secas no le dice
- * nada a quien nunca jugó a D&amp;D, y este mod se juega sobre todo con gente que no lo ha jugado.</p>
+ * <p>The three turn actions that aren't attacking or casting a spell, for whoever uses the Turn
+ * Actions item. Each button states what the action DOES, not just its name: "Dodge" alone tells
+ * someone who's never played D&amp;D nothing, and this mod is played mostly by people who haven't.</p>
  */
 public class TurnActionScreen extends ModalDialogScreen {
 	private static final int WIDTH = 260;
@@ -26,13 +26,13 @@ public class TurnActionScreen extends ModalDialogScreen {
 
 	@Override
 	protected void init() {
-		addAction(30, TurnActionManager.TurnAction.DODGE, "Esquivar — te atacan con desventaja");
-		addAction(54, TurnActionManager.TurnAction.DASH, "Correr — el doble de movimiento");
-		addAction(78, TurnActionManager.TurnAction.DISENGAGE, "Desengancharse — alejarte no provoca ataques");
+		addAction(30, TurnActionManager.TurnAction.DODGE, "gui.dndsheets.turn_action.dodge");
+		addAction(54, TurnActionManager.TurnAction.DASH, "gui.dndsheets.turn_action.dash");
+		addAction(78, TurnActionManager.TurnAction.DISENGAGE, "gui.dndsheets.turn_action.disengage");
 	}
 
-	private void addAction(int y, TurnActionManager.TurnAction action, String label) {
-		addModalButton(20, y, WIDTH - 40, 20, Component.literal(label), button -> {
+	private void addAction(int y, TurnActionManager.TurnAction action, String labelKey) {
+		addModalButton(20, y, WIDTH - 40, 20, Component.translatable(labelKey), button -> {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new TurnActionMessage(action));
 			this.onClose();
 		});

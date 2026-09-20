@@ -5,9 +5,9 @@ license="MIT License"
 [[mods]]
 modId="dndsheets_dungeon"
 version="1.0.0"
-displayName="D&D Sheets: Dungeon Toolkit"
+displayName="VTT MineRPG: Dungeon Toolkit"
 authors="Hawthorn, Cosmic"
-description="Herramientas del DM para trazar y generar mazmorras en 5e. Extension separada de D&D Sheets."
+description="Herramientas del DM para trazar y generar mazmorras en 5e. Extension separada de VTT MineRPG."
 
 [[dependencies.dndsheets_dungeon]]
     modId="minecraft"
@@ -16,12 +16,12 @@ description="Herramientas del DM para trazar y generar mazmorras en 5e. Extensio
     ordering="NONE"
     side="BOTH"
 
-# Dependencia DURA a proposito (ver Modularity Map / PROJECT_CONTEXT.md): el toolkit de mazmorras
-# no funciona sin el core -- usa su logger, sus rutas de datos, su boton de tomo y su base de GUI
-# compartida. No tiene sentido fingir que es opcional.
+# HARD dependency on purpose (see Modularity Map / PROJECT_CONTEXT.md): the dungeon toolkit
+# doesn't work without the core -- it uses its logger, its data paths, its tome button and its shared
+# GUI base. There's no point pretending it's optional.
 [[dependencies.dndsheets_dungeon]]
     modId="dndsheets"
     mandatory=true
-    versionRange="[1.0.2,)"
+    versionRange="[2.2.0,)"
     ordering="AFTER"
     side="BOTH"

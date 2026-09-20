@@ -8,7 +8,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente -> servidor: el jugador eligió un preset en el selector; se aplica a su propia hoja.
+//Client -> server: the player chose a preset in the picker; it's applied to their own sheet.
 public class PresetApplyMessage {
 	String presetId;
 

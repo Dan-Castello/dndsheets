@@ -54,17 +54,17 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * <p>Todo lo que hace falta para convertir piezas de mazmorra ({@link DungeonPieceRegistry}) en un
- * dungeon jugable, apoyándose 100% en el sistema jigsaw vanilla en vez de un editor gráfico propio:</p>
+ * <p>Everything needed to turn dungeon pieces ({@link DungeonPieceRegistry}) into a playable
+ * dungeon, relying 100% on the vanilla jigsaw system instead of a custom graphical editor:</p>
  * <ul>
- * <li>El DM escanea cada sala con el bloque de estructura vanilla (modo SAVE) y marca las conexiones
- * con bloques jigsaw vanilla a mano — conectores normales con {@code Name=dndsheets:connector,
- * Target=dndsheets:connector}, y la pieza de arranque además con {@code Name=} {@link #START_JIGSAW_NAME}.</li>
- * <li>{@link #capturePiece} copia el .nbt ya escaneado al datapack de la partida actual.</li>
- * <li>{@link #publish} agrupa las piezas por pool, escribe un {@code template_pool} JSON por grupo y
- * corre {@code /reload} para que el registro dinámico de mundo los recoja — sin Codec/ReloadListener
- * propios, el pipeline de datapacks de Minecraft ya hace ese trabajo.</li>
- * <li>{@link #generate} dispara {@link JigsawPlacement#generateJigsaw} en la posición pedida.</li>
+ * <li>The DM scans each room with the vanilla structure block (SAVE mode) and marks the connections
+ * with vanilla jigsaw blocks by hand — regular connectors with {@code Name=dndsheets:connector,
+ * Target=dndsheets:connector}, and the starting piece additionally with {@code Name=} {@link #START_JIGSAW_NAME}.</li>
+ * <li>{@link #capturePiece} copies the already-scanned .nbt to the current game's datapack.</li>
+ * <li>{@link #publish} groups the pieces by pool, writes a {@code template_pool} JSON per group and
+ * runs {@code /reload} so the dynamic world registry picks them up — with no custom Codec/ReloadListener,
+ * Minecraft's own datapack pipeline already does that work.</li>
+ * <li>{@link #generate} fires {@link JigsawPlacement#generateJigsaw} at the requested position.</li>
  * </ul>
  */
 public class DungeonManager {
@@ -73,12 +73,12 @@ public class DungeonManager {
 	public static final String START_JIGSAW_NAME = "dndsheets:dungeon_start";
 	public static final String CONNECTOR_NAME = "dndsheets:connector";
 
-	//Mismo charset que el path de un ResourceLocation vanilla ([a-z0-9_.-] + '/' como separador), pero
-	//además rechaza segmentos "." / ".." — el nombre de pool acaba en un new ResourceLocation(...) (que ya
-	//valida el charset) y en un Path.resolve() de escritura de archivo (publish()), que NO valida nada:
-	//sin este rechazo ".." permite escapar del datapack de la partida (path traversal). Único punto de
-	//validación: todo handler de red que reciba un nombre de pool del cliente pasa por acá antes de
-	//tocar DungeonManager.
+	//Same charset as a vanilla ResourceLocation's path ([a-z0-9_.-] + '/' as separator), but also
+	//rejects "." / ".." segments — the pool name ends up in a new ResourceLocation(...) (which already
+	//validates the charset) and in a file-writing Path.resolve() (publish()), which validates NOTHING:
+	//without this rejection ".." allows escaping the game's datapack (path traversal). Single
+	//validation point: every network handler that receives a pool name from the client goes through
+	//here before touching DungeonManager.
 	private static final Pattern POOL_NAME_CHARSET = Pattern.compile("[a-z0-9_./-]+");
 
 	public static boolean isValidPoolName(String poolName) {
@@ -89,28 +89,28 @@ public class DungeonManager {
 		return true;
 	}
 
-	//Mensaje compartido por los ~6 sitios que rechazan un pool inválido (comando y red) — el error más
-	//común con diferencia es escribir el espacio de nombres de la ESTRUCTURA (p.ej. "dndsheets_dm:dungeon",
-	//que el DM eligió libremente al nombrar el bloque de estructura) en el
-	//campo de POOL, que se autonamespacea solo a "dndsheets:X" y nunca debería llevar ":" escrito a mano.
+	//Message shared by the ~6 places that reject an invalid pool (command and network) — by far the
+	//most common mistake is writing the STRUCTURE's namespace (e.g. "dndsheets_dm:dungeon", which the
+	//DM chose freely when naming the structure block) in the
+	//POOL field, which auto-namespaces itself to "dndsheets:X" and should never have a hand-typed ":".
 	public static Component poolNameError(String poolName) {
 		return Component.translatable("chat.dndsheets.dungeon.bad_pool_name",
 			poolName, POOL_NAMESPACE, POOL_NAMESPACE + ":" + poolName);
 	}
 
-	//Puramente informativo (ver decisión del DM): sin llamadas reflectivas a la API de Structurize, solo
-	//para mostrar un aviso en la GUI si no está instalado — el flujo con el bloque de estructura vanilla
-	//funciona igual con o sin esto.
+	//Purely informational (see the DM's decision): no reflective calls into the Structurize API, just
+	//to show a warning in the GUI if it isn't installed — the flow with the vanilla structure block
+	//works the same with or without this.
 	public static boolean structurizeAvailable() {
 		return ModList.get().isLoaded("structurize");
 	}
 
-	//Escribe Name/Target/Pool/Joint directo en el block entity del jigsaw, sin pasar por su GUI vanilla —
-	//el DM ya no tiene que tipear a mano los 3 strings exactos con nuestro namespace (ver DungeonToolManager).
-	//Target siempre es CONNECTOR_NAME: todo conector normal usa ese mismo Name, así que cualquier jigsaw
-	//que lo apunte encaja con cualquier otro. Joint fijo en ALIGNED (no ROLLABLE): para salas hechas a mano
-	//con una abertura fija es el caso común; ponytail: sin exponer el joint como opción, añadir un toggle
-	//si algún DM necesita piezas que roten libremente.
+	//Writes Name/Target/Pool/Joint directly into the jigsaw block entity, bypassing its vanilla GUI —
+	//the DM no longer has to hand-type the 3 exact strings with our namespace (see DungeonToolManager).
+	//Target is always CONNECTOR_NAME: every regular connector uses that same Name, so any jigsaw that
+	//points to it fits any other one. Joint is fixed at ALIGNED (not ROLLABLE): the common case for
+	//hand-built rooms with a fixed opening; ponytail: joint isn't exposed as an option, add a toggle
+	//if some DM needs freely-rotating pieces.
 	public static void configureJigsaw(JigsawBlockEntity jigsaw, String poolName, boolean isStart) {
 		jigsaw.setName(new ResourceLocation(isStart ? START_JIGSAW_NAME : CONNECTOR_NAME));
 		jigsaw.setTarget(new ResourceLocation(CONNECTOR_NAME));
@@ -118,29 +118,30 @@ public class DungeonManager {
 		jigsaw.setJoint(JigsawBlockEntity.JointType.ALIGNED);
 		jigsaw.setChanged();
 
-		//setChanged() solo marca el chunk para guardar a disco — no empuja el cambio al cliente. Sin esto
-		//el DM veía el jigsaw "vacío" hasta cerrar y recargar el mundo (que sí relee de disco). Mismo patrón
-		//que usa el propio StructureBlockEntity vanilla tras cambiar sus datos.
+		//setChanged() only marks the chunk for saving to disk — it doesn't push the change to the client.
+		//Without this the DM would see the jigsaw as "empty" until closing and reloading the world (which
+		//does re-read from disk). Same pattern the vanilla StructureBlockEntity itself uses after changing
+		//its data.
 		if (jigsaw.getLevel() != null) {
 			BlockState state = jigsaw.getBlockState();
 			jigsaw.getLevel().sendBlockUpdated(jigsaw.getBlockPos(), state, state, 3);
 		}
 	}
 
-	//Copia <mundo>/generated/<ns>/structures/<ruta>.nbt -> <mundo>/datapacks/dndsheets_dungeon/data/<ns>/structures/<ruta>.nbt
-	//(mismo layout relativo que usa StructureTemplateManager para ambas raíces, solo cambia la base) y
-	//registra la pieza. Optional.empty() = éxito; con mensaje = fallo claro para mostrar en chat/GUI.
+	//Copies <world>/generated/<ns>/structures/<path>.nbt -> <world>/datapacks/dndsheets_dungeon/data/<ns>/structures/<path>.nbt
+	//(same relative layout StructureTemplateManager uses for both roots, only the base changes) and
+	//registers the piece. Optional.empty() = success; with a message = a clear failure to show in chat/GUI.
 	public static Optional<String> capturePiece(MinecraftServer server, DungeonPieceRegistry.DungeonPiece piece) {
 		ResourceLocation structureId = ResourceLocation.tryParse(piece.structureId());
 		if (structureId == null) {
-			return Optional.of("\"" + piece.structureId() + "\" no es un id válido (usa el formato espacioDeNombres:ruta).");
+			return Optional.of("\"" + piece.structureId() + "\" is not a valid id (use the namespace:path format).");
 		}
 
 		Path src = server.getWorldPath(LevelResource.GENERATED_DIR)
 			.resolve(structureId.getNamespace()).resolve("structures").resolve(structureId.getPath() + ".nbt");
 		if (!Files.exists(src)) {
-			return Optional.of("No encontré una estructura escaneada como " + structureId
-				+ " — guárdala primero con un bloque de estructura (modo SAVE).");
+			return Optional.of("No scanned structure found as " + structureId
+				+ " — save it first with a structure block (SAVE mode).");
 		}
 
 		Path dst = server.getWorldPath(LevelResource.DATAPACK_DIR).resolve(PACK_NAME)
@@ -149,8 +150,8 @@ public class DungeonManager {
 			Files.createDirectories(dst.getParent());
 			Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
-			DndsheetsMod.LOGGER.error("dndsheets: no pude copiar la estructura de la pieza {}.", piece.id(), e);
-			return Optional.of("No pude copiar el archivo de estructura: " + e.getMessage());
+			DndsheetsMod.LOGGER.error("dndsheets: could not copy the structure of piece {}.", piece.id(), e);
+			return Optional.of("Could not copy the structure file: " + e.getMessage());
 		}
 
 		DungeonPieceRegistry.register(piece);
@@ -158,10 +159,10 @@ public class DungeonManager {
 		return Optional.empty();
 	}
 
-	//¿Esta pieza tiene, DENTRO de su .nbt ya capturado, un jigsaw con Name=START_JIGSAW_NAME? Mismo chequeo
-	//que hace vanilla — JigsawPlacement.addPieces busca ese jigsaw solo dentro de la pieza que el RNG haya
-	//elegido para arrancar, ver el comentario grande en generate() — pero acá, ANTES de generar, para poder
-	//avisar con precisión en vez de esperar a que vanilla falle y solo loguee un mensaje genérico.
+	//Does this piece have, INSIDE its already-captured .nbt, a jigsaw with Name=START_JIGSAW_NAME? Same
+	//check vanilla does — JigsawPlacement.addPieces looks for that jigsaw only inside the piece the RNG
+	//picked to start with, see the large comment in generate() — but here, BEFORE generating, so we can
+	//warn precisely instead of waiting for vanilla to fail and just log a generic message.
 	public static boolean hasStartJigsaw(ServerLevel level, DungeonPieceRegistry.DungeonPiece piece) {
 		ResourceLocation structureId = ResourceLocation.tryParse(piece.structureId());
 		if (structureId == null) return false;
@@ -171,9 +172,9 @@ public class DungeonManager {
 	}
 
 	/**
-	 * <p>Los nombres de los jigsaw que hay dentro de un .nbt. Lo miran dos cosas por motivos distintos:
-	 * {@link #hasStartJigsaw} para saber si una pieza puede abrir una mazmorra, y la importación para poder
-	 * decirle al DM si lo que acaba de traer se puede conectar con algo.</p>
+	 * <p>The names of the jigsaws found inside a .nbt. Two things look at this for different reasons:
+	 * {@link #hasStartJigsaw} to know whether a piece can open a dungeon, and the import flow so it can
+	 * tell the DM whether what was just brought in can connect to anything.</p>
 	 */
 	public static List<String> jigsawNames(StructureTemplate template) {
 		List<String> names = new ArrayList<>();
@@ -183,15 +184,15 @@ public class DungeonManager {
 		return names;
 	}
 
-	// --- Traer construcciones de fuera ------------------------------------------------------------
+	// --- Bringing in outside builds ------------------------------------------------------------
 
 	/**
-	 * <p>Espacio de nombres de todo lo que el DM importa. Separado del suyo propio para que se vea de un
-	 * vistazo qué salió de esta partida y qué vino de fuera.</p>
+	 * <p>Namespace for everything the DM imports. Kept separate from their own so it's obvious at a
+	 * glance what came from this game and what came from outside.</p>
 	 */
 	public static final String IMPORT_NAMESPACE = "dndsheets_import";
 
-	/** Lo que se sabe de un .nbt recién traído, que es justo lo que hay que contarle al DM. */
+	/** What's known about a freshly imported .nbt — exactly what needs to be told to the DM. */
 	public record Imported(ResourceLocation structureId, int width, int height, int depth, List<String> jigsaws) {
 		public boolean canConnect() {
 			return !jigsaws.isEmpty();
@@ -203,14 +204,14 @@ public class DungeonManager {
 	}
 
 	/**
-	 * <p>Un nombre de archivo cualquiera convertido en ruta válida de {@link ResourceLocation}: minúsculas,
-	 * sin acentos y sin nada fuera de {@code [a-z0-9_-]}.</p>
+	 * <p>Any arbitrary file name turned into a valid {@link ResourceLocation} path: lowercase, no
+	 * accents, and nothing outside {@code [a-z0-9_-]}.</p>
 	 *
-	 * <p>Hace falta porque los archivos que se descargan se llaman "Casa Grande (v2).nbt", y un
-	 * ResourceLocation con un espacio o una tilde dentro no es que falle: es que
-	 * {@code ResourceLocation.tryParse} devuelve null y la importación muere con un mensaje que habla de
-	 * ids cuando el DM solo ha copiado un archivo. Mismo problema, y misma solución, que el
-	 * {@code npc-capit-n} de {@code CharacterRules.npcIdFor}: los acentos se quitan ANTES de filtrar.</p>
+	 * <p>Needed because downloaded files are named things like "Casa Grande (v2).nbt", and a
+	 * ResourceLocation with a space or an accent in it doesn't just fail cleanly:
+	 * {@code ResourceLocation.tryParse} returns null and the import dies with a message about ids when
+	 * the DM only copied a file. Same problem, and same fix, as the
+	 * {@code npc-capit-n} case in {@code CharacterRules.npcIdFor}: accents are stripped BEFORE filtering.</p>
 	 */
 	public static String structureNameFor(String fileName) {
 		String withoutAccents = java.text.Normalizer.normalize(fileName == null ? "" : fileName,
@@ -218,24 +219,24 @@ public class DungeonManager {
 		String slug = withoutAccents.toLowerCase(java.util.Locale.ROOT)
 			.replaceAll("[^a-z0-9]+", "_")
 			.replaceAll("(^_|_$)", "");
-		return slug.isEmpty() ? "estructura" : slug;
+		return slug.isEmpty() ? "structure" : slug;
 	}
 
 	/**
-	 * <p>Copia un {@code .nbt} de la biblioteca compartida ({@link DndPaths#STRUCTURES_DIR}) a la carpeta
-	 * {@code generated/} de esta partida, que es de donde vanilla lee las estructuras guardadas y donde
-	 * {@link #capturePiece} ya sabe buscarlas. Con eso, una construcción traída de fuera entra en el flujo
-	 * de mazmorras existente sin que ese flujo tenga que enterarse.</p>
+	 * <p>Copies a {@code .nbt} from the shared library ({@link DndPaths#STRUCTURES_DIR}) into this
+	 * game's {@code generated/} folder, which is where vanilla reads saved structures from and where
+	 * {@link #capturePiece} already knows to look for them. That way, a build brought in from outside
+	 * enters the existing dungeon flow without that flow ever needing to know.</p>
 	 *
-	 * <p>No se toca el archivo por dentro: un {@code .nbt} de estructura ya es el formato de Minecraft.
-	 * Litematica y los editores de mapas exportan a él, así que traducir formatos ajenos —.schem,
-	 * .litematic— sería escribir un conversor para llegar al mismo sitio al que su propio botón de
-	 * exportar llega.</p>
+	 * <p>The file's contents aren't touched: a structure {@code .nbt} is already Minecraft's own
+	 * format. Litematica and map editors export to it, so translating other formats —.schem,
+	 * .litematic— would mean writing a converter just to reach the same place their own export
+	 * button already reaches.</p>
 	 */
 	public static Optional<Imported> importStructure(ServerLevel level, String fileName, Consumer<String> onError) {
 		Path source = DndPaths.STRUCTURES_DIR.resolve(fileName + ".nbt");
 		if (!Files.exists(source)) {
-			onError.accept("No encontré " + source.toAbsolutePath() + ". Copia ahí el .nbt y vuelve a intentarlo.");
+			onError.accept("Could not find " + source.toAbsolutePath() + ". Copy the .nbt there and try again.");
 			return Optional.empty();
 		}
 
@@ -246,19 +247,19 @@ public class DungeonManager {
 			Files.createDirectories(destination.getParent());
 			Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
-			DndsheetsMod.LOGGER.error("dndsheets: no pude copiar la estructura importada {}.", fileName, e);
-			onError.accept("No pude copiar el archivo: " + e.getMessage());
+			DndsheetsMod.LOGGER.error("dndsheets: could not copy the imported structure {}.", fileName, e);
+			onError.accept("Could not copy the file: " + e.getMessage());
 			return Optional.empty();
 		}
 
-		//El gestor de plantillas cachea también los fallos: si alguien nombró este id antes de que el archivo
-		//existiera, sin esto se queda con el "no existe" para siempre y la importación parece no haber pasado.
+		//The template manager also caches failures: if something named this id before the file existed,
+		//without this it would keep the "doesn't exist" result forever and the import would appear to do nothing.
 		level.getStructureManager().remove(structureId);
 
 		Optional<StructureTemplate> template = level.getStructureManager().get(structureId);
 		if (template.isEmpty()) {
-			onError.accept("\"" + fileName + ".nbt\" no es una estructura de Minecraft válida "
-				+ "(¿es un .schem o un .litematic? expórtalo a estructura de vanilla primero).");
+			onError.accept("\"" + fileName + ".nbt\" is not a valid Minecraft structure "
+				+ "(is it a .schem or a .litematic? export it to a vanilla structure first).");
 			return Optional.empty();
 		}
 
@@ -267,7 +268,7 @@ public class DungeonManager {
 			jigsawNames(template.get())));
 	}
 
-	/** Pega una estructura ya importada en el mundo, para poder entrar en ella y ponerle los jigsaw. */
+	/** Pastes an already-imported structure into the world, so it can be entered and given jigsaws. */
 	public static boolean place(ServerLevel level, ResourceLocation structureId, BlockPos at) {
 		Optional<StructureTemplate> template = level.getStructureManager().get(structureId);
 		return template.isPresent()
@@ -279,13 +280,14 @@ public class DungeonManager {
 		DungeonPieceRegistry.save(server);
 	}
 
-	//Agrupa por pool + arma el JSON del formato StructureTemplatePool.DIRECT_CODEC. Separado de publish()
-	//para poder probarlo sin un MinecraftServer real (ver JsonContentSelfTest.checkDungeonPools) — es la
-	//única lógica con ramas reales de esta feature, el resto son llamadas finas a APIs vanilla.
+	//Groups by pool + builds the JSON in the StructureTemplatePool.DIRECT_CODEC format. Kept separate
+	//from publish() so it can be tested without a real MinecraftServer (see
+	//JsonContentSelfTest.checkDungeonPools) — it's the only logic with real branches in this feature,
+	//the rest are thin calls into vanilla APIs.
 	public static Map<String, JsonObject> buildPoolJsons(Collection<DungeonPieceRegistry.DungeonPiece> pieces) {
 		Map<String, List<DungeonPieceRegistry.DungeonPiece>> byPool = new LinkedHashMap<>();
 		for (DungeonPieceRegistry.DungeonPiece piece : pieces) {
-			//Pieza con structureId corrupto/mal escrito: se salta, no tumba el resto del pool.
+			//A piece with a corrupted/malformed structureId: skip it, don't take down the rest of the pool.
 			if (ResourceLocation.tryParse(piece.structureId()) == null) continue;
 			byPool.computeIfAbsent(piece.pool(), key -> new ArrayList<>()).add(piece);
 		}
@@ -305,8 +307,8 @@ public class DungeonManager {
 
 				JsonObject wrapper = new JsonObject();
 				wrapper.add("element", element);
-				//weight está acotado a [1,150] por StructureTemplatePool.DIRECT_CODEC: fuera de ese rango
-				//el archivo entero falla a parsear en el reload, así que se acota acá antes de escribirlo.
+				//weight is clamped to [1,150] by StructureTemplatePool.DIRECT_CODEC: outside that range
+				//the whole file fails to parse on reload, so it's clamped here before writing it.
 				wrapper.addProperty("weight", Math.max(1, Math.min(150, piece.weight())));
 				elements.add(wrapper);
 			}
@@ -316,33 +318,33 @@ public class DungeonManager {
 		return result;
 	}
 
-	//Escribe pack.mcmeta (si falta) + un template_pool JSON por pool en el datapack local de la partida,
-	//y corre /reload — que SOLO sirve acá para que el datapack recién creado quede en la lista de "packs
-	//conocidos" del mundo (ver ReloadCommand.discoverNewPacks), NO para que los pools queden disponibles:
-	//Registries.TEMPLATE_POOL es un registro "worldgen", y /reload nunca lo toca (ver el comentario en
-	//generate() sobre ReloadableServerResources.listeners()). Un pool nuevo o editado solo queda visible
-	//tras recargar el mundo de verdad (salir y volver a entrar, o reiniciar el servidor) — generate()
-	//avisa de esto si el pool todavía no aparece. Devuelve null en éxito (de la ESCRITURA, no de que el
-	//pool ya esté listo para generar), o un mensaje de error para mostrar al DM.
+	//Writes pack.mcmeta (if missing) + one template_pool JSON per pool into the game's local datapack,
+	//and runs /reload — which ONLY serves here to get the freshly created datapack onto the world's list
+	//of "known packs" (see ReloadCommand.discoverNewPacks), NOT to make the pools available:
+	//Registries.TEMPLATE_POOL is a "worldgen" registry, and /reload never touches it (see the comment in
+	//generate() about ReloadableServerResources.listeners()). A new or edited pool only becomes visible
+	//after a real world reload (leave and rejoin, or restart the server) — generate() warns about this
+	//if the pool still doesn't show up. Returns null on success (of the WRITE, not of the pool already
+	//being ready to generate), or an error message to show the DM.
 	public static String publish(ServerPlayer dm) {
 		MinecraftServer server = dm.getServer();
 		Path packRoot = server.getWorldPath(LevelResource.DATAPACK_DIR).resolve(PACK_NAME);
 		ensurePackMcmeta(packRoot);
 
 		Map<String, JsonObject> pools = buildPoolJsons(DungeonPieceRegistry.all());
-		if (pools.isEmpty()) return "No hay piezas registradas — añade alguna antes de publicar.";
+		if (pools.isEmpty()) return "No pieces registered — add some before publishing.";
 
 		Path poolDir = packRoot.resolve("data").resolve(POOL_NAMESPACE).resolve("worldgen").resolve("template_pool");
-		//Borra pools publicados en una pasada ANTERIOR que ya no tiene ninguna pieza (se le quitaron todas,
-		//o se le cambió el pool a todas) — sin esto, un pool.json huérfano se quedaba para siempre en el
-		//datapack, listo para confundir la próxima vez que alguien reutilizara ese nombre de pool.
+		//Deletes pools published in a PREVIOUS pass that no longer have any pieces (all of them were
+		//removed, or all had their pool changed) — without this, an orphaned pool.json would stay in the
+		//datapack forever, ready to confuse the next time someone reused that pool name.
 		try (var existing = Files.list(poolDir)) {
 			for (Path file : existing.filter(p -> p.toString().endsWith(".json")).toList()) {
 				String name = file.getFileName().toString().replace(".json", "");
 				if (!pools.containsKey(name)) Files.deleteIfExists(file);
 			}
 		} catch (IOException ignored) {
-			//poolDir no existe todavía (primera publicación) — nada que limpiar.
+			//poolDir doesn't exist yet (first publish) — nothing to clean up.
 		}
 
 
@@ -354,19 +356,19 @@ public class DungeonManager {
 					out.write(DndsheetsMod.PRETTY_GSON.toJson(entry.getValue()).getBytes());
 				}
 			} catch (IOException e) {
-				DndsheetsMod.LOGGER.error("dndsheets: no pude escribir el pool {}.", entry.getKey(), e);
-				return "No pude escribir el pool \"" + entry.getKey() + "\": " + e.getMessage();
+				DndsheetsMod.LOGGER.error("dndsheets: could not write pool {}.", entry.getKey(), e);
+				return "Could not write pool \"" + entry.getKey() + "\": " + e.getMessage();
 			}
 		}
 
-		//Bloquea hasta terminar: se llama desde el hilo principal del servidor (comando o
-		//NetworkUtil.handleOnServer), y MinecraftServer#reloadResources hace managedBlock en ese caso —
-		//sin callbacks/CompletableFuture de por medio.
+		//Blocks until done: called from the server's main thread (command or
+		//NetworkUtil.handleOnServer), and MinecraftServer#reloadResources does a managedBlock in that
+		//case — no callbacks/CompletableFuture involved.
 		server.getCommands().performPrefixedCommand(dm.createCommandSourceStack(), "reload");
 		return null;
 	}
 
-	//publish() + JigsawPlacement.generateJigsaw en la posición pedida. false = fallo (mensaje ya enviado al DM).
+	//publish() + JigsawPlacement.generateJigsaw at the requested position. false = failure (message already sent to the DM).
 	public static boolean generate(ServerPlayer dm, String poolName, int maxDepth, BlockPos pos) {
 		String publishError = publish(dm);
 		if (publishError != null) {
@@ -374,12 +376,13 @@ public class DungeonManager {
 			return false;
 		}
 
-		//JigsawPlacement.addPieces (vanilla, confirmado leyendo su fuente) elige UNA pieza al azar —
-		//pesada, no la primera— de TODO el pool y busca el jigsaw de inicio SOLO adentro de esa. Si el pool
-		//mezcla la pieza de entrada con piezas normales que no tienen ese jigsaw, la generación tiene una
-		//probabilidad real de fallar según a cuál le toque — no es un error de configuración intermitente,
-		//es literalmente una tirada de dados con datos reales. Se valida ACÁ, con los .nbt ya capturados,
-		//en vez de dejar que vanilla lo descubra y solo loguee un mensaje sin contexto.
+		//JigsawPlacement.addPieces (vanilla, confirmed by reading its source) picks ONE random piece —
+		//weighted, not the first one — from the WHOLE pool and looks for the starting jigsaw ONLY inside
+		//that one. If the pool mixes the entry piece with regular pieces that don't have that jigsaw,
+		//generation has a real chance of failing depending on which one gets picked — this isn't an
+		//intermittent config error, it's literally a dice roll with real data. Validated HERE, using the
+		//already-captured .nbt files, instead of letting vanilla discover it and just log a message with
+		//no context.
 		List<DungeonPieceRegistry.DungeonPiece> poolPieces = DungeonPieceRegistry.all().stream()
 			.filter(piece -> piece.pool().equals(poolName))
 			.toList();
@@ -403,22 +406,22 @@ public class DungeonManager {
 			.getHolder(ResourceKey.create(Registries.TEMPLATE_POOL, new ResourceLocation(POOL_NAMESPACE, poolName)));
 
 		if (holder.isEmpty()) {
-			//NO es "revisá que alguna pieza lo use" — publish() ya escribió el JSON del pool en disco
-			//correctamente en ese caso. El problema es que /reload (ver publish()) jamás repuebla
-			//Registries.TEMPLATE_POOL: ReloadableServerResources.listeners() solo recarga tags/loot/recetas/
-			//funciones/logros, ninguno de ellos "worldgen" — los pools de estructura se leen SOLO al
-			//cargar el mundo. Un pool nuevo (o uno editado) queda escrito en el datapack pero invisible
-			//para el registro en vivo hasta que el mundo se recarga de verdad.
+			//NOT "check that some piece uses it" — publish() already wrote the pool's JSON to disk
+			//correctly in that case. The problem is that /reload (see publish()) never repopulates
+			//Registries.TEMPLATE_POOL: ReloadableServerResources.listeners() only reloads tags/loot/
+			//recipes/functions/advancements, none of them "worldgen" — structure pools are read ONLY when
+			//the world loads. A new (or edited) pool ends up written to the datapack but invisible to the
+			//live registry until the world is really reloaded.
 			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.pool_not_loaded", poolName));
 			return false;
 		}
 
-		//No se llama a JigsawPlacement.generateJigsaw (que hace exactamente esto pero se queda con las
-		//piezas para sí misma) porque EncounterPopulator necesita el bounding box real de cada sala para
-		//poblarla — y como la colocación jigsaw es aleatoria, es IMPOSIBLE volver a calcular ese layout
-		//después con una segunda llamada: saldría un dungeon distinto al que de verdad se acaba de plantar
-		//en el mundo. Así que replicamos su cuerpo (confirmado leyendo su fuente mapeada) usando el mismo
-		//JigsawPlacement.addPieces público, en vez de duplicar la generación.
+		//JigsawPlacement.generateJigsaw isn't called (it does exactly this but keeps the pieces to
+		//itself) because EncounterPopulator needs the real bounding box of each room to populate it — and
+		//since jigsaw placement is random, it's IMPOSSIBLE to recompute that layout afterward with a
+		//second call: it would produce a different dungeon than the one that was actually just planted in
+		//the world. So its body is replicated here (confirmed by reading its mapped source) using the
+		//same public JigsawPlacement.addPieces, instead of duplicating the generation.
 		ServerLevel level = dm.serverLevel();
 		ChunkGenerator chunkGenerator = level.getChunkSource().getGenerator();
 		StructureTemplateManager structureTemplateManager = level.getStructureManager();
@@ -443,8 +446,8 @@ public class DungeonManager {
 			roomBounds.add(poolPiece.getBoundingBox());
 		}
 
-		//El personaje de quien genera es la única referencia de nivel que tenemos a mano — un grupo sin DM
-		//que genera su propia mazmorra normalmente lo hace con el propio personaje activo.
+		//The generating player's character is the only level reference available — a group without a DM
+		//that generates its own dungeon normally does so with its own active character.
 		int playerLevel = SheetLoader.characterLevelOf(SheetLoader.getServerSheet(dm.getStringUUID()), dm);
 		EncounterPopulator.populate(level, roomBounds, playerLevel);
 
@@ -459,7 +462,7 @@ public class DungeonManager {
 			Files.createDirectories(packRoot);
 			JsonObject packSection = new JsonObject();
 			packSection.addProperty("pack_format", 15);
-			packSection.addProperty("description", "Piezas de mazmorra del DM (dndsheets)");
+			packSection.addProperty("description", "Dungeon pieces from the DM (dndsheets)");
 			JsonObject root = new JsonObject();
 			root.add("pack", packSection);
 
@@ -467,7 +470,7 @@ public class DungeonManager {
 				out.write(DndsheetsMod.PRETTY_GSON.toJson(root).getBytes());
 			}
 		} catch (IOException e) {
-			DndsheetsMod.LOGGER.error("dndsheets: no pude crear pack.mcmeta para el datapack de mazmorras.", e);
+			DndsheetsMod.LOGGER.error("dndsheets: could not create pack.mcmeta for the dungeon datapack.", e);
 		}
 	}
 }

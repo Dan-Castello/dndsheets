@@ -1,0 +1,10 @@
+{
+  "id": "myaddon:example_ray",
+  "name": "Example Bolt",
+  "level": 1,
+  "mode": "attack",
+  "castingAbility": "int",
+  "dice": "2d8",
+  "damageType": "lightning",
+  "upcastDice": "1d8"
+}

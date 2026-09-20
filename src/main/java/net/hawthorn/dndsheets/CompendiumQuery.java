@@ -10,25 +10,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>Consulta de contenido para el compendio en juego. Con 779 entradas importadas del SRD, la única
- * forma de mirar un hechizo o un bloque de estadísticas era recordar su id y escribir un comando — que
- * es tanto como no tenerlas.</p>
+ * <p>Content lookup for the in-game compendium. With 779 entries imported from the SRD, the only way to
+ * look up a spell or a stat block was to remember its id and type a command — which is as good as not
+ * having them.</p>
  *
- * <p>El servidor <b>formatea</b> y el cliente pinta: los registros viven aquí, y mandar un bloque de
- * estadísticas entero por la red para que el cliente lo componga sería mover el problema sin resolverlo.
- * Es el mismo criterio que ya usaba la vista de grupo.</p>
+ * <p>The server <b>formats</b> and the client draws: the registries live here, and sending a whole stat
+ * block over the network for the client to compose would move the problem without solving it. Same
+ * criterion the party view already used.</p>
  *
- * <p>La lista manda una línea de resumen por entrada y la ficha completa se pide aparte al pulsarla. Con
- * 362 objetos, mandar las descripciones enteras de golpe serían decenas de kilobytes en un solo paquete;
- * dos viajes cortos es lo correcto, no una optimización prematura al revés.</p>
+ * <p>The list sends one summary line per entry and the full detail is requested separately when clicked.
+ * With 362 items, sending every full description at once would be tens of kilobytes in a single packet;
+ * two short trips is the right call here, not premature optimization run in reverse.</p>
  */
 public class CompendiumQuery {
 
 	private static final String KEY = "gui.dndsheets.compendium.";
 
-	/** Categorías del compendio. El valor viaja como texto en el mensaje, así que se compara en minúsculas. */
+	/** Compendium categories. The value travels as text in the message, so it's compared lowercase. */
 	public enum Category {
-		SPELLS("hechizos"), MONSTERS("monstruos"), ITEMS("objetos"), WEAPONS("armas"), TRAITS("rasgos");
+		SPELLS("spells"), MONSTERS("monsters"), ITEMS("items"), WEAPONS("weapons"), TRAITS("traits");
 
 		public final String label;
 		Category(String label) { this.label = label; }
@@ -45,9 +45,9 @@ public class CompendiumQuery {
 		Category category = Category.of(rawCategory);
 		if (category == null) return;
 
-		//Los ids viajan como "categoria|id": el cliente los devuelve tal cual al pedir la ficha, sin tener
-		//que deducir de qué registro salieron. Deducirlo del título de la pantalla era frágil y fallaba en
-		//silencio en cuanto alguien cambiara ese texto.
+		//Ids travel as "category|id": the client sends them back as-is when requesting the detail, without
+		//having to guess which registry they came from. Guessing it from the screen title was fragile and
+		//failed silently the moment someone changed that text.
 		List<String> ids = new ArrayList<>();
 		List<Component> labels = new ArrayList<>();
 		String prefix = category.name().toLowerCase(java.util.Locale.ROOT) + "|";
@@ -76,17 +76,18 @@ public class CompendiumQuery {
 					MagicItemRegistry.MagicItem item = MagicItemRegistry.get(id);
 					if (item == null) continue;
 					ids.add(prefix + id);
-					//Se marca cuál aplica el motor y cuál narra el DM: es la distinción que más importa al
-					//consultarlos, y sin ella un DM no sabe qué esperar al entregarlo.
+					//Marks which one the engine applies and which one the DM narrates: that's the
+					//distinction that matters most when looking them up, and without it a DM doesn't
+					//know what to expect when handing it out.
 					labels.add(Component.translatable(item.hasMechanics()
 						? "gui.dndsheets.compendium.item_line"
 						: "gui.dndsheets.compendium.item_line_narrative", ContentNames.of(item.name()), item.rarity()));
 				}
 			}
-			//Los rasgos eran el unico contenido que el jugador no podia mirar desde ninguna parte: la hoja
-			//guarda sus ids ("traits") pero TraitRegistry vive solo en el servidor, asi que sin esto un
-			//monje no tenia forma de saber con que dado pega a mano desnuda. Se marcan los que lleva
-			//puestos quien mira, que es la mitad de la pregunta y aqui sale gratis: la hoja esta al lado.
+			//Traits were the only content the player couldn't look up anywhere: the sheet stores their
+			//ids ("traits") but TraitRegistry lives only on the server, so without this a monk had no way
+			//to know which die they hit with unarmed. The ones the viewer already has are marked, which
+			//is half the question and comes free here: the sheet is right there.
 			case TRAITS -> {
 				java.util.Set<String> mine = grantedTraitIds(viewer);
 				for (String id : sorted(TraitRegistry.ids())) {
@@ -113,7 +114,7 @@ public class CompendiumQuery {
 			new BrowseListMessage(BrowseListMessage.Kind.CONTENT, ids, labels));
 	}
 
-	/** @param entryId {@code categoria|id}: el mensaje solo tiene un campo de texto, así que viajan juntos. */
+	/** @param entryId {@code category|id}: the message only has one text field, so they travel together. */
 	public static void sendDetail(ServerPlayer viewer, String entryId) {
 		String[] parts = entryId.split("\\|", 2);
 		if (parts.length != 2) return;
@@ -130,12 +131,15 @@ public class CompendiumQuery {
 		};
 		if (detail == null) return;
 
+		//The WHOLE entryId travels ("category|id"), not the bare id: the screen needs the category to
+		//know what can be DONE with the entry (learn a spell, summon a monster...). The field already
+		//existed and nobody read it, so this doesn't change a single byte of the packet's shape.
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> viewer),
-			new BrowseListMessage(BrowseListMessage.Kind.DETAIL, List.of(id), List.of(detail)));
+			new BrowseListMessage(BrowseListMessage.Kind.DETAIL, List.of(entryId), List.of(detail)));
 	}
 
-	//Las fichas se arman como Component y no como String: asi los rotulos ("Nivel", "CA", "Salvacion")
-	//los resuelve el CLIENTE en su idioma. El valor de cada uno es dato del registro y viaja tal cual.
+	//Detail sheets are built as Component and not as String: that way labels ("Level", "AC", "Save")
+	//get resolved by the CLIENT in its own language. Each value is registry data and travels as-is.
 	private static MutableComponent describeSpell(String id) {
 		SpellRegistry.Spell spell = SpellRegistry.get(id);
 		if (spell == null) return null;
@@ -160,8 +164,8 @@ public class CompendiumQuery {
 		return text;
 	}
 
-	//Devuelve la CLAVE, no el texto: quien la pinta la envuelve en translatable, asi el modo tambien
-	//se traduce en el cliente en vez de venir ya resuelto.
+	//Returns the KEY, not the text: whoever renders it wraps it in translatable, so the mode also gets
+	//translated on the client instead of arriving already resolved.
 	private static String modeKey(SpellRegistry.Spell spell) {
 		if (spell.isSummon()) return "mode_summon";
 		if (spell.isZone()) return "mode_zone";
@@ -196,9 +200,9 @@ public class CompendiumQuery {
 		return text;
 	}
 
-	//Un rasgo no tiene texto de descripcion en el registro (ver TraitRegistry.Trait): lo que hace es lo
-	//que declara en dados por nivel, asi que la ficha ES esa tabla. Sin dados declarados queda solo el
-	//nombre, que sigue siendo mas de lo que se veia antes.
+	//A trait has no description text in the registry (see TraitRegistry.Trait): what it does is whatever
+	//dice-per-level it declares, so the detail sheet IS that table. With no dice declared, only the name
+	//is left, which is still more than was visible before.
 	private static MutableComponent describeTrait(String id) {
 		TraitRegistry.Trait trait = TraitRegistry.get(id);
 		if (trait == null) return null;
@@ -213,7 +217,7 @@ public class CompendiumQuery {
 		return text;
 	}
 
-	/** Ids de rasgos de la hoja de quien mira, para marcar en la lista cuales lleva puestos. */
+	/** Trait ids from the viewer's sheet, to mark in the list which ones they already have. */
 	private static java.util.Set<String> grantedTraitIds(ServerPlayer viewer) {
 		com.google.gson.JsonObject sheet = SheetLoader.getServerSheet(viewer.getStringUUID());
 		if (sheet == null || !sheet.has("traits")) return java.util.Set.of();

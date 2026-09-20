@@ -6,15 +6,15 @@ import net.minecraftforge.fml.common.Mod;
 import java.util.List;
 
 /**
- * <p>Punto de entrada del addon de especies. No necesita canal de red propio ni registro de contenido
- * vía JSON para los rasgos raciales: son descriptivos (sin mecánica automatizada, mismo criterio que
- * {@link TraitRegistry} documenta para los rasgos de clase — "un campo más aquí, no un motor genérico"),
- * así que se registran directo en código, una vez, al construir el mod.</p>
+ * <p>Entry point of the species addon. It needs neither its own network channel nor JSON-based content
+ * registration for racial traits: they're descriptive (no automated mechanic, same criterion that
+ * {@link TraitRegistry} documents for class traits — "one more field here, not a generic engine"),
+ * so they're registered directly in code, once, when the mod is built.</p>
  *
- * <p>{@code /dndspecies sync} (ver {@code command.RaceCommand}) reusa {@code SheetLoader}/{@code
- * DndsheetsMod.sendSheetFieldUpdate} del core (dependencia dura) en vez de inventar su propio camino de
- * escritura a la ficha — invariante 4 de PROJECT_CONTEXT.md: toda mutación de hoja persiste por el mismo
- * camino que ya existe.</p>
+ * <p>{@code /dndspecies sync} (see {@code command.RaceCommand}) reuses the core's {@code SheetLoader}/
+ * {@code DndsheetsMod.sendSheetFieldUpdate} (hard dependency) instead of inventing its own sheet-write
+ * path — invariant 4 of PROJECT_CONTEXT.md: every sheet mutation persists through the same existing
+ * path.</p>
  */
 @Mod("dndsheets_species")
 public class DndsheetsSpeciesMod {
@@ -30,34 +30,34 @@ public class DndsheetsSpeciesMod {
 	}
 
 	private static void registerRaceTraits() {
-		trait("fey_ancestry", "Ascendencia Feérica");
+		trait("fey_ancestry", "Fey Ancestry");
 		trait("trance", "Trance");
-		trait("dwarven_resilience", "Resiliencia Enana");
-		trait("stonecunning", "Conocimiento Pétreo");
-		trait("lucky", "Suerte");
-		trait("brave", "Coraje");
-		trait("draconic_ancestry", "Ascendencia Dracónica");
-		trait("gnome_cunning", "Astucia Gnoma");
-		trait("skill_versatility", "Versatilidad de Habilidad");
-		trait("relentless_endurance", "Resistencia Implacable");
-		trait("savage_attacks", "Ataques Salvajes");
-		trait("hellish_resistance", "Resistencia Infernal");
-		trait("infernal_legacy", "Legado Infernal");
+		trait("dwarven_resilience", "Dwarven Resilience");
+		trait("stonecunning", "Stonecunning");
+		trait("lucky", "Lucky");
+		trait("brave", "Brave");
+		trait("draconic_ancestry", "Draconic Ancestry");
+		trait("gnome_cunning", "Gnome Cunning");
+		trait("skill_versatility", "Skill Versatility");
+		trait("relentless_endurance", "Relentless Endurance");
+		trait("savage_attacks", "Savage Attacks");
+		trait("hellish_resistance", "Hellish Resistance");
+		trait("infernal_legacy", "Infernal Legacy");
 	}
 
 	private static void registerBackgroundTraits() {
-		trait("shelter_of_the_faithful", "Refugio del Fiel");
-		trait("false_identity", "Identidad Falsa");
-		trait("criminal_contact", "Contacto Criminal");
-		trait("by_popular_demand", "Por Petición Popular");
-		trait("rustic_hospitality", "Hospitalidad Rústica");
-		trait("guild_membership", "Membresía del Gremio");
-		trait("discovery", "Descubrimiento");
-		trait("position_of_privilege", "Posición Privilegiada");
-		trait("wanderer", "Vagabundo");
-		trait("researcher", "Investigador");
-		trait("ships_passage", "Pasaje de Barco");
-		trait("military_rank", "Rango Militar");
-		trait("city_secrets", "Contactos en la Ciudad");
+		trait("shelter_of_the_faithful", "Shelter of the Faithful");
+		trait("false_identity", "False Identity");
+		trait("criminal_contact", "Criminal Contact");
+		trait("by_popular_demand", "By Popular Demand");
+		trait("rustic_hospitality", "Rustic Hospitality");
+		trait("guild_membership", "Guild Membership");
+		trait("discovery", "Discovery");
+		trait("position_of_privilege", "Position of Privilege");
+		trait("wanderer", "Wanderer");
+		trait("researcher", "Researcher");
+		trait("ships_passage", "Ship's Passage");
+		trait("military_rank", "Military Rank");
+		trait("city_secrets", "City Secrets");
 	}
 }

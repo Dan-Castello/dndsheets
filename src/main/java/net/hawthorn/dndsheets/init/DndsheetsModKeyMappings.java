@@ -34,12 +34,12 @@ public class DndsheetsModKeyMappings {
 		}
 	};
 
-	//La tecla abre el panel siempre: el cliente no tiene forma barata de saber si el modo solo
-	//(Config.soloMode()) está encendido —a diferencia del nivel de permiso, que sí le sincroniza el
-	//servidor—, así que ya no filtramos acá quién puede verlo. El gate real vive del lado servidor, en
-	//cada mensaje que el panel manda (DndsheetsMod.canActAsDm / NetworkUtil.handleOnServerAsDm) — un
-	//jugador sin permiso y sin modo solo puede abrir el panel, pero cada acción que intente se rechaza
-	//igual que antes.
+	//The key always opens the panel: the client has no cheap way to know whether Solo mode
+	//(Config.soloMode()) is on — unlike permission level, which the server does sync to it — so who's
+	//allowed to see it is no longer filtered here. The real gate lives server-side, on every message the
+	//panel sends (DndsheetsMod.canActAsDm / NetworkUtil.handleOnServerAsDm) — a player without permission
+	//and without solo mode can open the panel, but every action they attempt is still rejected just like
+	//before.
 	public static final KeyMapping DM_PANEL = new KeyMapping("key.dndsheets.dmpanel", GLFW.GLFW_KEY_P, "key.categories.dndsheets") {
 		private boolean isDownOld = false;
 
@@ -53,8 +53,9 @@ public class DndsheetsModKeyMappings {
 		}
 	};
 
-	//Directo al Grimorio, sin pasar por la ficha (H) primero: no depende de nada que solo viva ahí (ver
-	//GrimoireScreen), así que abrirlo suelto es tan válido como abrirlo desde el botón "Grimorio".
+	//Straight to the Spellbook, without going through the sheet (H) first: it doesn't depend on anything
+	//that only lives there (see GrimoireScreen), so opening it standalone is just as valid as opening it
+	//from the "Spellbook" button.
 	public static final KeyMapping GRIMOIRE = new KeyMapping("key.dndsheets.grimoire", GLFW.GLFW_KEY_G, "key.categories.dndsheets") {
 		private boolean isDownOld = false;
 
@@ -68,10 +69,10 @@ public class DndsheetsModKeyMappings {
 		}
 	};
 
-	//Lanzado rápido: repite lo último lanzado desde el Grimorio sin abrirlo. No es una barra de favoritos
-	//—eso sería una lista propia en la hoja, con su red y su pantalla— sino la comodidad que de verdad se
-	//pide en combate: el mismo truco, otra vez, sin menú. Para atar un hechizo CONCRETO a algo permanente
-	//ya está el báculo reconfigurable (ver GrimoireScreen "Vincular al báculo").
+	//Quick cast: repeats the last thing cast from the Spellbook without opening it. Not a favorites bar —
+	//that would be its own list on the sheet, with its own networking and its own screen — but the
+	//convenience actually asked for in combat: the same cantrip, again, no menu. To bind a SPECIFIC spell
+	//to something permanent there's already the reconfigurable staff (see GrimoireScreen "Bind to staff").
 	public static final KeyMapping QUICK_CAST = new KeyMapping("key.dndsheets.quickcast", GLFW.GLFW_KEY_R, "key.categories.dndsheets") {
 		private boolean isDownOld = false;
 

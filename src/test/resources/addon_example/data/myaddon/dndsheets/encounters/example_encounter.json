@@ -1,0 +1,5 @@
+{
+  "id": "myaddon:example_encounter",
+  "name": "Example Encounter",
+  "monsters": ["myaddon:example_sentinel x2"]
+}

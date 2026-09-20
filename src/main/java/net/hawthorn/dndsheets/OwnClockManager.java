@@ -22,36 +22,36 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * <p>Jefes que <b>no hacen cola</b>. Una criatura con {@code "ownClock": true} en su bloque sale del orden
- * de iniciativa pero no del combate: recibe daño con todas las reglas de 5e, cuenta para que el encuentro
- * termine, y una condición que incapacita la para en seco igual que a cualquiera. Lo único que ignora es
- * esperar su turno.</p>
+ * <p>Bosses that <b>don't queue up</b>. A creature with {@code "ownClock": true} in its stat block leaves
+ * the initiative order but not combat: it takes damage under all the normal 5e rules, counts toward
+ * ending the encounter, and a condition that incapacitates it stops it cold just like anyone else. The
+ * only thing it ignores is waiting for its turn.</p>
  *
- * <p><b>El guardarraíl que lo hace justo</b> es {@link #CYCLE_TICKS}: actúa una vez cada seis segundos,
- * que es exactamente lo que dura un asalto de 5e. No tiene más acciones que nadie — las tiene
- * <em>desincronizadas</em>. Quitar ese tope convierte un jefe en un bug.</p>
+ * <p><b>The guardrail that keeps it fair</b> is {@link #CYCLE_TICKS}: it acts once every six seconds,
+ * which is exactly the length of a 5e round. It doesn't get more actions than anyone else — its actions
+ * are <em>desynchronized</em>. Removing that cap turns a boss into a bug.</p>
  *
- * <p><b>Por qué también se le fija el objetivo.</b> Un jefe que huye o pierde el aggro rompe la escena
- * mucho más que uno que espera turno: los jugadores lo ven irse y la sensación es de fallo, no de diseño.
- * Así que al entrar en combate se le quitan las metas de vanilla que lo harían escapar
- * ({@code PanicGoal}, {@code AvoidEntityGoal} — un ravager en llamas huye, y con eso el encuentro se
- * acabó) y en cada ciclo se le vuelve a poner objetivo si lo ha perdido. No hace falta ningún mixin: las
- * metas de un {@code Mob} se pueden quitar por su nombre de clase.</p>
+ * <p><b>Why its target also gets locked in.</b> A boss that flees or loses aggro breaks the scene far
+ * worse than one that waits its turn: players watch it leave and read that as a failure, not a design
+ * choice. So on entering combat it has its vanilla flee goals removed
+ * ({@code PanicGoal}, {@code AvoidEntityGoal} — a ravager on fire flees, and that's the end of the
+ * encounter) and every cycle it gets re-targeted if it lost its target. No mixin needed: a {@code Mob}'s
+ * goals can be removed by their class name.</p>
  */
 public final class OwnClockManager {
 
-	//Seis segundos: el asalto de 5e. Es el número que impide que esto sea "el jefe hace lo que quiere".
+	//Six seconds: the 5e round. This is the number that keeps this from being "the boss does whatever it wants".
 	private static final int CYCLE_TICKS = 120;
-	//A cuánto busca objetivo si lo perdió. El mismo alcance con el que autoAct elige a quién pegar.
+	//How far it looks for a target if it lost one. Same range autoAct uses to pick who to hit.
 	private static final double AGGRO_RANGE = 30.0;
 
 	private OwnClockManager() {
 	}
 
 	/**
-	 * <p>Arranca el reloj de esta criatura y anuncia a la mesa lo que está pasando. Idempotente por
-	 * definición del llamador: se invoca al montar la iniciativa y al sumar un monstruo tarde, y las dos
-	 * veces sobre criaturas distintas.</p>
+	 * <p>Starts this creature's clock and announces to the table what's happening. Idempotent by the
+	 * caller's own design: it gets invoked when building initiative and when adding a monster late, and
+	 * both times on different creatures.</p>
 	 */
 	public static void start(ServerLevel level, Entity boss) {
 		if (!MonsterRegistry.isOffClock(boss)) return;
@@ -62,27 +62,28 @@ public final class OwnClockManager {
 
 	private static void schedule(ServerLevel level, int entityId) {
 		DndsheetsMod.queueServerWork(CYCLE_TICKS, () -> {
-			//El combate manda: fuera de él no hay reloj que llevar, y el jefe vuelve a ser un mob normal
-			//con su IA. Sin esta salida el ciclo se rearmaría para siempre.
+			//Combat is what governs this: outside of it there's no clock to keep, and the boss goes back to
+			//being a normal mob with its own AI. Without this early return the cycle would keep rearming forever.
 			if (!TurnManager.isActive()) return;
 			Entity boss = level.getEntity(entityId);
 			if (boss == null || !boss.isAlive() || !MonsterRegistry.isOffClock(boss)) return;
 
 			keepAggro(level, boss);
-			//autoAct comprueba por su cuenta que la criatura pueda actuar (paralizada, aturdida...) sin
-			//pedir turno, porque el bloque lo marca. Ver MonsterActionManager.
+			//autoAct checks on its own whether the creature can act (paralyzed, stunned...) without
+			//requesting a turn, since the stat block flags it. See MonsterActionManager.
 			MonsterActionManager.autoAct(level, boss);
 			schedule(level, entityId);
 		});
 	}
 
 	/**
-	 * <p>Le quita las metas de vanilla que lo harían huir. Se recorre la lista de metas y se descartan por
-	 * tipo: es la única forma sin mixins, y funciona sobre la entidad base sea de quien sea.</p>
+	 * <p>Removes the vanilla goals that would make it flee. The goal list is walked and entries are
+	 * discarded by type: this is the only way to do it without mixins, and it works on the base entity
+	 * regardless of whose mod it belongs to.</p>
 	 */
 	private static void hardenAggro(Entity boss) {
 		if (!(boss instanceof Mob mob)) return;
-		//No se puede quitar mientras se itera: se juntan primero y se quitan después.
+		//Can't remove while iterating: goals are collected first and removed afterward.
 		List<net.minecraft.world.entity.ai.goal.Goal> fleeing = new ArrayList<>();
 		Set<WrappedGoal> goals = mob.goalSelector.getAvailableGoals();
 		for (WrappedGoal wrapped : goals) {
@@ -91,11 +92,11 @@ public final class OwnClockManager {
 			}
 		}
 		for (net.minecraft.world.entity.ai.goal.Goal goal : fleeing) mob.goalSelector.removeGoal(goal);
-		//Y que no se descargue por distancia a mitad de la pelea, que es la otra forma de "desaparecer".
+		//And to keep it from unloading due to distance mid-fight, which is the other way to "disappear".
 		mob.setPersistenceRequired();
 	}
 
-	/** Si perdió el objetivo (murió, se alejó, nunca lo tuvo), se le da el jugador vivo más cercano. */
+	/** If it lost its target (died, walked away, never had one), it's given the nearest living player. */
 	private static void keepAggro(ServerLevel level, Entity boss) {
 		if (!(boss instanceof Mob mob)) return;
 		LivingEntity target = mob.getTarget();
@@ -105,12 +106,13 @@ public final class OwnClockManager {
 	}
 
 	/**
-	 * <p>El aviso a la mesa, en pantalla y no en el chat. Es la mitad del diseño: sin él, un jugador que ve
-	 * al dragón moverse fuera de su turno concluye que el mod está roto. Con él, concluye que ese bicho es
-	 * otra cosa — que es exactamente lo que queríamos.</p>
+	 * <p>The heads-up to the table, on screen rather than in chat. This is half the design: without it, a
+	 * player who sees the dragon move outside its turn concludes the mod is broken. With it, they conclude
+	 * that creature is something else entirely — which is exactly what we wanted.</p>
 	 *
-	 * <p>El subtítulo cambia según el tipo de criatura, porque "no puede ser detenida por los turnos" dicho
-	 * de un dragón y dicho de un cieno son dos frases distintas, y la que no encaja se lee como plantilla.</p>
+	 * <p>The subtitle changes depending on creature type, because "cannot be stopped by turns" said of a
+	 * dragon and said of an ooze are two different statements, and the one that doesn't fit reads as a
+	 * template.</p>
 	 */
 	private static void announce(ServerLevel level, Entity boss) {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(boss);
@@ -120,16 +122,16 @@ public final class OwnClockManager {
 		Component subtitle = Component.translatable(subtitleKey(block.type())).withStyle(ChatFormatting.GRAY);
 
 		for (ServerPlayer player : level.players()) {
-			//Entrada lenta y salida lenta: un título que aparece de golpe se lee como un error del juego.
+			//Slow fade-in and fade-out: a title that pops up instantly reads as a game glitch.
 			player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 70, 20));
 			player.connection.send(new ClientboundSetSubtitleTextPacket(subtitle));
 			player.connection.send(new ClientboundSetTitleTextPacket(title));
-			//El sonido hace la mitad del trabajo: avisa incluso a quien está mirando su hoja.
+			//The sound does half the work: it alerts even someone who's looking at their sheet.
 			player.playNotifySound(SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 0.6f, 1.4f);
 		}
 	}
 
-	/** Una frase por tipo de criatura; el resto comparten la genérica. */
+	/** One phrase per creature type; the rest share the generic one. */
 	static String subtitleKey(CreatureType type) {
 		return switch (type) {
 			case DRAGON, GIANT, MONSTROSITY, ABERRATION, FIEND, CELESTIAL, UNDEAD, ELEMENTAL, CONSTRUCT ->

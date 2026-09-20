@@ -10,15 +10,15 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * <p>PG en el nombre flotante de cualquier combatiente del encuentro activo: "Goblin 4/7". El dato ya
- * viaja al cliente para el tablero del HUD (ver {@link TurnHudState}); esto solo lo repite donde el
- * jugador ya está mirando — encima del bicho al que apunta. Sin combate activo, o para una entidad
- * fuera del orden de turnos, el nombre queda exactamente como estaba (invariante 9).</p>
+ * <p>HP on the floating nametag of any combatant in the active encounter: "Goblin 4/7". The data already
+ * travels to the client for the HUD tracker (see {@link TurnHudState}); this just repeats it where the
+ * player is already looking — above the creature they're aiming at. With no active combat, or for an
+ * entity outside the turn order, the nametag stays exactly as it was (invariant 9).</p>
  *
- * <p>No dibuja nada propio: se cuelga del nombre que Minecraft ya renderiza (jugadores siempre;
- * criaturas con nombre, al apuntarlas), así que hereda gratis el billboard, la oclusión y el
- * "se ve solo cuando toca" de vanilla. Una barra flotante dibujada a mano fue descartada a propósito:
- * es render 3D nuevo para repetir un dato que ya está en el tablero del HUD.</p>
+ * <p>It draws nothing of its own: it hooks onto the nametag Minecraft already renders (always for
+ * players; for named creatures, when aimed at), so it gets vanilla's billboarding, occlusion, and
+ * "only visible when it should be" for free. A hand-drawn floating bar was deliberately ruled out: it
+ * would be new 3D rendering to repeat a value already on the HUD tracker.</p>
  */
 @Mod.EventBusSubscriber(modid = DndsheetsMod.MODID, value = Dist.CLIENT)
 public class NameTagHp {
@@ -29,10 +29,10 @@ public class NameTagHp {
 		TurnStateMessage.RosterRow row = TurnHudState.myRow(event.getEntity().getId());
 		if (row == null || row.maxHp() <= 0 || row.defeated()) return;
 
-		//ALLOW y no solo setContent: un mob sin nombre custom nunca enseña nametag por sí solo
-		//(shouldShowName es falso), así que sin forzarlo el PG solo aparecía sobre jugadores y NPC
-		//nombrados — y los que importan son justo los enemigos. Solo mientras hay combate y solo para
-		//quien está en el orden: fuera de eso el evento ni llega hasta aquí (invariante 9).
+		//ALLOW, not just setContent: a mob with no custom name never shows a nametag on its own
+		//(shouldShowName is false), so without forcing it the HP only appeared over players and named
+		//NPCs — and the ones that matter are exactly the enemies. Only while combat is active and only
+		//for whoever's in the turn order: outside that, the event never even reaches here (invariant 9).
 		event.setResult(net.minecraftforge.eventbus.api.Event.Result.ALLOW);
 		ChatFormatting color = row.currentHp() * 2 >= row.maxHp() ? ChatFormatting.GREEN
 			: row.currentHp() * 4 >= row.maxHp() ? ChatFormatting.YELLOW : ChatFormatting.RED;

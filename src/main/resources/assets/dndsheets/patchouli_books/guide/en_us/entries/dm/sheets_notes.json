@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.sheets_notes",
+  "category": "dndsheets:dm",
+  "icon": "minecraft:name_tag",
+  "sortnum": 6,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_sheet_admin"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_notes"
+    }
+  ]
+}

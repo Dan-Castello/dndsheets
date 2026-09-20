@@ -8,31 +8,32 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 /**
- * <p>Todo el ciclo de vida de la votación de descanso en una clase, con un enum en vez de cuatro
- * mensajes casi iguales (invariante 3) — el mismo patrón que ya usan {@code WildShapeMessage} y
+ * <p>The whole lifecycle of a rest vote in one class, with an enum instead of four nearly identical
+ * messages (invariant 3) — the same pattern already used by {@code WildShapeMessage} and
  * {@code BrowseActionMessage}.</p>
  *
  * <ul>
- *   <li>{@code PROPOSE} — cliente → servidor. Eligió corto o largo en {@code RestChoiceScreen} y
- *       arranca la votación.</li>
- *   <li>{@code VOTE_OPEN} — servidor → cliente (a cada uno). "Fulano propone un descanso largo, vota".
- *       El nombre y la etiqueta las resuelve el servidor: es quien tiene la propuesta pendiente.</li>
- *   <li>{@code VOTE_RESPONSE} — cliente → servidor. Aceptó o rechazó. El descanso solo se aplica si
- *       TODOS aceptan.</li>
- *   <li>{@code VOTE_CLOSE} — servidor → cliente. Cierra la ventana porque la votación ya se resolvió,
- *       expiró o se canceló por otra vía; sin esto, quien no había votado se quedaba con un
- *       "Aceptar/Rechazar" de una votación que ya no existía (ver {@code RestManager.clear()}).</li>
+ *   <li>{@code PROPOSE} — client → server. Chose short or long in {@code RestChoiceScreen} and
+ *       starts the vote.</li>
+ *   <li>{@code VOTE_OPEN} — server → client (to each one). "So-and-so proposes a long rest, vote".
+ *       The name and the label are resolved by the server: it's the one holding the pending proposal.</li>
+ *   <li>{@code VOTE_RESPONSE} — client → server. Accepted or rejected. The rest is only applied if
+ *       EVERYONE accepts.</li>
+ *   <li>{@code VOTE_CLOSE} — server → client. Closes the window because the vote was already resolved,
+ *       expired, or was canceled some other way; without this, whoever hadn't voted yet was left with an
+ *       "Accept/Reject" for a vote that no longer existed (see {@code RestManager.clear()}).</li>
  * </ul>
  */
 public class RestMessage {
 
-	//Al final, nunca en medio: writeEnum viaja por ordinal (ver la invariante 2 de PROJECT_CONTEXT.md).
+	//At the end, never in the middle: writeEnum travels by ordinal (see invariant 2 in PROJECT_CONTEXT.md).
 	public enum Kind { PROPOSE, VOTE_OPEN, VOTE_RESPONSE, VOTE_CLOSE }
 
 	final Kind kind;
-	//Cada campo solo lleva dato en su Kind; en los demás viaja vacío. Se mantienen con nombre propio en
-	//vez de un solo booleano compartido: "longRest" y "accept" son preguntas distintas, y un campo que
-	//significa una cosa u otra según el kind es justo lo que cuesta descifrar a las 3 de la mañana.
+	//Each field only carries data for its own Kind; for the rest it travels empty. Kept as separately
+	//named fields instead of a single shared boolean: "longRest" and "accept" are different questions, and
+	//a field that means one thing or another depending on the kind is exactly what's hard to decipher at
+	//3am.
 	final boolean longRest;    //PROPOSE
 	final boolean accept;      //VOTE_RESPONSE
 	final String proposerName; //VOTE_OPEN
@@ -82,8 +83,8 @@ public class RestMessage {
 		NetworkEvent.Context context = contextSupplier.get();
 
 		switch (message.kind) {
-			//No pasa por handleOnServerAsDm: proponer y votar un descanso es de cualquier jugador, no del
-			//DM. Quién puede aplicarlo lo decide RestManager, que exige unanimidad.
+			//Doesn't go through handleOnServerAsDm: proposing and voting on a rest is any player's action,
+			//not the DM's. Who can apply it is decided by RestManager, which requires unanimity.
 			case PROPOSE -> NetworkUtil.handleOnServer(context, () -> {
 				ServerPlayer proposer = context.getSender();
 				if (proposer != null) {

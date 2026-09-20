@@ -10,9 +10,9 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>Lista los ataques personalizados de UN monstruo ya invocado (ver
- * {@link net.hawthorn.dndsheets.MonsterRegistry#customAttacksOf}); pulsar uno lo quita al instante. Los
- * predefinidos del bloque de estadísticas de su especie no aparecen aquí — esos se editan por JSON.</p>
+ * <p>Lists the custom attacks of ONE already-summoned monster (see
+ * {@link net.hawthorn.dndsheets.MonsterRegistry#customAttacksOf}); clicking one removes it instantly.
+ * The predefined ones from its species' stat block don't appear here — those are edited via JSON.</p>
  */
 public class ManageCustomAttacksScreen extends ListPickerScreen {
 	private final int entityId;

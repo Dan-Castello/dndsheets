@@ -8,10 +8,10 @@ import net.minecraft.network.chat.Component;
 
 import java.util.List;
 
-//Lista de hechizos cargados, dos filas cada uno (equivalente en GUI a /dndspells learn y /dndspells
-//staff), para un jugador ya elegido — abierta vía BrowseActionMessage.GIVE_SPELLS/BrowseListMessage. Los
-//ids vienen resueltos del servidor y no del registro del cliente: el registro solo vive en el servidor, y
-//un DM que sea un proceso aparte (invitado por LAN) lo vería siempre vacío.
+//List of loaded spells, two rows each (GUI equivalent of /dndspells learn and /dndspells
+//staff), for an already-chosen player — opened via BrowseActionMessage.GIVE_SPELLS/BrowseListMessage. The
+//ids come resolved from the server, not from the client registry: the registry only lives on the server, and
+//a DM running as a separate process (invited over LAN) would always see it empty.
 public class SpellGiveListScreen extends ListPickerScreen {
 	private final String targetUuid;
 	private final List<String> ids;

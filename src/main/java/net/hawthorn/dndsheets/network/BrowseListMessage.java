@@ -15,16 +15,16 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * <p>Servidor → cliente: la respuesta a {@link BrowseActionMessage}, y la que abre la pantalla que toque.
- * Dos listas paralelas (id y etiqueta ya formateada) en vez de un objeto por fila: el cliente no hace
- * nada con los datos salvo pintarlos, así que formatear en el servidor evita mandar media hoja de
- * personaje por la red solo para componer un texto.</p>
+ * <p>Server → client: the response to {@link BrowseActionMessage}, and the one that opens whichever
+ * screen applies. Two parallel lists (id and already-formatted label) instead of one object per row: the
+ * client does nothing with the data except paint it, so formatting on the server avoids sending half a
+ * character sheet over the network just to compose a string.</p>
  */
 public class BrowseListMessage {
 
-	//Al final, igual que arriba: el ordinal viaja por la red. Desde GIVE_WEAPON hacia abajo son las
-	//antiguas parejas List/ListRequest (ocho clases casi idénticas por lado, ver invariante 3),
-	//fundidas aquí en la migración que borró ~16 clases de este paquete.
+	//At the end, same as above: the ordinal travels over the network. From GIVE_WEAPON downward are the
+	//old List/ListRequest pairs (eight nearly identical classes per side, see invariant 3), merged here in
+	//the migration that deleted ~16 classes from this package.
 	public enum Kind { MINE, PARTY, CONTENT, DETAIL, JOURNAL, SUBCLASS, FEAT,
 		GIVE_WEAPON, GIVE_SPELL, GRANT_TRAIT, PRESET, PRESET_MULTICLASS, SPAWN_MONSTER,
 		MANAGE_OPTIONS, CONTENT_ENTRY, CHARACTER_OPTION, ENCOUNTER, ENCOUNTER_DESIGN }
@@ -32,10 +32,10 @@ public class BrowseListMessage {
 	final Kind kind;
 	final List<String> ids;
 	final List<Component> labels;
-	//Lo que la pantalla de destino necesita además de la lista: el uuid del jugador objetivo
-	//(GIVE_*/GRANT_TRAIT/PRESET), la categoría (MANAGE_OPTIONS/CHARACTER_OPTION) o el nombre del
-	//ContentType (CONTENT_ENTRY). Los kinds anteriores a la migración lo mandan vacío. Va al FINAL del
-	//payload — invariante 2, los campos nuevos nunca se insertan en medio.
+	//What the destination screen needs besides the list: the target player's uuid
+	//(GIVE_*/GRANT_TRAIT/PRESET), the category (MANAGE_OPTIONS/CHARACTER_OPTION), or the ContentType's name
+	//(CONTENT_ENTRY). Kinds that predate the migration send it empty. Goes at the END of the payload —
+	//invariant 2, new fields are never inserted in the middle.
 	final String context;
 
 	public BrowseListMessage(Kind kind, List<String> ids, List<Component> labels) {
@@ -63,7 +63,7 @@ public class BrowseListMessage {
 		buffer.writeUtf(message.context);
 	}
 
-	/** El envío que repetían las ocho parejas: al jugador que pidió, con el contexto que su pantalla necesita. */
+	/** The send that the eight pairs used to repeat: to the requesting player, with the context their screen needs. */
 	public static void send(net.minecraft.server.level.ServerPlayer to, Kind kind, List<String> ids,
 							 List<Component> labels, String context) {
 		net.hawthorn.dndsheets.DndsheetsMod.PACKET_HANDLER.send(
@@ -81,34 +81,35 @@ public class BrowseListMessage {
 				case JOURNAL -> JournalScreen.open(message.ids, message.labels);
 				case SUBCLASS -> SubclassScreen.open(message.ids, message.labels);
 				case FEAT -> FeatScreen.open(message.ids, message.labels);
-				//Una ficha suelta viaja como una lista de un elemento: mismo mensaje, sin una clase nueva
-				//para transportar un texto largo.
+				//A lone entry travels as a one-element list: same message, no new class needed just to
+				//carry a long text.
 				case DETAIL -> CompendiumEntryScreen.open(
-					message.labels.isEmpty() ? "" : message.labels.get(0).getString());
+					message.labels.isEmpty() ? "" : message.labels.get(0).getString(),
+					message.ids.isEmpty() ? "" : message.ids.get(0));
 				case GIVE_WEAPON -> net.hawthorn.dndsheets.client.gui.WeaponGiveListScreen.open(message.context, message.ids);
 				case GIVE_SPELL -> net.hawthorn.dndsheets.client.gui.SpellGiveListScreen.open(message.context, message.ids);
 				case GRANT_TRAIT -> net.hawthorn.dndsheets.client.gui.TraitGrantScreen.open(message.context, message.ids, plainLabels(message.labels));
 				case PRESET -> net.hawthorn.dndsheets.client.gui.PresetScreen.open(message.context, false, message.ids, plainLabels(message.labels));
 				case PRESET_MULTICLASS -> net.hawthorn.dndsheets.client.gui.PresetScreen.open("", true, message.ids, plainLabels(message.labels));
 				case SPAWN_MONSTER -> net.hawthorn.dndsheets.client.gui.MonsterSpawnListScreen.open(message.ids);
-				//El array JSON crudo viaja como etiqueta única, mismo truco que DETAIL: el cliente solo lo
-				//reenvía a la pantalla, que ya sabía parsearlo.
+				//The raw JSON array travels as a single label, same trick as DETAIL: the client just
+				//forwards it to the screen, which already knew how to parse it.
 				case MANAGE_OPTIONS -> net.hawthorn.dndsheets.client.gui.OptionsManageScreen.open(message.context,
 					message.labels.isEmpty() ? "[]" : message.labels.get(0).getString());
 				case CONTENT_ENTRY -> openContentEntries(message);
-				//Se captura la pantalla activa para volver a ELLA al elegir o cancelar — la lista de pasos
-				//(CharacterSetupScreen) también pide opciones y no hay que echarla a media configuración.
+				//The active screen is captured so it can be returned to when choosing or canceling — the
+				//step list (CharacterSetupScreen) also requests options and shouldn't get kicked out mid-setup.
 				case CHARACTER_OPTION -> net.hawthorn.dndsheets.client.gui.CharacterOptionListScreen.open(
 					net.minecraft.client.Minecraft.getInstance().screen, message.context, message.ids);
 				case ENCOUNTER -> openEncounters(message);
-				//Bestiario + presupuesto del grupo: la pantalla se queda con la carga y recalcula sola.
+				//Bestiary + party budget: the screen keeps the payload and recalculates on its own.
 				case ENCOUNTER_DESIGN -> net.hawthorn.dndsheets.client.gui.EncounterDesignerScreen.open(
 					message.ids, message.labels, message.context);
 			}
 		});
 	}
 
-	//Cada fila dispara el /dndencounters spawn de siempre: el permiso y el efecto siguen en el comando.
+	//Each row fires the usual /dndencounters spawn: the permission and the effect still live in the command.
 	private static void openEncounters(BrowseListMessage message) {
 		List<net.hawthorn.dndsheets.client.gui.CommandListScreen.Row> rows = new java.util.ArrayList<>(message.ids.size());
 		for (int i = 0; i < message.ids.size(); i++) {
@@ -125,7 +126,7 @@ public class BrowseListMessage {
 		try {
 			type = net.hawthorn.dndsheets.ContentType.valueOf(message.context);
 		} catch (IllegalArgumentException e) {
-			return; //Un context que no es un ContentType: mensaje corrupto o versión cruzada, se descarta.
+			return; //A context that isn't a ContentType: corrupt message or version mismatch, discarded.
 		}
 		net.hawthorn.dndsheets.client.gui.ContentEntryListScreen.open(type,
 			message.labels.isEmpty() ? "[]" : message.labels.get(0).getString(),

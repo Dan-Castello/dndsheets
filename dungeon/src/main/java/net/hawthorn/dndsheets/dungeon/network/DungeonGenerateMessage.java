@@ -10,8 +10,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: publica los pools y genera la mazmorra en la posición pedida, desde
-//DungeonGenerateScreen (equivalente en GUI a /dnddungeon generate).
+//Client (the DM) -> server: publishes the pools and generates the dungeon at the requested position,
+//from DungeonGenerateScreen (the GUI equivalent of /dnddungeon generate).
 public class DungeonGenerateMessage {
 	String pool;
 	int maxDepth;
@@ -45,7 +45,7 @@ public class DungeonGenerateMessage {
 
 			int maxDepth = Math.max(1, Math.min(7, message.maxDepth));
 			boolean success = DungeonManager.generate(dm, message.pool, maxDepth, message.pos);
-			//DungeonManager.generate ya le manda al DM el motivo del fallo — aquí solo falta confirmar el éxito.
+			//DungeonManager.generate already sends the DM the failure reason — only success needs confirming here.
 			if (success) dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.generated", message.pos.toShortString()));
 		});
 	}

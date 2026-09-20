@@ -25,11 +25,11 @@ import java.nio.file.Path;
 import java.util.Collection;
 
 /**
- * <p>Permite cargar en caliente packs de armas (p.ej. 50 armas de D&amp;D de golpe) desde un JSON en
- * {@code &lt;carpeta del mundo&gt;/dndsheets/weapons/&lt;archivo&gt;.json}, sin tocar dndsheets-common.toml ni
- * reiniciar el servidor, y entregarlas a jugadores como loot.</p>
+ * <p>Lets you hot-load weapon packs (e.g. 50 D&amp;D weapons at once) from a JSON in
+ * {@code &lt;world folder&gt;/dndsheets/weapons/&lt;file&gt;.json}, without touching dndsheets-common.toml or
+ * restarting the server, and hand them to players as loot.</p>
  *
- * <p>Formato del JSON, un array de objetos:</p>
+ * <p>JSON format, an array of objects:</p>
  * <pre>
  * [
  *   { "id": "dndsheets:dagger", "dice": "1d4", "ability": "dex", "name": "Daga", "item": "minecraft:iron_sword" }
@@ -45,58 +45,58 @@ public class WeaponCommand {
 		event.getDispatcher().register(Commands.literal("dndweapons")
 			.requires(source -> DndsheetsMod.canActAsDm(source))
 			.then(Commands.literal("load")
-				.then(Commands.argument("archivo", StringArgumentType.word())
+				.then(Commands.argument("file", StringArgumentType.word())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(DndPaths.jsonFileNames(WEAPONS_DIR), builder))
 					.executes(WeaponCommand::load)))
 			.then(Commands.literal("list").executes(WeaponCommand::list))
 			.then(Commands.literal("give")
-				.then(Commands.argument("jugadores", EntityArgument.players())
-					.then(Commands.argument("armaId", ResourceLocationArgument.id())
+				.then(Commands.argument("players", EntityArgument.players())
+					.then(Commands.argument("weaponId", ResourceLocationArgument.id())
 						.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(Config.loadedWeaponIds(), builder))
 						.executes(ctx -> give(ctx, 1))
-						.then(Commands.argument("cantidad", IntegerArgumentType.integer(1, 64))
-							.executes(ctx -> give(ctx, IntegerArgumentType.getInteger(ctx, "cantidad"))))))));
+						.then(Commands.argument("amount", IntegerArgumentType.integer(1, 64))
+							.executes(ctx -> give(ctx, IntegerArgumentType.getInteger(ctx, "amount"))))))));
 	}
 
 	private static int load(CommandContext<CommandSourceStack> ctx) {
-		String fileName = StringArgumentType.getString(ctx, "archivo");
+		String fileName = StringArgumentType.getString(ctx, "file");
 		Path file = WEAPONS_DIR.resolve(fileName + ".json");
 
 		if (!Files.exists(file)) {
-			ctx.getSource().sendFailure(Component.literal("No encontré " + file.toAbsolutePath()));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.content.file_not_found", file.toAbsolutePath().toString()));
 			return 0;
 		}
 
 		try {
 			int count = Config.loadFile(file);
-			ctx.getSource().sendSuccess(() -> Component.literal("Cargadas " + count + " armas desde " + fileName + ".json"), true);
+			ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.weapon.loaded", count, fileName), true);
 			return count;
 		} catch (IOException | RuntimeException e) {
-			ctx.getSource().sendFailure(Component.literal("No pude leer " + fileName + ".json: " + e.getMessage()));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.content.read_failed", fileName, e.getMessage()));
 			return 0;
 		}
 	}
 
 	private static int list(CommandContext<CommandSourceStack> ctx) {
 		java.util.Set<String> ids = Config.loadedWeaponIds();
-		ctx.getSource().sendSuccess(() -> Component.literal("Armas configuradas (" + ids.size() + "): " + String.join(", ", ids)), false);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.weapon.configured_list", ids.size(), String.join(", ", ids)), false);
 		return ids.size();
 	}
 
 	private static int give(CommandContext<CommandSourceStack> ctx, int count) throws CommandSyntaxException {
-		String weaponId = ResourceLocationArgument.getId(ctx, "armaId").toString();
+		String weaponId = ResourceLocationArgument.getId(ctx, "weaponId").toString();
 		if (Config.weaponDefaultFor(weaponId) == null) {
-			ctx.getSource().sendFailure(Component.literal("No conozco el arma \"" + weaponId + "\". Cárgala con /dndweapons load o usa un id de ítem/arma ya configurado."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.weapon.no_such_load_hint", weaponId));
 			return 0;
 		}
 
 		ItemStack stack = Config.buildWeaponStack(weaponId, count);
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) {
 			target.getInventory().add(stack.copy());
 		}
 
-		ctx.getSource().sendSuccess(() -> Component.literal("Entregado " + stack.getHoverName().getString() + " a " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.weapon.given", stack.getHoverName().getString(), targets.size()), true);
 		return targets.size();
 	}
 }

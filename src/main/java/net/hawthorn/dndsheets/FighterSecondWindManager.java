@@ -13,15 +13,15 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * <p>Segundo Aliento del guerrero: cura {@code 1d10 + nivel} una vez por descanso (corto o largo — ver
- * {@link RestManager#applyRest}, que llama a {@link #resetOnRest} en los dos casos, igual que en 5e de
- * verdad). Sin duración que contar en asaltos ni en ticks — a diferencia de la Furia, esto es un simple
- * "usado/no usado" que un descanso resetea, así que no necesita nada de {@link TurnManager}.</p>
+ * <p>Fighter's Second Wind: heals {@code 1d10 + level} once per rest (short or long — see
+ * {@link RestManager#applyRest}, which calls {@link #resetOnRest} in both cases, exactly like real 5e).
+ * No duration to track in rounds or ticks — unlike Rage, this is a simple "used/not used" flag a rest
+ * resets, so it needs nothing from {@link TurnManager}.</p>
  */
 public class FighterSecondWindManager {
-	//El "ya usado" vive en la HOJA, no en un conjunto por jugador: es del personaje (con dos personajes,
-	//gastarlo con uno se lo gastaba al otro) y sobrevive a un reinicio del servidor, que antes se lo
-	//devolvía a todo el mundo sin haber descansado. Ver RestResource.
+	//The "already used" flag lives on the SHEET, not in a per-player set: it belongs to the character
+	//(with two characters, spending it on one used to spend it on the other too) and it survives a
+	//server restart, which used to give it back to everyone without them having rested. See RestResource.
 
 	public static void use(ServerPlayer player) {
 		if (!RestResource.spend(player, RestResource.SECOND_WIND)) {
@@ -39,15 +39,15 @@ public class FighterSecondWindManager {
 		player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.second_wind", amount).withStyle(ChatFeedback.RESOURCE));
 	}
 
-	//Público: RestManager lo llama para los dos tipos de descanso, corto y largo — 5e recupera este
-	//recurso con cualquiera de los dos, a diferencia de los espacios de conjuro (solo descanso largo).
+	//Public: RestManager calls it for both rest types, short and long — 5e recovers this resource with
+	//either one, unlike spell slots (long rest only).
 	public static void resetOnRest(ServerPlayer player) {
 		RestResource.restore(player, RestResource.SECOND_WIND);
 	}
 
-	//--- Ítem de Segundo Aliento: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3
-	//eventos de interacción por separado. Mismo patrón que el Tótem de
-	//Furia (BarbarianRageManager). ---
+	//--- Second Wind item: activated from AbilityItemDispatcher instead of subscribing to the 3
+	//interaction events separately. Same pattern as the Rage Totem
+	//(BarbarianRageManager). ---
 
 	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);

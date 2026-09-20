@@ -13,14 +13,14 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 /**
- * <p>Cliente -&gt; servidor: el jugador eligió, desde el botón "Vincular al báculo" del Grimorio, qué
- * hechizo asignarle al báculo que lleva en la mano principal. Reescribe el {@code quickSpell} de ESE
- * ítem en vez de crear uno nuevo (ver {@code SpellCommand.buildStaffStack}), así que el mismo báculo se
- * puede reasignar tantas veces como haga falta — con cientos de hechizos no es viable uno distinto por
- * cada uno.</p>
+ * <p>Client -&gt; server: the player chose, from the "Bind to staff" button in the Spellbook, which
+ * spell to assign to the staff held in their main hand. Rewrites the {@code quickSpell} of THAT
+ * item instead of creating a new one (see {@code SpellCommand.buildStaffStack}), so the same staff
+ * can be reassigned as many times as needed — with hundreds of spells, a distinct staff item per
+ * spell isn't viable.</p>
  *
- * <p>Solo actúa si el ítem en mano ya trae {@code staffConfigurable:true}: un jugador con un cliente
- * modificado no puede convertir un ítem cualquiera en báculo mandando este mensaje a mano.</p>
+ * <p>Only acts if the item in hand already has {@code staffConfigurable:true}: a player with a
+ * modified client can't turn an arbitrary item into a staff by hand-crafting this message.</p>
  */
 public class StaffBindMessage {
 	String spellId;

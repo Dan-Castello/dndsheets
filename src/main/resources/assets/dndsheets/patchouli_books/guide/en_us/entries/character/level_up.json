@@ -1,0 +1,24 @@
+{
+  "name": "gui.dndsheets.guide.entry.level_up",
+  "category": "dndsheets:character",
+  "icon": "minecraft:experience_bottle",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.level_up"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.level_up_2"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.level_up_3"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.subclass"
+    }
+  ]
+}

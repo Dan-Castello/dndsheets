@@ -4,9 +4,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 /**
- * <p>Puntuación pasiva = la misma fórmula que ya tiene el jugador para esa habilidad en la columna
- * "skills" de su hoja, sustituyendo el d20 por un 10 fijo (regla de 5e), en vez de duplicar esa
- * fórmula a mano. El índice 12 (Percepción) es el mismo orden fijo que ya usa {@link RollIndex}.</p>
+ * <p>Passive score = the same formula the player already has for that skill in the "skills" column of
+ * their sheet, substituting a fixed 10 for the d20 (5e rule), instead of duplicating that formula by
+ * hand. Index 12 (Perception) is the same fixed order already used by {@link RollIndex}.</p>
  */
 public class PassiveScores {
 	private static final int PERCEPTION_SKILL_INDEX = 12;

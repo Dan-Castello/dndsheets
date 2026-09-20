@@ -4,8 +4,11 @@ license="MIT License"
 
 [[mods]]
 modId="dndsheets"
-version="1.0.2"
-displayName="D&D Sheets"
+# ${file.jarVersion} is replaced by Forge at startup with the jar's version, which comes from build.gradle.
+# It used to be a hand-typed number, and that is exactly why the repo said 1.0.2 while CurseForge
+# had a published 1.0.3: two places you have to remember to touch at the same time.
+version="${file.jarVersion}"
+displayName="VTT MineRPG"
 authors="Hawthorn, Cosmic"
 logoFile="logo.png"
 description="A mod to let you play D&D 5e in Minecraft."
@@ -21,9 +24,9 @@ description="A mod to let you play D&D 5e in Minecraft."
 
 
 
-# Dependencia BLANDA: si Curios esta presente, los objetos magicos usan sus ranuras reales (anillo,
-# collar, capa, cinturon) en vez de depender solo de la sintonizacion; si no lo esta, el mod funciona
-# exactamente igual que antes. mandatory=false es lo que hace que Forge no lo exija para arrancar.
+# SOFT dependency: if Curios is present, magic items use its real slots (ring,
+# necklace, cape, belt) instead of relying on attunement alone; if it isn't, the mod works
+# exactly as before. mandatory=false is what makes Forge not require it to start.
 [[dependencies.dndsheets]]
     modId="curios"
     mandatory=false
@@ -31,12 +34,32 @@ description="A mod to let you play D&D 5e in Minecraft."
     ordering="AFTER"
     side="BOTH"
 
-# Dependencia BLANDA: con Patchouli instalado, la Guia se abre como manual con indice, busqueda y
-# marcapaginas, y ademas queda como un item que el jugador puede guardar. Sin el, se abre el libro
-# escrito de siempre con las mismas paginas. Ver PatchouliCompat.
+# SOFT dependency: with Patchouli installed, the Guide opens as a manual with an index, search and
+# bookmarks, and it also becomes an item the player can keep. Without it, the usual written book
+# opens with the same pages. See PatchouliCompat.
 [[dependencies.dndsheets]]
     modId="patchouli"
     mandatory=false
     versionRange="[1.20.1-84,)"
+    ordering="AFTER"
+    side="BOTH"
+
+# SOFT dependency: with Jade installed, pointing at a creature shows its AC, HP and conditions
+# on the HUD, without opening anything. Without it, nothing extra appears and everything else works the same. See JadePlugin,
+# which is the only class in the mod that names Jade types and the only one loaded by Jade itself.
+[[dependencies.dndsheets]]
+    modId="jade"
+    mandatory=false
+    versionRange="[11,)"
+    ordering="AFTER"
+    side="BOTH"
+
+# SOFT dependency: with Pehkui installed, each creature is drawn at the size its block declares
+# (Tiny to Gargantuan) — 149 of the bestiary's 330 are larger than Medium. Without it, all of them look
+# the way they always have. See PehkuiCompat.
+[[dependencies.dndsheets]]
+    modId="pehkui"
+    mandatory=false
+    versionRange="[3,)"
     ordering="AFTER"
     side="BOTH"

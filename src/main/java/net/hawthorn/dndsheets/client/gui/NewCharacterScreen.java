@@ -8,13 +8,13 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Crear un personaje escribiéndole el nombre. Era la última pieza de la gestión de personajes que
- * todavía exigía un comando: se podía cambiar, borrar y subir de nivel desde la pantalla, pero para tener
- * uno nuevo había que saberse {@code /dndchar new}.</p>
+ * <p>Create a character by typing its name. This was the last piece of character management that still
+ * required a command: you could switch, delete, and level up from the screen, but to get a new one you
+ * had to know {@code /dndchar new}.</p>
  *
- * <p>Solo pide el nombre. Clase, características y todo lo demás salen del preset que se elija después
- * desde la hoja, así que preguntarlo aquí sería preguntar dos veces por lo mismo — y con peor información,
- * porque la pantalla de presets enseña lo que concede cada uno.</p>
+ * <p>Only asks for the name. Class, abilities, and everything else come from the preset chosen
+ * afterward from the sheet, so asking for it here would be asking for the same thing twice — with worse
+ * information, since the presets screen shows what each one grants.</p>
  */
 public class NewCharacterScreen extends SmallFormScreen {
 
@@ -30,16 +30,16 @@ public class NewCharacterScreen extends SmallFormScreen {
 
 	@Override
 	protected void buildForm() {
-		//Sin valor por defecto: un "Personaje" ya escrito se queda tal cual en cuanto alguien pulse
-		//Confirmar sin mirar, y dos personajes con el mismo nombre son justo lo que cuesta distinguir.
+		//No default value: a pre-filled "Character" would stick as-is the moment someone hits
+		//Confirm without looking, and two characters with the same name are exactly what's hard to tell apart.
 		nameBox = addField(Component.translatable("gui.dndsheets.new_character.name").getString(), "", 40);
 	}
 
 	@Override
 	protected void onConfirm() {
 		String name = nameBox.getValue().trim();
-		//Un nombre vacío no se manda: el servidor lo rechazaría igual, y un viaje de ida y vuelta para que
-		//no pase nada se lee como que el botón está roto.
+		//An empty name isn't sent: the server would reject it anyway, and a round trip that does
+		//nothing reads as if the button is broken.
 		if (name.isEmpty()) return;
 		DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.CREATE, name));
 	}

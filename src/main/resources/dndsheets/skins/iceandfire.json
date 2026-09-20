@@ -2,7 +2,7 @@
   "mod": "iceandfire",
   "name": "Ice and Fire: Dragons",
   "url": "https://www.curseforge.com/minecraft/mc-mods/ice-and-fire-dragons",
-  "_nota": "Los 40 dragones por aliento: fuego (rojo/oro/laton/verde/negro/cobre), hielo (blanco/plata) y rayo (azul/bronce). Ice and Fire no trae un modelo por color, asi que se elige el mas cercano.",
+  "_note": "The 40 dragons by breath: fire (red/gold/brass/green/black/copper), ice (white/silver) and lightning (blue/bronze). Ice and Fire has no model per color, so the closest one is chosen.",
   "skins": {
     "dndsheets:red_dragon_wyrmling": "iceandfire:fire_dragon",
     "dndsheets:gold_dragon_wyrmling": "iceandfire:fire_dragon",

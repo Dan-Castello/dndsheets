@@ -9,11 +9,11 @@ import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Cabecera de sección dentro de una lista: el rótulo en latón entre dos filetes, sin fondo de fila.
- * Divide un menú largo (el Panel de DM llegó a 17 filas planas indistinguibles) en bloques con nombre,
- * sin inventar un segundo contenedor: {@code ButtonListWidget} solo sabe de {@code Button}, así que la
- * cabecera ES un botón — uno que no responde al clic ni al teclado y se pinta como rótulo. Ver
- * {@code ListPickerScreen.addHeader}, que además la excluye del buscador.</p>
+ * <p>Section header within a list: the brass-colored label between two rules, with no row background.
+ * Splits a long menu (the DM Panel reached 17 indistinguishable flat rows) into named blocks,
+ * without inventing a second container: {@code ButtonListWidget} only knows about {@code Button}, so the
+ * header IS a button — one that doesn't respond to clicks or keyboard and paints itself as a label. See
+ * {@code ListPickerScreen.addHeader}, which also excludes it from the search.</p>
  */
 public class SectionHeader extends Button {
 
@@ -33,9 +33,9 @@ public class SectionHeader extends Button {
 		guiGraphics.drawCenteredString(font, this.getMessage(), centerX, this.getY() + (this.height - 8) / 2, GuiStyle.ACCENT_COLOR);
 	}
 
-	//Un rótulo, no un control: nada de clic, sonido ni foco de teclado (ButtonListWidget reactiva
-	//"active" cada frame para las filas visibles, así que el bloqueo tiene que ser por estos métodos y
-	//no por active=false).
+	//A label, not a control: no clicking, sound, or keyboard focus (ButtonListWidget re-enables
+	//"active" every frame for visible rows, so the block has to happen through these methods and
+	//not through active=false).
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		return false;

@@ -2,7 +2,7 @@
   "mod": "alexsmobs",
   "name": "Alex's Mobs",
   "url": "https://www.curseforge.com/minecraft/mc-mods/alexs-mobs",
-  "_nota": "El SRD trae 95 bestias y vanilla no tiene ni oso pardo, ni cocodrilo, ni elefante.",
+  "_note": "The SRD ships 95 beasts and vanilla has no grizzly bear, no crocodile, no elephant.",
   "skins": {
     "dndsheets:brown_bear": "alexsmobs:grizzly_bear",
     "dndsheets:black_bear": "alexsmobs:grizzly_bear",

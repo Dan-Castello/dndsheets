@@ -10,31 +10,31 @@ import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * <p>Castigo Divino: clic derecho marca un flag de un solo uso (mismo patrón que Hechizo Gemelo del
- * hechicero); el PRÓXIMO golpe de arma del paladín que conecte gasta un espacio de conjuro y suma daño
- * radiante — {@link CombatManager} lo tira aparte y suma el monto, igual que Ataque Furtivo/Marca del
- * Cazador, para no meter dos grupos de dados en la misma expresión.</p>
+ * <p>Divine Smite: right-click sets a one-use flag (same pattern as the sorcerer's Twinned Spell); the
+ * paladin's NEXT weapon hit that connects spends a spell slot and adds radiant damage — {@link
+ * CombatManager} rolls it separately and adds the amount, same as Sneak Attack/Hunter's Mark, so as not
+ * to mix two groups of dice into the same expression.</p>
  *
- * <p>El dado <b>escala con el espacio que se gasta de verdad</b>: 2d8 con uno de nivel 1 y +1d8 por cada
- * nivel por encima, con tope en 5d8. Era fijo en 2d8 porque los espacios eran un contador plano sin
- * niveles; desde que {@link SpellSlots#spend} dice con qué nivel salió, la regla se puede escribir tal
- * cual. No hay que elegir nivel: se sigue cogiendo el más bajo que quede, así que el castigo crece solo
- * cuando al paladín ya no le quedan espacios baratos — que es exactamente cuando en la mesa se gasta uno
- * caro.</p>
+ * <p>The die <b>scales with the slot actually spent</b>: 2d8 with a level-1 slot and +1d8 per level above
+ * that, capped at 5d8. It used to be fixed at 2d8 because slots were a flat counter with no levels; since
+ * {@link SpellSlots#spend} reports which level was actually spent, the rule can now be written as-is.
+ * There's no level to choose: it still takes the lowest one remaining, so the smite only grows once the
+ * paladin has no cheap slots left — which is exactly when spending an expensive one matters at the
+ * table.</p>
  *
- * <p>Y suma <b>otro d8 contra no-muertos e inmundos</b>, que es lo que hace del paladín un cazador de
- * muertos vivientes y no un guerrero con dados de más. Esta parte estuvo sin escribir mientras un monstruo
- * no tuvo tipo de criatura: no había nada que consultar, y deducirlo del nombre habría acertado con el
- * esqueleto y fallado con todo lo demás. Ver {@link CreatureType}.</p>
+ * <p>And it adds <b>another d8 against undead and fiends</b>, which is what makes the paladin a
+ * dead-hunter rather than a fighter with extra dice. This part stayed unwritten while a monster had no
+ * creature type: there was nothing to check against, and guessing from the name would have gotten the
+ * skeleton right and everything else wrong. See {@link CreatureType}.</p>
  */
 public class PaladinSmiteManager {
 	/**
-	 * <p>Dados del castigo: 2d8 de base, +1d8 por cada nivel de espacio por encima del 1º con tope en 5d8,
-	 * y +1d8 más si la víctima es no-muerta o inmunda.</p>
+	 * <p>Smite dice: 2d8 base, +1d8 per slot level above 1st capped at 5d8, plus +1d8 more if the target
+	 * is undead or a fiend.</p>
 	 *
-	 * <p>El extra se suma <b>después</b> del tope a propósito: en 5e el límite de 5d8 es el de la subida
-	 * por espacio, y el dado contra no-muertos va aparte — un castigo de 6d8 con un espacio de 4º sobre un
-	 * esqueleto es la cifra correcta, no un desbordamiento.</p>
+	 * <p>The extra die is added <b>after</b> the cap on purpose: in 5e the 5d8 limit applies to the
+	 * per-slot-level increase, and the die against undead is separate — a 6d8 smite with a 4th-level slot
+	 * on a skeleton is the correct number, not an overflow.</p>
 	 */
 	static String diceForSlot(int slotLevel, CreatureType targetType) {
 		int dice = Math.min(5, 1 + Math.max(1, slotLevel));
@@ -42,7 +42,7 @@ public class PaladinSmiteManager {
 		return dice + "d8";
 	}
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta.
+	//Triggered from AbilityItemDispatcher instead of subscribing to RightClickItem on its own.
 	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -51,8 +51,8 @@ public class PaladinSmiteManager {
 		if (sheet == null) return;
 		sheet.addProperty("smitePending", true);
 		SheetLoader.saveServer(sheet, player.getStringUUID());
-		//Un flag armado que no se ve es un flag que se olvida: el paladín no sabía si le quedaba el castigo
-		//preparado de hace tres turnos o si ya lo gastó.
+		//An armed flag you can't see is a flag you forget: the paladin had no way to tell if the smite
+		//armed three turns ago was still ready or already spent.
 		JsonObject patch = new JsonObject();
 		patch.addProperty("smitePending", true);
 		DndsheetsMod.sendSheetFieldUpdate(player, patch);
@@ -60,16 +60,16 @@ public class PaladinSmiteManager {
 		player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.smite_armed").withStyle(ChatFeedback.RESOURCE));
 	}
 
-	//Público: CombatManager lo consume justo después de confirmar un golpe (no antes: fallar el ataque no
-	//debería gastar el espacio). Devuelve null si no había flag pendiente O no quedaban espacios que gastar.
-	//El objetivo entra porque el dado depende de contra QUÉ se castiga, no solo de con qué se paga.
+	//Public: CombatManager consumes this right after confirming a hit (not before: missing the attack
+	//shouldn't spend the slot). Returns null if there was no pending flag OR there were no slots left to spend.
+	//The target is passed in because the die depends on WHAT is being smitten, not just on what pays for it.
 	public static String consumeIfPending(JsonObject sheet, Entity target) {
 		if (sheet == null || !sheet.has("smitePending") || !sheet.get("smitePending").getAsBoolean()) return null;
 		sheet.remove("smitePending");
 
-		//Cualquier espacio de nivel 1 o superior sirve; se gasta el más bajo. Y el dado sale del nivel que
-		//spend() dice haber gastado, no del que se pidió: si los de nivel 1 estaban agotados, el castigo
-		//salió con uno más alto y pega más.
+		//Any slot of level 1 or higher works; the lowest one is spent. And the die is based on the level
+		//spend() reports having spent, not the level requested: if level-1 slots were exhausted, the smite
+		//went out with a higher one and hits harder.
 		if (!SpellSlots.hasSlotFor(sheet, 1)) return null;
 		return diceForSlot(SpellSlots.spend(sheet, 1), MonsterRegistry.typeOf(target));
 	}

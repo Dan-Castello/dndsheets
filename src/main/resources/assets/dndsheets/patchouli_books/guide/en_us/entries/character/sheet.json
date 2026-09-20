@@ -1,0 +1,24 @@
+{
+  "name": "gui.dndsheets.guide.entry.sheet",
+  "category": "dndsheets:character",
+  "icon": "minecraft:paper",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.sheet"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.sheet_2"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.characters"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.hud_states"
+    }
+  ]
+}

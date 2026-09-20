@@ -8,9 +8,9 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 /**
- * Cliente -&gt; servidor: el jugador eligió su Mejora de Puntuación de Característica. {@code second} vacío
- * significa "+2 a una"; con las dos, "+1 a cada una". El servidor comprueba que de verdad le tocaba una
- * mejora antes de aplicar nada — ver {@link LevelUpManager#applyImprovement}.
+ * Client -&gt; server: the player chose their Ability Score Improvement. An empty {@code second} means
+ * "+2 to one"; with both filled, "+1 to each." The server verifies they actually had an improvement
+ * pending before applying anything — see {@link LevelUpManager#applyImprovement}.
  */
 public class AbilityImprovementMessage {
 	final String first;

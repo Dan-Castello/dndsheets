@@ -12,8 +12,8 @@ import net.minecraftforge.network.PacketDistributor;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: edita pool/peso/tags de una pieza ya capturada, desde DungeonPieceEditScreen
-//— structureId no se toca (eso solo se fija al capturar, ver DungeonPieceCaptureMessage).
+//Client (the DM) -> server: edits the pool/weight/tags of an already captured piece, from DungeonPieceEditScreen
+//— structureId is left alone (it is only set on capture, see DungeonPieceCaptureMessage).
 public class DungeonPieceUpdateMessage {
 	String id, pool, tags;
 	int weight;

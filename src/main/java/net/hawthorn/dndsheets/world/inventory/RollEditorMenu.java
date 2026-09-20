@@ -10,11 +10,11 @@ import net.minecraft.world.item.ItemStack;
 
 import java.util.HashMap;
 
-/** Menú sin ranuras del editor de tiradas — mismo papel y misma limpieza que {@link CharacterSheetMenu}. */
+/** Slotless menu for the roll editor — same role and same cleanup as {@link CharacterSheetMenu}. */
 public class RollEditorMenu extends AbstractContainerMenu {
 	public final static HashMap<String, Object> guistate = new HashMap<>();
 
-	//El FriendlyByteBuf lo exige IForgeMenuType (ver DndsheetsModMenus): llega vacío y no se lee.
+	//The FriendlyByteBuf is required by IForgeMenuType (see DndsheetsModMenus): it arrives empty and isn't read.
 	public RollEditorMenu(int id, Inventory inv, FriendlyByteBuf extraData) {
 		super(DndsheetsModMenus.ROLL_EDITOR.get(), id);
 	}

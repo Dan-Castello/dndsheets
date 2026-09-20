@@ -14,22 +14,22 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * <p>Panel de efectos activos: siempre visible (no hace falta abrir el Grimorio ni la hoja, ni estar en
- * combate) con lo que Minecraft no muestra de forma nativa — condiciones, PG temporales, concentración,
- * inspiración/castigo/ventaja pendientes, espacios de conjuro y oro. Se lee directamente de la hoja del
- * cliente ({@link SheetLoader#getClientSheet()}), la misma que ya mantiene sincronizada cada comando que
- * la toca (espacios, descansos, condiciones, oro...), así que no necesita su propio mensaje de red.</p>
+ * <p>Active-effects panel: always visible (no need to open the Grimoire, the sheet, or be in combat)
+ * showing what Minecraft doesn't display natively — conditions, temporary HP, concentration, pending
+ * inspiration/smite/advantage, spell slots, and gold. Read directly from the client sheet
+ * ({@link SheetLoader#getClientSheet()}), the same one already kept in sync by every command that
+ * touches it (slots, rests, conditions, gold...), so it needs no network message of its own.</p>
  *
- * <p>Es el complemento persistente de {@link TurnHudOverlay}, que solo existe mientras hay un combate
- * activo: la mitad de esto (condiciones, concentración) importa también fuera de turnos, así que vive en
- * su propio panel, en la esquina opuesta de la pantalla, con el mismo aspecto de tomo (ver
- * {@link GuiStyle}) para que las dos piezas se lean como una sola interfaz y no como dos mods distintos.</p>
+ * <p>It's the persistent counterpart to {@link TurnHudOverlay}, which only exists while combat is
+ * active: half of this data (conditions, concentration) matters outside of turns too, so it lives in
+ * its own panel, in the opposite corner of the screen, with the same tome-like look (see
+ * {@link GuiStyle}) so the two pieces read as one interface instead of two separate mods.</p>
  */
 @Mod.EventBusSubscriber(modid = DndsheetsMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ResourceHudOverlay {
 
-	//PADDING no baja de 7: con menos, el texto se mete debajo de la cantonera de latón de la esquina (ver
-	//GuiStyle — mismo límite que TurnHudOverlay). El resto, más apretado a pedido.
+	//PADDING doesn't go below 7: any less and the text sinks under the corner's brass brace (see
+	//GuiStyle — same limit as TurnHudOverlay). Everything else, tightened per request.
 	private static final int PADDING = 7;
 	private static final int ROW_HEIGHT = 9;
 	private static final int MIN_WIDTH = 95;
@@ -39,11 +39,12 @@ public class ResourceHudOverlay {
 		event.registerAboveAll("dndsheets_resources", (gui, guiGraphics, partialTick, width, height) -> render(guiGraphics));
 	}
 
-	//Las líneas del HUD, ya montadas, y la versión de hoja con la que se montaron. Este render corre por
-	//FOTOGRAMA y sin necesidad de abrir nada, así que es el código que más veces por segundo se ejecuta del
-	//mod; rehacer estas cadenas a 120 fps era ~2.500 asignaciones por segundo para un texto que solo cambia
-	//cuando cambia la hoja. Cada línea lleva su color: no todas significan lo mismo (un estado no es un
-	//recurso), así que un solo color para todo el panel las volvería indistinguibles de un vistazo.
+	//The HUD lines, already assembled, and the sheet version they were assembled from. This render runs
+	//every FRAME with nothing needing to be opened, so it's the mod's most-frequently-executed code;
+	//rebuilding these strings at 120 fps was ~2,500 allocations per second for text that only changes
+	//when the sheet changes. Each line carries its own color: they don't all mean the same thing (a
+	//condition isn't a resource), so a single color for the whole panel would make them indistinguishable
+	//at a glance.
 	private record Line(String text, int color) {}
 
 	private static int cachedVersion = -1;
@@ -58,23 +59,24 @@ public class ResourceHudOverlay {
 			lines.add(new Line(Component.translatable("hud.dndsheets.spell_slots", slots, spellSlotsMax).getString(), 0xFF55FFFF));
 		}
 
-		//PG temporales: un colchón que Minecraft no representa (su barra de vida es solo la real), así que
-		//sin esto un jugador con PG temporales no tenía forma de saber cuántos le quedan de ese colchón
-		//hasta que un golpe se los empieza a comer.
+		//Temporary HP: a buffer Minecraft doesn't represent (its health bar is only the real HP), so
+		//without this a player with temporary HP had no way to know how much buffer they had left until a
+		//hit started eating into it.
 		int temporaryHp = sheet.has("temporaryHp") ? sheet.get("temporaryHp").getAsInt() : 0;
 		if (temporaryHp > 0) lines.add(new Line(Component.translatable("hud.dndsheets.temp_hp", temporaryHp).getString(), 0xFF7FE0A0));
 
-		//Las condiciones activas, en rojo y arriba del todo de lo demás. Estaban SOLO en el Panel de DM, así
-		//que un jugador paralizado no tenía forma de saberlo: sus clics dejaban de hacer nada y eso se lee
-		//como que el mod está roto, no como la regla que es. Media docena de reglas del motor dependen de
-		//condiciones y ninguna se veía desde el lado de quien las sufre.
+		//Active conditions, in red and above everything else. These used to live ONLY in the DM Panel, so
+		//a paralyzed player had no way to know it: their clicks simply stopped doing anything, and that
+		//reads as the mod being broken rather than as the rule it actually is. Half a dozen rules-engine
+		//checks depend on conditions and none of them were visible from the sufferer's side.
 		String conditions = activeConditionLabels(sheet);
 		if (!conditions.isEmpty()) lines.add(new Line(conditions, 0xFFFF5555));
 
-		//Lo que llevas ENCIMA y decide tu próxima tirada. Vivía todo en el servidor: recibías Inspiración
-		//Bárdica y no lo sabías, armabas un Castigo y no sabías si seguía armado tres turnos después, y la
-		//concentración —de lo que más se consulta en una mesa— solo existía como una línea de chat que se va
-		//con el scroll. Un modificador que no se ve no se puede jugar; se descubre después, en el resultado.
+		//The "things you're carrying" that decide your next roll. All of it used to live server-side: you'd
+		//receive Bardic Inspiration and not know it, prime a Smite and not know if it was still armed three
+		//turns later, and concentration — one of the most-checked things at a table — only existed as a
+		//chat line that scrolls away. A modifier you can't see isn't something you can play around; you only
+		//find out about it after the fact, in the result.
 		String held = heldEffects(sheet);
 		if (!held.isEmpty()) lines.add(new Line(held, 0xFFFFD9A0));
 
@@ -92,7 +94,7 @@ public class ResourceHudOverlay {
 			rebuild(sheet);
 			cachedVersion = version;
 		}
-		if (cachedLines.length == 0) return; //Nada activo: mejor sin panel que un panel vacío ocupando esquina.
+		if (cachedLines.length == 0) return; //Nothing active: better no panel than an empty one taking up a corner.
 
 		Font font = Minecraft.getInstance().font;
 		int contentWidth = MIN_WIDTH;
@@ -114,9 +116,9 @@ public class ResourceHudOverlay {
 	}
 
 	/**
-	 * <p>Etiquetas de las condiciones activas, separadas por coma. Se le quita el "@id" con el que viaja la
-	 * fuente de cada una (ver {@code Combatant.formatEntry}): a quien la sufre le importa que está asustado,
-	 * no el número de entidad que lo asustó.</p>
+	 * <p>Labels of the active conditions, comma-separated. The "@id" that each one carries its source
+	 * with (see {@code Combatant.formatEntry}) is stripped: what matters to the one suffering it is that
+	 * they're frightened, not the entity number that frightened them.</p>
 	 */
 	private static String activeConditionLabels(JsonObject sheet) {
 		if (!sheet.has("conditions")) return "";
@@ -130,14 +132,14 @@ public class ResourceHudOverlay {
 		return labels.length() == 0 ? "" : Component.translatable("hud.dndsheets.conditions", labels.toString()).getString();
 	}
 
-	/** Los "llevo esto encima" que cambian la próxima tirada: concentración, dado de inspiración, castigo armado, ventaja pendiente. */
+	/** The "things carried" that change the next roll: concentration, inspiration die, armed smite, pending advantage. */
 	private static String heldEffects(JsonObject sheet) {
 		StringBuilder held = new StringBuilder();
 		if (sheet.has("concentratingOn")) append(held, Component.translatable("hud.dndsheets.concentrating", net.hawthorn.dndsheets.ContentNames.of(sheet.get("concentratingOn").getAsString())).getString());
 		if (sheet.has("bardicInspiration")) append(held, Component.translatable("hud.dndsheets.inspiration", sheet.get("bardicInspiration").getAsInt()).getString());
 		if (sheet.has("smitePending")) append(held, Component.translatable("hud.dndsheets.smite_armed").getString());
-		//"normal" es el valor de reposo, no una ventaja pendiente: enseñarlo sería una línea permanente que
-		//no dice nada y que acabaría ignorándose junto con las que sí importan.
+		//"normal" is the resting value, not a pending advantage: showing it would be a permanent line that
+		//says nothing and would end up ignored along with the ones that actually matter.
 		if (sheet.has("nextAttackAdvantage")) {
 			String advantage = sheet.get("nextAttackAdvantage").getAsString();
 			if ("advantage".equals(advantage)) append(held, Component.translatable("hud.dndsheets.advantage").getString());

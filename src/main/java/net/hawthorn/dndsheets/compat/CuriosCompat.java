@@ -7,28 +7,27 @@ import net.minecraftforge.fml.ModList;
 import java.util.List;
 
 /**
- * <p>Integración <b>opcional</b> con Curios API. Resuelve un problema que la mesa de D&amp;D no tiene y
- * Minecraft sí: no hay ranura de anillo, collar, capa ni cinturón, así que un Anillo de Protección no
- * podía estar "puesto" de ninguna forma natural. Con Curios instalado, los objetos mágicos se llevan en
- * sus ranuras reales; sin él, todo sigue funcionando exactamente igual que antes vía sintonización.</p>
+ * <p><b>Optional</b> integration with the Curios API. Solves a problem the D&amp;D tabletop doesn't have
+ * but Minecraft does: there's no ring, necklace, cloak, or belt slot, so a Ring of Protection had no
+ * natural way of being "worn." With Curios installed, magic items are carried in their real slots;
+ * without it, everything keeps working exactly as before via attunement.</p>
  *
- * <p><b>Por qué son dos clases y no una.</b> Esta no importa ni un solo tipo de Curios: si lo hiciera, la
- * JVM intentaría resolverlos al cargarla y reventaría con {@code NoClassDefFoundError} en cualquier
- * instalación sin Curios — que es justo lo que "dependencia blanda" tiene que evitar. Todo lo que toca su
- * API vive en {@link CuriosSlots}, que solo se carga después de comprobar {@link #isLoaded()}, porque
- * Java carga las clases de forma perezosa. La comprobación no es una cortesía: es lo que hace que la
- * separación funcione.</p>
+ * <p><b>Why there are two classes and not one.</b> This one doesn't import a single Curios type: if it
+ * did, the JVM would try to resolve them when loading it and blow up with {@code NoClassDefFoundError}
+ * on any install without Curios — which is exactly what "soft dependency" has to avoid. Everything that
+ * touches its API lives in {@link CuriosSlots}, which is only loaded after checking {@link #isLoaded()},
+ * because Java loads classes lazily. The check isn't a courtesy: it's what makes the separation work.</p>
  *
- * <p>En el build, Curios entra como {@code compileOnly} (más {@code runtimeOnly} solo para poder probarlo
- * en el entorno de desarrollo), y en {@code mods.toml} como dependencia con {@code mandatory=false}.
- * Nunca se empaqueta dentro del jar publicado.</p>
+ * <p>In the build, Curios is pulled in as {@code compileOnly} (plus {@code runtimeOnly} just to be able
+ * to test it in the dev environment), and in {@code mods.toml} as a dependency with
+ * {@code mandatory=false}. It's never packaged inside the published jar.</p>
  */
 public final class CuriosCompat {
 
 	private CuriosCompat() {}
 
-	//Se resuelve una sola vez: ModList no cambia después del arranque, y esto se consulta en cada cálculo
-	//de CA de cada ataque.
+	//Resolved once: ModList doesn't change after startup, and this is checked on every AC calculation of
+	//every attack.
 	private static final boolean LOADED = ModList.get().isLoaded("curios");
 
 	public static boolean isLoaded() {
@@ -36,8 +35,8 @@ public final class CuriosCompat {
 	}
 
 	/**
-	 * <p>Lo que el jugador lleva en ranuras de Curios, o una lista vacía si Curios no está instalado.
-	 * Devolver vacío en vez de fallar es lo que permite al llamador tratar los dos casos igual.</p>
+	 * <p>What the player is carrying in Curios slots, or an empty list if Curios isn't installed.
+	 * Returning empty instead of failing is what lets the caller treat both cases the same way.</p>
 	 */
 	public static List<ItemStack> equippedStacks(Player player) {
 		if (!LOADED) return List.of();

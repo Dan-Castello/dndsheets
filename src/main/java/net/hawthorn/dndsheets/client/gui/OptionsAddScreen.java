@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.minecraft.client.resources.language.I18n;
 import com.google.gson.JsonArray;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.network.OptionsSaveMessage;
@@ -10,8 +11,8 @@ import net.minecraft.network.chat.Component;
 
 import java.util.List;
 
-//Añade UNA opción a una categoría de CharacterOptionsRegistry — abierto desde OptionsManageScreen. Manda
-//la lista COMPLETA (actual + la nueva) por OptionsSaveMessage, ver esa clase para el porqué.
+//Adds ONE option to a CharacterOptionsRegistry category — opened from OptionsManageScreen. Sends
+//the COMPLETE list (current + the new one) via OptionsSaveMessage, see that class for why.
 public class OptionsAddScreen extends SmallFormScreen {
 	private final String category;
 	private final List<String> current;
@@ -29,7 +30,7 @@ public class OptionsAddScreen extends SmallFormScreen {
 
 	@Override
 	protected void buildForm() {
-		valueBox = addField("Nueva opción", "", 64);
+		valueBox = addField(I18n.get("gui.dndsheets.form.new_option"), "", 64);
 	}
 
 	@Override

@@ -12,8 +12,8 @@ import net.minecraftforge.network.PacketDistributor;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: borra una entrada de dm_created.json de un tipo, desde ContentEntryListScreen.
-//Solo borra entradas creadas in-game (viven en dm_created.json) — un pack cargado a mano aparte no se toca.
+//Client (the DM) -> server: deletes an entry of a type from dm_created.json, from ContentEntryListScreen.
+//Only deletes entries created in-game (they live in dm_created.json) — a separately hand-loaded pack is left alone.
 public class ContentEntryRemoveMessage {
 	ContentType type;
 	String id;

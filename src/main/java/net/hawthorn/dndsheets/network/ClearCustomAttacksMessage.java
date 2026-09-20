@@ -9,7 +9,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: "Borrar todos" en ManageCustomAttacksScreen.
+//Client (the DM) -> server: "Delete all" in ManageCustomAttacksScreen.
 public class ClearCustomAttacksMessage {
 	int entityId;
 

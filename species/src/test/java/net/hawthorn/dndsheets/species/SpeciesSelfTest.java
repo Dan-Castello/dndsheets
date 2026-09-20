@@ -6,10 +6,10 @@ import com.google.gson.JsonPrimitive;
 import net.hawthorn.dndsheets.RollIndex;
 
 /**
- * <p>Lo único con ramas reales de este addon: {@link RaceRegistry#apply} y {@link BackgroundRegistry#apply}
- * son aditivos (a diferencia de {@code PresetRegistry.applyToSheet}, que sobreescribe), así que cambiar de
- * raza o trasfondo tiene que deshacer lo anterior antes de aplicar lo nuevo, y reaplicar lo mismo no debe
- * duplicar nada. Corre de pie, sin runtime de Forge — ninguna de las dos toca clases de Minecraft.</p>
+ * <p>The only logic in this addon with real branches: {@link RaceRegistry#apply} and {@link BackgroundRegistry#apply}
+ * are additive (unlike {@code PresetRegistry.applyToSheet}, which overwrites), so switching
+ * race or background must undo the previous one before applying the new one, and reapplying the same one must not
+ * duplicate anything. Runs standalone, without the Forge runtime — neither touches Minecraft classes.</p>
  */
 public class SpeciesSelfTest {
 	public static void main(String[] args) {
@@ -22,8 +22,8 @@ public class SpeciesSelfTest {
 		System.out.println("SpeciesSelfTest: OK.");
 	}
 
-	/** Sheet con las 18 habilidades sin competencia, cada una con una expresión no vacía — mismo requisito
-	 *  que {@code RollIndex.setSkillProficiency}, que no-opea si la habilidad no existe todavía. */
+	/** Sheet with all 18 skills without proficiency, each with a non-empty expression — same requirement
+	 *  as {@code RollIndex.setSkillProficiency}, which no-ops if the skill doesn't exist yet. */
 	private static JsonObject sheetWithSkills() {
 		JsonObject sheet = new JsonObject();
 		JsonArray skills = new JsonArray();
@@ -37,12 +37,12 @@ public class SpeciesSelfTest {
 		sheet.addProperty("dexterity", "10");
 
 		RaceRegistry.ApplyResult first = RaceRegistry.apply(sheet, "elf");
-		assertTrue(first.outcome() == RaceRegistry.ApplyOutcome.APPLIED, "la primera aplicación debería ser APPLIED");
-		assertTrue(sheet.get("dexterity").getAsString().equals("12"), "Elfo debería sumar +2 DEX, dio " + sheet.get("dexterity"));
+		assertTrue(first.outcome() == RaceRegistry.ApplyOutcome.APPLIED, "the first application should be APPLIED");
+		assertTrue(sheet.get("dexterity").getAsString().equals("12"), "Elf should add +2 DEX, got " + sheet.get("dexterity"));
 
 		RaceRegistry.ApplyResult second = RaceRegistry.apply(sheet, "elf");
-		assertTrue(second.outcome() == RaceRegistry.ApplyOutcome.NO_CHANGE, "reaplicar la misma raza no debería tocar nada");
-		assertTrue(sheet.get("dexterity").getAsString().equals("12"), "reaplicar no debería sumar el bono dos veces, dio " + sheet.get("dexterity"));
+		assertTrue(second.outcome() == RaceRegistry.ApplyOutcome.NO_CHANGE, "reapplying the same race should change nothing");
+		assertTrue(sheet.get("dexterity").getAsString().equals("12"), "reapplying should not add the bonus twice, got " + sheet.get("dexterity"));
 	}
 
 	private static void checkSwapSubtractsPreviousBonus() {
@@ -51,50 +51,50 @@ public class SpeciesSelfTest {
 		sheet.addProperty("dexterity", "10");
 
 		RaceRegistry.apply(sheet, "half_orc"); //STR +2, CON +1
-		assertTrue(sheet.get("strength").getAsString().equals("12"), "Semiorco debería sumar +2 STR");
+		assertTrue(sheet.get("strength").getAsString().equals("12"), "Half-Orc should add +2 STR");
 
-		RaceRegistry.apply(sheet, "elf"); //DEX +2 — el +2 STR de Semiorco tiene que desaparecer
-		assertTrue(sheet.get("strength").getAsString().equals("10"), "cambiar a Elfo debería restar el bono de Semiorco, quedó " + sheet.get("strength"));
-		assertTrue(sheet.get("dexterity").getAsString().equals("12"), "cambiar a Elfo debería sumar su propio +2 DEX");
+		RaceRegistry.apply(sheet, "elf"); //DEX +2 — the Half-Orc +2 STR has to go away
+		assertTrue(sheet.get("strength").getAsString().equals("10"), "switching to Elf should subtract the Half-Orc bonus, left " + sheet.get("strength"));
+		assertTrue(sheet.get("dexterity").getAsString().equals("12"), "switching to Elf should add its own +2 DEX");
 	}
 
 	private static void checkUnknownRace() {
 		JsonObject sheet = new JsonObject();
 		RaceRegistry.ApplyResult result = RaceRegistry.apply(sheet, "no-existe");
-		assertTrue(result.outcome() == RaceRegistry.ApplyOutcome.UNKNOWN_RACE, "un id que no existe tiene que devolver UNKNOWN_RACE, no reventar");
+		assertTrue(result.outcome() == RaceRegistry.ApplyOutcome.UNKNOWN_RACE, "an id that doesn't exist must return UNKNOWN_RACE, not blow up");
 	}
 
 	private static void checkBackgroundApplyIsIdempotent() {
 		JsonObject sheet = sheetWithSkills();
 
 		BackgroundRegistry.ApplyResult first = BackgroundRegistry.apply(sheet, "acolyte");
-		assertTrue(first.outcome() == BackgroundRegistry.ApplyOutcome.APPLIED, "la primera aplicación debería ser APPLIED");
-		assertTrue(RollIndex.isSkillProficient(sheet, 10), "Acólito debería dar competencia en Perspicacia (10)");
-		assertTrue(RollIndex.isSkillProficient(sheet, 8), "Acólito debería dar competencia en Religión (8)");
+		assertTrue(first.outcome() == BackgroundRegistry.ApplyOutcome.APPLIED, "the first application should be APPLIED");
+		assertTrue(RollIndex.isSkillProficient(sheet, 10), "Acolyte should grant proficiency in Insight (10)");
+		assertTrue(RollIndex.isSkillProficient(sheet, 8), "Acolyte should grant proficiency in Religion (8)");
 
 		BackgroundRegistry.ApplyResult second = BackgroundRegistry.apply(sheet, "acolyte");
-		assertTrue(second.outcome() == BackgroundRegistry.ApplyOutcome.NO_CHANGE, "reaplicar el mismo trasfondo no debería tocar nada");
-		assertTrue(RollIndex.isSkillProficient(sheet, 10), "reaplicar no debería quitar la competencia");
+		assertTrue(second.outcome() == BackgroundRegistry.ApplyOutcome.NO_CHANGE, "reapplying the same background should change nothing");
+		assertTrue(RollIndex.isSkillProficient(sheet, 10), "reapplying should not remove the proficiency");
 	}
 
 	private static void checkBackgroundSwapRevokesPreviousSkills() {
 		JsonObject sheet = sheetWithSkills();
 
-		BackgroundRegistry.apply(sheet, "criminal"); //Engaño(14) + Sigilo(3)
-		assertTrue(RollIndex.isSkillProficient(sheet, 14), "Criminal debería dar competencia en Engaño (14)");
-		assertTrue(RollIndex.isSkillProficient(sheet, 3), "Criminal debería dar competencia en Sigilo (3)");
+		BackgroundRegistry.apply(sheet, "criminal"); //Deception(14) + Stealth(3)
+		assertTrue(RollIndex.isSkillProficient(sheet, 14), "Criminal should grant proficiency in Deception (14)");
+		assertTrue(RollIndex.isSkillProficient(sheet, 3), "Criminal should grant proficiency in Stealth (3)");
 
-		BackgroundRegistry.apply(sheet, "acolyte"); //Perspicacia(10) + Religión(8) — Engaño/Sigilo tienen que desaparecer
-		assertTrue(!RollIndex.isSkillProficient(sheet, 14), "cambiar a Acólito debería quitar Engaño de Criminal");
-		assertTrue(!RollIndex.isSkillProficient(sheet, 3), "cambiar a Acólito debería quitar Sigilo de Criminal");
-		assertTrue(RollIndex.isSkillProficient(sheet, 10), "cambiar a Acólito debería dar su propia Perspicacia");
-		assertTrue(RollIndex.isSkillProficient(sheet, 8), "cambiar a Acólito debería dar su propia Religión");
+		BackgroundRegistry.apply(sheet, "acolyte"); //Insight(10) + Religion(8) — Deception/Stealth have to go away
+		assertTrue(!RollIndex.isSkillProficient(sheet, 14), "switching to Acolyte should remove Criminal's Deception");
+		assertTrue(!RollIndex.isSkillProficient(sheet, 3), "switching to Acolyte should remove Criminal's Stealth");
+		assertTrue(RollIndex.isSkillProficient(sheet, 10), "switching to Acolyte should grant its own Insight");
+		assertTrue(RollIndex.isSkillProficient(sheet, 8), "switching to Acolyte should grant its own Religion");
 	}
 
 	private static void checkUnknownBackground() {
 		JsonObject sheet = sheetWithSkills();
 		BackgroundRegistry.ApplyResult result = BackgroundRegistry.apply(sheet, "no-existe");
-		assertTrue(result.outcome() == BackgroundRegistry.ApplyOutcome.UNKNOWN_BACKGROUND, "un id que no existe tiene que devolver UNKNOWN_BACKGROUND, no reventar");
+		assertTrue(result.outcome() == BackgroundRegistry.ApplyOutcome.UNKNOWN_BACKGROUND, "an id that doesn't exist must return UNKNOWN_BACKGROUND, not blow up");
 	}
 
 	private static void assertTrue(boolean condition, String message) {

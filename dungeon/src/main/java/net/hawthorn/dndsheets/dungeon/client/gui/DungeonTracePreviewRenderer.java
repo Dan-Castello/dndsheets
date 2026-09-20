@@ -25,16 +25,16 @@ import net.minecraftforge.fml.common.Mod;
 import java.util.List;
 
 /**
- * <p>Proyecta en el mundo real, mientras {@link DungeonTraceScreen} está abierta, lo mismo que
- * {@link GridToStructure} traduciría al confirmar — la misma idea que el modo de colocación de
- * Litematica: nada de un visor 3D dentro del diálogo, se reutiliza el renderer de bloques de vanilla
- * sobre el mundo que ya está dibujado.</p>
+ * <p>Projects into the real world, while {@link DungeonTraceScreen} is open, the same thing
+ * {@link GridToStructure} would translate on confirm — the same idea as Litematica's placement mode:
+ * no 3D viewport inside the dialog, it reuses vanilla's own block renderer over the world that's
+ * already drawn.</p>
  *
- * <p><b>Tinte fantasma:</b> el modelo del bloque no se manda por {@code renderSingleBlock} (elige él
- * solo el {@code RenderType} del bloque real, sólido para piedra) sino por
- * {@link ModelBlockRenderer#renderModel} contra el buffer de {@link RenderType#translucent()}, envuelto
- * en un {@link GhostVertexConsumer} que fuerza el alfa de cada vértice — así CUALQUIER bloque, sea
- * translúcido o no en el juego real, sale semitransparente en la proyección.</p>
+ * <p><b>Ghost tint:</b> the block's model isn't sent through {@code renderSingleBlock} (it picks the
+ * real block's {@code RenderType} on its own, solid for stone) but through
+ * {@link ModelBlockRenderer#renderModel} against the {@link RenderType#translucent()} buffer, wrapped
+ * in a {@link GhostVertexConsumer} that forces every vertex's alpha — so ANY block, translucent or not
+ * in the real game, comes out semi-transparent in the projection.</p>
  */
 @Mod.EventBusSubscriber(value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class DungeonTracePreviewRenderer {
@@ -43,7 +43,7 @@ public final class DungeonTracePreviewRenderer {
 
 	private static final int DOOR_COLOR = 0x4A90D9;
 	private static final int START_COLOR = 0x2ECC71;
-	//0-255: bastante transparente para leerse como "todavía no está" sin dejar de reconocerse la forma.
+	//0-255: transparent enough to read as "not there yet" while the shape is still recognizable.
 	private static final int GHOST_ALPHA = 120;
 
 	@SubscribeEvent
@@ -63,9 +63,9 @@ public final class DungeonTracePreviewRenderer {
 		MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
 		BlockRenderDispatcher blockRenderer = Minecraft.getInstance().getBlockRenderer();
 
-		//Cancela la traslación de cámara que ya trae event.getPoseStack() para volver a coordenadas de
-		//mundo absolutas, y desde ahí se traslada a cada bloque como si nada — el mismo truco que usa
-		//cualquier renderer que se engancha a este evento en vez de al pipeline de chunks.
+		//Cancels the camera translation already baked into event.getPoseStack() to get back to absolute
+		//world coordinates, and from there translates to each block normally — the same trick used by
+		//any renderer that hooks into this event instead of the chunk pipeline.
 		poseStack.pushPose();
 		poseStack.translate(-cam.x, -cam.y, -cam.z);
 
@@ -98,17 +98,17 @@ public final class DungeonTracePreviewRenderer {
 			case FLOOR -> DungeonPiecePlacer.resolveOrDefault(trace.floorBlockId(), DungeonPiecePlacer.DEFAULT_FLOOR);
 			case WALL -> DungeonPiecePlacer.resolveOrDefault(trace.wallBlockId(), DungeonPiecePlacer.DEFAULT_WALL);
 			case OBJECT -> DungeonPiecePlacer.objectStateFor(block.blockId(), block.facing());
-			case CONNECTOR, START -> DungeonPiecePlacer.DEFAULT_OBJECT; //inalcanzable: las dos ramas de arriba las capturan antes
+			case CONNECTOR, START -> DungeonPiecePlacer.DEFAULT_OBJECT; //unreachable: the two branches above already catch these first
 		};
 	}
 
 	/**
-	 * <p>Envoltorio de {@link VertexConsumer} que fuerza el alfa de cada vértice, dejando el color que
-	 * calculó el modelo tal cual. Solo hace falta sobrescribir {@code color(int,int,int,int)}: todos los
-	 * demás métodos de conveniencia de la interfaz (el {@code vertex(...)} de 14 argumentos que de verdad
-	 * usa {@code ModelBlockRenderer}, {@code color(float,float,float,float)}, etc.) son {@code default} y
-	 * terminan llamando a este mismo método sobre {@code this} — interceptarlo acá alcanza para toda
-	 * ruta de dibujado, no hace falta duplicar esa cadena.</p>
+	 * <p>A {@link VertexConsumer} wrapper that forces every vertex's alpha, leaving the color the model
+	 * computed untouched. Only {@code color(int,int,int,int)} needs to be overridden: all the
+	 * interface's other convenience methods (the 14-argument {@code vertex(...)} that
+	 * {@code ModelBlockRenderer} actually uses, {@code color(float,float,float,float)}, etc.) are
+	 * {@code default} and end up calling this same method on {@code this} — intercepting it here is
+	 * enough for every drawing path, no need to duplicate that chain.</p>
 	 */
 	private static final class GhostVertexConsumer implements VertexConsumer {
 		private final VertexConsumer delegate;

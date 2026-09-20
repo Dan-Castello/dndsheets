@@ -41,29 +41,30 @@ import org.apache.logging.log4j.Logger;
 
 public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheetMenu> {
 	private final static HashMap<String, Object> guistate = CharacterSheetMenu.guistate;
-	//El jugador que mira la ficha: los PG/PG máx/PG temp/nivel/hambre se leen en vivo de él (ver
-	//containerTick). Es el único de los cinco campos que MCreator copiaba del menú que alguien leía.
+	//The player looking at the sheet: HP/max HP/temp HP/level/hunger are read live from them (see
+	//containerTick). It's the only one of the five fields MCreator copied from the menu that anything
+	//actually read.
 	private final Player entity;
-	//private: verificado que ningún otro archivo del mod lee/escribe estos dos campos (solo se usan dentro
-	//de esta clase) — no había motivo para que fueran public static y quedaran mutables desde cualquier
-	//mod externo en el classpath.
+	//private: verified that no other file in the mod reads/writes these two fields (only used within
+	//this class) — there was no reason for them to be public static and left mutable from any external
+	//mod on the classpath.
 	private static PanelStatus panelActive = PanelStatus.MAIN;
 	private static boolean editMode = false;
 
-	EditBox hitPoints;      // Sincronizado en vivo desde entity.getHealth() - ver containerTick()
-	EditBox hitPointsMax;   // Sincronizado en vivo desde entity.getMaxHealth()
-	EditBox hitPointsTemp;  // Sincronizado en vivo desde entity.getAbsorptionAmount() (corazones dorados = PG temporales de D&D)
+	EditBox hitPoints;      // Synced live from entity.getHealth() - see containerTick()
+	EditBox hitPointsMax;   // Synced live from entity.getMaxHealth()
+	EditBox hitPointsTemp;  // Synced live from entity.getAbsorptionAmount() (golden hearts = D&D temp HP)
 	EditBox armorClass;
 	EditBox speed;
 	EditBox characterName;
 	EditBox characterRace;
 	EditBox characterClass;
 	EditBox background;
-	EditBox proficiency;    // Auto-calculado desde el nivel real (regla de competencia de 5e)
-	EditBox level;          // Sincronizado en vivo desde entity.experienceLevel (XP real de Minecraft)
-	EditBox hunger;         // Sincronizado en vivo desde entity.getFoodData().getFoodLevel()
-	Button grimoireButton;  // Abre el Grimorio (ver GrimoireScreen), sin tocar la hoja
-	Button menuButton;      // Abre el Menú del jugador (ver PlayerPanelScreen): personajes, presets, diario, guía...
+	EditBox proficiency;    // Auto-calculated from the real level (5e proficiency rule)
+	EditBox level;          // Synced live from entity.experienceLevel (Minecraft's real XP)
+	EditBox hunger;         // Synced live from entity.getFoodData().getFoodLevel()
+	Button grimoireButton;  // Opens the Grimoire (see GrimoireScreen), without touching the sheet
+	Button menuButton;      // Opens the player Menu (see PlayerPanelScreen): characters, presets, journal, guide...
 
 	EditBox hitDice;
 	EditBox hitDiceTypes;
@@ -102,55 +103,54 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private final int ABILITY_SIZE_Y = 18;
 	private final int ABILITY_SEPARATION = 22;
 
-	//Borde derecho del panel lateral: los iconos de característica acaban en 98 y el filete del fondo cae
-	//en 114.
+	//Side panel's right edge: the ability icons end at 98 and the background's rule falls at 114.
 	private static final int SIDE_PANEL_RIGHT = 104;
-	//Modo edición, justo debajo de la última característica. Estaba en x = leftPos - 6, o sea FUERA del
-	//panel, sobre el margen del pergamino: se veía como un icono suelto sin relación con nada.
+	//Edit mode toggle, right below the last ability. Used to be at x = leftPos - 6, i.e. OUTSIDE the
+	//panel, over the parchment's margin: it looked like a loose icon with no relation to anything.
 	private static final int EDIT_TOGGLE_Y = 192;
 
 	private final int NAME_OFFSET_X = 15;
 	private final int NAME_OFFSET_Y = 20;
 
 	/*
-		RETÍCULA DEL PANEL PRINCIPAL
+		MAIN PANEL GRID
 
-		Antes esto eran veinte números sueltos, cada uno ajustado a mano contra la textura: las filas caían
-		en y = 20, 55, 90, 125, 165, 205 (ritmo 35, 35, 35, 40, 40) y las columnas en x = 125, 220, 235,
-		304 sin relación entre ellas. Mover un campo obligaba a recolocar sus vecinos a ojo.
+		This used to be twenty loose numbers, each adjusted by hand against the texture: rows fell at
+		y = 20, 55, 90, 125, 165, 205 (rhythm 35, 35, 35, 40, 40) and columns at x = 125, 220, 235, 304,
+		unrelated to each other. Moving one field meant eyeballing all its neighbors into place.
 
-		Ahora todo sale de la retícula de aquí abajo: cuatro filas de campos repartidas en tres secciones
-		con cabecera. Cada fila es RÓTULO (8 px de alto) + CAMPO (18), y cada sección abre con su título y
-		un filete de latón. Lo que se gana no es solo orden: doce rótulos sueltos sobre un pergamino en
-		blanco no tienen jerarquía, y agrupados sí se encuentran de un vistazo.
+		Now everything comes from the grid below: four rows of fields spread across three sections with a
+		header. Each row is LABEL (8px tall) + FIELD (18), and each section opens with its title and a
+		brass rule. What's gained isn't just order: twelve loose labels on a blank parchment have no
+		hierarchy, and grouped, they're found at a glance.
 
-		Para tocar el alto de una fila se cambia ROW_STEP, no seis constantes.
+		To adjust a row's height, change ROW_STEP, not six constants.
 	 */
-	//350x240, no 350x200: el alto subió cuando Nivel/Hambre y los botones de página dejaron de caber. La
-	//retícula de más abajo tiene que caber DENTRO de esto, y el bloque static de después lo comprueba.
+	//350x240, not 350x200: the height went up once Level/Hunger and the page buttons stopped fitting. The
+	//grid below has to fit WITHIN this, and the static block afterward checks it.
 	private static final int SHEET_WIDTH = 350;
 	private static final int SHEET_HEIGHT = 240;
 
-	private static final int PANEL_X = 122;      //Primera columna útil: el filete del fondo cae en x=114.
-	private static final int PANEL_RIGHT = 340;  //Último píxel útil dentro del ancho de 350.
+	private static final int PANEL_X = 122;      //First usable column: the background's rule falls at x=114.
+	private static final int PANEL_RIGHT = 340;  //Last usable pixel within the 350 width.
 	private static final int FIELD_H = 18;
-	private static final int LABEL_GAP = 10;     //Hueco del rótulo encima de su campo.
-	private static final int ROW_STEP = 36;      //De un campo al siguiente dentro de una sección.
-	private static final int SECTION_STEP = 20;  //Del último campo de una sección a la cabecera siguiente.
-	private static final int HEADING_STEP = 22;  //De la cabecera de sección al rótulo de su primera fila.
+	private static final int LABEL_GAP = 10;     //Gap for a label above its field.
+	private static final int ROW_STEP = 36;      //From one field to the next within a section.
+	private static final int SECTION_STEP = 20;  //From a section's last field to the next header.
+	private static final int HEADING_STEP = 22;  //From a section's header to its first row's label.
 
-	//--- Sección 1: identidad ---
+	//--- Section 1: identity ---
 	private static final int SEC1_Y = 8;
 	private static final int ROW1_Y = SEC1_Y + HEADING_STEP;
-	//--- Sección 2: combate ---
+	//--- Section 2: combat ---
 	private static final int SEC2_Y = ROW1_Y + FIELD_H + SECTION_STEP;
 	private static final int ROW2_Y = SEC2_Y + HEADING_STEP;
 	private static final int ROW3_Y = ROW2_Y + ROW_STEP;
-	//--- Sección 3: recursos ---
+	//--- Section 3: resources ---
 	private static final int SEC3_Y = ROW3_Y + FIELD_H + SECTION_STEP;
 	private static final int ROW4_Y = SEC3_Y + HEADING_STEP;
 
-	//Fila 1 — Raza | Clase | Trasfondo. Tres huecos iguales que llenan el ancho del panel.
+	//Row 1 — Race | Class | Background. Three equal slots filling the panel's width.
 	private static final int IDENTITY_W = 70;
 	private static final int IDENTITY_STEP = 74;
 	private final int RACE_OFFSET_X = PANEL_X;
@@ -160,14 +160,14 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private final int BACKG_OFFSET_X = PANEL_X + IDENTITY_STEP * 2;
 	private final int BACKG_OFFSET_Y = ROW1_Y;
 
-	//Fila 2 — CA | PG | PG Máx | PG Temp. Velocidad SALE de este grupo: con cinco huecos, el rótulo del
-	//quinto ("Velocidad", 54 px) empezaba en x=305 y terminaba en 359, fuera del panel de 350. Y además no
-	//es un número de combate de la misma familia; encaja mejor junto a Iniciativa.
+	//Row 2 — AC | HP | Max HP | Temp HP. Speed is LEFT OUT of this group: with five slots, the fifth
+	//label's ("Speed", 54px) start at x=305 and end at 359, off the 350-wide panel. And besides, it isn't
+	//a combat number of the same family; it fits better next to Initiative.
 	private final int ACHP_OFFSET_X = PANEL_X;
 	private final int ACHP_OFFSET_Y = ROW2_Y;
 	private final int ACHP_SEPARATION = 54;
 
-	//Fila 3 — Velocidad | Competencia | Iniciativa.
+	//Row 3 — Speed | Proficiency | Initiative.
 	private final int SPEED_OFFSET_X = PANEL_X;
 	private final int SPEED_OFFSET_Y = ROW3_Y;
 	private final int PROF_OFFSET_X = PANEL_X + 72;
@@ -175,7 +175,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private final int INITIATIVE_OFFSET_X = PANEL_X + 152;
 	private final int INITIATIVE_OFFSET_Y = ROW3_Y;
 
-	//Fila 4 — Nivel | Hambre | Dados de Golpe (dado + tipos).
+	//Row 4 — Level | Hunger | Hit Dice (die + types).
 	private final int LEVEL_OFFSET_X = PANEL_X;
 	private final int LEVEL_OFFSET_Y = ROW4_Y;
 	private final int HUNGER_OFFSET_X = PANEL_X + 46;
@@ -184,10 +184,10 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private final int HITDICE_OFFSET_Y = ROW4_Y;
 	private static final int HITDICE_TYPES_W = PANEL_RIGHT - (PANEL_X + 98 + 26);
 
-	//Botones de página (Grimorio, Presets, Guía): centrados en el ancho completo, no en el panel derecho,
-	//porque son acciones de la hoja entera y no de una sección. 80*3 + 10*2 = 260, (350-260)/2 = 45.
-	//72 y no 80: la fila de abajo pasa de tres botones a cuatro al entrar "Personajes", y cuatro de 80 no
-	//caben en los 350 de la hoja. Con 72 y 86 de paso, el último acaba en 340, justo en PANEL_RIGHT.
+	//Page buttons (Grimoire, Presets, Guide): centered across the full width, not the right panel,
+	//because they're actions for the whole sheet, not a single section. 80*3 + 10*2 = 260, (350-260)/2 = 45.
+	//72, not 80: the bottom row goes from three buttons to four once "Characters" is added, and four at
+	//80 don't fit within the sheet's 350. With 72 and a step of 86, the last one ends at 340, exactly PANEL_RIGHT.
 	private static final int BOTTOM_BUTTON_WIDTH = 72;
 	private static final int BOTTOM_BUTTON_STEP = 86;
 	private static final int BOTTOM_BUTTON_HEIGHT = 16;
@@ -198,105 +198,106 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private final int MENU_OFFSET_Y = BOTTOM_ROW_Y;
 
 	/*
-		RETÍCULA DE LA PESTAÑA DE HABILIDADES
+		SKILLS TAB GRID
 
-		Las dieciocho habilidades se agrupan por característica, que es como funcionan en 5e y como se
-		imprimen en una hoja de verdad. Esa agrupación ya estaba en el código, pero solo como comentarios
-		(//STR, //DEX, //INT...): en pantalla eran dos columnas de nueve filas seguidas, sin decir de qué
-		característica tira cada una.
+		The eighteen skills are grouped by ability, which is how they work in 5e and how they're printed
+		on a real sheet. That grouping already existed in the code, but only as comments (//STR, //DEX,
+		//INT...): on screen they were two columns of nine consecutive rows, with nothing saying which
+		ability each one draws from.
 
-		Los rótulos de cabecera NO son claves nuevas: son los mismos LABEL_ABILITY_* que ya usan las
-		tiradas de característica del panel lateral, así que traducir uno traduce los dos sitios.
+		The header labels are NOT new keys: they're the same LABEL_ABILITY_* the side panel's ability
+		checks already use, so translating one translates both places.
 	 */
 	private static final int SKILL_TOP = 10;
-	private static final int SKILL_ROW = 20;          //De una habilidad a la siguiente.
-	private static final int SKILL_GROUP_STEP = 14;   //Lo que ocupa una cabecera de grupo.
-	private static final int SKILL_LABEL_GAP = 18;    //Del botón de tirada a su rótulo.
+	private static final int SKILL_ROW = 20;          //From one skill to the next.
+	private static final int SKILL_GROUP_STEP = 14;   //What a group header takes up.
+	private static final int SKILL_LABEL_GAP = 18;    //From the roll button to its label.
 
-	//Columna 1 en x=116 (el filete del fondo cae en 114) y columna 2 en 224. La segunda va más a la derecha
-	//de lo que parecería simétrico a propósito: sus rótulos son los largos ("Trato con Animales" mide 108
-	//px), y con las columnas a la misma anchura ese se salía del panel — llegaba a x=363 sobre un ancho de
-	//350. Es un desbordamiento que solo aparecía en español.
+	//Column 1 at x=116 (the background's rule falls at 114) and column 2 at 224. The second sits further
+	//right than would look symmetric, deliberately: its labels are the long ones ("Animal Handling" runs
+	//108px), and with both columns the same width that one ran off the panel — it reached x=363 on a
+	//350-wide sheet. It's an overflow that only showed up in Spanish.
 	private static final int SKILL_COL1_X = 114;
 	private static final int SKILL_COL2_X = 230;
-	//El pergamino llega hasta x=364, así que el filete de las cabeceras se corta en 358 para dejar margen.
-	//Las columnas van tan justas porque los rótulos en español casi llenan el ancho: entre "Juego de Manos"
-	//(84 px) en la primera y "Trato con Animales" (108) en la segunda, más los botones de tirada, se comen
-	//228 de los 244 disponibles. Por eso la columna 1 arranca pegada al borde del panel lateral — en esta
-	//pestaña no hay filete vertical de fondo (solo lo lleva character_sheet.png, la principal).
+	//The parchment runs to x=364, so the headers' rule is cut off at 358 to leave a margin. The columns
+	//are this tight because the Spanish labels nearly fill the width: between "Sleight of Hand" (84px) in
+	//the first and "Animal Handling" (108) in the second, plus the roll buttons, they eat up 228 of the
+	//244 available. That's why column 1 starts flush against the side panel's edge — this tab has no
+	//vertical background rule (only character_sheet.png, the main one, carries it).
 	private static final int SKILL_RIGHT = 358;
 
-	//Cuántas habilidades cuelgan de cada característica, en orden. Columna 1: Fuerza (1), Destreza (3),
-	//Inteligencia (5). Columna 2: Sabiduría (5), Carisma (4).
+	//How many skills hang off each ability, in order. Column 1: Strength (1), Dexterity (3),
+	//Intelligence (5). Column 2: Wisdom (5), Charisma (4).
 	private static final int[] SKILL_COL1_GROUPS = {1, 3, 5};
 	private static final int[] SKILL_COL2_GROUPS = {5, 4};
 
 	/*
-		RETÍCULA DE LA PESTAÑA DE ATAQUES
+		ATTACKS TAB GRID
 
-		La lista se alineaba con sus propios números (x=125, ancho 210) en vez de con el panel, así que
-		quedaba unos píxeles descuadrada respecto a las otras dos pestañas. Ahora usa las mismas columnas.
-		El alto deja sitio debajo para el botón de añadir.
+		The list used to align to its own numbers (x=125, width 210) instead of the panel, so it sat a
+		few pixels out of alignment with the other two tabs. Now it uses the same columns. The height
+		leaves room below for the add button.
 	 */
 	private static final int ATTACK_TOP = ROW1_Y;
 	private static final int ATTACK_HEIGHT = 160;
 
 	static {
-		//La retícula se sale del panel con demasiada facilidad: pasó al escribirla (los botones de página
-		//caían en y=246 sobre un panel de 240) y ya había pasado antes (y=228 sobre un fondo de 200). No
-		//rompe nada, no avisa, y solo se ve abriendo la hoja — así que se comprueba al cargar la clase, con
-		//las constantes de verdad, que es lo único que no puede quedarse desincronizado de ellas.
+		//The grid runs off the panel far too easily: it happened while writing it (the page buttons fell
+		//at y=246 on a 240-tall panel) and had already happened before (y=228 on a 200-tall background).
+		//Nothing breaks, nothing warns, and it only shows up by opening the sheet — so it's checked when
+		//the class loads, against the real constants, which is the only thing that can't drift out of
+		//sync with them.
 		int bottom = BOTTOM_ROW_Y + BOTTOM_BUTTON_HEIGHT;
 		if (bottom > SHEET_HEIGHT) {
-			throw new IllegalStateException("La retícula de la hoja llega a y=" + bottom
-				+ " y el panel mide " + SHEET_HEIGHT + ". Sube SHEET_HEIGHT o baja ROW_STEP/SECTION_STEP.");
+			throw new IllegalStateException("The sheet grid reaches y=" + bottom
+				+ " and the panel is " + SHEET_HEIGHT + " tall. Raise SHEET_HEIGHT or lower ROW_STEP/SECTION_STEP.");
 		}
 		int rightmost = PANEL_X + IDENTITY_STEP * 2 + IDENTITY_W;
 		if (rightmost > PANEL_RIGHT) {
-			throw new IllegalStateException("La fila de identidad llega a x=" + rightmost
-				+ " y el panel acaba en " + PANEL_RIGHT + ".");
+			throw new IllegalStateException("The identity row reaches x=" + rightmost
+				+ " and the panel ends at " + PANEL_RIGHT + ".");
 		}
 
-		int attackBottom = ATTACK_TOP + ATTACK_HEIGHT + 8 + 16;  //+8 de hueco, +16 del botón de añadir
+		int attackBottom = ATTACK_TOP + ATTACK_HEIGHT + 8 + 16;  //+8 gap, +16 for the add button
 		if (attackBottom > SHEET_HEIGHT) {
-			throw new IllegalStateException("La lista de ataques y su botón llegan a y=" + attackBottom
-				+ " y el panel mide " + SHEET_HEIGHT + ".");
+			throw new IllegalStateException("The attack list and its button reach y=" + attackBottom
+				+ " and the panel is " + SHEET_HEIGHT + " tall.");
 		}
 
-		//Las dos columnas de habilidades reparten NUEVE huecos cada una. Si alguien cambia los tamaños de
-		//grupo y dejan de sumar nueve, skillRowY revienta al pedir un hueco que no existe — pero solo al
-		//abrir esa pestaña y solo en la fila concreta que falte. Mejor que salte entero y aquí.
+		//Both skill columns split into NINE slots each. If someone changes the group sizes and they stop
+		//adding up to nine, skillRowY blows up asking for a slot that doesn't exist — but only when that
+		//tab is opened, and only on the specific missing row. Better that it fails loudly, and here.
 		for (int[] groups : new int[][] {SKILL_COL1_GROUPS, SKILL_COL2_GROUPS}) {
 			int slots = 0;
 			for (int size : groups) slots += size;
 			if (slots != 9) {
-				throw new IllegalStateException("Una columna de habilidades reparte " + slots
-					+ " huecos y tienen que ser 9 (18 habilidades en dos columnas).");
+				throw new IllegalStateException("A skill column lays out " + slots
+					+ " slots but it must be 9 (18 skills in two columns).");
 			}
 			int height = skillGroupY(groups, groups.length - 1)
 				+ SKILL_GROUP_STEP + groups[groups.length - 1] * SKILL_ROW;
 			if (height > SHEET_HEIGHT) {
-				throw new IllegalStateException("Una columna de habilidades llega a y=" + height
-					+ " y el panel mide " + SHEET_HEIGHT + ".");
+				throw new IllegalStateException("A skill column reaches y=" + height
+					+ " and the panel is " + SHEET_HEIGHT + " tall.");
 			}
 		}
 	}
 
-	//Color del texto de los campos que se rellenan solos (PG, CA, nivel, hambre, competencia): ámbar, para
-	//distinguirlos de un vistazo de los campos en blanco normal que sí se pueden escribir a mano.
-	//Tinta sobre pergamino: marrón muy oscuro en vez de negro puro, que sobre un fondo cálido se ve duro.
+	//Text color for the fields that fill themselves in (HP, AC, level, hunger, proficiency): amber, to
+	//tell them apart at a glance from the normal blank fields that CAN be typed into by hand.
+	//Ink on parchment: very dark brown instead of pure black, which looks harsh on a warm background.
 	private static final int INK_COLOR = 0x2A2118;
-	/** Rótulo de las pestañas cerradas: van sobre cuero, así que el mismo pergamino apagado de TomeButton. */
+	/** Label for closed tabs: they sit over leather, so the same dulled parchment color as TomeButton. */
 	private static final int TAB_TEXT_CLOSED = 0xCBBA97;
-	/** Cabeceras de sección: tinta aguada, para que titulen sin competir con los rótulos de los campos. */
+	/** Section headers: watered-down ink, so they title without competing with the field labels. */
 	private static final int SECTION_COLOR = 0x6B5636;
-	//Bandas de sección: negro y blanco a muy poca opacidad, no colores propios. Así se oscurecen y aclaran
-	//el pergamino que tengan detrás sin pelearse con él si algún día cambia de tono.
+	//Section bands: black and white at very low opacity, not colors of their own. This darkens and
+	//lightens whatever parchment sits behind them without clashing with it if its tone ever changes.
 	private static final int BAND_FILL = 0x12000000;
 	private static final int BAND_LIGHT = 0x20FFFFFF;
 	private static final int BAND_SHADOW = 0x22000000;
-	//Ámbar quemado para lo que se rellena solo. El ámbar claro de antes (0xFFD37F) estaba pensado para un
-	//fondo oscuro; sobre pergamino no tenía contraste suficiente para leerse.
+	//Burnt amber for what fills itself in. The lighter amber before (0xFFD37F) was designed for a dark
+	//background; over parchment it didn't have enough contrast to read.
 	private static final int AUTO_FIELD_COLOR = 0x8A5A12;
 
 	public enum PanelStatus {
@@ -323,12 +324,12 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private static final ResourceLocation ICON_WIS = new ResourceLocation("dndsheets:textures/screens/wis.png");
 	private static final ResourceLocation ICON_CHA = new ResourceLocation("dndsheets:textures/screens/cha.png");
 
-	//renderLabels corre cada frame: estos Component (texto estático, nunca cambia) se cachean una sola
-	//vez en vez de construirse de nuevo en cada uno.
+	//renderLabels runs every frame: these Components (static text, never changes) are cached once
+	//instead of being rebuilt on every single one.
 	private static final Component LABEL_NAME = Component.translatable("gui.dndsheets.character_sheet.label_name");
-	//Los íconos junto a los campos de característica (str.png, dex.png...) son pictogramas sin texto —
-	//sin esto, un jugador nuevo no tiene forma de saber cuál campo es Fuerza y cuál es Destreza salvo por
-	//el orden. Usados como tooltip (ver initAbilityScoreBoxes) y como texto de los botones de tirada.
+	//The icons next to the ability score fields (str.png, dex.png...) are pictograms with no text —
+	//without this, a new player has no way of knowing which field is Strength and which is Dexterity
+	//other than by order. Used as a tooltip (see initAbilityScoreBoxes) and as the roll buttons' text.
 	private static final Component LABEL_ABILITY_STR = Component.translatable("gui.dndsheets.character_sheet.ability_str");
 	private static final Component LABEL_ABILITY_DEX = Component.translatable("gui.dndsheets.character_sheet.ability_dex");
 	private static final Component LABEL_ABILITY_CON = Component.translatable("gui.dndsheets.character_sheet.ability_con");
@@ -365,7 +366,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private static final Component LABEL_SKILL_DECEPTION = Component.translatable("gui.dndsheets.character_sheet.label_skill_deception");
 	private static final Component LABEL_SKILL_INTIMIDATION = Component.translatable("gui.dndsheets.character_sheet.label_skill_intimidation");
 	private static final Component LABEL_SKILL_PERFORMANCE = Component.translatable("gui.dndsheets.character_sheet.label_skill_performance");
-	/** Cabecera de la pestaña de Ataques: el mismo rótulo que lleva su pestaña, sin clave nueva. */
+	/** Header for the Attacks tab: the same label its tab carries, no new key. */
 	private static final Component LABEL_ATTACKS_TAB = Component.translatable("gui.dndsheets.character_sheet.attacks_tab");
 	private static final Component LABEL_ATTACKS_EMPTY = Component.translatable("gui.dndsheets.character_sheet.attacks_empty");
 	private static final Component LABEL_SECTION_ABILITIES = Component.translatable("gui.dndsheets.character_sheet.section_abilities");
@@ -374,8 +375,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private static final Component LABEL_SECTION_RESOURCES = Component.translatable("gui.dndsheets.character_sheet.section_resources");
 	private static final Component LABEL_SKILL_PERSUASION = Component.translatable("gui.dndsheets.character_sheet.label_skill_persuasion");
 
-	//Las 18 habilidades en el mismo orden en que se colocan, para poder recorrerlas (ver
-	//warnIfLabelsOverflow). Antes solo existían sueltas, nombradas una a una en renderLabels.
+	//The 18 skills in the same order they're placed, so they can be iterated over (see
+	//warnIfLabelsOverflow). Before, they only existed loose, named one by one in renderLabels.
 	private static final Component[] SKILL_LABELS_COL1 = {
 		LABEL_SKILL_ATHLETICS, LABEL_SKILL_ACROBATICS, LABEL_SKILL_SLEIGHTOFHAND, LABEL_SKILL_STEALTH,
 		LABEL_SKILL_ARCANA, LABEL_SKILL_HISTORY, LABEL_SKILL_INVESTIGATION, LABEL_SKILL_NATURE, LABEL_SKILL_RELIGION,
@@ -386,10 +387,11 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		LABEL_SKILL_PERSUASION,
 	};
 
-	//Todos los campos de la hoja, para enmarcarlos de una pasada. Salen del guistate, que ya los tiene
-	//todos: registrarlos a mano en los trece sitios que los crean es justo como se olvida uno.
+	//Every field on the sheet, to frame them all in one pass. Sourced from guistate, which already has
+	//all of them: registering them by hand in the thirteen places that create them is exactly how one
+	//gets forgotten.
 	private final java.util.List<EditBox> sheetFields = new ArrayList<>();
-	//Los widgets del panel principal, para ocultarlos al cambiar de pestaña. Ver initMainPanel().
+	//The main panel's widgets, to hide them when switching tabs. See initMainPanel().
 	private final java.util.List<AbstractWidget> mainPanelWidgets = new ArrayList<>();
 
 	@Override
@@ -425,14 +427,14 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			case SKILLS:
 				break;
 			case ATTACKS:
-				//La cabecera y el aviso de lista vacía se dibujan en renderLabels, no aquí: este método corre
-				//en coordenadas de PANTALLA y las constantes de la retícula son de la HOJA, así que sin la
-				//traslación de leftPos/topPos el texto aterrizaba en la esquina superior izquierda, encima
-				//del panel lateral de características.
+				//The header and the empty-list notice are drawn in renderLabels, not here: this method runs
+				//in SCREEN coordinates and the grid's constants are in SHEET coordinates, so without the
+				//leftPos/topPos translation the text would land in the top-left corner, over the side panel
+				//of ability scores.
 				break;
 		}
 
-		//Después de que los campos se hayan dibujado: el marco tapa el anillo gris que cada uno se pinta solo.
+		//After the fields have been drawn: the frame covers the gray ring each one paints for itself.
 		for (EditBox field : sheetFields) {
 			if (field.visible) frameField(guiGraphics, field);
 		}
@@ -458,8 +460,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				break;
 		}
 
-		//Bandas de sección, solo en la pestaña principal. Va aquí y no en renderLabels porque renderLabels
-		//corre DESPUÉS de los widgets: dibujadas allí taparían los propios campos que enmarcan.
+		//Section bands, only on the main tab. Goes here and not in renderLabels because renderLabels runs
+		//AFTER the widgets: drawn there, they'd cover the very fields they frame.
 		if (panelActive == PanelStatus.MAIN) {
 			sectionBand(guiGraphics, SEC1_Y, ROW1_Y);
 			sectionBand(guiGraphics, SEC2_Y, ROW3_Y);
@@ -476,11 +478,11 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		RenderSystem.disableBlend();
 	}
 
-	//El botón/campo bajo el cursor se queda con el scroll por defecto (Screen le entrega el evento a lo
-	//que esté justo debajo del mouse), y una fila de la lista de Ataques no hace nada con él — de ahí que
-	//antes solo se pudiera desplazar pasando el mouse por huecos sin botón (ver PresetScreen.mouseScrolled,
-	//mismo arreglo). Solo aplica en la pestaña de Ataques y solo si el cursor está sobre la lista, para no
-	//robarle el scroll a nada de las otras pestañas.
+	//The button/field under the cursor keeps the scroll by default (Screen hands the event to whatever's
+	//right under the mouse), and a row in the Attacks list does nothing with it — which is why it used to
+	//only be possible to scroll by hovering over gaps with no button (see PresetScreen.mouseScrolled,
+	//same fix). Only applies on the Attacks tab and only if the cursor is over the list, so as not to
+	//steal scroll from anything on the other tabs.
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
 		if (panelActive == PanelStatus.ATTACKS && attackRolls.isMouseOver(mouseX, mouseY)) {
@@ -491,18 +493,16 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 	@Override
 	public boolean keyPressed(int key, int b, int c) {
-		//if (key == 256 || DndsheetsModKeyMappings.CHARACTER.isActiveAndMatches(InputConstants.getKey(key, b))) {
 		if (key == 256) {
-			//DndsheetsModKeyMappings.CHARACTER.consumeClick();
 			this.minecraft.player.closeContainer();
 			CharacterSheetSaveProcedure.execute(guistate);
 			return true;
 		}
-		// Cualquier campo de texto enfocado se queda con la tecla entera, sin importar
-		// si EditBox.keyPressed() la reconoce o no. Antes, una tecla "no especial" (p.ej.
-		// una letra normal, que EditBox solo procesa en charTyped) devolvía false aquí y
-		// el evento caía en AbstractContainerScreen.keyPressed(), que cierra la hoja si la
-		// tecla coincide con el keybind de inventario (por defecto, E) - perdiendo lo escrito.
+		// Any focused text field claims the entire keypress, regardless of whether
+		// EditBox.keyPressed() recognizes it or not. Before, a "non-special" key (e.g.
+		// a regular letter, which EditBox only processes in charTyped) returned false here
+		// and the event fell through to AbstractContainerScreen.keyPressed(), which closes
+		// the sheet if the key matches the inventory keybind (E by default) - losing what was typed.
 		EditBox[] textFields = {
 			hitPoints, hitPointsTemp, hitPointsMax, armorClass,
 			characterName, characterRace, characterClass, background,
@@ -517,6 +517,19 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		}
 
 		if (attackRolls.forwardKeyToFocusedNameBox(key, b, c)) return true;
+
+		//Closes with the SAME key that opens it (H by default), like vanilla's inventory does with E.
+		//Deliberately placed down here and not above, and that's the entire reason it was commented out
+		//since 2025-09-19: the default key is a LETTER, so placed before focus dispatch it would eat the
+		//"h" in "Sorcerer" while typing the name and close the sheet mid-word. After dispatch, a focused
+		//field has already claimed the key and only the "loose" H arrives here.
+		//The server already did its half of the toggle (see CharacterSheetOpenMessage.pressAction); what
+		//was missing was this one, because with a screen open the key doesn't even reach the KeyMapping.
+		if (DndsheetsModKeyMappings.CHARACTER.isActiveAndMatches(InputConstants.getKey(key, b))) {
+			this.minecraft.player.closeContainer();
+			CharacterSheetSaveProcedure.execute(guistate);
+			return true;
+		}
 
 		return super.keyPressed(key, b, c);
 	}
@@ -552,17 +565,17 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	}
 
 	/**
-	 * <p>Sincroniza los campos derivados del estado real del jugador (vida, hambre, nivel)
-	 * en lugar de depender de lo que el jugador escriba manualmente. Esto convierte a estos
-	 * campos en un espejo de solo lectura del jugador de Minecraft, en vez de una hoja
-	 * independiente que hay que actualizar a mano.</p>
+	 * <p>Syncs the fields derived from the player's real state (health, hunger, level)
+	 * instead of relying on what the player types in by hand. This turns these
+	 * fields into a read-only mirror of the Minecraft player, instead of an
+	 * independent sheet that has to be updated manually.</p>
 	 */
 	private void syncFromEntity() {
 		if (entity == null) return;
 
 		int currentHp = (int) Math.ceil(entity.getHealth());
 		int maxHp = (int) Math.ceil(entity.getMaxHealth());
-		int tempHp = (int) Math.ceil(entity.getAbsorptionAmount()); // Corazones dorados = PG temporales
+		int tempHp = (int) Math.ceil(entity.getAbsorptionAmount()); // Golden hearts = temp HP
 
 		if (!hitPoints.getValue().equals(String.valueOf(currentHp)))
 			hitPoints.setValue(String.valueOf(currentHp));
@@ -577,19 +590,19 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				hunger.setValue(String.valueOf(foodLevel));
 		}
 
-		// Nivel real de personaje: sigue el XP de Minecraft hasta que el DM lo fije a mano con
-		// /dndsheet setlevel (guarda "characterLevel" en la hoja) — ver SheetLoader.characterLevelOf.
+		// Real character level: follows Minecraft's XP until the DM sets it by hand with
+		// /dndsheet setlevel (saves "characterLevel" on the sheet) — see SheetLoader.characterLevelOf.
 		int xpLevel = SheetLoader.characterLevelOf(SheetLoader.getClientSheet(), entity);
 		if (!level.getValue().equals(String.valueOf(xpLevel)))
 			level.setValue(String.valueOf(xpLevel));
 
-		// Regla de bono de competencia de D&D 5e, calculada a partir del nivel real
+		// D&D 5e proficiency bonus rule, calculated from the real level
 		int calculatedProficiency = 2 + ((xpLevel - 1) / 4);
 		if (!proficiency.getValue().equals(String.valueOf(calculatedProficiency)))
 			proficiency.setValue(String.valueOf(calculatedProficiency));
 
-		// CA = 10 + mod. Destreza + armadura real equipada (entity.getArmorValue()),
-		// para que la armadura que lleve puesta el jugador sí afecte a la hoja.
+		// AC = 10 + Dex mod + real equipped armor (entity.getArmorValue()),
+		// so the armor the player actually wears does affect the sheet.
 		int dexMod = abilityModifier(dexterity.getValue());
 		int calculatedAc = 10 + dexMod + (int) entity.getArmorValue();
 		if (!armorClass.getValue().equals(String.valueOf(calculatedAc)))
@@ -605,41 +618,41 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	}
 
 	/**
-	 * <p>Cabecera de sección: título en tinta apagada y filete de latón hasta el borde del panel. Se dibuja
-	 * desde {@code renderLabels}, que ya corre con la traslación de {@code leftPos}/{@code topPos} aplicada,
-	 * así que las coordenadas son las mismas de la retícula.</p>
+	 * <p>Section header: title in dulled ink and a brass rule out to the panel's edge. Drawn from
+	 * {@code renderLabels}, which already runs with {@code leftPos}/{@code topPos}'s translation applied,
+	 * so the coordinates are the same as the grid's.</p>
 	 */
 	/**
-	 * <p>Marco de latón sobre el anillo gris que {@link EditBox} se dibuja solo.</p>
+	 * <p>Brass frame over the gray ring {@link EditBox} paints for itself.</p>
 	 *
-	 * <p>Vanilla pinta cada campo como un anillo gris de un píxel (blanco al tener el foco) alrededor de un
-	 * relleno negro, y los dos colores están fijos en {@code EditBox.renderWidget}. Sobre el pergamino eso
-	 * se leía como widgets prestados de otra interfaz: la pantalla parecía dos diseños a la vez.</p>
+	 * <p>Vanilla draws every field as a one-pixel gray ring (white when focused) around a black fill, and
+	 * both colors are hardcoded in {@code EditBox.renderWidget}. Over the parchment that read as widgets
+	 * borrowed from another interface: the screen looked like two designs at once.</p>
 	 *
-	 * <p>Apagar el borde con {@code setBordered(false)} no vale: quita también el relleno negro Y cambia
-	 * dónde se dibuja el texto (pasa de estar centrado con margen a pegarse a la esquina superior
-	 * izquierda), y sin relleno oscuro detrás el texto tendría que ser tinta sobre pergamino — que con la
-	 * sombra fija de Minecraft se ve duplicado, el problema que ya arreglamos en los rótulos.</p>
+	 * <p>Turning off the border with {@code setBordered(false)} doesn't work: it also removes the black
+	 * fill AND changes where the text is drawn (it goes from centered with a margin to hugging the
+	 * top-left corner), and with no dark fill behind it the text would have to be ink on parchment — which
+	 * with Minecraft's fixed shadow reads as doubled, the same problem already fixed on the labels.</p>
 	 *
-	 * <p>Así que el anillo no se quita: se repinta encima. Ocupa exactamente un píxel por fuera de la caja,
-	 * o sea que taparlo no toca ni el texto ni el interior. Se conserva la señal de foco (latón encendido
-	 * en vez de blanco) y se añade una línea oscura por fuera, que es lo que hace que el campo se lea
-	 * hundido en la hoja en vez de pegado encima.</p>
+	 * <p>So the ring isn't removed: it's repainted over. It occupies exactly one pixel outside the box, so
+	 * covering it touches neither the text nor the interior. The focus cue is kept (lit brass instead of
+	 * white) and a dark line is added outside it, which is what makes the field read as sunk into the
+	 * sheet instead of stuck on top of it.</p>
 	 */
 	/**
-	 * <p>Avisa por el log si algún rótulo se sale de su hueco. Cuatro veces en un mismo rediseño se coló un
-	 * rótulo más ancho que su columna —{@code Velocidad}, {@code Bono de Competencia},
-	 * {@code Trato con Animales} y el mensaje de "sin ataques"— y las cuatro <b>solo en español</b>: los
-	 * huecos se ajustan mirando la pantalla en un idioma y el desbordamiento aparece en otro.</p>
+	 * <p>Warns via the log if any label runs past its slot. Four times in the same redesign a label
+	 * wider than its column slipped through — {@code Speed}, {@code Proficiency Bonus},
+	 * {@code Animal Handling}, and the "no attacks" message — and all four <b>only in Spanish</b>: slots
+	 * get sized while looking at the screen in one language, and the overflow shows up in another.</p>
 	 *
-	 * <p>Va aquí y no en el bloque {@code static} porque necesita {@code this.font}, que no existe hasta
-	 * que hay pantalla. Y avisa en vez de reventar: un rótulo recortado por una traducción larga es un
-	 * defecto cosmético, no motivo para dejar sin hoja a quien juega. Quien lo tiene que ver es quien
-	 * desarrolla, y para eso basta el log.</p>
+	 * <p>Lives here and not in the {@code static} block because it needs {@code this.font}, which doesn't
+	 * exist until there's a screen. And it warns instead of crashing: a label clipped by a long
+	 * translation is a cosmetic defect, not a reason to leave whoever's playing without a sheet. The one
+	 * who needs to see it is whoever's developing, and the log is enough for that.</p>
 	 */
 	private void warnIfLabelsOverflow() {
-		//{rótulo, x donde empieza, x donde NO puede llegar}. Los límites salen de la retícula, así que
-		//siguen a las constantes solos.
+		//{label, x where it starts, x it CANNOT reach}. The limits come from the grid, so they follow the
+		//constants on their own.
 		Object[][] slots = {
 			{LABEL_RACE, RACE_OFFSET_X, CLASS_OFFSET_X},
 			{LABEL_CLASS, CLASS_OFFSET_X, BACKG_OFFSET_X},
@@ -655,14 +668,14 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			{LABEL_HUNGER, HUNGER_OFFSET_X, HITDICE_OFFSET_X},
 			{LABEL_HITDICE, HITDICE_OFFSET_X, PANEL_RIGHT},
 			{LABEL_ATTACKS_EMPTY, PANEL_X, PANEL_RIGHT},
-			//El panel lateral: su límite real es el filete vertical del fondo, no el borde del bloque.
+			//The side panel: its real limit is the background's vertical rule, not the block's edge.
 			{LABEL_NAME, NAME_OFFSET_X, PANEL_X - 8},
 			{LABEL_SECTION_ABILITIES, NAME_OFFSET_X, PANEL_X - 8},
 		};
 		for (Object[] slot : slots) {
 			checkLabelFits((Component) slot[0], (Integer) slot[1], (Integer) slot[2]);
 		}
-		//Las habilidades: el rótulo va tras el botón de tirada, y la columna 1 no puede invadir la 2.
+		//The skills: the label goes after the roll button, and column 1 can't invade column 2.
 		for (int i = 0; i < 9; i++) {
 			checkLabelFits(SKILL_LABELS_COL1[i], SKILL_COL1_X + SKILL_LABEL_GAP, SKILL_COL2_X - 4);
 			checkLabelFits(SKILL_LABELS_COL2[i], SKILL_COL2_X + SKILL_LABEL_GAP, SKILL_RIGHT);
@@ -672,8 +685,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	private void checkLabelFits(Component label, int left, int limit) {
 		int end = left + this.font.width(label);
 		if (end > limit) {
-			DndsheetsMod.LOGGER.error("Hoja de personaje: el rótulo \"{}\" llega a x={} y su hueco acaba en {}"
-				+ " — se verá recortado o encima de lo de al lado.", label.getString(), end, limit);
+			DndsheetsMod.LOGGER.error("Character sheet: the label \"{}\" reaches x={} and its slot ends at {}"
+				+ " - it will be clipped or overlap its neighbour.", label.getString(), end, limit);
 		}
 	}
 
@@ -682,15 +695,15 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	}
 
 	/**
-	 * <p>Banda de una sección: un rectángulo apenas más oscuro que el pergamino, con luz arriba y sombra
-	 * abajo. Da cuerpo al grupo — un título y un filete solos dejan la sección sin superficie, y la hoja
-	 * entera se lee plana.</p>
+	 * <p>A section's band: a rectangle just barely darker than the parchment, with light on top and shadow
+	 * below. Gives the group body — a lone title and rule leave the section with no surface, and the
+	 * whole sheet reads flat.</p>
 	 *
-	 * <p>Se calcula desde las constantes de la retícula, no a mano contra la textura: por eso no puede
-	 * desalinearse de las filas que envuelve cuando se cambie {@code ROW_STEP}.</p>
+	 * <p>Computed from the grid's constants, not by hand against the texture: that's why it can't drift
+	 * out of alignment with the rows it wraps when {@code ROW_STEP} changes.</p>
 	 *
-	 * @param headingY  la {@code SEC*_Y} de la sección
-	 * @param lastRowY  la {@code ROW*_Y} de su ÚLTIMA fila de campos
+	 * @param headingY  the section's {@code SEC*_Y}
+	 * @param lastRowY  its LAST field row's {@code ROW*_Y}
 	 */
 	private void sectionBand(GuiGraphics guiGraphics, int headingY, int lastRowY) {
 		int left = this.leftPos + PANEL_X - 8;
@@ -709,22 +722,22 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 	private void section(GuiGraphics guiGraphics, Component title, int y, int left, int right) {
 		guiGraphics.drawString(this.font, title, left, y, SECTION_COLOR, false);
-		//El filete arranca donde acaba el título, no debajo: así la cabecera ocupa una sola línea y las
-		//secciones caben en el alto del panel, que es justo lo que no pasaba con el filete en su propia fila.
-		//Y solo si queda sitio: GuiGraphics.fill con el borde izquierdo pasado del derecho no deja de
-		//dibujar, dibuja el rectángulo al revés. En el panel lateral el título casi llena el ancho, y en
-		//español lo llena del todo.
+		//The rule starts where the title ends, not below it: this way the header takes up a single line
+		//and the sections fit within the panel's height, which is exactly what didn't happen with the rule
+		//on its own row. And only if there's room left: GuiGraphics.fill with the left edge past the right
+		//one doesn't stop drawing, it draws the rectangle backwards. On the side panel the title nearly
+		//fills the width, and in Spanish it fills it completely.
 		int ruleLeft = left + this.font.width(title) + 6;
 		if (right - ruleLeft >= 6) GuiStyle.rule(guiGraphics, ruleLeft, right, y + 3);
 	}
 
 	/**
-	 * <p>Coordenada del hueco {@code index} (0..8) de una columna de habilidades, contando lo que ocupan
-	 * las cabeceras de grupo que quedan por encima.</p>
+	 * <p>Coordinate for slot {@code index} (0..8) of a skill column, counting what the group headers
+	 * above it take up.</p>
 	 *
-	 * <p>Se calcula en vez de escribirse porque los grupos no son del mismo tamaño (Fuerza tiene una
-	 * habilidad e Inteligencia cinco): con posiciones a mano, añadir o mover una obliga a recolocar todas
-	 * las de debajo. Devuelve la y del RÓTULO; el botón de tirada se centra sobre ella.</p>
+	 * <p>Computed instead of hardcoded because the groups aren't all the same size (Strength has one
+	 * skill and Intelligence has five): with hand-written positions, adding or moving one forces
+	 * repositioning every one below it. Returns the LABEL's y; the roll button centers over it.</p>
 	 */
 	private static int skillRowY(int[] groups, int index) {
 		int y = SKILL_TOP;
@@ -735,10 +748,10 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			y += size * SKILL_ROW;
 			seen += size;
 		}
-		throw new IllegalArgumentException("Hueco " + index + " fuera de una columna de " + seen + " habilidades");
+		throw new IllegalArgumentException("Slot " + index + " is outside a column of " + seen + " skills");
 	}
 
-	/** Coordenada de la cabecera del grupo {@code group} de una columna. */
+	/** Coordinate for group {@code group}'s header within a column. */
 	private static int skillGroupY(int[] groups, int group) {
 		int y = SKILL_TOP;
 		for (int i = 0; i < group; i++) y += SKILL_GROUP_STEP + groups[i] * SKILL_ROW;
@@ -747,22 +760,22 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 	@Override
 	protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-		//UNA sola tinta. Antes eran dos —lightColor blanco y darkColor casi negro— repartidos sin criterio
-		//aparente entre etiquetas vecinas, y el fondo era BLANCO: la mayoría de las etiquetas eran blanco
-		//sobre blanco, invisibles. Lo que las tapaba era el texto horneado en el PNG, que además estaba en
-		//inglés y duplicaba a estas. Con el pergamino nuevo, una tinta oscura las hace legibles todas.
+		//A SINGLE ink. There used to be two (a white lightColor and a near-black darkColor) handed out with no
+		//apparent logic between neighboring labels, and the background was WHITE: most labels were white
+		//on white, invisible. What covered for them was the text baked into the PNG, which was also in
+		//English and duplicated these. With the new parchment, one dark ink makes them all legible.
 		final int lightColor = INK_COLOR;
 		final int darkColor = INK_COLOR;
 		guiGraphics.drawString(this.font, LABEL_NAME, NAME_OFFSET_X, NAME_OFFSET_Y - 10, lightColor, false);
-		//El panel lateral era lo único de la hoja sin cabecera, y se ve en las tres pestañas. Va fuera del
-		//switch por eso mismo.
+		//The side panel was the only part of the sheet without a header, and it shows on all three tabs. That's
+		//why it goes outside the switch.
 		section(guiGraphics, LABEL_SECTION_ABILITIES, ABILITY_OFFSET_Y - 13, NAME_OFFSET_X, SIDE_PANEL_RIGHT);
 
 		switch (panelActive) {
 			case ATTACKS:
 				section(guiGraphics, LABEL_ATTACKS_TAB, SEC1_Y);
-				//Sin ataques, la lista es un hueco oscuro que no dice qué hacer con él. El botón de añadir
-				//está justo debajo pero es un icono de 16 px sin rótulo.
+				//With no attacks, the list is a dark hole that doesn't say what to do with it. The add button
+				//is right below but it's a 16 px icon with no label.
 				if (attackRolls.getListSize() == 0) {
 					guiGraphics.drawString(this.font, LABEL_ATTACKS_EMPTY,
 						PANEL_X + (PANEL_RIGHT - PANEL_X - this.font.width(LABEL_ATTACKS_EMPTY)) / 2,
@@ -770,47 +783,48 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				}
 				break;
 			case MAIN:
-				//Cabeceras de sección: son lo que convierte doce rótulos sueltos sobre un pergamino en blanco
-				//en tres grupos que se encuentran de un vistazo. El filete es el mismo recurso que usa
-				//GuiStyle en las pantallas de lista, así que la hoja y el resto del mod se leen igual.
+				//Section headers: they turn twelve loose labels on a blank parchment into three groups that can
+				//be found at a glance. The rule is the same device GuiStyle uses on the list screens, so the
+				//sheet and the rest of the mod read the same.
 				section(guiGraphics, LABEL_SECTION_IDENTITY, SEC1_Y);
 				section(guiGraphics, LABEL_SECTION_COMBAT, SEC2_Y);
 				section(guiGraphics, LABEL_SECTION_RESOURCES, SEC3_Y);
 
-				//Fila 1 — identidad.
-				//Ámbar = se rellena solo (ver AUTO_FIELD_COLOR); color normal = se escribe a mano.
+				//Row 1 — identity.
+				//Amber = fills itself in (see AUTO_FIELD_COLOR); normal color = typed in by hand.
 				guiGraphics.drawString(this.font, LABEL_RACE, RACE_OFFSET_X, RACE_OFFSET_Y - LABEL_GAP, lightColor, false);
 				guiGraphics.drawString(this.font, LABEL_CLASS, CLASS_OFFSET_X, CLASS_OFFSET_Y - LABEL_GAP, lightColor, false);
 				guiGraphics.drawString(this.font, LABEL_BACKGROUND, BACKG_OFFSET_X, BACKG_OFFSET_Y - LABEL_GAP, lightColor, false);
 
-				//Fila 2 — combate.
+				//Row 2 — combat.
 				guiGraphics.drawString(this.font, LABEL_ARMOR_CLASS_AC, ACHP_OFFSET_X, ACHP_OFFSET_Y - LABEL_GAP, AUTO_FIELD_COLOR, false);
 				guiGraphics.drawString(this.font, LABEL_HIT_POINTS, ACHP_OFFSET_X + ACHP_SEPARATION, ACHP_OFFSET_Y - LABEL_GAP, AUTO_FIELD_COLOR, false);
 				guiGraphics.drawString(this.font, LABEL_HIT_POINTS_MAX, ACHP_OFFSET_X + ACHP_SEPARATION * 2, ACHP_OFFSET_Y - LABEL_GAP, AUTO_FIELD_COLOR, false);
 				guiGraphics.drawString(this.font, LABEL_HIT_POINTS_TEMP, ACHP_OFFSET_X + ACHP_SEPARATION * 3, ACHP_OFFSET_Y - LABEL_GAP, AUTO_FIELD_COLOR, false);
 
-				//Fila 3 — velocidad, competencia e iniciativa.
+				//Row 3 — speed, proficiency, and initiative.
 				guiGraphics.drawString(this.font, LABEL_SPEED, SPEED_OFFSET_X, SPEED_OFFSET_Y - LABEL_GAP, lightColor, false);
 				guiGraphics.drawString(this.font, LABEL_PROFICIENCY_BONUS, PROF_OFFSET_X, PROF_OFFSET_Y - LABEL_GAP, AUTO_FIELD_COLOR, false);
-				//El "+" va pegado al campo, no dentro: el campo guarda solo el número.
+				//The "+" sits right next to the field, not inside it: the field only stores the number.
 				guiGraphics.drawString(this.font, "+", PROF_OFFSET_X - 7, PROF_OFFSET_Y + 5, AUTO_FIELD_COLOR, false);
-				//Alineado a la izquierda como todos los demás. Estaba centrado sobre su botón, que era la única
-				//excepción de la hoja y además obligaba a drawCenteredString, que fuerza sombra (ver más abajo).
+				//Left-aligned like everything else. Used to be centered over its button, which was the
+				//sheet's only exception and on top of that forced drawCenteredString, which forces a shadow
+				//(see below).
 				guiGraphics.drawString(this.font, LABEL_INITIATIVE, INITIATIVE_OFFSET_X, INITIATIVE_OFFSET_Y - LABEL_GAP, lightColor, false);
 
-				//Fila 4 — recursos. "Dados de Golpe" rotula la celda entera (cantidad + tipos), no solo el
-				//primer campo, por eso su rótulo se extiende por encima de los dos.
+				//Row 4 — resources. "Hit Dice" labels the whole cell (amount + types), not just the first
+				//field, which is why its label spans above both.
 				guiGraphics.drawString(this.font, LABEL_LEVEL, LEVEL_OFFSET_X, LEVEL_OFFSET_Y - LABEL_GAP, AUTO_FIELD_COLOR, false);
 				guiGraphics.drawString(this.font, LABEL_HUNGER, HUNGER_OFFSET_X, HUNGER_OFFSET_Y - LABEL_GAP, AUTO_FIELD_COLOR, false);
 				guiGraphics.drawString(this.font, LABEL_HITDICE, HITDICE_OFFSET_X, HITDICE_OFFSET_Y - LABEL_GAP, lightColor, false);
 				break;
 			case SKILLS:
-				//Cabeceras de grupo: dicen de qué característica tira cada bloque, que es la mitad de la
-				//información de una lista de habilidades y en pantalla no aparecía por ningún lado — la
-				//agrupación existía solo como comentarios en el código. Reutilizan los rótulos de
-				//característica del panel lateral, así que no hay claves de traducción nuevas.
-				//Aquí no hay bandas como en la pestaña principal: cinco bandas en dos columnas se leen como
-				//rayas, y las cabeceras con filete ya separan los grupos de sobra.
+				//Group headers: they say which ability each block draws from, which is half the
+				//information a skill list needs and used to appear nowhere on screen — the grouping only
+				//existed as comments in the code. They reuse the side panel's ability labels, so there are
+				//no new translation keys.
+				//No bands here like on the main tab: five bands across two columns read as stripes, and
+				//the headers with their rule already separate the groups more than enough.
 				section(guiGraphics, LABEL_ABILITY_STR, skillGroupY(SKILL_COL1_GROUPS, 0), SKILL_COL1_X, SKILL_COL2_X - 8);
 				section(guiGraphics, LABEL_ABILITY_DEX, skillGroupY(SKILL_COL1_GROUPS, 1), SKILL_COL1_X, SKILL_COL2_X - 8);
 				section(guiGraphics, LABEL_ABILITY_INT, skillGroupY(SKILL_COL1_GROUPS, 2), SKILL_COL1_X, SKILL_COL2_X - 8);
@@ -855,12 +869,12 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	}
 
 	/**
-	 * <p>Vuelve a rellenar los campos desde la hoja del cliente, si esta pantalla es la que está abierta.</p>
+	 * <p>Refills the fields from the client sheet, if this screen is the one currently open.</p>
 	 *
-	 * <p>La llama {@code SheetClientMessage} cada vez que llega una hoja COMPLETA del servidor: cambiar de
-	 * personaje, descansar, aplicar un preset, gastar una Mejora de Característica. Los parches de un solo
-	 * campo ({@code SheetFieldUpdateMessage}) no pasan por aquí a propósito — llegan a mitad de combate y
-	 * repintarían encima de lo que el jugador esté escribiendo.</p>
+	 * <p>Called by {@code SheetClientMessage} every time a COMPLETE sheet arrives from the server:
+	 * switching characters, resting, applying a preset, spending an Ability Score Improvement. Single-field
+	 * patches ({@code SheetFieldUpdateMessage}) deliberately don't go through here — they arrive mid-combat
+	 * and would repaint over whatever the player is typing.</p>
 	 */
 	public static void refreshIfOpen() {
 		if (net.minecraft.client.Minecraft.getInstance().screen instanceof CharacterSheetScreen screen) {
@@ -877,8 +891,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		CharacterSheetSaveProcedure.execute(guistate);
 		Logger logger = LogManager.getLogger(DndsheetsMod.MODID);
 		logger.log(org.apache.logging.log4j.Level.getLevel("info"), "cat: " + category + " | index: " + index + " | subindex: " + subIndex);
-		//Shift+clic en el dado = tirada privada (Sigilo, Investigación...): solo le llega a quien tira y a
-		//los operadores conectados, en vez de a todo el mundo cerca — ver RollAnnouncerProcedure.sendPrivately.
+		//Shift+click on the die = private roll (Stealth, Investigation...): only reaches whoever rolled
+		//and connected operators, instead of everyone nearby — see RollAnnouncerProcedure.sendPrivately.
 		boolean isPrivate = hasShiftDown();
 		DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetRollButtonMessage(category, index, subIndex, isPrivate));
 		SheetRollButtonMessage.handle(entity, category, index, subIndex, isPrivate);
@@ -914,17 +928,17 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 				e.setHeight(15);
 				e.setImage( new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton.png"), 0, 0, 15, 50, 45);
 				e.txtColor = TAB_TEXT_CLOSED;
-				e.txtShadow = true;  //Claro sobre cuero: la sombra da relieve.
+				e.txtShadow = true;  //Light over leather: the shadow gives it relief.
 				e.active = true;
 			}
 			else {
 				e.setY(this.topPos - 17);
 				e.setHeight(20);
 				e.setImage( new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_tabbutton_active.png"), 0, 0, 20, 50, 60);
-				//Tinta oscura: la pestaña abierta es pergamino, y el blanco de MCreator sobre pergamino no se lee.
+				//Dark ink: the open tab is parchment, and MCreator's white doesn't read over parchment.
 				e.txtColor = INK_COLOR;
-				//Sin sombra: en tinta oscura sobre el pergamino de la pestaña abierta, la sombra es una
-				//segunda copia del rótulo a un píxel y la palabra se lee escrita dos veces.
+				//No shadow: in dark ink over the open tab's parchment, the shadow is a second copy of the
+				//label one pixel off, and the word reads as written twice.
 				e.txtShadow = false;
 				e.active = false;
 			}
@@ -937,14 +951,14 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		saveEditButtons.forEach((e) -> setActiveVisible(editMode, e));
 
 		//Main Tab
-		//A diferencia de las pestañas Skills/Attacks (más abajo), a estos campos antes solo se les tocaba
-		//"active" y nunca "visible": cambiar de pestaña los dejaba deshabilitados pero seguían dibujándose
-		//encima de Skills/Attacks en su misma posición de pantalla — la UI superpuesta reportada en. EditBox.visible arranca en true y nunca se apagaba.
+		//Unlike the Skills/Attacks tabs (below), these fields used to only have "active" touched, never
+		//"visible": switching tabs left them disabled but they kept drawing themselves over Skills/Attacks
+		//in the same screen position — the overlapping UI that got reported. EditBox.visible starts true and never got turned off.
 		isActive = panelActive == PanelStatus.MAIN;
 		for (AbstractWidget widget : mainPanelWidgets) setActiveVisible(isActive, widget);
 
-		//Los dos de iniciativa comparten sitio y se turnan según el modo edición, así que van DESPUÉS del
-		//bucle de arriba: este los afina, aquel los pone a todos por igual.
+		//The two initiative widgets share a spot and take turns based on edit mode, so they go AFTER the
+		//loop above: this fine-tunes them, that one sets them all the same.
 		setActiveVisible(isActive && !editMode, initiativeButton);
 		setActiveVisible(isActive && editMode, initiativeEditButton);
 
@@ -962,7 +976,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		setActiveVisible(isActive, addButton);
 	}
 
-	//F4 del audit: reemplaza ~16 pares repetidos de "x.active = isActive; x.visible = isActive;".
+	//Audit item F4: replaces ~16 repeated pairs of "x.active = isActive; x.visible = isActive;".
 	private static void setActiveVisible(boolean isActive, AbstractWidget... widgets) {
 		for (AbstractWidget widget : widgets) {
 			widget.active = isActive;
@@ -985,7 +999,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		ImageButton rollButton = new ImageButton(this.leftPos + x, this.topPos + y, 16, 16, 0, 0, 16, new ResourceLocation(!isSave ? "dndsheets:textures/screens/atlas/imagebutton_d20.png" : "dndsheets:textures/screens/atlas/imagebutton_d20_save.png"), 16, 32, e -> {
 			sendRoll(category, index, 0);
 		});
-		rollButton.setTooltip(Tooltip.create(Component.literal((isSave ? "Tirada de salvación: " : "Tirar: ") + label.getString())));
+		rollButton.setTooltip(Tooltip.create(Component.translatable(isSave ? "gui.dndsheets.character_sheet.save_tooltip" : "gui.dndsheets.character_sheet.roll_of", label)));
 		guistate.put(guistateKey, rollButton);
 		this.addRenderableWidget(rollButton);
 
@@ -1019,11 +1033,11 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	 * @param index
 	 */
 	/**
-	 * <p>Saca del screen todos los widgets de las filas actuales de {@code scrollList} y vacía la lista.
-	 * Llamado por {@code CharacterSheetLoadProcedure} ANTES de repoblar desde una hoja nueva del
-	 * servidor (cambiar de raza, aplicar un preset, descansar, subir de nivel) — sin esto, cada hoja
-	 * nueva apilaba filas de ataques encima de las viejas en vez de reemplazarlas, y el botón de borrar
-	 * de una fila de más terminaba con un índice que ya no existía en el array real (ver
+	 * <p>Removes from the screen all widgets of {@code scrollList}'s current rows and empties the list.
+	 * Called by {@code CharacterSheetLoadProcedure} BEFORE repopulating from a fresh sheet from the
+	 * server (changing race, applying a preset, resting, leveling up) — without this, each new sheet
+	 * stacked attack rows on top of the old ones instead of replacing them, and an extra row's delete
+	 * button ended up with an index that no longer existed in the real array (see
 	 * {@link RollScrollWidget#clearAndCollectWidgets}).</p>
 	 */
 	public void clearScrollList(RollScrollWidget scrollList) {
@@ -1067,9 +1081,9 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 
 
 			String rollTooltip = switch (i) {
-				case 0 -> "daño";
-				case 1 -> "ataque";
-				default -> "tirada";
+				case 0 -> "damage";
+				case 1 -> "attack";
+				default -> "roll";
 			};
 
 			ImageButton rollButton = new ImageButton(0, 0, 16, 16, 0, 0, 16, new ResourceLocation(imgLocation), 16, 32, e -> {
@@ -1101,12 +1115,12 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			rollButtons.forEach(this::removeWidget);
 			editButtons.forEach(this::removeWidget);
 			this.removeWidget(e);
-			if (removedIndex < 0) return; //Este botón ya no correspondía a ninguna fila real de la lista.
+			if (removedIndex < 0) return; //This button no longer matched any real row in the list.
 
 			JsonObject sheet = SheetLoader.getClientSheet();
 			SheetLoader.validateSheet(sheet);
 			JsonArray arr = sheet.getAsJsonArray(RollIndex.Category.fromInt(category).toString());
-			if (removedIndex < arr.size()) arr.remove(removedIndex); //Defensa en profundidad: ver clearScrollList.
+			if (removedIndex < arr.size()) arr.remove(removedIndex); //Defense in depth: see clearScrollList.
 		});
 		deleteButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.character_sheet.delete_row")));
 		this.addWidget(deleteButton);
@@ -1114,9 +1128,9 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		scrollList.addListItem(nameBox, rollButtons, editButtons, deleteButton);
 	}
 
-	//Cada campo de texto de la hoja repetía esta misma lógica de "placeholder que reaparece cuando el
-	//campo queda vacío" como subclase anónima de EditBox, cambiando solo la clave de traducción. x/y son offsets sin aplicar leftPos/topPos todavía, igual que las
-	//constantes OFFSET_X/OFFSET_Y de la clase.
+	//Every text field on the sheet repeated this same "placeholder that reappears when the field is
+	//empty" logic as an anonymous EditBox subclass, changing only the translation key. x/y are offsets
+	//without leftPos/topPos applied yet, like the class's OFFSET_X/OFFSET_Y constants.
 	private EditBox placeholderEditBox(int x, int y, int width, int height, String translationKey, int maxLength) {
 		String placeholder = Component.translatable(translationKey).getString();
 		EditBox box = new EditBox(this.font, this.leftPos + x, this.topPos + y, width, height, Component.translatable(translationKey)) {
@@ -1206,13 +1220,14 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	}
 
 	private void initMainPanel() {
-		//Todo lo que se cree aquí dentro pertenece al panel principal, y updateTabs() lo oculta al cambiar
-		//de pestaña. Se captura por diferencia sobre children() en vez de listarlo a mano en updateTabs.
+		//Everything created in here belongs to the main panel, and updateTabs() hides it when switching
+		//tabs. It's captured as a diff over children() instead of being listed by hand in updateTabs.
 		//
-		//La lista a mano ya falló dos veces, y siempre igual: alguien añade un campo, no se acuerda de
-		//apuntarlo en el sitio lejano donde se oculta, y el campo se queda dibujado encima de Habilidades y
-		//Ataques — sin rótulo, sin hacer nada y sin que falle nada. Le pasó primero a la tanda entera y después a Nivel, Hambre y el botón de Guía. Capturado así, un campo nuevo entra
-		//solo por existir.
+		//The hand-written list already failed twice, always the same way: someone adds a field, forgets
+		//to register it in the distant place where it gets hidden, and the field stays drawn on top of
+		//Skills and Attacks — unlabeled, doing nothing, and with nothing failing. It happened first to
+		//the whole batch and then to Level, Hunger and the Guide button. Captured this way, a new field
+		//gets included just by existing.
 		int before = this.children().size();
 
 		initVitalsBoxes();
@@ -1252,9 +1267,9 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		guistate.put("text:proficiency", proficiency);
 		this.addWidget(this.proficiency);
 
-		// --- Campos derivados del jugador real: nivel y hambre ---
-		// NOTA: las posiciones (X/Y) son un punto de partida; ajústalas contra tu textura
-		// de fondo (character_sheet.png) para que encajen visualmente con el resto del panel.
+		// --- Fields derived from the real player: level and hunger ---
+		// NOTE: the (X/Y) positions are a starting point; adjust them against your background
+		// texture (character_sheet.png) so they visually fit with the rest of the panel.
 		level = new EditBox(this.font, this.leftPos + LEVEL_OFFSET_X, this.topPos + LEVEL_OFFSET_Y, 20, 18, Component.translatable("gui.dndsheets.character_sheet.level"));
 		level.setMaxLength(2);
 		guistate.put("text:level", level);
@@ -1265,9 +1280,9 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		guistate.put("text:hunger", hunger);
 		this.addWidget(this.hunger);
 
-		// Estos campos ahora reflejan el estado real del jugador (ver syncFromEntity()),
-		// así que se bloquean para que no se puedan editar a mano y queden desincronizados.
-		// El color ámbar los distingue de un vistazo de los campos que sí se pueden escribir a mano.
+		// These fields now reflect the player's real state (see syncFromEntity()),
+		// so they're locked to keep them from being edited by hand and drifting out of sync.
+		// The amber color tells them apart at a glance from the fields that CAN be typed into by hand.
 		EditBox[] autoFields = {hitPoints, hitPointsMax, hitPointsTemp, proficiency, level, hunger, armorClass};
 		for (EditBox autoField : autoFields) {
 			autoField.setEditable(false);
@@ -1280,13 +1295,13 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			@Override
 			public boolean mouseClicked(double mx, double my, int button) {
 				if (!this.isMouseOver(mx, my)) return false;
-				//La raza la elige Origins, no un picker propio (ver Modularity Map / dndsheets_species): esto
-				//abre el selector real de Origins y sincroniza solo después (ver SpeciesCommand.choose).
-				//La ficha se cierra ANTES de que llegue el selector: dejarla abierta encima le robaba el
-				//clic/teclado al selector de Origins, que quedaba inutilizable hasta cerrar la ficha a mano.
-				//Sin el addon species el comando no existe (error de Brigadier en el chat, ningún selector):
-				//se cae al selector de lista propio, que vuelve a ESTA ficha al elegir (parent capturado por
-				//el handler; el contenedor nunca se cierra en ese camino — ver CharacterOptionListScreen).
+				//Race is chosen by Origins, not by a picker of our own (see Modularity Map / dndsheets_species): this
+				//opens Origins' real selector and only syncs afterward (see SpeciesCommand.choose).
+				//The sheet is closed BEFORE the selector arrives: leaving it open on top stole the
+				//click/keyboard from Origins' selector, which became unusable until the sheet was closed by hand.
+				//Without the species addon the command doesn't exist (a Brigadier error in chat, no selector):
+				//it falls back to our own list selector, which returns to THIS sheet on choosing (parent captured
+				//by the handler; the container is never closed on that path — see CharacterOptionListScreen).
 				CharacterSheetSaveProcedure.execute(guistate);
 				if (CharacterSetupScreen.speciesLoaded()) {
 					net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndspecies choose");
@@ -1308,9 +1323,9 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			@Override
 			public boolean mouseClicked(double mx, double my, int button) {
 				if (!this.isMouseOver(mx, my)) return false;
-				//El trasfondo lo elige Origins, no un picker propio (ver Modularity Map / dndsheets_species):
-				//esto abre el selector real de Origins y sincroniza solo después. Mismo patrón que Raza,
-				//respaldo sin species incluido.
+				//Background is chosen by Origins, not by a picker of our own (see Modularity Map / dndsheets_species):
+				//this opens Origins' real selector and only syncs afterward. Same pattern as Race,
+				//including the no-species fallback.
 				CharacterSheetSaveProcedure.execute(guistate);
 				if (CharacterSetupScreen.speciesLoaded()) {
 					net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndspecies choosebackground");
@@ -1332,10 +1347,10 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			@Override
 			public boolean mouseClicked(double mx, double my, int button) {
 				if (!this.isMouseOver(mx, my)) return false;
-				//La clase también la elige Origins (capa origins-classes:class, ver Modularity Map /
-				//dndsheets_species): mismo patrón que Raza/Trasfondo, sigue aplicando el PRESET real. Sin
-				//species el respaldo NO es la lista de nombres sino el selector de presets — el mecanismo
-				//real del core (dado de golpe, características, equipo), igual que en CharacterSetupScreen.
+				//Class is also chosen by Origins (origins-classes:class layer, see Modularity Map /
+				//dndsheets_species): same pattern as Race/Background, and it still applies the real PRESET. Without
+				//species the fallback is NOT the list of names but the preset selector — the core's real
+				//mechanism (hit die, ability scores, equipment), same as in CharacterSetupScreen.
 				CharacterSheetSaveProcedure.execute(guistate);
 				if (CharacterSetupScreen.speciesLoaded()) {
 					net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndspecies chooseclass");
@@ -1383,19 +1398,19 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 	}
 
 	private void initBottomButtons() {
-		//NOTA: sin hueco dibujado en la textura todavía. Puestos en el margen inferior, debajo de Nivel/
-		//Hambre, para no pisar el círculo de Iniciativa (que ocupa la zona x=270-345, y=90-200).
+		//NOTE: no slot drawn in the texture yet. Placed in the bottom margin, below Level/
+		//Hunger, so as not to overlap the Initiative circle (which occupies the area x=270-345, y=90-200).
 		grimoireButton = TomeButton.of(Component.translatable("gui.dndsheets.character_sheet.grimoire"), b -> GrimoireScreen.open(this), this.leftPos + GRIMOIRE_OFFSET_X, this.topPos + GRIMOIRE_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
 		guistate.put("button:grimoire", grimoireButton);
 		this.addRenderableWidget(grimoireButton);
 
-		//Un botón donde había tres (Presets, Personajes, Guía). No es solo ahorro de sitio: esos tres eran
-		//TODO lo que el jugador podía abrir sin saberse un comando, y ya no cabía un cuarto en esta fila
-		//(ver BOTTOM_BUTTON_WIDTH). Detrás hay una lista con secciones y buscador que crece sin pelearse
-		//con la retícula de la ficha — ver PlayerPanelScreen. El Grimorio se queda suelto porque es el
-		//único que se pulsa en mitad de un turno.
+		//One button where there used to be three (Presets, Characters, Guide). It's not just saving space: those
+		//three were EVERYTHING the player could open without knowing a command, and a fourth no longer fit
+		//in this row (see BOTTOM_BUTTON_WIDTH). Behind it is a list with sections and search that grows
+		//without fighting the sheet's grid — see PlayerPanelScreen. The Grimoire stays on its own because it's
+		//the only one pressed in the middle of a turn.
 		menuButton = TomeButton.of(Component.translatable("gui.dndsheets.character_sheet.menu"), b -> {
-			CharacterSheetSaveProcedure.execute(guistate); //No perder lo escrito al navegar fuera.
+			CharacterSheetSaveProcedure.execute(guistate); //Don't lose what was typed when navigating away.
 			PlayerPanelScreen.open(this);
 		}, this.leftPos + MENU_OFFSET_X, this.topPos + MENU_OFFSET_Y, BOTTOM_BUTTON_WIDTH, BOTTOM_BUTTON_HEIGHT);
 		guistate.put("button:menu", menuButton);
@@ -1524,8 +1539,8 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 		initMainPanel();
 		initSkillPanel();
 
-		//Se vacía antes de rellenar: init() se vuelve a ejecutar al cambiar el tamaño de la ventana, y
-		//guistate es estático (lo comparte el menú), así que sin esto la lista crecería en cada reajuste.
+		//Cleared before filling: init() runs again when the window is resized, and
+		//guistate is static (shared with the menu), so without this the list would grow on every resize.
 		sheetFields.clear();
 		for (Object widget : guistate.values()) {
 			if (widget instanceof EditBox field) sheetFields.add(field);

@@ -9,24 +9,25 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>Los personajes de un jugador, con el que lleva puesto marcado; pulsar uno cambia a él. Se abre con
- * {@code /dndchar} sin argumentos, que es un punto de entrada sin riesgo de layout — la hoja de personaje
- * es una de las tres pantallas que sí son {@code AbstractContainerScreen} y meterle un botón más es una
- * operación bastante más cara que un comando.</p>
+ * <p>A player's characters, with the one currently worn marked; clicking one switches to it. Opened with
+ * {@code /dndchar} without arguments, which is a layout-risk-free entry point — the character sheet is
+ * one of the three screens that ARE an {@code AbstractContainerScreen}, and squeezing in one more button
+ * there is a considerably more expensive operation than a command.</p>
  *
- * <p>No se reconstruye en local al pulsar: el servidor manda la lista otra vez ya con la marca movida,
- * porque es él quien decide si el cambio valía (el personaje tiene que ser tuyo). Repintar aquí una
- * marca que el servidor podría rechazar es exactamente cómo se enseña un estado que no existe.</p>
+ * <p>Doesn't rebuild locally on click: the server sends the list again with the marker already moved,
+ * because it's the server that decides whether the switch was valid (the character has to be yours).
+ * Repainting a marker here that the server could reject is exactly how you end up showing a state that
+ * doesn't exist.</p>
  */
 public class CharacterListScreen extends ListPickerScreen {
 
 	private final List<String> ids;
 	private final List<Component> labels;
 	/**
-	 * <p>Modo borrar: hay que activarlo antes de que una fila borre nada. Es la confirmación, y va aquí en
-	 * vez de en un diálogo por fila porque borrar ya deja una copia en disco ({@code .json.deleted}) — la
-	 * protección que hace falta es que no se borre de un clic despistado, no una pregunta que se contesta
-	 * que sí sin leerla.</p>
+	 * <p>Delete mode: it has to be turned on before a row deletes anything. This is the confirmation, and
+	 * it lives here instead of in a per-row dialog because deleting already leaves a copy on disk
+	 * ({@code .json.deleted}) — the protection actually needed is against an absent-minded click, not a
+	 * yes/no prompt that gets answered "yes" without reading it.</p>
 	 */
 	private boolean deleteMode;
 
@@ -40,7 +41,7 @@ public class CharacterListScreen extends ListPickerScreen {
 		Minecraft.getInstance().setScreen(new CharacterListScreen(ids, labels));
 	}
 
-	//Deja sitio bajo la lista para las tres filas fijas: competencias, crear y borrar.
+	//Leaves room below the list for the three fixed rows: proficiencies, create, and delete.
 	@Override
 	protected int listHeight() {
 		return super.listHeight() - 3 * (BUTTON_HEIGHT + SPACING);
@@ -51,15 +52,15 @@ public class CharacterListScreen extends ListPickerScreen {
 		super.init();
 		int left = (this.width - buttonWidth()) / 2;
 		int y = listTop() + listHeight() + SPACING;
-		//Crear va ARRIBA de borrar y con el mismo aspecto que una fila normal: es la acción que más se usa
-		//de las dos, y la destructiva no debería ser la que queda más a mano.
+		//Create sits ABOVE delete and looks like a normal row: it's the more frequently used of the two
+		//actions, and the destructive one shouldn't be the one that's easiest to reach.
 		this.addRenderableWidget(net.hawthorn.dndsheets.client.gui.components.TomeButton.of(
 			Component.translatable("gui.dndsheets.character_list.new"), button -> NewCharacterScreen.open(),
 			left, y, buttonWidth(), BUTTON_HEIGHT));
 		y += BUTTON_HEIGHT + SPACING;
-		//Configurar es de un personaje, así que vive donde se elige personaje. La hoja no puede abrirlo: es
-		//una de las tres pantallas que sí son AbstractContainerScreen y su fila de botones ya está llena
-		//(ver el punto 25 de PROJECT_CONTEXT.md), y esta pantalla se abre desde ella.
+		//Setup belongs to a character, so it lives where a character gets chosen. The sheet can't open it:
+		//it's one of the three screens that ARE an AbstractContainerScreen and its button row is already
+		//full (see point 25 of PROJECT_CONTEXT.md), and this screen is opened from it.
 		this.addRenderableWidget(net.hawthorn.dndsheets.client.gui.components.TomeButton.of(
 			Component.translatable("gui.dndsheets.character_list.setup"), button -> CharacterSetupScreen.open(this),
 			left, y, buttonWidth(), BUTTON_HEIGHT));
@@ -67,8 +68,8 @@ public class CharacterListScreen extends ListPickerScreen {
 		net.minecraft.client.gui.components.Button toggle = this.addRenderableWidget(
 			net.hawthorn.dndsheets.client.gui.components.TomeButton.of(deleteLabel(), button -> {
 				deleteMode = !deleteMode;
-				//Se reconstruye la pantalla entera: las filas cambian de color y de acción, y repintar solo
-				//el interruptor dejaría botones que hacen una cosa distinta de la que dicen.
+				//Rebuilds the entire screen: the rows change color and action, and repainting only the
+				//toggle would leave buttons doing something different from what they say.
 				this.rebuildWidgets();
 			}, left, y, buttonWidth(), BUTTON_HEIGHT));
 		toggle.setMessage(deleteLabel());
@@ -84,9 +85,9 @@ public class CharacterListScreen extends ListPickerScreen {
 	protected void buildRows() {
 		for (int i = 0; i < ids.size(); i++) {
 			String characterId = ids.get(i);
-			//El personaje activo viene marcado con "▶" desde el servidor (ver BrowseActionMessage.listMine).
-			//Se sigue mirando el texto ya resuelto porque la marca es un simbolo, no una palabra: no cambia
-			//con el idioma.
+			//The active character comes marked with "▶" from the server (see BrowseActionMessage.listMine).
+			//The already-resolved text is still what gets checked because the marker is a symbol, not a
+			//word: it doesn't change with the language.
 			boolean active = labels.get(i).getString().startsWith("▶");
 			ChatFormatting color = deleteMode ? ChatFormatting.RED : (active ? ChatFormatting.GREEN : ChatFormatting.GRAY);
 			Component label = deleteMode
@@ -100,8 +101,8 @@ public class CharacterListScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		//Un jugador siempre tiene al menos su hoja de siempre, así que esto solo se ve si algo fue mal
-		//cargándolas — decirlo es más útil que una lista vacía sin explicación.
+		//A player always has at least their default sheet, so this is only ever seen if something went
+		//wrong loading them — saying so is more useful than an empty list with no explanation.
 		return ids.isEmpty() ? Component.translatable("gui.dndsheets.character_list.empty") : null;
 	}
 }

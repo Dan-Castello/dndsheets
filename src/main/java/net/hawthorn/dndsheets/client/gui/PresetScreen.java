@@ -11,18 +11,19 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>Selector de presets de clase: la lista (ids + nombres) la manda el servidor en
- * {@code BrowseListMessage} kind PRESET (pedida con {@code BrowseActionMessage.LIST_PRESETS} al pulsar "Presets" en la
- * hoja, o por un DM tras elegir a otro jugador en {@link PlayerPickerScreen},
- * porque el registro de presets solo vive en memoria del servidor. Elegir uno rellena la clase, el dado
- * de golpe y las características de la hoja — hay que cerrarla y reabrirla para verlo. {@code
- * targetUuid} vacío significa "aplícalo a mi propia hoja".</p>
+ * <p>Class preset selector: the list (ids + names) is sent by the server in
+ * {@code BrowseListMessage} kind PRESET (requested with {@code BrowseActionMessage.LIST_PRESETS} when clicking "Presets" on the
+ * sheet, or by a DM after picking another player in {@link PlayerPickerScreen}),
+ * because the preset registry only lives in server memory. Picking one fills in the sheet's class, hit
+ * die, and ability scores — you have to close and reopen it to see it. An empty {@code
+ * targetUuid} means "apply it to my own sheet".</p>
  *
- * <p>{@code multiclass} es un modo distinto de la MISMA lista, elegido en {@code PresetActionMenuScreen}
- * ("Multiclasear" en vez de "Aplicar preset"): en vez de reemplazar clase/dado de golpe/características
- * (lo que hace {@code PresetApplyMessage}), sube un nivel EN la clase elegida ({@code
- * MulticlassMessage}, mismo camino que ya usaba {@code /dndsheet multiclass}). Solo tiene sentido self
- * ({@code targetUuid} vacío) — el botón que lo dispara vive en la propia ficha, no en el Panel de DM.</p>
+ * <p>{@code multiclass} is a different mode over the SAME list, chosen in {@code PresetActionMenuScreen}
+ * ("Multiclass" instead of "Apply preset"): instead of replacing class/hit die/ability scores
+ * (what {@code PresetApplyMessage} does), it levels up IN the chosen class ({@code
+ * MulticlassMessage}, the same path {@code /dndsheet multiclass} already used). It only makes sense for
+ * self ({@code targetUuid} empty) — the button that triggers it lives on the character's own sheet, not
+ * in the DM Panel.</p>
  */
 public class PresetScreen extends ListPickerScreen {
 	private final String targetUuid;

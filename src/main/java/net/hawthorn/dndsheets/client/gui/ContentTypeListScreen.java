@@ -9,11 +9,11 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>"Crear contenido" del Panel de DM: elige qué crear/editar/borrar sin escribir JSON a mano fuera del
- * juego — armas/hechizos/presets vía {@link ContentEntryListScreen}, raza/trasfondo/clase vía
- * {@link OptionsManageScreen}. Rasgos y monstruos todavía no están acá — rasgos necesitan un editor de
- * listas de nivel/dado propio, monstruos se crean capturando un NPC ya configurado (ver la nota pendiente
- * en {@code MonsterActionScreen}) — ambos quedan para una pasada siguiente.</p>
+ * <p>"Create content" from the DM Panel: choose what to create/edit/delete without hand-writing JSON
+ * outside the game — weapons/spells/presets via {@link ContentEntryListScreen}, race/background/class via
+ * {@link OptionsManageScreen}. Traits and monsters aren't here yet — traits need their own level/die list
+ * editor, monsters are created by capturing an already-configured NPC (see the pending note in
+ * {@code MonsterActionScreen}) — both are left for a later pass.</p>
  */
 public class ContentTypeListScreen extends ListPickerScreen {
 	private ContentTypeListScreen(Screen parent) {
@@ -32,8 +32,8 @@ public class ContentTypeListScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.content_type.traits"), b -> request(ContentType.TRAIT));
 		addRow(Component.translatable("gui.dndsheets.content_type.encounters"), b -> request(ContentType.ENCOUNTER));
 		addRow(Component.translatable("gui.dndsheets.content_type.feats"), b -> request(ContentType.FEAT));
-		//Raza y Trasfondo ya no tienen editor in-game: Origins elige, /dndspecies load/loadbackground
-		//homebrewean por archivo (ver dndsheets_species). Sin fila acá para no prometer pantallas que ya no existen.
+		//Race and Background no longer have an in-game editor: Origins picks them, /dndspecies load/loadbackground
+		//homebrews them via file (see dndsheets_species). No row here so as not to promise screens that no longer exist.
 		addRow(Component.translatable("gui.dndsheets.content_type.classes"), b -> requestOptions(CharacterOptionsRegistry.CLASS));
 	}
 

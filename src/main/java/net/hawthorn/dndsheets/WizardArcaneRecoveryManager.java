@@ -11,32 +11,32 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * <p>Recuperación Arcana del mago: una vez por descanso largo, el siguiente descanso CORTO le devuelve
- * {@code ceil(nivel / 2)} espacios de conjuro (sin superar el máximo) — automático, no hace falta ítem ni
- * comando, se engancha directo en {@link RestManager#applyRest}.</p>
+ * <p>Wizard's Arcane Recovery: once per long rest, the next SHORT rest restores
+ * {@code ceil(level / 2)} spell slots (capped at the maximum) — automatic, no item or command needed,
+ * hooked directly into {@link RestManager#applyRest}.</p>
  *
- * <p>A diferencia de Furia/Segundo Aliento (cualquiera que tenga el ítem los puede usar), esto solo debe
- * aplicar a magos de verdad: se comprueba igual que {@link Config#hitDieFor} comprueba la clase — por
- * subcadena contra el campo "Clase y Nivel" de la hoja, insensible a mayúsculas e idioma — en vez de
- * exigir un ítem o un rasgo concedido aparte, ya que esto no es algo que el jugador "activa", es algo que
- * pasa solo al descansar.</p>
+ * <p>Unlike Rage/Second Wind (anyone holding the item can use those), this should only apply to actual
+ * wizards: it's checked the same way {@link Config#hitDieFor} checks class — by substring match against
+ * the sheet's "Class and Level" field, case- and language-insensitive — instead of requiring an item or
+ * a separately granted trait, since this isn't something the player "activates", it just happens on
+ * resting.</p>
  */
 public class WizardArcaneRecoveryManager {
-	//En la hoja y no en un conjunto por jugador: es del personaje, y sobrevive a un reinicio del servidor
-	//(antes, reiniciar le devolvía la Recuperación Arcana a todo el mundo sin descanso largo). Ver
+	//On the sheet, not in a per-player set: it belongs to the character, and survives a server restart
+	//(previously, restarting handed Arcane Recovery back to everyone without a long rest). See
 	//RestResource.
-	/** La Recuperación Arcana no devuelve espacios de nivel 6 o superior. */
+	/** Arcane Recovery does not restore slots of level 6 or higher. */
 	private static final int MAX_RECOVERED_LEVEL = 5;
 
-	//Público: RestManager lo llama en cada descanso CORTO, con la MISMA hoja que ya está a punto de
-	//guardar/enviar, para que el ajuste de espacios de conjuro viaje en el mismo SheetClientMessage.
+	//Public: RestManager calls this on every SHORT rest, with the SAME sheet that's already about to be
+	//saved/sent, so the spell-slot adjustment travels in the same SheetClientMessage.
 	public static void onShortRest(ServerPlayer player, JsonObject sheet) {
 		if (!isWizard(sheet)) return;
-		if (!RestResource.spend(player, RestResource.ARCANE_RECOVERY)) return; //Ya usada desde el último descanso largo.
+		if (!RestResource.spend(player, RestResource.ARCANE_RECOVERY)) return; //Already used since the last long rest.
 
-		//La regla de 5e es un presupuesto de NIVELES SUMADOS (la mitad del nivel de mago, ninguno por
-		//encima del 5º), no un número de espacios sueltos. Antes se contaban espacios porque con la bolsa
-		//única no había "de qué nivel" que recuperar; con la tabla por niveles ya se puede aplicar tal cual.
+		//The 5e rule is a budget of SUMMED LEVELS (half the wizard's level, none above 5th), not a count
+		//of individual slots. Slots used to be counted because with a single shared pool there was no
+		//"which level" to recover; with the per-level table it can now be applied as written.
 		int budget = (int) Math.ceil(SheetLoader.characterLevelOf(sheet, player) / 2.0);
 		int recovered = SpellSlots.restoreBudget(sheet, budget, MAX_RECOVERED_LEVEL);
 		if (recovered <= 0) return;
@@ -44,7 +44,7 @@ public class WizardArcaneRecoveryManager {
 		player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.arcane_recovery", recovered).withStyle(ChatFormatting.LIGHT_PURPLE));
 	}
 
-	//Público: RestManager lo llama en cada descanso LARGO.
+	//Public: RestManager calls this on every LONG rest.
 	public static void resetOnLongRest(ServerPlayer player) {
 		RestResource.restore(player, RestResource.ARCANE_RECOVERY);
 	}

@@ -8,10 +8,10 @@ import net.minecraft.network.chat.Component;
 
 import java.util.List;
 
-//Lista de armas cargadas para entregar a un jugador ya elegido (equivalente en GUI a /dndweapons give) —
-//abierta vía BrowseActionMessage.GIVE_WEAPONS/BrowseListMessage. Los ids vienen resueltos del servidor y
-//no del registro del cliente: el registro solo vive en el servidor, y un DM que sea un proceso aparte
-//(invitado por LAN) lo vería siempre vacío.
+//List of loaded weapons to give to an already-chosen player (GUI equivalent of /dndweapons give) —
+//opened via BrowseActionMessage.GIVE_WEAPONS/BrowseListMessage. The ids come resolved from the server,
+//not from the client registry: the registry only lives on the server, and a DM running as a separate
+//process (joined via LAN) would always see it empty.
 public class WeaponGiveListScreen extends ListPickerScreen {
 	private final String targetUuid;
 	private final List<String> ids;

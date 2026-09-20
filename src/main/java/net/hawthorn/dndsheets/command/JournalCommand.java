@@ -23,14 +23,15 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * <p>{@code /dndjournal}: diario de campaña y handouts, que son lo mismo con distinta visibilidad (ver
- * {@link JournalManager}).</p>
+ * <p>{@code /dndjournal}: campaign journal and handouts, which are the same thing with different
+ * visibility (see {@link JournalManager}).</p>
  *
  * <ul>
- *   <li>{@code publish <título>} — convierte el Libro y Pluma de tu mano en una entrada. Solo DM.</li>
- *   <li>{@code share <id> <jugadores>} — se la entrega a esos jugadores. Es lo que hace un handout.</li>
- *   <li>{@code party <id>} / {@code hide <id>} — visible para todos, o de vuelta a privada.</li>
- *   <li>{@code list} — abre el diario con lo que TÚ puedas leer. Sin permisos: cada uno ve lo suyo.</li>
+ *   <li>{@code publish <title>} — turns the Book and Quill in your hand into an entry. DM only.</li>
+ *   <li>{@code share <id> <players>} — delivers it to those players. That's what a handout does.</li>
+ *   <li>{@code party <id>} / {@code hide <id>} — visible to everyone, or back to private.</li>
+ *   <li>{@code list} — opens the journal with whatever YOU can read. No permissions: everyone sees their
+ *   own.</li>
  * </ul>
  */
 @Mod.EventBusSubscriber
@@ -39,18 +40,18 @@ public class JournalCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndjournal")
-			//Sin subcomando abre el diario: es lo que se va a querer casi siempre.
+			//No subcommand opens the journal: that's what will be wanted almost always.
 			.executes(JournalCommand::open)
 			.then(Commands.literal("list").executes(JournalCommand::open))
 			.then(Commands.literal("publish")
 				.requires(source -> DndsheetsMod.canActAsDm(source))
-				.then(Commands.argument("titulo", StringArgumentType.greedyString())
+				.then(Commands.argument("title", StringArgumentType.greedyString())
 					.executes(JournalCommand::publish)))
 			.then(Commands.literal("share")
 				.requires(source -> DndsheetsMod.canActAsDm(source))
 				.then(Commands.argument("id", StringArgumentType.word())
 					.suggests(JournalCommand::suggestIds)
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(JournalCommand::share))))
 			.then(Commands.literal("party")
 				.requires(source -> DndsheetsMod.canActAsDm(source))
@@ -69,8 +70,8 @@ public class JournalCommand {
 					.executes(JournalCommand::delete))));
 	}
 
-	//Solo sugiere lo que quien escribe puede leer: autocompletar el id de una nota privada del DM ya
-	//filtraría que existe, que es justo lo que una nota privada no debería revelar.
+	//Only suggests what whoever's typing can read: autocompleting the id of a private DM note would
+	//already leak that it exists, which is exactly what a private note shouldn't reveal.
 	private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestIds(
 			CommandContext<CommandSourceStack> ctx, com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
 		try {
@@ -83,22 +84,21 @@ public class JournalCommand {
 	}
 
 	private static int open(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		//El comando ya corre en el servidor: manda la lista directamente, sin pedirsela a si mismo.
+		//The command already runs on the server: it sends the list directly, without asking itself for it.
 		BrowseActionMessage.sendJournal(ctx.getSource().getPlayerOrException());
 		return 1;
 	}
 
 	private static int publish(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		ServerPlayer dm = ctx.getSource().getPlayerOrException();
-		String title = StringArgumentType.getString(ctx, "titulo");
+		String title = StringArgumentType.getString(ctx, "title");
 
 		ItemStack book = dm.getMainHandItem().is(Items.WRITABLE_BOOK) ? dm.getMainHandItem()
 			: dm.getOffhandItem().is(Items.WRITABLE_BOOK) ? dm.getOffhandItem() : ItemStack.EMPTY;
 		if (book.isEmpty()) {
-			//Se dice exactamente qué falta: "no se pudo" obligaría a adivinar entre no llevar libro,
-			//llevarlo firmado, o llevarlo en blanco.
-			ctx.getSource().sendFailure(Component.literal(
-				"Necesitas un Libro y Pluma en la mano. Consigue uno con /dndnotes give."));
+			//What's missing is stated exactly: "couldn't do it" would force guessing between not carrying
+			//a book, carrying a signed one, or carrying a blank one.
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.journal.needs_book"));
 			return 0;
 		}
 
@@ -107,25 +107,25 @@ public class JournalCommand {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.journal.blank_book"));
 			return 0;
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Publicado \"" + entry.title() + "\" [" + entry.id()
-			+ "]. Compártelo con /dndjournal share " + entry.id() + " <jugadores> o /dndjournal party " + entry.id() + ".")
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.journal.published", entry.title(), entry.id())
 			.withStyle(ChatFormatting.GREEN), false);
 		return 1;
 	}
 
 	private static int share(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		String id = StringArgumentType.getString(ctx, "id");
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		if (!JournalManager.share(id, targets)) {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.journal.no_entry"));
 			return 0;
 		}
 		JournalManager.Entry entry = JournalManager.get(id);
-		//Al que la recibe se le avisa: un handout que aparece en una lista sin decir nada no lo lee nadie.
+		//Whoever receives it is notified: a handout that just appears in a list without saying anything
+		//goes unread.
 		for (ServerPlayer target : targets) {
 			target.sendSystemMessage(Component.translatable("chat.dndsheets.journal.received", entry.title()).withStyle(ChatFormatting.GOLD));
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Compartido con " + targets.size() + " jugador(es)."), false);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.journal.shared_with", targets.size()), false);
 		return targets.size();
 	}
 
@@ -135,8 +135,8 @@ public class JournalCommand {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.journal.no_entry"));
 			return 0;
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal(party
-			? "Ahora la ve todo el grupo." : "Ya no la ve el grupo."), false);
+		ctx.getSource().sendSuccess(() -> Component.translatable(party
+			? "chat.dndsheets.journal.party_visible" : "chat.dndsheets.journal.party_hidden"), false);
 		return 1;
 	}
 

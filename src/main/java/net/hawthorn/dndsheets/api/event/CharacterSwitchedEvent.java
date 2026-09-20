@@ -5,14 +5,14 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.eventbus.api.Event;
 
 /**
- * <p>Se dispara al final de {@code SheetLoader.switchCharacter(player, characterId)}, con el personaje
- * nuevo ya activo (hoja enviada al cliente, PG restaurados). Pensado para que un mod de contenido
- * reconcilie estado que vive FUERA de la hoja pero necesita seguir al personaje activo — el caso real es
- * {@code dndsheets_species}: Origins guarda la raza/trasfondo elegidos por CUENTA de jugador, no por
- * personaje, así que sin este evento el segundo personaje de alguien heredaba en silencio la raza del
- * primero, sin selector y sin forma de cambiarla sin also cambiar la del otro.</p>
- * <p>No es cancelable: es un punto de "reaccionar a", no de bloquear el cambio de personaje (que ya pasó
- * cuando esto se dispara).</p>
+ * <p>Fired at the end of {@code SheetLoader.switchCharacter(player, characterId)}, with the new character
+ * already active (sheet sent to the client, HP restored). Meant for a content mod to reconcile state that
+ * lives OUTSIDE the sheet but needs to track the active character — the real-world case is
+ * {@code dndsheets_species}: Origins stores the chosen race/background per player ACCOUNT, not per
+ * character, so without this event a player's second character silently inherited the first one's race,
+ * with no selector and no way to change it without also changing the other one's.</p>
+ * <p>Not cancelable: this is a "react to" point, not a place to block the character switch (which has
+ * already happened by the time this fires).</p>
  */
 public class CharacterSwitchedEvent extends Event {
 	private final ServerPlayer player;
@@ -33,7 +33,7 @@ public class CharacterSwitchedEvent extends Event {
 		return characterId;
 	}
 
-	/** @return la hoja real del personaje que acaba de quedar activo (no una copia). */
+	/** @return the actual sheet of the character that just became active (not a copy). */
 	public JsonObject getSheet() {
 		return sheet;
 	}

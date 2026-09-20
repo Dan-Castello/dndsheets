@@ -2,7 +2,7 @@
   "mod": "mowziesmobs",
   "name": "Mowzie's Mobs",
   "url": "https://www.curseforge.com/minecraft/mc-mods/mowzies-mobs",
-  "_nota": "Pocas criaturas, muy animadas, y justo donde vanilla no tenia nada parecido.",
+  "_note": "Few creatures, highly animated, and exactly where vanilla had nothing similar.",
   "skins": {
     "dndsheets:animated_armor": "mowziesmobs:ferrous_wroughtnaut",
     "dndsheets:shield_guardian": "mowziesmobs:ferrous_wroughtnaut",

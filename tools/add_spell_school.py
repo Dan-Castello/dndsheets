@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Inserta "school" en un pack de hechizos, respetando el formato a mano.
+"""Inserts "school" into a spell pack, respecting the hand-written format.
 
-Por que un script y no editar el JSON con json.load/json.dump: la invariante 10 de PROJECT_CONTEXT.md
-dice que el contenido esta formateado a mano, compacto, una linea por hechizo. Un round-trip por el
-modulo json reflowea el archivo entero y deja un diff ilegible de 87 lineas donde solo cambia un campo.
-Esto es una insercion de texto por linea: el resto del archivo sale byte a byte igual.
+Why a script and not editing the JSON with json.load/json.dump: invariant 10 of PROJECT_CONTEXT.md
+says the content is hand-formatted, compact, one line per spell. A round-trip through the
+json module reflows the whole file and leaves an unreadable 87-line diff where only one field changes.
+This is a per-line text insertion: the rest of the file comes out byte for byte the same.
 
-La tabla es del SRD 5.1 (CC-BY-4.0, ver PROJECT_CONTEXT.md > Atribucion). Se escribe aqui a mano en vez
-de descargarse: el build no toca la red, y un pack de contenido no puede depender de que un repo ajeno
-siga en pie.
+The table is from SRD 5.1 (CC-BY-4.0, see PROJECT_CONTEXT.md > Attribution). It is written here by hand instead
+of being downloaded: the build doesn't touch the network, and a content pack can't depend on someone else's repo
+staying up.
 
-Idempotente: una linea que ya trae "school" se deja como esta.
+Idempotent: a line that already has "school" is left as it is.
 
     python tools/add_spell_school.py src/main/resources/dndsheets/defaults/spells.json
 """
@@ -18,30 +18,30 @@ import io
 import re
 import sys
 
-# Sin ninguna de adivinacion: el pack solo trae conjuros que el motor puede resolver, y las de
-# adivinacion del SRD (Detectar Magia, Identificar) son utilidad pura. MagicSchool.DIVINATION existe
-# igual, para los packs que escriba un DM.
+# With no divination at all: the pack only ships spells the engine can resolve, and the SRD's
+# divination ones (Detect Magic, Identify) are pure utility. MagicSchool.DIVINATION exists
+# anyway, for packs a DM writes.
 SCHOOLS = {
-    "abjuracion": ["banishment"],
-    "conjuracion": [
+    "abjuration": ["banishment"],
+    "conjuration": [
         "spirit_guardians", "poison_spray", "produce_flame", "call_lightning", "acid_splash",
         "entangle", "black_tentacles", "cloudkill", "insect_plague", "incendiary_cloud",
         "wall_of_thorns", "flaming_sphere", "faithful_hound",
     ],
-    "encantamiento": [
+    "enchantment": [
         "vicious_mockery", "charm_person", "hideous_laughter", "sleep", "hold_person",
         "dominate_beast", "dominate_person", "hold_monster", "dominate_monster", "feeblemind",
     ],
-    "ilusion": ["hypnotic_pattern", "phantasmal_killer", "weird", "fear"],
-    "nigromancia": [
+    "illusion": ["hypnotic_pattern", "phantasmal_killer", "weird", "fear"],
+    "necromancy": [
         "toll_the_dead", "chill_touch", "inflict_wounds", "blindness_deafness", "vampiric_touch",
         "blight", "circle_of_death", "eyebite", "harm", "finger_of_death", "false_life",
     ],
-    "transmutacion": ["heat_metal", "disintegrate", "flesh_to_stone", "regenerate"],
+    "transmutation": ["heat_metal", "disintegrate", "flesh_to_stone", "regenerate"],
 }
-# Evocacion es el resto: es la escuela mayoritaria del pack (los conjuros de dano directo y los de
-# curacion), asi que listarla entera seria repetir cincuenta ids para nada.
-DEFAULT_SCHOOL = "evocacion"
+# Evocation is the rest: it is the pack's majority school (the direct-damage spells and the healing
+# ones), so listing it in full would be repeating fifty ids for nothing.
+DEFAULT_SCHOOL = "evocation"
 
 BY_ID = {spell_id: school for school, ids in SCHOOLS.items() for spell_id in ids}
 

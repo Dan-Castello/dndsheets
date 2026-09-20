@@ -1,73 +1,73 @@
 [
   {
-    "_note": "Campos obligatorios: id, dice, ability. Todo lo demás tiene un default razonable.",
+    "_note": "Required fields: id, dice, ability. Everything else has a reasonable default.",
     "id": "dndsheets:dagger",
-    "name": "Daga",
+    "name": "Dagger",
     "item": "minecraft:iron_sword",
     "dice": "1d4",
     "ability": "dex",
-    "damageType": "cortante"
+    "damageType": "slashing"
   },
   {
-    "_note": "hands por defecto es \"one\" si se omite — esta entrada es idéntica a omitir \"hands\".",
+    "_note": "hands defaults to \"one\" if omitted — this entry is identical to omitting \"hands\".",
     "id": "dndsheets:shortsword",
-    "name": "Espada Corta",
+    "name": "Shortsword",
     "item": "minecraft:iron_sword",
     "dice": "1d6",
     "ability": "dex",
-    "damageType": "perforante",
+    "damageType": "piercing",
     "hands": "one"
   },
   {
-    "_note": "hands:\"versatile\" + versatileDice: el dado grande solo cuenta si la mano secundaria está VACÍA de verdad (nada de escudo/foco). Con algo en la otra mano, se usa \"dice\" normal.",
+    "_note": "hands:\"versatile\" + versatileDice: the big die only counts if the off hand is truly EMPTY (no shield/focus). With something in the other hand, the normal \"dice\" is used.",
     "id": "dndsheets:longsword",
-    "name": "Espada Larga",
+    "name": "Longsword",
     "item": "minecraft:iron_sword",
     "dice": "1d8",
     "ability": "str",
-    "damageType": "cortante",
+    "damageType": "slashing",
     "hands": "versatile",
     "versatileDice": "1d10"
   },
   {
-    "_note": "hands:\"two\" cancela el ataque de verdad (con aviso) si el jugador lleva algo en la mano secundaria — no se puede empuñar un arma a dos manos con un escudo.",
+    "_note": "hands:\"two\" truly cancels the attack (with a warning) if the player carries something in the off hand — you can't wield a two-handed weapon with a shield.",
     "id": "dndsheets:greataxe",
-    "name": "Hacha Grande",
+    "name": "Greataxe",
     "item": "minecraft:diamond_axe",
     "dice": "1d12",
     "ability": "str",
-    "damageType": "cortante",
+    "damageType": "slashing",
     "hands": "two"
   },
   {
-    "_note": "classes (opcional): lista de subcadenas comparadas contra \"Clase y Nivel\" de la hoja del jugador, sin distinguir mayúsculas — cualquier clase cuyo nombre CONTENGA una de estas subcadenas puede usarla. Sin este campo, cualquier clase puede usar el arma (comportamiento por defecto). Podés mezclar español/inglés si tus jugadores usan presets con nombres distintos.",
+    "_note": "classes (optional): a list of substrings compared against the \"Class & Level\" field of the player's sheet, case-insensitive — any class whose name CONTAINS one of these substrings can use it. Without this field, any class can use the weapon (default behavior). You can mix languages if your players use presets with different names.",
     "id": "dndsheets:battleaxe",
-    "name": "Hacha de Batalla",
+    "name": "Battleaxe",
     "item": "minecraft:iron_axe",
     "dice": "1d8",
     "ability": "str",
-    "damageType": "cortante",
+    "damageType": "slashing",
     "hands": "versatile",
     "versatileDice": "1d10",
-    "classes": ["guerrero", "fighter", "bárbaro", "barbarian", "paladín", "paladin"]
+    "classes": ["fighter", "barbarian", "paladin"]
   },
   {
-    "_note": "customModelData (opcional): entero libre, único por arma que quieras reskinear. Necesita un modelo de resource pack que lo lea — ver templates/resourcepack/.",
+    "_note": "customModelData (optional): a free integer, unique per weapon you want to reskin. It needs a resource pack model that reads it — see templates/resourcepack/.",
     "id": "dndsheets:enchanted_rapier",
-    "name": "Estoque Encantado",
+    "name": "Enchanted Rapier",
     "item": "minecraft:iron_sword",
     "dice": "1d8",
     "ability": "dex",
-    "damageType": "perforante",
+    "damageType": "piercing",
     "customModelData": 100001
   },
   {
-    "_note": "damageType (opcional, por defecto \"fisico\"): cualquier palabra sirve, pero para que las resistencias/vulnerabilidades del DM (/dndsheet damagetype) coincidan de verdad, usá siempre el mismo nombre exacto. Tipos de 5e ya usados en el mod: fisico, cortante, perforante, contundente, fuego, frio, rayo, acido, veneno, psiquico, radiante, necrotico, fuerza, trueno.",
+    "_note": "damageType (optional, default \"physical\"): any word works, but for the DM's resistances/vulnerabilities (/dndsheet damagetype) to really match, always use the exact same name. 5e types already used in the mod: physical, slashing, piercing, bludgeoning, fire, cold, lightning, acid, poison, psychic, radiant, necrotic, force, thunder.",
     "id": "dndsheets:flametongue",
-    "name": "Espada Lengua de Fuego",
+    "name": "Flame Tongue Sword",
     "item": "minecraft:golden_sword",
     "dice": "1d8",
     "ability": "str",
-    "damageType": "fuego"
+    "damageType": "fire"
   }
 ]

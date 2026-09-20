@@ -31,13 +31,13 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * <p>{@code /dnditems}: objetos mágicos. Mismo juego de subcomandos que el resto de tipos de contenido
- * ({@code load} para recargar en caliente, {@code give} para entregar), más los dos que son propios de
- * este tipo: {@code attune} y {@code unattune}.</p>
+ * <p>{@code /dnditems}: magic items. Same set of subcommands as the rest of the content types
+ * ({@code load} to hot-reload, {@code give} to hand out), plus the two that are unique to this type:
+ * {@code attune} and {@code unattune}.</p>
  *
- * <p>La sintonización no es un adorno: en 5e limita a tres objetos por personaje, y aquí resuelve además
- * un problema propio de Minecraft — no hay ranura de anillo ni de capa donde llevar puesto un Anillo de
- * Protección, así que sin ella no habría forma de que un objeto de ese tipo estuviera "en uso".</p>
+ * <p>Attunement isn't decoration: in 5e it caps a character at three items, and here it also solves a
+ * problem unique to Minecraft — there's no ring slot or cloak slot to wear a Ring of Protection in, so
+ * without it there'd be no way for an item of that type to be "in use".</p>
  */
 @Mod.EventBusSubscriber
 public class MagicItemCommand {
@@ -51,7 +51,7 @@ public class MagicItemCommand {
 				.then(Commands.argument("id", StringArgumentType.string())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(MagicItemRegistry.ids(), builder))
 					.executes(MagicItemCommand::info)))
-			//Sintonizar es cosa del propio jugador sobre su propia hoja: no se gatea por operador.
+			//Attuning is the player's own business over their own sheet: it isn't gated by operator status.
 			.then(Commands.literal("attune")
 				.then(Commands.argument("id", StringArgumentType.string())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(MagicItemRegistry.ids(), builder))
@@ -62,13 +62,13 @@ public class MagicItemCommand {
 					.executes(ctx -> setAttuned(ctx, false))))
 			.then(Commands.literal("give")
 				.requires(source -> DndsheetsMod.canActAsDm(source))
-				.then(Commands.argument("jugadores", EntityArgument.players())
+				.then(Commands.argument("players", EntityArgument.players())
 					.then(Commands.argument("id", StringArgumentType.string())
 						.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(MagicItemRegistry.ids(), builder))
 						.executes(MagicItemCommand::give))))
 			.then(Commands.literal("load")
 				.requires(source -> DndsheetsMod.canActAsDm(source))
-				.then(Commands.argument("archivo", StringArgumentType.string())
+				.then(Commands.argument("file", StringArgumentType.string())
 					.executes(MagicItemCommand::load))));
 	}
 
@@ -77,14 +77,14 @@ public class MagicItemCommand {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.magic.none_loaded"));
 			return 0;
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Objetos mágicos cargados: " + MagicItemRegistry.ids().size())
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.magicitem.loaded_count", MagicItemRegistry.ids().size())
 			.withStyle(ChatFormatting.GOLD), false);
 		for (String id : MagicItemRegistry.ids()) {
 			MagicItemRegistry.MagicItem item = MagicItemRegistry.get(id);
-			//Se marca cuál tiene mecánicas reales y cuál es puramente narrativo: sin eso, un DM no sabría
-			//cuáles va a aplicar el motor y cuáles tiene que narrar él.
-			ctx.getSource().sendSuccess(() -> Component.literal("  ").append(ContentNames.of(item.name())).append(" [" + id + "]"
-				+ (item.hasMechanics() ? "" : " (narrativo)")).withStyle(ChatFormatting.GRAY), false);
+			//It's marked which one has real mechanics and which is purely narrative: without that, a DM
+			//wouldn't know which ones the engine will apply and which ones they have to narrate themselves.
+			ctx.getSource().sendSuccess(() -> Component.literal("  ").append(ContentNames.of(item.name())).append(" [" + id + "]")
+				.append(item.hasMechanics() ? Component.empty() : Component.translatable("chat.dndsheets.magicitem.narrative_suffix")).withStyle(ChatFormatting.GRAY), false);
 		}
 		return MagicItemRegistry.ids().size();
 	}
@@ -95,8 +95,7 @@ public class MagicItemCommand {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.magic.no_such_item"));
 			return 0;
 		}
-		ctx.getSource().sendSuccess(() -> ContentNames.of(item.name()).append(" — " + item.rarity()
-			+ (item.attunement() ? " (requiere sintonización)" : "")).withStyle(ChatFormatting.GOLD), false);
+		ctx.getSource().sendSuccess(() -> ContentNames.of(item.name()).append(" — " + item.rarity()).append(item.attunement() ? Component.translatable("chat.dndsheets.magicitem.info_attunement") : Component.empty()).withStyle(ChatFormatting.GOLD), false);
 		if (!item.description().isBlank()) {
 			ctx.getSource().sendSuccess(() -> Component.literal(item.description()).withStyle(ChatFormatting.GRAY), false);
 		}
@@ -116,20 +115,20 @@ public class MagicItemCommand {
 
 		boolean changed = attune ? MagicItemRegistry.attune(sheet, id) : MagicItemRegistry.unattune(sheet, id);
 		if (!changed) {
-			//Se distinguen los dos motivos posibles en vez de un "no se pudo" que obliga a adivinar.
-			ctx.getSource().sendFailure(Component.literal(attune
-				? "Ya lo tenías sintonizado, o llegaste al límite de " + MagicItemRegistry.MAX_ATTUNED + "."
-				: "No lo tenías sintonizado."));
+			//The two possible reasons are distinguished instead of a "couldn't do it" that forces guessing.
+			ctx.getSource().sendFailure(attune
+				? Component.translatable("chat.dndsheets.magicitem.already_attuned", MagicItemRegistry.MAX_ATTUNED)
+				: Component.translatable("chat.dndsheets.magicitem.not_attuned"));
 			return 0;
 		}
 		SheetLoader.saveServer(sheet, player.getStringUUID());
-		ctx.getSource().sendSuccess(() -> Component.literal(attune ? "Sintonizado con " : "Dejaste de sintonizar ")
-			.append(ContentNames.of(item.name())).append(".").withStyle(ChatFormatting.GREEN), false);
+		ctx.getSource().sendSuccess(() -> Component.translatable(attune ? "chat.dndsheets.magicitem.attuned" : "chat.dndsheets.magicitem.unattuned",
+			ContentNames.of(item.name())).withStyle(ChatFormatting.GREEN), false);
 		return 1;
 	}
 
 	private static int give(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		String id = StringArgumentType.getString(ctx, "id");
 		MagicItemRegistry.MagicItem magicItem = MagicItemRegistry.get(id);
 		if (magicItem == null) {
@@ -138,7 +137,7 @@ public class MagicItemCommand {
 		}
 		Item base = ForgeRegistries.ITEMS.getValue(ResourceLocation.tryParse(magicItem.itemId()));
 		if (base == null) {
-			ctx.getSource().sendFailure(Component.literal("El ítem base \"" + magicItem.itemId() + "\" no existe."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.content.base_item_missing", magicItem.itemId()));
 			return 0;
 		}
 
@@ -146,24 +145,23 @@ public class MagicItemCommand {
 			ItemStack stack = MagicItemRegistry.tag(new ItemStack(base), id);
 			stack.setHoverName(ContentNames.of(magicItem.name()).withStyle(ChatFormatting.AQUA));
 			target.getInventory().add(stack);
-			target.sendSystemMessage(Component.translatable("chat.dndsheets.item.received_magic", ContentNames.of(magicItem.name()), (magicItem.attunement() ? ". Sintonízalo con /dnditems attune " + id : "."))
+			target.sendSystemMessage(Component.translatable("chat.dndsheets.item.received_magic", ContentNames.of(magicItem.name()), (magicItem.attunement() ? Component.translatable("chat.dndsheets.magicitem.attune_hint", id) : Component.literal(".")))
 				.withStyle(ChatFormatting.GREEN));
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Entregado ").append(ContentNames.of(magicItem.name())).append(" a "
-			+ targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.magicitem.given", ContentNames.of(magicItem.name()), targets.size()), true);
 		return targets.size();
 	}
 
 	private static int load(CommandContext<CommandSourceStack> ctx) {
-		String fileName = StringArgumentType.getString(ctx, "archivo");
+		String fileName = StringArgumentType.getString(ctx, "file");
 		Path file = DndPaths.ITEMS_DIR.resolve(fileName);
 		try {
 			int loaded = MagicItemRegistry.loadFile(file);
-			ctx.getSource().sendSuccess(() -> Component.literal("Cargados " + loaded + " objetos mágicos.")
+			ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.magicitem.loaded", loaded)
 				.withStyle(ChatFormatting.GREEN), true);
 			return loaded;
 		} catch (IOException e) {
-			ctx.getSource().sendFailure(Component.literal("No se pudo leer " + file + ": " + e.getMessage()));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.magicitem.read_failed", file.toString(), e.getMessage()));
 			return 0;
 		}
 	}

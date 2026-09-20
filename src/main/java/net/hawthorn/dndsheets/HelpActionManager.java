@@ -9,18 +9,18 @@ import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * <p><b>Ayudar</b>, la cuarta acción de turno: distraes a un enemigo o preparas la jugada de un compañero,
- * y su próximo ataque tiene ventaja.</p>
+ * <p><b>Help</b>, the fourth turn action: you distract an enemy or set up an ally's move, and their
+ * next attack has advantage.</p>
  *
- * <p>Va aparte de {@link TurnActionManager} —donde están Esquivar, Correr y Desengancharse— porque es la
- * única de las cuatro que necesita <em>a quién</em> señalar, así que su sitio natural es un ítem de clic
- * derecho sobre otro jugador y no una entrada de un menú. Es exactamente el mismo patrón que la Inspiración
- * Bárdica, que tiene el mismo problema y ya lo resolvió así.</p>
+ * <p>It lives apart from {@link TurnActionManager} —where Dodge, Dash, and Disengage are— because it's
+ * the only one of the four that needs a <em>target</em> to point at, so its natural place is a
+ * right-click item on another player rather than a menu entry. It's exactly the same pattern as
+ * Bardic Inspiration, which has the same problem and already solved it this way.</p>
  *
- * <p>La ventaja se apunta en {@code nextAttackAdvantage}, el flag de un solo uso que la hoja ya tenía y que
- * {@code CombatManager.consumeAdvantage} gasta en la siguiente tirada de ataque, venga de un arma, de un
- * conjuro o del botón de la propia hoja. No hacía falta un mecanismo nuevo: hacía falta usar el que
- * {@code /dndsheet advantage} lleva usando desde siempre.</p>
+ * <p>The advantage is recorded in {@code nextAttackAdvantage}, the single-use flag the sheet already
+ * had, which {@code CombatManager.consumeAdvantage} spends on the next attack roll, whether it comes
+ * from a weapon, a spell, or the sheet's own button. No new mechanism was needed: it just needed to
+ * reuse the one {@code /dndsheet advantage} has always used.</p>
  */
 public class HelpActionManager {
 
@@ -32,8 +32,8 @@ public class HelpActionManager {
 			helper.sendSystemMessage(Component.translatable("chat.dndsheets.action.help_self").withStyle(ChatFormatting.GRAY));
 			return;
 		}
-		//Igual que las otras tres: fuera de combate no hay turno que gastar, y aceptar el clic sin decirlo
-		//dejaría al jugador creyendo que ayudó.
+		//Same as the other three: outside combat there's no turn to spend, and accepting the click without
+		//saying so would leave the player thinking they helped.
 		if (!TurnManager.isActive()) {
 			helper.sendSystemMessage(Component.translatable("chat.dndsheets.action.needs_combat").withStyle(ChatFormatting.GRAY));
 			return;
@@ -48,8 +48,8 @@ public class HelpActionManager {
 		allySheet.addProperty("nextAttackAdvantage", "advantage");
 		SheetLoader.saveServer(allySheet, ally.getStringUUID());
 
-		//El aliado tiene que VER que le llegó: es un flag en su hoja, y sin este parche solo se enteraría al
-		//volver a abrirla. Mismo parche corto que usa el resto del mod tras tocar un campo suelto.
+		//The ally needs to SEE that it landed: it's a flag on their sheet, and without this patch they'd
+		//only find out by reopening it. Same short patch the rest of the mod uses after touching a loose field.
 		JsonObject patch = new JsonObject();
 		patch.addProperty("nextAttackAdvantage", "advantage");
 		DndsheetsMod.sendSheetFieldUpdate(ally, patch);

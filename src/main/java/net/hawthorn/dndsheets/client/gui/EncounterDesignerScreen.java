@@ -16,19 +16,20 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * <p>Diseñador de encuentros: se arma el grupo eligiendo monstruos de una lista y, a cada clic, la
- * pantalla dice qué tan dura le queda la pelea al grupo conectado ("Media", "Mortal"). Antes un encuentro
- * se escribía a mano en una casilla de texto ({@code ContentTypeForms.encounterFields}) sin ninguna
- * respuesta sobre si eran cuatro goblins o cuatro dragones: componer ya se podía, <em>calibrar</em> no.</p>
+ * <p>Encounter designer: the party is built by picking monsters from a list and, with each click, the
+ * screen reports how hard the fight is for the connected party ("Medium", "Deadly"). Before, an
+ * encounter was typed by hand into a text box ({@code ContentTypeForms.encounterFields}) with no
+ * feedback on whether it was four goblins or four dragons: composing was already possible,
+ * <em>calibrating</em> wasn't.</p>
  *
- * <p>El bestiario, el coste en PX de cada monstruo y los umbrales del grupo llegan de una sola vez con la
- * pantalla (ver {@code BrowseActionMessage.DESIGN_ENCOUNTER}): la cuenta de {@link EncounterBudget} es
- * aritmética sobre esos números, así que sumar un goblin no necesita preguntarle nada al servidor.</p>
+ * <p>The bestiary, each monster's XP cost, and the party's thresholds all arrive at once with the
+ * screen (see {@code BrowseActionMessage.DESIGN_ENCOUNTER}): {@link EncounterBudget}'s calculation is
+ * arithmetic over those numbers, so adding a goblin doesn't need to ask the server anything.</p>
  *
- * <p><b>Guardar no guarda aquí.</b> Al pulsar se abre el formulario de contenido de siempre con la
- * composición ya escrita: el id, el nombre y la escritura en {@code dm_created.json} siguen viviendo en
- * {@link ContentFormScreen}/{@code ContentEntrySaveMessage}, que ya lo hacían bien para los cinco tipos de
- * contenido. Esta pantalla solo aporta la parte que faltaba, elegir con criterio.</p>
+ * <p><b>Save doesn't save here.</b> Clicking it opens the usual content form with the composition
+ * already filled in: the id, the name, and writing to {@code dm_created.json} still live in
+ * {@link ContentFormScreen}/{@code ContentEntrySaveMessage}, which already handled that correctly for
+ * all five content types. This screen only adds the part that was missing, choosing with judgment.</p>
  */
 public class EncounterDesignerScreen extends ListPickerScreen {
 
@@ -37,7 +38,7 @@ public class EncounterDesignerScreen extends ListPickerScreen {
 	private final int[] xp;
 	private final int[] thresholds;
 	private final int partySize;
-	//id del monstruo -> cuántos. Ordenado por inserción: la lista se lee en el orden en que el DM la armó.
+	//monster id -> how many. Insertion-ordered: the list reads in the order the DM built it in.
 	private final Map<String, Integer> chosen = new LinkedHashMap<>();
 
 	private EncounterDesignerScreen(List<String> ids, List<Component> names, JsonObject payload, Screen parent) {
@@ -54,7 +55,7 @@ public class EncounterDesignerScreen extends ListPickerScreen {
 		try {
 			payload = JsonParser.parseString(payloadJson).getAsJsonObject();
 		} catch (RuntimeException e) {
-			return; //Carga corrupta o versión cruzada: sin presupuesto no hay diseñador que enseñar.
+			return; //Corrupted or cross-version payload: without a budget there's no designer to show.
 		}
 		Minecraft.getInstance().setScreen(
 			new EncounterDesignerScreen(ids, names, payload, Minecraft.getInstance().screen));
@@ -68,7 +69,7 @@ public class EncounterDesignerScreen extends ListPickerScreen {
 		return values;
 	}
 
-	//Sitio para el renglón del veredicto, que es lo que se mira entre clic y clic.
+	//Room for the verdict line, which is what gets checked between clicks.
 	@Override
 	protected int listTop() {
 		return super.listTop() + 12;
@@ -82,8 +83,8 @@ public class EncounterDesignerScreen extends ListPickerScreen {
 			int index = ids.indexOf(id);
 			Component name = index < 0 ? Component.literal(id) : names.get(index);
 			addRow(Component.translatable("gui.dndsheets.encounter_designer.row", name, count, xpOf(id) * count),
-				//Clic suma uno y mayús+clic quita uno (al llegar a cero, fuera): un botón por fila en vez de
-				//tres, que en una lista de ancho fijo es la diferencia entre leer el nombre y no leerlo.
+				//Click adds one and shift+click removes one (hitting zero drops it): one button per row
+				//instead of three, which in a fixed-width list is the difference between reading the name and not.
 				b -> {
 					int updated = count + (hasShiftDown() ? -1 : 1);
 					if (updated <= 0) chosen.remove(id);
@@ -102,8 +103,8 @@ public class EncounterDesignerScreen extends ListPickerScreen {
 			addRow(Component.translatable("gui.dndsheets.encounter_designer.save"), b -> save());
 		}
 
-		//Editar o borrar lo ya guardado se hacía solo desde "Crear contenido", que es donde nadie va a
-		//buscarlo: quien acaba de diseñar un encuentro está acá, no tres menús más allá.
+		//Editing or deleting what's already saved used to only be possible from "Create content", which is
+		//where nobody's going to look for it: whoever just designed an encounter is here, not three menus away.
 		addRow(Component.translatable("gui.dndsheets.encounter_designer.manage"),
 			b -> net.hawthorn.dndsheets.DndsheetsMod.PACKET_HANDLER.sendToServer(
 				new net.hawthorn.dndsheets.network.BrowseActionMessage(
@@ -113,10 +114,10 @@ public class EncounterDesignerScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return null; //Nunca está vacía: "+ Añadir monstruo" siempre está.
+		return null; //Never empty: "+ Add monster" is always there.
 	}
 
-	/** La composición en la misma sintaxis del JSON y del formulario: "dndsheets:goblin x4, dndsheets:wolf x2". */
+	/** The composition in the same syntax as the JSON and the form: "dndsheets:goblin x4, dndsheets:wolf x2". */
 	private String composition() {
 		StringBuilder text = new StringBuilder();
 		for (Map.Entry<String, Integer> member : chosen.entrySet()) {
@@ -158,8 +159,8 @@ public class EncounterDesignerScreen extends ListPickerScreen {
 		int rating = EncounterBudget.rate(totalXp(), totalMonsters(), partySize, thresholds);
 		Component summary;
 		if (chosen.isEmpty()) {
-			//Antes de elegir nada, la fila dice cómo se usa la pantalla; el veredicto de un encuentro vacío
-			//("Trivial") no es información, es ruido.
+			//Before picking anything, the line explains how to use the screen; the verdict for an empty
+			//encounter ("Trivial") isn't information, it's noise.
 			summary = Component.translatable("gui.dndsheets.encounter_designer.hint");
 		} else if (rating < 0) {
 			summary = Component.translatable("gui.dndsheets.encounter_designer.no_party", totalXp());
@@ -170,7 +171,7 @@ public class EncounterDesignerScreen extends ListPickerScreen {
 		guiGraphics.drawCenteredString(this.font, summary, this.width / 2, super.listTop(), GuiStyle.SUBTITLE_COLOR);
 	}
 
-	/** El bestiario para elegir uno; vuelve al diseñador con lo elegido (y con lo que ya llevaba puesto). */
+	/** The bestiary to pick one from; returns to the designer with the pick (and whatever was already chosen). */
 	private static class MonsterPickScreen extends ListPickerScreen {
 		private final List<String> ids;
 		private final List<Component> names;
@@ -193,7 +194,7 @@ public class EncounterDesignerScreen extends ListPickerScreen {
 				String id = ids.get(i);
 				addRow(i < names.size() ? names.get(i) : Component.literal(id), b -> {
 					onPick.accept(id);
-					this.onClose(); //Vuelve al diseñador, que conserva lo ya elegido.
+					this.onClose(); //Returns to the designer, which keeps what was already chosen.
 				});
 			}
 		}

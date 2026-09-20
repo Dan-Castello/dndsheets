@@ -9,10 +9,10 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>Último paso de conceder un rasgo desde el Panel de DM: la lista (ids + nombres) la manda el
- * servidor en {@code BrowseListMessage} kind GRANT_TRAIT (pedida con {@code BrowseActionMessage.GRANT_TRAITS} tras elegir el
- * jugador objetivo en {@link PlayerPickerScreen}), porque el registro de rasgos solo vive en memoria del
- * servidor — mismo patrón que {@link PresetScreen}.</p>
+ * <p>Final step of granting a trait from the DM Panel: the list (ids + names) is sent by the
+ * server in {@code BrowseListMessage} kind GRANT_TRAIT (requested with {@code BrowseActionMessage.GRANT_TRAITS} after picking the
+ * target player in {@link PlayerPickerScreen}), because the trait registry only lives in the server's
+ * memory — same pattern as {@link PresetScreen}.</p>
  */
 public class TraitGrantScreen extends ListPickerScreen {
 	private final String targetUuid;

@@ -23,9 +23,9 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
 
             mods {
-                // El addon no arranca solo — necesita el core cargado en el mismo cliente de
-                // desarrollo. Fuente directa del sourceSet del proyecto raíz, no el jar publicado:
-                // así un cambio en cualquiera de los dos módulos se ve sin tener que compilar el otro.
+                // The addon doesn't start on its own — it needs the core loaded in the same development
+                // client. A direct source of the root project's sourceSet, not the published jar:
+                // this way a change in either module shows up without having to compile the other.
                 dndsheets {
                     source project(':').sourceSets.main
                 }
@@ -56,10 +56,10 @@ minecraft {
 dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.4.22'
 
-    // Dependencia DURA con el core: el toolkit de mazmorras no es un mod independiente de verdad,
-    // solo toca tres cosas del core (DndsheetsMod.LOGGER/PRETTY_GSON/MODID, DndPaths, TomeButton) y
-    // extiende su framework de GUI compartido (SmallFormScreen/ListPickerScreen/ModalDialogScreen/
-    // GuiStyle). Compila contra el sourceSet del proyecto raíz, no un jar publicado por separado.
+    // HARD dependency on the core: the dungeon toolkit isn't really an independent mod,
+    // it only touches three things of the core (DndsheetsMod.LOGGER/PRETTY_GSON/MODID, DndPaths, TomeButton) and
+    // extends its shared GUI framework (SmallFormScreen/ListPickerScreen/ModalDialogScreen/
+    // GuiStyle). It compiles against the root project's sourceSet, not a separately published jar.
     implementation project(':')
 }
 
@@ -71,8 +71,8 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
-// Mismo patron que el core (ver build.gradle raiz): logica pura (DungeonManager.buildPoolJsons,
-// GridToStructure) probada de pie, sin runtime de Forge.
+// Same pattern as the core (see the root build.gradle): pure logic (DungeonManager.buildPoolJsons,
+// GridToStructure) tested standing up, without the Forge runtime.
 tasks.register('testDungeonSelf', JavaExec) {
     dependsOn compileTestJava
     group = 'verification'

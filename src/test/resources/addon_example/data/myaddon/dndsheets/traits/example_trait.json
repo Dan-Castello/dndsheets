@@ -1,0 +1,8 @@
+{
+  "id": "myaddon:example_trait",
+  "name": "Example Trait",
+  "unarmedAbility": "str",
+  "unarmedDiceByLevel": [
+    { "level": 1, "dice": "1d4" }
+  ]
+}

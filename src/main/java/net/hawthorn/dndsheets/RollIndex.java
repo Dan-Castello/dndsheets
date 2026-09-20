@@ -259,8 +259,8 @@ public class RollIndex {
         }
     }
 
-    //Público: usado por SheetCommand (/dndsheet setroll) para poder nombrar un check/save/skill por su
-    //nombre en vez de exigir que el DM se acuerde de su índice numérico.
+    //Public: used by SheetCommand (/dndsheet setroll) so a check/save/skill can be named
+    //rather than requiring the DM to remember its numeric index.
     public static List<String> basicNames(Category category) {
         int count = switch (category) {
             case CHECKS -> 7;
@@ -325,13 +325,13 @@ public class RollIndex {
         return result;
     }
 
-    // --- Competencias de habilidad ---------------------------------------------------------------
+    // --- Skill proficiencies ---------------------------------------------------------------
 
     /**
-     * <p>Las 18 habilidades de 5e, en el MISMO orden que el array {@code skills} de la hoja y que las
-     * etiquetas de {@code CharacterSheetScreen}. Viven aquí y no en la pantalla porque el índice es lo que
-     * decide qué habilidad recibe la competencia: dos listas en dos archivos que se desordenen entre sí no
-     * dan un error, dan competencia en Sigilo a quien eligió Atletismo.</p>
+     * <p>5e's 18 skills, in the SAME order as the sheet's {@code skills} array and as
+     * {@code CharacterSheetScreen}'s labels. They live here rather than in the screen because the index is
+     * what decides which skill gets the proficiency: two lists in two files getting out of sync doesn't
+     * throw an error, it gives Stealth proficiency to whoever picked Athletics.</p>
      */
     private static final String[] SKILL_KEYS = {
         "athletics", "acrobatics", "sleightofhand", "stealth", "arcana", "history", "investigation",
@@ -341,17 +341,17 @@ public class RollIndex {
 
     public static final int SKILL_COUNT = 18;
 
-    //Derivado del array de arriba, no un "12" suelto en RollAnnouncerProcedure: si algún día SKILL_KEYS
-    //cambia de orden, este índice se mueve solo con él en vez de quedar apuntando a otra habilidad.
+    //Derived from the array above, not a bare "12" in RollAnnouncerProcedure: if SKILL_KEYS ever
+    //changes order, this index moves with it automatically instead of ending up pointing at another skill.
     public static final int PERCEPTION_SKILL_INDEX = java.util.Arrays.asList(SKILL_KEYS).indexOf("perception");
 
-    /** El token que la calculadora de tiradas ya entiende como "suma tu bono de competencia". */
+    /** The token the roll calculator already understands as "add your proficiency bonus". */
     public static final String PROFICIENCY_TOKEN = "$prof";
 
-    //Las dos formas en que el término puede aparecer escrito. La segunda (al principio de la expresión)
-    //existe solo para poder QUITARLA: nadie la escribe desde la interfaz, pero una expresión escrita a mano
-    //por un DM que empiece por $prof tiene que poder desmarcarse igual, o la casilla dice una cosa y la
-    //tirada hace otra. (?![a-z]) protege a $hprof, que es media competencia y no es esto.
+    //The two ways the term can appear written. The second form (at the start of the expression)
+    //exists only so it can be REMOVED: nobody writes it that way from the UI, but an expression a DM
+    //typed by hand starting with $prof still needs to be uncheckable, or the checkbox says one thing
+    //and the roll does another. (?![a-z]) protects $hprof, which is half proficiency and isn't this.
     private static final java.util.regex.Pattern PROFICIENCY_TERM = java.util.regex.Pattern.compile(
         "(\\s*[+]\\s*[$]prof(?![a-z])|[$]prof(?![a-z])\\s*[+]\\s*)");
 
@@ -360,10 +360,10 @@ public class RollIndex {
     }
 
     /**
-     * <p>La característica de cada habilidad, por tramos: Atletismo es de Fuerza; Acrobacias, Juego de
-     * Manos y Sigilo de Destreza; las cinco de conocimiento de Inteligencia; las cinco de percepción de
-     * Sabiduría; las cuatro sociales de Carisma. Es la tabla del SRD y el orden de arriba la sigue, así que
-     * se lee de los tramos en vez de repetirla entrada por entrada.</p>
+     * <p>Each skill's ability, by range: Athletics is Strength; Acrobatics, Sleight of Hand and
+     * Stealth are Dexterity; the five knowledge skills are Intelligence; the five perception skills are
+     * Wisdom; the four social skills are Charisma. This is the SRD table and the order above follows it,
+     * so it's read off the ranges instead of repeating it entry by entry.</p>
      */
     public static String skillAbility(int index) {
         if (index <= 0) return "str";
@@ -378,10 +378,9 @@ public class RollIndex {
     }
 
     /**
-     * <p>Añade o quita el término de competencia <b>sin tocar el resto de la expresión</b>. Reescribirla
-     * entera desde la característica sería una línea más corta y borraría cualquier bono que el jugador o
-     * el DM hubieran puesto a mano en esa habilidad, que es justo lo que un editor de tiradas existe para
-     * permitir.</p>
+     * <p>Adds or removes the proficiency term <b>without touching the rest of the expression</b>. Rewriting
+     * it entirely from the ability score would be a shorter line, and would erase any bonus the player or
+     * the DM had manually added to that skill — which is exactly what a roll editor exists to allow.</p>
      */
     public static String withProficiency(String expression, boolean proficient) {
         String base = PROFICIENCY_TERM.matcher(expression == null ? "" : expression).replaceAll("").trim();
@@ -393,7 +392,7 @@ public class RollIndex {
         return expression != null && isProficient(expression);
     }
 
-    /** @return true si algo cambió; false si el índice no existe en esta hoja. */
+    /** @return true if something changed; false if the index doesn't exist on this sheet. */
     public static boolean setSkillProficiency(JsonObject sheet, int index, boolean proficient) {
         String expression = skillExpression(sheet, index);
         if (expression == null) return false;

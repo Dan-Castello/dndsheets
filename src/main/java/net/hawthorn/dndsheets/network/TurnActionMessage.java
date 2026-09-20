@@ -7,9 +7,9 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente -> servidor: el jugador eligió Esquivar/Correr/Desengancharse en TurnActionScreen.
+//Client -> server: the player chose Dodge/Dash/Disengage in TurnActionScreen.
 public class TurnActionMessage {
-	//Al final, nunca en medio: writeEnum viaja por ordinal (invariante 2 de PROJECT_CONTEXT.md).
+	//At the end, never in the middle: writeEnum travels by ordinal (invariant 2 of PROJECT_CONTEXT.md).
 	final TurnActionManager.TurnAction action;
 
 	public TurnActionMessage(TurnActionManager.TurnAction action) {

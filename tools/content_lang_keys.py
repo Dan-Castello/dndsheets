@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
-"""Pasa los nombres de los packs de serie a claves de idioma.
+"""Turns the names in the shipped packs into language keys.
 
-Antes: `"name": "Daga"` — texto fijo en el dato, que ninguna opcion de idioma puede tocar, y que
-ademas se hornea en el NBT del ItemStack, asi que un cliente en ingles leia "Daga" para siempre.
-Despues: `"name": "content.dndsheets.weapon.dagger"`, que cada cliente resuelve en el suyo.
+Before: `"name": "Daga"` — fixed text in the data, which no language option can touch, and which
+is also baked into the ItemStack's NBT, so an English client read "Daga" forever.
+After: `"name": "content.dndsheets.weapon.dagger"`, which each client resolves in its own language.
 
-El ESPANOL sale del nombre que ya habia. El INGLES sale del ID, que en estos packs es el id del SRD
-y por tanto ya viene en ingles (`dndsheets:fire_bolt` -> "Fire Bolt"); cuando el nombre actual YA
-coincide con ese id se prefiere el nombre tal cual, porque trae la puntuacion buena
-("Ammunition, +1" gana a "Ammunition 1"). Lo que no tiene id del que tirar —los nombres de ataque
-de monstruo— va en OVERRIDES_EN a mano.
+The SPANISH comes from the name that was already there. The ENGLISH comes from the ID, which in these packs is the SRD id
+and therefore is already in English (`dndsheets:fire_bolt` -> "Fire Bolt"); when the current name ALREADY
+matches that id the name is preferred as is, because it carries the right punctuation
+("Ammunition, +1" beats "Ammunition 1"). What has no id to draw from —monster attack names—
+goes in OVERRIDES_EN by hand.
 
-Un pack escrito a mano por un DM NO pasa por aqui y no hace falta tocarlo: `ContentNames.of` deja el
-literal como estaba (Minecraft devuelve la clave cruda cuando no existe).
+A pack written by hand by a DM does NOT go through here and needs no touching: `ContentNames.of` leaves the
+literal as it was (Minecraft returns the raw key when it does not exist).
 
-    python tools/content_lang_keys.py          # migra y reescribe en_us/es_es
-    python tools/content_lang_keys.py --dry    # solo informa
+    python tools/content_lang_keys.py          # migrates and rewrites en_us/es_es
+    python tools/content_lang_keys.py --dry    # only reports
 """
 import json
 import io
@@ -27,15 +27,19 @@ DEFAULTS = os.path.join('src', 'main', 'resources', 'dndsheets', 'defaults')
 LANG = os.path.join('src', 'main', 'resources', 'assets', 'dndsheets', 'lang')
 PREFIX = 'content.dndsheets.'
 
-# presets.json queda FUERA a proposito, y no por pereza: el nombre de un preset no solo se enseña,
-# se ESCRIBE en la hoja (`characterClass`, `characterSubclass`), que es un campo de texto que el
-# jugador ve y puede editar, y del que ademas SpellSlots.casterFor deduce por subcadena si la clase
-# lanza conjuros. Con la clave dentro, el jugador leeria "content.dndsheets.preset.wizard" en la
-# casilla Clase de su ficha. Traducir clases pide que la hoja guarde el id (ya lo tiene en
-# `appliedPresetId`) y muestre el nombre aparte — otro cambio, no este.
-# ponytail: 12 clases y 12 subclases siguen en espanol; el arreglo es desacoplar guardado de display.
+# presets.json is deliberately LEFT OUT, and not out of laziness: a preset's name is not only displayed,
+# it is WRITTEN to the sheet (`characterClass`, `characterSubclass`), which is a text field the
+# player sees and can edit, and from which SpellSlots.casterFor also deduces by substring whether the class
+# casts spells. With the key inside, the player would read "content.dndsheets.preset.wizard" in the
+# Class box of their sheet — decoupling storage (id) from display (key) would be another change, not this one.
+#
+# Instead, the 12 classes and 12 subclasses were translated to literal English text directly
+# in presets.json (without a `content.dndsheets.*` key): SpellSlots.casterFor/castingAbilityFor,
+# Config.hitDieFor and WeaponDefault.allowsClass already checked both the English and the
+# Spanish substring before this change, so translating the literal breaks none of that — and the sheets
+# already saved keep their old Spanish text, which those same matchers still recognize.
 
-# Que fichero aporta que tipo de clave.
+# Which file contributes which kind of key.
 TYPES = {
     'weapons.json': 'weapon',
     'spells.json': 'spell',
@@ -46,13 +50,13 @@ TYPES = {
     'encounters.json': 'encounter',
 }
 
-# Minusculas dentro de un titulo ingles, salvo en la primera palabra.
+# Lowercase inside an English title, except for the first word.
 SMALL = {'of', 'the', 'and', 'or', 'in', 'on', 'a', 'an', 'to', 'from', 'with', 'at', 'by', 'for'}
 
-# Lo que no se puede derivar de un id: nombres de ataque de monstruo (el JSON no les da id) y los
-# pocos ids que estan en espanol. Escrito a mano contra el SRD.
+# What cannot be derived from an id: monster attack names (the JSON gives them no id) and the
+# few ids that are in Spanish. Written by hand against the SRD.
 OVERRIDES_EN = {
-    # --- ataques y acciones de monstruo ---
+    # --- monster attacks and actions ---
     'Aguijon': 'Stinger',
     'Aguijon (mordisco en forma bestial)': 'Stinger (Bite in Beast Form)',
     'Aliento de Fuego': 'Fire Breath',
@@ -119,7 +123,7 @@ OVERRIDES_EN = {
     'dndsheets:cripta': 'Crypt Guardians',
     'dndsheets:banda_bandidos': 'Bandit Gang',
     'dndsheets:bandidos': 'Highway Bandits',
-    # --- subclases: el id es escueto ("cleric:life") y el nombre del SRD lleva su prefijo ---
+    # --- subclasses: the id is terse ("cleric:life") and the SRD name carries its prefix ---
     'fighter:champion': 'Champion',
     'wizard:evocation': 'School of Evocation',
     'rogue:thief': 'Thief',
@@ -137,7 +141,7 @@ OVERRIDES_EN = {
 }
 
 
-# El caso inverso: ataques que el pack trae ya en INGLES y a los que les falta el espanol.
+# The inverse case: attacks the pack already ships in ENGLISH and that lack the Spanish.
 OVERRIDES_ES = {
     'Battleaxe': 'Hacha de Batalla',
     'Beard': 'Barba',
@@ -186,29 +190,29 @@ def title_en(text):
 
 
 def english_for(identifier, current):
-    """Ingles del id, salvo que el nombre actual YA sea ese ingles mejor puntuado."""
+    """English from the id, unless the current name is ALREADY that English, better punctuated."""
     if identifier and identifier in OVERRIDES_EN:
         return OVERRIDES_EN[identifier]
     if current in OVERRIDES_EN:
         return OVERRIDES_EN[current]
-    # Sin id del que tirar (ataques de monstruo): o esta en OVERRIDES_EN o se queda como estaba, y
-    # main() lo lista para que alguien lo traduzca. Nunca se inventa un ingles a partir del espanol.
+    # With no id to draw from (monster attacks): it is either in OVERRIDES_EN or stays as it was, and
+    # main() lists it so someone can translate it. English is never invented from the Spanish.
     if not identifier:
         return current
     guess = title_en(slug(identifier).split('.')[-1])
 
-    # El id agrupa las variantes con un sufijo numerico (armor_1, armor_2): el SRD las escribe
-    # "Armor, +1". Sin esto salia "Armor 1", que no es el nombre de nada.
+    # The id groups the variants with a numeric suffix (armor_1, armor_2): the SRD writes them
+    # "Armor, +1". Without this it came out "Armor 1", which is nobody's name.
     bonus = re.match(r'^(.*) ([123])$', guess)
     if bonus:
         guess = '%s, +%s' % (bonus.group(1), bonus.group(2))
 
-    # Si el nombre que ya hay EMPIEZA por la misma palabra que la conjetura, ya esta en ingles y
-    # ademas mejor escrito: trae la puntuacion y los matices que el id no puede llevar
-    # ("Ammunition, +1, +2, or +3" gana a "Ammunition"; "Carpet of Flying (3 ft. x 5 ft.)" gana a
-    # "Carpet of Flying 3x5"; "Belt of Cloud Giant Strength" gana al orden del id, pensado para
-    # agrupar variantes y no para leerse). Un nombre en espanol no comparte la primera palabra con
-    # su id ingles —"Escudo Animado" contra "Animated Shield"—, asi que ese cae a la conjetura.
+    # If the existing name STARTS with the same word as the guess, it is already in English and
+    # better written too: it carries the punctuation and nuances the id cannot carry
+    # ("Ammunition, +1, +2, or +3" beats "Ammunition"; "Carpet of Flying (3 ft. x 5 ft.)" beats
+    # "Carpet of Flying 3x5"; "Belt of Cloud Giant Strength" beats the id's order, meant
+    # for grouping variants and not for reading). A Spanish name does not share its first word with
+    # its English id —"Escudo Animado" against "Animated Shield"—, so that one falls to the guess.
     def first_word(text):
         words = re.findall(r'[A-Za-z0-9]+', text)
         return words[0].lower() if words else ''
@@ -218,7 +222,7 @@ def english_for(identifier, current):
 
 
 def collect(pack, kind, entries, unresolved):
-    """Recorre un pack y devuelve [(objeto, campo, clave, es, en)] sin tocar nada todavia."""
+    """Walks a pack and returns [(object, field, key, es, en)] without touching anything yet."""
     found = []
 
     def add(obj, field, key, identifier):
@@ -236,8 +240,8 @@ def collect(pack, kind, entries, unresolved):
         base = PREFIX + kind + '.' + slug(identifier)
         if 'name' in entry:
             add(entry, 'name', base, identifier)
-        # Los ataques no tienen id: la clave sale del nombre en espanol, que es estable y unico
-        # dentro del pack, y ademas se COMPARTE entre monstruos (veinte de ellos llevan "Cimitarra").
+        # Attacks have no id: the key comes from the Spanish name, which is stable and unique
+        # within the pack, and is also SHARED between monsters (twenty of them carry "Cimitarra").
         for group in ('attacks', 'abilities_special'):
             for action in entry.get(group, []):
                 if 'name' not in action:
@@ -259,50 +263,50 @@ def main():
         path = os.path.join(DEFAULTS, filename)
         pack = json.load(io.open(path, encoding='utf-8'))
         found = collect(pack, kind, [], unresolved)
-        # Las sustituciones agrupadas por ENTRADA, no por valor suelto: dos objetos distintos pueden
-        # llamarse igual ("Pocion de Curacion" es potion_of_healing y potion_of_healing_common) y con
-        # un mapa global el segundo se llevaria la clave del primero. Dentro de una entrada el nombre
-        # si es unico. Un mismo valor en entradas distintas —"Cimitarra", que llevan veinte
-        # monstruos— si comparte clave a proposito: es una sola entrada de idioma.
-        por_entrada = {}
+        # Substitutions grouped by ENTRY, not by loose value: two different objects can
+        # share a name ("Pocion de Curacion" is potion_of_healing and potion_of_healing_common) and with
+        # a global map the second would take the first one's key. Within an entry the name
+        # is unique. The same value in different entries —"Cimitarra", which twenty
+        # monsters carry— does share a key on purpose: it is a single language entry.
+        by_entry = {}
         for obj, field, key, spanish, english in found:
             es_new.setdefault(key, spanish)
             en_new.setdefault(key, english)
-            por_entrada.setdefault(id(obj), []).append((obj[field], key))
+            by_entry.setdefault(id(obj), []).append((obj[field], key))
         total += len(found)
         print('%-16s %4d nombres' % (filename, len(found)))
         if dry:
             continue
 
-        # Sustitucion de TEXTO, no round-trip por json.dump: la invariante 10 de PROJECT_CONTEXT.md
-        # dice que estos packs estan formateados a mano (compactos, una entrada por linea) y un dump
-        # reflowea el fichero entero — 14.000 lineas de diff donde solo cambian 1.351 valores. Mismo
-        # criterio, y por el mismo motivo, que tools/add_spell_school.py.
+        # TEXT substitution, not a round-trip through json.dump: invariant 10 of PROJECT_CONTEXT.md
+        # says these packs are hand-formatted (compact, one entry per line) and a dump
+        # reflows the whole file — 14,000 lines of diff where only 1,351 values change. Same
+        # criterion, and for the same reason, as tools/add_spell_school.py.
         raw = io.open(path, encoding='utf-8').read()
 
-        # Cada entrada empieza por su "id" y llega hasta el "id" de la siguiente, asi que ese tramo de
-        # texto contiene su nombre y los de sus ataques y nada mas. Sirve igual con los packs de una
-        # entrada por linea (armas, objetos) y con los multilinea (monstruos), sin reformatear nada.
-        cortes = [m.start() for m in re.finditer(r'"id"\s*:\s*"', raw)]
-        assert len(cortes) == len(pack), ('%s: %d entradas pero %d campos "id" en el texto — hay ids '
-                                          'anidados y el troceado por entrada no vale aqui'
-                                          % (filename, len(pack), len(cortes)))
-        cortes.append(len(raw))
+        # Each entry starts at its "id" and runs to the next one's "id", so that stretch of
+        # text contains its name and those of its attacks and nothing else. It works the same with packs of one
+        # entry per line (weapons, items) and with multiline ones (monsters), without reformatting anything.
+        cuts = [m.start() for m in re.finditer(r'"id"\s*:\s*"', raw)]
+        assert len(cuts) == len(pack), ('%s: %d entries but %d "id" fields in the text — there are nested ids '
+                                          'and splitting by entry does not work here'
+                                          % (filename, len(pack), len(cuts)))
+        cuts.append(len(raw))
 
-        trozos = []
+        chunks = []
         for n, entry in enumerate(pack):
-            trozo = raw[cortes[n]:cortes[n + 1]]
-            for valor, key in por_entrada.get(id(entry), []) + sum(
-                    (por_entrada.get(id(a), []) for group in ('attacks', 'abilities_special')
+            chunk = raw[cuts[n]:cuts[n + 1]]
+            for value, key in by_entry.get(id(entry), []) + sum(
+                    (by_entry.get(id(a), []) for group in ('attacks', 'abilities_special')
                      for a in entry.get(group, [])), []):
-                # "name" es tambien el campo de appliesEffect, que NO se migra (ahi el valor es el id
-                # de una condicion y el motor lo compara). Por eso se ancla en el valor exacto y no en
-                # el campo: un "envenenado" nunca coincide con un nombre de contenido.
-                antes = '"name": %s' % json.dumps(valor, ensure_ascii=False)
-                assert antes in trozo, '%s: no encuentro %s en %s' % (filename, antes, entry.get('id'))
-                trozo = trozo.replace(antes, '"name": "%s"' % key)
-            trozos.append(trozo)
-        io.open(path, 'w', encoding='utf-8').write(raw[:cortes[0]] + ''.join(trozos))
+                # "name" is also the appliesEffect field, which is NOT migrated (there the value is the id
+                # of a condition and the engine compares it). That is why it is anchored on the exact value and not on
+                # the field: a "poisoned" never matches a content name.
+                before = '"name": %s' % json.dumps(value, ensure_ascii=False)
+                assert before in chunk, '%s: could not find %s in %s' % (filename, before, entry.get('id'))
+                chunk = chunk.replace(before, '"name": "%s"' % key)
+            chunks.append(chunk)
+        io.open(path, 'w', encoding='utf-8').write(raw[:cuts[0]] + ''.join(chunks))
 
     missing = sorted(set(n for n in unresolved
                          if n not in OVERRIDES_EN and n not in OVERRIDES_ES))

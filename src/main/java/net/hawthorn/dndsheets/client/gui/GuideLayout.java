@@ -4,14 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>La aritmética de repartir la Guía en páginas del libro escrito. Sin nada de Minecraft dentro a
- * propósito: quien mide el texto es {@link GuideBook}, que tiene el {@code Font} del cliente, y aquí solo
- * se reparte lo ya medido.</p>
+ * <p>The arithmetic behind splitting the Guide into written-book pages. Deliberately free of anything
+ * Minecraft-specific: {@link GuideBook} is what measures the text, since it has the client's
+ * {@code Font}, and here we just distribute what's already been measured.</p>
  *
- * <p>Está separada porque es la parte que puede fallar en silencio —de cuántas páginas ocupe el índice
- * depende el número al que salta CADA fila suya, así que una línea de más manda todos los enlaces a la
- * página equivocada— y {@code JsonContentSelfTest} corre sin juego: junto al {@code Font} no habría forma
- * de comprobarla. Es el mismo motivo por el que existe {@code CharacterRules}.</p>
+ * <p>This is kept separate because it's the part that can fail silently — how many pages the index takes
+ * up determines the page number EVERY one of its rows jumps to, so one extra line sends every link to the
+ * wrong page — and {@code JsonContentSelfTest} runs without the game: tangled together with {@code Font}
+ * there would be no way to test it. It's the same reason {@code CharacterRules} exists.</p>
  */
 public final class GuideLayout {
 
@@ -19,11 +19,11 @@ public final class GuideLayout {
 	}
 
 	/**
-	 * <p>Junta líneas ya partidas en trozos que quepan en una página. El primero puede llevar menos sitio
-	 * que el resto, que es donde entra el título de la entrada.</p>
+	 * <p>Joins already-wrapped lines into chunks that fit on a page. The first chunk can hold less than
+	 * the rest, which is where the entry's title goes.</p>
 	 *
-	 * <p>Se re-unen con un espacio porque es justo lo que el repartidor quita al cortar: el texto vuelve
-	 * a partirse igual al pintarse.</p>
+	 * <p>They're rejoined with a space because that's exactly what the splitter strips out when wrapping:
+	 * the text gets wrapped the same way again when it's rendered.</p>
 	 */
 	public static List<String> wrap(List<String> lines, int firstLimit, int restLimit) {
 		List<String> chunks = new ArrayList<>();
@@ -41,16 +41,16 @@ public final class GuideLayout {
 			current.append(line);
 			used++;
 		}
-		//Sin el guardia de arriba, un texto que acaba justo en el límite dejaría una página en blanco
-		//detrás. Con él, el último trozo siempre lleva algo.
+		//Without the guard above, a text ending exactly at the limit would leave a blank page behind it.
+		//With it, the last chunk always carries something.
 		chunks.add(current.toString());
 		return chunks;
 	}
 
 	/**
-	 * <p>Reparte filas de altura conocida en páginas de {@code limit} líneas, y devuelve cuántas filas
-	 * lleva cada página. Una fila más alta que la página entera se queda sola en la suya en vez de
-	 * bloquear el reparto.</p>
+	 * <p>Distributes rows of known height into pages of {@code limit} lines, and returns how many rows
+	 * each page holds. A row taller than an entire page gets its own page to itself instead of blocking
+	 * the layout.</p>
 	 */
 	public static List<Integer> paginate(List<Integer> heights, int limit) {
 		List<Integer> pages = new ArrayList<>();

@@ -1,0 +1,24 @@
+{
+  "name": "gui.dndsheets.guide.entry.magic",
+  "category": "dndsheets:combat",
+  "icon": "minecraft:blaze_rod",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.spells"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.spell_prepare"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.spell_casting_time"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.spell_schools"
+    }
+  ]
+}

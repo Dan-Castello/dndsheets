@@ -19,55 +19,55 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * <p>Capa impura del editor de trazado: planta en el mundo lo que {@link GridToStructure} tradujo, y
- * escanea esa región exactamente como lo haría un bloque de estructura en modo SAVE — así
- * {@link DungeonManager#capturePiece} no necesita saber que la pieza no la construyó una persona.</p>
+ * <p>The impure layer of the trace editor: plants into the world what {@link GridToStructure}
+ * translated, and scans that region exactly the way a structure block in SAVE mode would — so
+ * {@link DungeonManager#capturePiece} doesn't need to know the piece wasn't built by a person.</p>
  *
- * <p>El bloque de una celda {@code OBJECT} se busca en {@link ForgeRegistries#BLOCKS}, el mismo
- * registro global donde vive cualquier bloque de cualquier mod instalado (así es como el resto del
- * mod ya resuelve ítems ajenos, ver {@code Config.resolveItem}) — no hace falta compatibilidad
- * especial por mod, un mueble de otro mod es solo un {@link ResourceLocation} más. Si no resuelve
- * (el mod no está instalado, o el DM no eligió nada) cae al bloque por defecto.</p>
+ * <p>The block for an {@code OBJECT} cell is looked up in {@link ForgeRegistries#BLOCKS}, the same
+ * global registry where any block from any installed mod lives (the same way the rest of the mod
+ * already resolves foreign items, see {@code Config.resolveItem}) — no special per-mod compatibility
+ * needed, a piece of furniture from another mod is just one more {@link ResourceLocation}. If it
+ * doesn't resolve (the mod isn't installed, or the DM didn't pick anything) it falls back to the
+ * default block.</p>
  */
 public final class DungeonPiecePlacer {
 
 	private DungeonPiecePlacer() {}
 
-	//Públicos: el renderer de previsualización en el mundo (DungeonTracePreviewRenderer, cliente) necesita
-	//resolver EXACTAMENTE los mismos bloques que va a plantar el servidor — dos copias de esta tabla se
-	//desincronizan la primera vez que alguien cambie una sin acordarse de la otra.
+	//Public: the in-world preview renderer (DungeonTracePreviewRenderer, client-side) needs to resolve
+	//EXACTLY the same blocks the server will plant — two copies of this table would drift apart the
+	//first time someone changes one without remembering the other.
 	public static final BlockState DEFAULT_FLOOR = Blocks.POLISHED_ANDESITE.defaultBlockState();
 	public static final BlockState DEFAULT_WALL = Blocks.STONE_BRICKS.defaultBlockState();
 	public static final BlockState DEFAULT_OBJECT = Blocks.BARREL.defaultBlockState();
 
 	/**
-	 * <p>Material de pared y de piso para TODA la pieza — a diferencia de {@code OBJECT}, que elige
-	 * bloque celda a celda, pared y piso son una sola decisión por pieza (así dibuja un DM: "esta sala
-	 * es de piedra", no bloque por bloque). Cualquiera de los dos puede ser null: cae al bloque por
-	 * defecto.</p>
+	 * <p>Wall and floor material for the WHOLE piece — unlike {@code OBJECT}, which picks a block cell
+	 * by cell, wall and floor are a single decision per piece (that's how a DM draws: "this room is
+	 * made of stone," not block by block). Either one can be null: falls back to the default block.</p>
 	 */
 	public record Materials(ResourceLocation wallBlockId, ResourceLocation floorBlockId) {
 		public static final Materials DEFAULTS = new Materials(null, null);
 	}
 
-	/** Sin materiales elegidos por el DM — ver {@link #placeAndCapture(ServerLevel, BlockPos, DungeonPieceRegistry.DungeonPiece, List, Materials)}. */
+	/** No materials chosen by the DM — see {@link #placeAndCapture(ServerLevel, BlockPos, DungeonPieceRegistry.DungeonPiece, List, Materials)}. */
 	public static Optional<String> placeAndCapture(ServerLevel level, BlockPos origin,
 			DungeonPieceRegistry.DungeonPiece piece, List<GridToStructure.PlacedBlock> blocks) {
 		return placeAndCapture(level, origin, piece, blocks, Materials.DEFAULTS);
 	}
 
 	/**
-	 * <p>Planta los bloques en {@code origin}, escanea la región con el mismo mecanismo que usa el
-	 * bloque de estructura al guardar, y delega el registro de la pieza en
-	 * {@link DungeonManager#capturePiece} sin duplicar esa lógica.</p>
+	 * <p>Plants the blocks at {@code origin}, scans the region with the same mechanism the structure
+	 * block uses when saving, and delegates registering the piece to
+	 * {@link DungeonManager#capturePiece} without duplicating that logic.</p>
 	 */
 	public static Optional<String> placeAndCapture(ServerLevel level, BlockPos origin,
 			DungeonPieceRegistry.DungeonPiece piece, List<GridToStructure.PlacedBlock> blocks, Materials materials) {
 		ResourceLocation structureId = ResourceLocation.tryParse(piece.structureId());
 		if (structureId == null) {
-			return Optional.of("\"" + piece.structureId() + "\" no es un id válido (usa el formato espacioDeNombres:ruta).");
+			return Optional.of("\"" + piece.structureId() + "\" is not a valid id (use the namespace:path format).");
 		}
-		if (blocks.isEmpty()) return Optional.of("la grilla está vacía, no hay nada que plantar.");
+		if (blocks.isEmpty()) return Optional.of("the grid is empty, there is nothing to plant.");
 
 		BlockState floorState = resolveOrDefault(materials.floorBlockId(), DEFAULT_FLOOR);
 		BlockState wallState = resolveOrDefault(materials.wallBlockId(), DEFAULT_WALL);
@@ -94,7 +94,7 @@ public final class DungeonPiecePlacer {
 		StructureTemplate template = manager.getOrCreate(structureId);
 		template.fillFromWorld(level, origin, new Vec3i(width, tallest, depth), false, Blocks.STRUCTURE_VOID);
 		if (!manager.save(structureId)) {
-			return Optional.of("no pude guardar la estructura escaneada como " + structureId + ".");
+			return Optional.of("could not save the scanned structure as " + structureId + ".");
 		}
 
 		return DungeonManager.capturePiece(level.getServer(), piece);
@@ -106,11 +106,11 @@ public final class DungeonPiecePlacer {
 		return block != null ? block.defaultBlockState() : fallback;
 	}
 
-	//Gira el objeto si su bloque usa la propiedad de orientación horizontal estándar (la mayoría de
-	//muebles de un solo espacio la tienen, sea del mod que sea) — sin lista de bloques conocidos, así
-	//que no hace falta compatibilidad especial por mod. Un mueble de MÁS de una celda (cama, puerta) no
-	//sale completo: cada celda de la grilla es un solo BlockPos, y eso ya es un techo del editor, no de
-	//esta función.
+	//Rotates the object if its block uses the standard horizontal-facing property (most single-space
+	//furniture has it, regardless of which mod it's from) — no list of known blocks needed, so no
+	//special per-mod compatibility is required. Furniture spanning MORE than one cell (bed, door) won't
+	//come out complete: each grid cell is a single BlockPos, and that's already a ceiling of the
+	//editor, not of this function.
 	public static BlockState objectStateFor(ResourceLocation blockId, Direction facing) {
 		BlockState state = resolveOrDefault(blockId, DEFAULT_OBJECT);
 		if (facing != null && facing.getAxis().isHorizontal()
@@ -120,9 +120,9 @@ public final class DungeonPiecePlacer {
 		return state;
 	}
 
-	//El "afuera" que calculó GridToStructure ya es la Direction horizontal; el jigsaw también necesita
-	//un "arriba" para su orientación completa (FrontAndTop) — DOWN/UP no aplican a puertas en el plano
-	//de la grilla, así que siempre es UP.
+	//The "outward" direction GridToStructure computed is already the horizontal Direction; the jigsaw
+	//also needs an "up" for its full orientation (FrontAndTop) — DOWN/UP don't apply to openings on the
+	//grid's plane, so it's always UP.
 	private static void placeJigsaw(ServerLevel level, BlockPos at, Direction facing, String pool, boolean isStart) {
 		BlockState state = Blocks.JIGSAW.defaultBlockState()
 			.setValue(JigsawBlock.ORIENTATION, FrontAndTop.fromFrontAndTop(facing, Direction.UP));

@@ -9,19 +9,19 @@ import java.util.Deque;
 import java.util.List;
 
 /**
- * <p>Últimas tiradas de la partida, en memoria: el desglose completo que {@link DiceManager.RollOutcome}
- * ya calcula (el mismo texto que se ve en el chat), pero sin perderse en el scroll. Enganchado en el único
- * punto de entrada de toda tirada, {@link DiceManager#roll} — no hace falta interceptar cada uno de sus
- * llamadores por separado.</p>
+ * <p>The game's most recent rolls, in memory: the full breakdown that {@link DiceManager.RollOutcome}
+ * already computes (the same text seen in chat), but without it getting lost in the scroll. Hooked into
+ * the single entry point every roll goes through, {@link DiceManager#roll} — no need to intercept each
+ * of its callers separately.</p>
  *
- * <p><b>ponytail:</b> sin quién tira cuando el llamador no pasa una hoja con {@code characterName} (un
- * monstruo, casi siempre, invocado con un {@code JsonObject} vacío) — se guarda como {@code "?"} en vez de
- * nada. Pasarle la identidad real a {@code DiceManager.roll} pediría tocar las docenas de sitios que ya lo
- * llaman hoy; el desglose de la tirada en sí (lo que más se pierde sin log) ya queda capturado igual.
- * Subir a esto cuando alguien lo eche de menos en una mesa de verdad.</p>
+ * <p><b>ponytail:</b> no roller name when the caller doesn't pass a sheet with {@code characterName} (a
+ * monster, almost always, invoked with an empty {@code JsonObject}) — stored as {@code "?"} instead of
+ * nothing. Passing the real identity through to {@code DiceManager.roll} would mean touching the dozens
+ * of call sites that already use it; the roll's own breakdown (what's most missed without a log) is
+ * already captured regardless. Upgrade this when someone actually misses it at a real table.</p>
  *
- * <p>Solo en memoria, mismo criterio que {@link TurnManager}: es un historial de la SESIÓN, no del
- * personaje, así que no hace falta que sobreviva a un reinicio del servidor.</p>
+ * <p>Memory-only, same criterion as {@link TurnManager}: it's a SESSION history, not the character's,
+ * so it doesn't need to survive a server restart.</p>
  */
 public final class RollLog {
 	private RollLog() {}
@@ -32,13 +32,13 @@ public final class RollLog {
 	private static final Deque<Entry> entries = new ArrayDeque<>();
 
 	public static synchronized void record(JsonObject sheet, DiceManager.RollOutcome outcome) {
-		if (outcome.result() == null || outcome.formatted() == null) return; //Tirada fallida: nada que anotar.
+		if (outcome.result() == null || outcome.formatted() == null) return; //Failed roll: nothing to log.
 		String actor = sheet != null && sheet.has("characterName") ? sheet.get("characterName").getAsString() : "?";
 		entries.addLast(new Entry(actor, outcome.formatted(), System.currentTimeMillis()));
 		while (entries.size() > MAX_ENTRIES) entries.removeFirst();
 	}
 
-	/** Las últimas tiradas, más reciente primero. */
+	/** The most recent rolls, most recent first. */
 	public static synchronized List<Entry> recent() {
 		List<Entry> copy = new ArrayList<>(entries);
 		Collections.reverse(copy);

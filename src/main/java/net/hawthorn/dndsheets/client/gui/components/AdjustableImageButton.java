@@ -20,13 +20,13 @@ public class AdjustableImageButton extends Button {
     protected int textureHeight;
     public int txtColor = 0xF4F3F3;
     /**
-     * <p>Sombra del rótulo. Va aparte de {@link #txtColor} porque las dos decisiones no son la misma: la
-     * sombra de Minecraft es una copia del texto un píxel abajo y a la derecha, en el color oscurecido a
-     * la cuarta parte. Con texto claro sobre fondo oscuro eso es relieve y ayuda a leer; con texto oscuro
-     * sobre pergamino (la pestaña seleccionada) la copia queda tan oscura como el original y la palabra
-     * se lee escrita dos veces.</p>
+     * <p>Label shadow. Kept separate from {@link #txtColor} because the two decisions aren't the same: Minecraft's
+     * shadow is a copy of the text one pixel down and to the right, in the color darkened to a
+     * quarter. With light text on a dark background that reads as relief and helps legibility; with dark text
+     * on parchment (the selected tab) the copy ends up as dark as the original and the word
+     * reads as if written twice.</p>
      *
-     * <p>Arranca en true porque es lo que hacía {@code renderString}, que es a lo que sustituye.</p>
+     * <p>Starts as true because that's what {@code renderString} did, which this replaces.</p>
      */
     public boolean txtShadow = true;
 
@@ -64,8 +64,8 @@ public class AdjustableImageButton extends Button {
     public void renderWidget(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
         Minecraft minecraft = Minecraft.getInstance();
         this.renderTexture(pGuiGraphics, this.resourceLocation, this.getX(), this.getY(), this.xTexStart, this.yTexStart, this.yDiffTex, this.width, this.height, this.textureWidth, this.textureHeight);
-        //Dibujo directo en vez de renderString(): ese acaba en drawCenteredString, que fuerza la sombra sin
-        //dejar apagarla. Ver txtShadow.
+        //Direct drawing instead of renderString(): that ends up in drawCenteredString, which forces the shadow
+        //without letting it be turned off. See txtShadow.
         int color = txtColor | Mth.ceil(this.alpha * 255.0F) << 24;
         pGuiGraphics.drawString(minecraft.font, this.getMessage(),
             this.getX() + (this.width - minecraft.font.width(this.getMessage())) / 2,

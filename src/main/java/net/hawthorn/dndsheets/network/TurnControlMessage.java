@@ -9,8 +9,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: botón de Iniciar/Siguiente/Cancelar/Terminar en TurnControlScreen
-//(equivalente en GUI a /dndturns start|next|cancel|end).
+//Client (the DM) -> server: Start/Next/Cancel/End button in TurnControlScreen
+//(GUI equivalent of /dndturns start|next|cancel|end).
 public class TurnControlMessage {
 	String action;
 

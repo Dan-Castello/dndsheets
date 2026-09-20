@@ -33,12 +33,12 @@ import java.nio.file.Path;
 import java.util.Collection;
 
 /**
- * <p>Carga hechizos desde JSON en {@code <carpeta del mundo>/dndsheets/spells/<archivo>.json} (ver
- * {@link SpellRegistry} para el formato) y permite que un jugador "aprenda" uno, añadiéndolo a la lista
- * de hechizos conocidos de su propia hoja para que aparezca en su Grimorio. Aprender el PRIMER hechizo
- * también le da un espacio de conjuro (si tenía 0) y un báculo de lanzado rápido en el inventario, para
- * que se pueda probar de inmediato sin depender de {@code /dndsheet setslots} ni {@code /dndspells
- * staff} aparte.</p>
+ * <p>Loads spells from JSON at {@code <world folder>/dndsheets/spells/<file>.json} (see
+ * {@link SpellRegistry} for the format) and lets a player "learn" one, adding it to their own sheet's
+ * list of known spells so it shows up in their Spellbook. Learning the FIRST spell also gives them a
+ * spell slot (if they had 0) and a quick-cast staff in their inventory, so it can be tried out
+ * immediately without depending separately on {@code /dndsheet setslots} or {@code /dndspells
+ * staff}.</p>
  */
 @Mod.EventBusSubscriber
 public class SpellCommand {
@@ -48,16 +48,16 @@ public class SpellCommand {
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndspells")
 			.requires(source -> DndsheetsMod.canActAsDm(source))
-			.then(ContentCommands.loadBranch(SPELLS_DIR, SpellRegistry::loadFile, "hechizos"))
-			.then(ContentCommands.listBranch(SpellRegistry::ids, "Hechizos"))
+			.then(ContentCommands.loadBranch(SPELLS_DIR, SpellRegistry::loadFile, "spells"))
+			.then(ContentCommands.listBranch(SpellRegistry::ids, "Spells"))
 			.then(Commands.literal("learn")
-				.then(Commands.argument("jugadores", EntityArgument.players())
-					.then(Commands.argument("hechizoId", ResourceLocationArgument.id())
+				.then(Commands.argument("players", EntityArgument.players())
+					.then(Commands.argument("spellId", ResourceLocationArgument.id())
 						.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(SpellRegistry.ids(), builder))
 						.executes(SpellCommand::learn))))
 			.then(Commands.literal("staff")
-				.then(Commands.argument("jugadores", EntityArgument.players())
-					.then(Commands.argument("hechizoId", ResourceLocationArgument.id())
+				.then(Commands.argument("players", EntityArgument.players())
+					.then(Commands.argument("spellId", ResourceLocationArgument.id())
 						.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(SpellRegistry.ids(), builder))
 						.executes(ctx -> staff(ctx, "minecraft:blaze_rod"))
 						.then(Commands.argument("itemBase", ResourceLocationArgument.id())
@@ -68,23 +68,23 @@ public class SpellCommand {
 
 
 	private static int learn(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		String spellId = ResourceLocationArgument.getId(ctx, "hechizoId").toString();
+		String spellId = ResourceLocationArgument.getId(ctx, "spellId").toString();
 		SpellRegistry.Spell spell = SpellRegistry.get(spellId);
 		if (spell == null) {
-			ctx.getSource().sendFailure(Component.literal("No conozco el hechizo \"" + spellId + "\". Cárgalo con /dndspells load."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.spell.no_such_load_hint", spellId));
 			return 0;
 		}
 
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) learnForPlayer(target, spellId, spell);
 
-		ctx.getSource().sendSuccess(() -> Component.literal(targets.size() + " jugador(es) aprendieron ").append(ContentNames.of(spell.name())).append("."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.spell.learned_players", targets.size(), ContentNames.of(spell.name())), true);
 		return targets.size();
 	}
 
-	//Público: también lo usa network.SpellGiveMessage (equivalente en GUI, ver client.gui.SpellGiveListScreen)
-	//— mismo cuerpo por jugador que el bucle de arriba, para no duplicar la lógica de primer-hechizo entre
-	//comando y GUI.
+	//Public: also used by network.SpellGiveMessage (its GUI equivalent, see client.gui.SpellGiveListScreen)
+	//— same per-player body as the loop above, so as not to duplicate the first-spell logic between
+	//command and GUI.
 	public static void learnForPlayer(ServerPlayer target, String spellId, SpellRegistry.Spell spell) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;
@@ -92,13 +92,14 @@ public class SpellCommand {
 		SheetLoader.validateSheet(sheet);
 		boolean alreadyKnown = !SpellRegistry.learn(sheet, spellId);
 
-		//Sin esto, aprender un hechizo por primera vez dejaba al jugador con 0/0 espacios para
-		//siempre (un descanso no crea espacios de la nada, solo rellena los que ya existían) y sin
-		//nada en el inventario para lanzarlo: había que acordarse de /dndsheet setslots Y /dndspells
-		//staff aparte. Si el DM ya configuró espacios a mano, esto no los toca.
-		//Aprender un conjuro sin tener espacios dejaba al jugador con 0/0 para siempre (un descanso rellena
-		//los que ya hay, no crea ninguno). Con la progresión por clase, una clase lanzadora ya trae los
-		//suyos; esto solo cubre al que NO lanza y a quien el DM le enseña un conjuro igualmente.
+		//Without this, learning a spell for the first time left the player with 0/0 slots forever
+		//(a rest doesn't create slots out of nothing, it only refills ones that already existed) and
+		//nothing in the inventory to cast it with: /dndsheet setslots AND /dndspells staff had to be
+		//remembered separately. If the DM already configured slots by hand, this doesn't touch them.
+		//Learning a spell without having slots left the player at 0/0 forever (a rest refills what's
+		//already there, it doesn't create any). With per-class progression, a casting class already
+		//brings its own; this only covers whoever does NOT cast and whoever the DM teaches a spell to
+		//anyway.
 		int slotsMax = sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
 		if (slotsMax <= 0) SpellSlots.setFlat(sheet, 1, 1);
 		if (!alreadyKnown) {
@@ -108,37 +109,37 @@ public class SpellCommand {
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 	}
 
-	//Un báculo (o cualquier ítem base) etiquetado {dndsheets:{quickSpell:"id"}} lo lanza de un clic
-	//derecho sin pasar por el Grimorio (ver QuickSpellManager), usando siempre las estadísticas y
-	//espacios de conjuro reales del portador, no un "cargador" propio del báculo. Con cientos de hechizos
-	//en el juego no es viable un báculo distinto por cada uno, así que el que se entrega es RECONFIGURABLE:
-	//sostenerlo y elegir "Vincular al báculo" en el Grimorio le reescribe el hechizo (ver StaffBindMessage),
-	//sin crear un ítem nuevo por cada cambio.
+	//A staff (or any base item) tagged {dndsheets:{quickSpell:"id"}} casts it with a right-click without
+	//going through the Spellbook (see QuickSpellManager), always using the wielder's real stats and
+	//spell slots, not a "charge" of its own on the staff. With hundreds of spells in the game a separate
+	//staff for each one isn't viable, so the one handed out is RECONFIGURABLE: holding it and choosing
+	//"Bind to staff" in the Spellbook rewrites its spell (see StaffBindMessage), without creating a new
+	//item on every change.
 	private static int staff(CommandContext<CommandSourceStack> ctx, String itemId) throws CommandSyntaxException {
-		String spellId = ResourceLocationArgument.getId(ctx, "hechizoId").toString();
+		String spellId = ResourceLocationArgument.getId(ctx, "spellId").toString();
 		SpellRegistry.Spell spell = SpellRegistry.get(spellId);
 		if (spell == null) {
-			ctx.getSource().sendFailure(Component.literal("No conozco el hechizo \"" + spellId + "\". Cárgalo con /dndspells load."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.spell.no_such_load_hint", spellId));
 			return 0;
 		}
 
 		ItemStack stack = buildStaffStack(spellId, spell, itemId);
 
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) {
 			target.getInventory().add(stack.copy());
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Entregado el Báculo de ").append(ContentNames.of(spell.name())).append(" a " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.spell.staff_given", ContentNames.of(spell.name()), targets.size()), true);
 		return targets.size();
 	}
 
-	//Público: también lo usa la pestaña creativa (DndsheetsModCreativeTab) para mostrar los báculos de cada hechizo cargado.
+	//Public: also used by the creative tab (DndsheetsModCreativeTab) to display the staves for each loaded spell.
 	public static ItemStack buildStaffStack(String spellId, SpellRegistry.Spell spell, String itemId) {
-		//null = "el báculo del mod". Lo piden los tres sitios que antes pasaban un blaze rod a mano.
+		//null = "the mod's own staff". Requested by the three call sites that used to pass a blaze rod by hand.
 		ResourceLocation itemLoc = itemId == null ? null : ResourceLocation.tryParse(itemId);
 		Item baseItem = itemLoc != null ? ForgeRegistries.ITEMS.getValue(itemLoc) : null;
-		//Sin ítem configurado, el báculo del mod con su textura. Con uno configurado, el que diga el DM:
-		//quien pone "minecraft:trident" quiere ver un tridente, no nuestro icono encima.
+		//With no item configured, the mod's own staff with its texture. With one configured, whatever the
+		//DM says: whoever sets "minecraft:trident" wants to see a trident, not our icon on top of it.
 		boolean ownStaff = baseItem == null;
 		if (ownStaff) baseItem = net.hawthorn.dndsheets.init.DndsheetsModItems.TOKEN.get();
 
@@ -148,9 +149,9 @@ public class SpellCommand {
 		dndTag.putString("quickSpell", spellId);
 		dndTag.putBoolean("staffConfigurable", true);
 		stack.getOrCreateTag().put("dndsheets", dndTag);
-		//La MISMA clave que usa StaffBindMessage al revincular el báculo en juego: son el mismo objeto por
-		//dos caminos, y aquí se había escrito "Báculo de " a mano. Un cliente en inglés recibía un báculo
-		//en español que además dejaba de llamarse igual en cuanto lo revinculaba.
+		//The SAME key StaffBindMessage uses when rebinding the staff in-game: it's the same object through
+		//two paths, and this used to have "Staff of " hardcoded by hand. An English client would get a
+		//staff whose name was in Spanish and which even stopped matching once it was rebound.
 		stack.setHoverName(Component.translatable("chat.dndsheets.staff.item_name", ContentNames.of(spell.name())));
 		return stack;
 	}

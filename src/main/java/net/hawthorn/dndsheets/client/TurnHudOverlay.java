@@ -21,38 +21,38 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * <p>HUD del modo turnos: no solo de quién es el turno (eso ya lo tenía), sino el tablero de iniciativa
- * entero — orden, quién ya actuó, quién cayó, qué condiciones lleva encima cada uno — con el mismo aspecto
- * de tomo encuadernado que el resto de la interfaz del mod (ver {@link GuiStyle}), en vez de texto flotando
- * sin panel.</p>
+ * <p>Turn-mode HUD: not just whose turn it is (that already existed), but the entire initiative tracker —
+ * order, who has already acted, who's down, what conditions each combatant is carrying — with the same
+ * bound-tome look as the rest of the mod's interface (see {@link GuiStyle}), instead of floating text
+ * with no panel.</p>
  *
- * <p>Antes esta información existía, pero solo en el chat: cada tirada, cada condición aplicada, cada
- * "le toca a X" era una línea de texto más en una lista que crece sola durante todo el combate. Un jugador
- * nuevo no tiene forma de saber, sin desplazarse hacia arriba, quién sigue en pie o qué le está pasando a
- * su personaje ahora mismo. Este panel no reemplaza el chat —los mensajes siguen— pero da el estado actual
- * de un vistazo, que es como se lee una mesa real.</p>
+ * <p>This information used to exist, but only in chat: every roll, every condition applied, every
+ * "it's X's turn" was one more text line in a list that keeps growing throughout combat. A new player has
+ * no way to know, without scrolling up, who's still standing or what's happening to their character right
+ * now. This panel doesn't replace chat — the messages still appear — but it gives the current state at a
+ * glance, the way a real table is read.</p>
  *
- * <p>Movimiento y estado de acción propio se calculan en el cliente contra el origen del turno que ya
- * manda {@link net.hawthorn.dndsheets.network.TurnStateMessage}, sin pedirle nada más al servidor; el resto
- * del tablero (nombres, condiciones, quién actuó) sí viaja en ese mismo mensaje porque es información de
- * OTROS combatientes que el cliente no tiene forma de calcular solo.</p>
+ * <p>Movement and the player's own action economy are computed client-side against the turn origin
+ * already sent by {@link net.hawthorn.dndsheets.network.TurnStateMessage}, without asking the server for
+ * anything more; the rest of the tracker (names, conditions, who acted) does travel in that same message
+ * because it's information about OTHER combatants that the client has no way to compute on its own.</p>
  */
 @Mod.EventBusSubscriber(modid = DndsheetsMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class TurnHudOverlay {
 	private static final int DEFAULT_SPEED_FEET = 30;
 	private static final double FEET_PER_BLOCK = 5.0;
-	//speedBlocksFromClientSheet corre cada frame mientras es el turno del jugador local: el Pattern se
-	//cachea en vez de recompilarse en cada frame.
+	//speedBlocksFromClientSheet runs every frame while it's the local player's turn: the Pattern is
+	//cached instead of recompiled every frame.
 	private static final Pattern SPEED_FEET_PATTERN = Pattern.compile("\\d+");
 
-	//Achicado a pedido: el panel ocupaba demasiada pantalla. PADDING no baja de 7 aunque el resto se
-	//apriete — con menos, el texto se mete debajo de la cantonera de latón de la esquina (ver GuiStyle:
-	//brazo de 3px + 2px de margen = 5px mínimos para no pisarla).
+	//Shrunk on request: the panel was taking up too much screen. PADDING doesn't go below 7 even as
+	//everything else is tightened — any less and the text sinks under the corner's brass brace (see
+	//GuiStyle: 3px arm + 2px margin = 5px minimum to avoid overlapping it).
 	private static final int PANEL_WIDTH = 176;
 	private static final int PADDING = 7;
 	private static final int ROW_HEIGHT = 10;
-	//Antes 10: con un encuentro grande el panel se volvía enorme antes de que la ventana centrada (ver
-	//render) entrara a recortar. Con 6, la mayoría de los combates entra entero y uno grande se recorta antes.
+	//Used to be 10: with a large encounter the panel became huge before the centered window (see
+	//render) kicked in to trim it. At 6, most combats fit entirely and a large one gets trimmed sooner.
 	private static final int MAX_ROSTER_ROWS = 6;
 
 	private static final int MOVEMENT_COLOR = 0xFF6FD1C6;
@@ -75,26 +75,27 @@ public class TurnHudOverlay {
 		List<TurnStateMessage.RosterRow> roster = TurnHudState.roster();
 		TurnStateMessage.RosterRow myRow = TurnHudState.myRow(minecraft.player.getId());
 
-		//Ventana centrada en quien tiene el turno: con un enjambre o un combate de muchos enemigos, el
-		//techo de filas no basta solo — sin esto, si el turno activo caía después de la fila 10 el panel
-		//lo dejaba fuera de vista sin avisar, y el HUD parecía "atascado" en un combatiente que ya pasó.
+		//Window centered on whoever has the turn: with a swarm or a fight against many enemies, the row
+		//cap alone isn't enough — without this, if the active turn fell past row 10 the panel would leave
+		//it out of view with no warning, and the HUD would look "stuck" on a combatant whose turn already
+		//passed.
 		int total = roster.size();
 		boolean truncated = total > MAX_ROSTER_ROWS;
-		int windowCap = truncated ? MAX_ROSTER_ROWS - 1 : MAX_ROSTER_ROWS; //Una fila menos si hace falta el indicador de "+N ocultos".
+		int windowCap = truncated ? MAX_ROSTER_ROWS - 1 : MAX_ROSTER_ROWS; //One row fewer if the "+N hidden" indicator is needed.
 		int currentIdx = indexOfCurrent(roster);
 		int start = truncated ? Math.max(0, Math.min(currentIdx - windowCap / 2, total - windowCap)) : 0;
 		int end = truncated ? start + windowCap : total;
 		int hidden = total - (end - start);
 
-		//Dos pasadas: primero se mide cuánto panel hace falta, después se dibuja el fondo, después el
-		//contenido encima — GuiStyle.panel necesita saber el borde inferior ANTES de que haya nada que pintar.
+		//Two passes: first the required panel size is measured, then the background is drawn, then the
+		//content on top of it — GuiStyle.panel needs to know the bottom edge BEFORE anything is painted.
 		int top = 8;
 		int left = screenWidth - 8 - PANEL_WIDTH;
 		int right = screenWidth - 8;
 		int contentTop = top + PADDING;
 
 		int height = ROW_HEIGHT + 4 + (end - start) * ROW_HEIGHT + (truncated ? ROW_HEIGHT : 0);
-		if (myRow != null) height += 4 + 4 * ROW_HEIGHT; //Acción, Acción adicional, Reacción, Movimiento.
+		if (myRow != null) height += 4 + 4 * ROW_HEIGHT; //Action, Bonus Action, Reaction, Movement.
 		int bottom = contentTop + height + PADDING - 4;
 
 		GuiStyle.panel(guiGraphics, left, top, right, bottom);
@@ -126,8 +127,8 @@ public class TurnHudOverlay {
 		}
 	}
 
-	//0 si no se encuentra (combate recién arrancado, primer paquete): mejor centrar la ventana en el
-	//principio del orden que reventar con un índice inválido.
+	//0 if not found (combat just started, first packet): better to center the window at the start of the
+	//order than to crash on an invalid index.
 	private static int indexOfCurrent(List<TurnStateMessage.RosterRow> roster) {
 		int currentEntityId = TurnHudState.currentEntityId();
 		for (int i = 0; i < roster.size(); i++) {
@@ -136,10 +137,11 @@ public class TurnHudOverlay {
 		return 0;
 	}
 
-	//Una fila de iniciativa: "▶ Nombre" si le toca ahora, tachado y apagado si cayó, y un sufijo a la
-	//derecha con lo más urgente de saber sobre esa fila — condiciones si tiene, si no un check discreto de
-	//"ya actuó este asalto". Las dos cosas comparten el mismo hueco a propósito: mostrar ambas duplicaría
-	//el alto del panel por cada combatiente, y la condición es siempre la más importante de las dos.
+	//An initiative row: "▶ Name" if it's their turn now, struck through and dimmed if they're down, and a
+	//suffix on the right with the most urgent thing to know about that row — conditions if any, otherwise
+	//a discreet checkmark for "already acted this round". The two things deliberately share the same slot:
+	//showing both would double the panel's height per combatant, and the condition is always the more
+	//important of the two.
 	private static void drawRosterRow(GuiGraphics guiGraphics, Font font, TurnStateMessage.RosterRow row,
 									   int left, int right, int y, boolean isCurrent) {
 		String marker = isCurrent ? "▶ " : "   ";
@@ -147,9 +149,9 @@ public class TurnHudOverlay {
 			: isCurrent ? GuiStyle.TITLE_COLOR
 			: row.isMonster() ? ENEMY_COLOR : GuiStyle.SUBTITLE_COLOR;
 
-		//Barra de vida de 1px bajo el nombre: el dato que en una mesa real da el propio muñeco sobre la
-		//mesa ("¿cómo va ese ogro?") y que aquí solo existía preguntando por chat. maxHp 0 = combatiente
-		//fuera de las reglas o descargado: sin barra, igual que antes.
+		//1px health bar under the name: the info that at a real table comes from the miniature itself
+		//("how's that ogre doing?") and that here used to only be obtainable by asking in chat. maxHp 0 =
+		//combatant outside the rules engine or unloaded: no bar, same as before.
 		if (row.maxHp() > 0 && !row.defeated()) {
 			int barY = y + ROW_HEIGHT - 2;
 			double fraction = Math.min(1.0, Math.max(0.0, row.currentHp() / (double) row.maxHp()));
@@ -165,7 +167,7 @@ public class TurnHudOverlay {
 		String suffix = null;
 		int suffixColor = CONDITION_COLOR;
 		if (row.defeated()) {
-			suffix = null; //Ya lo dice el tachado; repetir "derrotado" al lado sería ruido.
+			suffix = null; //The strikethrough already says it; repeating "defeated" next to it would be noise.
 		} else if (!row.conditions().isEmpty()) {
 			suffix = row.conditions().size() == 1 ? row.conditions().get(0)
 				: row.conditions().get(0) + " +" + (row.conditions().size() - 1);
@@ -178,9 +180,10 @@ public class TurnHudOverlay {
 		}
 	}
 
-	//El propio estado de acción/reacción/movimiento: lo único de este HUD que de verdad importa decidir
-	//(el resto del tablero es información, esto es "qué me queda por gastar"). Se muestra siempre que el
-	//jugador tenga puesto en el orden, no solo en su turno — la reacción se puede gastar fuera de turno.
+	//The player's own action/reaction/movement state: the only thing on this HUD that actually matters
+	//for decision-making (the rest of the tracker is information, this is "what I still have left to
+	//spend"). Shown whenever the player has a slot in the order, not just on their turn — a reaction can
+	//be spent outside of turn.
 	private static void drawEconomy(GuiGraphics guiGraphics, Font font, TurnStateMessage.RosterRow myRow,
 									 Minecraft minecraft, int left, int right, int y) {
 		boolean myTurn = myRow.entityId() == TurnHudState.currentEntityId();
@@ -208,9 +211,9 @@ public class TurnHudOverlay {
 		guiGraphics.fill(left, barY, left + (int) Math.round(barWidth * fraction), barY + 2, MOVEMENT_COLOR);
 	}
 
-	//"disponible" solo se pinta en verde cuando de verdad se puede gastar ya mismo (la reacción siempre que
-	//no se haya usado; la acción solo en el propio turno) — fuera de eso, apagado, para no prometer un
-	//clic que TurnManager va a rechazar.
+	//"available" is only painted green when it can genuinely be spent right now (a reaction whenever it
+	//hasn't been used; an action only on the player's own turn) — otherwise, dimmed, so as not to promise
+	//a click that TurnManager is going to reject.
 	private static void drawEconomyLine(GuiGraphics guiGraphics, Font font, Component label, boolean available,
 										 boolean usable, int left, int right, int y) {
 		guiGraphics.drawString(font, label, left, y, GuiStyle.SUBTITLE_COLOR);
@@ -220,8 +223,8 @@ public class TurnHudOverlay {
 		guiGraphics.drawString(font, state, right - font.width(state), y, color);
 	}
 
-	//Misma conversión que MovementAnchorTracker.speedBlocksFor en el servidor, pero leída de la hoja ya sincronizada
-	//al cliente (SheetLoader.getClientSheet()) — el HUD no necesita pedirle nada nuevo al servidor.
+	//Same conversion as MovementAnchorTracker.speedBlocksFor on the server, but read from the sheet already
+	//synced to the client (SheetLoader.getClientSheet()) — the HUD doesn't need to ask the server for anything new.
 	private static double speedBlocksFromClientSheet() {
 		JsonObject sheet = SheetLoader.getClientSheet();
 		int feet = DEFAULT_SPEED_FEET;

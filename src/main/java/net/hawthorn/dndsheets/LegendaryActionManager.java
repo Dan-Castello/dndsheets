@@ -8,35 +8,36 @@ import net.minecraft.world.entity.player.Player;
 import java.util.List;
 
 /**
- * <p>Acciones legendarias: un jefe actúa <b>al terminar el turno de otro</b>, no solo en el suyo. Es la
- * regla que hace que un dragón contra cuatro jugadores sea una pelea y no un intercambio de turnos donde
- * el grupo pega cuatro veces por cada una suya.</p>
+ * <p>Legendary actions: a boss acts <b>at the end of someone else's turn</b>, not just on its own. It's
+ * the rule that makes a dragon against four players a fight instead of a turn exchange where the party
+ * hits four times for every one hit the dragon lands.</p>
  *
- * <p>La otra mitad de la Resistencia Legendaria, y la que de verdad cambia cómo se siente el combate. Sin
- * ella, el bestiario tenía 43 dragones, una tarrasca y un lich que peleaban como un goblin grande.</p>
+ * <p>The other half of Legendary Resistance, and the one that actually changes how combat feels. Without
+ * it, the bestiary had 43 dragons, a tarrasque, and a lich all fighting like an oversized goblin.</p>
  *
- * <p><b>Modelo deliberadamente reducido a "un ataque".</b> En el SRD cada jefe tiene su propia lista de
- * acciones legendarias con costes distintos (Atacar por 1, Aletazo por 2, Detectar por 1...). Aquí una
- * acción legendaria es <em>un ataque de los suyos</em>, con coste 1, hasta agotar su presupuesto del asalto.
- * Es la que casi todos comparten y la que decide el combate; inventar un esquema para las demás sería
- * escribir un campo por jefe para capacidades que además no tienen a quién apuntar en este mod (moverse sin
- * provocar, detectar, cambiar el terreno).</p>
+ * <p><b>Model deliberately reduced to "one attack."</b> In the SRD each boss has its own list of
+ * legendary actions with different costs (Attack for 1, Tail Attack for 2, Detect for 1...). Here a
+ * legendary action is <em>one of its own attacks</em>, costing 1, until its per-round budget runs out.
+ * It's the one nearly all of them share and the one that decides the fight; inventing a scheme for the
+ * rest would mean writing a field per boss for abilities that, in this mod, don't even have anything to
+ * target (moving without provoking, detecting, changing the terrain).</p>
  *
- * <p>El presupuesto va en la etiqueta NBT de la entidad, igual que los PG y las resistencias legendarias:
- * es del individuo, no de la especie, y Minecraft ya lo guarda y lo carga solo.</p>
+ * <p>The budget lives in the entity's NBT tag, same as HP and legendary resistances: it belongs to the
+ * individual, not the species, and Minecraft already saves and loads it on its own.</p>
  */
 public class LegendaryActionManager {
 
 	private static final String LEGENDARY_ACTIONS_LEFT = "legendaryActionsLeft";
-	/** Hasta dónde busca a quién castigar. El mismo que usa el resto de acciones de monstruo. */
+	/** How far it looks for a target to punish. Same value the rest of the monster actions use. */
 	private static final double TARGET_RANGE = 30.0;
 
 	/**
-	 * <p>Se llama al TERMINAR el turno de alguien, que es cuando 5e deja actuar a un jefe. Cada criatura
-	 * legendaria del orden de turnos —menos la que acaba de jugar— gasta una acción si le queda.</p>
+	 * <p>Called when someone's turn ENDS, which is when 5e lets a boss act. Every legendary creature in
+	 * the turn order —except the one that just went— spends an action if it has one left.</p>
 	 *
-	 * <p>No se le da la acción al que acaba de terminar su propio turno: en 5e son acciones para actuar
-	 * <em>fuera</em> del suyo, y dárselas ahí le regalaría un ataque extra pegado al que ya hizo.</p>
+	 * <p>The creature that just finished its own turn doesn't get the action: in 5e these are actions
+	 * meant to be used <em>outside</em> its own turn, and giving it one here would hand it a free extra
+	 * attack right after the one it already made.</p>
 	 */
 	static void onTurnEnded(ServerLevel level, TurnManager.TurnEntry finishing, List<TurnManager.TurnEntry> order) {
 		for (TurnManager.TurnEntry entry : order) {
@@ -45,17 +46,18 @@ public class LegendaryActionManager {
 
 			Entity boss = level.getEntity(entry.entityId());
 			if (boss == null || !boss.isAlive()) continue;
-			//Un jefe paralizado, aturdido o inconsciente no toma acciones legendarias: en 5e lo dice la propia
-			//regla ("no puede usarlas mientras esté incapacitado"), y sin esto un dragón dormido seguía
-			//repartiendo tres ataques por asalto. Se comprueba ANTES de gastar, para no cobrarle un uso por
-			//una acción que no llega a ocurrir.
+			//A paralyzed, stunned, or unconscious boss doesn't take legendary actions: in 5e the rule itself
+			//says so ("can't use them while incapacitated"), and without this a sleeping dragon kept
+			//dealing out three attacks per round. Checked BEFORE spending, so it isn't charged a use for
+			//an action that never actually happens.
 			if (TurnManager.isIncapacitated(boss)) continue;
 			if (!spendAction(boss)) continue;
 
 			Player target = level.getNearestPlayer(boss, TARGET_RANGE);
 			if (target == null) {
-				//Nadie a tiro: se devuelve el uso en vez de tirarlo. Gastarlo contra nadie castigaría al jefe
-				//por dónde está el grupo, que es justo lo contrario de lo que la regla hace.
+				//Nobody in range: the use is refunded instead of wasted. Spending it against no one would
+				//punish the boss for where the party happens to be, which is exactly the opposite of what
+				//the rule is for.
 				refundAction(boss);
 				continue;
 			}
@@ -63,7 +65,7 @@ public class LegendaryActionManager {
 		}
 	}
 
-	/** Al empezar su propio turno recupera todas: es como se recargan en 5e. */
+	/** At the start of its own turn it recovers them all: that's how they recharge in 5e. */
 	static void onOwnTurnStart(Entity boss) {
 		int budget = budgetOf(boss);
 		if (budget <= 0) return;
@@ -73,19 +75,19 @@ public class LegendaryActionManager {
 	private static int budgetOf(Entity entity) {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(entity);
 		if (block == null) return 0;
-		//Con reloj propio, ninguna. Las acciones legendarias existen en 5e para que un jefe pueda hacer
-		//algo mientras espera su turno; quien no espera turno no las necesita, y dárselas igual sería
-		//darle dos economías de acción a la vez.
+		//With its own clock, none. Legendary actions exist in 5e so a boss can do something while it
+		//waits for its turn; something that doesn't wait for a turn doesn't need them, and giving them
+		//anyway would be granting two action economies at once.
 		if (block.ownClock()) return 0;
 		return block.legendaryActions();
 	}
 
 	/**
-	 * <p>Gasta una acción. Devuelve false si la criatura no es legendaria o si ya agotó su presupuesto
-	 * este asalto.</p>
+	 * <p>Spends an action. Returns false if the creature isn't legendary or if it already used up its
+	 * budget this round.</p>
 	 *
-	 * <p>Sin la etiqueta puesta todavía cuenta como "las tiene todas", igual que la Resistencia Legendaria:
-	 * un jefe invocado antes de que existiera la regla no debería quedarse sin ellas para siempre.</p>
+	 * <p>Without the tag set yet, it still counts as "has them all," same as Legendary Resistance: a boss
+	 * summoned before the rule existed shouldn't be stuck without them forever.</p>
 	 */
 	private static boolean spendAction(Entity boss) {
 		int budget = budgetOf(boss);

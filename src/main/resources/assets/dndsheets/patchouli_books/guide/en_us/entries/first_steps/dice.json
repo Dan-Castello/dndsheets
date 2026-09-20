@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.dice",
+  "category": "dndsheets:first_steps",
+  "icon": "minecraft:bone",
+  "sortnum": 1,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.d20"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.advantage_basics"
+    }
+  ]
+}

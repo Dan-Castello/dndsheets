@@ -1,0 +1,8 @@
+[
+  { "id": "dndsheets:fire_bolt", "name": "Fire Bolt", "level": 0, "school": "evocation", "mode": "attack", "castingAbility": "int", "dice": "1d10", "damageType": "fire" },
+  { "id": "dndsheets:magic_missile", "name": "Magic Missile", "level": 1, "school": "evocation", "mode": "attack", "castingAbility": "int", "dice": "3d4", "damageType": "force" },
+  { "id": "dndsheets:fireball", "name": "Fireball", "level": 3, "school": "evocation", "mode": "save", "castingAbility": "int", "saveAbility": "dex", "dice": "8d6", "halfOnSave": true, "damageType": "fire", "aoeRadius": 6 },
+  { "id": "dndsheets:sacred_flame", "name": "Sacred Flame", "level": 0, "school": "evocation", "mode": "save", "castingAbility": "wis", "saveAbility": "dex", "dice": "1d8", "halfOnSave": false, "damageType": "radiant" },
+  { "id": "dndsheets:spirit_guardians", "name": "Spirit Guardians", "level": 3, "school": "conjuration", "mode": "zone", "castingAbility": "wis", "saveAbility": "wis", "dice": "3d8", "halfOnSave": true, "damageType": "radiant", "concentration": true, "aoeRadius": 3, "aoeShape": "sphere", "followsCaster": true },
+  { "id": "dndsheets:cure_wounds", "name": "Cure Wounds", "level": 1, "school": "evocation", "mode": "heal", "castingAbility": "wis", "dice": "1d8 + $wis" }
+]

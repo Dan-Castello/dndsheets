@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.minecraft.client.resources.language.I18n;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.Combatant;
 import net.minecraft.client.Minecraft;
@@ -7,8 +8,8 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-//Nombre + característica del golpe desarmado de un rasgo — el id no se toca (ver TraitEditScreen). Las
-//listas de nivel/dado se editan aparte, en TraitEditScreen/TierAddScreen.
+//Name + unarmed strike ability of a trait — the id isn't touched (see TraitEditScreen). The
+//level/dice lists are edited separately, in TraitEditScreen/TierAddScreen.
 public class TraitBasicInfoScreen extends SmallFormScreen {
 
 	private final JsonObject entry;
@@ -27,12 +28,12 @@ public class TraitBasicInfoScreen extends SmallFormScreen {
 	@Override
 	protected void buildForm() {
 		String name = entry.has("name") ? entry.get("name").getAsString() : entry.get("id").getAsString();
-		nameBox = addField("Nombre", name, 64);
+		nameBox = addField(I18n.get("gui.dndsheets.form.name"), name, 64);
 
 		String currentAbility = entry.has("unarmedAbility") ? entry.get("unarmedAbility").getAsString() : "str";
 		int index = 0;
 		for (int i = 0; i < Combatant.ABILITIES.length; i++) if (Combatant.ABILITIES[i].equalsIgnoreCase(currentAbility)) index = i;
-		abilityField = addCycleButton("Característica (golpe desarmado)", Combatant.ABILITIES, Combatant.ABILITIES, index);
+		abilityField = addCycleButton(I18n.get("gui.dndsheets.form.unarmed_ability"), Combatant.ABILITIES, Combatant.ABILITIES, index);
 	}
 
 	@Override

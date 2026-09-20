@@ -8,8 +8,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: eligió una acción del menú para un monstruo concreto, y a quién apuntarla
-//(elegido en PlayerPickerScreen justo después; targetUuid vacío = que el servidor caiga al más cercano).
+//Client (the DM) -> server: chose an action from the menu for a specific monster, and who to target it
+//at (chosen in PlayerPickerScreen right after; empty targetUuid = let the server fall back to the nearest one).
 public class MonsterActionChooseMessage {
 	int entityId;
 	int actionIndex;
@@ -35,9 +35,9 @@ public class MonsterActionChooseMessage {
 
 	public static void handler(MonsterActionChooseMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		//Mismo candado que ya usa MonsterActionManager.onInteractWithMonster: el cliente puede mandar
-		//este mensaje sin haber abierto el menu real (sin Vara de DM, sin estar cerca), asi que el
-		//permiso se revisa siempre en el servidor, no solo en si la GUI llego a abrirse.
+		//Same lock already used by MonsterActionManager.onInteractWithMonster: the client can send this
+		//message without ever having opened the real menu (no DM Rod, not nearby), so the permission is
+		//always rechecked on the server, not just whether the GUI managed to open.
 		NetworkUtil.handleOnServerAsDm(context, dm ->
 			MonsterActionManager.resolveAction(dm, message.entityId, message.actionIndex, message.targetUuid));
 	}

@@ -10,23 +10,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>Lista vertical de botones de ancho completo con scroll automático si no caben todos en el alto
- * disponible — usada por las pantallas de elegir-uno-de-varios del Panel de DM (jugador, preset, rasgo,
- * acción de monstruo, ataque personalizado a quitar). Antes de esto, cada pantalla centraba su lista a
- * mano con {@code (alto - total) / 2} sin ningún tope: con suficientes filas ese cálculo se volvía
- * negativo y empujaba los botones fuera de pantalla, sin ninguna forma de llegar a ellos.</p>
+ * <p>Vertical list of full-width buttons with automatic scrolling if they don't all fit in the available
+ * height — used by the DM Panel's pick-one-of-several screens (player, preset, trait,
+ * monster action, custom attack to remove). Before this, each screen centered its list by
+ * hand with {@code (height - total) / 2} with no clamp: with enough rows that calculation went
+ * negative and pushed the buttons off-screen, with no way to reach them.</p>
  *
- * <p>Los botones deben registrarse en la pantalla con {@code Screen#addWidget} (NO
- * {@code addRenderableWidget}, para que la pantalla no los dibuje por su cuenta — este widget ya se
- * encarga) y en este widget con {@link #addRow}. Mismo patrón de scissor/scroll que ya usa
- * {@link RollScrollWidget} para la pestaña de Ataques, simplificado para una sola fila de un botón.</p>
+ * <p>Buttons must be registered on the screen with {@code Screen#addWidget} (NOT
+ * {@code addRenderableWidget}, so the screen doesn't draw them on its own — this widget already
+ * handles it) and on this widget with {@link #addRow}. Same scissor/scroll pattern already used by
+ * {@link RollScrollWidget} for the Attacks tab, simplified for a single one-button row.</p>
  */
 public class ButtonListWidget extends AbstractScrollWidget {
 	private final List<Button> rows = new ArrayList<>();
-	//Hueco entre filas. La ALTURA la pone cada botón (getHeight), no esta lista: así una cabecera de
-	//sección puede medir la mitad que una fila sin que este widget tenga que saber qué es una cabecera.
-	//Cuando todas las filas medían lo mismo, las cinco cabeceras del Panel de DM costaban cinco filas de
-	//lista y lo empujaban a hacer scroll con diecisiete acciones que, por alto, sí cabían.
+	//Gap between rows. The HEIGHT is set by each button (getHeight), not this list: that way a section
+	//header can be half the height of a row without this widget having to know what a header is.
+	//When all rows had the same height, the DM Panel's five headers cost five list rows'
+	//worth of space and forced it to scroll with seventeen actions that, by height, would otherwise have fit.
 	private final int spacing;
 
 	public ButtonListWidget(int x, int y, int width, int height, int spacing) {
@@ -42,10 +42,10 @@ public class ButtonListWidget extends AbstractScrollWidget {
 		rows.add(button);
 	}
 
-	//Usado por ListPickerScreen para filtrar por texto de búsqueda: los botones que salen de la lista
-	//visible no se destruyen (siguen registrados en Screen#children para que un futuro replaceRows los
-	//pueda traer de vuelta), pero hay que apagarles visible/active a mano — renderContents solo lo hace
-	//para los que YA están dentro del rango de scroll de la lista actual.
+	//Used by ListPickerScreen to filter by search text: buttons that fall out of the visible
+	//list aren't destroyed (they stay registered in Screen#children so a future replaceRows can
+	//bring them back), but visible/active must be turned off by hand — renderContents only does it
+	//for the ones that are ALREADY within the current list's scroll range.
 	public void replaceRows(List<Button> newRows) {
 		for (Button button : rows) {
 			if (!newRows.contains(button)) {
@@ -68,8 +68,8 @@ public class ButtonListWidget extends AbstractScrollWidget {
 		return total;
 	}
 
-	//Media fila por muesca de rueda, tomando la primera como referencia: con filas de dos altos distintos
-	//no hay "la" altura, y el paso del scroll no necesita ser exacto, solo cómodo.
+	//Half a row per wheel notch, using the first row as a reference: with rows of two different heights
+	//there's no single "the" height, and the scroll step doesn't need to be exact, just comfortable.
 	@Override
 	protected double scrollRate() {
 		return rows.isEmpty() ? 12 : stepOf(rows.get(0)) / 2.0;
@@ -94,16 +94,16 @@ public class ButtonListWidget extends AbstractScrollWidget {
 	protected void renderContents(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		if (rows.isEmpty()) return;
 		int scroll = (int) this.scrollAmount();
-		//Se sigue posicionando y dibujando SOLO lo que cae dentro del recorte (antes se llamaba setX/setY
-		//en cada botón de cada frame, visible o no, y con listas largas se notaba al desplazar). Lo que
-		//cambia con alturas por fila es que el rango ya no sale de una división: se acumula el alto al
-		//recorrer, que es el mismo recorrido que este bucle hacía igualmente.
+		//Only what falls within the clip is still positioned and drawn (before, setX/setY was called
+		//on every button every frame, visible or not, and with long lists it was noticeable while scrolling). What
+		//changes with per-row heights is that the range no longer comes from a division: the height accumulates
+		//while iterating, which is the same pass this loop was already doing.
 		int offset = 0;
 		for (Button button : rows) {
 			int step = stepOf(button);
 			int top = offset - scroll;
 			offset += step;
-			//Un paso de margen por arriba y por abajo, para que no haga "pop" justo en el borde.
+			//One step of margin above and below, so it doesn't "pop" right at the edge.
 			boolean rowVisible = top + step >= -step && top <= this.height + step;
 			button.visible = rowVisible;
 			button.active = rowVisible;
@@ -116,6 +116,17 @@ public class ButtonListWidget extends AbstractScrollWidget {
 
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
-		return false; //Los clics van a los botones hijos (registrados aparte en la pantalla), no al contenedor.
+		return false; //Clicks go to the child buttons (registered separately on the screen), not to the container.
+	}
+
+	//scrollAmount()/setScrollAmount() are protected in AbstractScrollWidget; this exposes them so
+	//ListPickerScreen can carry over the scroll position of a list it replaces when rebuilding
+	//the screen (see its init()). The clamp to the real height is still done by setScrollAmount itself.
+	public double scroll() {
+		return this.scrollAmount();
+	}
+
+	public void scrollTo(double amount) {
+		this.setScrollAmount(amount);
 	}
 }

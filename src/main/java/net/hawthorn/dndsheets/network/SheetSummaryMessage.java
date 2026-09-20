@@ -7,13 +7,13 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Servidor -> cliente: valores actuales de la hoja del objetivo elegido en PlayerPickerScreen, para abrir
-//SheetAdjustScreen con datos reales (oro y espacios de conjuro solo viven en la hoja del servidor).
+//Server -> client: current sheet values for the target chosen in PlayerPickerScreen, to open
+//SheetAdjustScreen with real data (gold and spell slots only live on the server's sheet).
 public class SheetSummaryMessage {
 	String targetUuid, targetName;
 	int gold, slotsMax, slotsCurrent, hp, maxHp, ac;
-	//Condiciones activas separadas por coma ("derribado,envenenado"), vacío si ninguna. Una cadena y no
-	//una lista con longitud propia: son 14 como mucho y así el mensaje sigue teniendo un solo campo nuevo.
+	//Active conditions separated by commas ("prone,poisoned"), empty if none. A string rather than a
+	//list with its own length field: there are at most 14, so the message keeps just one new field.
 	String conditionsCsv;
 
 	public SheetSummaryMessage(String targetUuid, String targetName, int gold, int slotsMax, int slotsCurrent, int hp, int maxHp, int ac, String conditionsCsv) {

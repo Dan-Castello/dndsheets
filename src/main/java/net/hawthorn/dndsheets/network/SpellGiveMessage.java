@@ -11,8 +11,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: enseña un hechizo o entrega su báculo de lanzado rápido (equivalente en GUI
-//a /dndspells learn|staff), desde SpellGiveListScreen.
+//Client (the DM) -> server: teaches a spell or gives out its quick-cast staff (GUI equivalent
+//of /dndspells learn|staff), from SpellGiveListScreen.
 public class SpellGiveMessage {
 	String targetUuid;
 	String spellId;

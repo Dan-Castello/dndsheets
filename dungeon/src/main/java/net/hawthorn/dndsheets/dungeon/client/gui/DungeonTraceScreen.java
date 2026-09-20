@@ -1,4 +1,5 @@
 package net.hawthorn.dndsheets.dungeon.client.gui;
+import net.minecraft.client.resources.language.I18n;
 import net.hawthorn.dndsheets.client.gui.ModalDialogScreen;
 import net.hawthorn.dndsheets.client.gui.GuiStyle;
 
@@ -20,27 +21,27 @@ import java.util.Deque;
 import java.util.List;
 
 /**
- * <p>Dibuja una pieza de mazmorra celda a celda en vez de construirla a mano y escanearla con un bloque
- * de estructura. Al pulsar "Guardar" manda la grilla al servidor ({@link DungeonTraceCaptureMessage}),
- * que la traduce ({@link GridToStructure}) y la planta en el mundo ({@code DungeonPiecePlacer}) — el
- * resultado se registra exactamente igual que una pieza escaneada a mano.</p>
+ * <p>Draws a dungeon piece cell by cell instead of building it by hand and scanning it with a structure
+ * block. Pressing "Save" sends the grid to the server ({@link DungeonTraceCaptureMessage}), which
+ * translates it ({@link GridToStructure}) and plants it in the world ({@code DungeonPiecePlacer}) — the
+ * result is registered exactly the same as a piece scanned by hand.</p>
  *
- * <p>Las celdas de objeto no llevan un bloque fijo: "Elegir bloque..." abre {@link BlockPickerScreen},
- * que busca en el registro global de bloques — de cualquier mod instalado, muebles incluidos — así que
- * no hace falta ninguna compatibilidad especial por mod.</p>
+ * <p>Object cells don't carry a fixed block: "Choose block..." opens {@link BlockPickerScreen}, which
+ * searches the global block registry — from any installed mod, furniture included — so no special
+ * per-mod compatibility is needed.</p>
  *
- * <p>Puerta y Entrada tienen su propio pool destino ("Pool puerta") y su propia dirección manual — el
- * mismo botón "Girar" que usa Objeto, reutilizado: en Puerta/Entrada, "Auto" es la heurística de
- * {@link GridToStructure} (primer vecino vacío N/E/S/O); cualquier otro valor la reemplaza.</p>
+ * <p>Door and Start have their own destination pool ("Door pool") and their own manual direction — the
+ * same "Rotate" button Object uses, reused: for Door/Start, "Auto" is {@link GridToStructure}'s heuristic
+ * (first empty N/E/S/W neighbor); any other value overrides it.</p>
  */
 public class DungeonTraceScreen extends ModalDialogScreen {
-	//Presupuesto fijo de píxeles para el lienzo: el diálogo no cambia de tamaño (ModalDialogScreen lo fija
-	//en el constructor), así que una grilla más grande sale con celdas más chicas, no con una ventana
-	//más grande. El tamaño de celda se deriva de esto, no al revés.
+	//Fixed pixel budget for the canvas: the dialog doesn't change size (ModalDialogScreen fixes it in the
+	//constructor), so a bigger grid comes out with smaller cells, not a bigger window. Cell size is
+	//derived from this, not the other way around.
 	private static final int CANVAS_AREA = 200;
-	//24 es el techo práctico, no el del servidor (MAX_SIDE=64 en DungeonTraceCaptureMessage): más allá de
-	//eso la celda baja de ~8px y deja de ser un blanco cómodo para el mouse. El límite real es la
-	//precisión del clic, no un número arbitrario de protocolo.
+	//24 is the practical ceiling, not the server's (MAX_SIDE=64 in DungeonTraceCaptureMessage): beyond
+	//that the cell drops below ~8px and stops being a comfortable mouse target. The real limit is click
+	//precision, not an arbitrary protocol number.
 	private static final int[] GRID_SIZES = {8, 10, 12, 16, 20, 24};
 	private static final int DEFAULT_GRID_INDEX = 2; //12
 	private static final int CANVAS_Y = 98;
@@ -49,19 +50,19 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 	private static final int MAX_UNDO = 20;
 	private static final int MAX_ORIGIN_OFFSET = 16;
 	private static final int MAX_RECENT_OBJECTS = 5;
-	//null = "Auto": para Objeto, no tocar la orientación; para Puerta/Entrada, la heurística de
-	//GridToStructure. El resto son direcciones manuales concretas.
+	//null = "Auto": for Object, don't touch orientation; for Door/Start, GridToStructure's heuristic.
+	//The rest are concrete manual directions.
 	private static final Direction[] FACING_CYCLE = {null, Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
 
 	private enum PaintMode { FREE, RECT }
 
 	private enum Tool {
-		WALL(GridToStructure.Cell.WALL, "Pared"),
-		FLOOR(GridToStructure.Cell.FLOOR, "Piso"),
-		DOOR(GridToStructure.Cell.DOOR, "Puerta"),
-		START(GridToStructure.Cell.START, "Entrada"),
-		OBJECT(GridToStructure.Cell.OBJECT, "Objeto"),
-		ERASE(GridToStructure.Cell.EMPTY, "Borrar");
+		WALL(GridToStructure.Cell.WALL, "gui.dndsheets.dungeon_trace.tool_wall"),
+		FLOOR(GridToStructure.Cell.FLOOR, "gui.dndsheets.dungeon_trace.tool_floor"),
+		DOOR(GridToStructure.Cell.DOOR, "gui.dndsheets.dungeon_trace.tool_door"),
+		START(GridToStructure.Cell.START, "gui.dndsheets.dungeon_trace.tool_start"),
+		OBJECT(GridToStructure.Cell.OBJECT, "gui.dndsheets.dungeon_trace.tool_object"),
+		ERASE(GridToStructure.Cell.EMPTY, "gui.dndsheets.dungeon_trace.tool_erase");
 
 		final GridToStructure.Cell cell;
 		final String label;
@@ -85,27 +86,27 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 	private GridToStructure.CellOptions[][] options;
 	private Tool currentTool = Tool.WALL;
 	private ResourceLocation currentObjectBlock = null;
-	//Compartido entre Objeto (rotación) y Puerta/Entrada (dirección manual) — ver el Javadoc de la clase.
+	//Shared between Object (rotation) and Door/Start (manual direction) — see the class Javadoc.
 	private Direction currentFacing = null;
 	private ResourceLocation wallBlock = null;
 	private ResourceLocation floorBlock = null;
 	private int height = 3;
 
 	private PaintMode paintMode = PaintMode.FREE;
-	//Rectángulo en curso: null cuando no se está arrastrando uno. Solo tiene sentido en modo RECT.
+	//Rectangle in progress: null when none is being dragged. Only meaningful in RECT mode.
 	private int rectStartX = -1, rectStartZ = -1, rectEndX = -1, rectEndZ = -1;
 	private boolean rectDragging = false;
 
 	private int originDx = 0, originDz = 0;
 
-	//Una foto por trazo (clic inicial), no por celda pintada — deshacer un arrastre completo de una vez
-	//es lo esperable; deshacer celda por celda dentro del mismo trazo no lo es. Tope de 20: la grilla es
-	//chica (máximo 24x24), así que ni la memoria ni la copia son un problema real.
+	//One snapshot per stroke (initial click), not per painted cell — undoing a whole drag at once is the
+	//expected behavior; undoing cell by cell within the same stroke isn't. Cap of 20: the grid is small
+	//(24x24 max), so neither memory nor the copy is a real problem.
 	private record Snapshot(GridToStructure.Cell[][] grid, GridToStructure.CellOptions[][] options) {}
 	private final Deque<Snapshot> undoStack = new ArrayDeque<>();
 
-	//MRU de bloques de objeto elegidos: sin esto, alternar entre dos muebles distintos obliga a reabrir
-	//el buscador cada vez, aunque el DM ya lo haya buscado hace treinta segundos.
+	//MRU of chosen object blocks: without this, switching between two different pieces of furniture
+	//forces reopening the search every time, even if the DM already searched for it thirty seconds ago.
 	private final Deque<ResourceLocation> recentObjectBlocks = new ArrayDeque<>();
 	private final List<Button> recentButtons = new ArrayList<>();
 
@@ -133,9 +134,8 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		resize(GRID_SIZES[gridIndex]);
 	}
 
-	//Cambiar de tamaño vacía la grilla — no hay forma de reproyectar celdas ya pintadas a una cuadrícula
-	//distinta que tenga sentido, y agrandar/achicar a mitad de dibujo es un caso raro. El DM elige el
-	//tamaño primero, dibuja después.
+	//Changing size clears the grid — there's no sensible way to reproject already-painted cells onto a
+	//different grid, and resizing mid-drawing is a rare case. The DM picks the size first, draws after.
 	private void resize(int size) {
 		gridSize = size;
 		cell = Math.max(4, CANVAS_AREA / size);
@@ -148,7 +148,7 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		}
 	}
 
-	/** Los mismos cinco campos que ya escribió el DM en {@link DungeonPieceAddScreen}: dibujar es la otra mitad del mismo flujo, no uno nuevo. */
+	/** The same five fields the DM already entered in {@link DungeonPieceAddScreen}: drawing is the other half of the same flow, not a new one. */
 	public static void open(String id, String structureId, String pool, int weight, String tags, Screen parent) {
 		Minecraft.getInstance().setScreen(new DungeonTraceScreen(id, structureId, pool, weight, tags, parent));
 	}
@@ -160,10 +160,10 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		int toolsLeft = (300 - (Tool.values().length * toolWidth + (Tool.values().length - 1) * gap)) / 2;
 		for (int i = 0; i < Tool.values().length; i++) {
 			Tool tool = Tool.values()[i];
-			//Sin "> " ni ningún otro texto variable: la fila ya está justa a lo ancho (6 botones en 300px),
-			//así que la herramienta activa se marca apagando el botón (active=false), no agregándole texto.
+			//No "> " or any other variable text: the row is already tight on width (6 buttons in 300px),
+			//so the active tool is marked by disabling the button (active=false), not by adding text to it.
 			Button button = addModalButton(toolsLeft + i * (toolWidth + gap), 8, toolWidth, toolHeight,
-				Component.literal(tool.label), b -> selectTool(tool));
+				Component.translatable(tool.label), b -> selectTool(tool));
 			button.active = tool != currentTool;
 			toolButtons.add(button);
 		}
@@ -183,7 +183,7 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		});
 
 		sizeButton = addModalButton(20, 44, 60, 16, sizeLabel(), b -> cycleSize());
-		addModalButton(82, 44, 46, 16, Component.literal("Círculo"), b ->
+		addModalButton(82, 44, 46, 16, Component.translatable("gui.dndsheets.dungeon_trace.circle_button"), b ->
 			GridToStructure.stampCircle(grid, gridSize / 2, gridSize / 2, gridSize / 2 - 1, 1));
 		wallBlockButton = addModalButton(130, 44, 80, 16, materialLabel("Pared", wallBlock, 80), b -> BlockPickerScreen.open(this, id -> {
 			wallBlock = id;
@@ -203,7 +203,7 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		rebuildRecentButtons();
 
 		int row5 = CANVAS_Y + canvas + 8;
-		undoButton = addModalButton(20, row5, 60, 16, Component.literal("Deshacer"), b -> undo());
+		undoButton = addModalButton(20, row5, 60, 16, Component.translatable("gui.dndsheets.dungeon_trace.undo_button"), b -> undo());
 		modeButton = addModalButton(84, row5, 100, 16, modeLabel(), b -> {
 			paintMode = paintMode == PaintMode.FREE ? PaintMode.RECT : PaintMode.FREE;
 			rectDragging = false;
@@ -230,15 +230,15 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		doorPoolBox.tick();
 	}
 
-	//Vacío = "usa el pool de esta pieza" (el mismo comportamiento que había antes de poder elegir uno
-	//distinto), no un pool literalmente llamado "".
+	//Empty = "use this piece's pool" (the same behavior that existed before a different one could be
+	//chosen), not a pool literally named "".
 	private String doorPoolOverride() {
 		String text = doorPoolBox.getValue().trim();
 		return text.isEmpty() ? null : text;
 	}
 
 	private Component modeLabel() {
-		return Component.literal(paintMode == PaintMode.FREE ? "Libre" : "Rectángulo");
+		return Component.translatable(paintMode == PaintMode.FREE ? "gui.dndsheets.dungeon_trace.mode_free" : "gui.dndsheets.dungeon_trace.mode_rect");
 	}
 
 	private Component originXLabel() {
@@ -263,10 +263,10 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		return Component.literal(gridSize + "x" + gridSize);
 	}
 
-	//ponytail: Confirmar/Cancelar quedan donde los puso init() con el lienzo del tamaño con el que se
-	//abrió la pantalla — CANVAS_AREA se eligió para que el lienzo real mida entre 192 y 200px con
-	//cualquier tamaño de GRID_SIZES, así que como mucho queda 8px de aire de más bajo el lienzo, nunca
-	//una superposición. Recalcularlos de verdad implica reconstruir todos los widgets, no solo estos dos.
+	//ponytail: Confirm/Cancel stay where init() put them with the canvas size the screen was opened
+	//with — CANVAS_AREA was chosen so the real canvas measures between 192 and 200px at any GRID_SIZES
+	//value, so at most there's 8px of extra slack under the canvas, never an overlap. Truly recalculating
+	//them means rebuilding all the widgets, not just these two.
 	private void cycleSize() {
 		gridIndex = (gridIndex + 1) % GRID_SIZES.length;
 		resize(GRID_SIZES[gridIndex]);
@@ -280,8 +280,8 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		rebuildRecentButtons();
 	}
 
-	//Se reconstruye entera en vez de llevar un pool de botones reutilizables: la lista mide como mucho
-	//MAX_RECENT_OBJECTS, así que el costo de tirar y recrear los botones es irrelevante.
+	//Rebuilt entirely instead of keeping a pool of reusable buttons: the list is at most
+	//MAX_RECENT_OBJECTS long, so the cost of discarding and recreating the buttons is irrelevant.
 	private void rebuildRecentButtons() {
 		for (Button button : recentButtons) this.removeWidget(button);
 		recentButtons.clear();
@@ -320,14 +320,14 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 	}
 
 	private Component blockLabel() {
-		return materialLabel("Obj", currentObjectBlock, 140);
+		return materialLabel(I18n.get("gui.dndsheets.dungeon_trace.object_prefix"), currentObjectBlock, 140);
 	}
 
-	//Trunca en vez de confiar en que el nombre del bloque entre: un mueble de otro mod puede llamarse
-	//"polished_blackstone_bricks", y ningún ancho fijo de botón adivina eso. font.width(text) > maxWidth
-	//es la única señal confiable de que se salió, no una cuenta de caracteres a ojo.
+	//Truncates instead of trusting the block name to fit: a piece of furniture from another mod can be
+	//named "polished_blackstone_bricks", and no fixed button width guesses that right. font.width(text) >
+	//maxWidth is the only reliable signal it overflowed, not an eyeballed character count.
 	private Component materialLabel(String prefix, ResourceLocation block, int maxWidth) {
-		String value = block != null ? block.getPath() : "(por defecto)";
+		String value = block != null ? block.getPath() : I18n.get("gui.dndsheets.dungeon_trace.default_material");
 		return Component.literal(fit(prefix + ": " + value, maxWidth));
 	}
 
@@ -336,15 +336,15 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		return this.font.plainSubstrByWidth(text, maxWidth - this.font.width("…")) + "…";
 	}
 
-	//Sin prefijo "Girar: " — el botón mide 50px y "Girar: north" no entra ni truncado a algo legible.
-	//La posición en la fila ya dice qué es; el valor solo necesita ser corto.
+	//No "Rotate: " prefix — the button is 50px wide and "Rotate: north" doesn't fit even truncated to
+	//something legible. Its position in the row already says what it is; the value just needs to be short.
 	private Component facingLabel() {
-		if (currentFacing == null) return Component.literal("Auto");
+		if (currentFacing == null) return Component.translatable("gui.dndsheets.dungeon_trace.facing_auto");
 		return Component.literal(switch (currentFacing) {
 			case NORTH -> "N";
 			case EAST -> "E";
 			case SOUTH -> "S";
-			case WEST -> "O";
+			case WEST -> I18n.get("gui.dndsheets.dungeon_trace.facing_west");
 			default -> currentFacing.getSerializedName();
 		});
 	}
@@ -355,7 +355,7 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 	}
 
 	private Component heightLabel() {
-		return Component.literal("Alto: " + height);
+		return Component.translatable("gui.dndsheets.dungeon_trace.height_label", height);
 	}
 
 	private void changeHeight(int delta) {
@@ -408,8 +408,8 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		Minecraft.getInstance().setScreen(parent);
 	}
 
-	//Solo lectura, para DungeonTracePreviewRenderer — dibuja en el mundo lo mismo que hay acá, no una
-	//copia de estado por separado.
+	//Read-only, for DungeonTracePreviewRenderer — it draws in the world the same thing that's here, not
+	//a separate copy of state.
 	GridToStructure.Cell[][] gridSnapshot() { return grid; }
 	GridToStructure.CellOptions[][] optionsSnapshot() { return options; }
 	int pieceHeight() { return height; }
@@ -422,7 +422,7 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		return dialogLeft() + (300 - canvas) / 2;
 	}
 
-	//Celda de grilla bajo un punto de pantalla, o null si cae fuera del lienzo.
+	//Grid cell under a screen point, or null if it falls outside the canvas.
 	private int[] cellAt(double mouseX, double mouseY) {
 		int left = canvasLeft(), top = dialogTop() + CANVAS_Y;
 		int gx = (int) ((mouseX - left) / cell), gz = (int) ((mouseY - top) / cell);
@@ -449,9 +449,9 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		return super.mouseClicked(mouseX, mouseY, button);
 	}
 
-	//Arrastrar el mouse pinta como si fuera clic tras clic en modo Libre — sin esto, una pared de 12
-	//celdas son 12 clics sueltos en vez de un trazo. En modo Rectángulo solo mueve la previsualización;
-	//el relleno se aplica entero al soltar (mouseReleased), no celda por celda.
+	//Dragging the mouse paints as if it were click after click in Free mode — without this, a 12-cell
+	//wall is 12 separate clicks instead of one stroke. In Rectangle mode it only moves the preview; the
+	//fill is applied all at once on release (mouseReleased), not cell by cell.
 	@Override
 	public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
 		if (button == 0) {
@@ -506,8 +506,8 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		renderPanel(guiGraphics);
 
-		//Sin etiqueta aparte a la izquierda del EditBox: a 80px de ancho "Pool puerta:" ya se comía la
-		//mitad de la caja. El hint (ver init()) dice lo mismo cuando está vacío, que es cuando hace falta.
+		//No separate label to the left of the EditBox: at 80px wide "Door pool:" already ate up half the
+		//box. The hint (see init()) says the same thing when it's empty, which is when it's needed.
 		guiGraphics.drawString(this.font, fit("Pool:", 65), dialogLeft() + 20, dialogTop() + 66, GuiStyle.MUTED_COLOR, false);
 
 		int left = canvasLeft(), top = dialogTop() + CANVAS_Y;

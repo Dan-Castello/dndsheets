@@ -13,32 +13,32 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * <p>Furia del bárbaro: resistencia a daño físico (cortante/perforante/contundente/físico) y un bono al
- * daño de armas cuerpo a cuerpo con Fuerza que sube con el nivel ({@link #damageBonusFor}), durante
- * {@value #DURATION_ROUNDS} asaltos
- * (1 minuto real de 5e). Se activa con clic derecho en el Tótem de Furia
- * ({@code {dndsheets:{rage:true}}}, entregado con {@code /dndsheet rageitem}), igual de patrón que los
- * ítems de turno ({@link TurnItemManager}).</p>
+ * <p>Barbarian Rage: resistance to physical damage (slashing/piercing/bludgeoning/physical) and a bonus
+ * to melee weapon damage with Strength that scales with level ({@link #damageBonusFor}), for
+ * {@value #DURATION_ROUNDS} rounds
+ * (1 real-time minute in 5e). Activated with right-click on the Rage Totem
+ * ({@code {dndsheets:{rage:true}}}, given via {@code /dndsheet rageitem}), the same pattern as the
+ * turn items ({@link TurnItemManager}).</p>
  *
- * <p><b>Duración por asaltos, no solo por ticks reales</b>: si el modo turnos está activo cuando se activa
- * la Furia, la duración se cuenta en asaltos completos ({@link TurnManager#onRoundsPass}) — un combate
- * lento en tiempo real no debería "gastar" la Furia antes de tiempo, ni un combate rápido dejarla parada
- * de más. Fuera de modo turnos (juego libre, sin iniciativa), cae a temporizador real
- * ({@link DndsheetsMod#queueServerWork}). Se decide UNA vez, al activarse; si el modo turnos se
- * activa/desactiva a mitad de la Furia, no cambia de modo de conteo (simplificación deliberada).</p>
+ * <p><b>Duration in rounds, not just real ticks</b>: if turn mode is active when Rage is activated, the
+ * duration is counted in full rounds ({@link TurnManager#onRoundsPass}) — a combat that's slow in real
+ * time shouldn't "spend" Rage early, nor should a fast combat leave it running longer than it should.
+ * Outside turn mode (free play, no initiative), it falls back to a real timer
+ * ({@link DndsheetsMod#queueServerWork}). Decided ONCE, on activation; if turn mode is toggled on/off
+ * mid-Rage, it doesn't switch counting mode (deliberate simplification).</p>
  *
- * <p><b>Otra simplificación deliberada</b>: en 5e de verdad la Furia tiene un número limitado de usos por
- * descanso largo (2 a nivel 1-2, más en niveles altos). Aquí no hay límite de usos — activar de nuevo con
- * la Furia ya puesta no hace nada raro, solo no reinicia el contador.</p>
+ * <p><b>Another deliberate simplification</b>: in real 5e Rage has a limited number of uses per long rest
+ * (2 at level 1-2, more at higher levels). Here there's no usage limit — activating again while Rage is
+ * already up doesn't do anything strange, it just doesn't reset the counter.</p>
  */
 public class BarbarianRageManager {
-	private static final int DURATION_ROUNDS = 10; //1 minuto de 5e = 10 asaltos.
-	private static final int DURATION_TICKS = 20 * 60; //1 minuto real fuera de modo turnos.
+	private static final int DURATION_ROUNDS = 10; //1 minute in 5e = 10 rounds.
+	private static final int DURATION_TICKS = 20 * 60; //1 real-time minute outside turn mode.
 	/**
-	 * <p>Bono de daño de la Furia, por nivel de personaje (+2/+3/+4, ver {@link CharacterRules#rageDamageBonusFor}).</p>
+	 * <p>Rage damage bonus, by character level (+2/+3/+4, see {@link CharacterRules#rageDamageBonusFor}).</p>
 	 *
-	 * <p>Era una constante fija en +2. La progresión de un bárbaro <em>es</em> este número, así que
-	 * congelarlo dejaba a uno de nivel 20 pegando igual que uno de nivel 1 salvo por el arma.</p>
+	 * <p>It used to be a constant fixed at +2. A barbarian's progression <em>is</em> this number, so
+	 * freezing it left a level 20 character hitting the same as a level 1 one except for the weapon.</p>
 	 */
 	public static int damageBonusFor(ServerPlayer player) {
 		return CharacterRules.rageDamageBonusFor(
@@ -47,7 +47,7 @@ public class BarbarianRageManager {
 
 	private static final Set<UUID> raging = ConcurrentHashMap.newKeySet();
 
-	/** Corta la furia sin avisar ni devolver nada: la usa el cambio de personaje. Ver SheetLoader. */
+	/** Cuts off rage silently, no notification or return value: used by character switching. See SheetLoader. */
 	public static void clearFor(ServerPlayer player) {
 		raging.remove(player.getUUID());
 	}
@@ -57,12 +57,12 @@ public class BarbarianRageManager {
 	}
 
 	public static void activate(ServerPlayer player) {
-		if (raging.contains(player.getUUID())) return; //Ya estaba en furia: no reinicia el contador ni duplica el mensaje, y no gasta nada de nuevo.
+		if (raging.contains(player.getUUID())) return; //Already raging: don't reset the counter or duplicate the message, and don't spend anything again.
 
-		//5e de verdad: "puedes entrar en furia como una acción adicional". No estaba gateado en absoluto
-		//—activar la Furia no costaba ni acción ni acción adicional—, la única acción adicional real del
-		//SRD que este motor todavía no cobraba. Va antes de tocar el set "raging": si no puede gastar la
-		//acción adicional, no debe quedar marcado como que ya entró en furia.
+		//Real 5e: "you can enter a rage as a bonus action." This wasn't gated at all
+		//—activating Rage cost neither an action nor a bonus action— the only real SRD bonus action
+		//this engine wasn't charging for yet. This goes before touching the "raging" set: if it can't
+		//spend the bonus action, it must not end up marked as already raging.
 		if (!TurnManager.tryActBonus(player)) {
 			TurnManager.notifyCantActBonus(player);
 			return;
@@ -84,8 +84,8 @@ public class BarbarianRageManager {
 		player.sendSystemMessage(Component.translatable("chat.dndsheets.rage.start", damageBonusFor(player)).withStyle(ChatFeedback.RESOURCE));
 	}
 
-	//--- Tótem de Furia: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos de
-	//interacción por separado. Mismo patrón que los ítems de turno
+	//--- Rage Totem: activated from AbilityItemDispatcher instead of subscribing to the 3 interaction
+	//events separately. Same pattern as the turn items
 	//(TurnItemManager). ---
 
 	static void tryUse(PlayerInteractEvent event) {

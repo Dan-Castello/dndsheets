@@ -7,8 +7,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Se abre para quien usó el Kit de Descanso: elige corto o largo, lo que manda la propuesta
- * al resto de jugadores (ver {@link net.hawthorn.dndsheets.RestManager#propose}).</p>
+ * <p>Opens for whoever used the Rest Kit: choose short or long, which sends the proposal
+ * to the rest of the players (see {@link net.hawthorn.dndsheets.RestManager#propose}).</p>
  */
 public class RestChoiceScreen extends ModalDialogScreen {
 	private static final int WIDTH = 220;

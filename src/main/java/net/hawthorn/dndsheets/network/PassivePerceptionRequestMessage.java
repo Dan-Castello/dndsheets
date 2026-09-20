@@ -10,9 +10,9 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: botón "Percepción pasiva" en SheetAdjustScreen (equivalente en GUI a
-///dndsheet passive). La respuesta es un mensaje de chat privado al DM, no hace falta abrir nada en el
-//cliente ni mandar una hoja completa de vuelta.
+//Client (the DM) -> server: "Passive Perception" button in SheetAdjustScreen (GUI equivalent of
+///dndsheet passive). The response is a private chat message to the DM; there's no need to open anything
+//on the client or send a full sheet back.
 public class PassivePerceptionRequestMessage {
 	String targetUuid;
 

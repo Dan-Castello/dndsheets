@@ -1,35 +1,35 @@
 # -*- coding: utf-8 -*-
-"""Importa contenido de fuera (SRD 5.1/5.2, Open5e, o un pack de otra mesa) a los packs de este mod.
+"""Imports outside content (SRD 5.1/5.2, Open5e, or another table's pack) into this mod's packs.
 
     python tools/import_srd.py --kind feat   --from <url|archivo> --into src/main/resources/dndsheets/defaults/feats.json
     python tools/import_srd.py --kind spell  --from https://api.open5e.com/v1/spells/?limit=50 --dry-run
     python tools/import_srd.py --kind monster --from src/2014/en/5e-SRD-Monsters.json --limit 20
 
-Por que existe: los 330 monstruos y los 87 hechizos que ya vienen se importaron A MANO, una vez, y ese
-trabajo no quedo escrito en ninguna parte. Eso convertia cada ampliacion en el mismo trabajo otra vez, y
-dejaba a las mesas sin manera de traerse su propio contenido salvo escribiendolo entrada a entrada.
+Why it exists: the 330 monsters and 87 spells that already ship were imported BY HAND, once, and that
+work was written down nowhere. That turned every expansion into the same work again, and
+left tables with no way to bring their own content other than writing it entry by entry.
 
-Tres formatos de entrada, detectados por como es el primer registro (nadie tiene que declarar nada):
+Three input formats, detected by what the first record looks like (nobody has to declare anything):
 
-  * **5e-bits/5e-database** (clave "index"): la transcripcion JSON del SRD, tanto la 5.1 (`src/2014/en`)
-    como la 5.2 (`src/2024/en`). Es de donde salio el contenido que ya viene.
-  * **Open5e** (clave "slug"): la API de la comunidad, con el contenido OGL de Kobold Press y demas.
-    Se le sigue la paginacion (`next`) hasta `--limit`.
-  * **Nativo** (clave "id"): un pack que YA esta en el formato de este mod. No es un caso tonto: sirve
-    para fusionar el pack de otra mesa sin pisar lo tuyo, que es lo que hace `--into`.
+  * **5e-bits/5e-database** ("index" key): the JSON transcription of the SRD, both 5.1 (`src/2014/en`)
+    and 5.2 (`src/2024/en`). It is where the content that already ships came from.
+  * **Open5e** ("slug" key): the community API, with Kobold Press's OGL content and more.
+    Its pagination (`next`) is followed up to `--limit`.
+  * **Native** ("id" key): a pack that is ALREADY in this mod's format. It is not a silly case: it serves
+    to merge another table's pack without overwriting yours, which is what `--into` does.
 
-Tres reglas que no se negocian:
+Three rules that are not negotiable:
 
-  1. **`--into` solo AÑADE.** Un id que ya esta en el pack se salta y se dice. Los packs de este repo
-     estan formateados a mano (invariante 10) y una entrada nueva se empalma como texto antes del `]`
-     final: los bytes de lo que ya habia no se tocan.
-  2. **Lo que no se sabe mapear no se inventa: se salta y se cuenta al final.** Un hechizo cuyo daño no
-     aparece en la prosa entra como un hechizo que no hace nada, y eso se descubre en la mesa.
-  3. **Los tipos de daño se dejan como vienen.** `DamageTypes.normalize` del mod entiende "fire" igual
-     que "fuego", asi que traducirlos aqui seria una segunda tabla que se puede separar de la primera.
+  1. **`--into` only ADDS.** An id that is already in the pack is skipped and reported. This repo's packs
+     are hand-formatted (invariant 10) and a new entry is spliced in as text before the final `]`:
+     the bytes of what was already there are not touched.
+  2. **What cannot be mapped is not invented: it is skipped and counted at the end.** A spell whose damage does not
+     appear in the prose gets in as a spell that does nothing, and that is discovered at the table.
+  3. **Damage types are left as they come.** The mod's `DamageTypes.normalize` understands "fire" the same
+     as "fuego", so translating them here would be a second table that can drift from the first.
 
-`--lang` toma un diccionario `{"dndsheets:alert": {"name": "...", "description": "..."}}` para que la
-importacion sea reproducible: lo que se envia en el repo esta en español y se puede volver a generar.
+`--lang` takes a dictionary `{"dndsheets:alert": {"name": "...", "description": "..."}}` so the
+import is reproducible: whatever is translated in the repo can be generated again.
 """
 import argparse
 import json
@@ -43,7 +43,7 @@ UA = {'User-Agent': 'dndsheets-import/1.0 (+https://github.com/Dan-Castello/dnds
 
 
 def fetch(source, limit):
-    """Un archivo local o una URL. Devuelve la lista de registros, siguiendo la paginacion de Open5e."""
+    """A local file or a URL. Returns the list of records, following Open5e's pagination."""
     records = []
     while source:
         remote = bool(re.match(r'https?://', source))
@@ -55,9 +55,9 @@ def fetch(source, limit):
                 data = json.load(f)
         if isinstance(data, dict) and 'results' in data:
             records.extend(data['results'])
-            # La paginacion solo se sigue si de verdad hace falta: pedir 3200 monstruos para quedarte con
-            # 20 es maleducado con una API gratis. Y solo desde una URL: un volcado guardado en disco lleva
-            # dentro su "next", y seguirlo convertia "importa este archivo" en 72 peticiones a internet.
+            # Pagination is only followed if it is really needed: asking for 3200 monsters to keep
+            # 20 is rude to a free API. And only from a URL: a dump saved on disk carries
+            # its own "next", and following it turned "import this file" into 72 internet requests.
             source = data.get('next') if (remote and (limit is None or len(records) < limit)) else None
         else:
             records.extend(data if isinstance(data, list) else [data])
@@ -88,13 +88,13 @@ def source_id(record, shape, namespace):
 
 # --------------------------------------------------------------------------- dotes
 
-# El tipo de dote del SRD 5.2 dice a que nivel se puede coger. No es cosmetico: los Dones Epicos son de
-# nivel 19, y ofrecerlos en la mejora del nivel 4 llena la lista de cosas que el servidor va a rechazar.
+# The SRD 5.2 feat type says at which level it can be taken. It is not cosmetic: Epic Boons are
+# level 19, and offering them at the level 4 improvement fills the list with things the server will reject.
 FEAT_MIN_LEVEL = {'origin': 1, 'fighting-style': 1, 'fighting style': 1, 'general': 4, 'epic boon': 19,
                   'epic-boon': 19, 'boon': 19}
 
-# La Mejora de Caracteristica es una dote en el SRD 5.2, pero en este mod ya ES el recurso que las dotes
-# gastan (ver LevelUpManager). Importarla seria ofrecerla como alternativa a si misma.
+# Ability Score Improvement is a feat in SRD 5.2, but in this mod it already IS the resource feats
+# spend (see LevelUpManager). Importing it would be offering it as an alternative to itself.
 FEAT_SKIP = {'ability-score-improvement', 'ability_score_improvement'}
 
 
@@ -103,16 +103,16 @@ def map_feat(record, shape, namespace):
         return record, None
     key = record.get('index') or record.get('slug') or ''
     if key.lower() in FEAT_SKIP:
-        return None, 'la Mejora de Caracteristica ya es el recurso que gastan las dotes'
+        return None, 'Ability Score Improvement is already the resource feats spend'
     name = record.get('name')
     description = (record.get('description') or record.get('desc') or '').strip()
     if not name or not description:
-        return None, 'sin nombre o sin texto'
+        return None, 'no name or no text'
     out = {'id': source_id(record, shape, namespace), 'name': name,
            'description': re.sub(r'\s*\n\s*', ' ', description)}
     level = FEAT_MIN_LEVEL.get(str(record.get('type', '')).lower())
     if level is None and record.get('prerequisite'):
-        level = 4  # Open5e no dice el tipo; una dote con requisito no es de origen.
+        level = 4  # Open5e does not give the type; a feat with a prerequisite is not an origin one.
     if level and level > 1:
         out['minLevel'] = level
     return out, None
@@ -120,8 +120,8 @@ def map_feat(record, shape, namespace):
 
 # --------------------------------------------------------------------------- hechizos
 
-# De que caracteristica lanza cada clase. El SRD no lo dice en el hechizo (depende de quien lo lance),
-# asi que se toma la primera clase que puede lanzarlo, que es lo que acierta en el 95% de los casos.
+# Which ability each class casts with. The SRD does not say it on the spell (it depends on who casts it),
+# so the first class that can cast it is taken, which is right in 95% of cases.
 CASTING_ABILITY = {'wizard': 'int', 'artificer': 'int',
                    'cleric': 'wis', 'druid': 'wis', 'ranger': 'wis',
                    'bard': 'cha', 'sorcerer': 'cha', 'warlock': 'cha', 'paladin': 'cha'}
@@ -152,11 +152,11 @@ def map_spell(record, shape, namespace):
     if shape == 'nativo':
         return record, None
     name = record.get('name')
-    # Open5e trae las dos: "level": "4th-level" (para leer) y "level_int": 4. La buena es la segunda.
+    # Open5e brings both: "level": "4th-level" (to read) and "level_int": 4. The good one is the second.
     level = record.get('level_int', record.get('level'))
     if name is None or level is None:
-        return None, 'sin nombre o sin nivel'
-    # "desc"/"higher_level" son un parrafo en Open5e y una LISTA de parrafos en 5e-bits.
+        return None, 'no name or no level'
+    # "desc"/"higher_level" are a paragraph in Open5e and a LIST of paragraphs in 5e-bits.
     prose = flatten(record.get('desc'))
     higher = flatten(record.get('higher_level'))
     out = {'id': source_id(record, shape, namespace), 'name': name, 'level': int(level)}
@@ -168,7 +168,7 @@ def map_spell(record, shape, namespace):
             break
     out['castingAbility'] = ability
 
-    # El dado: 5e-bits lo trae estructurado por nivel de espacio; Open5e solo en la prosa.
+    # The die: 5e-bits brings it structured by slot level; Open5e only in the prose.
     dice = damage_type = None
     upcast = None
     damage = record.get('damage') or {}
@@ -177,12 +177,12 @@ def map_spell(record, shape, namespace):
         first = min(at_slot, key=lambda k: int(k))
         dice = at_slot[first]
         rest = sorted((int(k) for k in at_slot), key=int)
-        # Un truco NO se sube de nivel gastando un espacio: crece con el nivel del personaje, y de eso ya
-        # se encarga Spell.atCasterLevel. Escribirle upcastDice seria darle las dos subidas.
+        # A cantrip does NOT scale by spending a slot: it grows with the character level, and Spell.atCasterLevel
+        # already takes care of that. Writing upcastDice for it would give it both increases.
         if len(rest) > 1 and int(level) > 0 and 'damage_at_slot_level' in damage:
             step = at_slot[str(rest[1])]
-            # "8d6" -> "10d6" con un espacio mas significa +1d6 por nivel. Solo se declara la subida si el
-            # dado es el mismo: si cambia (2d8 -> 3d10) no hay un incremento que escribir.
+            # "8d6" -> "10d6" with one more slot means +1d6 per level. The increase is only declared if the
+            # die is the same: if it changes (2d8 -> 3d10) there is no increment to write.
             a, b = DICE.match(dice), DICE.match(step)
             if a and b and a.group(1).split('d')[1] == b.group(1).split('d')[1]:
                 delta = int(b.group(1).split('d')[0]) - int(a.group(1).split('d')[0])
@@ -218,8 +218,8 @@ def map_spell(record, shape, namespace):
         out['mode'] = 'attack'
         out['dice'] = dice
     else:
-        # Regla 2: un hechizo sin golpe reconocible entra como un hechizo que no hace nada.
-        return None, 'no se reconoce el daño ni la curacion en el texto'
+        # Rule 2: a spell with no recognizable hit gets in as a spell that does nothing.
+        return None, 'neither the damage nor the healing is recognized in the text'
 
     if damage_type:
         out['damageType'] = damage_type.lower()
@@ -230,7 +230,7 @@ def map_spell(record, shape, namespace):
 
     area = record.get('area_of_effect') or {}
     if area.get('size'):
-        # 5 pies = 1 bloque. La forma importa: una esfera nace donde impacta y un cono en el lanzador.
+        # 5 feet = 1 block. The shape matters: a sphere starts where it hits and a cone at the caster.
         out['aoeRadius'] = max(1, int(area['size']) // 5)
         shape_name = {'sphere': 'sphere', 'cylinder': 'sphere', 'line': 'line', 'cone': 'cone',
                       'cube': 'sphere'}.get(area.get('type'), 'sphere')
@@ -241,8 +241,8 @@ def map_spell(record, shape, namespace):
 
 # --------------------------------------------------------------------------- monstruos
 
-# Con que mob de Minecraft se representa cada tipo de criatura. Sale de contar lo que ya usan los 330
-# monstruos que vienen (ver monsters.json): esto no inventa un criterio, copia el que ya se aplico.
+# Which Minecraft mob represents each creature type. It comes from counting what the 330 monsters
+# that ship already use (see monsters.json): this invents no criterion, it copies the one already applied.
 BASE_ENTITY = {'aberration': 'minecraft:guardian', 'beast': 'minecraft:wolf',
                'celestial': 'minecraft:allay', 'construct': 'minecraft:iron_golem',
                'dragon': 'minecraft:ravager', 'elemental': 'minecraft:vex',
@@ -253,7 +253,7 @@ BASE_ENTITY = {'aberration': 'minecraft:guardian', 'beast': 'minecraft:wolf',
 
 
 def proficiency_for(cr):
-    """Bono de competencia por Valor de Desafio: 2 hasta VD 4, y +1 cada cuatro VD (tabla del DMG)."""
+    """Proficiency bonus by Challenge Rating: 2 up to CR 4, and +1 every four CR (DMG table)."""
     try:
         cr = float(cr)
     except (TypeError, ValueError):
@@ -288,7 +288,7 @@ def map_monster(record, shape, namespace):
     name = record.get('name')
     scores = ability_scores(record)
     if not name or not scores:
-        return None, 'sin nombre o sin las seis caracteristicas'
+        return None, 'no name or missing the six ability scores'
 
     creature_type = str(record.get('type') or '').lower()
     attacks = []
@@ -303,17 +303,17 @@ def map_monster(record, shape, namespace):
         if not dice:
             match = re.search(r'(\d+d\d+)[^.]*?\b(\w+) damage', action.get('desc') or '')
             if not match:
-                continue  # Multiataque, Aliento recargable descrito en prosa, gritos... no es un golpe.
+                continue  # Multiattack, a rechargeable Breath described in prose, shrieks... it is not a hit.
             dice, damage_type = match.group(1), match.group(2)
-        # Con que caracteristica pega: si el texto dice "Ranged" es Destreza, y si no, Fuerza. Lo mismo
-        # que hace el SRD al escribir el bono a impactar, solo que aqui se deduce del nombre del ataque.
+        # Which ability it hits with: if the text says "Ranged" it is Dexterity, and if not, Strength. The same
+        # as the SRD does when writing the to-hit bonus, only here it is deduced from the attack name.
         ranged = 'ranged' in (action.get('desc') or '').lower()[:60]
         ability = 'dex' if ranged else 'str'
         attacks.append({'name': action.get('name', 'Ataque'), 'toHitAbility': ability,
                         'dice': DICE.search(dice).group(1) if DICE.search(dice) else dice,
                         'damageAbility': ability, 'damageType': damage_type or 'fisico'})
     if not attacks:
-        return None, 'ningun ataque con dado reconocible'
+        return None, 'no attack with a recognizable die'
 
     out = {'id': source_id(record, shape, namespace), 'name': name,
            'type': creature_type or 'humanoide',
@@ -330,8 +330,8 @@ def map_monster(record, shape, namespace):
         entries = raw if isinstance(raw, list) else [x.strip() for x in raw.split(',')]
         for entry in entries:
             entry = str(entry).strip().lower()
-            # "bludgeoning, piercing, and slashing from nonmagical attacks" es OTRO campo del mod
-            # (nonmagicalAffinities) y no un tipo de daño: se deja fuera en vez de inventar una clave.
+            # "bludgeoning, piercing, and slashing from nonmagical attacks" is ANOTHER mod field
+            # (nonmagicalAffinities) and not a damage type: it is left out instead of inventing a key.
             if not entry or ' ' in entry:
                 continue
             affinities[entry] = label
@@ -355,13 +355,13 @@ def existing_ids(path):
 
 
 def append_to_pack(path, entries):
-    """Empalma las entradas nuevas como TEXTO antes del `]` final.
+    """Splices the new entries in as TEXT before the final `]`.
 
-    Releer el pack con json.load y volver a escribirlo con json.dump reformatearia las entradas que ya
-    estaban, que en este repo estan puestas a mano (invariante 10). Asi el diff son exactamente las
-    lineas nuevas."""
-    # Una entrada por linea y con espacios dentro de las llaves, que es como estan los packs que ya vienen
-    # (items.json, spells.json): asi un pack importado y uno escrito a mano se leen igual.
+    Re-reading the pack with json.load and writing it back with json.dump would reformat the entries that
+    were already there, which in this repo are hand-placed (invariant 10). This way the diff is exactly the
+    new lines."""
+    # One entry per line and with spaces inside the braces, which is how the packs that already ship are
+    # (items.json, spells.json): this way an imported pack and a hand-written one read the same.
     lines = ['  { ' + json.dumps(e, ensure_ascii=False)[1:-1].strip() + ' }' for e in entries]
     if not os.path.exists(path):
         text = '[\n' + ',\n'.join(lines) + '\n]\n'
@@ -381,7 +381,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('--kind', required=True, choices=sorted(MAPPERS))
     parser.add_argument('--from', dest='source', required=True, help='URL o archivo JSON')
-    parser.add_argument('--into', help='pack del mod al que añadir (solo añade, nunca pisa)')
+    parser.add_argument('--into', help='mod pack to add to (only adds, never overwrites)')
     parser.add_argument('--lang', help='diccionario id -> {name, description} para traducir')
     parser.add_argument('--namespace', default='dndsheets')
     parser.add_argument('--limit', type=int)
@@ -390,10 +390,10 @@ def main():
 
     records = fetch(args.source, args.limit)
     if not records:
-        sys.exit('no hay registros en ' + args.source)
+        sys.exit('no records in ' + args.source)
     shape = shape_of(records[0])
     if shape is None:
-        sys.exit('no reconozco el formato: el primer registro no tiene "index", "slug" ni "id"')
+        sys.exit('unrecognized format: the first record has no "index", "slug" or "id"')
 
     translations = {}
     if args.lang:
@@ -409,7 +409,7 @@ def main():
             skipped.append('%s: %s' % (record.get('name', '?'), why))
             continue
         if mapped['id'] in have:
-            skipped.append('%s: ya esta en el pack' % mapped['id'])
+            skipped.append('%s: already in the pack' % mapped['id'])
             continue
         mapped.update(translations.get(mapped['id'], {}))
         have.add(mapped['id'])
@@ -425,7 +425,7 @@ def main():
         return
     if entries:
         append_to_pack(args.into, entries)
-        print('añadidas %d entradas a %s' % (len(entries), args.into))
+        print('added %d entries to %s' % (len(entries), args.into))
 
 
 if __name__ == '__main__':

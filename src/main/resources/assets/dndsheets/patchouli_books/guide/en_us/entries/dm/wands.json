@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.wands",
+  "category": "dndsheets:dm",
+  "icon": "minecraft:stick",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_wand"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_turns"
+    }
+  ]
+}

@@ -11,19 +11,19 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 /**
- * <p>Cliente -> servidor: el jugador eligió una clase en {@link net.hawthorn.dndsheets.client.gui.PresetScreen}
- * (en modo multiclase) para subir un nivel EN ESA clase en su propia hoja — mismo botón "Multiclasear" de
- * {@code CharacterSheetScreen}, mismo camino que ya usaba {@code /dndsheet multiclass}
+ * <p>Client -> server: the player chose a class in {@link net.hawthorn.dndsheets.client.gui.PresetScreen}
+ * (in multiclass mode) to gain a level IN THAT class on their own sheet — same "Multiclass" button as
+ * {@code CharacterSheetScreen}, same path already used by {@code /dndsheet multiclass}
  * ({@link SheetCommand#applyMulticlass}).</p>
  *
- * <p>A diferencia de {@link PresetApplyMessage} (self, sin candado: elegir el preset inicial no requiere
- * ser DM), esto SÍ lo requiere: en 5e la multiclase la concede quien lleva la mesa, y
- * {@code /dndsheet multiclass} ya vive bajo {@code .requires(source -> DndsheetsMod.canActAsDm(source))}.
- * El botón de la ficha se muestra siempre (el cliente no puede saber {@code Config.soloMode()} sin que se
- * le sincronice), así que la autoridad real vive aquí, del lado servidor — y a diferencia del guard mudo de
- * {@code NetworkUtil.handleOnServerAsDm}, aquí SÍ hace falta avisar por chat: quien no es DM (y no hay modo
- * Solo) pulsa el botón, no pasa nada visible, y eso se lee como un botón roto en vez de una acción
- * rechazada.</p>
+ * <p>Unlike {@link PresetApplyMessage} (self, no lock: choosing the initial preset doesn't require being
+ * DM), this one DOES require it: in 5e multiclassing is granted by whoever runs the table, and
+ * {@code /dndsheet multiclass} already lives under {@code .requires(source -> DndsheetsMod.canActAsDm(source))}.
+ * The sheet's button is always shown (the client has no way to know {@code Config.soloMode()} without it
+ * being synced), so the real authority lives here, server-side — and unlike the silent guard in
+ * {@code NetworkUtil.handleOnServerAsDm}, here a chat notice IS needed: someone who isn't DM (and Solo
+ * mode isn't on) presses the button, nothing visible happens, and that reads as a broken button instead
+ * of a rejected action.</p>
  */
 public class MulticlassMessage {
 	String classId;

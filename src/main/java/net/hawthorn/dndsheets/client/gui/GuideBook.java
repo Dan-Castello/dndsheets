@@ -21,20 +21,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-//Guía para quien no sabe usar el mod (jugadores y DM). Usa el libro escrito vanilla (BookViewScreen)
-//en vez de una pantalla propia: paginación y renderizado gratis, sin darle el ítem al jugador ni
-//pasar por el servidor — se construye y se abre entero en el cliente.
+//Guide for anyone who doesn't know how to use the mod (players and DM). Uses vanilla's written book
+//(BookViewScreen) instead of a custom screen: pagination and rendering for free, without giving the
+//item to the player or going through the server — it's built and opened entirely on the client.
 //
-//Con Patchouli instalado la Guía se abre como manual, con índice, categorías, búsqueda y marcapáginas
-//(ver PatchouliCompat). Sin Patchouli era una tira de 31 páginas sueltas que solo se podía leer
-//pasándolas una a una, así que aquí se reconstruyen a mano las dos cosas que daba el manual y que de
-//verdad hacen falta: el libro va PARTIDO en las mismas categorías y entradas que el de Patchouli, y
-//empieza por un índice cuyas filas son enlaces (ClickEvent.CHANGE_PAGE, que BookViewScreen ya sabe
-//resolver). Cada página lleva de vuelta al índice.
+//With Patchouli installed the Guide opens as a manual, with an index, categories, search and
+//bookmarks (see PatchouliCompat). Without Patchouli it used to be a strip of 31 loose pages that could
+//only be read by flipping through them one at a time, so the two things the manual really provided are
+//rebuilt here by hand: the book is SPLIT into the same categories and entries as the Patchouli one, and
+//it starts with an index whose rows are links (ClickEvent.CHANGE_PAGE, which BookViewScreen already
+//knows how to resolve). Every page links back to the index.
 //
-//Las dos versiones enseñan lo mismo y en el mismo orden: cada Entry de aquí es una entrada de
-//assets/dndsheets/patchouli_books/guide/en_us/entries/<categoría>/<archivo>.json, y
-//JsonContentSelfTest.checkPatchouliBook falla si las dos listas se separan.
+//The two versions teach the same content in the same order: each Entry here is an entry from
+//assets/dndsheets/patchouli_books/guide/en_us/entries/<category>/<file>.json, and
+//JsonContentSelfTest.checkPatchouliBook fails if the two lists drift apart.
 public class GuideBook {
 	private record Entry(String titleKey, String... pages) {
 	}
@@ -43,71 +43,71 @@ public class GuideBook {
 	}
 
 	private static final Chapter[] CHAPTERS = {
-		//Delante de todo, y es deliberado: el resto de la Guía enseña el MOD dando por sabido el juego —
-		//dice CA, salvación y ventaja sin definirlos— y quien entra por primera vez a un mundo con esto
-		//instalado no tiene por qué haber jugado nunca a D&D. Estas cuatro entradas son lo único que se
-		//lee sin saber nada, así que se leen primero.
-		new Chapter("gui.dndsheets.guide.cat.primeros_pasos", false,
-			new Entry("gui.dndsheets.guide.entry.que_es",
+		//First of all, and deliberately so: the rest of the Guide teaches the MOD assuming knowledge of
+		//the game itself — it says AC, saving throw and advantage without defining them — and someone
+		//joining a world with this installed for the first time has no reason to have ever played D&D.
+		//These four entries are the only thing that can be read knowing nothing, so they're read first.
+		new Chapter("gui.dndsheets.guide.cat.first_steps", false,
+			new Entry("gui.dndsheets.guide.entry.what_is_this",
 				"gui.dndsheets.guide.page.intro",
 				"gui.dndsheets.guide.page.roles"),
-			new Entry("gui.dndsheets.guide.entry.dado",
+			new Entry("gui.dndsheets.guide.entry.dice",
 				"gui.dndsheets.guide.page.d20",
 				"gui.dndsheets.guide.page.advantage_basics"),
-			new Entry("gui.dndsheets.guide.entry.vocabulario",
+			new Entry("gui.dndsheets.guide.entry.glossary",
 				"gui.dndsheets.guide.page.glossary_1",
 				"gui.dndsheets.guide.page.glossary_2"),
-			new Entry("gui.dndsheets.guide.entry.empezar",
+			new Entry("gui.dndsheets.guide.entry.getting_started",
 				"gui.dndsheets.guide.page.first_ten",
 				"gui.dndsheets.guide.page.first_combat")),
 
-		new Chapter("gui.dndsheets.guide.cat.personaje", false,
-			new Entry("gui.dndsheets.guide.entry.hoja",
+		new Chapter("gui.dndsheets.guide.cat.character", false,
+			new Entry("gui.dndsheets.guide.entry.sheet",
 				"gui.dndsheets.guide.page.sheet",
 				"gui.dndsheets.guide.page.sheet_2",
 				"gui.dndsheets.guide.page.characters",
 				"gui.dndsheets.guide.page.hud_states"),
-			new Entry("gui.dndsheets.guide.entry.subir_nivel",
+			new Entry("gui.dndsheets.guide.entry.level_up",
 				"gui.dndsheets.guide.page.level_up",
 				"gui.dndsheets.guide.page.level_up_2",
 				"gui.dndsheets.guide.page.level_up_3",
 				"gui.dndsheets.guide.page.subclass"),
-			new Entry("gui.dndsheets.guide.entry.descanso",
+			new Entry("gui.dndsheets.guide.entry.rest",
 				"gui.dndsheets.guide.page.rest",
 				"gui.dndsheets.guide.page.death_saves"),
-			new Entry("gui.dndsheets.guide.entry.objetos_clase",
+			new Entry("gui.dndsheets.guide.entry.class_items",
 				"gui.dndsheets.guide.page.class_items",
 				"gui.dndsheets.guide.page.wildshape",
 				"gui.dndsheets.guide.page.wildshape_2"),
-			new Entry("gui.dndsheets.guide.entry.compendio",
+			new Entry("gui.dndsheets.guide.entry.compendium",
 				"gui.dndsheets.guide.page.compendium"),
-			new Entry("gui.dndsheets.guide.entry.objetos_magicos",
+			new Entry("gui.dndsheets.guide.entry.magic_items",
 				"gui.dndsheets.guide.page.magic_items")),
 
-		new Chapter("gui.dndsheets.guide.cat.combate", false,
-			new Entry("gui.dndsheets.guide.entry.tiradas",
+		new Chapter("gui.dndsheets.guide.cat.combat", false,
+			new Entry("gui.dndsheets.guide.entry.rolls",
 				"gui.dndsheets.guide.page.rolling",
 				"gui.dndsheets.guide.page.skills",
 				"gui.dndsheets.guide.page.private_rolls"),
-			new Entry("gui.dndsheets.guide.entry.turnos",
+			new Entry("gui.dndsheets.guide.entry.turns",
 				"gui.dndsheets.guide.page.turns",
 				"gui.dndsheets.guide.page.turn_actions"),
-			new Entry("gui.dndsheets.guide.entry.cobertura",
+			new Entry("gui.dndsheets.guide.entry.cover",
 				"gui.dndsheets.guide.page.cover",
 				"gui.dndsheets.guide.page.vision",
 				"gui.dndsheets.guide.page.vision_2",
 				"gui.dndsheets.guide.page.distance"),
-			new Entry("gui.dndsheets.guide.entry.magia",
+			new Entry("gui.dndsheets.guide.entry.magic",
 				"gui.dndsheets.guide.page.spells",
 				"gui.dndsheets.guide.page.spell_prepare",
 				"gui.dndsheets.guide.page.spell_casting_time",
 				"gui.dndsheets.guide.page.spell_schools")),
 
-		//El libro de Patchouli enseña las páginas de DM a todo el mundo: un manual con índice no puede
-		//esconder medio índice sin quedar raro, y lo que hay ahí es cómo se usa el mod, no el secreto de
-		//nadie. El libro escrito sí las esconde, porque aquí no cuesta nada — es este dmOnly.
+		//The Patchouli book shows the DM pages to everyone: a manual with an index can't hide half the
+		//index without looking odd, and what's in there is how to use the mod, not anyone's secret. The
+		//written book does hide them, because doing so costs nothing here — that's this dmOnly.
 		new Chapter("gui.dndsheets.guide.cat.dm", true,
-			new Entry("gui.dndsheets.guide.entry.primera_sesion",
+			new Entry("gui.dndsheets.guide.entry.first_session",
 				"gui.dndsheets.guide.page.dm_first_1",
 				"gui.dndsheets.guide.page.dm_first_2",
 				"gui.dndsheets.guide.page.dm_first_3"),
@@ -115,10 +115,10 @@ public class GuideBook {
 				"gui.dndsheets.guide.page.dm_panel",
 				"gui.dndsheets.guide.page.dm_commands",
 				"gui.dndsheets.guide.page.dm_commands_2"),
-			new Entry("gui.dndsheets.guide.entry.varas",
+			new Entry("gui.dndsheets.guide.entry.wands",
 				"gui.dndsheets.guide.page.dm_wand",
 				"gui.dndsheets.guide.page.dm_turns"),
-			new Entry("gui.dndsheets.guide.entry.monstruos",
+			new Entry("gui.dndsheets.guide.entry.monsters",
 				"gui.dndsheets.guide.page.dm_creatures",
 				"gui.dndsheets.guide.page.dm_bosses",
 				"gui.dndsheets.guide.page.dm_bosses_2",
@@ -126,13 +126,13 @@ public class GuideBook {
 				"gui.dndsheets.guide.page.dm_ownclock_2",
 				"gui.dndsheets.guide.page.dm_encounters",
 				"gui.dndsheets.guide.page.dm_encounters_2"),
-			new Entry("gui.dndsheets.guide.entry.mazmorras",
+			new Entry("gui.dndsheets.guide.entry.dungeons",
 				"gui.dndsheets.guide.page.dm_dungeons_1",
 				"gui.dndsheets.guide.page.dm_dungeons_2",
 				"gui.dndsheets.guide.page.dm_dungeons_3",
 				"gui.dndsheets.guide.page.dm_dungeons_4",
 				"gui.dndsheets.guide.page.dm_dungeons_5"),
-			new Entry("gui.dndsheets.guide.entry.contenido",
+			new Entry("gui.dndsheets.guide.entry.content",
 				"gui.dndsheets.guide.page.dm_content_packs",
 				"gui.dndsheets.guide.page.dm_content_packs_2",
 				"gui.dndsheets.guide.page.dm_more_packs",
@@ -140,25 +140,25 @@ public class GuideBook {
 				"gui.dndsheets.guide.page.dm_npc_ai_2",
 				"gui.dndsheets.guide.page.dm_bind",
 				"gui.dndsheets.guide.page.dm_bind_2"),
-			new Entry("gui.dndsheets.guide.entry.hojas",
+			new Entry("gui.dndsheets.guide.entry.sheets_notes",
 				"gui.dndsheets.guide.page.dm_sheet_admin",
 				"gui.dndsheets.guide.page.dm_notes"),
-			new Entry("gui.dndsheets.guide.entry.diario",
+			new Entry("gui.dndsheets.guide.entry.journal",
 				"gui.dndsheets.guide.page.dm_journal")),
 	};
 
-	//BookViewScreen.TEXT_WIDTH y TEXT_HEIGHT son protected, así que van copiados: 114 px de ancho y
-	//128/9 = 14 líneas por página. Lo que pase de ahí NO se recorta con puntos suspensivos ni añade una
-	//página: desaparece sin avisar. La página de subir de nivel medía 704 caracteres, así que llevaba
-	//tiempo enseñando poco más de la mitad de lo que decía, y nada en el juego lo delataba.
+	//BookViewScreen.TEXT_WIDTH and TEXT_HEIGHT are protected, so they're copied here: 114 px wide and
+	//128/9 = 14 lines per page. Anything past that is NOT truncated with an ellipsis or given an extra
+	//page: it just disappears without warning. The level-up page was 704 characters long, so it had
+	//been showing barely more than half of what it said for a while, with nothing in-game to reveal it.
 	private static final int PAGE_WIDTH = 114;
 	private static final int PAGE_LINES = 128 / 9;
-	//Cada página cierra con una línea en blanco y el enlace de vuelta; la primera de cada entrada gasta
-	//otras dos en su título.
+	//Every page ends with a blank line and the back link; the first page of each entry spends two more
+	//lines on its title.
 	private static final int FOOTER_LINES = 2;
 	private static final int HEADER_LINES = 2;
 
-	/** Una fila del índice. {@code target} es la página de contenido a la que salta, o -1 si es un rótulo. */
+	/** One index row. {@code target} is the content page it jumps to, or -1 if it's a heading. */
 	private record IndexLine(Component label, int target) {
 	}
 
@@ -166,9 +166,9 @@ public class GuideBook {
 	}
 
 	public static void open(boolean includeDmPages) {
-		//Con Patchouli instalado, la misma Guía se abre como manual. El texto es el mismo —las entradas
-		//apuntan a estas mismas claves de idioma— así que no hay dos guías que mantener, solo dos formas
-		//de leerla. Ver PatchouliCompat.
+		//With Patchouli installed, the same Guide opens as a manual. The text is the same — the entries
+		//point at these same language keys — so there aren't two guides to maintain, just two ways of
+		//reading it. See PatchouliCompat.
 		if (PatchouliCompat.openOnClient()) return;
 
 		Font font = Minecraft.getInstance().font;
@@ -177,20 +177,20 @@ public class GuideBook {
 		List<IndexLine> index = new ArrayList<>();
 		index.add(rubric("gui.dndsheets.guide.index"));
 
-		//Antes escondía los capítulos dmOnly (Panel, Varas, Mazmorras...) a quien no tuviera permiso de
-		//operador — la misma razón que ya valía para Patchouli, arriba, ahora también aplica acá: "es cómo
-		//se usa el mod, no el secreto de nadie". Con el modo Solo (ver Config.soloMode/DndsheetsMod.
-		//canActAsDm) cualquiera puede terminar siendo quien invoca monstruos o genera una mazmorra, y el
-		//cliente no tiene forma barata de saber si ese modo está encendido para decidir qué mostrar —así
-		//que la única guía de mazmorras que existe se quedaba invisible justo para quien más la necesita.
-		// includeDmPages queda como parámetro (no se borra la forma del mensaje que lo trae) pero ya no
-		//filtra nada; ver TutorialOpenMessage si algún día hace falta limpiarlo del todo.
+		//This used to hide the dmOnly chapters (Panel, Wands, Dungeons...) from anyone without operator
+		//permission — the same reasoning that already applied to Patchouli above now applies here too:
+		//"it's how to use the mod, not anyone's secret." With Solo mode (see Config.soloMode/DndsheetsMod.
+		//canActAsDm) anyone can end up being the one summoning monsters or generating a dungeon, and the
+		//client has no cheap way to know whether that mode is on to decide what to show — so the only
+		//dungeon guide that exists was staying invisible for exactly the people who need it most.
+		//includeDmPages stays as a parameter (the shape of the message that carries it isn't removed) but
+		//no longer filters anything; see TutorialOpenMessage if it ever needs to be fully cleaned up.
 		for (Chapter chapter : CHAPTERS) {
 			index.add(new IndexLine(Component.empty(), -1));
 			index.add(rubric(chapter.titleKey()));
 			for (Entry entry : chapter.entries()) {
-				//Dónde empieza esta entrada DENTRO del contenido: el índice todavía no sabe cuánto ocupa
-				//él mismo, y ese desfase se suma abajo, ya paginado.
+				//Where this entry starts WITHIN the content: the index doesn't yet know how much space it
+				//takes up itself, and that offset is added below, once paginated.
 				int startsAt = content.size();
 				appendEntry(font, content, entry);
 				index.add(new IndexLine(
@@ -209,7 +209,7 @@ public class GuideBook {
 			for (int i = from; i < from + rows; i++) {
 				if (i > from) text.append("\n");
 				IndexLine line = index.get(i);
-				//+1 porque CHANGE_PAGE cuenta desde 1 (BookViewScreen.handleComponentClicked).
+				//+1 because CHANGE_PAGE counts from 1 (BookViewScreen.handleComponentClicked).
 				text.append(line.target() < 0 ? line.label()
 					: line.label().copy().withStyle(linkToPage(indexPages.size() + line.target() + 1)));
 			}
@@ -240,12 +240,12 @@ public class GuideBook {
 			.withClickEvent(new ClickEvent(ClickEvent.Action.CHANGE_PAGE, String.valueOf(page)));
 	}
 
-	/** Cuántas líneas ocupa un texto en una página, con el mismo repartidor con el que se va a dibujar. */
+	/** How many lines a text takes up on a page, using the same line splitter that will render it. */
 	private static int measure(Font font, String text) {
 		return Math.max(1, font.getSplitter().splitLines(text, PAGE_WIDTH, Style.EMPTY).size());
 	}
 
-	/** Una entrada: su título arriba de la primera página, y una página de libro por cada trozo que quepa. */
+	/** One entry: its title atop the first page, and one book page for each chunk that fits. */
 	private static void appendEntry(Font font, List<Component> out, Entry entry) {
 		Component header = Component.translatable(entry.titleKey()).withStyle(ChatFormatting.BOLD);
 		for (String key : entry.pages()) {

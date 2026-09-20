@@ -17,8 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: guarda un monstruo invocado (normalmente un NPC genérico ya armado con
-//ataques en vivo) como plantilla en monsters/dm_created.json — ver client.gui.MonsterTemplateSaveScreen.
+//Client (the DM) -> server: saves a spawned monster (usually a generic NPC already armed with live
+//attacks) as a template in monsters/dm_created.json — see client.gui.MonsterTemplateSaveScreen.
 public class MonsterSaveTemplateMessage {
 
 	int entityId;
@@ -52,7 +52,7 @@ public class MonsterSaveTemplateMessage {
 				try {
 					value = Integer.parseInt(parts[i].trim());
 				} catch (NumberFormatException ignored) {
-					//Se queda en 10.
+					//Stays at 10.
 				}
 			}
 			abilities.put(Combatant.ABILITIES[i], value);
@@ -77,7 +77,7 @@ public class MonsterSaveTemplateMessage {
 			MonsterRegistry.MonsterStatBlock template = new MonsterRegistry.MonsterStatBlock(
 				message.id, block.name(), block.baseEntityId(), block.ac(), block.maxHp(),
 				parseAbilities(message.abilitiesCsv), block.proficiencyBonus(), attacks, List.of(),
-				block.damageAffinities(), block.nonmagicalAffinities(), block.type(), block.legendaryResistances(), block.legendaryActions(), block.attacksPerTurn(), block.appearance(), block.keepsOwnAi(), block.ownClock(), block.flies()); //Se heredan del monstruo capturado: la plantilla no debería perder sus resistencias, su tipo ni su IA.
+				block.damageAffinities(), block.nonmagicalAffinities(), block.type(), block.legendaryResistances(), block.legendaryActions(), block.attacksPerTurn(), block.size(), block.appearance(), block.keepsOwnAi(), block.ownClock(), block.flies()); //Inherited from the captured monster: the template shouldn't lose its resistances, type, size, or AI.
 			JsonObject json = MonsterRegistry.toJson(template);
 
 			try {

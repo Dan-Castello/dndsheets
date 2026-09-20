@@ -8,9 +8,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>NPC en blanco desde el Panel de DM (equivalente en GUI a {@code /dndmonsters spawn generic}): sin
- * ataques, pensado para rellenarlo después desde el menú de la Vara de DM ("+ Añadir ataque", ver
- * {@link AddMonsterAttackScreen}). Se invoca en la posición del DM.</p>
+ * <p>Blank NPC from the DM Panel (GUI equivalent of {@code /dndmonsters spawn generic}): no
+ * attacks, meant to be filled in later from the DM Wand's menu ("+ Add attack", see
+ * {@link AddMonsterAttackScreen}). Spawns at the DM's position.</p>
  */
 public class SpawnGenericScreen extends SmallFormScreen {
 	private EditBox nameBox;
@@ -28,8 +28,8 @@ public class SpawnGenericScreen extends SmallFormScreen {
 
 	@Override
 	protected void buildForm() {
-		nameBox = addField("Nombre", "NPC", 40);
-		baseEntityBox = addField("Entidad base", "minecraft:villager", 64);
+		nameBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.name"), "NPC", 40);
+		baseEntityBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.base_entity"), "minecraft:villager", 64);
 		acBox = addField("CA", "10", 3);
 		hpBox = addField("PG", "10", 4);
 	}

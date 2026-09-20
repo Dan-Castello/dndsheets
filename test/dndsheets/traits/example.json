@@ -1,0 +1,21 @@
+[
+  {
+    "id": "monk:martial_arts",
+    "name": "Martial Arts",
+    "unarmedAbility": "dex",
+    "unarmedDiceByLevel": [
+      { "level": 1, "dice": "1d4" },
+      { "level": 5, "dice": "1d6" },
+      { "level": 11, "dice": "1d8" },
+      { "level": 17, "dice": "1d10" }
+    ]
+  },
+  {
+    "id": "rogue:sneak_attack",
+    "name": "Sneak Attack",
+    "sneakAttackDiceByLevel": [
+      { "level": 1, "dice": "1d6" },
+      { "level": 3, "dice": "2d6" }
+    ]
+  }
+]

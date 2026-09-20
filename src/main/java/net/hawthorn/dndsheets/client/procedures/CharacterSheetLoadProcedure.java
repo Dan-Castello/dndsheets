@@ -22,11 +22,11 @@ public class CharacterSheetLoadProcedure {
 	public static void execute(HashMap<String, Object> guistate, CharacterSheetScreen screen) {
 		if (guistate == null)
  {
-			DndsheetsMod.LOGGER.warn("CharacterSheetLoadProcedure.execute llamado sin guistate.");
+			DndsheetsMod.LOGGER.warn("CharacterSheetLoadProcedure.execute called without a guistate.");
 			return;
 		}
 		if (SheetLoader.getClientSheet() == null ) {
-			DndsheetsMod.LOGGER.warn("El cliente no tiene una hoja cargada; la GUI puede verse incorrecta.");
+			DndsheetsMod.LOGGER.warn("The client has no sheet loaded; the GUI may look wrong.");
 			return;
 		}
 		JsonObject sheet = SheetLoader.getClientSheet();
@@ -38,10 +38,10 @@ public class CharacterSheetLoadProcedure {
 		if (guistate.get("text:characterclass") instanceof EditBox _tf && sheet.has("characterClass")) {
 			String charName = sheet.get("characterClass").getAsString();
 			_tf.setValue(charName);
-			//Sin esto, la sugerencia fantasma ("Guerrero 1"/"Fighter 1", puesta una sola vez al construir el
-			//campo en CharacterSheetScreen) se sigue dibujando pegada justo después del valor real elegido
-			//en el selector — antes lo limpiaba insertText()/moveCursorTo() al escribir a mano, pero esos
-			//overrides ya no existen porque el campo dejó de aceptar texto libre.
+			//Without this, the ghost suggestion ("Guerrero 1"/"Fighter 1", set once when the field is built in
+			//CharacterSheetScreen) keeps drawing right after the actual value chosen
+			//in the selector — before, insertText()/moveCursorTo() cleared it when typing by hand, but those
+			//overrides no longer exist because the field stopped accepting free text.
 			if (!charName.isEmpty()) _tf.setSuggestion(null);
 		}
 		if (guistate.get("text:characterrace") instanceof EditBox _tf && sheet.has("characterRace")) {
@@ -117,9 +117,9 @@ public class CharacterSheetLoadProcedure {
 		}
 
 		if (guistate.get("scrolllist:attack_rolls") instanceof RollScrollWidget _tf && sheet.has("attacks")) {
-			//Esta hoja puede no ser la primera que llega mientras la ficha sigue abierta (cambiar de raza,
-			//aplicar un preset, descansar, subir de nivel...): sin limpiar antes, cada llegada apilaba las
-			//filas de ataques encima de las anteriores en vez de reemplazarlas. Ver CharacterSheetScreen#clearScrollList.
+			//This sheet may not be the first one to arrive while the character sheet stays open (changing
+			//race, applying a preset, resting, leveling up...): without clearing first, each arrival stacked
+			//attack rows on top of the previous ones instead of replacing them. See CharacterSheetScreen#clearScrollList.
 			screen.clearScrollList(_tf);
 			autoPopulateWeapons(sheet);
 
@@ -133,10 +133,10 @@ public class CharacterSheetLoadProcedure {
 	}
 
 	/**
-	 * <p>Añade a la pestaña de Ataques cualquier arma (reconocida en el config) que el jugador
-	 * lleve en el inventario y todavía no tenga una entrada ahí, con el daño por defecto de
-	 * dndsheets-common.toml. No toca las entradas ya existentes, así que cualquier ajuste manual
-	 * (incluido el dado en sí) se conserva entre aperturas de la hoja.</p>
+	 * <p>Adds to the Attacks tab any weapon (recognized in the config) the player
+	 * carries in their inventory that doesn't already have an entry there, with the default damage from
+	 * dndsheets-common.toml. Doesn't touch existing entries, so any manual adjustment
+	 * (including the die itself) is preserved between openings of the sheet.</p>
 	 */
 	private static void autoPopulateWeapons(JsonObject sheet) {
 		if (Minecraft.getInstance().player == null) return;
@@ -158,7 +158,7 @@ public class CharacterSheetLoadProcedure {
 
 	private static void addWeaponIfNew(JsonArray attacks, ItemStack stack, Set<String> knownItemIds, Set<String> seenThisScan) {
 		if (stack.isEmpty()) return;
-		String itemId = Config.weaponIdOf(stack); //Respeta la etiqueta NBT {dndsheets:{weapon:"..."}} si el ítem la lleva.
+		String itemId = Config.weaponIdOf(stack); //Honors the NBT tag {dndsheets:{weapon:"..."}} if the item carries it.
 		if (knownItemIds.contains(itemId) || seenThisScan.contains(itemId)) return;
 
 		Config.WeaponDefault weaponDefault = Config.weaponDefaultFor(itemId);
@@ -170,7 +170,7 @@ public class CharacterSheetLoadProcedure {
 		rollForm.addProperty("itemId", itemId);
 
 		JsonObject roll = new JsonObject();
-		roll.addProperty("context", "Daño");
+		roll.addProperty("context", "Damage");
 		roll.addProperty("expression", weaponDefault.dice() + " + $" + weaponDefault.ability());
 
 		JsonArray rollGroup = new JsonArray();

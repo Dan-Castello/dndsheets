@@ -5,8 +5,8 @@ import net.minecraft.world.item.ItemStack;
 import vazkii.patchouli.api.PatchouliAPI;
 
 /**
- * <p>Lo único que toca la API de Patchouli. No se carga si Patchouli no está instalado: ver
- * {@link PatchouliCompat}, que es quien decide.</p>
+ * <p>The only thing that touches the Patchouli API. Not loaded if Patchouli isn't installed: see
+ * {@link PatchouliCompat}, which is the one that decides.</p>
  */
 final class PatchouliBook {
 
@@ -15,13 +15,13 @@ final class PatchouliBook {
 	private PatchouliBook() {}
 
 	static boolean openOnClient() {
-		//Se traga cualquier fallo a propósito: si una versión de Patchouli cambia esto o el libro no
-		//llegó a cargar, la Guía tiene que seguir abriéndose. Devolver false manda al libro escrito.
+		//Swallows any failure on purpose: if a Patchouli version changes this or the book failed to
+		//load, the Guide still has to open. Returning false falls back to the written book.
 		try {
 			PatchouliAPI.get().openBookGUI(BOOK);
 			return true;
 		} catch (RuntimeException | LinkageError e) {
-			net.hawthorn.dndsheets.DndsheetsMod.LOGGER.warn("dndsheets: Patchouli está instalado pero no pude abrir la Guía ({}). Abro el libro de siempre.", e.toString());
+			net.hawthorn.dndsheets.DndsheetsMod.LOGGER.warn("dndsheets: Patchouli is installed but the Guide could not be opened ({}). Opening the regular book.", e.toString());
 			return false;
 		}
 	}

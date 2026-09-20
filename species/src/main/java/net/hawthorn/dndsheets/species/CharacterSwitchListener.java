@@ -7,22 +7,22 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * <p>Reconcilia Origins con el personaje que acaba de quedar activo (ver {@code CharacterSwitchedEvent}
- * en el core). Origins guarda una sola elección por CUENTA de jugador para cada capa — no sabe que
- * dndsheets tiene varios personajes — así que sin esto, el segundo personaje de alguien heredaba en
- * silencio la raza/trasfondo/clase del primero, sin selector propio y sin forma de cambiarla sin also
- * cambiar la del otro (el mismo origen "vivía" en un solo sitio compartido).</p>
+ * <p>Reconciles Origins with the character that just became active (see {@code CharacterSwitchedEvent}
+ * in the core). Origins stores a single choice per player ACCOUNT for each layer — it doesn't know
+ * dndsheets has multiple characters — so without this, someone's second character would silently
+ * inherit the race/background/class of the first, with no selector of its own and no way to change it
+ * without also changing the other's (the same origin "lived" in a single shared slot).</p>
  *
- * <p>La ficha de cada personaje ya guarda qué origen se le aplicó ({@code appliedRaceId}/
- * {@code appliedBackgroundId}/{@code appliedPresetId} — este último hace doble uso porque el id de
- * origen de clase y el id de preset son el mismo string a propósito, ver {@code SpeciesCommand}), así
- * que la ficha es la fuente de verdad real; esto solo empuja ese valor DE VUELTA a Origins para que su
- * selector muestre lo que corresponde a quien está activo ahora, no lo último que alguien haya elegido.</p>
+ * <p>Each character's sheet already stores which origin was applied to it ({@code appliedRaceId}/
+ * {@code appliedBackgroundId}/{@code appliedPresetId} — the latter does double duty because the class
+ * origin id and the preset id are the same string by design, see {@code SpeciesCommand}), so the sheet
+ * is the real source of truth; this just pushes that value BACK to Origins so its selector shows what
+ * corresponds to whoever is active now, not the last thing anyone chose.</p>
  *
- * <p>Si el personaje nuevo todavía no tiene nada aplicado en alguna capa, no se toca esa capa — Origins
- * se queda mostrando lo del personaje anterior hasta que el jugador elija algo con {@code /dndspecies
- * choose*} y sincronice; es preferible a "limpiar" la elección, porque Origins no tiene un método público
- * para dejar una capa sin elegir.</p>
+ * <p>If the new character doesn't have anything applied yet in some layer, that layer is left untouched —
+ * Origins keeps showing the previous character's choice until the player picks something with
+ * {@code /dndspecies choose*} and it syncs; that's preferable to "clearing" the choice, because Origins
+ * has no public method to leave a layer unchosen.</p>
  */
 @Mod.EventBusSubscriber
 public class CharacterSwitchListener {

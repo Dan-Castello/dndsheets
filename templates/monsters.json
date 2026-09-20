@@ -1,6 +1,6 @@
 [
   {
-    "_note": "Campos obligatorios: id. baseEntity (por defecto minecraft:zombie) es el mob vanilla usado para spawnearlo (visual/hitbox/sonidos) — se invoca con NoAI:1, así que no persigue ni se mueve solo, pero actúa solo en su turno (TurnManager) si el modo turnos está activo.",
+    "_note": "Required fields: id. baseEntity (default minecraft:zombie) is the vanilla mob used to spawn it (visuals/hitbox/sounds) — it is summoned with NoAI:1, so it neither chases nor moves on its own, but it acts by itself on its turn (TurnManager) if turn mode is active.",
     "id": "dndsheets:goblin",
     "name": "Goblin",
     "baseEntity": "minecraft:zombie",
@@ -9,13 +9,13 @@
     "proficiencyBonus": 2,
     "abilities": { "str": 8, "dex": 14, "con": 10, "int": 10, "wis": 8, "cha": 8 },
     "attacks": [
-      { "name": "Cimitarra", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "cortante" }
+      { "name": "Scimitar", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "slashing" }
     ]
   },
   {
-    "_note": "Un ataque con appliesEffect deja al objetivo con daño por turno (mismo StatusEffect que TurnManager.tickEffects ya aplica al empezar cada uno de sus turnos) — turns cuenta turnos del modo turnos, no ticks reales.",
+    "_note": "An attack with appliesEffect leaves the target taking damage each turn (the same StatusEffect that TurnManager.tickEffects already applies at the start of each of their turns) — turns counts turn-mode turns, not real ticks.",
     "id": "dndsheets:giant_spider",
-    "name": "Araña Gigante",
+    "name": "Giant Spider",
     "baseEntity": "minecraft:spider",
     "ac": 14,
     "hp": 26,
@@ -23,38 +23,38 @@
     "abilities": { "str": 14, "dex": 16, "con": 12, "int": 2, "wis": 11, "cha": 4 },
     "attacks": [
       {
-        "name": "Mordisco", "toHitAbility": "dex", "dice": "1d8", "damageAbility": "dex", "damageType": "perforante",
-        "appliesEffect": { "name": "veneno", "dice": "2d8", "turns": 3 }
+        "name": "Bite", "toHitAbility": "dex", "dice": "1d8", "damageAbility": "dex", "damageType": "piercing",
+        "appliesEffect": { "name": "poison", "dice": "2d8", "turns": 3 }
       }
     ]
   },
   {
-    "_note": "abilities_special: hechizos/ataques especiales del monstruo (salvación en vez de tirada de ataque) — mismo campo que \"attacks\" del jugador, pero con saveDc fijo en vez de calculado. También puede llevar appliesEffect.",
+    "_note": "abilities_special: the monster's special spells/attacks (a saving throw instead of an attack roll) — the same field as the player's \"attacks\", but with a fixed saveDc instead of a computed one. It can also carry appliesEffect.",
     "id": "dndsheets:fire_mage",
-    "name": "Mago de Fuego",
+    "name": "Fire Mage",
     "baseEntity": "minecraft:skeleton",
     "ac": 12,
     "hp": 20,
     "proficiencyBonus": 3,
     "abilities": { "str": 8, "dex": 12, "con": 12, "int": 16, "wis": 12, "cha": 10 },
     "attacks": [
-      { "name": "Bastón", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "contundente" }
+      { "name": "Quarterstaff", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "bludgeoning" }
     ],
     "abilities_special": [
-      { "name": "Bola de Fuego", "saveAbility": "dex", "saveDc": 13, "dice": "8d6", "halfOnSave": true, "damageType": "fuego" }
+      { "name": "Fireball", "saveAbility": "dex", "saveDc": 13, "dice": "8d6", "halfOnSave": true, "damageType": "fire" }
     ]
   },
   {
-    "_note": "baseEntity acepta CUALQUIER EntityType registrado, incluido uno de otro mod: si tienes el mod Easy NPC (easy_npc, sin modificar) instalado, 'easy_npc:humanoid' funciona igual que 'minecraft:zombie' arriba — se invoca con NoAI:1 y se le aplican las reglas de dndsheets sin ningún código extra, solo cambia el modelo/skin base.",
+    "_note": "baseEntity accepts ANY registered EntityType, including one from another mod: if you have the Easy NPC mod (easy_npc, unmodified) installed, 'easy_npc:humanoid' works the same as 'minecraft:zombie' above — it is summoned with NoAI:1 and the dndsheets rules apply to it with no extra code, only the base model/skin changes.",
     "id": "dndsheets:bandit",
-    "name": "Bandido",
+    "name": "Bandit",
     "baseEntity": "easy_npc:humanoid",
     "ac": 12,
     "hp": 11,
     "proficiencyBonus": 2,
     "abilities": { "str": 11, "dex": 12, "con": 12, "int": 10, "wis": 10, "cha": 10 },
     "attacks": [
-      { "name": "Cimitarra", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "cortante" }
+      { "name": "Scimitar", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "slashing" }
     ]
   }
 ]

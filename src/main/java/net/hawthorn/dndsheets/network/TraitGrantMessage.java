@@ -7,8 +7,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: eligió un rasgo en TraitGrantScreen, se lo concede al objetivo elegido antes
-//en PlayerPickerScreen (equivalente en GUI a /dndtraits grant).
+//Client (the DM) -> server: chose a trait in TraitGrantScreen, grants it to the target picked earlier
+//in PlayerPickerScreen (GUI equivalent of /dndtraits grant).
 public class TraitGrantMessage {
 	String targetUuid, traitId;
 

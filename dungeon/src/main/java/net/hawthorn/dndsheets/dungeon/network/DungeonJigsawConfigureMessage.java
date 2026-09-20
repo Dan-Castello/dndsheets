@@ -11,8 +11,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: aplica pool/inicio elegidos en DungeonJigsawConfigureScreen al jigsaw block
-//en pos, escribiendo Name/Target/Pool/Joint directo (ver DungeonManager.configureJigsaw).
+//Client (the DM) -> server: applies the pool/start chosen in DungeonJigsawConfigureScreen to the jigsaw block
+//at pos, writing Name/Target/Pool/Joint directly (see DungeonManager.configureJigsaw).
 public class DungeonJigsawConfigureMessage {
 	BlockPos pos;
 	String pool;
@@ -47,7 +47,7 @@ public class DungeonJigsawConfigureMessage {
 			if (!(dm.level().getBlockEntity(message.pos) instanceof JigsawBlockEntity jigsaw)) return;
 
 			DungeonManager.configureJigsaw(jigsaw, message.pool, message.isStart);
-			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.jigsaw_set", message.pool, (message.isStart ? " (pieza de inicio)." : ".")));
+			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.jigsaw_set", message.pool, (message.isStart ? Component.translatable("chat.dndsheets.dungeon.start_suffix") : Component.literal("."))));
 		});
 	}
 }

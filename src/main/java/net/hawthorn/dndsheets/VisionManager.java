@@ -16,52 +16,53 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * <p>La otra mitad del entorno, después de {@link Cover}: la luz. Estar a oscuras deja de ser decoración y
- * pasa a ser la regla de 5e —quien no ve, ataca con desventaja y le atacan con ventaja— usando el nivel de
- * luz que Minecraft ya calcula en cada bloque. Ver {@link Light} para los umbrales y por qué son los de
- * vanilla y no una escala propia.</p>
+ * <p>The other half of environment, after {@link Cover}: light. Being in the dark stops being decoration
+ * and becomes the 5e rule — those who can't see attack with disadvantage and are attacked with advantage —
+ * using the light level Minecraft already computes for every block. See {@link Light} for the thresholds
+ * and why they're vanilla's and not a scale of our own.</p>
  *
- * <p><b>Se apoya entero en piezas que ya existían.</b> La ceguera es {@link Condition#CEGADO}, con las siete
- * consecuencias que ya tenía desde la Fase 0; no hay una regla nueva de combate en ningún sitio. Lo único
- * que aporta esta clase es <em>cuándo</em> se pone y se quita.</p>
+ * <p><b>Rests entirely on pieces that already existed.</b> Blindness is {@link Condition#BLINDED}, with the
+ * seven consequences it has had since Phase 0; there is no new combat rule anywhere. The only thing this
+ * class contributes is <em>when</em> it's applied and removed.</p>
  *
- * <p><b>Llevar una antorcha en la mano cuenta como luz brillante.</b> Vanilla no ilumina desde la mano, así
- * que sin esto un personaje con una antorcha encendida en el puño estaría ciego en una cueva, que es
- * absurdo en la mesa y peor en pantalla. El nivel lo pone el propio bloque ({@code getLightEmission}), así
- * que un farol de otro mod cuenta sin que haya que apuntarlo en ninguna lista.</p>
+ * <p><b>Holding a torch in hand counts as bright light.</b> Vanilla doesn't light from the hand, so
+ * without this a character with a lit torch in their fist would be blind in a cave, which is absurd at
+ * the table and worse on screen. The level comes from the block itself ({@code getLightEmission}), so a
+ * lantern from another mod counts without having to be listed anywhere.</p>
  *
- * <p><b>Apagado por defecto</b> ({@code visionRules} en el toml, {@code /dndvision} en caliente). Es la
- * regla más intrusiva que puede tener este mod: cegar a quien pica piedra de noche cambia cómo se juega a
- * Minecraft fuera de la mesa, y el invariante de "si no has configurado nada, esto es Minecraft normal" pesa
- * más que la fidelidad. Creativo y espectador quedan siempre fuera, que es la salida práctica del DM.</p>
+ * <p><b>Off by default</b> ({@code visionRules} in the toml, {@code /dndvision} at runtime). It's the most
+ * intrusive rule this mod can have: blinding someone mining stone at night changes how Minecraft plays
+ * outside the table, and the invariant "if you haven't configured anything, this is normal Minecraft"
+ * outweighs fidelity. Creative and spectator are always excluded, which is the DM's practical escape
+ * hatch.</p>
  *
- * <p><b>Simplificado a propósito:</b> los monstruos ven en la oscuridad. En el SRD casi todos tienen visión
- * en la oscuridad, así que la aproximación acierta la mayoría de las veces, y la alternativa —mirar la luz
- * de cada entidad viva del mundo en cada tick— cuesta mucho más de lo que corrige. Un DM que quiera cegar a
- * un monstruo concreto ya tiene {@code /dndturns effect}.</p>
+ * <p><b>Deliberately simplified:</b> monsters see in the dark. In the SRD almost all of them have
+ * darkvision, so the approximation is right most of the time, and the alternative — checking the light
+ * around every living entity in the world every tick — costs far more than it fixes. A DM who wants to
+ * blind one specific monster already has {@code /dndturns effect}.</p>
  */
 @Mod.EventBusSubscriber
 public final class VisionManager {
-	/** Una vez por segundo: la luz de un bloque no cambia lo bastante deprisa como para mirarla 20 veces. */
+	/** Once per second: a block's light doesn't change fast enough to warrant checking it 20 times. */
 	private static final int CHECK_INTERVAL_TICKS = 20;
 
 	/**
-	 * Los efectos duran mucho más que el intervalo para que se solapen y no parpadeen entre comprobación y
-	 * comprobación. Y por encima de 200 ticks a propósito: por debajo de ese umbral vanilla hace parpadear
-	 * la visión nocturna para avisar de que se acaba, y aquí no se acaba, se está refrescando.
+	 * Effects last much longer than the interval so they overlap and don't flicker between one check and
+	 * the next. And deliberately above 200 ticks: below that threshold vanilla makes night vision flicker
+	 * to warn it's about to end, and here it isn't ending, it's being refreshed.
 	 */
 	private static final int EFFECT_TICKS = 240;
 
 	/**
-	 * <p>La "fuente" de una ceguera causada por la oscuridad. No es una entidad: es un negativo distinto de
-	 * {@link Combatant#NO_SOURCE}, así que no puede colisionar con el id de ninguna criatura ni confundirse
-	 * con "sin fuente".</p>
+	 * <p>The "source" of a blindness caused by darkness. It isn't an entity: it's a negative number distinct
+	 * from {@link Combatant#NO_SOURCE}, so it can't collide with any creature's id or be confused with
+	 * "no source".</p>
 	 *
-	 * <p>Existe porque quitar la condición sin saber quién la puso sería el mismo error de siempre: al salir
-	 * a la luz se borraría también la ceguera que acaba de echarte un conjuro o un DM. Marcar la fuente hace
-	 * la pertenencia exacta, y además sobrevive a un reinicio, cosa que un {@code Set} en memoria no hace —
-	 * y las condiciones sí se persisten, así que un marcador que se pierde deja al jugador ciego para
-	 * siempre.</p>
+	 * <p>It exists because removing the condition without knowing who applied it would be the same old
+	 * mistake: stepping into the light would also clear a blindness that a spell or a DM just inflicted.
+	 * Marking the source makes ownership exact, and it also survives a restart, which an in-memory
+	 * {@code Set} does not — and conditions ARE persisted, so a marker that gets lost would leave the
+	 * player blind forever.</p>
 	 */
 	static final int DARKNESS_SOURCE = -2;
 
@@ -78,7 +79,7 @@ public final class VisionManager {
 
 	private static void update(ServerPlayer player) {
 		Combatant combatant = Combatant.of(player);
-		if (combatant == null) return; //Sin ficha, Minecraft normal.
+		if (combatant == null) return; //No sheet, normal Minecraft.
 
 		if (player.isCreative() || player.isSpectator()) {
 			lift(player, combatant);
@@ -89,8 +90,8 @@ public final class VisionManager {
 		boolean darkvision = CharacterRules.darkvisionFeetFor(sheet) > 0;
 		Light around = rawLightAround(player);
 
-		//La visión nocturna se concede por la luz REAL, no por la que se ve tras aplicarla: si no, en cuanto
-		//el rasgo convierte la oscuridad en penumbra dejaría de haber motivo para concederla.
+		//Night vision is granted based on the REAL light, not the light seen after applying it: otherwise,
+		//as soon as the trait turns darkness into dim light there would stop being a reason to grant it.
 		if (around == Light.DARK && darkvision) grant(player, MobEffects.NIGHT_VISION);
 
 		if (!around.withDarkvision(darkvision).blinds()) {
@@ -99,22 +100,22 @@ public final class VisionManager {
 		}
 
 		grant(player, MobEffects.DARKNESS);
-		if (combatant.hasCondition(Condition.CEGADO)) return;
-		combatant.addCondition(Condition.CEGADO, DARKNESS_SOURCE);
+		if (combatant.hasCondition(Condition.BLINDED)) return;
+		combatant.addCondition(Condition.BLINDED, DARKNESS_SOURCE);
 		player.sendSystemMessage(Component.translatable("chat.dndsheets.vision.blinded")
 			.withStyle(ChatFormatting.DARK_GRAY));
 	}
 
 	/**
-	 * <p>Si esta persona está en penumbra AHORA MISMO: ni luz brillante, ni tan oscura como para contar como
-	 * ciega ({@link Condition#CEGADO}, que ya tiene su propia mecánica completa). Es la mitad de la regla de
-	 * luz que {@link Light} documentaba como deliberadamente sin efecto ("da desventaja en las pruebas de
-	 * Percepción que dependen de la vista, y aquí no hace nada mecánico") — ver
-	 * {@code RollAnnouncerProcedure}, el único llamador, para dónde se convierte en desventaja de verdad.</p>
+	 * <p>Whether this person is in dim light RIGHT NOW: neither bright light nor dark enough to count as
+	 * blind ({@link Condition#BLINDED}, which already has its own complete mechanic). This is the half of
+	 * the light rule that {@link Light} documented as deliberately having no effect ("gives disadvantage on
+	 * Perception checks that rely on sight, and here it does nothing mechanical") — see
+	 * {@code RollAnnouncerProcedure}, the only caller, for where it actually becomes disadvantage.</p>
 	 *
-	 * <p>Mismo gate que el resto de esta clase: apagado si {@code visionRules} está desactivado, o si quien
-	 * pregunta está en creativo/espectador. Sin esto, la desventaja de Percepción encendería sola aunque el
-	 * DM nunca haya activado la regla de visión.</p>
+	 * <p>Same gate as the rest of this class: off if {@code visionRules} is disabled, or if whoever is
+	 * asking is in creative/spectator. Without this, Perception disadvantage would turn on by itself even
+	 * if the DM never enabled the vision rule.</p>
 	 */
 	public static boolean inDimLight(ServerPlayer player) {
 		if (!Config.visionRules() || player.isCreative() || player.isSpectator()) return false;
@@ -123,19 +124,19 @@ public final class VisionManager {
 		return rawLightAround(player).withDarkvision(darkvision) == Light.DIM;
 	}
 
-	/** Devuelve a este jugador a la vista, si es que se la habíamos quitado nosotros. */
+	/** Restores this player's sight, if it was us who had taken it away. */
 	private static void lift(ServerPlayer player, Combatant combatant) {
 		remove(player, MobEffects.DARKNESS);
 		remove(player, MobEffects.NIGHT_VISION);
-		if (combatant.sourceOf(Condition.CEGADO) != DARKNESS_SOURCE) return;
-		combatant.removeCondition(Condition.CEGADO);
+		if (combatant.sourceOf(Condition.BLINDED) != DARKNESS_SOURCE) return;
+		combatant.removeCondition(Condition.BLINDED);
 		player.sendSystemMessage(Component.translatable("chat.dndsheets.vision.restored").withStyle(ChatFormatting.DARK_GRAY));
 	}
 
 	/**
-	 * Levanta la regla de todo el mundo. La llama {@code /dndvision off}: sin esto, apagar la regla dejaría
-	 * ciego para siempre a quien estuviera a oscuras en ese momento, porque el tick que lo arreglaría es el
-	 * mismo que se acaba de apagar.
+	 * Lifts the rule for everyone. Called by {@code /dndvision off}: without this, turning off the rule
+	 * would leave whoever was in the dark at that moment blind forever, because the tick that would fix it
+	 * is the very one that was just turned off.
 	 */
 	public static void liftAll(MinecraftServer server) {
 		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
@@ -148,24 +149,24 @@ public final class VisionManager {
 		if (lightEmission(player.getMainHandItem()) > 0 || lightEmission(player.getOffhandItem()) > 0) {
 			return Light.BRIGHT;
 		}
-		//A la altura de los ojos y no de los pies: es donde se mira desde, y estando de pie en un túnel
-		//iluminado por arriba las dos casillas pueden dar números distintos.
+		//At eye height, not at the feet: that's where you're looking from, and while standing in a tunnel
+		//lit from above the two blocks can give different numbers.
 		BlockPos eyes = BlockPos.containing(player.getEyePosition());
 		return Light.fromLightLevel(player.level().getMaxLocalRawBrightness(eyes));
 	}
 
 	private static int lightEmission(ItemStack stack) {
-		//getLightEmission() del estado está deprecado en vanilla porque lo normal es preguntárselo al mundo
-		//en una posición; aquí el bloque está en una mano y no hay posición que dar, así que la versión del
-		//estado es justo la correcta. El número lo pone el bloque (antorcha 14, farol 15), no una tabla
-		//nuestra: la lámpara de otro mod cuenta sola.
+		//The state's getLightEmission() is deprecated in vanilla because the normal way is to ask the world
+		//at a position; here the block is in a hand and there's no position to give, so the state version
+		//is exactly the right one. The number comes from the block (torch 14, lantern 15), not from a table
+		//of ours: a lamp from another mod counts on its own.
 		return stack.getItem() instanceof BlockItem item
 			? item.getBlock().defaultBlockState().getLightEmission() : 0;
 	}
 
 	private static void grant(ServerPlayer player, MobEffect effect) {
-		//ambient=true no es cosmético: es lo que marca estos efectos como nuestros, para poder quitarlos sin
-		//tocar la visión nocturna de una poción o de un DM (ver remove).
+		//ambient=true isn't cosmetic: it's what marks these effects as ours, so they can be removed without
+		//touching night vision from a potion or from a DM (see remove).
 		player.addEffect(new MobEffectInstance(effect, EFFECT_TICKS, 0, true, false, true));
 	}
 

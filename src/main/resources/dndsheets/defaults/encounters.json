@@ -1,22 +1,22 @@
 [
   {
-    "id": "dndsheets:emboscada_goblin", "name": "content.dndsheets.encounter.emboscada_goblin",
+    "id": "dndsheets:goblin_ambush", "name": "content.dndsheets.encounter.goblin_ambush",
     "monsters": ["dndsheets:goblin x4"]
   },
   {
-    "id": "dndsheets:patrulla_hobgoblin", "name": "content.dndsheets.encounter.patrulla_hobgoblin",
+    "id": "dndsheets:hobgoblin_patrol", "name": "content.dndsheets.encounter.hobgoblin_patrol",
     "monsters": ["dndsheets:hobgoblin x2", "dndsheets:goblin x3"]
   },
   {
-    "id": "dndsheets:manada_lobos", "name": "content.dndsheets.encounter.manada_lobos",
+    "id": "dndsheets:wolf_pack", "name": "content.dndsheets.encounter.wolf_pack",
     "monsters": ["dndsheets:wolf x3", "dndsheets:dire_wolf"]
   },
   {
-    "id": "dndsheets:cripta", "name": "content.dndsheets.encounter.cripta",
+    "id": "dndsheets:crypt_guardians", "name": "content.dndsheets.encounter.crypt_guardians",
     "monsters": ["dndsheets:skeleton x3", "dndsheets:zombie x2"]
   },
   {
-    "id": "dndsheets:bandidos", "name": "content.dndsheets.encounter.bandidos",
+    "id": "dndsheets:highway_bandits", "name": "content.dndsheets.encounter.highway_bandits",
     "monsters": ["dndsheets:bandit x4", "dndsheets:bandit_captain"]
   }
 ]

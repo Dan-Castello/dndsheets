@@ -1,37 +1,37 @@
-# Templates de dndsheets
+# dndsheets templates
 
-Punto de partida para crear contenido propio (armas, hechizos, monstruos, presets, rasgos) sin
-tener que adivinar el formato leyendo el código fuente. Estos archivos **no se cargan solos**:
-son plantillas para copiar, no contenido real de una partida.
+A starting point for creating your own content (weapons, spells, monsters, presets, traits) without
+having to guess the format by reading the source code. These files **do not load by themselves**:
+they are templates to copy, not real content of a game.
 
-## Cómo usarlos
+## How to use them
 
-1. Copiá el `.json` que te interese a la carpeta del mundo real:
-   `<mundo>/dndsheets/<tipo>/tu_archivo.json` (p. ej. `dndsheets/weapons/mis_armas.json`).
-   Esa carpeta se crea sola al arrancar el servidor si no existe.
-2. Editá los campos que quieras — cualquier nombre de archivo vale, y cualquier `.json` que haya
-   ahí dentro se carga solo al arrancar el servidor. Para recargar sin reiniciar, usá el comando
-   `load` del tipo correspondiente (`/dndweapons load`, `/dndspells load`, `/dndmonsters load`,
+1. Copy the `.json` you're interested in to the real world folder:
+   `<world>/dndsheets/<type>/your_file.json` (e.g. `dndsheets/weapons/my_weapons.json`).
+   That folder is created automatically when the server starts if it doesn't exist.
+2. Edit whatever fields you want — any file name works, and any `.json` in there is loaded
+   automatically when the server starts. To reload without restarting, use the `load` command
+   of the matching type (`/dndweapons load`, `/dndspells load`, `/dndmonsters load`,
    `/dndpresets load`, `/dndtraits load`).
-3. Borrá las entradas de ejemplo que no uses — son solo para mostrar la forma de cada campo.
+3. Delete the example entries you don't use — they are only there to show the shape of each field.
 
-## Archivos
+## Files
 
-| Archivo | Va en | Qué define |
+| File | Goes in | What it defines |
 |---|---|---|
-| `weapons.json` | `dndsheets/weapons/` | Armas cuerpo a cuerpo/a distancia: dado de daño, característica, a una/dos manos, restricción por clase, reskin. |
-| `spells.json` | `dndsheets/spells/` | Hechizos: ataque, salvación o curación; área de efecto; concentración. |
-| `monsters.json` | `dndsheets/monsters/` | Bloques de estadísticas de monstruo: CA, PG, características, ataques y hechizos especiales. |
-| `presets.json` | `dndsheets/presets/` | Presets de clase: características de partida, arma inicial, rasgos y hechizos concedidos, espacios de conjuro. |
-| `traits.json` | `dndsheets/traits/` | Rasgos (pasivas de clase): golpe a mano desnuda con dado propio, dados extra de Ataque Furtivo. |
-| `resourcepack/` | un resource pack aparte | Cómo reskinear un arma personalizada (`customModelData`) y cómo reskinear un tipo de monstruo entero por textura. |
+| `weapons.json` | `dndsheets/weapons/` | Melee/ranged weapons: damage die, ability, one/two hands, class restriction, reskin. |
+| `spells.json` | `dndsheets/spells/` | Spells: attack, saving throw or healing; area of effect; concentration. |
+| `monsters.json` | `dndsheets/monsters/` | Monster stat blocks: AC, HP, abilities, attacks and special spells. |
+| `presets.json` | `dndsheets/presets/` | Class presets: starting ability scores, starting weapon, granted traits and spells, spell slots. |
+| `traits.json` | `dndsheets/traits/` | Traits (class passives): bare-handed strike with its own die, extra Sneak Attack dice. |
+| `resourcepack/` | a separate resource pack | How to reskin a custom weapon (`customModelData`) and how to reskin a whole monster type by texture. |
 
-Cada `.json` de acá tiene varias entradas de ejemplo para mostrar las variantes de cada campo
-(un arma a una mano, una versátil, una a dos manos, una restringida por clase...) — no hace falta
-usarlas todas, es una referencia.
+Each `.json` here has several example entries to show the variants of each field
+(a one-handed weapon, a versatile one, a two-handed one, one restricted by class...) — you don't
+have to use them all, it's a reference.
 
-## Campos opcionales, comportamiento por defecto
+## Optional fields, default behavior
 
-En todos los tipos de contenido, un campo que no pongas toma un valor por defecto razonable (está
-anotado en cada plantilla). Nunca hace falta escribir el JSON completo — solo lo que quieras
-cambiar respecto al default.
+In every content type, a field you leave out takes a reasonable default (it is
+annotated in each template). You never need to write the full JSON — only what you want to
+change from the default.

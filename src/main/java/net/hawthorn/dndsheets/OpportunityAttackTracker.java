@@ -11,20 +11,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-//Ataques de oportunidad del modo turnos — extraído de TurnManager (ver hallazgo F3): qué
-//monstruos tenían a quien se mueve al alcance cuerpo a cuerpo, para dispararles la reacción en cuanto se
-//alejan sin desengancharse. Estado propio; recibe el orden de turnos como parámetro en vez de leer el
-//campo de TurnManager directamente.
+//Opportunity attacks for turn mode — extracted from TurnManager (see finding F3): which
+//monsters had the mover within melee reach, so their reaction fires the moment they move away without
+//disengaging. Owns its own state; receives the turn order as a parameter instead of reading
+//TurnManager's field directly.
 class OpportunityAttackTracker {
-	//Alcance cuerpo a cuerpo aproximado (mismo rango que ya usa Minecraft para golpear).
-	//Package-private a propósito: MonsterActionManager reusa este mismo valor para decidir cuándo un
-	//monstruo propio ya está lo bastante cerca para atacar sin acercarse más (ver autoAct/moveTowardIfNeeded).
+	//Approximate melee reach (same range Minecraft already uses for hitting).
+	//Package-private on purpose: MonsterActionManager reuses this same value to decide when one of our own
+	//monsters is already close enough to attack without moving closer (see autoAct/moveTowardIfNeeded).
 	static final double MELEE_REACH = 3.0;
 	private final Set<Integer> withinReach = new HashSet<>();
 
-	//Se guarda la última posición ya comprobada para saltar el recorrido de todos los combatientes si no
-	//cambió desde el tick anterior — checkOpportunityAttacks corría en cada tick del jugador con el turno,
-	//incluso parado quieto.
+	//The last checked position is stored to skip iterating over all combatants if it hasn't changed since
+	//the previous tick — checkOpportunityAttacks used to run on every tick of the player with the turn,
+	//even while standing still.
 	private final Map<Integer, Vec3> lastCheckedPos = new HashMap<>();
 
 	void clear() {
@@ -35,19 +35,19 @@ class OpportunityAttackTracker {
 		if (withinReach.remove(oldId)) withinReach.add(newId);
 	}
 
-	//Al empezar el turno de un jugador, se anota qué monstruos lo tienen ya al alcance (adyacentes desde el
-	//principio, sin "salir" de nada) para no dispararles una reacción falsa en el primer tick de su turno.
+	//When a player's turn starts, we note which monsters already have them within reach (adjacent from the
+	//start, without "leaving" anything) so as not to fire a false reaction on the first tick of their turn.
 	void seedReachState(ServerLevel level, ServerPlayer mover, List<TurnManager.TurnEntry> order) {
 		withinReach.clear();
-		//Sin esto, si el jugador termina un turno anterior y empieza este SIN moverse de esa posición, el
-		//primer tick del turno nuevo vería la misma posición "ya comprobada" del turno anterior y se
-		//saltaría el chequeo de oportunidad que en realidad hace falta reevaluar desde cero.
+		//Without this, if the player ends a previous turn and starts this one WITHOUT moving from that
+		//position, the first tick of the new turn would see the same "already checked" position from the
+		//previous turn and would skip the opportunity check that actually needs to be reevaluated from scratch.
 		lastCheckedPos.remove(mover.getId());
 		for (TurnManager.TurnEntry entry : order) {
 			if (entry.entityId() == mover.getId()) continue;
 			Entity entity = level.getEntity(entry.entityId());
-			//Un jefe con reloj propio queda fuera: se mueve constantemente, así que provocaría ataques de
-			//oportunidad sin parar y el combate se convertiría en un goteo de tiradas de reacción.
+			//A boss with its own clock is excluded: it moves constantly, so it would trigger opportunity
+			//attacks nonstop and combat would turn into a drip-feed of reaction rolls.
 			if (entity != null && MonsterRegistry.statBlockOf(entity) != null && !MonsterRegistry.isOffClock(entity)
 					&& entity.position().distanceTo(mover.position()) <= MELEE_REACH) {
 				withinReach.add(entry.entityId());
@@ -55,25 +55,25 @@ class OpportunityAttackTracker {
 		}
 	}
 
-	//Llamado cada tick mientras el jugador que se mueve libremente (tiene el turno) sigue en pie: cualquier
-	//monstruo del orden de turnos que estuviera a alcance cuerpo a cuerpo el tick anterior y ya no lo esté
-	//ahora (se alejó sin desengancharse) gasta su reacción en un ataque de oportunidad con su primer ataque
-	//real disponible. Simplificación deliberada: solo monstruos, no PvP entre jugadores (los demás
-	//jugadores están anclados y no pueden moverse de todos modos mientras no sea su turno).
+	//Called every tick while the player who's free to move (has the turn) is still alive: any monster in
+	//the turn order that was within melee reach the previous tick and isn't anymore (moved away without
+	//disengaging) spends its reaction on an opportunity attack with its first available real attack.
+	//Deliberate simplification: monsters only, no PvP between players (other players are anchored and
+	//can't move anyway while it isn't their turn).
 	void checkOpportunityAttacks(ServerLevel level, ServerPlayer mover, List<TurnManager.TurnEntry> order) {
-		//Desengancharse: alejarse deja de provocar reacciones este turno. Se sale ANTES de recorrer nada,
-		//pero sin tocar withinReach — cuando el turno acabe y la acción caduque, el registro de quién lo
-		//tenía a alcance tiene que seguir siendo el bueno.
+		//Disengaging: moving away stops triggering reactions this turn. We return BEFORE iterating anything,
+		//but without touching withinReach — once the turn ends and the action expires, the record of who
+		//had them in reach needs to still be accurate.
 		if (TurnActionManager.isDisengaged(mover)) return;
 		Vec3 pos = mover.position();
-		if (pos.equals(lastCheckedPos.get(mover.getId()))) return; //Sin cambio de posición, nada que reevaluar.
+		if (pos.equals(lastCheckedPos.get(mover.getId()))) return; //No position change, nothing to reevaluate.
 		lastCheckedPos.put(mover.getId(), pos);
 
 		for (TurnManager.TurnEntry entry : order) {
 			if (entry.entityId() == mover.getId()) continue;
 			Entity entity = level.getEntity(entry.entityId());
 			if (entity == null || !entity.isAlive() || MonsterRegistry.statBlockOf(entity) == null) continue;
-			if (MonsterRegistry.isOffClock(entity)) continue; //Fuera del orden, fuera de las reacciones.
+			if (MonsterRegistry.isOffClock(entity)) continue; //Out of the order, out of reactions.
 
 
 			boolean nowInReach = entity.position().distanceTo(mover.position()) <= MELEE_REACH;

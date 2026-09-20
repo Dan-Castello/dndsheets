@@ -4,29 +4,29 @@ import com.google.gson.JsonObject;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * <p>Recursos de <b>una vez por descanso</b> (Segundo Aliento, Expulsar Muertos Vivientes, Recuperación
- * Arcana): se gastan, y un descanso los devuelve.</p>
+ * <p><b>Once-per-rest</b> resources (Second Wind, Turn Undead, Arcane Recovery): they get spent,
+ * and a rest returns them.</p>
  *
- * <p>Vivían en un {@code Set<UUID>} por manager, indexado por <b>jugador</b>. Eso está mal por dos motivos
- * distintos, y los dos se notan jugando:</p>
+ * <p>They used to live in a {@code Set<UUID>} per manager, indexed by <b>player</b>. That's wrong for two
+ * distinct reasons, and both show up while playing:</p>
  *
  * <ul>
- *   <li><b>Son del personaje, no de quien lo lleva.</b> Con dos personajes, gastar el Segundo Aliento con
- *       uno se lo gastaba al otro — la misma familia de fallo que el nivel y la vida compartidos.</li>
- *   <li><b>No sobrevivían a un reinicio.</b> El conjunto vive en memoria, así que reiniciar el servidor le
- *       devolvía a todo el mundo sus recursos gastados sin haber descansado.</li>
+ *   <li><b>They belong to the character, not whoever's playing it.</b> With two characters, spending
+ *       Second Wind on one also spent it for the other — the same failure family as shared level and HP.</li>
+ *   <li><b>They didn't survive a restart.</b> The set lives in memory, so restarting the server gave
+ *       everyone back their spent resources without having rested.</li>
  * </ul>
  *
- * <p>En la hoja los dos problemas desaparecen a la vez, y de paso queda donde ya viven el Castigo armado y
- * el dado de Inspiración, que siempre estuvieron bien.</p>
+ * <p>Storing it on the sheet makes both problems disappear at once, and it ends up alongside where
+ * Smite-prepared and the Inspiration die already live, which were always fine.</p>
  */
 final class RestResource {
 
-	/** Segundo Aliento del guerrero: una vez por descanso corto o largo. */
+	/** Fighter's Second Wind: once per short or long rest. */
 	static final String SECOND_WIND = "secondWindUsed";
-	/** Canalizar Divinidad del clérigo: igual, corto o largo. */
+	/** Cleric's Channel Divinity: same, short or long. */
 	static final String CHANNEL_DIVINITY = "channelDivinityUsed";
-	/** Recuperación Arcana del mago: solo la devuelve un descanso LARGO. */
+	/** Wizard's Arcane Recovery: only returned by a LONG rest. */
 	static final String ARCANE_RECOVERY = "arcaneRecoveryUsed";
 
 	private RestResource() {
@@ -37,8 +37,8 @@ final class RestResource {
 	}
 
 	/**
-	 * <p>Lo gasta. Devuelve {@code false} si ya estaba gastado, que es la comprobación y el gasto en una sola
-	 * llamada — igual que hacía {@code Set.add}, para que quien llama no tenga que acordarse de hacer las dos.</p>
+	 * <p>Spends it. Returns {@code false} if it was already spent, which combines the check and the spend
+	 * into one call — same as {@code Set.add} used to, so the caller doesn't have to remember to do both.</p>
 	 */
 	static boolean spend(ServerPlayer player, String key) {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
@@ -48,7 +48,7 @@ final class RestResource {
 		return true;
 	}
 
-	/** Lo devuelve. No hace nada si no estaba gastado, para no escribir la hoja en cada descanso de cada uno. */
+	/** Returns it. Does nothing if it wasn't spent, to avoid writing the sheet on every rest for everyone. */
 	static void restore(ServerPlayer player, String key) {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (!isSpent(sheet, key)) return;

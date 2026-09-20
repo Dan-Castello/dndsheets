@@ -8,13 +8,13 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>Las subclases que este personaje puede elegir <b>ahora</b>. La lista la manda el servidor
- * ({@code BrowseListMessage.Kind.SUBCLASS}) porque depende de dos cosas que el cliente no decide: qué
- * preset lleva puesto y qué nivel tiene.</p>
+ * <p>The subclasses this character can choose <b>right now</b>. The list is sent by the server
+ * ({@code BrowseListMessage.Kind.SUBCLASS}) because it depends on two things the client doesn't decide:
+ * which preset is applied and what level the character is.</p>
  *
- * <p>La lista vacía no es un error, es la respuesta correcta a "todavía no": un guerrero de nivel 1 no
- * elige arquetipo hasta el 3. Por eso el mensaje de vacío dice el porqué en vez de dejar un panel en
- * blanco, que es lo que se reporta como fallo.</p>
+ * <p>An empty list isn't an error, it's the correct answer to "not yet": a level 1 fighter doesn't
+ * choose an archetype until level 3. That's why the empty message states the reason instead of leaving
+ * a blank panel, which is what gets reported as a bug.</p>
  */
 public class SubclassScreen extends ListPickerScreen {
 

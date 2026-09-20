@@ -3,11 +3,12 @@ plugins {
     id 'net.minecraftforge.gradle' version '6.0.54'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id 'com.hypherionmc.modutils.modpublisher' version '2.2.3'
 }
 
-version = '1.0.2'
+version = '2.2.1'
 group = 'net.hawthorn.dndsheets'
-archivesBaseName = 'dndsheets'
+archivesBaseName = 'vttminerpg'
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
@@ -31,6 +32,27 @@ minecraft {
             }
         }
 
+        // In-GAME tests, with nobody watching: starts a server, places the arena, runs each
+        // @GameTest and exits. The exit code is the number of tests that failed, so it works as-is
+        // in CI or in a hook.
+        //
+        //     ./gradlew runGameTestServer
+        //
+        // It is the other half of invariant 11: JsonContentSelfTest covers everything that can be tested
+        // standing up, and this covers what can't —a real entity, with its NBT, in a real world—, which until
+        // now was only checked by playing.
+        gameTestServer {
+            workingDirectory project.file('runGameTest')
+
+            property 'forge.logging.console.level', 'info'
+
+            mods {
+                dndsheets {
+                    source sourceSets.main
+                }
+            }
+        }
+
         server {
             workingDirectory project.file('runServer')
 
@@ -46,22 +68,22 @@ minecraft {
     }
 }
 
-// --- Como se prueba esto, que costo cinco arranques averiguarlo ---
+// --- How this is tested, which took five startups to work out ---
 //
-// El cliente de desarrollo (runClient) NO puede cargar mods de produccion que hagan mixin sobre
-// clases de vanilla. Se probaron uno a uno y fallan todos, cada uno un arranque: Oculus, Patchouli,
-// LionfishAPI, Curios y Citadel. Siempre el mismo motivo: el mod referencia nombres SRG (f_19803_,
-// m_8097_, m_91087_) y este entorno corre con mapeos parchment, donde esos nombres no existen.
-// Pasar el jar por fg.deobf arregla su bytecode pero no sus mixins; activar mixin.env.remapRefMap
-// arregla los mixins del jar deobfeado y rompe los de todos los demas. No hay combinacion que valga.
+// The development client (runClient) CANNOT load production mods that mixin into vanilla
+// classes. They were tried one by one and all fail, each costing a startup: Oculus, Patchouli,
+// LionfishAPI, Curios and Citadel. Always the same reason: the mod references SRG names (f_19803_,
+// m_8097_, m_91087_) and this environment runs with parchment mappings, where those names don't exist.
+// Passing the jar through fg.deobf fixes its bytecode but not its mixins; enabling mixin.env.remapRefMap
+// fixes the deobfuscated jar's mixins and breaks everyone else's. No combination works.
 //
-// Asi que runClient/mods se queda VACIO: runClient sirve para desarrollar este mod, y para eso
-// sobra. Las integraciones (packs de aspecto, Patchouli, Curios) se prueban donde se van a usar:
+// So runClient/mods stays EMPTY: runClient is for developing this mod, and for that it is
+// plenty. The integrations (appearance packs, Patchouli, Curios) are tested where they will be used:
 //
-//     ./gradlew build   ->   build/libs/dndsheets-1.0.2.jar   ->   instalacion normal de 1.20.1
+//     ./gradlew build   ->   build/libs/vttminerpg-2.2.1.jar   ->   normal 1.20.1 install
 //
-// Ahi todo es de produccion y todo casa.
-// tools/preflight_mods.py sigue sirviendo para la instalacion real: dice que falta antes de arrancar.
+// There everything is production and everything matches.
+// tools/preflight_mods.py is still useful for the real install: it tells you what's missing before starting.
 
 configurations {
     shade
@@ -69,69 +91,108 @@ configurations {
 }
 
 repositories {
-    // Curios API. Dependencia BLANDA: solo compileOnly, nunca se empaqueta ni se exige en runtime — el
-    // mod arranca y funciona igual sin Curios instalado (ver CuriosCompat y la entrada opcional de
-    // mods.toml). Si este maven estuviera caido, lo unico que se rompe es compilar, no el mod publicado.
+    // Curios API. SOFT dependency: compileOnly only, never packaged or required at runtime — the
+    // mod starts and works the same without Curios installed (see CuriosCompat and the optional entry in
+    // mods.toml). If this maven were down, the only thing that breaks is compiling, not the published mod.
     maven { url = "https://maven.theillusivec4.top/" }
 
-    // Patchouli. Misma clase de dependencia que Curios: BLANDA y solo compileOnly. Es el mod estandar
-    // para manuales dentro del juego, y la Guia de este mod es exactamente eso. Sin el instalado, la
-    // Guia sigue abriendose en el libro escrito de siempre (ver PatchouliCompat).
+    // Patchouli. The same kind of dependency as Curios: SOFT and compileOnly only. It is the standard mod
+    // for in-game manuals, and this mod's Guide is exactly that. Without it installed, the
+    // Guide still opens as the usual written book (see PatchouliCompat).
     maven { url = "https://maven.blamejared.com" }
+
+    // Jade. The same kind of dependency as Curios and Patchouli: SOFT and compileOnly only. Jade doesn't publish
+    // a maven of its own, so it is taken from CurseMaven. The group filter is what keeps this repo
+    // from getting in the middle of resolving Forge or the project's libraries.
+    maven {
+        url = "https://cursemaven.com"
+        content { includeGroup "curse.maven" }
+    }
+
+    // Pehkui. Another SOFT dependency (see PehkuiCompat). It is taken from Modrinth's maven, just like Origins
+    // in species/build.gradle, and with the same group filter.
+    maven {
+        url = "https://api.modrinth.com/maven"
+        content { includeGroup "maven.modrinth" }
+    }
 }
 
 dependencies {
-    // 47.4.22 y no 47.2.0: varios mods que se usan para probar la integracion (FTB Library, Easy NPC,
-    // Carry On Extend) exigen 47.3+ o 47.4+, y con 47.2.0 el cliente de desarrollo ni arranca. Es la
-    // misma 1.20.1; mods.toml no pide ninguna version de Forge, asi que esto no cambia lo que exige el
-    // mod publicado, solo con que se compila y se prueba.
+    // 47.4.22 and not 47.2.0: several mods used to test the integration (FTB Library, Easy NPC,
+    // Carry On Extend) require 47.3+ or 47.4+, and with 47.2.0 the development client doesn't even start. It is the
+    // same 1.20.1; mods.toml asks for no Forge version, so this doesn't change what the published
+    // mod requires, only what it is compiled and tested with.
     minecraft 'net.minecraftforge:forge:1.20.1-47.4.22'
     // https://mvnrepository.com/artifact/io.github.tfriedrichs/dicebot
     minecraftLibrary 'io.github.tfriedrichs:dicebot:1.0.0'
     shade 'io.github.tfriedrichs:dicebot:1.0.0'
 
-    // El clasificador "api" y no el jar completo: es lo unico que hace falta para compilar contra Curios,
-    // y deja claro que no se depende de su implementacion. Se fija una version TEMPRANA de la 5.x a
-    // proposito: los dos metodos que se usan (CuriosApi.getCuriosInventory y getEquippedCurios) existen
-    // desde el principio, y compilar contra la mas antigua es lo que hace que el mod funcione con
-    // cualquier Curios que el usuario tenga instalado, no solo con el ultimo.
+    // The "api" classifier and not the full jar: it is all that is needed to compile against Curios,
+    // and it makes clear that its implementation is not depended on. An EARLY 5.x version is pinned on
+    // purpose: the two methods that are used (CuriosApi.getCuriosInventory and getEquippedCurios) have existed
+    // from the start, and compiling against the oldest is what makes the mod work with
+    // whatever Curios the user has installed, not just the latest.
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:5.4.7+1.20.1:api")
 
-    // Solo el artefacto "api", que es lo unico que se toca: PatchouliAPI.get().
+    // Pehkui 3.7.6, the OLDEST 1.20.1 published. The same criterion as Curios and Jade: the only thing that is
+    // called (ScaleTypes.BASE.getScaleData().setScale/setTargetScale) has existed for many versions, and
+    // compiling against the oldest is what makes any Pehkui the player has installed work.
+    // t5W7Jfwy = the project; rUlbXz1h = that version.
+    compileOnly fg.deobf("maven.modrinth:t5W7Jfwy:rUlbXz1h")
+
+    // Jade 11.8.0, the OLDEST 1.20.1 that already has the current shape of the plugin API. The same criterion
+    // as Curios and for the same reason: compiling against the oldest is what makes the mod
+    // work with whatever Jade the player has installed, not just the latest. fg.deobf is needed because
+    // the signatures of Jade's API name vanilla types (Entity, CompoundTag) and the published jar
+    // ships them with SRG names.
+    compileOnly fg.deobf("curse.maven:jade-324717:5072729")
+
+    // Only the "api" artifact, which is all that is touched: PatchouliAPI.get().
     compileOnly fg.deobf("vazkii.patchouli:Patchouli:1.20.1-85-FORGE:api")
 
-    // NO se anade el jar completo como runtimeOnly. Probado, y el resultado es el mismo callejon que
-    // con Curios, solo que un paso mas alla: puesto a mano en runClient/mods, Patchouli muere al
-    // arrancar llamando a Minecraft.m_91087_() (el nombre SRG de getInstance) desde su
-    // BookCrashHandler; pasado por fg.deobf, esa llamada se arregla pero fallan sus mixins, y
-    // activar mixin.env.remapRefMap para arreglarlos rompe los mixins de cualquier otro mod de
-    // produccion con mixins que se cargue en el mismo cliente —Citadel el primero cuando se probo—.
-    // Un cliente de desarrollo no puede tener a la vez mods deobfeados y mods de produccion con
-    // mixins, y por eso runClient/mods se queda vacio (ver arriba).
+    // The full jar is NOT added as runtimeOnly. Tested, and the result is the same dead end as
+    // with Curios, just one step further: put by hand in runClient/mods, Patchouli dies on
+    // startup calling Minecraft.m_91087_() (the SRG name of getInstance) from its
+    // BookCrashHandler; passed through fg.deobf, that call is fixed but its mixins fail, and
+    // enabling mixin.env.remapRefMap to fix them breaks the mixins of any other production mod with
+    // mixins loaded in the same client —Citadel the first one when it was tried—.
+    // A development client cannot have deobfuscated mods and production mods with
+    // mixins at the same time, and that is why runClient/mods stays empty (see above).
     //
-    // Asi que la Guia de Patchouli se prueba en una instalacion normal con el jar construido. Lo que
-    // si se comprueba aqui es su estructura: checkPatchouliBook exige que cada pagina de la Guia este
-    // en exactamente una entrada del libro, en las dos direcciones.
+    // So the Patchouli Guide is tested in a normal install with the built jar. What
+    // is checked here is its structure: checkPatchouliBook requires every page of the Guide to be
+    // in exactly one entry of the book, in both directions.
 
-    // NO se anade el jar completo como runtimeOnly, aunque seria comodo para probar la integracion:
-    // Curios se publica con sus mixins referenciando nombres SRG (f_19803_), y runClient corre con
-    // mapeos parchment, donde ese nombre no existe. El resultado es que el cliente de desarrollo no
-    // arranca — probado con 5.14.1 y con 5.4.7, asi que no es desfase de version sino el remapeo del
-    // entorno. Hacerlo funcionar exigiria configurar el remapeo de refmaps de mixin, y lo unico que
-    // compraria es poder probar Curios en local: la integracion en si esta aislada de forma estructural
-    // (ver CuriosCompat) y se verifica con javap, no ejecutandola. Para probarla de verdad, instalacion
-    // real, no entorno de desarrollo.
+    // The full jar is NOT added as runtimeOnly, even though it would be handy for testing the integration:
+    // Curios is published with its mixins referencing SRG names (f_19803_), and runClient runs with
+    // parchment mappings, where that name doesn't exist. The result is that the development client doesn't
+    // start — tested with 5.14.1 and with 5.4.7, so it is not version drift but the environment's
+    // remapping. Making it work would require configuring mixin refmap remapping, and the only thing it
+    // would buy is being able to test Curios locally: the integration itself is structurally isolated
+    // (see CuriosCompat) and is verified with javap, not by running it. To really test it, a
+    // real install, not a development environment.
+}
+
+// The manifest is NOT decoration: mods.toml declares version="${file.jarVersion}", and that marker is
+// resolved by Forge reading Implementation-Version from HERE. Without this line, the mod announces itself in-game
+// with the literal text "${file.jarVersion}". It goes in both jars because the one that is published is the shadow.
+// The value is captured HERE and not inside the closure: inside manifest{} the delegate is the Manifest, not
+// the task, so archiveVersion doesn't resolve — it fails when evaluating the script, not when packaging.
+def modVersion = project.version.toString()
+def modManifest = {
+    attributes(['Implementation-Version': modVersion])
 }
 
 jar {
     archiveClassifier = 'slim'
-
+    manifest modManifest
 }
 
 shadowJar {
     archiveClassifier = ''
     configurations = [project.configurations.shade]
     relocate 'io.github.tfriedrichs.dicebot', "${project.group}.relocated.dicebot"
+    manifest modManifest
     finalizedBy 'reobfShadowJar'
 }
 
@@ -145,9 +206,160 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
 
+// --- Publishing (R4): CurseForge and Modrinth from the same command ---
+//
+//     ./gradlew publishMod          both platforms
+//     ./gradlew publishCurseforge   just one (useful when the other already uploaded and repeating it would duplicate)
+//     ./gradlew publishModrinth
+//
+// ⚠️ READ THE OUTPUT, NOT THE EXIT CODE. ModPublisher prints "Failed to Upload artifact to
+// CurseForge" and the task still ends in BUILD SUCCESSFUL — it really happened, with an invalid slug in
+// the relations. One platform's success says nothing about the other's: look for a "Successfully uploaded"
+// for each one. (The same when a token is missing: see the checkPublishSecrets guard below.)
+//
+// ModPublisher and not Minotaur because Minotaur only uploads to Modrinth, and this project ALREADY exists on
+// CurseForge (id 1634980, "VTT MineRPG"). A warning so you don't chase a ghost: there is **no**
+// way to sync the two platforms. Neither imports the other's project — description,
+// images, categories and version history don't travel. The only thing shared is THIS upload: the
+// same jar and the same version number to both at once.
+//
+// NO normal build touches this: `build`, `assemble` and `check` don't depend on `publishMod`. The tokens
+// are not written here on purpose, they are credentials. The Modrinth id goes by property because the
+// project doesn't exist yet: without it, `publishMod` uploads only to CurseForge.
+//
+// The number and the name are already aligned with what is published: the last file on CurseForge was
+// "VTTMinecraft 2.1.1.jar" (21-08-2026), so `version` above is 2.2.0 and the mod is called
+// "VTT MineRPG" in all three mods.toml. What did NOT change and must not change is the modId `dndsheets`:
+// the saved sheets, the content ids (dndsheets:goblin), the language keys and
+// the two addons' dependencies hang from it. The visible name and the identifier are different things.
+// Environment variable first, and if not, a Gradle property. The property goes in YOUR
+// ~/.gradle/gradle.properties (outside the repo, just like org.gradle.java.home), NEVER in the
+// gradle.properties here: that is a versioned file and pushing a token to git is publishing it.
+//
+//     curseforgeToken=...
+//     modrinthToken=...
+//
+def publishSecret = { String envVar, String propertyName ->
+    System.getenv(envVar) ?: (project.findProperty(propertyName) ?: '')
+}
 
-// Comprueba que los JSON de ejemplo en test/dndsheets/ siguen siendo compatibles con los parsers
-// reales del mod (ver JsonContentSelfTest). No usa el runtime de Forge, así que corre fuera del juego.
+publisher {
+    apiKeys {
+        curseforge publishSecret('CURSE_TOKEN', 'curseforgeToken')
+        modrinth publishSecret('MODRINTH_TOKEN', 'modrinthToken')
+    }
+
+    // The two ids are public (they show on the page itself), they are not credentials: they go here and not by
+    // property, so publishing doesn't depend on remembering a parameter.
+    setCurseID('1634980')
+    setModrinthID('rESHXYW7')
+
+    setVersion(project.version.toString())
+    setDisplayName("VTT MineRPG ${project.version}")
+    setVersionType('release')
+
+    // Required: without a changelog, publishCurseforge fails when querying the property (verified). It comes
+    // from the repo's CHANGELOG.md so that the release note and what is versioned are the same text,
+    // instead of two stories that drift apart by the second publication.
+    setChangelog(rootProject.file('CHANGELOG.md'))
+    setGameVersions('1.20.1')
+    setLoaders('forge')
+    setCurseEnvironment('both') //Client and server: this mod is needed on both sides.
+
+    // The fat jar, not the "slim": dicebot travels inside and relocated (see shadowJar). Publishing the slim
+    // would be publishing a mod that doesn't start.
+    setArtifact(tasks.named('shadowJar'))
+
+    // CurseForge relations are declared PER FILE, not per project: every new upload goes out with
+    // none unless they are set again. That is why they are here and not left to do by hand on the web — by hand
+    // you have to remember every time, and the first time it is forgotten nobody will notice.
+    //
+    // ALL are optional. None is needed for the mod to start: without them it behaves like
+    // vanilla wherever nothing is configured (invariant 9).
+    //
+    // The seven appearance packs are NOT a list of tastes: they are exactly the modids that the
+    // dndsheets/skins/ files reference (iceandfire, alexsmobs, naturalist, twilightforest, mowziesmobs,
+    // guardvillagers, cataclysm). If a pack is ever added or removed, this list changes with it.
+    // THE RULE: what is declared here is what the project REFERENCES, not what is recommended to install. A
+    // relation on the page says "this mod talks to that other one"; a modpack recommendation is something else
+    // and lives in PROJECT_CONTEXT (R4), not here. Without that line, the list grows with every mod someone
+    // thinks is a good idea and stops meaning anything.
+    //
+    // Left OUT by that rule, and the code itself says so:
+    //   - Tinkers' Construct  -> Config.java: other mods' weapons work "without this mod having
+    //                            to know anything about Tinkers' Construct (or any other mod)". Declaring it
+    //                            would hint at special support that doesn't exist.
+    //   - EasyNPC             -> MonsterCommand.java: "there is no EasyNPC integration or dependency on
+    //                            anyone". It works because the tag is NBT and accepts any entity.
+    //   - AttributeFix        -> zero mentions in the whole repo.
+    //   - Configured, Customizable Player Models, Dynamic Lights [Server] -> table recommendations, without
+    //                            a single line of code in between. Dynamic Lights also FIXES
+    //                            a rule (see VisionManager), so it is documented in R4 — but
+    //                            recommending is not depending.
+    //
+    // All are OPTIONAL: with none, the mod behaves like vanilla wherever nothing is configured
+    // (invariant 9). The truly required ones are the addons', and those aren't published yet.
+    def declared = [
+        //Real integrations: all four are in mods.toml with mandatory=false and have their own *Compat class.
+        'curios', 'patchouli', 'jade', 'pehkui',
+        //Appearance packs: exactly the modids that the dndsheets/skins/ JSONs reference. This list
+        //is not about tastes — if a pack is added or removed, it changes with it.
+        'ice-and-fire-dragons', 'alexs-mobs', 'naturalist',
+        'mowzies-mobs', 'guard-villagers',
+    ]
+
+    // The two that CANNOT be shared between platforms, and that is why they are separate:
+    //   - Cataclysm changes slug: 'lendercataclysm' on CurseForge, 'l_enders-cataclysm' on Modrinth.
+    //     Assuming it was the same cost a whole rejected upload (CurseForge error 1018).
+    //   - The Twilight Forest does NOT exist on Modrinth, it is CurseForge-exclusive.
+    curseDepends {
+        optional(*(declared + 'lendercataclysm' + 'the-twilight-forest'))
+    }
+
+    modrinthDepends {
+        optional(*(declared + 'l_enders-cataclysm'))
+    }
+
+    // The addons (dungeon, species) are separate jars and are uploaded separately: each one is a mod with its
+    // own modid, and species also requires Origins, which is not a dependency of the core.
+}
+
+// Without a token, ModPublisher silently skips the platform and STILL prints "Published mod to all
+// configured platforms" and exits successfully. Verified: with empty credentials there isn't even one HTTP
+// request, yet the build says there was. That is worse than failing — someone believes they published and published
+// nothing. This guard turns that silence into an error before the task does anything.
+// To know whether Gradle is seeing the credentials without risking uploading anything:
+//
+//     ./gradlew checkPublishSecrets
+//
+// It prints ONLY whether they are present and how many characters long they are. Never the value: a token in a
+// console's output ends up in a log, a screenshot or a history, and then it is no longer a secret.
+tasks.register('checkPublishSecrets') {
+    group = 'verification'
+    description = 'Says whether publishing credentials are present, without showing them and without publishing.'
+    doLast {
+        [CurseForge: publishSecret('CURSE_TOKEN', 'curseforgeToken'),
+         Modrinth  : publishSecret('MODRINTH_TOKEN', 'modrinthToken')].each { platform, value ->
+            println value
+                ? "$platform: presente (${value.length()} caracteres)"
+                : "$platform: MISSING — put its token in the environment or in your ~/.gradle/gradle.properties"
+        }
+    }
+}
+
+tasks.named('publishMod') {
+    doFirst {
+        if (!publishSecret('CURSE_TOKEN', 'curseforgeToken')) {
+            throw new GradleException("There is no CurseForge token: put CURSE_TOKEN in the environment or " +
+                "curseforgeToken in your ~/.gradle/gradle.properties. Without it, publishMod uploads nothing and " +
+                "still finishes successfully.")
+        }
+    }
+}
+
+
+// Checks that the sample JSONs in test/dndsheets/ are still compatible with the mod's real
+// parsers (see JsonContentSelfTest). It doesn't use the Forge runtime, so it runs outside the game.
 tasks.register('testJsonContent', JavaExec) {
     dependsOn compileTestJava
     group = 'verification'

@@ -12,7 +12,7 @@ import net.minecraftforge.network.NetworkHooks;
 
 import java.util.function.Supplier;
 
-/** Cliente -&gt; servidor: abre el editor avanzado de tiradas, o lo cierra si ya estaba abierto. */
+/** Client -&gt; server: opens the advanced roll editor, or closes it if it was already open. */
 public class AdvancedRollEditorOpenMessage {
 
 	public AdvancedRollEditorOpenMessage() {

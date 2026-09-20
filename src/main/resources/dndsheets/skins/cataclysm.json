@@ -2,7 +2,7 @@
   "mod": "cataclysm",
   "name": "L_Ender's Cataclysm",
   "url": "https://www.curseforge.com/minecraft/mc-mods/lends-cataclysm",
-  "_nota": "Jefes enormes para los monstruos que deberian imponer nada mas verlos.",
+  "_note": "Huge bosses for the monsters that should command respect at first sight.",
   "skins": {
     "dndsheets:tarrasque": "cataclysm:netherite_monstrosity",
     "dndsheets:kraken": "cataclysm:the_leviathan",

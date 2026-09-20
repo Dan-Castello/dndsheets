@@ -12,15 +12,15 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * <p>Las 14 condiciones de 5e de un jugador, desde el Panel de DM: cada fila muestra si la tiene puesta
- * y al pulsarla la alterna. Una sola lista para los dos sentidos en vez de un "aplicar" y un "quitar"
- * separados — el DM ve el estado real y actúa sobre él, que era justo lo que faltaba: sin esto, las
- * condiciones solo se podían tocar por {@code /dndturns effect} y sin forma de consultarlas.</p>
+ * <p>A player's 14 5e conditions, from the DM Panel: each row shows whether it's active on them and
+ * toggles it when clicked. A single list for both directions instead of separate "apply" and "remove"
+ * — the DM sees the real state and acts on it, which was exactly what was missing: without this,
+ * conditions could only be touched via {@code /dndturns effect} and there was no way to check them.</p>
  *
- * <p>El estado de partida llega en el mismo {@code SheetSummaryMessage} que ya traía oro/PG/CA al abrir
- * {@link SheetAdjustScreen}, así que no hace falta ni un mensaje nuevo ni una ida y vuelta extra. Se
- * mantiene en local al alternar en vez de volver a pedirlo: el servidor es la autoridad, pero para
- * repintar una marca de verificación no vale la pena un viaje de red por clic.</p>
+ * <p>The starting state arrives in the same {@code SheetSummaryMessage} that already carried gold/HP/AC
+ * when opening {@link SheetAdjustScreen}, so no new message or extra round trip is needed. It's kept
+ * locally when toggling instead of re-requesting it: the server is the authority, but repainting a
+ * checkmark doesn't warrant a network trip per click.</p>
  */
 public class ConditionListScreen extends ListPickerScreen {
 
@@ -33,7 +33,7 @@ public class ConditionListScreen extends ListPickerScreen {
 		this.active = active;
 	}
 
-	/** @param conditionsCsv etiquetas separadas por coma, tal cual viajan en {@code SheetSummaryMessage}. */
+	/** @param conditionsCsv comma-separated labels, exactly as they travel in {@code SheetSummaryMessage}. */
 	public static void open(String targetUuid, String targetName, String conditionsCsv) {
 		Set<Condition> active = EnumSet.noneOf(Condition.class);
 		if (conditionsCsv != null && !conditionsCsv.isEmpty()) {
@@ -45,8 +45,8 @@ public class ConditionListScreen extends ListPickerScreen {
 		Minecraft.getInstance().setScreen(new ConditionListScreen(targetUuid, targetName, active, Minecraft.getInstance().screen));
 	}
 
-	//Sin buscador a propósito, aunque la base lo ofrezca: son 14 filas fijas, y alternar una reconstruye la
-	//pantalla entera, lo que vaciaría la caja de búsqueda en cada clic. Buscar entre 14 no compensa eso.
+	//No search box on purpose, even though the base class offers one: there are 14 fixed rows, and toggling
+	//one rebuilds the whole screen, which would clear the search box on every click. Searching 14 rows isn't worth that.
 	@Override
 	protected void buildRows() {
 		for (Condition condition : Condition.values()) {
@@ -56,7 +56,7 @@ public class ConditionListScreen extends ListPickerScreen {
 
 	private Component rowLabel(Condition condition) {
 		boolean on = active.contains(condition);
-		return Component.literal((on ? "✔ " : "  ") + condition.label())
+		return Component.literal((on ? "✔ " : "  ") + condition.displayLabel())
 			.withStyle(on ? ChatFormatting.RED : ChatFormatting.GRAY);
 	}
 
@@ -65,8 +65,8 @@ public class ConditionListScreen extends ListPickerScreen {
 		if (apply) active.add(condition);
 		else active.remove(condition);
 		DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.condition(targetUuid, condition.label(), apply));
-		//rebuildWidgets() de vanilla: vuelve a llamar a init(), que a su vez rellama a buildRows() con el
-		//estado ya alternado. Reconstruir 14 filas para repintar una marca no necesita nada más fino.
+		//Vanilla rebuildWidgets(): calls init() again, which in turn calls buildRows() again with the
+		//state already toggled. Rebuilding 14 rows to repaint a checkmark doesn't need anything finer.
 		this.rebuildWidgets();
 	}
 }

@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Regenera la lista de ids de vanilla que usa el self-test.
+"""Regenerates the list of vanilla ids used by the self-test.
 
     python tools/extract_vanilla_ids.py
 
-Sale del en_us.json del cliente de 1.20.1 que ForgeGradle ya tiene descargado, asi que no hay que
-bajarse nada ni arrancar el juego. Si algun dia se sube de version de Minecraft, se vuelve a ejecutar.
+It comes from the 1.20.1 client's en_us.json that ForgeGradle already has downloaded, so nothing has to be
+downloaded and the game doesn't have to start. If the Minecraft version is ever bumped, run it again.
 
-Existe por un fallo real: una de las 26 armas tenia "minecraft:mace" como item base, que es de 1.21.
-En 1.20.1 no resuelve, el arma caia a un palo, y lo unico que se veia era un aviso en el log del
-cliente al abrir la pestana creativa.
+It exists because of a real failure: one of the 26 weapons had "minecraft:mace" as its base item, which is from 1.21.
+In 1.20.1 it doesn't resolve, the weapon fell back to a stick, and the only thing seen was a warning in the
+client log when opening the creative tab.
 """
 import io
 import json
@@ -29,8 +29,8 @@ if __name__ == '__main__':
                 ids.add('%s/%s' % (kind, key.split('.', 2)[2]))
 
     with io.open(OUT, 'w', encoding='utf-8') as f:
-        f.write('# Ids de objeto/bloque y de entidad que existen en Minecraft 1.20.1.\n'
-                '# Sacado del en_us.json del cliente 1.20.1; se regenera con tools/extract_vanilla_ids.py.\n'
-                '# Sirve para que el self-test cace un id de otra version (paso con minecraft:mace, que es de 1.21).\n')
+        f.write('# Item/block and entity ids that exist in Minecraft 1.20.1.\n'
+                '# Taken from the 1.20.1 client en_us.json; regenerated with tools/extract_vanilla_ids.py.\n'
+                '# It lets the self-test catch an id from another version (it happened with minecraft:mace, which is from 1.21).\n')
         f.write('\n'.join(sorted(ids)) + '\n')
     print('escritos %d ids en %s' % (len(ids), OUT))

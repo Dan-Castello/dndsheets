@@ -13,18 +13,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
-//Servidor -> cliente: la lista de piezas de mazmorra registradas (ver DungeonPieceListRequestMessage),
-//o el eco tras capturar/editar una para refrescar la pantalla — mismas listas paralelas que
-//PresetListMessage en vez de un codec propio, no hay tantos campos como para justificar uno.
+//Server -> client: the list of registered dungeon pieces (see DungeonPieceListRequestMessage), or the
+//echo after capturing/editing one to refresh the screen — same parallel-lists approach as
+//PresetListMessage instead of its own codec, there aren't enough fields to justify one.
 public class DungeonPieceListMessage {
 	List<String> ids;
 	List<String> structureIds;
 	List<String> pools;
 	List<Integer> weights;
 	List<String> tags;
-	//DungeonManager.hasStartJigsaw por pieza — para que DungeonPieceListScreen marque cuáles tienen el
-	//jigsaw de inicio, visible ANTES de intentar generar (ver el problema real de mezclar piezas de
-	//entrada con piezas normales en un mismo pool, DungeonManager.generate()).
+	//DungeonManager.hasStartJigsaw per piece — so DungeonPieceListScreen can mark which ones have the
+	//start jigsaw, visible BEFORE attempting to generate (see the real problem with mixing entry pieces
+	//with regular pieces in the same pool, DungeonManager.generate()).
 	List<Boolean> hasStart;
 
 	public DungeonPieceListMessage(List<String> ids, List<String> structureIds, List<String> pools, List<Integer> weights, List<String> tags, List<Boolean> hasStart) {

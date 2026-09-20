@@ -16,44 +16,43 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * <p>Inspiración Bárdica: clic derecho del bardo sobre OTRO jugador (con el Cuerno de Inspiración,
- * {@code {dndsheets:{bardicInspiration:true}}}) le da un dado (d6 a d12 según el nivel del bardo, tirado ya en el momento de
- * concederlo) que se suma a su PRÓXIMA tirada de ataque, durante {@value #DURATION_ROUNDS} asaltos (10
- * minutos de 5e). Igual que Furia, la duración cuenta en asaltos si el modo turnos está activo al
- * concederla, o en ticks reales si no — ver {@link TurnManager#onRoundsPass}.</p>
+ * <p>Bardic Inspiration: the bard right-clicking on ANOTHER player (with the Horn of Inspiration,
+ * {@code {dndsheets:{bardicInspiration:true}}}) grants them a die (d6 to d12 depending on the bard's
+ * level, rolled at the moment it's granted) that's added to their NEXT attack roll, for
+ * {@value #DURATION_ROUNDS} rounds (10 minutes in 5e). Same as Rage, the duration counts in rounds if
+ * turn mode is active when it's granted, or in real ticks if not — see {@link TurnManager#onRoundsPass}.</p>
  *
- * <p><b>Alcance deliberadamente reducido</b>: 5e deja usar este dado en un ataque, una prueba de
- * característica O una salvación; aquí solo se engancha a la tirada de ataque (mismo punto donde ya vive
- * la ventaja/desventaja en {@link CombatManager}/{@link SpellCastManager}) — extenderlo a pruebas y
- * salvaciones tocaría también {@code RollAnnouncerProcedure}, la pantalla de la hoja. Tampoco hay límite
- * de usos por descanso (en 5e es el modificador de Carisma del bardo); se puede volver a conceder cuando
- * se quiera, igual que Furia.</p>
+ * <p><b>Deliberately narrowed scope</b>: 5e lets you use this die on an attack roll, an ability check OR a
+ * saving throw; here it only hooks into the attack roll (the same spot where advantage/disadvantage
+ * already lives in {@link CombatManager}/{@link SpellCastManager}) — extending it to checks and saves
+ * would also touch {@code RollAnnouncerProcedure}, the sheet screen. There's also no limit on uses per
+ * rest (in 5e it's the bard's Charisma modifier); it can be granted again whenever wanted, same as
+ * Rage.</p>
  */
 @Mod.EventBusSubscriber
 public class BardInspirationManager {
-	//El dado sale del nivel del BARDO (ver CharacterRules.bardicInspirationDieFor), no de una constante:
-	//estaba fijo en 1d6, así que el recurso que define a la clase no mejoraba nunca. Y del bardo, no del
-	//objetivo — quien inspira es quien pone la calidad del dado, aunque lo tire otro.
-	private static final int DURATION_ROUNDS = 100; //10 minutos de 5e = 100 asaltos.
-	private static final int DURATION_TICKS = 20 * 60 * 10; //10 minutos reales fuera de modo turnos.
+	//The die comes from the BARD's level (see CharacterRules.bardicInspirationDieFor), not a constant:
+	//it used to be fixed at 1d6, so the resource that defines the class never improved. And from the
+	//bard, not the target — whoever inspires is who sets the die's quality, even if someone else rolls it.
+	private static final int DURATION_ROUNDS = 100; //10 minutes in 5e = 100 rounds.
+	private static final int DURATION_TICKS = 20 * 60 * 10; //10 real-time minutes outside turn mode.
 
-	//Token por objetivo: cada grant() se lleva el suyo, y su temporizador de expiración solo borra
-	//"bardicInspiration" si sigue siendo el grant MÁS RECIENTE para ese jugador. Evita el caso de una
-	//segunda concesión (antes de que expire la primera) siendo borrada de más por el temporizador viejo —
-	//y a diferencia de comparar por el valor tirado, esto no falla ni siquiera si las dos tiradas
-	//coinciden por azar.
+	//Token per target: each grant() carries its own, and its expiry timer only clears
+	//"bardicInspiration" if it's still the MOST RECENT grant for that player. Avoids the case where a
+	//second grant (before the first expires) gets wrongly cleared by the older timer — and unlike
+	//comparing by the rolled value, this doesn't fail even if the two rolls happen to coincide.
 	private static final Map<UUID, Integer> latestGrantToken = new ConcurrentHashMap<>();
 	private static int nextToken = 0;
 
-	//A diferencia de furia/segundo aliento/etc., este token no tiene su propio temporizador de expiración
-	//independiente del jugador (solo el efecto NBT expira solo; el token en sí se queda para siempre en
-	//el mapa si el jugador no vuelve a conectarse).
+	//Unlike rage/second wind/etc., this token has no independent expiry timer of its own tied to the
+	//player (only the NBT effect expires on its own; the token itself stays in the map forever if the
+	//player never logs back in).
 	@SubscribeEvent
 	public static void onPlayerLogout(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
 		latestGrantToken.remove(event.getEntity().getUUID());
 	}
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a EntityInteract por su cuenta.
+	//Activated from AbilityItemDispatcher instead of subscribing to EntityInteract on its own.
 	static void tryUse(PlayerInteractEvent.EntityInteract event) {
 		if (!(event.getEntity() instanceof ServerPlayer bard) || !(event.getTarget() instanceof ServerPlayer target)) return;
 
@@ -72,8 +71,8 @@ public class BardInspirationManager {
 		int amount = roll.result().getValue();
 
 		targetSheet.addProperty("bardicInspiration", amount);
-		//Al objetivo hay que decírselo: el dado se suma a SU próxima tirada de ataque, y sin esto no tenía
-		//forma de saber que lo llevaba encima hasta que se gastara solo.
+		//The target needs to be told: the die is added to THEIR next attack roll, and without this they'd
+		//have no way to know they were carrying it until it was spent on its own.
 		JsonObject patch = new JsonObject();
 		patch.addProperty("bardicInspiration", amount);
 		DndsheetsMod.sendSheetFieldUpdate(target, patch);
@@ -81,15 +80,15 @@ public class BardInspirationManager {
 
 		String bardName = SheetLoader.characterNameOf(SheetLoader.getServerSheet(bard.getStringUUID()), bard);
 		String targetName = SheetLoader.characterNameOf(targetSheet, target);
-		ChatFeedback.broadcast(bard, Component.literal(bardName + " inspira a " + targetName + ": +" + amount + " (" + roll.formatted() + ") a su próxima tirada de ataque.").withStyle(ChatFeedback.RESOURCE));
+		ChatFeedback.broadcast(bard, Component.translatable("chat.dndsheets.bard.inspires", bardName, targetName, amount, roll.formatted()).withStyle(ChatFeedback.RESOURCE));
 
 		UUID uuid = target.getUUID();
 		MinecraftServer server = target.getServer();
 		int myToken = ++nextToken;
 		latestGrantToken.put(uuid, myToken);
 		Runnable expire = () -> {
-			//Si otro grant más nuevo llegó para este jugador mientras tanto, ESE es el que manda ahora —
-			//este temporizador viejo no debe tocar nada.
+			//If another, newer grant arrived for this player in the meantime, THAT one is in charge now —
+			//this older timer must not touch anything.
 			if (!Integer.valueOf(myToken).equals(latestGrantToken.get(uuid))) return;
 			latestGrantToken.remove(uuid);
 			ServerPlayer stillHere = server != null ? server.getPlayerList().getPlayer(uuid) : null;
@@ -103,8 +102,8 @@ public class BardInspirationManager {
 		TurnManager.scheduleExpiry(DURATION_ROUNDS, DURATION_TICKS, expire);
 	}
 
-	//Público: CombatManager/SpellCastManager lo llaman justo antes de tirar un ataque, igual que
-	//CombatManager.consumeAdvantage — se gasta sola en cuanto se usa, con o sin acierto.
+	//Public: CombatManager/SpellCastManager call it right before rolling an attack, same as
+	//CombatManager.consumeAdvantage — it's consumed as soon as it's used, hit or miss.
 	public static int consumeAttackBonus(JsonObject sheet) {
 		if (sheet == null || !sheet.has("bardicInspiration")) return 0;
 		int amount = sheet.get("bardicInspiration").getAsInt();

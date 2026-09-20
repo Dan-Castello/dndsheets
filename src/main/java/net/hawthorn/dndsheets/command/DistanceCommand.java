@@ -12,9 +12,9 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * <p>{@code /dnddistance <objetivo>}: distancia en línea recta entre quien ejecuta el comando y el
- * objetivo, convertida a pies (5 ft/bloque, misma rejilla que {@link net.hawthorn.dndsheets.MovementAnchorTracker}
- * y el resto de la mesa) y redondeada al múltiplo de 5 más cercano, como se mide en 5e.</p>
+ * <p>{@code /dnddistance <target>}: straight-line distance between whoever runs the command and the
+ * target, converted to feet (5 ft/block, same grid as {@link net.hawthorn.dndsheets.MovementAnchorTracker}
+ * and the rest of the table) and rounded to the nearest multiple of 5, as measured in 5e.</p>
  */
 @Mod.EventBusSubscriber
 public class DistanceCommand {
@@ -23,13 +23,13 @@ public class DistanceCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dnddistance")
-			.then(Commands.argument("objetivo", EntityArgument.entity())
+			.then(Commands.argument("target", EntityArgument.entity())
 				.executes(DistanceCommand::report)));
 	}
 
 	private static int report(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		Entity source = ctx.getSource().getEntityOrException();
-		Entity target = EntityArgument.getEntity(ctx, "objetivo");
+		Entity target = EntityArgument.getEntity(ctx, "target");
 
 		double blocks = source.position().distanceTo(target.position());
 		long feet = Math.round(blocks * FEET_PER_BLOCK / 5.0) * 5;

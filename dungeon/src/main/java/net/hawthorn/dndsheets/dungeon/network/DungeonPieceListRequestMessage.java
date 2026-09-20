@@ -10,8 +10,8 @@ import net.minecraftforge.network.PacketDistributor;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: pide la lista de piezas de mazmorra registradas, para abrir
-//DungeonPieceListScreen desde el Panel de DM (ver DmPanelScreen).
+//Client (the DM) -> server: asks for the list of registered dungeon pieces, to open
+//DungeonPieceListScreen from the DM Panel (see DmPanelScreen).
 public class DungeonPieceListRequestMessage {
 	public DungeonPieceListRequestMessage() {
 	}

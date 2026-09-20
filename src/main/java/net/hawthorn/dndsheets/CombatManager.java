@@ -28,30 +28,30 @@ import net.minecraftforge.registries.ForgeRegistries;
 import java.util.Map;
 
 /**
- * <p>Dos usos: (1) los armor stands actúan como muñecos de pruebas, golpearlos (cuerpo a cuerpo o a
- * distancia) con un arma configurada hace la tirada de daño sola y la anuncia en el chat, sin destruir
- * el muñeco; (2) en PvP, un golpe entre jugadores con un arma configurada se resuelve como un ataque de
- * 5e de verdad: tirada de ataque (1d20 + característica + competencia) contra la CA real del objetivo
- * (10 + mod. Destreza + armadura real equipada) y, si impacta, el daño real se reemplaza por la tirada
- * de daño configurada. Si el arma no está configurada, no se toca nada y Minecraft se comporta como siempre.</p>
+ * <p>Two uses: (1) armor stands act as training dummies, hitting them (melee or ranged) with a
+ * configured weapon rolls damage on its own and announces it in chat, without destroying the dummy;
+ * (2) in PvP, a hit between players with a configured weapon is resolved as a real 5e attack: an attack
+ * roll (1d20 + ability + proficiency) against the target's real AC (10 + Dex mod + real equipped armor)
+ * and, on a hit, the real damage is replaced by the configured damage roll. If the weapon isn't
+ * configured, nothing is touched and Minecraft behaves as always.</p>
  */
 @Mod.EventBusSubscriber
 public class CombatManager {
 
 	private record Roll(int amount, String formatted, String weaponName, String characterName) {}
-	//autoDetected: no-null solo cuando el ítem no está registrado a mano (JSON/.toml) pero declara daño de
-	//ataque real por atributo vanilla (ver Config.autoDetectWeapon) — compatibilidad con armas de otros
-	//mods (Tinkers' Construct y cualquier otro) sin necesitar un JSON por ítem.
+	//autoDetected: non-null only when the item isn't registered by hand (JSON/.toml) but declares real
+	//attack damage via a vanilla attribute (see Config.autoDetectWeapon) — compatibility with weapons
+	//from other mods (Tinkers' Construct and any other) without needing a JSON entry per item.
 	private record IdentifiedWeapon(String id, String name, int enchantBonus, Config.WeaponDefault autoDetected) {}
 	private record ResolvedWeapon(String dice, String ability, String damageType) {}
 
-	//Id virtual para el golpe a mano desnuda cuando un rasgo le da un dado real (ver TraitRegistry):
-	//no es un arma configurada en Config, así que se resuelve aparte en resolveWeapon/findWeaponExpression.
+	//Virtual id for the bare-handed hit when a trait grants it a real die (see TraitRegistry): it's not a
+	//weapon configured in Config, so it's resolved separately in resolveWeapon/findWeaponExpression.
 	private static final String UNARMED_ID = "dndsheets:unarmed";
 
-	//Ventaja/desventaja se fija con /dndsheet advantage y se consume solo (vuelve a "normal") en la
-	//siguiente tirada de ataque de esa hoja, sea con arma, hechizo (ver SpellCastManager) o el botón de
-	//ataque de la propia hoja (ver procedures.RollAnnouncerProcedure) — público por eso, no solo del paquete.
+	//Advantage/disadvantage is set with /dndsheet advantage and consumes itself (reverts to "normal") on
+	//that sheet's next attack roll, whether with a weapon, a spell (see SpellCastManager), or the sheet's
+	//own attack button (see procedures.RollAnnouncerProcedure) — public for that reason, not just package-private.
 	public static DiceManager.Advantage consumeAdvantage(JsonObject sheet) {
 		DiceManager.Advantage advantage = DiceManager.advantageFromLabel(sheet.has("nextAttackAdvantage") ? sheet.get("nextAttackAdvantage").getAsString() : "normal");
 		sheet.addProperty("nextAttackAdvantage", "normal");
@@ -65,7 +65,7 @@ public class CombatManager {
 		Entity target = event.getTarget();
 
 		if (target instanceof ArmorStand) {
-			event.setCanceled(true); //Muñeco de pruebas: no se destruye ni se desarma al golpearlo.
+			event.setCanceled(true); //Training dummy: doesn't get destroyed or disarmed when hit.
 			ItemStack heldItem = player.getMainHandItem();
 			if (heldItem.isEmpty()) return;
 			Roll roll = computeDamageRoll(player, identifyWeapon(player, heldItem));
@@ -75,10 +75,10 @@ public class CombatManager {
 
 		if (TurnManager.isCombatTarget(target)) {
 			if (Combatant.of(target) == null) {
-				//Jefe/enemigo de otro mod, sin representación en las reglas (ni bloque ni ficha): no
-				//hay tirada de ataque/daño 5e que resolver, pero el golpe igual engancha el modo turnos
-				//(arranca el combate solo, cuenta como tu acción, bloquea golpear fuera de turno) — el daño
-				//real lo sigue resolviendo Minecraft tal cual.
+				//Boss/enemy from another mod, with no representation in the rules (no stat block or
+				//sheet): there's no 5e attack/damage roll to resolve, but the hit still hooks into turn
+				//mode (starts combat on its own, counts as your action, blocks hitting out of turn) — the
+				//real damage is still resolved by Minecraft as-is.
 				autoStartCombatIfNeeded(target, player);
 				if (!TurnManager.tryAct(player)) {
 					event.setCanceled(true);
@@ -87,16 +87,16 @@ public class CombatManager {
 				return;
 			}
 
-			//El arma se identifica ANTES de tocar el turno (arma sin configurar no debería gastar nada), pero
-			//a diferencia de antes ya NO se sale sin más si es null: un puñetazo sin rasgo de golpe desnudo
-			//(sin Artes Marciales ni Forma Salvaje) sigue siendo LA acción del jugador este turno — antes
-			//quedaba fuera del todo del modo turnos (nunca arrancaba el combate, nunca gastaba el turno),
-			//así que un jugador sin monje podía pegar puñetazos indefinidamente sin que "sin DM" se enterara.
+			//The weapon is identified BEFORE touching the turn (an unconfigured weapon shouldn't spend
+			//anything), but unlike before it no longer just bails out if it's null: a punch with no
+			//bare-hand trait (no Martial Arts, no Wild Shape) is still THE player's action this turn —
+			//before, it fell completely outside turn mode (never started combat, never spent the turn),
+			//so a non-monk player could throw punches indefinitely without "no DM" ever noticing.
 			IdentifiedWeapon weapon = identifyWeapon(player, player.getMainHandItem());
 			if (weapon != null && blockedByOffhand(weapon, player.getOffhandItem().isEmpty())) {
-				event.setCanceled(true); //Cancela de verdad: ni siquiera el golpe flojo de Minecraft pasa, no se puede empuñar así.
+				event.setCanceled(true); //Really cancels: not even Minecraft's weak punch gets through, it can't be wielded like that.
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.combat.needs_both_hands").withStyle(ChatFormatting.RED));
-				return; //No fue un intento de ataque real: no arranca combate ni gasta el turno.
+				return; //Wasn't a real attack attempt: doesn't start combat or spend the turn.
 			}
 			if (weapon != null && blockedByClass(player, weapon)) {
 				event.setCanceled(true);
@@ -106,32 +106,32 @@ public class CombatManager {
 			if (blockedByCharm(player, target)) {
 				event.setCanceled(true);
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.condition.charmed_block").withStyle(ChatFormatting.RED));
-				return; //No fue un intento de ataque válido: no arranca combate ni gasta el turno.
+				return; //Wasn't a valid attack attempt: doesn't start combat or spend the turn.
 			}
 			autoStartCombatIfNeeded(target, player);
 			if (!TurnManager.tryAct(player)) {
-				event.setCanceled(true); //Fuera de turno: ni siquiera el puñetazo flojo de Minecraft pasa.
+				event.setCanceled(true); //Out of turn: not even Minecraft's weak punch gets through.
 				TurnManager.notifyCantAct(player);
 				return;
 			}
-			if (weapon == null) return; //Sin arma ni rasgo de golpe desnudo: Minecraft resuelve el golpe normal, turno ya gastado.
-			event.setCanceled(true); //Se resuelve como un encuentro real, no como el golpe de Minecraft.
+			if (weapon == null) return; //No weapon and no bare-hand trait: Minecraft resolves the normal hit, turn already spent.
+			event.setCanceled(true); //Resolved as a real encounter, not as Minecraft's hit.
 			resolveAttackOnCreature(player, target, weapon, true);
 		}
 	}
 
-	//Sin nadie llevando la partida en vivo, nadie va a escribir /dndturns start (ni sumar a mano a quien
-	//llega tarde): el primer golpe de un jugador a un monstruo arranca el combate si no había uno activo,
-	//mismo punto de entrada que ya usa el Panel de DM (TurnManager.startAt). Quien da ese golpe entra como
-	//INICIADOR y abre el orden de turnos: antes no, y el resultado era que su ataque se perdía si no ganaba
-	//su propia tirada de iniciativa — el mismo clic funcionaba o desaparecía según un d20 que nadie había
-	//pedido tirar (ver TurnManager.startAt con iniciador).
-	//Si el combate YA estaba activo pero este jugador nunca entró al orden (llegó después de que
-	//arrancara), se suma ahora mismo — sin esto se quedaba sin poder actuar nunca en ese encuentro. Ahí NO
-	//es iniciador: el encuentro ya existía y llegar tarde no da derecho a colarse el primero.
-	//Público: también lo usa SpellCastManager, para que atacar con un hechizo arranque el combate solo
-	//igual que ya hace un golpe con arma — antes un hechizo de ataque/salvación se resolvía "gratis", sin
-	//turno ni congelamiento para nadie, porque nada lo llamaba desde ese lado.
+	//With nobody actively running the session, nobody's going to type /dndturns start (or manually add a
+	//latecomer): a player's first hit on a monster starts combat if none was active, the same entry point
+	//the DM Panel already uses (TurnManager.startAt). Whoever lands that hit goes in as the STARTER and
+	//opens the turn order: previously it didn't, and the result was that their attack got lost if they
+	//didn't win their own initiative roll — the same click worked or vanished depending on a d20 nobody
+	//had asked to roll (see TurnManager.startAt with starter).
+	//If combat was ALREADY active but this player never joined the order (arrived after it started),
+	//they're added right now — without this they'd never be able to act in that encounter at all. There
+	//they're NOT the starter: the encounter already existed and arriving late doesn't earn cutting to the front.
+	//Public: also used by SpellCastManager, so attacking with a spell starts combat on its own the same
+	//way a weapon hit already does — previously an attack/save spell resolved "for free", with no turn or
+	//freeze for anyone, because nothing called it from that side.
 	public static void autoStartCombatIfNeeded(Entity target, Player attacker) {
 		if (!(target.level() instanceof ServerLevel level)) return;
 		if (!TurnManager.isActive()) {
@@ -141,11 +141,11 @@ public class CombatManager {
 		if (attacker instanceof ServerPlayer serverPlayer) TurnManager.addLatePlayerIfMissing(level, serverPlayer);
 	}
 
-	//Identifica el arma a distancia mirando qué lleva el jugador en las manos en el momento del impacto
-	//(bastante fiable, arcos y ballestas no se sueltan de la mano al disparar). Para proyectiles que sí
-	//abandonan la mano (p.ej. un tridente lanzado), cae a un segundo intento por el tipo de entidad del
-	//proyectil: no lleva el ítem original, así que no ve sus encantamientos ni una etiqueta NBT
-	//personalizada, solo el dado por defecto configurado.
+	//Identifies the ranged weapon by looking at what the player is holding at the moment of impact (fairly
+	//reliable, bows and crossbows don't leave the hand when fired). For projectiles that DO leave the hand
+	//(e.g. a thrown trident), it falls back to a second attempt via the projectile's entity type: it
+	//doesn't carry the original item, so it can't see its enchantments or any custom NBT tag, only the
+	//configured default die.
 	@SubscribeEvent
 	public static void onProjectileImpact(ProjectileImpactEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
@@ -155,7 +155,7 @@ public class CombatManager {
 		if (!(event.getEntity() instanceof Projectile projectile) || !(projectile.getOwner() instanceof Player player)) return;
 
 		if (target instanceof ArmorStand) {
-			event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY); //Muñeco de pruebas: no se destruye al recibir el disparo.
+			event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY); //Training dummy: doesn't get destroyed when shot.
 			IdentifiedWeapon weapon = identifyRangedWeapon(player, projectile);
 			if (weapon == null) return;
 			Roll roll = computeDamageRoll(player, weapon);
@@ -165,8 +165,8 @@ public class CombatManager {
 
 		if (TurnManager.isCombatTarget(target)) {
 			if (Combatant.of(target) == null) {
-				//Mismo criterio de compatibilidad que onAttackEntity: sin representación en las reglas, el
-				//disparo sigue enganchando el modo turnos, pero el daño real lo resuelve Minecraft tal cual.
+				//Same compatibility criterion as onAttackEntity: with no representation in the rules, the
+				//shot still hooks into turn mode, but the real damage is resolved by Minecraft as-is.
 				autoStartCombatIfNeeded(target, player);
 				if (!TurnManager.tryAct(player)) {
 					event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY);
@@ -175,56 +175,56 @@ public class CombatManager {
 				return;
 			}
 
-			//Mismo orden que onAttackEntity: identificar el arma antes de cancelar el evento/gastar el turno.
+			//Same order as onAttackEntity: identify the weapon before canceling the event/spending the turn.
 			IdentifiedWeapon weapon = identifyRangedWeapon(player, projectile);
-			if (weapon == null) return; //Proyectil no reconocido: Minecraft se comporta como siempre.
+			if (weapon == null) return; //Unrecognized projectile: Minecraft behaves as always.
 			if (blockedByClass(player, weapon)) {
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.combat.wrong_class").withStyle(ChatFormatting.RED));
-				return; //Ni se resuelve como 5e ni se toca el turno: el disparo vanilla ya salió antes del impacto.
+				return; //Neither resolved as 5e nor is the turn touched: the vanilla shot already left before impact.
 			}
 			if (blockedByCharm(player, target)) {
 				event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY);
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.condition.charmed_block").withStyle(ChatFormatting.RED));
 				return;
 			}
-			event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY); //Se resuelve como un encuentro real, no como el impacto de Minecraft.
+			event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY); //Resolved as a real encounter, not as Minecraft's impact.
 			autoStartCombatIfNeeded(target, player);
 			if (!TurnManager.tryAct(player)) { TurnManager.notifyCantAct(player); return; }
 			resolveAttackOnCreature(player, target, weapon, false);
 		}
 	}
 
-	//PvP: se resuelve como un ataque real de 5e. Si el arma no está configurada, no se toca nada y
-	//Minecraft aplica su daño normal de siempre (nada de esto interfiere con peleas "normales").
+	//PvP: resolved as a real 5e attack. If the weapon isn't configured, nothing is touched and Minecraft
+	//applies its usual normal damage (none of this interferes with "normal" fights).
 	@SubscribeEvent
 	public static void onLivingHurt(LivingHurtEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
-		if (!(event.getEntity() instanceof Player victim)) return; //La víctima debe ser un jugador (PvP).
+		if (!(event.getEntity() instanceof Player victim)) return; //The victim must be a player (PvP).
 
 		DamageSource source = event.getSource();
-		if (!(source.getEntity() instanceof Player attacker)) return; //Quien golpea también debe ser un jugador.
+		if (!(source.getEntity() instanceof Player attacker)) return; //Whoever hits must also be a player.
 
-		//El arma se identifica ANTES de tocar el turno: si no está configurada, esto ni siquiera es un
-		//ataque de 5e (puede ser una explosión o una poción lanzada antes que Forge atribuye al jugador) y
-		//no debe gastar su acción ni bloquearse por el gating de turno — antes se llamaba a tryAct primero,
-		//así que cualquier daño atribuido al jugador consumía su turno aunque no fuera un golpe real.
+		//The weapon is identified BEFORE touching the turn: if it isn't configured, this isn't even a 5e
+		//attack (could be an explosion or a thrown potion attributed to the player before Forge sorts it
+		//out) and shouldn't spend their action or get blocked by the turn gating — previously tryAct was
+		//called first, so any damage attributed to the player consumed their turn even if it wasn't a real hit.
 		boolean melee = !(source.getDirectEntity() instanceof Projectile);
 		IdentifiedWeapon weapon = source.getDirectEntity() instanceof Projectile projectile
 			? identifyRangedWeapon(attacker, projectile)
 			: identifyWeapon(attacker, attacker.getMainHandItem());
-		if (weapon == null) return; //Arma no reconocida: se deja el daño normal de Minecraft, sin tocar el turno.
+		if (weapon == null) return; //Unrecognized weapon: Minecraft's normal damage is left alone, turn untouched.
 		if (melee && blockedByOffhand(weapon, attacker.getOffhandItem().isEmpty())) {
-			event.setCanceled(true); //Cancela de verdad: no se puede empuñar así, ni siquiera el daño normal de Minecraft pasa.
+			event.setCanceled(true); //Really cancels: it can't be wielded like that, not even Minecraft's normal damage gets through.
 			attacker.sendSystemMessage(Component.translatable("chat.dndsheets.combat.needs_both_hands").withStyle(ChatFormatting.RED));
 			return;
 		}
 		if (blockedByCharm(attacker, victim)) {
-			if (melee) event.setCanceled(true); //Cuerpo a cuerpo sí se puede cancelar a tiempo; una flecha ya en vuelo, no.
+			if (melee) event.setCanceled(true); //Melee can be canceled in time; an arrow already in flight can't.
 			attacker.sendSystemMessage(Component.translatable("chat.dndsheets.condition.charmed_block").withStyle(ChatFormatting.RED));
 			return;
 		}
 		if (blockedByClass(attacker, weapon)) {
-			if (melee) event.setCanceled(true); //Cuerpo a cuerpo sí se puede cancelar a tiempo; una flecha ya en vuelo, no.
+			if (melee) event.setCanceled(true); //Melee can be canceled in time; an arrow already in flight can't.
 			attacker.sendSystemMessage(Component.translatable("chat.dndsheets.combat.wrong_class").withStyle(ChatFormatting.RED));
 			return;
 		}
@@ -233,17 +233,17 @@ public class CombatManager {
 		Combatant target = Combatant.of(victim);
 		if (attackerSheet == null || target == null) return;
 
-		//weaponDefault también se comprueba ANTES de tocar el turno: identifyWeapon devuelve un
-		//IdentifiedWeapon no-nulo para CUALQUIER ítem no vacío en la mano, esté o no dado de alta en
-		//Config — así que "sostener una espada sin configurar" pasaba el filtro de arriba igual, y solo
-		//acá se detectaba que no era un arma real. Antes tryAct se llamaba primero, así que ese golpe sin
-		//configurar gastaba la acción del turno para nada, aunque el daño cayera a vanilla de todos modos.
+		//weaponDefault is also checked BEFORE touching the turn: identifyWeapon returns a non-null
+		//IdentifiedWeapon for ANY non-empty item in hand, whether or not it's registered in Config — so
+		//"holding an unconfigured sword" passed the filter above just the same, and only here was it
+		//detected as not a real weapon. Previously tryAct was called first, so that unconfigured hit
+		//spent the turn's action for nothing, even though the damage fell back to vanilla anyway.
 		ResolvedWeapon weaponDefault = resolveWeapon(attacker, attackerSheet, weapon, SheetLoader.characterLevelOf(attackerSheet, attacker));
-		if (weaponDefault == null) return; //Arma no configurada: se deja el daño normal de Minecraft, sin tocar el turno.
+		if (weaponDefault == null) return; //Unconfigured weapon: Minecraft's normal damage is left alone, turn untouched.
 
-		//En modo turnos, ni el PvP con arma configurada se libra: golpear fuera de tu turno (o dos veces en
-		//el mismo turno) se bloquea del todo, no solo se deja de resolver como ataque de 5e (si no,
-		//Minecraft aplicaría su daño normal de todos modos).
+		//In turn mode, not even PvP with a configured weapon gets a pass: hitting out of your turn (or
+		//twice in the same turn) is blocked entirely, not just left unresolved as a 5e attack (otherwise
+		//Minecraft would apply its normal damage anyway).
 		if (!TurnManager.tryAct(attacker)) {
 			event.setCanceled(true);
 			TurnManager.notifyCantAct(attacker);
@@ -254,16 +254,16 @@ public class CombatManager {
 			weaponDefault.ability(), weaponDefault.damageType(), melee);
 		if (outcome == null) return;
 		if (!outcome.hit()) {
-			event.setCanceled(true); //Fallo: ni siquiera se aplica la reducción de daño de la armadura de Minecraft, no hay golpe.
+			event.setCanceled(true); //Miss: not even Minecraft's armor damage reduction applies, there's no hit.
 			ChatFeedback.broadcast(attacker, outcome.message());
 			return;
 		}
 
-		//El daño se entrega por el propio evento, NO por Combatant.takeDamage: ya estamos DENTRO de la
-		//tubería de daño de Minecraft y llamarlo aquí recurriría. A partir de este punto la armadura real
-		//del objetivo todavía puede restar algo más — Minecraft lo hace solo después de este evento.
-		//Los PG temporales se descuentan aquí a mano: este camino entrega el daño por el propio evento, así
-		//que no puede pasar por Combatant.takeDamage (recurriría). Ver Combatant.absorbWithTemporaryHp.
+		//Damage is delivered through the event itself, NOT through Combatant.takeDamage: we're already
+		//INSIDE Minecraft's damage pipeline and calling it here would recurse. From this point on the
+		//target's real armor can still subtract more — Minecraft does that only after this event.
+		//Temporary HP is deducted here by hand: this path delivers damage through the event itself, so it
+		//can't go through Combatant.takeDamage (it would recurse). See Combatant.absorbWithTemporaryHp.
 		int afterTemporary = target.absorbWithTemporaryHp(outcome.damage());
 		event.setAmount(afterTemporary);
 		ConcentrationManager.onDamageTaken((ServerPlayer) victim, afterTemporary);
@@ -271,68 +271,67 @@ public class CombatManager {
 	}
 
 	/**
-	 * <p>Empujar a alguien a lava, o dejarlo caer, ya hacía daño de Minecraft — pero nunca pasaba por las
-	 * resistencias de 5e ({@link Combatant#effectiveDamageMultiplier}), la ventaja de plataforma más
-	 * grande sin explotar de todo el motor: el mundo físico real (lava, altura) y las reglas de 5e nunca
-	 * se hablaban. Cubre jugador, PNJ y monstruo por igual —a diferencia de {@link #onLivingHurt} de
-	 * arriba, que solo mira PvP— porque cualquiera con {@link Combatant#of} no nulo puede tener una
-	 * resistencia de verdad.</p>
+	 * <p>Pushing someone into lava, or letting them fall, already dealt Minecraft damage — but it never
+	 * went through 5e resistances ({@link Combatant#effectiveDamageMultiplier}), the biggest untapped
+	 * leverage point in the whole engine: the real physical world (lava, height) and 5e's rules never
+	 * talked to each other. Covers player, NPC, and monster alike — unlike {@link #onLivingHurt} above,
+	 * which only looks at PvP — because anyone with a non-null {@link Combatant#of} can have a real resistance.</p>
 	 *
-	 * <p>{@code source.getEntity() == null} es la marca de "sin atacante": un golpe de otro combatiente ya
-	 * se resolvió por su propio camino ({@link #onLivingHurt}, o el ataque de un monstruo en
-	 * {@code MonsterActionManager}), y tocarlo de nuevo aquí lo escalaría dos veces.</p>
+	 * <p>{@code source.getEntity() == null} is the mark of "no attacker": a hit from another combatant
+	 * has already been resolved through its own path ({@link #onLivingHurt}, or a monster's attack in
+	 * {@code MonsterActionManager}), and touching it again here would scale it twice.</p>
 	 *
-	 * <p><b>Alcance deliberado:</b> solo aplica el multiplicador de resistencia al daño que Minecraft ya
-	 * calculó — NO reemplaza la fórmula de caída del SRD (1d6 por 10 pies) por la de Minecraft, que es más
-	 * granular y no hay evidencia de que una mesa la prefiera menos.</p>
+	 * <p><b>Deliberate scope:</b> only applies the resistance multiplier to the damage Minecraft already
+	 * calculated — it does NOT replace the SRD's fall formula (1d6 per 10 feet) with Minecraft's, which is
+	 * more granular and there's no evidence a table would prefer it any less.</p>
 	 */
 	@SubscribeEvent
 	public static void onEnvironmentalDamage(LivingHurtEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
 		DamageSource source = event.getSource();
-		if (source.getEntity() != null) return; //Tiene atacante: no es entorno, ya se resuelve por otro camino.
+		if (source.getEntity() != null) return; //Has an attacker: not environmental, already resolved through another path.
 
 		Combatant combatant = Combatant.of(event.getEntity());
-		if (combatant == null) return; //Sin ficha, Minecraft normal.
+		if (combatant == null) return; //No sheet, normal Minecraft.
 
 		String damageType = environmentalDamageType(source);
-		if (damageType == null) return; //Ahogo, vacío, hambre... nada que el SRD module por resistencia.
+		if (damageType == null) return; //Drowning, void, starvation... nothing the SRD modulates by resistance.
 
 		int scaled = DamageTypes.applyMultiplier((int) event.getAmount(), combatant.effectiveDamageMultiplier(damageType, false));
 		event.setAmount(scaled);
 	}
 
-	//net.minecraft.world.damagesource.DamageTypes sin importar: el mismo nombre simple ya lo ocupa
-	//net.hawthorn.dndsheets.DamageTypes (mismo paquete, usado sin calificar en todo este archivo) — un
-	//import de la clase vanilla chocaría con esa resolución implícita.
+	//net.minecraft.world.damagesource.DamageTypes not imported: the same simple name is already taken by
+	//net.hawthorn.dndsheets.DamageTypes (same package, used unqualified throughout this file) — importing
+	//the vanilla class would clash with that implicit resolution.
 	private static String environmentalDamageType(DamageSource source) {
 		if (source.is(net.minecraft.world.damagesource.DamageTypes.LAVA)
 			|| source.is(net.minecraft.world.damagesource.DamageTypes.IN_FIRE)
 			|| source.is(net.minecraft.world.damagesource.DamageTypes.ON_FIRE)
-			|| source.is(net.minecraft.world.damagesource.DamageTypes.HOT_FLOOR)) return "fuego";
+			|| source.is(net.minecraft.world.damagesource.DamageTypes.HOT_FLOOR)) return "fire";
 		if (source.is(net.minecraft.world.damagesource.DamageTypes.FALL)
 			|| source.is(net.minecraft.world.damagesource.DamageTypes.FALLING_BLOCK)
 			|| source.is(net.minecraft.world.damagesource.DamageTypes.FALLING_ANVIL)
-			|| source.is(net.minecraft.world.damagesource.DamageTypes.FALLING_STALACTITE)) return "contundente";
+			|| source.is(net.minecraft.world.damagesource.DamageTypes.FALLING_STALACTITE)) return "bludgeoning";
 		return null;
 	}
 
 	private record AttackOutcome(boolean hit, int damage, MutableComponent message) {}
 
 	/**
-	 * <p>Núcleo compartido de toda tirada de ataque de un jugador contra un {@link Combatant}, sea otro
-	 * jugador o un monstruo. Antes esto eran dos métodos casi idénticos —este camino de PvP y
-	 * {@code resolveAttackOnCreature}— que solo se diferenciaban en cómo leían la CA, los PG y el nombre del
-	 * objetivo; y esa diferencia se había llevado por delante, sin que nadie lo decidiera, las resistencias,
-	 * la reacción de Escudo y la concentración del lado del monstruo.</p>
+	 * <p>Shared core of every player attack roll against a {@link Combatant}, whether another player or a
+	 * monster. This used to be two nearly identical methods — this PvP path and
+	 * {@code resolveAttackOnCreature} — that only differed in how they read AC, HP, and the target's
+	 * name; and that difference had quietly, with nobody deciding it, dropped resistances, the Shield
+	 * reaction, and concentration on the monster's side.</p>
 	 *
-	 * <p>No aplica el daño a propósito: lo devuelve. Los dos llamadores lo entregan por caminos que no se
-	 * pueden unificar sin romper algo — el PvP está dentro del {@code LivingHurtEvent} de Minecraft y usa
-	 * {@code setAmount}, mientras que el monstruo lleva sus PG de 5e aparte del atributo de salud vanilla.</p>
+	 * <p>Doesn't apply the damage on purpose: it returns it. The two callers deliver it through paths
+	 * that can't be unified without breaking something — PvP is inside Minecraft's {@code LivingHurtEvent}
+	 * and uses {@code setAmount}, while a monster tracks its 5e HP separately from the vanilla health attribute.</p>
 	 */
 	private static AttackOutcome resolveAttack(Player attacker, JsonObject attackerSheet, Combatant target,
 			IdentifiedWeapon weapon, String ability, String damageType, boolean melee) {
-		//Todas las fuentes en UNA sola llamada, nunca combinadas por partes: ver AttackRules.advantageAgainst.
+		//All sources in ONE single call, never combined piecemeal: see AttackRules.advantageAgainst.
 		DiceManager.Advantage advantage = AttackRules.advantageAgainst(attacker, target, melee,
 			consumeAdvantage(attackerSheet),
 			new Combatant.PlayerCombatant(attacker, attackerSheet).ownAttackAdvantage());
@@ -346,9 +345,9 @@ public class CombatManager {
 		persistAndSendSheetUpdate(attacker);
 
 		String attackerName = SheetLoader.characterNameOf(attackerSheet, attacker);
-		//Cobertura, CA efectiva, acierto y crítico: mismas reglas, y mismo código, que cuando ataca un
-		//monstruo. Ver AttackRules — estar escrito dos veces es lo que dejó a los monstruos ignorando media
-		//docena de reglas, cada una descubierta por separado.
+		//Cover, effective AC, hit, and crit: same rules, and the same code, as when a monster attacks.
+		//See AttackRules — being written twice is what left monsters ignoring half a dozen rules, each
+		//discovered separately.
 		AttackRules.Against result = AttackRules.against(attacker, target, attackRoll, melee);
 		int targetAc = result.targetAc();
 
@@ -361,9 +360,9 @@ public class CombatManager {
 		Roll damageRoll = computeDamageRoll(attacker, weapon, critical, advantage, ability, target.entity());
 		if (damageRoll == null) return null;
 
-		//Un golpe de arma cuenta como mágico si el arma lleva algún encantamiento que el mod reconozca
-		//(ver Config.enchantBonusPerLevelFor). Es la única señal de "arma mágica" que existe en Minecraft
-		//sin inventar un material nuevo, y es la que decide media docena de resistencias del SRD.
+		//A weapon hit counts as magical if the weapon carries any enchantment the mod recognizes (see
+		//Config.enchantBonusPerLevelFor). It's the only "magic weapon" signal that exists in Minecraft
+		//without inventing a new material, and it's the one that decides half a dozen SRD resistances.
 		boolean magical = weapon.enchantBonus() != 0;
 		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), target.effectiveDamageMultiplier(damageType, magical));
 		CombatFx.hit(target.entity(), critical, damageType);
@@ -371,21 +370,21 @@ public class CombatManager {
 			attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted(), inspiration), result.cover()));
 	}
 
-	//Jugador ataca a un monstruo invocado por /dndmonsters spawn: mismo ataque-vs-CA que en PvP, pero el
-	//objetivo no tiene hoja, tiene un bloque de estadísticas (MonsterRegistry), y sí lleva PG reales
-	//trackeados en su NBT persistente en vez de infinitos como el armor stand.
+	//Player attacks a monster spawned by /dndmonsters spawn: same attack-vs-AC as PvP, but the target has
+	//no sheet, it has a stat block (MonsterRegistry), and it does carry real HP tracked in its persistent
+	//NBT instead of infinite like the armor stand.
 	private static void resolveAttackOnCreature(Player attacker, Entity targetEntity, IdentifiedWeapon weapon, boolean melee) {
 		if (weapon == null) return;
 		Combatant target = Combatant.of(targetEntity);
 		if (target == null) return;
-		MonsterRegistry.faceTarget(targetEntity, attacker); //Que quede claro a quién le está respondiendo, acierte o no.
+		MonsterRegistry.faceTarget(targetEntity, attacker); //Make it clear who it's responding to, hit or miss.
 
 		JsonObject attackerSheet = SheetLoader.getServerSheet(attacker.getStringUUID());
 		if (attackerSheet == null) return;
 
 		ResolvedWeapon weaponDefault = resolveWeapon(attacker, attackerSheet, weapon, SheetLoader.characterLevelOf(attackerSheet, attacker));
 		String ability = weaponDefault != null ? weaponDefault.ability() : "str";
-		String damageType = weaponDefault != null ? weaponDefault.damageType() : "contundente";
+		String damageType = weaponDefault != null ? weaponDefault.damageType() : "bludgeoning";
 
 		AttackOutcome outcome = resolveAttack(attacker, attackerSheet, target, weapon, ability, damageType, melee);
 		if (outcome == null) return;
@@ -394,33 +393,33 @@ public class CombatManager {
 			return;
 		}
 
-		//Los PG restantes se calculan ANTES de aplicar el daño, porque takeDamage puede matar a la entidad
-		//(y entonces currentHp ya no diría nada útil). El sufijo de PG sigue siendo solo del lado del
-		//monstruo a propósito: en PvP la armadura real de Minecraft resta más daño DESPUÉS del evento, así
-		//que cualquier número que anunciáramos ahí sería mentira.
+		//Remaining HP is calculated BEFORE applying damage, because takeDamage can kill the entity (and
+		//then currentHp would no longer say anything useful). The HP suffix stays monster-side only on
+		//purpose: in PvP, Minecraft's real armor subtracts more damage AFTER the event, so any number
+		//announced there would be a lie.
 		int remainingHp = Math.max(0, target.currentHp() - outcome.damage());
 		MutableComponent message = outcome.message()
 			.append(Component.translatable("chat.dndsheets.combat.hp_suffix", remainingHp, target.maxHp()).withStyle(ChatFormatting.DARK_GRAY));
 
-		target.takeDamage(outcome.damage()); //Si llega a 0, mata al mob y lo saca del orden de turnos — ver Combatant.MonsterCombatant.
+		target.takeDamage(outcome.damage()); //If it reaches 0, kills the mob and removes it from the turn order — see Combatant.MonsterCombatant.
 		if (target.isDefeated()) {
-			//Sufijo en la MISMA línea del golpe que acaba de anunciarse, no una segunda línea de chat aparte.
+			//Suffix on the SAME line as the hit that was just announced, not a separate second chat line.
 			message.append(Component.translatable("chat.dndsheets.combat.defeated_suffix", ContentNames.of(target.name())).withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
 		}
 		ChatFeedback.broadcast(attacker, message);
 	}
 
-	//Bono de CA de llevar un escudo de verdad (+2 en 5e): player.getArmorValue() vanilla NUNCA lo cuenta —
-	//solo suma los 4 slots de armadura real, un escudo en la mano secundaria no es "armadura" para
-	//Minecraft, ni el vanilla ni uno modded. Se detecta por clase (ShieldItem), no por id, para que
-	//funcione igual con el escudo de cualquier mod que extienda la clase vanilla (patrón habitual).
+	//AC bonus for carrying a real shield (+2 in 5e): vanilla player.getArmorValue() NEVER counts it —
+	//it only adds up the 4 real armor slots, a shield in the offhand isn't "armor" to Minecraft, vanilla
+	//or modded. Detected by class (ShieldItem), not by id, so it works the same with any mod's shield
+	//that extends the vanilla class (a common pattern).
 	private static final int SHIELD_AC_BONUS = 2;
 
-	//Público: también lo usa network.SheetSummaryRequestMessage para mostrar la CA real en el Panel de DM.
+	//Public: also used by network.SheetSummaryRequestMessage to show the real AC in the DM Panel.
 	public static int armorClassOf(Player player, JsonObject sheet) {
-		//Override de DM/OP (/dndsheet setac, ver SheetCommand): manda sobre el cálculo normal para un caso
-		//especial (objeto mágico, regla de mesa puntual) sin tener que mentirle a Minecraft sobre la
-		//armadura real equipada. "auto" (el caso por defecto) quita esto y vuelve al cálculo de siempre.
+		//DM/OP override (/dndsheet setac, see SheetCommand): overrides the normal calculation for a
+		//special case (magic item, one-off table rule) without having to lie to Minecraft about the real
+		//equipped armor. "auto" (the default case) removes this and returns to the usual calculation.
 		if (sheet != null && sheet.has("armorClassOverride")) return sheet.get("armorClassOverride").getAsInt();
 		int shieldBonus = player.getOffhandItem().getItem() instanceof net.minecraft.world.item.ShieldItem ? SHIELD_AC_BONUS : 0;
 		return 10 + abilityModifier(sheet, "dexterity") + (int) player.getArmorValue() + shieldBonus;
@@ -431,9 +430,9 @@ public class CombatManager {
 		try {
 			return Math.floorDiv(Integer.parseInt(sheet.get(key).getAsString()) - 10, 2);
 		} catch (RuntimeException e) {
-			//RuntimeException, no solo NumberFormatException: sheet.get(key) puede ser un JsonObject/JsonArray
-			//si una hoja vieja quedó corrupta antes de que SheetServerMessage empezara a validar tipos, y
-			//.getAsString() sobre eso lanza UnsupportedOperationException, no NumberFormatException.
+			//RuntimeException, not just NumberFormatException: sheet.get(key) can be a JsonObject/JsonArray
+			//if an old sheet was left corrupted before SheetServerMessage started validating types, and
+			//.getAsString() on that throws UnsupportedOperationException, not NumberFormatException.
 			return 0;
 		}
 	}
@@ -449,23 +448,23 @@ public class CombatManager {
 	private static IdentifiedWeapon identifyWeapon(Player player, ItemStack heldItem) {
 		if (heldItem == null || heldItem.isEmpty()) return identifyUnarmed(player);
 		String itemId = Config.weaponIdOf(heldItem);
-		//Solo se molesta en calcular la detección automática si el ítem no está registrado a mano — un
-		//registro explícito (JSON/.toml) siempre manda, así que no vale la pena leer atributos si no hace falta.
+		//Only bothers computing auto-detection if the item isn't registered by hand — an explicit
+		//registration (JSON/.toml) always wins, so it's not worth reading attributes unless necessary.
 		Config.WeaponDefault autoDetected = Config.weaponDefaultFor(itemId) == null ? Config.autoDetectWeapon(heldItem) : null;
 		return new IdentifiedWeapon(itemId, heldItem.getHoverName().getString(), enchantmentBonusFor(heldItem), autoDetected);
 	}
 
-	//Un puñetazo solo se resuelve como ataque real de 5e si el personaje tiene un rasgo que le dé un dado
-	//propio (p.ej. Artes Marciales del monje) o Forma Salvaje está activa; sin eso, se queda como el golpe
-	//flojo de Minecraft de siempre, igual que cualquier arma sin configurar.
+	//A punch only resolves as a real 5e attack if the character has a trait granting it its own die
+	//(e.g. a monk's Martial Arts) or Wild Shape is active; without that, it stays as Minecraft's usual
+	//weak hit, same as any unconfigured weapon.
 	private static IdentifiedWeapon identifyUnarmed(Player player) {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (unarmedProfileFor(player, sheet, SheetLoader.characterLevelOf(sheet, player)) == null) return null;
-		return new IdentifiedWeapon(UNARMED_ID, "Golpe", 0, null);
+		return new IdentifiedWeapon(UNARMED_ID, "content.dndsheets.weapon.unarmed_strike", 0, null);
 	}
 
-	//Forma Salvaje (temporal, ver DruidWildShapeManager) manda sobre cualquier rasgo permanente de
-	//TraitRegistry mientras esté activa — no debería poder pasar que se sumen los dos a la vez.
+	//Wild Shape (temporary, see DruidWildShapeManager) overrides any permanent TraitRegistry trait while
+	//active — it shouldn't be possible for the two to stack.
 	private static TraitRegistry.UnarmedProfile unarmedProfileFor(Player player, JsonObject sheet, int level) {
 		if (player instanceof ServerPlayer serverPlayer && DruidWildShapeManager.isShifted(serverPlayer)) {
 			return DruidWildShapeManager.unarmedProfile(serverPlayer);
@@ -476,21 +475,21 @@ public class CombatManager {
 	private static ResolvedWeapon resolveWeapon(Player player, JsonObject sheet, IdentifiedWeapon weapon, int level) {
 		if (UNARMED_ID.equals(weapon.id())) {
 			TraitRegistry.UnarmedProfile profile = unarmedProfileFor(player, sheet, level);
-			return profile == null ? null : new ResolvedWeapon(profile.dice(), profile.ability(), "contundente");
+			return profile == null ? null : new ResolvedWeapon(profile.dice(), profile.ability(), "bludgeoning");
 		}
 		Config.WeaponDefault weaponDefault = Config.weaponDefaultFor(weapon.id());
-		if (weaponDefault == null) weaponDefault = weapon.autoDetected(); //Compatibilidad con armas de otros mods, ver Config.autoDetectWeapon.
+		if (weaponDefault == null) weaponDefault = weapon.autoDetected(); //Compatibility with weapons from other mods, see Config.autoDetectWeapon.
 		if (weaponDefault == null) return null;
-		//Pacto de la Hoja (ver /dndsheet pact): el brujo usa Carisma para atacar y dañar con su arma, en vez
-		//de la característica normal del arma — la diferencia mecánica real de este pacto.
-		String ability = "hoja".equals(pactOf(sheet)) ? "cha" : weaponDefault.ability();
+		//Pact of the Blade (see /dndsheet pact): the warlock uses Charisma to attack and deal damage with
+		//their weapon, instead of the weapon's normal ability — the real mechanical difference of this pact.
+		String ability = "blade".equals(pactOf(sheet)) ? "cha" : weaponDefault.ability();
 		return new ResolvedWeapon(weaponDefault.dice(), ability, weaponDefault.damageType());
 	}
 
-	//Un arma "two" (a dos manos de verdad, p.ej. mandoble) no se puede empuñar con nada más en la otra
-	//mano — a diferencia de la versátil, que solo pierde el dado grande y sigue atacando igual, esta
-	//directamente no ataca. Antes esto no se comprobaba en ningún lado (simplificación deliberada
-	// y llevar un escudo con un mandoble atacaba igual, solo con el dado chico.
+	//A "two" weapon (truly two-handed, e.g. a greatsword) can't be wielded with anything else in the
+	//other hand — unlike versatile, which just loses the big die and keeps attacking the same, this one
+	//simply doesn't attack. Previously this wasn't checked anywhere (a deliberate simplification), and
+	//carrying a shield with a greatsword attacked the same, just with the small die.
 	private static boolean blockedByOffhand(IdentifiedWeapon weapon, boolean offhandEmpty) {
 		if (offhandEmpty || UNARMED_ID.equals(weapon.id())) return false;
 		Config.WeaponDefault weaponDefault = Config.weaponDefaultFor(weapon.id());
@@ -498,9 +497,9 @@ public class CombatManager {
 		return weaponDefault != null && "two".equals(weaponDefault.hands());
 	}
 
-	//Arma restringida por clase (campo opcional "classes" en weapons.json, ver Config.WeaponDefault): sin
-	//lista configurada, cualquier clase puede usarla, igual que siempre. La mano desnuda nunca se restringe
-	//por esto — Artes Marciales/Forma Salvaje ya deciden por su cuenta quién puede pegar a mano.
+	//Weapon restricted by class (optional "classes" field in weapons.json, see Config.WeaponDefault):
+	//with no list configured, any class can use it, same as always. Bare hands are never restricted by
+	//this — Martial Arts/Wild Shape already decide on their own who can hit unarmed.
 	private static boolean blockedByClass(Player player, IdentifiedWeapon weapon) {
 		if (UNARMED_ID.equals(weapon.id())) return false;
 		Config.WeaponDefault weaponDefault = Config.weaponDefaultFor(weapon.id());
@@ -512,9 +511,9 @@ public class CombatManager {
 	}
 
 	/**
-	 * <p>Hechizado: no puedes atacar a quien te hechizó, pero sí a cualquier otro. Se comprueba junto al
-	 * resto de restricciones de empuñadura/clase de este archivo, y no dentro de {@code resolveAttack},
-	 * porque hay que decidirlo ANTES de gastar el turno o dejar pasar el daño vanilla.</p>
+	 * <p>Charmed: you can't attack whoever charmed you, but you can attack anyone else. Checked alongside
+	 * the rest of this file's wielding/class restrictions, not inside {@code resolveAttack}, because it
+	 * has to be decided BEFORE spending the turn or letting vanilla damage through.</p>
 	 */
 	private static boolean blockedByCharm(Player attacker, Entity target) {
 		Combatant combatant = Combatant.of(attacker);
@@ -522,21 +521,28 @@ public class CombatManager {
 	}
 
 	private static String pactOf(JsonObject sheet) {
-		return sheet != null && sheet.has("warlockPact") ? sheet.get("warlockPact").getAsString() : null;
+		if (sheet == null || !sheet.has("warlockPact")) return null;
+		//Sheets saved when pacts were Spanish ("cadena"/"hoja"/"vara") still read.
+		return switch (sheet.get("warlockPact").getAsString()) {
+			case "cadena" -> "chain";
+			case "hoja" -> "blade";
+			case "vara" -> "tome";
+			default -> sheet.get("warlockPact").getAsString();
+		};
 	}
 
-	//Para proyectiles que ya no están en la mano (tridentes lanzados): identifica el arma por el tipo de
-	//entidad del proyectil, ya que Minecraft coincidentemente usa el mismo id ("minecraft:trident") para
-	//el ítem y para la entidad arrojada.
-	//Mismas estadísticas que ya trae por defecto el arco/ballesta vanilla (ver dndsheets-common.toml), para
-	//cualquier arco/ballesta modded que no tenga una entrada explícita. Config.autoDetectWeapon (cuerpo a
-	//cuerpo) no sirve acá: lee el atributo de daño de ataque, que un arco no tiene — su daño sale de la
-	//flecha, no de un atributo del arma.
-	private static final Config.WeaponDefault GENERIC_BOW_DEFAULT = new Config.WeaponDefault("1d8", "dex", "fisico", "two", null, java.util.List.of());
+	//For projectiles no longer in hand (thrown tridents): identifies the weapon by the projectile's
+	//entity type, since Minecraft coincidentally uses the same id ("minecraft:trident") for the item and
+	//for the thrown entity.
+	//Same stats the vanilla bow/crossbow already default to (see dndsheets-common.toml), for any modded
+	//bow/crossbow with no explicit entry. Config.autoDetectWeapon (melee) doesn't work here: it reads the
+	//attack-damage attribute, which a bow doesn't have — its damage comes from the arrow, not from a
+	//weapon attribute.
+	private static final Config.WeaponDefault GENERIC_BOW_DEFAULT = new Config.WeaponDefault("1d8", "dex", "physical", "two", null, java.util.List.of());
 
-	//Reconoce un arco/ballesta de OTRO mod por su propia clase vanilla (la mayoría de mods de arcos extiende
-	//BowItem/CrossbowItem para heredar el tensado y disparo) en vez de exigir un id exacto en la config —
-	//mismo espíritu que Config.autoDetectWeapon, pero por tipo de ítem en vez de por atributo.
+	//Recognizes a bow/crossbow from ANOTHER mod by its own vanilla class (most bow mods extend
+	//BowItem/CrossbowItem to inherit drawing and firing) instead of requiring an exact id in the config —
+	//same spirit as Config.autoDetectWeapon, but by item type instead of by attribute.
 	private static ItemStack findGenericBowOrCrossbow(Player player) {
 		for (ItemStack candidate : new ItemStack[]{player.getMainHandItem(), player.getOffhandItem()}) {
 			if (candidate.getItem() instanceof net.minecraft.world.item.BowItem || candidate.getItem() instanceof net.minecraft.world.item.CrossbowItem) return candidate;
@@ -573,9 +579,9 @@ public class CombatManager {
 
 		if (weapon.enchantBonus() != 0) expression = expression + " + " + weapon.enchantBonus();
 
-		//Furia del bárbaro: bono plano de daño cuerpo a cuerpo con Fuerza (ver BarbarianRageManager). Un
-		//número plano, no un dado — seguro de concatenar en la misma expresión (a diferencia de Ataque
-		//Furtivo, que sí es un dado y necesita tirarse aparte).
+		//Barbarian Rage: flat melee damage bonus with Strength (see BarbarianRageManager). A flat number,
+		//not a die — safe to concatenate into the same expression (unlike Sneak Attack, which is a die
+		//and needs to be rolled separately).
 		if ("str".equals(attackAbility) && player instanceof ServerPlayer ragingCandidate && BarbarianRageManager.isRaging(ragingCandidate)) {
 			expression = expression + " + " + CharacterRules.rageDamageBonusFor(level);
 		}
@@ -586,59 +592,58 @@ public class CombatManager {
 		int amount = damage.amount();
 		String formatted = damage.formatted();
 
-		//Ataque Furtivo (y cualquier rasgo futuro "dado extra con ventaja"): se tira APARTE y se suma en
-		//Java, no metido en la misma expresión — el motor de dados (dicebot) no resuelve bien dos grupos
-		//de dados distintos en una sola expresión (p.ej. "1d8 + 2d6"), solo grupo+número plano. Se le pasa
-		//el mismo "critical" para que también doble sus propios dados en un golpe crítico, como en 5e.
+		//Sneak Attack (and any future "extra die on advantage" trait): rolled SEPARATELY and added in
+		//Java, not folded into the same expression — the dice engine (dicebot) doesn't correctly resolve
+		//two different dice groups in a single expression (e.g. "1d8 + 2d6"), only group+flat number. The
+		//same "critical" is passed to it so it also doubles its own dice on a critical hit, as in 5e.
 		if (advantage == DiceManager.Advantage.ADVANTAGE) {
 			String sneakAttackDice = TraitRegistry.sneakAttackDiceFor(sheet, level);
 			if (sneakAttackDice != null) {
 				DiceManager.DamageResult sneak = DiceManager.rollDamage(sheet, sneakAttackDice, critical);
 				if (sneak.formatted() != null) {
 					amount += sneak.amount();
-					formatted = formatted + " + Furtivo " + sneak.formatted();
+					formatted = formatted + " + " + Component.translatable("chat.dndsheets.roll.sneak").getString() + " " + sneak.formatted();
 				}
 			}
 		}
 
-		//Marca del Cazador: mismo "tirar aparte y sumar" que Ataque Furtivo, solo si ESTE golpe cae sobre
-		//el objetivo marcado (no cualquiera).
+		//Hunter's Mark: same "roll separately and add" as Sneak Attack, only if THIS hit lands on the
+		//marked target (not just any target).
 		if (target != null && player instanceof ServerPlayer possibleRanger && RangerHunterMarkManager.isMarked(possibleRanger, target)) {
 			DiceManager.DamageResult mark = DiceManager.rollDamage(sheet, RangerHunterMarkManager.DICE, critical);
 			if (mark.formatted() != null) {
 				amount += mark.amount();
-				formatted = formatted + " + Marca " + mark.formatted();
+				formatted = formatted + " + " + Component.translatable("chat.dndsheets.roll.hunters_mark").getString() + " " + mark.formatted();
 			}
 		}
 
-		//Castigo Divino: solo en golpes de arma de verdad, no a mano desnuda NI contra un muñeco de pruebas
-		//(target==null es la ruta del armor stand, ver announce/computeDamageRoll(player, weapon) de 2
-		//args) — sin el chequeo de target, un swing de práctica contra el dummy gastaba el espacio de
-		//conjuro de verdad exactamente igual que un golpe de combate real. Gasta el espacio de conjuro
-		//dentro de consumeIfPending, así que si no queda ninguno simplemente no aporta nada (y el flag ya
-		//se limpió, no se queda pendiente para el siguiente golpe).
+		//Divine Smite: only on real weapon hits, not bare-handed NOR against a training dummy
+		//(target==null is the armor stand path, see announce/the 2-arg computeDamageRoll(player, weapon))
+		//— without the target check, a practice swing against the dummy spent a real spell slot exactly
+		//like an actual combat hit. It spends the spell slot inside consumeIfPending, so if none are left
+		//it simply contributes nothing (and the flag is already cleared, not left pending for the next hit).
 		if (target != null && !UNARMED_ID.equals(weapon.id())) {
 			String smiteDice = PaladinSmiteManager.consumeIfPending(sheet, target);
 			if (smiteDice != null) {
 				DiceManager.DamageResult smite = DiceManager.rollDamage(sheet, smiteDice, critical);
 				if (smite.formatted() != null) {
 					amount += smite.amount();
-					formatted = formatted + " + Castigo Divino " + smite.formatted();
+					formatted = formatted + " + " + Component.translatable("chat.dndsheets.roll.divine_smite").getString() + " " + smite.formatted();
 				}
 			}
 		}
 
-		//Buff de arma con duración (Favor Divino): a diferencia de Castigo Divino NO se consume, se aplica a
-		//todos los golpes mientras dure. Se tira aparte por lo mismo que el resto de dados extra: el motor
-		//de dados no resuelve dos grupos distintos en una sola expresión.
+		//Weapon buff with a duration (Divine Favor): unlike Divine Smite it's NOT consumed, it applies to
+		//every hit while it lasts. Rolled separately for the same reason as the other extra dice: the
+		//dice engine doesn't resolve two different groups in a single expression.
 		WeaponBuffManager.Buff buff = WeaponBuffManager.active(sheet);
 		if (buff != null) {
 			DiceManager.DamageResult extra = DiceManager.rollDamage(sheet, buff.dice(), critical);
 			if (extra.formatted() != null) {
 				amount += extra.amount();
-				//El buff lleva el nombre del conjuro que lo concedio, que desde la migracion es una clave de
-				//idioma. Aqui se resuelve en texto plano porque va DENTRO de la formula de la tirada, que
-				//es un String — ver ContentNames.plain y su techo.
+				//The buff carries the name of the spell that granted it, which since the migration is a
+				//language key. It's resolved to plain text here because it goes INSIDE the roll formula,
+				//which is a String — see ContentNames.plain and its ceiling.
 				formatted = formatted + " + " + ContentNames.plain(buff.name()) + " " + extra.formatted();
 			}
 		}
@@ -648,33 +653,33 @@ public class CombatManager {
 	}
 
 	private static void announce(Entity target, Player player, Roll roll) {
-		//Golpe a un armor stand (dummy de práctica): siempre acierta, sin tirada de ataque de por medio, así
-		//que nunca hay crítico real que anunciar acá.
+		//Hit on an armor stand (practice dummy): always hits, with no attack roll involved, so there's
+		//never a real crit to announce here.
 		CombatFx.hit(target, false);
 		CombatFx.diceTick(player);
 		ChatFeedback.broadcast(player, ChatFeedback.damageOnly(roll.characterName(), roll.weaponName(), roll.formatted()));
 	}
 
-	//Llamado justo después de consumeAdvantage/BardInspirationManager.consumeAttackBonus en cada tirada de
-	//ataque: en vez de reenviar la hoja completa, manda solo los dos campos que esos dos métodos acaban de
-	//tocar — antes esto pasaba en CADA golpe de CADA combate.
+	//Called right after consumeAdvantage/BardInspirationManager.consumeAttackBonus on every attack roll:
+	//instead of resending the whole sheet, it sends only the two fields those two methods just touched —
+	//previously this happened on EVERY hit of EVERY fight.
 	private static void persistAndSendSheetUpdate(Player player) {
-		//Los tres consumos de arriba mutan la hoja en memoria; sin esto solo viajaban al cliente y quedaban
-		//colgando del autosave de 5 minutos (invariante 4). Afecta al espacio de conjuro que gasta el
-		//Castigo Divino, que es el que de verdad duele perder.
+		//The three consumptions above mutate the in-memory sheet; without this they only traveled to the
+		//client and were left hanging on the 5-minute autosave (invariant 4). This affects the spell slot
+		//Divine Smite spends, which is the one that really hurts to lose.
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (sheet != null) SheetLoader.saveServer(sheet, player.getStringUUID());
 
 		JsonObject patch = new JsonObject();
 		patch.addProperty("nextAttackAdvantage", "normal");
 		patch.add("bardicInspiration", JsonNull.INSTANCE);
-		//El castigo se consume en el mismo golpe (ver PaladinSmiteManager.consumeIfPending), así que se apaga
-		//en el mismo parche en vez de dejar el aviso encendido en el HUD hasta la siguiente tirada.
+		//The smite is consumed on the same hit (see PaladinSmiteManager.consumeIfPending), so it's turned
+		//off in the same patch instead of leaving the HUD indicator lit until the next roll.
 		patch.add("smitePending", JsonNull.INSTANCE);
 		DndsheetsMod.sendSheetFieldUpdate((ServerPlayer) player, patch);
 	}
 
-	//Suma el bono configurado (dndsheets-common.toml) por cada nivel de cada encantamiento real que lleve el arma.
+	//Adds the configured bonus (dndsheets-common.toml) for each level of each real enchantment the weapon carries.
 	private static int enchantmentBonusFor(ItemStack weapon) {
 		int total = 0;
 		for (Map.Entry<Enchantment, Integer> entry : EnchantmentHelper.getEnchantments(weapon).entrySet()) {
@@ -708,10 +713,10 @@ public class CombatManager {
 		}
 
 		Config.WeaponDefault weaponDefault = Config.weaponDefaultFor(itemId);
-		if (weaponDefault == null) weaponDefault = weapon.autoDetected(); //Compatibilidad con armas de otros mods, ver Config.autoDetectWeapon.
+		if (weaponDefault == null) weaponDefault = weapon.autoDetected(); //Compatibility with weapons from other mods, see Config.autoDetectWeapon.
 		if (weaponDefault == null) return null;
-		//Versátil (p.ej. espada larga 1d8/1d10): el dado grande solo cuenta con la otra mano libre de
-		//verdad — un escudo o cualquier otro ítem en ella cuenta como "no libre", igual que en 5e.
+		//Versatile (e.g. longsword 1d8/1d10): the big die only counts with the other hand truly free —
+		//a shield or any other item in it counts as "not free", same as in 5e.
 		String dice = weaponDefault.isVersatile() && offhandEmpty ? weaponDefault.versatileDice() : weaponDefault.dice();
 		return dice + " + $" + weaponDefault.ability();
 	}

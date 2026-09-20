@@ -8,13 +8,13 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>En qué bestia se convierte el druida. Las filas no se arman leyendo el bestiario en el cliente
- * —el registro en memoria vive solo en el servidor, y un cliente que sea un proceso aparte (cualquiera
- * que no sea quien abrió el mundo) lo vería siempre vacío— sino con los datos que ya trae el propio
- * mensaje {@code OPEN_PICKER} desde {@code WildShapeWatcher.openPicker}.</p>
+ * <p>What beast the druid turns into. Rows aren't built by reading the bestiary on the client
+ * —the in-memory registry only lives on the server, and a client running as a separate process (anyone
+ * other than whoever opened the world) would always see it empty— but instead from the data already
+ * carried by the {@code OPEN_PICKER} message itself from {@code WildShapeWatcher.openPicker}.</p>
  *
- * <p>Cada fila enseña PG y CA, que es lo único que de verdad se compara al elegir forma — un lobo y un
- * oso pardo no se diferencian por el nombre cuando lo que decides es si aguantas el siguiente turno.</p>
+ * <p>Each row shows HP and AC, which is the only thing that actually matters when choosing a form — a wolf and a
+ * brown bear aren't told apart by name when what you're deciding is whether you survive the next turn.</p>
  */
 public class WildShapeListScreen extends ListPickerScreen {
 
@@ -40,7 +40,7 @@ public class WildShapeListScreen extends ListPickerScreen {
 		return true;
 	}
 
-	//Nombre + PG + CA no cabe en el ancho estándar sin cortarse, igual que le pasaba a la lista de grupo.
+	//Name + HP + AC doesn't fit the standard width without getting cut off, same issue the party list had.
 	@Override
 	protected int buttonWidth() {
 		return 260;

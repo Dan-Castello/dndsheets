@@ -3,17 +3,17 @@ package net.hawthorn.dndsheets;
 import com.google.gson.JsonObject;
 
 /**
- * <p>Buffs de arma con duración: un hechizo que suma dados de daño a <em>cada</em> golpe con arma mientras
- * dura (Favor Divino, Castigo Marcador). No confundir con {@link PaladinSmiteManager}, que es un rider de
- * un solo uso — este se gasta por asaltos, no por golpe.</p>
+ * <p>Timed weapon buffs: a spell that adds damage dice to <em>every</em> weapon hit while it lasts
+ * (Divine Favor, Branding Smite). Not to be confused with {@link PaladinSmiteManager}, which is a
+ * one-shot rider — this one is spent by rounds, not by hit.</p>
  *
- * <p>Se guarda en la hoja y no en un mapa en memoria por la misma razón que las condiciones: es estado del
- * personaje, tiene que sobrevivir a una reconexión, y el mod ya tuvo una vez el problema de perder cambios
- * que solo vivían en RAM.</p>
+ * <p>Stored on the sheet rather than in an in-memory map for the same reason as conditions: it's
+ * character state, it has to survive a reconnect, and the mod has already once had the problem of
+ * losing changes that only lived in RAM.</p>
  *
- * <p>La duración se descuenta en asaltos completos, no en ticks reales, igual que la Furia del bárbaro:
- * un buff de "1 minuto" son 10 asaltos, y contarlo en segundos reales no significaría nada en una mesa
- * donde un turno tarda lo que tarde el jugador en decidir.</p>
+ * <p>Duration ticks down in full rounds, not real ticks, same as the barbarian's Rage: a "1 minute"
+ * buff is 10 rounds, and counting it in real seconds would mean nothing at a table where a turn takes
+ * however long the player takes to decide.</p>
  */
 public class WeaponBuffManager {
 
@@ -33,9 +33,9 @@ public class WeaponBuffManager {
 	}
 
 	/**
-	 * <p>El buff activo, o {@code null} si no hay. A diferencia de {@code PaladinSmiteManager.consumeIfPending}
-	 * esto NO consume nada: un buff de duración se aplica a todos los golpes del asalto, y descontarlo aquí
-	 * lo dejaría en un solo golpe, que es justo la mecánica del otro.</p>
+	 * <p>The active buff, or {@code null} if there is none. Unlike {@code PaladinSmiteManager.consumeIfPending}
+	 * this does NOT consume anything: a timed buff applies to every hit in the round, and decrementing it
+	 * here would limit it to a single hit, which is exactly the other one's mechanic.</p>
 	 */
 	public static Buff active(JsonObject sheet) {
 		if (sheet == null || !sheet.has(DICE_KEY)) return null;
@@ -43,10 +43,10 @@ public class WeaponBuffManager {
 		return new Buff(
 			sheet.has(NAME_KEY) ? sheet.get(NAME_KEY).getAsString() : "Buff",
 			sheet.get(DICE_KEY).getAsString(),
-			sheet.has(TYPE_KEY) ? sheet.get(TYPE_KEY).getAsString() : "fuerza");
+			sheet.has(TYPE_KEY) ? sheet.get(TYPE_KEY).getAsString() : "force");
 	}
 
-	/** Descuenta un asalto y limpia la hoja si expiró. Devuelve true si acaba de expirar. */
+	/** Decrements one round and clears the sheet if it expired. Returns true if it just expired. */
 	public static boolean tickRound(JsonObject sheet) {
 		if (sheet == null || !sheet.has(ROUNDS_KEY)) return false;
 		int left = sheet.get(ROUNDS_KEY).getAsInt() - 1;
@@ -58,7 +58,7 @@ public class WeaponBuffManager {
 		return true;
 	}
 
-	/** Se llama también al perder la concentración: estos hechizos la requieren. */
+	/** Also called when concentration is lost: these spells require it. */
 	public static void clear(JsonObject sheet) {
 		if (sheet == null) return;
 		sheet.remove(DICE_KEY);

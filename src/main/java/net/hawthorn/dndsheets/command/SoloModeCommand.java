@@ -10,14 +10,14 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * <p>{@code /dndsolo on|off}: enciende y apaga el modo solo (sin DM) — ver
- * {@link net.hawthorn.dndsheets.DndsheetsMod#canActAsDm}. Mismo patrón de hot-reload que
- * {@link VisionCommand}, pero a propósito con nivel de permiso 4 en vez de 2: {@code visionRules}
- * cambia una regla de mesa dentro de una partida ya de confianza, mientras que este flag decide QUIÉN
- * tiene poder administrativo total sobre otros jugadores (invocar monstruos, ajustar la hoja ajena,
- * aplicar condiciones). Pedir el mismo acceso que ya hace falta para nombrar operadores —no el nivel
- * 2 que este mismo flag vuelve irrelevante en cuanto se enciende— es lo que evita que cualquiera con
- * permiso de "DM" se auto-escale a "dueño del server".</p>
+ * <p>{@code /dndsolo on|off}: turns solo mode (no DM) on and off — see
+ * {@link net.hawthorn.dndsheets.DndsheetsMod#canActAsDm}. Same hot-reload pattern as
+ * {@link VisionCommand}, but deliberately with permission level 4 instead of 2: {@code visionRules}
+ * changes a table rule within a game that's already trusted, while this flag decides WHO has total
+ * administrative power over other players (spawning monsters, adjusting someone else's sheet, applying
+ * conditions). Requiring the same access already needed to grant operator status —not the level 2 that
+ * this very flag makes irrelevant the moment it's turned on— is what stops anyone with "DM" permission
+ * from self-escalating to "server owner".</p>
  */
 @Mod.EventBusSubscriber
 public class SoloModeCommand {
@@ -32,17 +32,17 @@ public class SoloModeCommand {
 
 	private static int set(CommandContext<CommandSourceStack> ctx, boolean enabled) {
 		Config.setSoloMode(enabled);
-		ctx.getSource().getServer().getPlayerList().broadcastSystemMessage(Component.literal(enabled
-			? "Modo solo activado: cualquier jugador conectado puede actuar como DM (invocar monstruos, controlar turnos, aplicar presets y condiciones)."
-			: "Modo solo desactivado: las acciones de DM vuelven a exigir operador."), false);
+		ctx.getSource().getServer().getPlayerList().broadcastSystemMessage(Component.translatable(enabled
+			? "chat.dndsheets.solo.enabled"
+			: "chat.dndsheets.solo.disabled"), false);
 		return 1;
 	}
 
 	private static int status(CommandContext<CommandSourceStack> ctx) {
 		boolean enabled = Config.soloMode();
-		ctx.getSource().sendSuccess(() -> Component.literal(enabled
-			? "Modo solo: activado. Apágalo con /dndsolo off."
-			: "Modo solo: desactivado. Enciéndelo con /dndsolo on."), false);
+		ctx.getSource().sendSuccess(() -> Component.translatable(enabled
+			? "chat.dndsheets.solo.status_on"
+			: "chat.dndsheets.solo.status_off"), false);
 		return enabled ? 1 : 0;
 	}
 }

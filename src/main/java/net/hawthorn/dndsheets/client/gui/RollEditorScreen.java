@@ -53,10 +53,10 @@ public class RollEditorScreen extends AbstractContainerScreen<RollEditorMenu> {
 
 	@Override
 	protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int gx, int gy) {
-		//Panel procedural en vez de un PNG. El que había era el azul marino con remaches rojos que trae
-		//MCreator por defecto: no era del mod, y encima ataba el tamaño de la pantalla al tamaño de una
-		//imagen. GuiStyle.panel es lo que ya pinta las otras cuarenta pantallas, así que estas dos dejan de
-		//poder desincronizarse del resto — y se dibuja en el mismo rectángulo, así que ningún offset cambia.
+		//Procedural panel instead of a PNG. The old one was the navy-blue-with-red-rivets look MCreator
+		//ships by default: it wasn't part of the mod, and it also tied the screen's size to an image's
+		//size. GuiStyle.panel is what already draws the other forty screens, so these two stop being able
+		//to drift out of sync with the rest — and it's drawn in the same rectangle, so no offset changes.
 		GuiStyle.panel(guiGraphics, this.leftPos, this.topPos, this.leftPos + this.imageWidth, this.topPos + this.imageHeight);
 	}
 
@@ -148,7 +148,7 @@ public class RollEditorScreen extends AbstractContainerScreen<RollEditorMenu> {
 			case 0: stringCategory = "checks"; break;
 			case 1: stringCategory = "saves"; break;
 			case 2: stringCategory = "skills"; break;
-			default: DndsheetsMod.LOGGER.warn("RollEditorScreen abierto con una categoría desconocida ({}).", workingCategory); this.minecraft.player.closeContainer(); break;
+			default: DndsheetsMod.LOGGER.warn("RollEditorScreen opened with an unknown category ({}).", workingCategory); this.minecraft.player.closeContainer(); break;
 		}
 		if (sheet.has(stringCategory)) {
 			if (sheet.get(stringCategory) != null) {

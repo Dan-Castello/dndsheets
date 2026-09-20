@@ -4,26 +4,26 @@ import net.minecraft.world.InteractionResult;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * <p>Un clic derecho no es un evento: son dos. Cuando la mano usada "no consume" nada, el cliente
- * reintenta por su cuenta con la otra mano (comportamiento vanilla de mano principal → secundaria) y
- * manda un segundo paquete, así que el servidor procesa la acción DOS VECES.</p>
+ * <p>A right-click isn't one event: it's two. When the used hand "doesn't consume" anything, the client
+ * retries on its own with the other hand (vanilla main-hand → off-hand behavior) and sends a second
+ * packet, so the server processes the action TWICE.</p>
  *
- * <p>Y {@code setCanceled(true)} por sí solo no lo evita: cancelar en el servidor deja el resultado en
- * {@code PASS}, que es justo lo que el cliente lee como "no consumió, prueba con la otra mano". Hay que
- * cancelar además con un resultado que SÍ consuma.</p>
+ * <p>And {@code setCanceled(true)} alone doesn't prevent it: canceling on the server leaves the result
+ * as {@code PASS}, which is exactly what the client reads as "didn't consume, try the other hand." You
+ * also have to cancel with a result that DOES consume.</p>
  *
- * <p>Se ve como mensajes de chat duplicados, pero eso es solo el síntoma visible: lo que se ejecuta dos
- * veces es el manejador entero. Un manejador idempotente lo disimula —{@code onSelectMoveDestination}
- * borraba su estado en la primera pasada y salía temprano en la segunda, así que "movido" salía una sola
- * vez mientras "seleccionado" salía dos— y por eso conviene llamar a esto SIEMPRE, no solo donde se note.</p>
+ * <p>It shows up as duplicated chat messages, but that's just the visible symptom: what actually runs
+ * twice is the whole handler. An idempotent handler hides it —{@code onSelectMoveDestination} cleared
+ * its state on the first pass and returned early on the second, so "moved" printed once while
+ * "selected" printed twice— which is why you should ALWAYS call this, not just where it's noticeable.</p>
  */
 public final class InteractionEvents {
 
 	private InteractionEvents() {
 	}
 
-	/** "Este clic derecho ya está atendido": cancela y corta el reintento del cliente con la otra mano.
-	 *  Pública: la usa también el addon del toolkit de mazmorras (módulo aparte, ver DungeonToolManager). */
+	/** "This right-click is already handled": cancels and cuts off the client's retry with the other hand.
+	 *  Public: also used by the dungeon toolkit addon (separate module, see DungeonToolManager). */
 	public static void consume(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		event.setCancellationResult(InteractionResult.SUCCESS);

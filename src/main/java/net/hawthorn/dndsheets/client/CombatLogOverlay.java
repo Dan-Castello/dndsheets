@@ -19,26 +19,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>Resumen efímero de los últimos eventos de combate (tiradas, ataques, conjuros, salvaciones de
- * muerte), abajo a la derecha, con el mismo aspecto de tomo que el resto del HUD (ver
- * {@link GuiStyle}). <b>Una línea por evento, recortada con elipsis, nunca envuelta</b>: el detalle
- * completo (desglose del dado, contra qué CA, tipo de daño) vive SOLO en el chat — tenerlo entero en
- * los dos sitios era leer lo mismo dos veces, y este panel existe para el vistazo, no para la lectura.</p>
+ * <p>Ephemeral summary of the most recent combat events (rolls, attacks, spells, death saves), bottom
+ * right, with the same tome-like look as the rest of the HUD (see {@link GuiStyle}). <b>One line per
+ * event, trimmed with an ellipsis, never wrapped</b>: the full detail (dice breakdown, against which AC,
+ * damage type) lives ONLY in chat — having it in full in both places meant reading the same thing twice,
+ * and this panel exists for a glance, not for reading.</p>
  *
- * <p>No hay mensaje de red nuevo ni cambios en ningún manager: TODA línea de combate del mod ya llega
- * al cliente como chat y ya empieza por una etiqueta traducible {@code chat.dndsheets.tag.*} (ver
- * {@code ChatFeedback.tag}); aquí solo se reconocen esas líneas al recibirlas y se resumen en pantalla
- * un rato. Por eso {@link #push} es privado: nadie puede escribir en este panel directamente — si una
- * línea no pasó por {@code ChatFeedback}, no existe para este panel.</p>
+ * <p>No new network message and no changes to any manager: EVERY combat line the mod produces already
+ * reaches the client as chat and already starts with a translatable {@code chat.dndsheets.tag.*} tag
+ * (see {@code ChatFeedback.tag}); this class only recognizes those lines as they arrive and summarizes
+ * them on screen for a while. That's why {@link #push} is private: nobody can write to this panel
+ * directly — if a line didn't go through {@code ChatFeedback}, it doesn't exist for this panel.</p>
  */
 @Mod.EventBusSubscriber(modid = DndsheetsMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class CombatLogOverlay {
 
-	//Encogido tras la primera partida real ("interfaz saturada"): menos eventos, menos vida y menos
-	//ancho — el panel es un vistazo, no una segunda ventana de chat compitiendo con la de verdad.
+	//Shrunk after the first real session ("interface felt cluttered"): fewer events, shorter lifetime,
+	//and less width — the panel is meant for a glance, not a second chat window competing with the real one.
 	private static final int MAX_ENTRIES = 4;
 	private static final long LIFE_MS = 8_000;
-	//Mismo suelo que los otros dos paneles (ver TurnHudOverlay): menos y el texto pisa la cantonera.
+	//Same floor as the other two panels (see TurnHudOverlay): any less and the text runs into the corner brace.
 	private static final int PADDING = 7;
 	private static final int LINE_HEIGHT = 9;
 	private static final int CONTENT_WIDTH = 170;
@@ -52,7 +52,7 @@ public class CombatLogOverlay {
 		event.registerAboveAll("dndsheets_combat_log", (gui, guiGraphics, partialTick, width, height) -> render(guiGraphics, width, height));
 	}
 
-	//Bus FORGE (eventos de juego), separado del bus MOD de la clase (registro de overlays).
+	//FORGE bus (game events), separate from the class's MOD bus (overlay registration).
 	@Mod.EventBusSubscriber(modid = DndsheetsMod.MODID, value = Dist.CLIENT)
 	public static class Chat {
 		@SubscribeEvent
@@ -62,10 +62,10 @@ public class CombatLogOverlay {
 	}
 
 	private static void push(Component line) {
-		//El resumen semántico viaja DENTRO de la propia línea de chat, como insertion invisible (ver
-		//ChatFeedback.withSummary): si está, el panel enseña ESO ("Mago ▶ Creeper · 17 ✓ 6") y el
-		//desglose queda solo en el chat. Sin resumen (líneas raras: caídas, reanimaciones), se cae a la
-		//línea completa recortada — mejor larga que ausente.
+		//The semantic summary travels INSIDE the chat line itself, as an invisible insertion (see
+		//ChatFeedback.withSummary): if present, the panel shows THAT ("Wizard ▶ Creeper · 17 ✓ 6") and the
+		//breakdown stays chat-only. Without a summary (rare lines: falls, revivals), it falls back to the
+		//full trimmed line — better long than missing.
 		String summary = findSummary(line);
 		entries.addLast(new Entry(summary != null ? Component.literal(summary) : line, System.currentTimeMillis()));
 		while (entries.size() > MAX_ENTRIES) entries.removeFirst();
@@ -83,8 +83,8 @@ public class CombatLogOverlay {
 		return null;
 	}
 
-	//La etiqueta es el primer trozo de toda línea de ChatFeedback, pero puede venir anidada dentro del
-	//árbol del Component, así que se busca en profundidad y no solo en la raíz.
+	//The tag is the first chunk of every ChatFeedback line, but it can arrive nested inside the
+	//Component tree, so the search goes depth-first instead of just checking the root.
 	private static boolean hasModTag(Component component) {
 		if (component.getContents() instanceof TranslatableContents translatable
 			&& translatable.getKey().startsWith("chat.dndsheets.tag.")) return true;
@@ -101,9 +101,9 @@ public class CombatLogOverlay {
 
 		Font font = Minecraft.getInstance().font;
 
-		//Una línea por evento, recortada y NUNCA envuelta: este panel es el resumen, el desglose entero
-		//ya está en el chat (pedido explícito del dueño: detalle solo en el chat). substrByWidth respeta
-		//los estilos del Component, así que el recorte conserva los colores de ChatFeedback.
+		//One line per event, trimmed and NEVER wrapped: this panel is the summary, the full breakdown is
+		//already in chat (explicit owner request: detail stays chat-only). substrByWidth respects the
+		//Component's styles, so trimming preserves ChatFeedback's colors.
 		List<FormattedCharSequence> wrapped = new ArrayList<>(entries.size());
 		int widest = 0;
 		int ellipsisWidth = font.width("…");
@@ -120,8 +120,8 @@ public class CombatLogOverlay {
 			widest = Math.max(widest, font.width(line));
 		}
 
-		//Abajo a la derecha, por encima de la hotbar: la esquina que los otros dos paneles no ocupan y
-		//donde no tapa ni el chat (abajo-izquierda) ni el tablero de turnos (arriba-derecha).
+		//Bottom right, above the hotbar: the corner the other two panels don't occupy, and where it
+		//doesn't cover either the chat (bottom-left) or the turn tracker (top-right).
 		int right = screenWidth - 8;
 		int left = right - widest - 2 * PADDING;
 		int bottom = screenHeight - 45;

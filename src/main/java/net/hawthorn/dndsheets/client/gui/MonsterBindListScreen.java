@@ -8,13 +8,13 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>Elegir qué bloque de estadísticas se le pega a la criatura que el DM acaba de tocar con la Vara de
- * DM. El bestiario viaja en el mismo {@link MonsterBindMessage} que abre esta pantalla —resuelto en el
- * servidor, que es donde de verdad vive el registro— y no se lee del cliente: un DM que sea un proceso
- * aparte (invitado por LAN) lo vería siempre vacío.</p>
+ * <p>Choose which stat block to attach to the creature the DM just touched with the DM Wand. The
+ * bestiary travels in the same {@link MonsterBindMessage} that opens this screen —resolved on the
+ * server, which is where the registry actually lives— and isn't read from the client: a DM running as
+ * a separate process (invited over LAN) would always see it empty.</p>
  *
- * <p>Lo único más que hay que llevar hasta aquí es a QUIÉN se lo estamos pegando, y eso viaja en el mismo
- * mensaje que luego vuelve con la respuesta.</p>
+ * <p>The only other thing that needs to travel here is WHO we're attaching it to, and that rides along
+ * in the same message that later comes back with the response.</p>
  */
 public class MonsterBindListScreen extends ListPickerScreen {
 
@@ -31,7 +31,7 @@ public class MonsterBindListScreen extends ListPickerScreen {
 		Minecraft.getInstance().setScreen(new MonsterBindListScreen(entityId, ids));
 	}
 
-	//330 monstruos del SRD: sin buscador esto es una lista por la que se baja con la rueda hasta rendirse.
+	//330 SRD monsters: without a search box this is a list you scroll through until you give up.
 	@Override
 	protected boolean searchable() {
 		return true;

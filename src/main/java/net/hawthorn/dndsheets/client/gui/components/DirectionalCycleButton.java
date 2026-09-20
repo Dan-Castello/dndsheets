@@ -4,13 +4,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
-//Botón cíclico que avanza con clic izquierdo y retrocede con clic derecho. Antes de esto, todo botón
-//cíclico del mod (dado de efecto de turno, hab. de ataque/daño, tipo de daño, ventaja, pacto...) solo
-//avanzaba: pasarse una opción obligaba a recorrer TODA la lista de vuelta en vez de retroceder un paso.
-//Hereda de TomeButton y no de Button para pintarse como el resto del mod: siendo un Button pelado
-//salia gris de piedra sobre el panel de cuero, que es justo lo que el rediseno vino a quitar.
-//No hereda el onPress de Button (privado en la clase base) — guarda sus propios callbacks y sobrescribe
-//mouseClicked entero, ya que AbstractWidget#onClick no recibe qué botón del mouse se usó.
+//Cyclic button that advances with left click and goes back with right click. Before this, every cyclic
+//button in the mod (turn effect die, attack/damage ability, damage type, advantage, pact...) only
+//advanced: overshooting an option meant cycling through the ENTIRE list again instead of stepping back.
+//Inherits from TomeButton and not Button so it renders like the rest of the mod: as a bare Button it
+//came out stone-gray on the leather panel, which is exactly what the redesign was meant to remove.
+//Doesn't inherit Button's onPress (private in the base class) — it keeps its own callbacks and overrides
+//mouseClicked entirely, since AbstractWidget#onClick doesn't receive which mouse button was used.
 public class DirectionalCycleButton extends TomeButton {
 	private final Runnable onNext;
 	private final Runnable onPrevious;

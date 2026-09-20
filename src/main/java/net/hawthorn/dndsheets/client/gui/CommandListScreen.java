@@ -7,13 +7,14 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>Lista genérica cuyas filas disparan un comando de chat al pulsarlas. Existe para darle camino GUI
- * a los comandos del DM que ya funcionan por chat sin escribirle una pantalla a cada uno: la fila del
- * Panel de DM (o el servidor, vía {@code BrowseListMessage}) arma las parejas etiqueta→comando y esta
- * pantalla solo las pinta y las manda — el permiso y el efecto siguen viviendo donde siempre, en el
- * comando del lado del servidor.</p>
+ * <p>Generic list whose rows fire a chat command when clicked. It exists to give a GUI path to DM
+ * commands that already work over chat, without writing a dedicated screen for each one: the DM Panel
+ * row (or the server, via {@code BrowseListMessage}) assembles the label→command pairs and this screen
+ * just renders them and sends them — the permission check and the effect still live where they always
+ * have, in the server-side command.</p>
  *
- * <p>Se cierra al elegir: la respuesta del comando llega por chat, y dejarla abierta encima la taparía.</p>
+ * <p>Closes on selection: the command's response arrives via chat, and leaving this open on top of it
+ * would cover it.</p>
  */
 public class CommandListScreen extends ListPickerScreen {
 

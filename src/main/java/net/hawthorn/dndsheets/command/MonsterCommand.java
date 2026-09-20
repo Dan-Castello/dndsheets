@@ -36,10 +36,10 @@ import java.nio.file.Path;
 import java.util.Collection;
 
 /**
- * <p>Carga bloques de estadísticas de monstruo desde JSON y los invoca como mobs vanilla reales sin IA
- * ({@code NoAI:1}), para que el DM los controle a mano con la vara de DM en vez de dejar que Minecraft
- * los mueva o ataque solo. Ver {@link MonsterRegistry} para el formato del JSON y
- * {@link net.hawthorn.dndsheets.MonsterActionManager} para cómo el DM dispara sus ataques/hechizos.</p>
+ * <p>Loads monster stat blocks from JSON and spawns them as real vanilla mobs with no AI
+ * ({@code NoAI:1}), so the DM controls them by hand with the DM wand instead of letting Minecraft
+ * move or attack with them on its own. See {@link MonsterRegistry} for the JSON format and
+ * {@link net.hawthorn.dndsheets.MonsterActionManager} for how the DM triggers their attacks/spells.</p>
  */
 @Mod.EventBusSubscriber
 public class MonsterCommand {
@@ -49,63 +49,64 @@ public class MonsterCommand {
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndmonsters")
 			.requires(source -> DndsheetsMod.canActAsDm(source))
-			.then(ContentCommands.loadBranch(MONSTERS_DIR, MonsterRegistry::loadFile, "monstruos"))
-			.then(ContentCommands.listBranch(MonsterRegistry::ids, "Monstruos"))
+			.then(ContentCommands.loadBranch(MONSTERS_DIR, MonsterRegistry::loadFile, "monsters"))
+			.then(ContentCommands.listBranch(MonsterRegistry::ids, "Monsters"))
 			.then(spawnNode())
 			.then(galleryNode())
 			.then(attackNode())
 			.then(bindNode())
 			.then(Commands.literal("dmtool")
-				.then(Commands.argument("jugadores", EntityArgument.players()).executes(MonsterCommand::giveDmTool)))
+				.then(Commands.argument("players", EntityArgument.players()).executes(MonsterCommand::giveDmTool)))
 			.then(Commands.literal("movetool")
-				.then(Commands.argument("jugadores", EntityArgument.players()).executes(MonsterCommand::giveMoveTool))));
+				.then(Commands.argument("players", EntityArgument.players()).executes(MonsterCommand::giveMoveTool))));
 	}
 
 	/**
-	 * <p>Le pega un bloque de estadísticas a una criatura que <b>ya existe</b>, en vez de invocar una
-	 * nueva. Es la dirección que faltaba: hasta ahora un monstruo del mod solo podía nacer del mod, así que
-	 * el DM tenía que elegir entre las reglas de 5e y las herramientas de un mod de NPC (EasyNPC y
-	 * compañía), que son mucho mejores para construir un personaje —piel, pose, diálogos, objetivos de
-	 * patrulla o de seguir al grupo— que cualquier cosa que este mod vaya a tener.</p>
+	 * <p>Attaches a stat block to a creature that <b>already exists</b>, instead of spawning a new one.
+	 * It's the missing direction: until now a mod monster could only be born from the mod, so the DM had
+	 * to choose between 5e rules and the tools of an NPC mod (EasyNPC and friends), which are far better
+	 * for building a character — skin, pose, dialogue, patrol or follow-the-party goals — than anything
+	 * this mod is ever going to have.</p>
 	 *
-	 * <p>Con esto no hay que elegir: se construye la criatura donde mejor se construya, y luego se le dice
-	 * "esto es un dndsheets:capitan_guardia". Desde ese momento tiene CA, PG, resistencias, ataques,
-	 * condiciones y turno propio como cualquier monstruo del bestiario, y sigue siendo suya para su mod de
-	 * origen. Ojo a lo que NO es: no hay integración con EasyNPC ni dependencia de nadie. La etiqueta es
-	 * NBT persistente ({@code MonsterRegistry.tagAsMonster}) y funciona igual sobre un mob de vanilla o de
-	 * cualquier otro mod, que es justo por lo que no hace falta integrar nada.</p>
+	 * <p>With this there's no need to choose: the creature is built wherever it's built best, and then
+	 * told "this is a dndsheets:capitan_guardia". From that moment it has AC, HP, resistances, attacks,
+	 * conditions and its own turn like any monster from the bestiary, and it stays theirs for its
+	 * originating mod. Note what it is NOT: there's no integration with EasyNPC and no dependency on
+	 * anyone. The tag is persistent NBT ({@code MonsterRegistry.tagAsMonster}) and works the same on a
+	 * vanilla mob or one from any other mod, which is exactly why nothing needs to be integrated.</p>
 	 *
-	 * <p>Su IA no se toca: si la criatura ya sabía patrullar, sigue sabiendo. El modo turnos la congela
-	 * mientras dure el combate y se la devuelve al acabar (ver {@code TurnManager.freeze}), exactamente
-	 * igual que a un monstruo propio invocado con {@code "ai": true}.</p>
+	 * <p>Its AI isn't touched: if the creature already knew how to patrol, it still does. Turn mode
+	 * freezes it for the duration of combat and gives it back when it ends (see {@code TurnManager.freeze}),
+	 * exactly like a mod-native monster spawned with {@code "ai": true}.</p>
 	 */
 	private static LiteralArgumentBuilder<CommandSourceStack> bindNode() {
 		return Commands.literal("bind")
-			.then(Commands.argument("objetivo", EntityArgument.entity())
-				.then(Commands.argument("monstruoId", ResourceLocationArgument.id())
+			.then(Commands.argument("target", EntityArgument.entity())
+				.then(Commands.argument("monsterId", ResourceLocationArgument.id())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(MonsterRegistry.ids(), builder))
 					.executes(MonsterCommand::bind)))
 			.then(Commands.literal("clear")
-				.then(Commands.argument("objetivo", EntityArgument.entity())
+				.then(Commands.argument("target", EntityArgument.entity())
 					.executes(MonsterCommand::unbind)));
 	}
 
 	private static int bind(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Entity target = EntityArgument.getEntity(ctx, "objetivo");
-		String monsterId = ResourceLocationArgument.getId(ctx, "monstruoId").toString();
+		Entity target = EntityArgument.getEntity(ctx, "target");
+		String monsterId = ResourceLocationArgument.getId(ctx, "monsterId").toString();
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(monsterId);
 		if (block == null) {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.monster.no_such_block", monsterId));
 			return 0;
 		}
-		//Un jugador tiene su propia hoja y sus propias reglas: darle un bloque de monstruo sería pisarlas.
+		//A player has their own sheet and their own rules: giving them a monster stat block would override
+		//those.
 		if (target instanceof net.minecraft.world.entity.player.Player) {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.monster.bind_player"));
 			return 0;
 		}
 
-		//Qué se pisa y qué no lo decide MonsterRegistry.applyStatBlock, que es también lo que ejecuta el
-		//selector de la Vara de DM: dos formas de hacer lo mismo tienen que hacer lo mismo.
+		//What gets overridden and what doesn't is decided by MonsterRegistry.applyStatBlock, which is also
+		//what the DM Wand's selector runs: two ways of doing the same thing have to do the same thing.
 		MonsterRegistry.applyStatBlock(target, block);
 		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.monster.bound",
 			target.getName().getString(), monsterId), true);
@@ -113,7 +114,7 @@ public class MonsterCommand {
 	}
 
 	private static int unbind(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Entity target = EntityArgument.getEntity(ctx, "objetivo");
+		Entity target = EntityArgument.getEntity(ctx, "target");
 		if (MonsterRegistry.monsterIdOf(target) == null) {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.monster.not_bound"));
 			return 0;
@@ -126,15 +127,15 @@ public class MonsterCommand {
 
 	private static LiteralArgumentBuilder<CommandSourceStack> spawnNode() {
 		return Commands.literal("spawn")
-			.then(Commands.argument("monstruoId", ResourceLocationArgument.id())
+			.then(Commands.argument("monsterId", ResourceLocationArgument.id())
 				.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(MonsterRegistry.ids(), builder))
 				.executes(ctx -> spawn(ctx, 1))
-				.then(Commands.argument("cantidad", IntegerArgumentType.integer(1, 50))
-					.executes(ctx -> spawn(ctx, IntegerArgumentType.getInteger(ctx, "cantidad")))))
-			//NPC en blanco, sin JSON: nombre obligatorio, entidad base/CA/PG opcionales (por defecto
-			//aldeano, CA 10, 10 PG) — para rellenarlo en vivo con "attack add" según haga falta.
+				.then(Commands.argument("amount", IntegerArgumentType.integer(1, 50))
+					.executes(ctx -> spawn(ctx, IntegerArgumentType.getInteger(ctx, "amount")))))
+			//Blank NPC, no JSON: name required, base entity/AC/HP optional (villager, AC 10, 10 HP by
+			//default) — to be filled in live with "attack add" as needed.
 			.then(Commands.literal("generic")
-				.then(Commands.argument("nombre", StringArgumentType.string())
+				.then(Commands.argument("name", StringArgumentType.string())
 					.executes(ctx -> spawnGeneric(ctx, "minecraft:villager", 10, 10))
 					.then(Commands.argument("baseEntity", StringArgumentType.word())
 						.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(ForgeRegistries.ENTITY_TYPES.getKeys().stream().map(Object::toString), builder))
@@ -145,49 +146,50 @@ public class MonsterCommand {
 								.executes(ctx -> spawnGeneric(ctx, StringArgumentType.getString(ctx, "baseEntity"), IntegerArgumentType.getInteger(ctx, "ac"), IntegerArgumentType.getInteger(ctx, "hp"))))))));
 	}
 
-	//Invoca de golpe TODO el bestiario en cuadrícula, para ver de un vistazo con qué modelo sale cada uno
-	//—que es justo lo que cambia según qué mods de aspecto haya instalados (ver MonsterSkins)—. Sin esto,
-	//comprobar que un pack de aspecto se aplicó de verdad exigía invocarlos de uno en uno.
+	//Spawns the ENTIRE bestiary at once in a grid, to see at a glance which model each one comes out as
+	//—which is exactly what changes depending on which appearance mods are installed (see MonsterSkins).
+	//Without this, checking that an appearance pack really applied required spawning them one by one.
 	private static LiteralArgumentBuilder<CommandSourceStack> galleryNode() {
 		return Commands.literal("gallery")
 			.executes(ctx -> gallery(ctx, ""))
-			//"clear" es literal, así que gana al argumento: no se puede filtrar por la palabra "clear".
+			//"clear" is a literal, so it wins over the argument: it's not possible to filter by the word
+			//"clear".
 			.then(Commands.literal("clear").executes(MonsterCommand::galleryClear))
-			.then(Commands.argument("filtro", StringArgumentType.word())
-				.executes(ctx -> gallery(ctx, StringArgumentType.getString(ctx, "filtro"))));
+			.then(Commands.argument("filter", StringArgumentType.word())
+				.executes(ctx -> gallery(ctx, StringArgumentType.getString(ctx, "filter"))));
 	}
 
-	//Edita EN VIVO los ataques de un monstruo ya invocado (una instancia concreta, no toda su especie —
-	//ver MonsterRegistry.addCustomAttack): sin "appliesEffect", solo ataque+daño, a propósito (ver la nota
-	//en MonsterRegistry). Para un efecto de estado sigue haciendo falta el JSON completo del monstruo.
+	//Edits the attacks of an already-spawned monster LIVE (a specific instance, not its whole species —
+	//see MonsterRegistry.addCustomAttack): no "appliesEffect", attack+damage only, on purpose (see the
+	//note in MonsterRegistry). A status effect still requires the monster's full JSON.
 	private static LiteralArgumentBuilder<CommandSourceStack> attackNode() {
 		return Commands.literal("attack")
 			.then(Commands.literal("add")
-				.then(Commands.argument("objetivo", EntityArgument.entity())
-					.then(Commands.argument("nombre", StringArgumentType.string())
-						.then(Commands.argument("habAtaque", StringArgumentType.word())
+				.then(Commands.argument("target", EntityArgument.entity())
+					.then(Commands.argument("name", StringArgumentType.string())
+						.then(Commands.argument("attackAbility", StringArgumentType.word())
 							.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(Combatant.ABILITIES, builder))
-							.then(Commands.argument("dado", StringArgumentType.word())
-								.then(Commands.argument("habDano", StringArgumentType.word())
+							.then(Commands.argument("dice", StringArgumentType.word())
+								.then(Commands.argument("damageAbility", StringArgumentType.word())
 									.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(Combatant.ABILITIES, builder))
-									.then(Commands.argument("tipoDano", StringArgumentType.word())
+									.then(Commands.argument("damageType", StringArgumentType.word())
 										.executes(MonsterCommand::addAttack))))))))
 			.then(Commands.literal("remove")
-				.then(Commands.argument("objetivo", EntityArgument.entity())
-					.then(Commands.argument("nombre", StringArgumentType.string())
+				.then(Commands.argument("target", EntityArgument.entity())
+					.then(Commands.argument("name", StringArgumentType.string())
 						.executes(MonsterCommand::removeAttack))))
 			.then(Commands.literal("clear")
-				.then(Commands.argument("objetivo", EntityArgument.entity())
+				.then(Commands.argument("target", EntityArgument.entity())
 					.executes(MonsterCommand::clearAttacks)));
 	}
 
 
 
 	private static int spawn(CommandContext<CommandSourceStack> ctx, int count) {
-		String monsterId = ResourceLocationArgument.getId(ctx, "monstruoId").toString();
+		String monsterId = ResourceLocationArgument.getId(ctx, "monsterId").toString();
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(monsterId);
 		if (block == null) {
-			ctx.getSource().sendFailure(Component.literal("No conozco el monstruo \"" + monsterId + "\". Cárgalo con /dndmonsters load."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.monster.no_such_load_hint", monsterId));
 			return 0;
 		}
 
@@ -203,18 +205,18 @@ public class MonsterCommand {
 		}
 
 		if (spawned == 0) {
-			ctx.getSource().sendFailure(Component.literal("El ítem base \"" + block.baseEntityId() + "\" de " + monsterId + " no existe."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.monster.no_base_entity", block.baseEntityId(), monsterId));
 			return 0;
 		}
 
 		int finalSpawned = spawned;
-		ctx.getSource().sendSuccess(() -> Component.literal("Invocados " + finalSpawned + " ").append(ContentNames.of(block.name()))
-			.append(" (CA " + block.ac() + ", " + block.maxHp() + " PG)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.monster.spawned_count",
+			finalSpawned, ContentNames.of(block.name()), block.ac(), block.maxHp()), true);
 		return spawned;
 	}
 
-	//4 bloques y no 3: con 3 los modelos grandes (un dragón de Ice and Fire, un gigante) se solapan con su
-	//vecino y no se distingue cuál es cuál, que es lo único para lo que sirve esta cuadrícula.
+	//4 blocks and not 3: with 3, large models (an Ice and Fire dragon, a giant) overlap with their
+	//neighbor and can't be told apart, which is the only thing this grid is for.
 	private static final int GALLERY_SPACING = 4;
 
 	private static int gallery(CommandContext<CommandSourceStack> ctx, String filter) {
@@ -224,7 +226,9 @@ public class MonsterCommand {
 			.sorted()
 			.toList();
 		if (ids.isEmpty()) {
-			ctx.getSource().sendFailure(Component.literal("Ningún monstruo cargado " + (needle.isEmpty() ? "todavía." : "contiene \"" + filter + "\".")));
+			ctx.getSource().sendFailure(needle.isEmpty()
+				? Component.translatable("chat.dndsheets.monster.gallery_none_loaded")
+				: Component.translatable("chat.dndsheets.monster.gallery_none_matching", filter));
 			return 0;
 		}
 
@@ -233,7 +237,8 @@ public class MonsterCommand {
 		int columns = (int) Math.ceil(Math.sqrt(ids.size()));
 		int spawned = 0;
 		for (int i = 0; i < ids.size(); i++) {
-			//Sin CombatFx.monsterSpawn: son cientos a la vez y el efecto por monstruo solo tapa la vista.
+			//No CombatFx.monsterSpawn: there are hundreds at once and a per-monster effect would just
+			//obscure the view.
 			if (MonsterRegistry.spawnAt(level,
 					origin.x + (i % columns) * GALLERY_SPACING,
 					origin.y,
@@ -244,13 +249,12 @@ public class MonsterCommand {
 		}
 
 		int finalSpawned = spawned;
-		ctx.getSource().sendSuccess(() -> Component.literal("Invocados " + finalSpawned + " monstruos en una cuadrícula de "
-			+ columns + " columnas. Bórralos con /dndmonsters gallery clear."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.monster.gallery_spawned", finalSpawned, columns), true);
 		return spawned;
 	}
 
-	//Borra TODO monstruo del mod que haya cerca, no solo los de la galería: 330 fichas no se limpian a mano
-	//con la Vara de DM. El radio cubre de sobra la cuadrícula más grande (18x18 casillas de 4 bloques).
+	//Removes EVERY mod monster nearby, not just the gallery's: 330 stat blocks don't get cleaned up by
+	//hand with the DM Wand. The radius comfortably covers the largest grid (18x18 cells of 4 blocks).
 	private static int galleryClear(CommandContext<CommandSourceStack> ctx) {
 		ServerLevel level = ctx.getSource().getLevel();
 		Vec3 pos = ctx.getSource().getPosition();
@@ -259,86 +263,86 @@ public class MonsterCommand {
 			entity -> MonsterRegistry.monsterIdOf(entity) != null);
 
 		for (Entity entity : found) {
-			//markDefeated antes del remove: este borrado no pasa por la muerte vanilla, y sin esto un
-			//combate en marcha se quedaría esperando a un enemigo que ya no existe (ver TurnManager).
+			//markDefeated before remove: this removal doesn't go through vanilla death, and without this
+			//an ongoing combat would be left waiting on an enemy that no longer exists (see TurnManager).
 			net.hawthorn.dndsheets.TurnManager.markDefeated(entity.getId());
 			entity.remove(Entity.RemovalReason.DISCARDED);
 		}
 
-		ctx.getSource().sendSuccess(() -> Component.literal("Borrados " + found.size() + " monstruos en 200 bloques."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.monster.gallery_cleared", found.size()), true);
 		return found.size();
 	}
 
-	//NPC en blanco (sin JSON de por medio): CA/PG/características por defecto, sin ataques. Pensado para
-	//rellenarlo en vivo con /dndmonsters attack add según lo que necesite ese encuentro concreto.
+	//Blank NPC (no JSON involved): default AC/HP/ability scores, no attacks. Meant to be filled in live
+	//with /dndmonsters attack add according to what that specific encounter needs.
 	private static int spawnGeneric(CommandContext<CommandSourceStack> ctx, String baseEntity, int ac, int hp) {
-		String name = StringArgumentType.getString(ctx, "nombre");
+		String name = StringArgumentType.getString(ctx, "name");
 		ServerLevel level = ctx.getSource().getLevel();
 		Vec3 pos = ctx.getSource().getPosition();
 
 		Entity entity = MonsterRegistry.spawnGeneric(level, pos.x, pos.y, pos.z, name, baseEntity, ac, hp);
 		if (entity == null) {
-			ctx.getSource().sendFailure(Component.literal("El ítem base \"" + baseEntity + "\" no existe."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.content.base_item_missing", baseEntity));
 			return 0;
 		}
 
 		CombatFx.monsterSpawn(entity);
-		ctx.getSource().sendSuccess(() -> Component.literal("Invocado " + name + " (CA " + ac + ", " + hp + " PG) — añádele ataques con /dndmonsters attack add."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.monster.generic_spawned", name, ac, hp), true);
 		return 1;
 	}
 
-	//Ataque personalizado sobre UN monstruo ya invocado (no toca el bloque de estadísticas compartido de
-	//su especie, ver MonsterRegistry.addCustomAttack) — así se puede dar un ataque extra a un solo goblin
-	//de la tanda sin recargar JSON ni afectar a los demás.
+	//Custom attack on ONE already-spawned monster (doesn't touch its species' shared stat block, see
+	//MonsterRegistry.addCustomAttack) — this way a single goblin in the batch can get an extra attack
+	//without reloading JSON or affecting the others.
 	private static int addAttack(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-		Entity target = EntityArgument.getEntity(ctx, "objetivo");
+		Entity target = EntityArgument.getEntity(ctx, "target");
 		if (MonsterRegistry.statBlockOf(target) == null) {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.monster.not_summoned"));
 			return 0;
 		}
 
-		String name = StringArgumentType.getString(ctx, "nombre");
-		String toHitAbility = StringArgumentType.getString(ctx, "habAtaque").toLowerCase(java.util.Locale.ROOT);
-		String dice = StringArgumentType.getString(ctx, "dado");
-		String damageAbility = StringArgumentType.getString(ctx, "habDano").toLowerCase(java.util.Locale.ROOT);
-		String damageType = StringArgumentType.getString(ctx, "tipoDano").toLowerCase(java.util.Locale.ROOT);
+		String name = StringArgumentType.getString(ctx, "name");
+		String toHitAbility = StringArgumentType.getString(ctx, "attackAbility").toLowerCase(java.util.Locale.ROOT);
+		String dice = StringArgumentType.getString(ctx, "dice");
+		String damageAbility = StringArgumentType.getString(ctx, "damageAbility").toLowerCase(java.util.Locale.ROOT);
+		String damageType = StringArgumentType.getString(ctx, "damageType").toLowerCase(java.util.Locale.ROOT);
 
 		MonsterRegistry.addCustomAttack(target, new MonsterRegistry.MonsterAttack(name, toHitAbility, dice, damageAbility, damageType, null, null, 0));
-		ctx.getSource().sendSuccess(() -> Component.literal("Añadido \"" + name + "\" a " + target.getName().getString() + "."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.monster.attack_added", name, target.getName().getString()), true);
 		return 1;
 	}
 
 	private static int removeAttack(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-		Entity target = EntityArgument.getEntity(ctx, "objetivo");
-		String name = StringArgumentType.getString(ctx, "nombre");
+		Entity target = EntityArgument.getEntity(ctx, "target");
+		String name = StringArgumentType.getString(ctx, "name");
 
 		if (!MonsterRegistry.removeCustomAttack(target, name)) {
-			ctx.getSource().sendFailure(Component.literal(target.getName().getString() + " no tenía ningún ataque personalizado llamado \"" + name + "\"."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.monster.attack_not_found", target.getName().getString(), name));
 			return 0;
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Quitado \"" + name + "\" de " + target.getName().getString() + "."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.monster.attack_removed", name, target.getName().getString()), true);
 		return 1;
 	}
 
 	private static int clearAttacks(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
-		Entity target = EntityArgument.getEntity(ctx, "objetivo");
+		Entity target = EntityArgument.getEntity(ctx, "target");
 		MonsterRegistry.clearCustomAttacks(target);
-		ctx.getSource().sendSuccess(() -> Component.literal("Ataques personalizados de " + target.getName().getString() + " borrados."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.monster.attacks_cleared", target.getName().getString()), true);
 		return 1;
 	}
 
 	private static int giveDmTool(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		ItemStack stack = buildDmToolStack();
 
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) {
 			target.getInventory().add(stack.copy());
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Entregada la Vara de DM a " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.monster.dm_wand_given", targets.size()), true);
 		return targets.size();
 	}
 
-	//Público: también lo usa la pestaña creativa (DndsheetsModCreativeTab).
+	//Public: also used by the creative tab (DndsheetsModCreativeTab).
 	public static ItemStack buildDmToolStack() {
 		ItemStack stack = net.hawthorn.dndsheets.ItemLook.DM_WAND.applyTo(
 			new ItemStack(net.hawthorn.dndsheets.init.DndsheetsModItems.TOKEN.get()));
@@ -362,15 +366,15 @@ public class MonsterCommand {
 	private static int giveMoveTool(CommandContext<CommandSourceStack> ctx) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		ItemStack stack = buildMoveToolStack();
 
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) {
 			target.getInventory().add(stack.copy());
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Entregada la Vara de Movimiento a " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.monster.move_wand_given", targets.size()), true);
 		return targets.size();
 	}
 
-	//Público: también lo usa la pestaña creativa (DndsheetsModCreativeTab).
+	//Public: also used by the creative tab (DndsheetsModCreativeTab).
 	public static ItemStack buildMoveToolStack() {
 		ItemStack stack = net.hawthorn.dndsheets.ItemLook.MOVE_WAND.applyTo(
 			new ItemStack(net.hawthorn.dndsheets.init.DndsheetsModItems.TOKEN.get()));

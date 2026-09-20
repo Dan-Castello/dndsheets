@@ -15,26 +15,26 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * <p>Superficies de terreno, la otra mitad del combo de altura+empujar que se trajo de Baldur's Gate 3:
- * el agua de VERDAD del mundo (bloques reales, no una zona abstracta) apaga el fuego y conduce el rayo, y
- * un impacto de fuego en área deja el suelo ardiendo unos asaltos, no solo el instante del golpe.</p>
+ * <p>Terrain surfaces, the other half of the height+shove combo brought over from Baldur's Gate 3:
+ * REAL water in the world (actual blocks, not an abstract zone) puts out fire and conducts lightning, and
+ * an area fire impact leaves the ground burning for a few rounds, not just the instant of the hit.</p>
  *
- * <p><b>Por qué no es una {@link ZoneManager.Zone}.</b> Una zona es DE alguien —tiene lanzador, tiene
- * concentración, se apaga si la pierde—; un charco de fuego que dejó una Bola de Fuego no es de nadie, y
- * cualquier otro golpe de área que caiga encima lo puede reavivar. Comparten el mismo gancho de
- * {@code TurnManager.beginTurn} porque la PREGUNTA es la misma (¿hay algo en el suelo bajo mis pies al
- * empezar mi turno?), pero el DUEÑO de la respuesta es distinto.</p>
+ * <p><b>Why this isn't a {@link ZoneManager.Zone}.</b> A zone BELONGS to someone — it has a caster, it has
+ * concentration, it goes out if they lose it; a fire patch left by a Fireball belongs to no one, and any
+ * other area hit that lands on it can rekindle it. They share the same {@code TurnManager.beginTurn} hook
+ * because the QUESTION is the same (is there anything on the ground under my feet when my turn starts?),
+ * but the OWNER of the answer is different.</p>
  *
- * <p><b>Por qué el agua es de verdad y no otra superficie trackeada.</b> Minecraft ya sabe dónde hay agua;
- * inventar una segunda "superficie de agua" encima habría sido mantener dos verdades para la misma
- * pregunta. Apagar fuego y conducir rayo consultan el bloque real del mundo — ni un hechizo nuevo, ni
- * contenido que cargar, ni estado que limpiar cuando el chunk se descarga.</p>
+ * <p><b>Why water is real and not another tracked surface.</b> Minecraft already knows where water is;
+ * inventing a second "water surface" on top of it would have meant maintaining two sources of truth for
+ * the same question. Putting out fire and conducting lightning check the world's actual block — no new
+ * spell, no content to load, no state to clean up when the chunk unloads.</p>
  *
- * <p><b>Simplificación deliberada</b>, {@code ponytail}: el charco de fuego no se dibuja como bloques de
- * fuego reales (podría prender la base de un jugador y no hay quien lo limpie después) — es una zona
- * abstracta con partículas, como ya hace {@link ZoneManager} con sus muros. El chispazo de rayo+agua es
- * daño fijo, no una tirada completa con salvación: es un efecto secundario del impacto, no un segundo
- * hechizo, y complicarlo no aporta nada que el jugador vaya a notar.</p>
+ * <p><b>Deliberate simplification</b>, {@code ponytail}: the fire patch isn't drawn as real fire blocks
+ * (it could ignite a player's base with no one around to clean it up afterward) — it's an abstract zone
+ * with particles, the same way {@link ZoneManager} already does with its walls. The lightning+water spark
+ * is fixed damage, not a full roll with a save: it's a side effect of the impact, not a second spell, and
+ * complicating it wouldn't add anything the player would ever notice.</p>
  */
 class SurfaceManager {
 
@@ -48,34 +48,34 @@ class SurfaceManager {
 
 	private static final int FIRE_ROUNDS = 3;
 	private static final String FIRE_DICE = "1d4";
-	//Bloque de impacto y el de al lado: un radio de agua de sobra sin tener que barrer un área entera por
-	//fotograma cada vez que cae un hechizo.
+	//Impact block and the one next to it: plenty of water radius without having to sweep a whole area
+	//every frame each time a spell lands.
 	private static final int WATER_CHECK_RADIUS = 2;
-	//"Charco eléctrico": cualquiera de pie en agua real dentro de este radio del impacto de un rayo se
-	//lleva la misma descarga, sin salvación — es agua conduciendo electricidad, no una regla que se esquive.
+	//"Electric puddle": anyone standing in real water within this radius of a lightning impact takes the
+	//same jolt, no save — it's water conducting electricity, not a rule you can dodge.
 	private static final double LIGHTNING_WATER_RADIUS = 6.0;
 	private static final String LIGHTNING_SPLASH_DICE = "1d6";
 
 	/**
-	 * <p>Llamado justo después de resolver el daño de un hechizo de área (ver {@code SpellCastManager}).
-	 * {@code alreadyHit} son las entidades que el hechizo ya golpeó de lleno: el chispazo de agua+rayo las
-	 * salta, para no cobrarles el mismo rayo dos veces.</p>
+	 * <p>Called right after resolving an area spell's damage (see {@code SpellCastManager}).
+	 * {@code alreadyHit} are the entities the spell already hit directly: the water+lightning spark skips
+	 * them, so they don't get charged the same lightning bolt twice.</p>
 	 */
 	static void onAoeImpact(ServerLevel level, Vec3 impactPoint, String damageType, List<Entity> alreadyHit) {
 		boolean wet = isNearWater(level, impactPoint);
-		if ("fuego".equals(damageType)) {
+		if ("fire".equals(damageType)) {
 			if (wet) {
 				broadcast(level, Component.translatable("chat.dndsheets.surface.fire_fizzles").withStyle(ChatFormatting.AQUA));
 				return;
 			}
 			ignite(level, impactPoint);
-		} else if ("rayo".equals(damageType) && wet) {
+		} else if ("lightning".equals(damageType) && wet) {
 			shockWater(level, impactPoint, alreadyHit);
 		}
 	}
 
-	//Si ya había fuego ahí, se le da cuerda de nuevo en vez de apilar un segundo charco encima del primero
-	//(dos Bolas de Fuego seguidas en el mismo sitio no deberían doblar el daño por turno, solo mantenerlo).
+	//If there was already fire there, it gets rewound instead of stacking a second patch on top of the
+	//first (two Fireballs in a row on the same spot shouldn't double the per-turn damage, only keep it going).
 	private static void ignite(ServerLevel level, Vec3 point) {
 		for (int i = 0; i < fires.size(); i++) {
 			Fire existing = fires.get(i);
@@ -97,15 +97,15 @@ class SurfaceManager {
 
 			DiceManager.RollOutcome roll = DiceManager.roll(new com.google.gson.JsonObject(), LIGHTNING_SPLASH_DICE);
 			if (roll.result() == null) continue;
-			int amount = DamageTypes.applyMultiplier(roll.result().getValue(), combatant.effectiveDamageMultiplier("rayo", true));
-			CombatFx.spellImpact(entity, false, "rayo");
+			int amount = DamageTypes.applyMultiplier(roll.result().getValue(), combatant.effectiveDamageMultiplier("lightning", true));
+			CombatFx.spellImpact(entity, false, "lightning");
 			broadcast(level, Component.translatable("chat.dndsheets.surface.water_shock", combatant.name(), roll.formatted())
 				.withStyle(ChatFormatting.AQUA));
 			if (amount > 0) combatant.takeDamage(amount);
 		}
 	}
 
-	/** Llamado al empezar el turno de un combatiente: si está de pie sobre fuego tirado en el suelo, arde. */
+	/** Called when a combatant's turn starts: if they're standing over fire left on the ground, they burn. */
 	static void onTurnStart(ServerLevel level, Entity entity) {
 		if (fires.isEmpty()) return;
 		Combatant combatant = Combatant.of(entity);
@@ -116,15 +116,15 @@ class SurfaceManager {
 
 			DiceManager.RollOutcome roll = DiceManager.roll(new com.google.gson.JsonObject(), FIRE_DICE);
 			if (roll.result() == null) continue;
-			int amount = DamageTypes.applyMultiplier(roll.result().getValue(), combatant.effectiveDamageMultiplier("fuego", true));
-			CombatFx.spellImpact(entity, false, "fuego");
+			int amount = DamageTypes.applyMultiplier(roll.result().getValue(), combatant.effectiveDamageMultiplier("fire", true));
+			CombatFx.spellImpact(entity, false, "fire");
 			broadcast(level, Component.translatable("chat.dndsheets.surface.fire_tick", combatant.name(), roll.formatted())
 				.withStyle(ChatFormatting.GOLD));
 			if (amount > 0) combatant.takeDamage(amount);
 		}
 	}
 
-	/** Asalto completo: descuenta duración, apaga lo que expira, y redibuja lo que sigue ardiendo. */
+	/** Full round: decrements duration, extinguishes what expires, and redraws whatever keeps burning. */
 	static void endRound(ServerLevel level) {
 		Iterator<Fire> it = fires.iterator();
 		List<Fire> renewed = new ArrayList<>();
@@ -153,8 +153,8 @@ class SurfaceManager {
 		return false;
 	}
 
-	//Mismo criterio visual que ZoneManager: partículas en el área en vez de nada, para que un charco de
-	//fuego sea una decisión táctica visible y no una trampa invisible.
+	//Same visual criterion as ZoneManager: particles across the area instead of nothing, so a fire patch is
+	//a visible tactical decision and not an invisible trap.
 	private static void draw(ServerLevel level, Fire fire) {
 		int samples = 10;
 		for (int i = 0; i < samples; i++) {

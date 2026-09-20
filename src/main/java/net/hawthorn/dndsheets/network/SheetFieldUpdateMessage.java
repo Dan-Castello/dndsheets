@@ -8,11 +8,11 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Servidor -> cliente: parche de unos pocos campos de la hoja (p.ej. "nextAttackAdvantage" tras consumir
-//ventaja, "spellSlotsCurrent" tras gastar un espacio), en vez de la hoja JSON completa. Un valor JsonNull en el parche significa "borrar esta clave" en la hoja
-//cacheada del cliente (ver SheetLoader.applyClientDelta), igual que el servidor la borra con
-//JsonObject.remove(...). Reservado para cambios acotados a un par de campos conocidos; los cambios
-//masivos (aplicar preset, cargar hoja al conectarse) siguen usando SheetClientMessage con la hoja entera.
+//Server -> client: patch of a few sheet fields (e.g. "nextAttackAdvantage" after consuming an
+//advantage, "spellSlotsCurrent" after spending a slot), instead of the full JSON sheet. A JsonNull value in the patch means "delete this key" in the
+//client's cached sheet (see SheetLoader.applyClientDelta), the same way the server deletes it with
+//JsonObject.remove(...). Reserved for changes limited to a couple of known fields; bulk changes
+//(applying a preset, loading the sheet on connect) keep using SheetClientMessage with the whole sheet.
 public class SheetFieldUpdateMessage {
 	byte[] data;
 

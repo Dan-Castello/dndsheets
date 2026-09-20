@@ -8,12 +8,13 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Guarda el monstruo invocado (normalmente un NPC genérico ya armado a mano con "+ Añadir ataque", ver
- * {@link MonsterActionScreen}) como una plantilla JSON reusable en {@code monsters/dm_created.json} — así
- * un DM crea un monstruo entero (nombre/CA/PG ya puestos al invocarlo, ataques ya puestos en vivo) sin
- * escribir ni una línea de JSON, solo con "Invocar NPC genérico" + esta pantalla. Las características
- * (fue/des/con/int/sab/car) no se pueden ajustar en un NPC ya invocado hoy, así que se piden acá — quedan
- * en 10 si no se tocan, igual que {@code MonsterRegistry.spawnGeneric} las deja por defecto.</p>
+ * <p>Saves the spawned monster (typically a generic NPC already built by hand with "+ Add attack", see
+ * {@link MonsterActionScreen}) as a reusable JSON template in {@code monsters/dm_created.json} — this
+ * lets a DM create an entire monster (name/AC/HP already set when spawning it, attacks already set
+ * live) without writing a single line of JSON, using only "Spawn generic NPC" + this screen. The
+ * ability scores (str/dex/con/int/wis/cha) can't currently be adjusted on an already-spawned NPC, so
+ * they're asked for here — they default to 10 if left untouched, same as {@code MonsterRegistry.spawnGeneric}
+ * defaults them.</p>
  */
 public class MonsterTemplateSaveScreen extends SmallFormScreen {
 	private final int entityId;
@@ -30,8 +31,8 @@ public class MonsterTemplateSaveScreen extends SmallFormScreen {
 
 	@Override
 	protected void buildForm() {
-		idBox = addField("Id (espacioDeNombres:ruta)", "", 32);
-		abilitiesBox = addField("Fue,Des,Con,Int,Sab,Car (separadas por coma)", "10, 10, 10, 10, 10, 10", 32);
+		idBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.id_path"), "", 32);
+		abilitiesBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.abilities_csv"), "10, 10, 10, 10, 10, 10", 32);
 	}
 
 	@Override

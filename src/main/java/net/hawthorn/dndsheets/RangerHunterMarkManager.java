@@ -14,25 +14,25 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * <p>Marca del Cazador: clic derecho del explorador sobre un objetivo (jugador o monstruo invocado) lo
- * marca durante {@value #DURATION_ROUNDS} asaltos/10 minutos reales (mismo patrón de duración por
- * asaltos-o-ticks que Furia/Inspiración Bárdica). Mientras dure, cada golpe del explorador CONTRA ESE
- * OBJETIVO concreto suma {@value #DICE} de daño extra — ver {@link CombatManager}, que la tira aparte y
- * suma el monto, igual que Ataque Furtivo, para no meter dos grupos de dados en una sola expresión.</p>
+ * <p>Hunter's Mark: the ranger right-clicking a target (player or summoned monster) marks it
+ * for {@value #DURATION_ROUNDS} rounds/10 real minutes (same rounds-or-ticks duration pattern
+ * as Rage/Bardic Inspiration). While it lasts, every hit the ranger lands ON THAT SPECIFIC
+ * TARGET adds {@value #DICE} extra damage — see {@link CombatManager}, which rolls it separately
+ * and adds the amount, just like Sneak Attack, to avoid putting two dice groups in a single expression.</p>
  *
- * <p><b>Simplificación deliberada</b>: en 5e de verdad esto es un hechizo de concentración (nivel 1),
- * así que golpear a otra cosa o recibir cierto daño puede acabarlo antes de tiempo. Aquí no está
- * enganchado a {@link ConcentrationManager} — dura su tiempo fijo pase lo que pase, más simple y
- * consistente con cómo esta pasada ya simplificó Forma Salvaje/Furia.</p>
+ * <p><b>Deliberate simplification</b>: in real 5e this is a concentration spell (level 1),
+ * so hitting something else or taking certain damage can end it early. Here it isn't
+ * hooked to {@link ConcentrationManager} — it lasts its fixed duration no matter what, simpler and
+ * consistent with how this pass already simplified Wild Shape/Rage.</p>
  */
 public class RangerHunterMarkManager {
 	public static final String DICE = "1d6";
-	private static final int DURATION_ROUNDS = 100; //10 minutos de 5e = 100 asaltos.
+	private static final int DURATION_ROUNDS = 100; //5e's 10 minutes = 100 rounds.
 	private static final int DURATION_TICKS = 20 * 60 * 10;
 
 	private static final Map<UUID, Integer> markedEntityIdByRanger = new ConcurrentHashMap<>();
 
-	/** Olvida a quién tenía marcado: la usa el cambio de personaje. Ver SheetLoader. */
+	/** Forgets who was marked: used by character switching. See SheetLoader. */
 	public static void clearFor(ServerPlayer ranger) {
 		markedEntityIdByRanger.remove(ranger.getUUID());
 	}
@@ -56,7 +56,7 @@ public class RangerHunterMarkManager {
 		TurnManager.scheduleExpiry(DURATION_ROUNDS, DURATION_TICKS, expire);
 	}
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a EntityInteract por su cuenta.
+	//Triggered from AbilityItemDispatcher instead of subscribing to EntityInteract on its own.
 	static void tryUse(PlayerInteractEvent.EntityInteract event) {
 		if (!(event.getEntity() instanceof ServerPlayer ranger)) return;
 

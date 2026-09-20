@@ -1,0 +1,8 @@
+{
+  "id": "myaddon:example_axe",
+  "name": "Example Axe",
+  "dice": "1d8",
+  "ability": "str",
+  "damageType": "slashing",
+  "hands": "one"
+}

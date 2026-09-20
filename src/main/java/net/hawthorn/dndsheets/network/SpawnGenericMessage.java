@@ -12,8 +12,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: formulario de SpawnGenericScreen (equivalente en GUI a
-///dndmonsters spawn generic), invoca al DM en su propia posición.
+//Client (the DM) -> server: SpawnGenericScreen form (GUI equivalent of
+///dndmonsters spawn generic), summons at the DM's own position.
 public class SpawnGenericMessage {
 	String name, baseEntity;
 	int ac, hp;

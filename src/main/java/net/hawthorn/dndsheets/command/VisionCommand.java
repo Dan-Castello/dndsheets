@@ -13,13 +13,13 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * <p>{@code /dndvision on|off} (y sin argumentos, cómo está ahora): enciende y apaga las reglas de visión
- * de {@link VisionManager} sin salir de la partida y sin editar el toml a mano.</p>
+ * <p>{@code /dndvision on|off} (and with no arguments, current status): turns {@link VisionManager}'s
+ * vision rules on and off without leaving the game and without editing the toml by hand.</p>
  *
- * <p>El comando existe porque esta regla es de las que se deciden <em>en la mesa</em> y no al instalar: se
- * enciende para bajar a una mazmorra y se apaga para la sesión de construir. Guardar el valor en la config
- * de siempre en vez de en un estado propio es lo que hace que sobreviva al reinicio sin inventar
- * persistencia nueva.</p>
+ * <p>The command exists because this is the kind of rule decided <em>at the table</em>, not at install
+ * time: turned on to head down into a dungeon, turned off for a building session. Saving the value in
+ * the regular config instead of custom state is what makes it survive a restart without inventing new
+ * persistence.</p>
  */
 @Mod.EventBusSubscriber
 public class VisionCommand {
@@ -36,21 +36,22 @@ public class VisionCommand {
 		Config.setVisionRules(enabled);
 
 		MinecraftServer server = ctx.getSource().getServer();
-		//Apagar tiene que levantar la ceguera de quien la tenga puesta AHORA: el tick que se la quitaría al
-		//salir a la luz es justo el que se acaba de apagar, así que se quedaría ciego para siempre.
+		//Turning it off has to lift blindness from whoever has it applied RIGHT NOW: the tick that would
+		//remove it upon stepping into light is exactly the one that was just turned off, so they'd stay
+		//blind forever.
 		if (!enabled) VisionManager.liftAll(server);
 
-		server.getPlayerList().broadcastSystemMessage(Component.literal(enabled
-			? "Reglas de visión activadas: a oscuras se está ciego, y llevar una antorcha en la mano cuenta como luz."
-			: "Reglas de visión desactivadas."), false);
+		server.getPlayerList().broadcastSystemMessage(Component.translatable(enabled
+			? "chat.dndsheets.vision.enabled"
+			: "chat.dndsheets.vision.disabled"), false);
 		return 1;
 	}
 
 	private static int status(CommandContext<CommandSourceStack> ctx) {
 		boolean enabled = Config.visionRules();
-		ctx.getSource().sendSuccess(() -> Component.literal(enabled
-			? "Reglas de visión: activadas. Apágalas con /dndvision off."
-			: "Reglas de visión: desactivadas. Enciéndelas con /dndvision on."), false);
+		ctx.getSource().sendSuccess(() -> Component.translatable(enabled
+			? "chat.dndsheets.vision.status_on"
+			: "chat.dndsheets.vision.status_off"), false);
 		return enabled ? 1 : 0;
 	}
 }

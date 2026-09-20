@@ -1,4 +1,5 @@
 package net.hawthorn.dndsheets.dungeon.client.gui;
+import net.minecraft.client.resources.language.I18n;
 import net.hawthorn.dndsheets.client.gui.SmallFormScreen;
 
 import net.hawthorn.dndsheets.dungeon.DndsheetsDungeonMod;
@@ -10,11 +11,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Configura un jigsaw block sin pasar por su GUI vanilla: el DM solo elige a qué pool debería tirar
- * esa salida y si esta es la pieza de arranque de la mazmorra — Name/Target se fijan solos
- * ({@link net.hawthorn.dndsheets.dungeon.DungeonManager#configureJigsaw}), en vez de tipear a mano los 3 strings
- * exactos con nuestro namespace. Se abre con clic derecho sobre un jigsaw block usando la Vara de DM
- * (ver {@link net.hawthorn.dndsheets.dungeon.DungeonToolManager}).</p>
+ * <p>Configures a jigsaw block bypassing its vanilla GUI: the DM only picks which pool that exit
+ * should connect to and whether this is the dungeon's starting piece — Name/Target are set
+ * automatically ({@link net.hawthorn.dndsheets.dungeon.DungeonManager#configureJigsaw}), instead of
+ * hand-typing the 3 exact strings with our namespace. Opened by right-clicking a jigsaw block with the
+ * DM Wand (see {@link net.hawthorn.dndsheets.dungeon.DungeonToolManager}).</p>
  */
 public class DungeonJigsawConfigureScreen extends SmallFormScreen {
 	private final BlockPos pos;
@@ -36,8 +37,10 @@ public class DungeonJigsawConfigureScreen extends SmallFormScreen {
 
 	@Override
 	protected void buildForm() {
-		poolBox = addField("Pool destino", initialPool, 32);
-		isStart = addCycleButton("Pieza de inicio", initialIsStart ? new String[]{"Sí", "No"} : new String[]{"No", "Sí"});
+		poolBox = addField(I18n.get("gui.dndsheets.dungeon_jigsaw.pool"), initialPool, 32);
+		String[] values = initialIsStart ? new String[]{"yes", "no"} : new String[]{"no", "yes"};
+		isStart = addCycleButton(I18n.get("gui.dndsheets.dungeon_jigsaw.is_start"), values,
+			new String[]{I18n.get("gui.dndsheets.common." + values[0]), I18n.get("gui.dndsheets.common." + values[1])});
 	}
 
 	@Override
@@ -45,6 +48,6 @@ public class DungeonJigsawConfigureScreen extends SmallFormScreen {
 		String pool = poolBox.getValue().trim();
 		if (pool.isEmpty()) return;
 
-		DndsheetsDungeonMod.PACKET_HANDLER.sendToServer(new DungeonJigsawConfigureMessage(pos, pool, "Sí".equals(isStart.value())));
+		DndsheetsDungeonMod.PACKET_HANDLER.sendToServer(new DungeonJigsawConfigureMessage(pos, pool, "yes".equals(isStart.value())));
 	}
 }

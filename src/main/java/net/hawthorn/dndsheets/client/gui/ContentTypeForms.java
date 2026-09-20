@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets.client.gui;
 
+import net.minecraft.client.resources.language.I18n;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -13,26 +14,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * <p>Definición de campos + (de)serialización JSON para los 3 tipos de contenido que encajan en
- * {@link ContentFormScreen} (esquema plano, sin listas anidadas): armas, hechizos, presets. Cada método
- * {@code xFields()} es lo que arma la pantalla, {@code xPrefill} lee una entrada existente (tal cual llegó
- * por red desde {@code dm_created.json}) de vuelta a los mismos campos para editar, {@code xToJson} arma
- * lo que se manda a guardar — mismos nombres de campo que ya leen {@code Config.loadFile}/
- * {@code SpellRegistry.parse}/{@code PresetRegistry.parse}, ver esos métodos.</p>
+ * <p>Field definitions + JSON (de)serialization for the 3 content types that fit
+ * {@link ContentFormScreen} (flat schema, no nested lists): weapons, spells, presets. Each
+ * {@code xFields()} method is what builds the screen, {@code xPrefill} reads an existing entry (as it
+ * arrived over the network from {@code dm_created.json}) back into the same fields for editing,
+ * {@code xToJson} builds what gets sent to save — same field names already read by
+ * {@code Config.loadFile}/{@code SpellRegistry.parse}/{@code PresetRegistry.parse}, see those methods.</p>
  *
- * <p>Recorte deliberado: para no amontonar más de ~10 filas en un formulario de una sola columna (ver
- * {@code SmallFormScreen}), listas de varios valores (clases de un arma, rasgos/hechizos de un preset,
- * las 6 características) se escriben como texto separado por comas en un solo campo, y hechizos con
- * {@code appliesEffect}/{@code aoeRadius}/{@code concentration} (Bola de Fuego, Rayo de Luna...) siguen
- * necesitando el JSON a mano por ahora — cubre el caso común, no cada campo del esquema.</p>
+ * <p>Deliberate cut: to avoid piling up more than ~10 rows in a single-column form (see
+ * {@code SmallFormScreen}), multi-value lists (a weapon's classes, a preset's traits/spells, the 6
+ * ability scores) are written as comma-separated text in a single field, and spells with
+ * {@code appliesEffect}/{@code aoeRadius}/{@code concentration} (Fireball, Moonbeam...) still need
+ * hand-written JSON for now — this covers the common case, not every field of the schema.</p>
  */
 final class ContentTypeForms {
-	private static final String[] BOOL_OPTIONS = {"si", "no"};
+	private static final String[] BOOL_OPTIONS = {"yes", "no"};
 
-	//Tope de las casillas que llevan una LISTA separada por comas. Los 64 caracteres del campo de texto
-	//normal dan para un nombre, no para tres ids con namespace: "dndsheets:goblin x4, dndsheets:wolf x2,
-	//dndsheets:dire_wolf" ya se pasa, y lo que sobra se pierde sin avisar. Un encuentro así se guarda con
-	//el último id cortado y solo se descubre al invocarlo, como "un monstruo que no existe".
+	//Cap for fields holding a comma-separated LIST. The normal text field's 64 characters are enough for
+	//a name, not for three namespaced ids: "dndsheets:goblin x4, dndsheets:wolf x2, dndsheets:dire_wolf"
+	//already exceeds it, and whatever overflows is silently lost. An encounter like that gets saved with
+	//the last id truncated and it's only discovered when invoking it, as "a monster that doesn't exist".
 	private static final int LIST_LENGTH = 256;
 
 	private ContentTypeForms() {
@@ -74,19 +75,19 @@ final class ContentTypeForms {
 		if (value != null && !value.isBlank()) entry.addProperty(key, value);
 	}
 
-	// --- Armas (ver command.WeaponCommand / Config.loadFile) ---
+	// --- Weapons (see command.WeaponCommand / Config.loadFile) ---
 
 	static List<FieldSpec> weaponFields() {
 		return List.of(
-			FieldSpec.text("id", "Id (espacioDeNombres:ruta)", ""),
-			FieldSpec.text("name", "Nombre", ""),
-			FieldSpec.text("item", "Ítem base (id de Minecraft/mod)", "minecraft:stick"),
-			FieldSpec.text("dice", "Dado de daño", "1d6"),
-			FieldSpec.cycle("ability", "Característica", new String[]{"str", "dex"}),
-			FieldSpec.cycle("damageType", "Tipo de daño", DamageTypes.CANONICAL),
-			FieldSpec.cycle("hands", "Manos", new String[]{"one", "two", "versatile"}),
-			FieldSpec.text("versatileDice", "Dado versátil (si aplica)", ""),
-			FieldSpec.text("classes", "Clases permitidas (vacío = todas, separadas por coma)", "", LIST_LENGTH)
+			FieldSpec.text("id", I18n.get("gui.dndsheets.form.id_path"), ""),
+			FieldSpec.text("name", I18n.get("gui.dndsheets.form.name"), ""),
+			FieldSpec.text("item", I18n.get("gui.dndsheets.form.base_item"), "minecraft:stick"),
+			FieldSpec.text("dice", I18n.get("gui.dndsheets.form.damage_dice"), "1d6"),
+			FieldSpec.cycle("ability", I18n.get("gui.dndsheets.form.ability"), new String[]{"str", "dex"}),
+			FieldSpec.cycle("damageType", I18n.get("gui.dndsheets.form.damage_type"), DamageTypes.CANONICAL),
+			FieldSpec.cycle("hands", I18n.get("gui.dndsheets.form.hands"), new String[]{"one", "two", "versatile"}),
+			FieldSpec.text("versatileDice", I18n.get("gui.dndsheets.form.versatile_dice"), ""),
+			FieldSpec.text("classes", I18n.get("gui.dndsheets.form.allowed_classes"), "", LIST_LENGTH)
 		);
 	}
 
@@ -113,20 +114,20 @@ final class ContentTypeForms {
 		return entry;
 	}
 
-	// --- Hechizos (ver command.SpellCommand / SpellRegistry.parse) ---
+	// --- Spells (see command.SpellCommand / SpellRegistry.parse) ---
 
 	static List<FieldSpec> spellFields() {
 		return List.of(
-			FieldSpec.text("id", "Id (espacioDeNombres:ruta)", ""),
-			FieldSpec.text("name", "Nombre", ""),
-			FieldSpec.intField("level", "Nivel (0 = truco)", "0"),
-			FieldSpec.cycle("school", "Escuela de magia", MagicSchool.KEYS),
-			FieldSpec.cycle("mode", "Modo", new String[]{"attack", "save", "heal"}),
-			FieldSpec.cycle("castingAbility", "Característica de lanzamiento", Combatant.ABILITIES),
-			FieldSpec.cycle("saveAbility", "Característica de salvación (si modo=save)", Combatant.ABILITIES),
-			FieldSpec.text("dice", "Dado", "1d8"),
-			FieldSpec.cycle("damageType", "Tipo de daño", DamageTypes.CANONICAL),
-			FieldSpec.cycle("halfOnSave", "Mitad de daño si salva", BOOL_OPTIONS)
+			FieldSpec.text("id", I18n.get("gui.dndsheets.form.id_path"), ""),
+			FieldSpec.text("name", I18n.get("gui.dndsheets.form.name"), ""),
+			FieldSpec.intField("level", I18n.get("gui.dndsheets.form.level_cantrip"), "0"),
+			FieldSpec.cycle("school", I18n.get("gui.dndsheets.form.school"), MagicSchool.KEYS),
+			FieldSpec.cycle("mode", I18n.get("gui.dndsheets.form.mode"), new String[]{"attack", "save", "heal"}),
+			FieldSpec.cycle("castingAbility", I18n.get("gui.dndsheets.form.casting_ability"), Combatant.ABILITIES),
+			FieldSpec.cycle("saveAbility", I18n.get("gui.dndsheets.form.save_ability"), Combatant.ABILITIES),
+			FieldSpec.text("dice", I18n.get("gui.dndsheets.form.dice"), "1d8"),
+			FieldSpec.cycle("damageType", I18n.get("gui.dndsheets.form.damage_type"), DamageTypes.CANONICAL),
+			FieldSpec.cycle("halfOnSave", I18n.get("gui.dndsheets.form.half_on_save"), BOOL_OPTIONS)
 		);
 	}
 
@@ -136,7 +137,7 @@ final class ContentTypeForms {
 			putIfPresent(map, entry, key);
 		}
 		if (entry.has("level")) map.put("level", entry.get("level").getAsString());
-		if (entry.has("halfOnSave")) map.put("halfOnSave", entry.get("halfOnSave").getAsBoolean() ? "si" : "no");
+		if (entry.has("halfOnSave")) map.put("halfOnSave", entry.get("halfOnSave").getAsBoolean() ? "yes" : "no");
 		return map;
 	}
 
@@ -151,23 +152,23 @@ final class ContentTypeForms {
 		if ("save".equals(values.get("mode"))) entry.addProperty("saveAbility", values.get("saveAbility"));
 		entry.addProperty("dice", values.get("dice"));
 		addIfNotBlank(entry, "damageType", values.get("damageType"));
-		entry.addProperty("halfOnSave", "si".equals(values.get("halfOnSave")));
+		entry.addProperty("halfOnSave", "yes".equals(values.get("halfOnSave")));
 		return entry;
 	}
 
-	// --- Presets de clase (ver command.PresetCommand / PresetRegistry.parse) ---
+	// --- Class presets (see command.PresetCommand / PresetRegistry.parse) ---
 
 	static List<FieldSpec> presetFields() {
 		return List.of(
-			FieldSpec.text("id", "Id", ""),
-			FieldSpec.text("name", "Nombre", ""),
-			FieldSpec.cycle("hitDiceType", "Dado de golpe", new String[]{"1d6", "1d8", "1d10", "1d12"}),
-			FieldSpec.text("abilities", "Fue,Des,Con,Int,Sab,Car (separadas por coma)", "10, 10, 10, 10, 10, 10"),
-			FieldSpec.text("startingWeapon", "Arma inicial (id, opcional)", ""),
-			FieldSpec.text("startingGear", "Equipo inicial (ids, separados por coma)", "", LIST_LENGTH),
-			FieldSpec.intField("spellSlotsMax", "Espacios de conjuro máx.", "0"),
-			FieldSpec.text("traits", "Rasgos concedidos (ids, separados por coma)", "", LIST_LENGTH),
-			FieldSpec.text("spells", "Hechizos conocidos (ids, separados por coma)", "", LIST_LENGTH)
+			FieldSpec.text("id", I18n.get("gui.dndsheets.form.id"), ""),
+			FieldSpec.text("name", I18n.get("gui.dndsheets.form.name"), ""),
+			FieldSpec.cycle("hitDiceType", I18n.get("gui.dndsheets.form.hit_die"), new String[]{"1d6", "1d8", "1d10", "1d12"}),
+			FieldSpec.text("abilities", I18n.get("gui.dndsheets.form.abilities_csv"), "10, 10, 10, 10, 10, 10"),
+			FieldSpec.text("startingWeapon", I18n.get("gui.dndsheets.form.starting_weapon"), ""),
+			FieldSpec.text("startingGear", I18n.get("gui.dndsheets.form.starting_gear"), "", LIST_LENGTH),
+			FieldSpec.intField("spellSlotsMax", I18n.get("gui.dndsheets.form.spell_slots_max"), "0"),
+			FieldSpec.text("traits", I18n.get("gui.dndsheets.form.granted_traits"), "", LIST_LENGTH),
+			FieldSpec.text("spells", I18n.get("gui.dndsheets.form.known_spells"), "", LIST_LENGTH)
 		);
 	}
 
@@ -213,20 +214,20 @@ final class ContentTypeForms {
 		return entry;
 	}
 
-	// --- Dotes (ver FeatRegistry.parse) ---
+	// --- Feats (see FeatRegistry.parse) ---
 
 	static List<FieldSpec> featFields() {
 		return List.of(
-			FieldSpec.text("id", "Id", ""),
-			FieldSpec.text("name", "Nombre", ""),
-			FieldSpec.text("description", "Descripción", ""),
-			//Las mismas seis en el mismo orden que el preset: aquí son el BONO que suma, no la puntuación.
-			FieldSpec.text("abilities", "Bonos Fue,Des,Con,Int,Sab,Car (separados por coma)", "0, 0, 0, 0, 0, 0"),
-			FieldSpec.text("traits", "Rasgos concedidos (ids, separados por coma)", "", LIST_LENGTH),
-			FieldSpec.text("spells", "Hechizos concedidos (ids, separados por coma)", "", LIST_LENGTH),
-			//Sin este campo, editar aquí un Don Épico importado le borraba el nivel 19: el formulario
-			//reescribe la entrada entera, así que lo que no pregunta lo pierde.
-			FieldSpec.text("minLevel", "Nivel mínimo", "1")
+			FieldSpec.text("id", I18n.get("gui.dndsheets.form.id"), ""),
+			FieldSpec.text("name", I18n.get("gui.dndsheets.form.name"), ""),
+			FieldSpec.text("description", I18n.get("gui.dndsheets.form.description"), ""),
+			//The same six in the same order as the preset: here they're the BONUS added, not the score.
+			FieldSpec.text("abilities", I18n.get("gui.dndsheets.form.ability_bonuses_csv"), "0, 0, 0, 0, 0, 0"),
+			FieldSpec.text("traits", I18n.get("gui.dndsheets.form.granted_traits"), "", LIST_LENGTH),
+			FieldSpec.text("spells", I18n.get("gui.dndsheets.form.granted_spells"), "", LIST_LENGTH),
+			//Without this field, editing an imported Epic Boon here would erase its level-19 requirement:
+			//the form rewrites the entire entry, so whatever it doesn't ask for gets lost.
+			FieldSpec.text("minLevel", I18n.get("gui.dndsheets.form.min_level"), "1")
 		);
 	}
 
@@ -258,27 +259,27 @@ final class ContentTypeForms {
 		String[] parts = values.getOrDefault("abilities", "").split(",");
 		for (int i = 0; i < Combatant.ABILITIES.length; i++) {
 			int bonus = i < parts.length ? parseIntOr(parts[i], 0) : 0;
-			//Solo se escriben los bonos que existen: un cero en el formulario es "esta no", no "+0".
+			//Only bonuses that exist get written: a zero in the form means "not this one", not "+0".
 			if (bonus != 0) abilities.addProperty(Combatant.ABILITIES[i], bonus);
 		}
 		if (abilities.size() > 0) entry.add("abilities", abilities);
 
 		addCommaArray(entry, "traits", values.get("traits"));
 		addCommaArray(entry, "spells", values.get("spells"));
-		//1 es lo normal y no se escribe, igual que un bono de 0: el campo ausente ya significa "desde nivel 1".
+		//1 is the default and doesn't get written, just like a 0 bonus: the absent field already means "from level 1".
 		int minLevel = parseIntOr(values.getOrDefault("minLevel", "1"), 1);
 		if (minLevel > 1) entry.addProperty("minLevel", minLevel);
 		return entry;
 	}
 
-	// --- Encuentros (ver command.EncounterCommand / EncounterRegistry.parse) ---
+	// --- Encounters (see command.EncounterCommand / EncounterRegistry.parse) ---
 
 	static List<FieldSpec> encounterFields() {
 		return List.of(
-			FieldSpec.text("id", "Id", ""),
-			FieldSpec.text("name", "Nombre", ""),
-			//La misma sintaxis que en el JSON: un parser y una forma de escribirlo, no dos.
-			FieldSpec.text("monsters", "Monstruos (id x cantidad, separados por coma)", "", LIST_LENGTH)
+			FieldSpec.text("id", I18n.get("gui.dndsheets.form.id"), ""),
+			FieldSpec.text("name", I18n.get("gui.dndsheets.form.name"), ""),
+			//The same syntax as in the JSON: one parser and one way to write it, not two.
+			FieldSpec.text("monsters", I18n.get("gui.dndsheets.form.monsters"), "", LIST_LENGTH)
 		);
 	}
 
@@ -298,14 +299,14 @@ final class ContentTypeForms {
 		return entry;
 	}
 
-	// --- Rasgos (ver command.TraitCommand / TraitRegistry.parse) — solo el alta inicial. Las listas de
-	// nivel/dado y la edición posterior viven en TraitEditScreen, no acá (ver esa clase). ---
+	// --- Traits (see command.TraitCommand / TraitRegistry.parse) — initial creation only. Level/die
+	// lists and later editing live in TraitEditScreen, not here (see that class). ---
 
 	static List<FieldSpec> traitCreateFields() {
 		return List.of(
-			FieldSpec.text("id", "Id", ""),
-			FieldSpec.text("name", "Nombre", ""),
-			FieldSpec.cycle("unarmedAbility", "Característica (golpe desarmado)", Combatant.ABILITIES)
+			FieldSpec.text("id", I18n.get("gui.dndsheets.form.id"), ""),
+			FieldSpec.text("name", I18n.get("gui.dndsheets.form.name"), ""),
+			FieldSpec.cycle("unarmedAbility", I18n.get("gui.dndsheets.form.unarmed_ability"), Combatant.ABILITIES)
 		);
 	}
 

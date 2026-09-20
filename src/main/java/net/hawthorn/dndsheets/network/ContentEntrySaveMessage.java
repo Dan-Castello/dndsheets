@@ -14,9 +14,10 @@ import net.minecraftforge.network.PacketDistributor;
 import java.io.IOException;
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: guarda (crea o edita, mismo id = pisa) una entrada en dm_created.json de un
-//tipo, desde ContentFormScreen. El JSON ya viene armado por el cliente (ver ContentFormScreen.buildJson) —
-//el servidor solo valida "id" y delega en el loadFile de siempre del tipo para interpretarlo.
+//Client (the DM) -> server: saves (creates or edits, same id = overwrite) an entry in a type's
+//dm_created.json, from ContentFormScreen. The JSON arrives already built by the client (see
+//ContentFormScreen.buildJson) — the server only validates "id" and delegates to the type's usual loadFile
+//to interpret it.
 public class ContentEntrySaveMessage {
 	ContentType type;
 	String entryJson;
@@ -51,10 +52,10 @@ public class ContentEntrySaveMessage {
 				dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.missing_id"));
 				return;
 			}
-			//Los comandos de contenido leen su id con ResourceLocationArgument, así que un id con mayúsculas
-			//o espacios ("Emboscada Goblin") se guarda bien y después NO se puede nombrar: Brigadier lo
-			//rechaza al parsear y el botón del Panel de DM que manda ese comando no hace nada ni explica por
-			//qué. Se corta acá, que es donde el DM todavía está mirando el formulario.
+			//Content commands read their id with ResourceLocationArgument, so an id with uppercase letters
+			//or spaces ("Goblin Ambush") saves fine and afterward CANNOT be named: Brigadier rejects it
+			//while parsing, and the DM Panel button that sends that command does nothing and explains
+			//nothing. It's cut off here, while the DM is still looking at the form.
 			String id = entry.get("id").getAsString();
 			if (!net.minecraft.resources.ResourceLocation.isValidResourceLocation(id)) {
 				dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.bad_id", id));
@@ -63,8 +64,8 @@ public class ContentEntrySaveMessage {
 
 			try {
 				ContentPackFile.upsert(message.type.dmCreatedFile(), "id", entry);
-				//Recarga SOLO dm_created.json, no todo el registro — un pack cargado a mano aparte con
-				///dnd... load no se toca ni se repite acá.
+				//Reloads ONLY dm_created.json, not the whole registry — a pack loaded manually with
+				///dnd... load is neither touched nor redone here.
 				message.type.load(message.type.dmCreatedFile());
 			} catch (IOException e) {
 				dm.sendSystemMessage(Component.translatable("chat.dndsheets.content.save_failed", e.getMessage()));

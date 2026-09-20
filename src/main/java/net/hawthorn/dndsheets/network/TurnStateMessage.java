@@ -9,15 +9,15 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * <p>Servidor -&gt; todos los clientes: estado actual de TurnManager, para el HUD del modo turnos (ver
- * {@code client.TurnHudState}/{@code client.TurnHudOverlay}). TurnManager lo manda de nuevo cada vez que
- * algo visible cambia; ningún cliente tiene que pedirlo.</p>
+ * <p>Server -&gt; all clients: TurnManager's current state, for the turn-mode HUD (see
+ * {@code client.TurnHudState}/{@code client.TurnHudOverlay}). TurnManager sends it again every time
+ * something visible changes; no client has to request it.</p>
  *
- * <p>{@code roster} es la fila de iniciativa completa —a quién le toca, quién ya actuó, quién cayó,
- * qué condiciones lleva encima cada uno— información que en una mesa real cualquiera ve con solo mirar el
- * tablero. Antes el HUD solo sabía de quién era el turno actual; el resto del combate solo existía en el
- * chat, que es la causa más probable de "es demasiada información": todo en texto corrido, nada de un
- * vistazo.</p>
+ * <p>{@code roster} is the full initiative row — whose turn it is, who has already acted, who is
+ * down, which conditions each one has — information that at a real table anyone can see just by
+ * looking at the board. Previously the HUD only knew whose turn it currently was; the rest of the
+ * combat only existed in chat, which is the most likely cause of "that's too much information": all
+ * of it in running text, nothing at a glance.</p>
  */
 public class TurnStateMessage {
 	boolean active;
@@ -28,13 +28,14 @@ public class TurnStateMessage {
 	List<RosterRow> roster;
 
 	/**
-	 * <p>Una fila del tablero. {@code conditions} son etiquetas ya resueltas a texto (ver
-	 * {@code Condition#label}), no el enum: el cliente no tiene por qué saber de qué tipo de combatiente
-	 * viene ni recalcular nada, solo mostrar lo que el servidor ya decidió que es cierto ahora.</p>
+	 * <p>One row of the board. {@code conditions} are labels already resolved to text (see
+	 * {@code Condition#label}), not the enum: the client has no need to know what type of combatant
+	 * it came from or recompute anything, just display what the server has already decided is true
+	 * now.</p>
 	 *
-	 * <p>{@code currentHp}/{@code maxHp} valen 0/0 si el combatiente no se pudo leer (entidad descargada,
-	 * fuera de las reglas): el cliente no pinta barra de vida cuando {@code maxHp} es 0. Van al FINAL del
-	 * payload a propósito — invariante 2, los campos nuevos nunca se insertan en medio.</p>
+	 * <p>{@code currentHp}/{@code maxHp} are 0/0 if the combatant couldn't be read (entity unloaded,
+	 * outside the rules): the client doesn't draw an HP bar when {@code maxHp} is 0. They go at the
+	 * END of the payload on purpose — invariant 2, new fields are never inserted in the middle.</p>
 	 */
 	public record RosterRow(int entityId, String name, boolean isMonster, boolean defeated, boolean acted,
 							 boolean reactionUsed, boolean bonusActionUsed, List<String> conditions,

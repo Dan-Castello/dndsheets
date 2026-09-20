@@ -14,23 +14,23 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * <p>Encuentros: un grupo de monstruos con nombre, guardado antes de la sesión y soltado entero de una
- * vez. Es el bucle de preparación de un DM, que hasta ahora no existía — se invocaba monstruo a monstruo,
- * lo cual va bien para enseñar el mod y fatal para una noche de juego con cuatro combates preparados.</p>
+ * <p>Encounters: a named group of monsters, saved before the session and dropped in all at once. It's the
+ * DM prep loop that didn't exist until now — monsters were summoned one at a time, which works fine for
+ * showing off the mod and is terrible for a game night with four fights prepared.</p>
  *
- * <p><b>No trae ninguna regla nueva.</b> Invoca con {@link MonsterRegistry#spawnAt} y ahí se acaba: la
- * iniciativa la sigue arrancando el primer golpe ({@code CombatManager.autoStartCombatIfNeeded}, que ya
- * recoge a todo el que esté en el radio), así que un encuentro no tiene que saber nada de turnos. Lo único
- * que aporta es <em>a la vez y donde tú digas</em>.</p>
+ * <p><b>It brings no new rule.</b> It summons with {@link MonsterRegistry#spawnAt} and that's the end of
+ * it: initiative still kicks off on the first hit ({@code CombatManager.autoStartCombatIfNeeded}, which
+ * already picks up everyone in range), so an encounter doesn't need to know anything about turns. The only
+ * thing it adds is <em>all at once and wherever you say</em>.</p>
  *
- * <p><b>La composición se escribe como texto</b> ({@code "dndsheets:goblin x4"}) y no como un objeto con
- * campos. Es el mismo formato en el JSON y en la casilla del creador in-game, así que hay un solo parser y
- * una sola sintaxis que aprender; con objetos habría dos formas de decir lo mismo y una conversión entre
- * ellas. Sin {@code xN} es uno.</p>
+ * <p><b>The composition is written as text</b> ({@code "dndsheets:goblin x4"}) rather than an object with
+ * fields. It's the same format in the JSON and in the in-game creator's field, so there's a single parser
+ * and a single syntax to learn; with objects there would be two ways to say the same thing and a
+ * conversion between them. With no {@code xN} it means one.</p>
  */
 public class EncounterRegistry {
 
-	/** Cuánto se separan los monstruos entre sí al soltarlos, en bloques. */
+	/** How far apart the monsters are spaced from each other when dropped in, in blocks. */
 	private static final double RING_SPACING = 1.6;
 
 	public record Member(String monsterId, int count) {}
@@ -43,7 +43,7 @@ public class EncounterRegistry {
 		}
 	}
 
-	private static final NamedRegistry<Encounter> REGISTRY = new NamedRegistry<>("encuentro", Encounter::id);
+	private static final NamedRegistry<Encounter> REGISTRY = new NamedRegistry<>("encounter", Encounter::id);
 
 	public static void register(Encounter encounter) {
 		REGISTRY.register(encounter);
@@ -62,7 +62,7 @@ public class EncounterRegistry {
 	}
 
 	private static final JsonRegistryLoader<Encounter> LOADER =
-		new JsonRegistryLoader<>("encuentro", EncounterRegistry::parse, EncounterRegistry::register);
+		new JsonRegistryLoader<>("encounter", EncounterRegistry::parse, EncounterRegistry::register);
 
 	public static int loadFile(Path file) throws IOException {
 		return LOADER.loadFile(file);
@@ -88,11 +88,11 @@ public class EncounterRegistry {
 	}
 
 	/**
-	 * <p>{@code "dndsheets:goblin x4"} → cuatro goblins. Sin la cola, uno.</p>
+	 * <p>{@code "dndsheets:goblin x4"} → four goblins. Without the suffix, one.</p>
 	 *
-	 * <p>Una línea que no se entiende devuelve {@code null} y se salta, en vez de reventar el encuentro
-	 * entero: es la misma decisión que ya toma {@link JsonRegistryLoader} con cada entrada de un archivo —
-	 * perder un monstruo de una emboscada es recuperable, perder el archivo del DM entero no.</p>
+	 * <p>A line that isn't understood returns {@code null} and is skipped, instead of blowing up the whole
+	 * encounter: it's the same call {@link JsonRegistryLoader} already makes for each entry in a file —
+	 * losing one monster from an ambush is recoverable, losing the DM's entire file isn't.</p>
 	 */
 	static Member parseMember(String text) {
 		if (text == null) return null;
@@ -104,16 +104,16 @@ public class EncounterRegistry {
 
 		try {
 			int count = Integer.parseInt(trimmed.substring(split + 2).trim());
-			//Cero o negativo no es "ninguno", es una errata: un encuentro con una línea que no invoca nada
-			//se lee como un encuentro roto, así que se trata como uno solo y el DM ve lo que escribió.
+			//Zero or negative isn't "none," it's a typo: an encounter with a line that summons nothing
+			//reads as a broken encounter, so it's treated as one, and the DM sees what they wrote.
 			return new Member(trimmed.substring(0, split).trim(), Math.max(1, count));
 		} catch (NumberFormatException e) {
-			//"dragón x viejo" no es una cuenta: el nombre se queda entero.
+			//"dragon x old" isn't a count: the name stays whole.
 			return new Member(trimmed, 1);
 		}
 	}
 
-	/** Cómo se lee un encuentro en el chat y en las listas: "Goblin x4, Lobo x2". */
+	/** How an encounter reads in chat and in lists: "Goblin x4, Wolf x2". */
 	public static String describe(Encounter encounter) {
 		StringBuilder text = new StringBuilder();
 		for (Member member : encounter.members()) {
@@ -122,15 +122,15 @@ public class EncounterRegistry {
 			text.append(ContentNames.plain(block != null ? block.name() : member.monsterId()));
 			if (member.count() > 1) text.append(" x").append(member.count());
 		}
-		return text.length() == 0 ? "(vacío)" : text.toString();
+		return text.length() == 0 ? "(empty)" : text.toString();
 	}
 
 	/**
-	 * <p>Suelta el encuentro entero alrededor de {@code center}, repartido en círculo para que no salgan
-	 * todos apilados en el mismo bloque —que es lo que hace {@code /dndmonsters spawn} con una cantidad, y
-	 * deja un montón imposible de señalar con la vara.</p>
+	 * <p>Drops the entire encounter around {@code center}, spread in a circle so they don't all come out
+	 * stacked on the same block — which is what {@code /dndmonsters spawn} does with a quantity, leaving a
+	 * pile impossible to target with the wand.</p>
 	 *
-	 * @return cuántos se invocaron de verdad; menos que el total significa que algún id no existe.
+	 * @return how many were actually summoned; fewer than the total means some id doesn't exist.
 	 */
 	public static int spawn(ServerLevel level, Vec3 center, Encounter encounter) {
 		int total = encounter.total();

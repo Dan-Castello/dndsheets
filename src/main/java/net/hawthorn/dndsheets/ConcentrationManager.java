@@ -10,42 +10,42 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * <p>Concentración de 5e: lanzar un hechizo de concentración reemplaza cualquier concentración previa;
- * recibir daño real obliga a una salvación de Constitución (CD = máx(10, daño/2)) o se pierde. Solo
- * jugadores concentran — los monstruos del DM se resuelven acción por acción, sin este seguimiento.</p>
+ * <p>5e Concentration: casting a concentration spell replaces any previous concentration; taking real
+ * damage forces a Constitution save (DC = max(10, damage/2)) or it's lost. Only players concentrate —
+ * the DM's monsters are resolved action by action, with no tracking of this.</p>
  *
- * <p>Si el hechizo dejó un efecto de estado corriendo (ver SpellRegistry.Spell#appliesEffect,
- * SpellCastManager), perder la concentración lo revierte de verdad (TurnManager.removeEffect) — antes
- * esto solo tiraba el dado y mandaba un mensaje, sin deshacer nada.</p>
+ * <p>If the spell left a status effect running (see SpellRegistry.Spell#appliesEffect, SpellCastManager),
+ * losing concentration actually reverts it (TurnManager.removeEffect) — previously this only rolled the
+ * die and sent a message, without undoing anything.</p>
  */
 public class ConcentrationManager {
-	//targetEntityId/effectName quedan en -1/null hasta que el hechizo de verdad aplica un efecto (ver
-	//attachEffect) — muchos hechizos de concentración no dejan nada que revertir (curación, daño puro), y
-	//eso sigue siendo válido: solo se llama a TurnManager.removeEffect si hay algo que quitar.
+	//targetEntityId/effectName stay at -1/null until the spell actually applies an effect (see
+	//attachEffect) — many concentration spells leave nothing to revert (healing, pure damage), and that's
+	//still valid: TurnManager.removeEffect is only called if there's something to remove.
 	private record Concentrating(String spellName, int targetEntityId, String effectName) {}
 
 	private static final Map<UUID, Concentrating> concentratingOn = new HashMap<>();
 
-	/** Solo quita la entrada del mapa; NO revierte zonas ni invocaciones como stopConcentrating. Para
-	 *  desconexion, donde lo unico que hay que evitar es que el UUID se quede en RAM para siempre. */
+	/** Only removes the entry from the map; does NOT revert zones or summons like stopConcentrating does.
+	 *  For disconnection, where the only thing to avoid is the UUID staying in RAM forever. */
 	static void clearFor(ServerPlayer player) {
 		concentratingOn.remove(player.getUUID());
 	}
 
 	public static void startConcentrating(ServerPlayer caster, String spellName) {
-		stopConcentrating(caster); //Un hechizo de concentración nuevo reemplaza cualquiera anterior — corta el efecto viejo antes de anotar el nuevo, en vez de dejarlo huérfano para siempre.
+		stopConcentrating(caster); //A new concentration spell replaces any previous one — cuts the old effect before recording the new one, instead of leaving it orphaned forever.
 		concentratingOn.put(caster.getUUID(), new Concentrating(spellName, -1, null));
 		notifyClient(caster, spellName);
 	}
 
 	/**
-	 * <p>Le dice al cliente en qué se está concentrando, para que se vea en el HUD.</p>
+	 * <p>Tells the client what it's concentrating on, so it shows in the HUD.</p>
 	 *
-	 * <p>La concentración vivía SOLO en el mapa de esta clase, así que el jugador no tenía forma de saber si
-	 * seguía concentrado: perderla por un golpe es de las cosas que más se consultan en una mesa, y aquí
-	 * pasaba en silencio salvo por una línea de chat que se va con el scroll. El campo va en la hoja para
-	 * que viaje por la tubería que ya existe, no porque la hoja necesite recordarlo — al reiniciar el
-	 * servidor no queda ninguna concentración viva de todos modos.</p>
+	 * <p>Concentration used to live ONLY in this class's map, so the player had no way of knowing whether
+	 * they were still concentrating: losing it to a hit is one of the things most often checked at the
+	 * table, and here it happened silently except for a chat line that scrolls away. The field goes on the
+	 * sheet so it travels through the pipeline that already exists, not because the sheet needs to
+	 * remember it — on a server restart no concentration survives anyway.</p>
 	 */
 	private static void notifyClient(ServerPlayer caster, String spellName) {
 		JsonObject sheet = SheetLoader.getServerSheet(caster.getStringUUID());
@@ -53,23 +53,23 @@ public class ConcentrationManager {
 		JsonObject patch = new JsonObject();
 		if (spellName == null) {
 			sheet.remove("concentratingOn");
-			patch.add("concentratingOn", com.google.gson.JsonNull.INSTANCE); //Null en un parche = borrar la clave.
+			patch.add("concentratingOn", com.google.gson.JsonNull.INSTANCE); //Null in a patch = delete the key.
 		} else {
 			sheet.addProperty("concentratingOn", spellName);
 			patch.addProperty("concentratingOn", spellName);
 		}
-		//Persistir ademas de avisar: en que se concentra el lanzador es estado de la hoja (invariante 4).
+		//Persist as well as notify: what the caster is concentrating on is sheet state (invariant 4).
 		SheetLoader.saveServer(sheet, caster.getStringUUID());
 		DndsheetsMod.sendSheetFieldUpdate(caster, patch);
 	}
 
-	//Llamado justo después de que el hechizo de concentración recién lanzado de verdad aplicó un efecto de
-	//estado a un objetivo (ver SpellCastManager) — le suma el objetivo/efecto al registro que
-	//startConcentrating ya creó, para que onDamageTaken/stopConcentrating sepan qué revertir si se pierde
-	//la concentración más tarde. No-op si el lanzador no está concentrándose en nada.
-	//ponytail: un solo objetivo por concentración — un hechizo de área (Guardianes Espirituales) que
-	//afecta a varios solo recuerda el último; revertir en todos requeriría una lista, no hecho porque
-	//ningún hechizo de ejemplo actual lo necesita.
+	//Called right after the just-cast concentration spell actually applied a status effect to a target
+	//(see SpellCastManager) — adds the target/effect to the record startConcentrating already created,
+	//so onDamageTaken/stopConcentrating know what to revert if concentration is lost later. No-op if the
+	//caster isn't concentrating on anything.
+	//ponytail: a single target per concentration — an area spell (Spirit Guardians) that affects several
+	//only remembers the last one; reverting on all of them would need a list, not done because no current
+	//example spell needs it.
 	public static void attachEffect(ServerPlayer caster, int targetEntityId, String effectName) {
 		Concentrating current = concentratingOn.get(caster.getUUID());
 		if (current == null) return;
@@ -77,34 +77,35 @@ public class ConcentrationManager {
 	}
 
 	public static void stopConcentrating(ServerPlayer caster) {
-		//Los muros son de concentración: perderla los apaga. Sin esto, fallar la salvación de Constitución
-		//dejaba el muro ardiendo igual — el mismo fallo que ya se corrigió una vez para los efectos de estado.
+		//Walls are concentration spells: losing it puts them out. Without this, failing the Constitution
+		//save left the wall burning anyway — the same bug already fixed once for status effects.
 		ZoneManager.removeFor(caster.getUUID());
-		//Los buffs de arma tambien son de concentracion (Favor Divino, Castigo Marcador).
-		//WeaponBuffManager es un helper puro sobre el JsonObject: quien lo llama es quien persiste.
+		//Weapon buffs are concentration spells too (Divine Favor, Branding Smite).
+		//WeaponBuffManager is a pure helper over the JsonObject: whoever calls it is responsible for persisting it.
 		JsonObject buffed = SheetLoader.getServerSheet(caster.getStringUUID());
 		WeaponBuffManager.clear(buffed);
 		if (buffed != null) SheetLoader.saveServer(buffed, caster.getStringUUID());
-		//Las invocaciones tambien: Arma Espiritual y Esfera Flamigera son de concentracion.
+		//Summons too: Spiritual Weapon and Flaming Sphere are concentration spells.
 		if (caster.level() instanceof net.minecraft.server.level.ServerLevel summonLevel) {
 			SummonManager.removeFor(summonLevel, caster.getUUID());
 		}
 		Concentrating previous = concentratingOn.remove(caster.getUUID());
 		if (previous != null) notifyClient(caster, null);
 		if (previous != null && previous.effectName() != null) {
-			//El nivel sale del propio lanzador: se necesita para resolver la entidad objetivo y poder
-			//levantarle la condición, no solo parar su temporizador de daño (ver TurnManager.removeEffect).
+			//The level comes from the caster itself: it's needed to resolve the target entity and lift
+			//its condition, not just stop its damage timer (see TurnManager.removeEffect).
 			net.minecraft.server.level.ServerLevel level = caster.level() instanceof net.minecraft.server.level.ServerLevel serverLevel ? serverLevel : null;
 			TurnManager.removeEffect(level, previous.targetEntityId(), previous.effectName());
 		}
 	}
 
-	//Llamado desde cada punto del mod donde un jugador recibe daño real (ver SpellCastManager.applyDamage,
-	//CombatManager.onLivingHurt, MonsterActionManager.resolveAttack/resolveSpell).
+	//Called from every point in the mod where a player takes real damage (see
+	//SpellCastManager.applyDamage, CombatManager.onLivingHurt, MonsterActionManager.resolveAttack/resolveSpell).
 	public static void onDamageTaken(ServerPlayer player, int damage) {
-		//Un conjuro a medio conjurar se interrumpe por la MISMA regla y con la misma CD (ver CastingManager),
-		//así que se engancha aquí y no en los cuatro caminos de daño por separado: este método es el punto
-		//por el que todos pasan ya, y uno nuevo que alguien añada mañana pasará también sin acordarse.
+		//A spell being cast mid-cast gets interrupted by the SAME rule and the same DC (see
+		//CastingManager), so it hooks in here instead of in the four damage paths separately: this method
+		//is the point all of them already go through, and a new one someone adds tomorrow will go through
+		//it too without having to remember to.
 		CastingManager.onDamageTaken(player, damage);
 
 		Concentrating current = concentratingOn.get(player.getUUID());
@@ -119,7 +120,7 @@ public class ConcentrationManager {
 		if (kept) {
 			player.sendSystemMessage(Component.translatable("chat.dndsheets.concentration.kept", name, current.spellName(), dc, saveRoll.formatted()).withStyle(ChatFormatting.GRAY));
 		} else {
-			stopConcentrating(player); //Ahora sí revierte el efecto activo (ver arriba), no solo borra el registro.
+			stopConcentrating(player); //Now it actually reverts the active effect (see above), not just clearing the record.
 			ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.concentration.lost", name, current.spellName(), dc, saveRoll.formatted()).withStyle(ChatFormatting.RED));
 		}
 	}

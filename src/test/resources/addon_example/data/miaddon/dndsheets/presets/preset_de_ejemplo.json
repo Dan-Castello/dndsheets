@@ -1,7 +1,0 @@
-{
-  "id": "miaddon:preset_de_ejemplo",
-  "name": "Preset de Ejemplo",
-  "hitDiceType": "1d8",
-  "abilities": { "str": 12, "dex": 14, "con": 13, "int": 10, "wis": 12, "cha": 8 },
-  "startingWeapon": "miaddon:hacha_de_ejemplo"
-}

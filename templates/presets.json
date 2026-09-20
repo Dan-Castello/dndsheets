@@ -1,20 +1,20 @@
 [
   {
-    "_note": "Campos obligatorios: id. Elegir el preset rellena clase/dado de golpe/características de la hoja y entrega el arma inicial (una vez) — nunca toca la pestaña de Ataques, que se auto-puebla sola desde el inventario.",
+    "_note": "Required fields: id. Choosing the preset fills in the sheet's class/hit die/ability scores and hands over the starting weapon (once) — it never touches the Attacks tab, which fills itself from the inventory.",
     "id": "fighter",
-    "name": "Guerrero",
+    "name": "Fighter",
     "hitDiceType": "1d10",
     "abilities": { "str": 15, "dex": 13, "con": 14, "int": 8, "wis": 12, "cha": 10 },
     "startingWeapon": "minecraft:iron_sword",
     "startingGear": ["minecraft:chainmail_chestplate", "minecraft:shield"],
     "subclasses": [
-      { "id": "fighter:champion", "name": "Campeón", "level": 3, "criticalFrom": 19 }
+      { "id": "fighter:champion", "name": "Champion", "level": 3, "criticalFrom": 19 }
     ]
   },
   {
-    "_note": "spellSlotsMax (opcional, por defecto 0): configura espacios de conjuro Y los llena al máximo al aplicar el preset. traits (opcional): ids de templates/traits.json concedidos automáticamente. spells (opcional): ids de este mismo spells.json añadidos al Grimorio del jugador — sin esto, tener espacios de conjuro no le da al jugador nada que lanzar.",
+    "_note": "spellSlotsMax (optional, default 0): sets spell slots AND fills them to the maximum when the preset is applied. traits (optional): ids from templates/traits.json granted automatically. spells (optional): ids from this same spells.json added to the player's Spellbook — without this, having spell slots gives the player nothing to cast.",
     "id": "wizard",
-    "name": "Mago",
+    "name": "Wizard",
     "hitDiceType": "1d6",
     "abilities": { "str": 8, "dex": 14, "con": 12, "int": 15, "wis": 13, "cha": 10 },
     "startingWeapon": "dndsheets:dagger",
@@ -22,20 +22,20 @@
     "spellSlotsMax": 2,
     "spells": ["dndsheets:fire_bolt", "dndsheets:magic_missile"],
     "subclasses": [
-      { "id": "wizard:evocation", "name": "Escuela de Evocación", "level": 2 }
+      { "id": "wizard:evocation", "name": "School of Evocation", "level": 2 }
     ]
   },
   {
-    "_note": "traits: mismo campo, para una clase no-caster con rasgo pasivo en vez de hechizos.",
+    "_note": "traits: the same field, for a non-caster class with a passive trait instead of spells.",
     "id": "rogue",
-    "name": "Pícaro",
+    "name": "Rogue",
     "hitDiceType": "1d8",
     "abilities": { "str": 10, "dex": 15, "con": 13, "int": 12, "wis": 8, "cha": 14 },
     "startingWeapon": "dndsheets:dagger",
     "startingGear": ["minecraft:leather_chestplate"],
-    "traits": ["picaro:ataque_furtivo"],
+    "traits": ["rogue:sneak_attack"],
     "subclasses": [
-      { "id": "rogue:thief", "name": "Ladrón", "level": 3 }
+      { "id": "rogue:thief", "name": "Thief", "level": 3 }
     ]
   }
 ]

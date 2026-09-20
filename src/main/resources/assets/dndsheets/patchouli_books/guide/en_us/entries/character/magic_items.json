@@ -1,0 +1,12 @@
+{
+  "name": "gui.dndsheets.guide.entry.magic_items",
+  "category": "dndsheets:character",
+  "icon": "minecraft:nether_star",
+  "sortnum": 5,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.magic_items"
+    }
+  ]
+}

@@ -29,14 +29,14 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * <p>Tabla de dados de golpe por clase, en config/dndsheets-common.toml, para poder
- * editarla (o traducirla, o ampliarla a mano) en bloque sin tocar el código ni recompilar.</p>
+ * <p>Per-class hit die table, in config/dndsheets-common.toml, so it can be edited (or translated, or
+ * extended by hand) in bulk without touching code or recompiling.</p>
  */
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
-//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
-//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
-//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
-//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
+//No stability contract: this mod doesn't publish a versioned API (the DndSheetsApi facade was deleted —
+//233 lines that not a single caller used, not even the addons, which come in through here). An external
+//mod calling these methods is exposed to their signature changing without notice. The only thing
+//intended for external consumption is the api/event events, which do have real consumers.
 public class Config {
 	public static final ForgeConfigSpec SPEC;
 	private static final ForgeConfigSpec.ConfigValue<List<? extends String>> HIT_DICE_ENTRIES;
@@ -44,91 +44,82 @@ public class Config {
 	private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ENCHANT_BONUS_ENTRIES;
 	private static final ForgeConfigSpec.BooleanValue VISION_RULES;
 	private static final ForgeConfigSpec.BooleanValue SOLO_MODE;
-	private static final ForgeConfigSpec.ConfigValue<String> DIFFICULTY_PRESET;
 	private static final ForgeConfigSpec.IntValue CAST_TICKS_PER_LEVEL;
 	private static final ForgeConfigSpec.IntValue CAST_TICKS_MAX;
 
 	static {
 		ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
 		builder.comment(
-			"Dado de golpe por clase, usado para calcular la vida máxima real a partir de clase + nivel + constitución.",
-			"Formato: una entrada por línea como \"nombre:dado\" (p.ej. \"guerrero:10\").",
-			"La coincidencia es por subcadena e insensible a mayúsculas contra el campo 'Clase y Nivel' de la hoja.",
-			"Añade aquí los nombres de clase que uses en tu mesa (en cualquier idioma) sin tocar el código."
+			"Hit die per class, used to compute actual max HP from class + level + constitution.",
+			"Format: one entry per line like \"name:die\" (e.g. \"fighter:10\").",
+			"Matching is by substring and case-insensitive against the sheet's 'Class & Level' field.",
+			"Add whatever class names you use at your table here (in any language) without touching the code."
 		);
 		HIT_DICE_ENTRIES = builder.defineList("hitDice", defaultHitDice(), Config::isValidEntry);
 
 		builder.comment(
-			"Daño por defecto de cada arma, usado para precargar la pestaña de Ataques con las armas",
-			"que el jugador lleve en el inventario, y para la tirada automática al golpear un armor stand.",
-			"Formato: una entrada por línea como \"id_de_item;dado;característica\" (p.ej. \"minecraft:iron_sword;1d6;str\").",
-			"La característica es str o dex. Cada jugador puede sobrescribir su propia tirada editando la entrada en su hoja.",
+			"Default damage for each weapon, used to preload the Attacks tab with the weapons",
+			"the player is carrying in their inventory, and for the automatic roll when hitting an armor stand.",
+			"Format: one entry per line like \"item_id;die;ability\" (e.g. \"minecraft:iron_sword;1d6;str\").",
+			"Ability is str or dex. Each player can override their own roll by editing the entry on their sheet.",
 			"",
-			"También admite armas personalizadas (dagas, lanzas, dardos...) sobre CUALQUIER ítem base:",
-			"dale al ítem una etiqueta NBT {dndsheets:{weapon:\"tu_id\"}} (por /give, loot table con",
-			"set_nbt, etc.) y usa ese mismo \"tu_id\" como clave aquí, p.ej. \"dndsheets:dagger;1d4;dex\".",
-			"Esa etiqueta manda sobre el id del ítem base, así puedes repartirlas como loot."
+			"Also supports custom weapons (daggers, spears, darts...) on ANY base item:",
+			"give the item an NBT tag {dndsheets:{weapon:\"your_id\"}} (via /give, a loot table with",
+			"set_nbt, etc.) and use that same \"your_id\" as the key here, e.g. \"dndsheets:dagger;1d4;dex\".",
+			"That tag takes priority over the base item's id, so you can hand them out as loot."
 		);
 		WEAPON_DAMAGE_ENTRIES = builder.defineList("weaponDamage", defaultWeaponDamage(), Config::isValidWeaponEntry);
 
 		builder.comment(
-			"Bono de daño por nivel de encantamiento del arma, sumado como número plano a la tirada",
-			"(equivalente al +1/+2/+3 de un arma mágica en 5e), no como dados extra.",
-			"Formato: una entrada por línea como \"id_de_encantamiento;bono_por_nivel\" (p.ej. \"minecraft:sharpness;1\").",
-			"Un Sharpness III con bono 1 suma +3. Añade aquí cualquier otro encantamiento que quieras que cuente."
+			"Damage bonus per weapon enchantment level, added as a flat number to the roll",
+			"(equivalent to the +1/+2/+3 of a magic weapon in 5e), not as extra dice.",
+			"Format: one entry per line like \"enchantment_id;bonus_per_level\" (e.g. \"minecraft:sharpness;1\").",
+			"A Sharpness III with bonus 1 adds +3. Add any other enchantment here that you want to count."
 		);
 		ENCHANT_BONUS_ENTRIES = builder.defineList("enchantmentDamageBonus", defaultEnchantBonus(), Config::isValidEnchantEntry);
 
 		builder.comment(
-			"Reglas de visión (VisionManager): en oscuridad —nivel de luz de Minecraft por debajo de 4— un",
-			"personaje sin visión en la oscuridad queda cegado, con lo que eso significa en 5e: ataca con",
-			"desventaja y le atacan con ventaja. Quien tiene el rasgo ve como en penumbra. Llevar una antorcha",
-			"o un farol en la mano cuenta como luz brillante.",
+			"Vision rules (VisionManager): in darkness — Minecraft light level below 4 — a character",
+			"without darkvision becomes blinded, with everything that means in 5e: attacks with",
+			"disadvantage and is attacked with advantage. Whoever has the trait sees as in dim light. Holding",
+			"a torch or lantern in hand counts as bright light.",
 			"",
-			"Apagado por defecto A PROPÓSITO: es la regla más intrusiva del mod, porque cambia cómo se juega a",
-			"Minecraft fuera de la mesa (minar de noche, entrar en una cueva). Se enciende y se apaga en",
-			"caliente con /dndvision, que escribe aquí."
+			"Off by default ON PURPOSE: it's the most intrusive rule in the mod, because it changes how",
+			"Minecraft is played outside the table (mining at night, entering a cave). It's toggled on and",
+			"off live with /dndvision, which writes here."
 		);
 		VISION_RULES = builder.define("visionRules", false);
 
 		builder.comment(
-			"Tiempo de lanzamiento de los conjuros, en ticks (20 ticks = 1 segundo).",
+			"Spell casting time, in ticks (20 ticks = 1 second).",
 			"",
-			"Un conjuro con tiempo de lanzamiento no sale en el mismo instante: el lanzador se carga de",
-			"partículas de su escuela, la barra de acción enseña el progreso, y recibir daño obliga a una",
-			"salvación de Constitución para no perderlo (el espacio de conjuro se gasta igual, como con el",
-			"Contrahechizo). Es lo único de este mod que hace que conjurar OCUPE tiempo real.",
+			"A spell with a casting time doesn't go off instantly: the caster builds up particles of its",
+			"school, the action bar shows progress, and taking damage forces a Constitution save to avoid",
+			"losing it (the spell slot is spent regardless, as with Counterspell). This is the only thing in",
+			"this mod that makes casting TAKE real time.",
 			"",
-			"Se calcula como nivel del conjuro x castTicksPerLevel, con castTicksMax de techo. Los trucos son",
-			"siempre instantáneos. Un conjuro puede fijar su propio \"castTicks\" en el JSON y entonces manda",
-			"ese (así se escribe un Escudo o un Contrahechizo, que tienen que salir ya).",
+			"Computed as spell level x castTicksPerLevel, capped by castTicksMax. Cantrips are always",
+			"instant. A spell can set its own \"castTicks\" in its JSON, which then takes priority",
+			"(this is how a Shield or a Counterspell is written, since they need to go off immediately).",
 			"",
-			"castTicksPerLevel = 0 devuelve el lanzamiento instantáneo de siempre para toda la mesa."
+			"castTicksPerLevel = 0 restores the always-instant casting of old for the whole table."
 		);
 		CAST_TICKS_PER_LEVEL = builder.defineInRange("castTicksPerLevel", 3, 0, 40);
 		CAST_TICKS_MAX = builder.defineInRange("castTicksMax", 20, 0, 200);
 
 		builder.comment(
-			"Modo solo (sin DM): cuando está activo, CUALQUIER jugador conectado puede hacer todo lo que hoy",
-			"exige un operador —invocar monstruos, controlar turnos a mano, aplicarse un preset de clase,",
-			"encender/apagar reglas de mesa, e incluso aplicar condiciones o ajustar la hoja de OTRO jugador—.",
-			"No hay jerarquía nueva ni 'líder de grupo': en modo solo todos quedan igual de confiables entre",
-			"sí, el mismo nivel de confianza que ya hace falta para compartir el mismo mundo de Minecraft.",
+			"Solo mode (no DM): when active, ANY connected player can do everything that currently requires",
+			"an operator — summoning monsters, controlling turns by hand, applying a class preset to",
+			"themselves, toggling table rules, and even applying conditions or adjusting ANOTHER player's",
+			"sheet. There's no new hierarchy or 'party leader': in solo mode everyone is equally trusted",
+			"among themselves, the same level of trust already required to share the same Minecraft world.",
 			"",
-			"Se enciende y se apaga en caliente con /dndsolo, igual que visionRules con /dndvision — pero ESE",
-			"comando exige nivel de permiso 4 (dueño del server/consola), no 2: decide QUIÉN tiene poder",
-			"administrativo total sobre otros jugadores, así que pide el mismo acceso que ya hace falta para",
-			"nombrar operadores, no el nivel 2 que este mismo flag vuelve irrelevante en cuanto se enciende."
+			"Toggled on and off live with /dndsolo, same as visionRules with /dndvision — but THAT command",
+			"requires permission level 4 (server owner/console), not 2: it decides WHO has full",
+			"administrative power over other players, so it demands the same access already needed to",
+			"appoint operators, not the level 2 that this very flag renders irrelevant the moment it's turned on."
 		);
 		SOLO_MODE = builder.define("soloMode", false);
-
-		builder.comment(
-			"Dificultad de los monstruos: 'facil' (×0.75 PG y daño), 'normal' (×1.0, como siempre) o 'dificil'",
-			"(×1.5 PG y daño). Solo escala al MONSTRUO —lo que un jugador hace nunca cambia—, así que sirve",
-			"como mando de dificultad self-service para un grupo sin DM que arbitre 'esto está siendo muy",
-			"duro' a ojo. Se cambia en caliente con /dnddifficulty, igual que visionRules con /dndvision."
-		);
-		DIFFICULTY_PRESET = builder.defineInList("difficultyPreset", "normal", List.of("facil", "normal", "dificil"));
 
 		SPEC = builder.build();
 	}
@@ -150,67 +141,73 @@ public class Config {
 		);
 	}
 
-	/** Si las reglas de visión están activas. Ver {@link net.hawthorn.dndsheets.VisionManager}. */
+	/** Whether vision rules are active. See {@link net.hawthorn.dndsheets.VisionManager}. */
 	public static boolean visionRules() {
 		return VISION_RULES.get();
 	}
 
-	/** Las enciende o las apaga y lo deja escrito en el toml, para que sobreviva al reinicio. */
+	/** Turns them on or off and writes it to the toml, so it survives a restart. */
 	public static void setVisionRules(boolean enabled) {
 		VISION_RULES.set(enabled);
 		VISION_RULES.save();
 	}
 
-	/** Ticks de lanzamiento por nivel de conjuro; 0 = todo instantáneo. Ver {@code SpellRegistry.Spell#castTicksAt}. */
+	/** Casting ticks per spell level; 0 = everything instant. See {@code SpellRegistry.Spell#castTicksAt}. */
 	public static int castTicksPerLevel() {
 		return CAST_TICKS_PER_LEVEL.get();
 	}
 
-	/** Techo del tiempo de lanzamiento, en ticks. Ver {@code SpellRegistry.Spell#castTicksAt}. */
+	/** Cap on casting time, in ticks. See {@code SpellRegistry.Spell#castTicksAt}. */
 	public static int castTicksMax() {
 		return CAST_TICKS_MAX.get();
 	}
 
-	/** Si el modo solo (sin DM) está activo. Ver {@link net.hawthorn.dndsheets.DndsheetsMod#canActAsDm}. */
+	/** Whether solo mode (no DM) is active. See {@link net.hawthorn.dndsheets.DndsheetsMod#canActAsDm}. */
 	public static boolean soloMode() {
 		return SOLO_MODE.get();
 	}
 
-	/** Mismo patrón que {@link #setVisionRules} — lo enciende/apaga y lo deja escrito en el toml. */
+	/** Same pattern as {@link #setVisionRules} — toggles it and writes it to the toml. */
 	public static void setSoloMode(boolean enabled) {
 		SOLO_MODE.set(enabled);
 		SOLO_MODE.save();
 	}
 
-	public static String difficultyPreset() {
-		return DIFFICULTY_PRESET.get();
-	}
-
-	/** Mismo patrón que {@link #setVisionRules}. {@code preset} debe ser "facil", "normal" o "dificil". */
-	public static void setDifficultyPreset(String preset) {
-		DIFFICULTY_PRESET.set(preset);
-		DIFFICULTY_PRESET.save();
-	}
-
+	/**
+	 * <p>How much monsters are scaled, read from <b>Minecraft's own difficulty</b> ({@code /difficulty}).
+	 * This used to be a separate setting with its own {@code /dnddifficulty} command, and there were two
+	 * dials for the same question: you could have the world on Hard and the mod's monsters on Easy, with
+	 * nothing warning about the contradiction. Now there's just one, the one the player already knows and
+	 * already uses, and it raises or lowers both at once.</p>
+	 *
+	 * <p>PEACEFUL counts as the lowest rung instead of disabling anything: in vanilla no hostiles spawn,
+	 * but this mod's monsters are summoned by the DM on purpose, and making them disappear would break
+	 * their scene. They stay, softened.</p>
+	 *
+	 * <p>Without a server (a call from the client) it returns 1.0, the same as Normal: it's a
+	 * multiplier, not a rule, and erring toward "unscaled" doesn't throw any numbers off.</p>
+	 */
 	private static double difficultyMultiplier() {
-		return switch (difficultyPreset()) {
-			case "facil" -> 0.75;
-			case "dificil" -> 1.5;
+		net.minecraft.server.MinecraftServer server = net.minecraftforge.server.ServerLifecycleHooks.getCurrentServer();
+		if (server == null) return 1.0;
+		return switch (server.getWorldData().getDifficulty()) {
+			case PEACEFUL, EASY -> 0.75;
+			case HARD -> 1.5;
 			default -> 1.0;
 		};
 	}
 
 	/**
-	 * <p>PG máximos de un monstruo, escalados por dificultad. Único punto que aplica el multiplicador —
-	 * úsalo en todo lugar que calcule cuántos PG tiene un monstruo (spawn y {@code Combatant.maxHp()}),
-	 * nunca leas {@code block.maxHp()} directo para eso, o quedan desincronizados: el monstruo aparece
-	 * con menos PG de los que su propia barra dice que tiene.</p>
+	 * <p>Max HP of a monster, scaled by difficulty. The single point that applies the multiplier —
+	 * use it anywhere that computes how much HP a monster has (spawn and {@code Combatant.maxHp()}),
+	 * never read {@code block.maxHp()} directly for that, or they get out of sync: the monster spawns
+	 * with less HP than its own bar says it has.</p>
 	 */
 	public static int scaleMonsterMaxHp(int rawMaxHp) {
 		return Math.max(1, (int) Math.round(rawMaxHp * difficultyMultiplier()));
 	}
 
-	/** Mismo multiplicador que {@link #scaleMonsterMaxHp}, aplicado al daño que un monstruo INFLIGE. */
+	/** Same multiplier as {@link #scaleMonsterMaxHp}, applied to the damage a monster DEALS. */
 	public static int scaleMonsterDamage(int rawDamage) {
 		return Math.max(0, (int) Math.round(rawDamage * difficultyMultiplier()));
 	}
@@ -237,8 +234,8 @@ public class Config {
 		entries.add("minecraft:crossbow;1d8;dex");
 		entries.add("minecraft:trident;1d8;str");
 
-		//Armas personalizadas de ejemplo (ver etiqueta NBT en el comentario de arriba). Bórralas o cambia
-		//el dado libremente; solo son un punto de partida para dagas/lanzas/dardos repartidos como loot.
+		//Example custom weapons (see the NBT tag in the comment above). Delete them or change
+		//the die freely; they're just a starting point for daggers/spears/darts handed out as loot.
 		entries.add("dndsheets:dagger;1d4;dex");
 		entries.add("dndsheets:spear;1d6;str");
 		entries.add("dndsheets:dart;1d4;dex");
@@ -275,11 +272,11 @@ public class Config {
 		}
 	}
 
-	//"hands" es "one" (por defecto), "two" (a dos manos de verdad, ver CombatManager.blockedByOffhand) o
-	//"versatile" (1d8/1d10 tipo espada larga: más daño con las dos manos libres). "versatileDice" solo
-	//importa si hands=="versatile" — ver CombatManager, que decide cuál usar mirando si la otra mano está
-	//vacía. "classes": lista de subcadenas (en minúscula) contra las que se compara characterClass, mismo
-	//patrón que ya usa hitDieFor — vacía/null significa "cualquier clase puede usarla" (el caso por defecto).
+	//"hands" is "one" (default), "two" (truly two-handed, see CombatManager.blockedByOffhand) or
+	//"versatile" (1d8/1d10 like a longsword: more damage with both hands free). "versatileDice" only
+	//matters if hands=="versatile" — see CombatManager, which decides which to use by checking whether
+	//the other hand is empty. "classes": list of substrings (lowercase) compared against characterClass,
+	//same pattern hitDieFor already uses — empty/null means "any class can use it" (the default case).
 	public record WeaponDefault(String dice, String ability, String damageType, String hands, String versatileDice, List<String> classes) {
 		public boolean isVersatile() {
 			return "versatile".equals(hands) && versatileDice != null;
@@ -293,14 +290,14 @@ public class Config {
 			return false;
 		}
 	}
-	//customModelData: opcional, para que un resource pack reskinee un arma personalizada por número en vez
-	//de compartir la textura del ítem base — null significa "sin modelo custom" (comportamiento de siempre).
+	//customModelData: optional, so a resource pack can reskin a custom weapon by number instead of
+	//sharing the base item's texture — null means "no custom model" (the usual behavior).
 	public record WeaponGiveInfo(String displayName, String baseItemId, Integer customModelData) {}
 
-	//Sembrado con los valores por defecto y no vacío: hasta que Forge carga el toml, hitDieFor devolvía d8
-	//para TODAS las clases, así que cualquier cosa que derivara PG antes de esa carga (o fuera del juego,
-	//como el self-test) daba números de una clase que no existe. El toml lo sobrescribe entero al cargar,
-	//así que sembrarlo no cambia nada de lo que el DM configure.
+	//Seeded with the default values and non-empty: until Forge loads the toml, hitDieFor returned d8
+	//for EVERY class, so anything deriving HP before that load (or outside the game, like the
+	//self-test) got numbers for a class that doesn't exist. The toml overwrites it entirely on load,
+	//so seeding it changes nothing the DM configures.
 	private static Map<String, Integer> hitDiceByClass = parseHitDice(defaultHitDice());
 
 	private static Map<String, Integer> parseHitDice(List<String> entries) {
@@ -310,7 +307,7 @@ public class Config {
 			try {
 				parsed.put(parts[0].trim().toLowerCase(Locale.ROOT), Integer.parseInt(parts[1].trim()));
 			} catch (RuntimeException ignored) {
-				//Entradas inválidas ya se filtran por isValidEntry(), pero por si acaso.
+				//Invalid entries are already filtered out by isValidEntry(), but just in case.
 			}
 		}
 		return parsed;
@@ -318,20 +315,20 @@ public class Config {
 	private static Map<String, WeaponDefault> weaponDamageByItem = new LinkedHashMap<>();
 	private static Map<String, Integer> enchantBonusPerLevel = new LinkedHashMap<>();
 
-	//Armas cargadas en caliente por /dndweapons load (ver WeaponCommand), no por el toml. Tienen prioridad
-	//sobre weaponDamageByItem por si un pack de armas quiere pisar un id ya definido ahí.
+	//Weapons hot-loaded by /dndweapons load (see WeaponCommand), not by the toml. They take priority
+	//over weaponDamageByItem in case a weapon pack wants to override an id already defined there.
 	private static final Map<String, WeaponDefault> jsonWeapons = new LinkedHashMap<>();
 	private static final Map<String, WeaponGiveInfo> jsonWeaponGiveInfo = new LinkedHashMap<>();
 
 	/**
-	 * <p>Registra (o sobrescribe) un arma en memoria, típicamente desde un JSON cargado con
-	 * {@code /dndweapons load}. No se guarda en el toml: se pierde al reiniciar el servidor a menos
-	 * que se vuelva a cargar el mismo archivo.</p>
+	 * <p>Registers (or overwrites) a weapon in memory, typically from a JSON loaded with
+	 * {@code /dndweapons load}. Not saved to the toml: it's lost on server restart unless
+	 * the same file is loaded again.</p>
 	 *
-	 * <p>F22 del audit: de los 5 overloads posicionales que había antes (hasta 10 parámetros String),
-	 * solo este de 10 parámetros tenía llamadas reales (ver {@link #loadFile}) — el resto se eliminó.
-	 * El otro llamador era la fachada {@code DndSheetsApi.registerWeapon}, borrada por no tener ninguno
-	 * a su vez.</p>
+	 * <p>Audit item F22: of the 5 positional overloads that used to exist (up to 10 String parameters),
+	 * only this 10-parameter one had real callers (see {@link #loadFile}) — the rest were removed.
+	 * The other caller was the {@code DndSheetsApi.registerWeapon} facade, deleted because it had none
+	 * of its own in turn.</p>
 	 */
 	public static void registerWeapon(String id, String dice, String ability, String damageType, String hands, String versatileDice, List<String> classes, String displayName, String baseItemId, Integer customModelData) {
 		List<String> normalizedClasses = new java.util.ArrayList<>();
@@ -350,38 +347,38 @@ public class Config {
 		return ids;
 	}
 
-	//Solo las armas personalizadas cargadas por JSON (con nombre e ítem base propios), para la pestaña
-	//creativa: las de weaponDamageByItem ya son ítems reales de Minecraft, no hace falta repetirlas ahí.
+	//Only the custom weapons loaded via JSON (with their own name and base item), for the creative
+	//tab: the ones in weaponDamageByItem are already real Minecraft items, no need to repeat them there.
 	public static java.util.Set<String> customWeaponIds() {
 		return jsonWeaponGiveInfo.keySet();
 	}
 
-	//Público: usado por el creador de contenido in-game para borrar un arma creada en el propio juego (ver
-	//ContentPackFile). No es un NamedRegistry como los demás *Registry (ver nota de loadFile más abajo),
-	//así que necesita su propio remove sobre los dos mapas en vez de delegar en NamedRegistry.remove.
+	//Public: used by the in-game content creator to delete a weapon created in-game (see
+	//ContentPackFile). Not a NamedRegistry like the other *Registry classes (see the loadFile note
+	//below), so it needs its own remove over the two maps instead of delegating to NamedRegistry.remove.
 	public static boolean removeWeapon(String id) {
 		boolean removed = jsonWeapons.remove(id) != null;
 		jsonWeaponGiveInfo.remove(id);
 		return removed;
 	}
 
-	//Público: usado por WeaponCommand (/dndweapons load) y por DndPaths para precargar solo todos los
-	//.json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de
-	//comandos. No usa JsonRegistryLoader como los demás *Registry: valida
-	//varios campos obligatorios a la vez y llama a registerWeapon con parámetros posicionales en vez de un
-	//par parse()/register() sobre un registro propio.
+	//Public: used by WeaponCommand (/dndweapons load) and by DndPaths to solo-preload all the
+	//.json files in the folder at server startup, without DndPaths having to depend on the command
+	//layer. Doesn't use JsonRegistryLoader like the other *Registry classes: it validates
+	//several required fields at once and calls registerWeapon with positional parameters instead of a
+	//parse()/register() pair on its own registry.
 	public static int loadFile(Path file) throws IOException {
 		return loadJson(JsonParser.parseString(Files.readString(file)), file.getFileName().toString(), id -> { });
 	}
 
 	/**
-	 * <p>Carga armas de un JSON ya leído, de un archivo del mundo o del jar de otro mod (ver
-	 * {@code ContentDatapackLoader}). Acepta un array de armas o una suelta, que es la convención de un
-	 * datapack: un archivo, una entrada.</p>
+	 * <p>Loads weapons from an already-parsed JSON, from a world file or another mod's jar (see
+	 * {@code ContentDatapackLoader}). Accepts either an array of weapons or a single loose one, which
+	 * follows the datapack convention: one file, one entry.</p>
 	 *
-	 * <p>Las armas no pasan por {@code JsonRegistryLoader} porque validan tres campos obligatorios a la vez
-	 * y registran con parámetros posicionales en vez de un par parse/register — ver el comentario de esa
-	 * clase. Por eso este método repite su forma en lugar de reusarla.</p>
+	 * <p>Weapons don't go through {@code JsonRegistryLoader} because they validate three required fields
+	 * at once and register with positional parameters instead of a parse/register pair — see that
+	 * class's comment. That's why this method duplicates its shape instead of reusing it.</p>
 	 */
 	public static int loadJson(JsonElement root, String source, java.util.function.Consumer<String> onId) {
 		JsonArray weapons;
@@ -398,7 +395,7 @@ public class Config {
 			try {
 				JsonObject weapon = element.getAsJsonObject();
 				if (!weapon.has("id") || !weapon.has("dice") || !weapon.has("ability")) {
-					DndsheetsMod.LOGGER.warn("Saltando arma #{} en {}: falta \"id\", \"dice\" o \"ability\".", index, source);
+					DndsheetsMod.LOGGER.warn("Skipping weapon #{} in {}: missing \"id\", \"dice\" or \"ability\".", index, source);
 					continue;
 				}
 
@@ -407,13 +404,13 @@ public class Config {
 				String ability = weapon.get("ability").getAsString();
 				String name = weapon.has("name") ? weapon.get("name").getAsString() : id;
 				String baseItem = weapon.has("item") ? weapon.get("item").getAsString() : "minecraft:stick";
-				String damageType = weapon.has("damageType") ? weapon.get("damageType").getAsString() : "fisico";
+				String damageType = weapon.has("damageType") ? weapon.get("damageType").getAsString() : "physical";
 				String hands = weapon.has("hands") ? weapon.get("hands").getAsString() : "one";
 				String versatileDice = weapon.has("versatileDice") ? weapon.get("versatileDice").getAsString() : null;
 
-				//Opcional: qué clases pueden usarla (subcadenas comparadas contra "Clase y Nivel" de la hoja,
-				//mismo patrón que hitDieFor) — sin este campo (el caso por defecto) cualquier clase
-				//puede usar el arma, igual que antes.
+				//Optional: which classes can use it (substrings compared against the sheet's "Class & Level",
+				//same pattern as hitDieFor) — without this field (the default case) any class
+				//can use the weapon, same as before.
 				List<String> classes = new java.util.ArrayList<>();
 				if (weapon.has("classes")) {
 					for (JsonElement el : weapon.getAsJsonArray("classes")) classes.add(el.getAsString());
@@ -425,17 +422,17 @@ public class Config {
 				onId.accept(id);
 				count++;
 			} catch (RuntimeException e) {
-				DndsheetsMod.LOGGER.warn("Saltando arma #{} en {}: {}", index, source, e.toString());
+				DndsheetsMod.LOGGER.warn("Skipping weapon #{} in {}: {}", index, source, e.toString());
 			}
 		}
 		return count;
 	}
 
-	//Si el id es directamente un ítem real de Minecraft (p.ej. "minecraft:bow"), se entrega tal cual, sin
-	//etiqueta NBT. Si es un id personalizado (p.ej. "dndsheets:dagger"), se etiqueta sobre el ítem base
-	//configurado (por /dndweapons load) para que el resto del sistema lo reconozca como esa arma.
-	//Público: también lo usan WeaponCommand (/dndweapons give), la pestaña creativa
-	//(DndsheetsModCreativeTab) y PresetManager (arma inicial de un preset).
+	//If the id is directly a real Minecraft item (e.g. "minecraft:bow"), it's given as-is, without an
+	//NBT tag. If it's a custom id (e.g. "dndsheets:dagger"), it's tagged onto the base item
+	//configured (via /dndweapons load) so the rest of the system recognizes it as that weapon.
+	//Public: also used by WeaponCommand (/dndweapons give), the creative tab
+	//(DndsheetsModCreativeTab) and PresetManager (a preset's starting weapon).
 	public static ItemStack buildWeaponStack(String weaponId, int count) {
 		ResourceLocation directLoc = ResourceLocation.tryParse(weaponId);
 		Item directItem = directLoc != null ? ForgeRegistries.ITEMS.getValue(directLoc) : null;
@@ -457,33 +454,33 @@ public class Config {
 		stack.getOrCreateTag().put("dndsheets", dndTag);
 		if (giveInfo != null) {
 			stack.setHoverName(ContentNames.of(giveInfo.displayName()));
-			//Reskin por resource pack: un modelo custom en assets/minecraft/models/item/<baseItem>.json puede
-			//mapear este número a un modelo/textura distinta, sin que el arma tenga que compartir la del
-			//ítem base que la representa (p.ej. una "Daga" que ya no se ve como una espada de hierro).
+			//Resource pack reskin: a custom model in assets/minecraft/models/item/<baseItem>.json can
+			//map this number to a different model/texture, without the weapon having to share the one
+			//belonging to the base item that represents it (e.g. a "Dagger" that no longer looks like an iron sword).
 			if (giveInfo.customModelData() != null) stack.getOrCreateTag().putInt("CustomModelData", giveInfo.customModelData());
 		}
 		addHandsLore(stack, weaponDefaultFor(weaponId));
 		return stack;
 	}
 
-	//Para "identificar armas de una y dos manos ya que algunas tienen bonificaciones" (feedback de
-	//playtesting): una línea de lore visible en el tooltip del ítem, no solo un dato en el JSON que solo
-	//lee el código. Las armas de "hands":"one" (el caso por defecto, casi todas) no llevan lore extra —
-	//no hay nada especial que señalar.
+	//For "identifying one- and two-handed weapons since some have bonuses" (playtesting feedback): a
+	//line of lore visible in the item's tooltip, not just a value in the JSON that only the code reads.
+	//Weapons with "hands":"one" (the default case, almost all of them) carry no extra lore —
+	//there's nothing special to flag.
 	private static void addHandsLore(ItemStack stack, WeaponDefault weaponDefault) {
 		if (weaponDefault == null) return;
 
-		String text = switch (weaponDefault.hands()) {
-			case "two" -> "A dos manos";
+		Component text = switch (weaponDefault.hands()) {
+			case "two" -> Component.translatable("chat.dndsheets.weapon.lore_two_handed");
 			case "versatile" -> weaponDefault.isVersatile()
-				? "Versátil (" + weaponDefault.dice() + " a una mano, " + weaponDefault.versatileDice() + " a dos)"
+				? Component.translatable("chat.dndsheets.weapon.lore_versatile", weaponDefault.dice(), weaponDefault.versatileDice())
 				: null;
 			default -> null;
 		};
 		if (text == null) return;
 
 		net.minecraft.nbt.ListTag lore = new net.minecraft.nbt.ListTag();
-		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(Component.literal(text).withStyle(ChatFormatting.GRAY))));
+		lore.add(net.minecraft.nbt.StringTag.valueOf(Component.Serializer.toJson(text.copy().withStyle(ChatFormatting.GRAY))));
 		stack.getOrCreateTagElement("display").put("Lore", lore);
 	}
 
@@ -513,26 +510,27 @@ public class Config {
 	}
 
 	/**
-	 * <p>Compatibilidad con armas de OTROS mods (Tinkers' Construct y cualquier otro) sin necesitar un JSON
-	 * por ítem: si nadie registró este id a mano (ni JSON ni .toml) pero el ítem ya declara daño de ataque
-	 * real por el atributo vanilla {@code ATTACK_DAMAGE} — el mismo que hace que el tooltip diga "X de daño
-	 * de ataque" y que el combate normal de Minecraft ya sepa hacer más daño con él — se aproxima como un
-	 * arma real de 5e con ESE daño, en vez de tratarlo siempre como un arma sin configurar.</p>
+	 * <p>Compatibility with weapons from OTHER mods (Tinkers' Construct and any other) without needing a
+	 * per-item JSON: if nobody registered this id by hand (neither JSON nor .toml) but the item already
+	 * declares real attack damage via the vanilla {@code ATTACK_DAMAGE} attribute — the same one that
+	 * makes the tooltip say "X Attack Damage" and that lets normal Minecraft combat already deal more
+	 * damage with it — it's approximated as a real 5e weapon with THAT damage, instead of always being
+	 * treated as an unconfigured weapon.</p>
 	 *
-	 * <p>Se lee de la INSTANCIA real del ítem, no de un valor fijo por id: las herramientas de Tinkers'
-	 * Construct guardan sus estadísticas por NBT, distintas en cada herramienta forjada, y ese atributo ya
-	 * las refleja sin que este mod tenga que saber nada de Tinkers' Construct (ni de ningún otro mod) en
-	 * particular — cualquier ítem de cualquier mod que participe del combate vanilla normal ya expone este
-	 * mismo atributo, es el mecanismo que usa Minecraft para que el combate modded funcione en absoluto.</p>
+	 * <p>Read from the item's real INSTANCE, not from a fixed value per id: Tinkers' Construct tools
+	 * store their stats via NBT, different for every forged tool, and that attribute already reflects
+	 * them without this mod having to know anything about Tinkers' Construct (or any other mod) in
+	 * particular — any item from any mod that participates in normal vanilla combat already exposes this
+	 * same attribute; it's the mechanism Minecraft uses for modded combat to work at all.</p>
 	 *
-	 * <p><b>Simplificaciones deliberadas</b>: se expresa como UN dado "1dX" con el mismo promedio que el
-	 * daño real del ítem (X = 2×daño-1, p.ej. +6 de daño real → 1d11, promedio 6) en vez de un número fijo
-	 * sin variación — sigue siendo una tirada de verdad, con su propia varianza, y dobla en un crítico
-	 * igual que cualquier otro dado. No es una conversión exacta (no hay un "dado correcto" único para un
-	 * número real de Minecraft), pero mantiene el promedio de poder del ítem tal como lo balanceó el mod
-	 * que lo añade. Siempre Fuerza y daño físico, sin versatilidad ni tipo de daño especial; un registro a
-	 * mano (JSON o .toml) para un ítem concreto sigue mandando sobre esto (ver {@link #weaponDefaultFor},
-	 * que se comprueba primero) — por ejemplo, para tratar una daga modded como Destreza en vez de Fuerza.</p>
+	 * <p><b>Deliberate simplifications</b>: it's expressed as a SINGLE "1dX" die with the same average as
+	 * the item's real damage (X = 2×damage-1, e.g. +6 real damage → 1d11, average 6) instead of a fixed
+	 * number with no variance — it's still a real roll, with its own variance, and it doubles on a
+	 * critical hit like any other die. It's not an exact conversion (there's no single "correct die" for
+	 * a real Minecraft number), but it preserves the item's average power as balanced by the mod that
+	 * adds it. Always Strength and physical damage, no versatility or special damage type; a hand-written
+	 * registration (JSON or .toml) for a specific item still overrides this (see {@link #weaponDefaultFor},
+	 * which is checked first) — for example, to treat a modded dagger as Dexterity instead of Strength.</p>
 	 */
 	public static WeaponDefault autoDetectWeapon(ItemStack stack) {
 		if (stack == null || stack.isEmpty()) return null;
@@ -541,9 +539,9 @@ public class Config {
 			if (modifier.getOperation() == AttributeModifier.Operation.ADDITION) bonus += modifier.getAmount();
 		}
 		int average = (int) Math.round(bonus);
-		if (average <= 0) return null; //Ni siquiera declara más daño que las manos vacías: no lo tratamos como arma.
+		if (average <= 0) return null; //Doesn't even declare more damage than bare hands: don't treat it as a weapon.
 		int sides = Math.max(1, 2 * average - 1);
-		return new WeaponDefault("1d" + sides, "str", "fisico", "one", null, List.of());
+		return new WeaponDefault("1d" + sides, "str", "physical", "one", null, List.of());
 	}
 
 	/**
@@ -578,7 +576,7 @@ public class Config {
 		for (String entry : WEAPON_DAMAGE_ENTRIES.get()) {
 			String[] parts = entry.split(";");
 			if (parts.length != 3) continue;
-			parsedWeapons.put(parts[0].trim(), new WeaponDefault(parts[1].trim(), parts[2].trim().toLowerCase(Locale.ROOT), "fisico", "one", null, List.of()));
+			parsedWeapons.put(parts[0].trim(), new WeaponDefault(parts[1].trim(), parts[2].trim().toLowerCase(Locale.ROOT), "physical", "one", null, List.of()));
 		}
 		weaponDamageByItem = parsedWeapons;
 
@@ -589,7 +587,7 @@ public class Config {
 			try {
 				parsedEnchants.put(parts[0].trim(), Integer.parseInt(parts[1].trim()));
 			} catch (NumberFormatException ignored) {
-				//Entradas inválidas ya se filtran por isValidEnchantEntry(), pero por si acaso.
+				//Invalid entries are already filtered out by isValidEnchantEntry(), but just in case.
 			}
 		}
 		enchantBonusPerLevel = parsedEnchants;

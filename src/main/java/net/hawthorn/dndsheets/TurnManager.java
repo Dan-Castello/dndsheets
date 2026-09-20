@@ -28,47 +28,47 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * <p>Modo turnos: ordena una lista de combatientes por iniciativa y aplica efectos de estado (veneno,
- * etc.) al empezar el turno de cada uno. Cada combatiente (jugador O monstruo controlado por el DM)
- * tiene derecho a UNA acción por turno; cualquier intento extra —sea porque ya actuó este turno, o
- * porque no le toca— se IGNORA por completo, no se acumula para más tarde. Al llegarle el turno a
- * alguien, elige de cero qué hacer; nada de lo que intentó fuera de turno queda pendiente.</p>
+ * <p>Turn mode: sorts a list of combatants by initiative and applies status effects (poison, etc.) at
+ * the start of each one's turn. Every combatant (player OR DM-controlled monster) is entitled to ONE
+ * action per turn; any extra attempt — whether because they already acted this turn, or because it isn't
+ * their turn — is IGNORED entirely, not queued for later. When a turn reaches someone, they choose from
+ * scratch what to do; nothing they attempted out of turn stays pending.</p>
  *
- * <p>Quien tiene el turno tampoco se mueve con libertad total de Minecraft: solo puede alejarse de
- * donde empezó su turno hasta su "speed" de hoja (5 pies = 1 bloque, 30 pies por defecto si el campo
- * está vacío o no es un número); pasado eso se le devuelve a la última posición válida — ver
+ * <p>Whoever has the turn also doesn't move with Minecraft's full freedom: they can only get as far from
+ * where their turn started as their sheet "speed" allows (5 feet = 1 block, 30 feet by default if the
+ * field is empty or not a number); past that, they're snapped back to their last valid position — see
  * {@link MovementAnchorTracker#enforceMovementBudget}.</p>
  *
- * <p>El turno pasa solo: en cuanto {@link #tryAct} le acepta una acción a quien tiene el turno, un tick
- * después se avanza al siguiente combatiente sin que nadie escriba {@code /dndturns next} — ver
- * {@link #scheduleAutoAdvance}. Quien tiene el turno brilla (efecto vanilla Brillo) para que se note sin
- * leer el chat, y el estado (ronda, de quién es el turno, si ya actuó) se manda a todos los clientes para
- * el HUD — ver {@code network.TurnStateMessage} / {@code client.TurnHudOverlay}.</p>
+ * <p>The turn advances on its own: as soon as {@link #tryAct} accepts an action from whoever has the
+ * turn, one tick later it moves on to the next combatant without anyone typing {@code /dndturns next} —
+ * see {@link #scheduleAutoAdvance}. Whoever has the turn glows (vanilla Glowing effect) so it's noticeable
+ * without reading chat, and the state (round, whose turn it is, whether they've acted) is sent to every
+ * client for the HUD — see {@code network.TurnStateMessage} / {@code client.TurnHudOverlay}.</p>
  *
- * <p>Fuera de modo turnos ({@link #isActive()} falso), todo se comporta exactamente igual que antes:
- * nada de esto interfiere si nadie usa {@code /dndturns start}.</p>
+ * <p>Outside turn mode ({@link #isActive()} false), everything behaves exactly as before: none of this
+ * interferes if nobody uses {@code /dndturns start}.</p>
  *
- * <p>Todo mutador de estado (start/next/cancel) pasa por un guardado de un solo tick de servidor, para
- * no duplicar un avance si el mismo comando se dispara dos veces por accidente — mismo problema que ya
- * se resolvió para el lanzado de hechizos en {@link SpellCastManager}.</p>
+ * <p>Every state mutator (start/next/cancel) goes through a single-server-tick debounce, to avoid
+ * duplicating an advance if the same command fires twice by accident — the same problem already solved
+ * for spellcasting in {@link SpellCastManager}.</p>
  *
- * <p>Techo conocido: todo el estado de aquí abajo es estático y único por servidor, así que solo puede
- * haber UN combate en modo turnos a la vez en todo el servidor (da igual la dimensión o la distancia).
- * Decisión deliberada: un servidor de este mod es una mesa. Si algún día dos grupos juegan encuentros
- * simultáneos, esto se convierte en estado por-encuentro (una instancia por combate, elegida por
- * proximidad/dimensión) — reescritura grande, no un parche.</p>
+ * <p>Known ceiling: all the state below is static and unique per server, so there can only be ONE
+ * turn-mode combat at a time on the entire server (dimension or distance don't matter). Deliberate
+ * decision: a server for this mod is one table. If someday two groups play simultaneous encounters, this
+ * becomes per-encounter state (one instance per combat, chosen by proximity/dimension) — a big rewrite,
+ * not a patch.</p>
  */
 @Mod.EventBusSubscriber
-public class TurnManager { //ponytail: un combate por servidor; estado por-encuentro si algún día hay 2 mesas.
-	//isMonster se fija al armar la iniciativa (startAt), no se reinfiere después: si el
-	//combatiente se borra del mundo a mitad de encuentro (DM, Vara de DM...) ya no habría forma de
-	//preguntarle a MonsterRegistry qué era. Ver allEnemiesDefeated, que depende de este flag. playerUuid es
-	//null para monstruos; para jugadores sobrevive a un entityId que cambia al reconectarse — ver
-	//reconcilePlayerEntity, que lo usa para encontrar el puesto de este jugador en order tras un relog.
-	//ponytail: nada de esto se persiste en disco (probado y revertido a propósito — un mob de
-	//compatibilidad recuperado tras un reinicio no recordaba su NoAI/movimiento a medio turno, quedando en
-	//un estado más raro que simplemente perder el encuentro). Las sesiones de este mod son al momento; un
-	//reinicio de servidor a mitad de combate simplemente lo corta, como cualquier otra cosa en memoria.
+public class TurnManager { //ponytail: one combat per server; per-encounter state if there's ever 2 tables.
+	//isMonster is set when initiative is assembled (startAt), never re-inferred afterward: if the
+	//combatant gets removed from the world mid-encounter (DM, DM Wand...) there'd be no way left to ask
+	//MonsterRegistry what it was. See allEnemiesDefeated, which depends on this flag. playerUuid is null
+	//for monsters; for players it survives an entityId that changes on reconnect — see
+	//reconcilePlayerEntity, which uses it to find this player's spot in order after a relog.
+	//ponytail: none of this is persisted to disk (tried and deliberately reverted — a compatibility mob
+	//recovered after a restart didn't remember its mid-turn NoAI/movement, leaving it in a state stranger
+	//than simply losing the encounter). This mod's sessions are ephemeral; a server restart mid-combat
+	//simply cuts it short, like anything else in memory.
 	public record TurnEntry(int entityId, String name, boolean isMonster, String playerUuid) {}
 	public record StatusEffect(String name, String damageDice, int remainingTurns) {}
 
@@ -78,43 +78,47 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 	private static boolean active = false;
 	private static long lastActionTick = -1;
 
-	//Área desde donde arrancó el encuentro (ver startAt): se reescanea sola cada LATE_MONSTER_SCAN_INTERVAL_
-	//TICKS mientras siga activo, sumando al orden cualquier mob hostil que entre después de arrancar (una
-	//araña que se acerca a media pelea, p.ej.) — sin esto, solo entraban los que ya estaban dentro en el
-	//instante exacto de /dndturns start. combatOrigin null = sin escaneo pendiente (encuentro terminado).
+	//Area the encounter started from (see startAt): re-scanned on its own every
+	//LATE_MONSTER_SCAN_INTERVAL_TICKS while still active, adding any hostile mob that shows up after the
+	//start to the order (a spider that wanders in mid-fight, e.g.) — without this, only whoever was
+	//already inside at the exact instant of /dndturns start would join. combatOrigin null = no scan
+	//pending (encounter over).
 	private static Vec3 combatOrigin;
 	private static double combatRadius;
-	private static final int LATE_MONSTER_SCAN_INTERVAL_TICKS = 20; //1s: no hace falta notar a alguien nuevo al instante.
+	private static final int LATE_MONSTER_SCAN_INTERVAL_TICKS = 20; //1s: no need to notice a newcomer instantly.
 
-	//Generación del turno actual: sube cada vez que el turno de verdad avanza (advance) o que se deshace
-	//una acción (undoAction). scheduleAutoAdvance captura el valor vigente al encolar el auto-avance y solo
-	//lo ejecuta si nadie lo cambió mientras tanto — sin esto, deshacer una acción y volver a actuar (p.ej.
-	//con el ítem "Deshacer Turno") podía disparar el auto-avance viejo Y el nuevo, dando una acción extra
-	//gratis, y un /dndturns next manual justo antes del auto-avance podía hacer avanzar la ronda dos veces.
+	//Current turn's generation: bumped every time the turn genuinely advances (advance) or an action is
+	//undone (undoAction). scheduleAutoAdvance captures the value in effect when it queues the auto-advance
+	//and only runs it if nothing changed it in the meantime — without this, undoing an action and acting
+	//again (e.g. with the "Undo Turn" item) could fire both the old auto-advance AND the new one, giving a
+	//free extra action, and a manual /dndturns next right before the auto-advance could advance the round
+	//twice.
 	private static int turnToken = 0;
 
-	//Mobs de compatibilidad (Enemy sin bloque de estadísticas propio, ver isMonster): a diferencia de los
-	//monstruos propios (NoAI fijo desde que se invocan, ver MonsterRegistry.spawnAt), estos SÍ necesitan su
-	//IA vanilla real para moverse/atacar en su propio turno — se les apaga (freeze) mientras esperan y se
-	//les devuelve (beginTurn) en cuanto les toca, igual que el anclaje de posición hace con un jugador.
-	//originalNoAi recuerda cómo estaba el mob ANTES de que el modo turnos tocara nada, para devolverlo tal
-	//cual al terminar el combate (start/end) en vez de asumir que siempre era false — por si algún otro
-	//mod ya lo controlaba con NoAI por su cuenta. Esta memoria en RAM no sobrevive un chunk descargado
-	//(justo lo que pasa casi siempre al morir: el respawn aleja al jugador de la zona en el mismo instante
-	//en que hay que restaurar) — FROZEN_TAG es el respaldo: una etiqueta en el NBT propio de la entidad
-	//(sí sobrevive descarga/recarga e incluso reinicio del servidor), leída por onCompatMobLoaded en
-	//cuanto la entidad vuelve a cargar para devolverle la IA sola si ya no sigue en combate.
+	//Compatibility mobs (an Enemy with no stat block of its own, see isMonster): unlike this mod's own
+	//monsters (NoAI fixed from the moment they're summoned, see MonsterRegistry.spawnAt), these DO need
+	//their real vanilla AI to move/attack on their own turn — it gets switched off (freeze) while they
+	//wait and given back (beginTurn) the instant their turn comes, the same way position anchoring does
+	//for a player. originalNoAi remembers how the mob was BEFORE turn mode touched anything, so it can be
+	//restored exactly at the end of combat (start/end) instead of assuming it was always false — in case
+	//some other mod was already controlling it with NoAI on its own. This in-RAM memory doesn't survive an
+	//unloaded chunk (which is exactly what happens almost every time someone dies: respawn moves the
+	//player away from the area at the very instant it needs restoring) — FROZEN_TAG is the fallback: a tag
+	//in the entity's own NBT (which DOES survive unload/reload and even a server restart), read by
+	//onCompatMobLoaded the moment the entity loads again to give its AI back on its own if it's no longer
+	//in combat.
 	private static final Map<Integer, Boolean> originalNoAi = new HashMap<>();
 	private static final String FROZEN_TAG = "dndsheets_turn_frozen";
 
-	//Red de seguridad para el turno de un mob de compatibilidad: ni "atacó de verdad" (onMobTurnAttack) ni
-	//"agotó su movimiento" (onMobTick) están garantizados a pasar nunca — el caso real que lo destapó es el
-	//slime más pequeño, que por diseño vanilla NUNCA hace daño al tocar (Slime.playerTouch exige
-	//!isTiny()), así que jamás dispara el evento de ataque; si además no se aleja lo suficiente de su
-	//origen, tampoco agota movimiento, y su turno se quedaba esperando para siempre otra vez. Con esto, a
-	//los MOB_TURN_TIMEOUT_TICKS de haber empezado su turno se le corta igual, actúe o no.
+	//Safety net for a compatibility mob's turn: neither "actually attacked" (onMobTurnAttack) nor
+	//"exhausted its movement" (onMobTick) is guaranteed to ever happen — the real case that exposed this
+	//is the smallest slime, which by vanilla design NEVER deals contact damage (Slime.playerTouch requires
+	//!isTiny()), so it never fires the attack event; if it also doesn't move far enough from its origin,
+	//it never exhausts movement either, and its turn would sit waiting forever again. With this, once
+	//MOB_TURN_TIMEOUT_TICKS have passed since its turn started it gets cut off regardless, whether it
+	//acted or not.
 	private static final Map<Integer, Long> mobTurnStartTick = new HashMap<>();
-	private static final long MOB_TURN_TIMEOUT_TICKS = 30; //1.5s a 20 ticks/seg.
+	private static final long MOB_TURN_TIMEOUT_TICKS = 30; //1.5s at 20 ticks/sec.
 
 	private static void setCompatMobActive(Entity entity, boolean active) {
 		if (!(entity instanceof Mob mob)) return;
@@ -135,40 +139,41 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		originalNoAi.clear();
 	}
 
-	//Respaldo de restoreAllCompatMobAi para cuando la entidad no estaba cargada al terminar el combate
-	//(chunk descargado): en cuanto vuelve a cargar (spawn, chunk load, incluso tras reiniciar el
-	//servidor), si lleva la etiqueta puesta y ya no forma parte de un combate en curso, se le devuelve la
-	//IA sola en vez de quedarse congelada para siempre esperando que alguien la edite a mano.
+	//Fallback for restoreAllCompatMobAi for when the entity wasn't loaded at the end of combat (unloaded
+	//chunk): the instant it loads again (spawn, chunk load, even after a server restart), if it's carrying
+	//the tag and is no longer part of an ongoing combat, its AI is given back on its own instead of
+	//staying frozen forever waiting for someone to edit it by hand.
 	@SubscribeEvent
 	public static void onCompatMobLoaded(net.minecraftforge.event.entity.EntityJoinLevelEvent event) {
 		if (event.getLevel().isClientSide()) return;
 		if (!(event.getEntity() instanceof Mob mob) || !mob.getPersistentData().getBoolean(FROZEN_TAG)) return;
-		if (active && isInOrder(mob.getId())) return; //Sigue en combate de verdad: freeze()/beginTurn ya lo manejan.
+		if (active && isInOrder(mob.getId())) return; //Still genuinely in combat: freeze()/beginTurn already handle it.
 		mob.setNoAi(false);
 		mob.getPersistentData().remove(FROZEN_TAG);
 	}
 
-	//Ids de combatientes confirmados muertos/borrados de verdad (ver markDefeated). allEnemiesDefeated NO
-	//puede fiarse de level.getEntity(id)==null para inferir "muerto": un monstruo simplemente en un chunk
-	//descargado (nadie cerca en ese instante) también devuelve null, y sin esta distinción el combate
-	//terminaba solo con el monstruo perfectamente vivo en cuanto se alejaban lo suficiente.
+	//Ids of combatants confirmed truly dead/removed (see markDefeated). allEnemiesDefeated can NOT rely on
+	//level.getEntity(id)==null to infer "dead": a monster simply sitting in an unloaded chunk (nobody
+	//nearby at that instant) also returns null, and without this distinction combat used to end on its
+	//own with the monster perfectly alive as soon as everyone moved far enough away.
 	private static final Set<Integer> confirmedDefeated = new HashSet<>();
 
-	//Público: llamado por CombatManager/SpellCastManager/MonsterActionManager justo donde de verdad
-	//eliminan a un monstruo (remove(RemovalReason...)) — ese remove nunca dispara LivingDeathEvent (los
-	//monstruos de este mod no mueren por el camino vanilla de LivingEntity#die()), así que no hay otro
-	//punto genérico donde enterarse de una muerte real.
+	//Public: called by CombatManager/SpellCastManager/MonsterActionManager exactly where they actually
+	//remove a monster (remove(RemovalReason...)) — that remove never fires LivingDeathEvent (this mod's
+	//monsters don't die via LivingEntity#die()'s vanilla path), so there's no other generic point to learn
+	//of a real death.
 	public static void markDefeated(int entityId) {
 		confirmedDefeated.add(entityId);
 	}
 
-	//Complemento del markDefeated de arriba: cubre la muerte que SÍ pasa por el camino vanilla de verdad
-	//(LivingEntity#die(), que markDefeated explícitamente no cubre) — un monstruo zombie (p.ej. goblin) que
-	//se quema con el sol, se ahoga o cae al vacío muere así, no por un remove(RemovalReason...) nuestro. Sin
-	//esto, allEnemiesDefeated nunca se enteraba de esa muerte (no está en confirmedDefeated y
-	//level.getEntity(id) puede seguir devolviendo la entidad ya muerta un instante, o null si ya se
-	//descargó, que a propósito se trata como "sigue viva" para no cerrar el combate de más) — si esa muerte
-	//coincidía justo con que le tocara su turno, el combate se quedaba dando vueltas sin poder terminar solo.
+	//Complement to markDefeated above: covers the death that DOES go through the real vanilla path
+	//(LivingEntity#die(), which markDefeated explicitly doesn't cover) — a zombie-type monster (e.g. a
+	//goblin) that burns in the sun, drowns, or falls into the void dies this way, not through one of our
+	//remove(RemovalReason...) calls. Without this, allEnemiesDefeated never learned of that death (it's
+	//not in confirmedDefeated, and level.getEntity(id) may still return the now-dead entity for an
+	//instant, or null if it's already unloaded, which is deliberately treated as "still alive" to avoid
+	//closing combat prematurely) — if that death happened to coincide with its turn coming up, combat
+	//would keep spinning, unable to end on its own.
 	@SubscribeEvent
 	public static void onMonsterDeath(net.minecraftforge.event.entity.living.LivingDeathEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
@@ -178,26 +183,27 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		if (event.getEntity().level() instanceof ServerLevel level) checkAllEnemiesDefeated(level);
 	}
 
-	//Consumo de turno para mobs de compatibilidad (Enemy sin bloque de estadísticas propio): no hay
-	//resolveAttack que llamar como con los monstruos propios (ver MonsterActionManager.autoAct), así que
-	//se les deja atacar de verdad con su IA vanilla (reactivada en beginTurn) y se detecta ESE golpe como
-	//su acción del turno. Si ya había gastado su acción (dos golpes rápidos antes de que el auto-avance de
-	//un tick alcance a procesarse), el segundo se cancela — mismo límite de "una acción por turno" que ya
-	//aplica a los jugadores en CombatManager. instanceof Mob (no solo "no jugador") es a propósito: un
-	//golpe de JUGADOR también puede llegar hasta LivingAttackEvent (p.ej. contra un mob de compatibilidad,
-	//que CombatManager no cancela si acierta) — CombatManager ya llamó tryAct por él, así que procesarlo
-	//DE NUEVO acá lo encontraría "ya actuado" y cancelaría el golpe del propio jugador que sí debía pasar.
+	//Turn consumption for compatibility mobs (an Enemy with no stat block of its own): there's no
+	//resolveAttack to call like there is for this mod's own monsters (see MonsterActionManager.autoAct),
+	//so they're left to actually attack with their real vanilla AI (re-enabled in beginTurn), and THAT hit
+	//is detected as their turn's action. If they'd already spent their action (two quick hits before a
+	//one-tick auto-advance manages to process), the second one is canceled — the same "one action per
+	//turn" limit that already applies to players in CombatManager. instanceof Mob (not just "not a
+	//player") is deliberate: a PLAYER's hit can also reach LivingAttackEvent (e.g. against a compatibility
+	//mob, which CombatManager doesn't cancel if it connects) — CombatManager already called tryAct for it,
+	//so processing it AGAIN here would find it "already acted" and cancel the player's own hit, which
+	//actually should have gone through.
 	@SubscribeEvent
 	public static void onMobTurnAttack(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
 		Entity attacker = event.getSource().getEntity();
 		if (!(attacker instanceof Mob mob) || MonsterRegistry.statBlockOf(attacker) != null) return;
 
-		//Congelado por nosotros (no es su turno): NoAI apaga su selector de metas (perseguir, apuntar...)
-		//pero NO el daño de contacto/toque que corre aparte de eso — Slime.playerTouch, p.ej., se dispara
-		//por colisión de hitbox en cada tick sin importar NoAI. Sin esto, un slime aplastado contra el
-		//jugador seguía haciendo daño aunque llevara su turno congelado. originalNoAi.containsKey confirma
-		//que fuimos NOSOTROS quienes lo congelamos (y no NoAI puesto por otra razón ajena al modo turnos).
+		//Frozen by us (not their turn): NoAI switches off its goal selector (chase, aim...) but NOT contact
+		//damage, which runs separately from that — Slime.playerTouch, for instance, fires on hitbox
+		//collision every tick regardless of NoAI. Without this, a slime pressed against the player kept
+		//dealing damage even with its turn frozen. originalNoAi.containsKey confirms that WE were the ones
+		//who froze it (and not NoAI set for some other reason unrelated to turn mode).
 		if (mob.isNoAi() && originalNoAi.containsKey(mob.getId())) {
 			event.setCanceled(true);
 			return;
@@ -207,11 +213,11 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		if (!tryAct(attacker)) event.setCanceled(true);
 	}
 
-	//Un mob que golpea a un jugador desde FUERA del área del encuentro (un esqueleto o un ghast atacando a
-	//distancia, p.ej.) nunca lo capturaba startAt ni el reescaneo periódico (ambos acotados al radio desde
-	//donde arrancó el combate) — se quedaba golpeando gratis, sin turno ni congelamiento. Cualquier golpe
-	//de un mob a un jugador lo suma al combate (arrancándolo si hace falta, centrado en la VÍCTIMA, no en
-	//el atacante, que puede estar lejísimos) o lo mete a mano si ya había uno en marcha.
+	//A mob that hits a player from OUTSIDE the encounter's area (a skeleton or a ghast attacking at range,
+	//e.g.) was never captured by startAt or the periodic re-scan (both bounded to the radius combat
+	//started from) — it kept hitting for free, with no turn or freezing. Any hit from a mob to a player
+	//adds it to combat (starting one if needed, centered on the VICTIM, not the attacker, who could be far
+	//away) or inserts it by hand if one was already underway.
 	@SubscribeEvent
 	public static void onMobHitsPlayer(net.minecraftforge.event.entity.living.LivingHurtEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
@@ -219,23 +225,23 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		Entity attacker = event.getSource().getEntity();
 		if (attacker == null || !isMonster(attacker) || !(attacker.level() instanceof ServerLevel level)) return;
 
-		//El monstruo que embosca también abre el orden: es el mismo caso que un jugador atacando primero,
-		//visto desde el otro lado. Su golpe ya ha caído cuando llegamos aquí, así que dejarlo en mitad del
-		//orden significaría que pega, y además vuelve a pegar en cuanto le toque.
+		//The ambushing monster also opens the order: it's the same case as a player attacking first, seen
+		//from the other side. Its hit has already landed by the time we get here, so leaving it in the
+		//middle of the order would mean it hits, and then hits again once its turn comes up.
 		if (!active) startAt(level, player.position(), DEFAULT_RADIUS, attacker);
 		if (active && !isInOrder(attacker.getId())) addLateMonster(level, attacker, nameOf(attacker));
 	}
 
-	//Presupuesto de movimiento de esos mismos mobs: si agotan su velocidad (ver
-	//MovementAnchorTracker.speedBlocksForMob) sin llegar a golpear a nadie —persiguiendo a alguien fuera de
-	//su alcance, p.ej.—, se les acaba el turno igual que si hubieran actuado. Sin esto, nada más haría
-	//avanzar su turno y todos (jugador incluido) se quedarían esperando para siempre otra vez.
+	//Movement budget for those same mobs: if they exhaust their speed (see
+	//MovementAnchorTracker.speedBlocksForMob) without ever hitting anyone — chasing someone out of reach,
+	//e.g. — their turn ends just as if they had acted. Without this, nothing else would advance their
+	//turn, and everyone (the player included) would be left waiting forever again.
 	@SubscribeEvent
 	public static void onMobTick(net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent event) {
-		//LivingTickEvent dispara para CADA entidad viva del mundo, cada tick, cliente y servidor — este
-		//chequeo va primero a propósito: fuera de combate (la inmensa mayoría del tiempo de juego) corta
-		//antes de tocar siquiera la entidad o su Level, en vez de pagar isClientSide/instanceof/isCurrentActor
-		//por cada mob del servidor 20 veces por segundo para nada.
+		//LivingTickEvent fires for EVERY living entity in the world, every tick, client and server — this
+		//check goes first deliberately: outside combat (the vast majority of play time) it bails before
+		//even touching the entity or its Level, instead of paying for isClientSide/instanceof/isCurrentActor
+		//on every server mob 20 times a second for nothing.
 		if (!active) return;
 		if (event.getEntity().level().isClientSide()) return;
 		Entity entity = event.getEntity();
@@ -247,40 +253,40 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		if (timedOut || outOfMovement) tryAct(entity);
 	}
 
-	//Público: mismo criterio que usa startAt para decidir quién cuenta como "monstruo" en la iniciativa —
-	//reutilizado por CombatManager para saber si golpear un mob sin bloque de estadísticas propio (jefe o
-	//enemigo de otro mod) debe igualmente enganchar el modo turnos. Enemy es la interfaz vanilla que
-	//cualquier mob hostil (propio o de otro mod) ya implementa para que el resto de Minecraft/Forge lo
-	//trate como hostil — reusarla evita mantener una lista de compatibilidad aparte por mod.
+	//Public: same criterion startAt uses to decide who counts as a "monster" for initiative — reused by
+	//CombatManager to know whether hitting a mob with no stat block of its own (a boss or another mod's
+	//enemy) should still engage turn mode. Enemy is the vanilla interface any hostile mob (this mod's own
+	//or another mod's) already implements so the rest of Minecraft/Forge treats it as hostile — reusing it
+	//avoids maintaining a separate compatibility list per mod.
 	/**
-	 * <p>Si cuenta como <b>enemigo</b>. Se usa para decidir cuándo termina un encuentro, así que un PNJ
-	 * aliado con ficha NO entra aquí a propósito: si entrara, un tabernero en la sala impediría que el
-	 * combate terminara nunca.</p>
+	 * <p>Whether it counts as an <b>enemy</b>. Used to decide when an encounter ends, so a friendly NPC
+	 * with a sheet deliberately does NOT enter here: if it did, a tavern keeper in the room would keep
+	 * combat from ever ending.</p>
 	 */
 	public static boolean isMonster(Entity entity) {
 		return MonsterRegistry.monsterIdOf(entity) != null || entity instanceof Enemy;
 	}
 
 	/**
-	 * <p>Si es un objetivo válido de las reglas de combate, sea enemigo o no. Un PNJ con ficha
-	 * ({@link Combatant#characterIdOf}) es atacable y curable con reglas de 5e completas sin ser un
-	 * enemigo — separar las dos preguntas es lo que permite tener aliados sin romper el fin de combate.</p>
+	 * <p>Whether it's a valid target for combat rules, enemy or not. An NPC with a sheet
+	 * ({@link Combatant#characterIdOf}) is attackable and healable under full 5e rules without being an
+	 * enemy — separating the two questions is what allows having allies without breaking combat's end
+	 * condition.</p>
 	 *
-	 * <p>Un JUGADOR real también cuenta, aunque no lleve la etiqueta NBT de PNJ (esa es solo para atar una
-	 * entidad del mundo a una ficha, no como se identifica a un jugador — eso ya es {@code Combatant.of}
-	 * por UUID). Sin esto, golpear a otro jugador nunca pasaba por {@code onAttackEntity}'s bloque de
-	 * turnos: {@code CombatManager} caía directo al golpe flojo de Minecraft, sin gastar turno ni acción,
-	 * así que se podía pegar sin límite en PvP mientras el modo turnos sí frenaba a todo lo demás.</p>
+	 * <p>A real PLAYER also counts, even without carrying the NPC NBT tag (that one is only for tying a
+	 * world entity to a sheet, not how a player is identified — that's already {@code Combatant.of} by
+	 * UUID). Without this, hitting another player never went through {@code onAttackEntity}'s turn block:
+	 * {@code CombatManager} fell straight through to Minecraft's loose hit, spending no turn and no
+	 * action, so PvP could be hit without limit while turn mode was throttling everything else.</p>
 	 */
 	public static boolean isCombatTarget(Entity entity) {
 		return isMonster(entity) || entity instanceof Player || Combatant.characterIdOf(entity) != null;
 	}
 
-	//Público: llamado justo tras markDefeated cuando un monstruo se borra A MANO en mitad de combate (Vara
-	//de DM, clic derecho + agachado). Sin esto, si era el último enemigo con vida, el combate seguía
-	//"activo" hasta que le tocara el turno a alguien de nuevo (el único punto que ya comprobaba
-	//allEnemiesDefeated) en vez de terminar al instante — quedaba el HUD/turnos corriendo sobre un
-	//encuentro ya vacío.
+	//Public: called right after markDefeated when a monster is removed BY HAND mid-combat (DM Wand,
+	//right-click + sneak). Without this, if it was the last living enemy, combat stayed "active" until
+	//someone's turn came up again (the only point that already checked allEnemiesDefeated) instead of
+	//ending instantly — the HUD/turn tracker was left running over an already-empty encounter.
 	public static void checkAllEnemiesDefeated(ServerLevel level) {
 		if (active && allEnemiesDefeated(level)) {
 			broadcast(level, Component.translatable("chat.dndsheets.turn.all_enemies_defeated").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
@@ -290,55 +296,53 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 
 	private static final Map<Integer, List<StatusEffect>> effects = new HashMap<>();
 
-	//Anclaje de posición y presupuesto de movimiento del modo turnos — ver MovementAnchorTracker
-	//(hallazgo F3).
+	//Turn mode's position anchoring and movement budget — see MovementAnchorTracker (audit finding F3).
 	private static final MovementAnchorTracker movementAnchors = new MovementAnchorTracker();
 
-	//Rasgos con duración en asaltos (Furia del bárbaro, etc.) en vez de ticks reales — ver
-	//BarbarianRageManager para el caso de uso. Un asalto = una vuelta completa del orden de turnos.
+	//Traits with a duration measured in rounds (barbarian Rage, etc.) instead of real ticks — see
+	//BarbarianRageManager for the use case. One round = one full pass of the turn order.
 	private record PendingRoundCallback(int roundsRemaining, Runnable action) {}
 	private static final List<PendingRoundCallback> pendingRoundCallbacks = new ArrayList<>();
 
-	//Quién ya gastó su acción en SU turno actual. Sin esto, quien tiene el turno podía atacar tantas
-	//veces como quisiera con solo hacer clic repetido — el modo turnos era puramente decorativo.
+	//Who has already spent their action on THEIR current turn. Without this, whoever has the turn could
+	//attack as many times as they wanted just by clicking repeatedly — turn mode was purely decorative.
 	private static final Set<Integer> actedThisTurn = new HashSet<>();
 
-	//Reacciones (Ataque de Oportunidad, Escudo, Contrahechizo): a diferencia de actedThisTurn, se pueden
-	//gastar en el turno de CUALQUIERA, no solo el propio — por eso es un set aparte en vez de reusar
-	//actedThisTurn. Se recupera al empezar el turno propio (beginTurn), igual que la regla real de 5e.
-	//ponytail: solo se recupera para quien esté en el orden de turnos; un jugador con un ítem de reacción
-	//que nunca se metió en la iniciativa se quedaría con la reacción gastada para siempre — caso raro,
-	//ya que /dndturns start mete a todos los jugadores conectados en el radio.
+	//Reactions (Opportunity Attack, Shield, Counterspell): unlike actedThisTurn, these can be spent on
+	//ANYONE's turn, not just your own — which is why it's a separate set instead of reusing
+	//actedThisTurn. Recovered at the start of one's own turn (beginTurn), same as the real 5e rule.
+	//ponytail: only recovered for whoever is in the turn order; a player with a reaction item who never
+	//got into initiative would be left with their reaction spent forever — a rare case, since
+	///dndturns start pulls in every connected player within the radius.
 	private static final Set<Integer> reactionUsed = new HashSet<>();
 
-	//Acción adicional: recurso DISTINTO de actedThisTurn — el SRD la trata aparte de la acción (Forma
-	//Salvaje, Segundo Aliento, Palabra Curativa...), y antes de esto el motor las colapsaba en una sola:
-	//gastar la acción adicional consumía la acción completa entera (ver DruidWildShapeManager, que usaba
-	//tryAct en vez de esto). Mismo ciclo de vida que actedThisTurn (se limpia en start/end/beginTurn/
-	//reconcilePlayerEntity) pero sin disparar scheduleAutoAdvance: gastarla no termina el turno.
+	//Bonus action: a resource DISTINCT from actedThisTurn — the SRD treats it separately from the action
+	//(Wild Shape, Second Wind, Healing Word...), and before this the engine collapsed them into one:
+	//spending the bonus action consumed the entire action (see DruidWildShapeManager, which used to use
+	//tryAct instead of this). Same lifecycle as actedThisTurn (cleared in start/end/beginTurn/
+	//reconcilePlayerEntity) but without triggering scheduleAutoAdvance: spending it doesn't end the turn.
 	private static final Set<Integer> bonusActionUsed = new HashSet<>();
 
-	//Ataques de oportunidad del modo turnos — ver OpportunityAttackTracker (hallazgo F3).
+	//Turn mode's opportunity attacks — see OpportunityAttackTracker (audit finding F3).
 	private static final OpportunityAttackTracker opportunityAttacks = new OpportunityAttackTracker();
 
-	//Público: usado por Escudo/Contrahechizo (fuera de turno) y por el ataque de oportunidad de abajo
-	//(dentro del tick de quien se mueve). Mismo "una vez y se acabó" que tryAct, pero sin exigir que sea
-	//el turno del que reacciona.
+	//Public: used by Shield/Counterspell (out of turn) and by the opportunity attack below (inside the
+	//tick of whoever is moving). Same "once and done" as tryAct, but without requiring it to be the
+	//reactor's turn.
 	public static boolean tryReact(Entity actor) {
-		//"Una criatura incapacitada no puede realizar acciones NI REACCIONES". Estaba solo en tryAct, así que
-		//un monstruo paralizado seguía haciendo ataques de oportunidad y un jugador aturdido seguía pudiendo
-		//usar Escudo y Contrahechizo — media docena de condiciones que dejaban de significar la mitad de lo
-		//que significan. Va antes que el modo turnos, igual que en tryAct: incapacitado lo estás también
-		//fuera de iniciativa.
+		//"An incapacitated creature can't take actions OR REACTIONS." This used to be only in tryAct, so a
+		//paralyzed monster still made opportunity attacks and a stunned player could still use Shield and
+		//Counterspell — half a dozen conditions that stopped meaning half of what they mean. Goes before
+		//the turn-mode check, same as in tryAct: you're incapacitated outside initiative too.
 		if (isIncapacitated(actor)) return false;
 		if (!active) return true;
 		return reactionUsed.add(actor.getId());
 	}
 
 	/**
-	 * <p>Las TRES formas de hacer algo —acción, reacción y acción legendaria— pasan por aquí para preguntar
-	 * lo mismo. Estaba escrito solo en {@link #tryAct}, y las otras dos se comportaban como si la regla no
-	 * existiera.</p>
+	 * <p>The THREE ways of doing something — action, reaction, and legendary action — go through here to
+	 * ask the same question. It used to be written only in {@link #tryAct}, and the other two behaved as
+	 * if the rule didn't exist.</p>
 	 */
 	static boolean isIncapacitated(Entity actor) {
 		Combatant combatant = Combatant.of(actor);
@@ -354,34 +358,34 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 	}
 
 	/**
-	 * <p>Si no hay modo turnos activo, siempre permite actuar (comportamiento normal, sin cambios). Si
-	 * hay modo turnos activo, {@code actor} (jugador o monstruo) solo puede actuar UNA vez durante su
-	 * propio turno: la primera llamada marca la acción como usada y devuelve true; cualquier intento
-	 * extra —fuera de turno, o repetido dentro de su propio turno— devuelve false sin dejar rastro para
-	 * más tarde (no se encola nada). El llamador debe comprobar el resultado ANTES de gastar cualquier
-	 * recurso (espacios de conjuro, etc.), para no cobrar por una acción que se va a descartar.</p>
+	 * <p>If turn mode isn't active, always allows acting (normal behavior, unchanged). If turn mode is
+	 * active, {@code actor} (player or monster) can only act ONCE during their own turn: the first call
+	 * marks the action as used and returns true; any extra attempt — out of turn, or repeated within
+	 * their own turn — returns false without leaving any trace for later (nothing gets queued). The
+	 * caller must check the result BEFORE spending any resource (spell slots, etc.), so as not to charge
+	 * for an action that's going to be discarded.</p>
 	 */
 	/**
-	 * <p>Si puede actuar por sus <b>condiciones</b>, sin preguntar de quién es el turno. Es la mitad de
-	 * {@link #tryAct} que un jefe con reloj propio sí tiene que respetar: ignora la cola, no las reglas —
-	 * paralizado, aturdido, petrificado o inconsciente lo paran igual que a cualquiera.</p>
+	 * <p>Whether it can act based on its <b>conditions</b>, without asking whose turn it is. This is the
+	 * half of {@link #tryAct} that a boss with its own clock still has to respect: it ignores the queue,
+	 * not the rules — paralyzed, stunned, petrified, or unconscious stops it just like anyone else.</p>
 	 */
 	public static boolean canActIgnoringTurn(Entity actor) {
 		return !isIncapacitated(actor);
 	}
 
 	public static boolean tryAct(Entity actor) {
-		//Antes que nada del modo turnos, y también fuera de combate: una condición que incapacita
-		//(paralizado, aturdido, petrificado, inconsciente) impide actuar aunque no haya iniciativa activa.
-		//Aquí y no en cada llamador porque TODA ruta de ataque —cuerpo a cuerpo, proyectil, PvP, hechizo—
-		//pasa ya por este mismo punto.
+		//Before anything turn-mode related, and also outside combat: an incapacitating condition
+		//(paralyzed, stunned, petrified, unconscious) prevents acting even with no initiative active.
+		//Here, and not in every caller, because EVERY attack route — melee, projectile, PvP, spell —
+		//already passes through this exact point.
 		if (isIncapacitated(actor)) return false;
 		if (!active) return true;
 		TurnEntry currentEntry = current();
 		if (currentEntry == null || currentEntry.entityId() != actor.getId()) return false;
 		boolean acted = actedThisTurn.add(actor.getId());
-		//En cuanto se gasta la acción, el turno se acaba solo: nadie tiene que escribir /dndturns next.
-		//Se difiere un tick para que el chat/HUD del ataque que acaba de pasar se vea antes del "turno de...".
+		//As soon as the action is spent, the turn ends on its own: nobody has to type /dndturns next.
+		//Deferred by one tick so the chat/HUD for the attack that just happened shows before "X's turn".
 		if (acted && actor.level() instanceof ServerLevel level) {
 			broadcastTurnState(level);
 			scheduleAutoAdvance(level, actor.getId());
@@ -390,10 +394,9 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 	}
 
 	/**
-	 * <p>Igual que {@link #tryAct} pero para la acción ADICIONAL: mismo gating de turno/incapacidad, mismo
-	 * "una vez y se acabó", pero un recurso aparte (v. {@link #bonusActionUsed}) que NO hace avanzar el
-	 * turno al gastarse — a diferencia de la acción, la adicional no es lo único que se puede hacer en un
-	 * turno.</p>
+	 * <p>Same as {@link #tryAct} but for the bonus ACTION: same turn/incapacitation gating, same "once and
+	 * done", but a separate resource (see {@link #bonusActionUsed}) that does NOT advance the turn when
+	 * spent — unlike the action, the bonus action isn't the only thing that can be done in a turn.</p>
 	 */
 	public static boolean tryActBonus(Entity actor) {
 		if (isIncapacitated(actor)) return false;
@@ -405,11 +408,11 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		return acted;
 	}
 
-	//Mensaje uniforme para cuando tryAct() devuelve false, distinguiendo "no te toca" de "ya actuaste".
+	//Uniform message for when tryAct() returns false, distinguishing "not your turn" from "already acted".
 	public static void notifyCantAct(Entity actor) {
 		if (!(actor instanceof Player player)) return;
-		//Una condición incapacitante manda sobre cualquier otra explicación: decir "no es tu turno" a quien
-		//está paralizado es exactamente el tipo de mensaje que hace que un cambio que SÍ funciona parezca roto.
+		//An incapacitating condition overrides any other explanation: telling someone who's paralyzed
+		//"it's not your turn" is exactly the kind of message that makes a change that DOES work look broken.
 		Combatant combatant = Combatant.of(actor);
 		if (combatant != null && combatant.cannotAct()) {
 			String blocking = combatant.conditions().stream()
@@ -426,7 +429,7 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		player.sendSystemMessage(reason.copy().withStyle(ChatFormatting.RED));
 	}
 
-	/** Mismo mensaje que {@link #notifyCantAct}, salvo el caso "ya gastaste" — ese es de la acción ADICIONAL, no la acción. */
+	/** Same message as {@link #notifyCantAct}, except for the "already spent" case — that one is for the bonus ACTION, not the action. */
 	public static void notifyCantActBonus(Entity actor) {
 		if (!(actor instanceof Player player)) return;
 		Combatant combatant = Combatant.of(actor);
@@ -445,10 +448,10 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		player.sendSystemMessage(reason.copy().withStyle(ChatFormatting.RED));
 	}
 
-	//Un tick después de gastar la acción, si sigue siendo el mismo combatiente (nadie avanzó a mano de
-	//por medio), pasa el turno solo. El tick de margen deja que se vea el resultado de la acción antes del
-	//anuncio de ronda siguiente, y evita reentrar en advance() en medio de la resolución del ataque/hechizo
-	//que todavía está corriendo cuando tryAct devuelve true.
+	//One tick after spending the action, if it's still the same combatant (nobody advanced by hand in
+	//between), the turn passes on its own. The margin tick lets the action's result be seen before the
+	//next-round announcement, and avoids re-entering advance() in the middle of resolving the
+	//attack/spell that's still running when tryAct returns true.
 	private static void scheduleAutoAdvance(ServerLevel level, int entityId) {
 		int scheduledToken = turnToken;
 		DndsheetsMod.queueServerWork(1, () -> {
@@ -459,80 +462,81 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 	}
 
 	/**
-	 * <p>Retiene el auto-avance ya encolado por la acción que se acaba de gastar. Lo usa
-	 * {@link CastingManager} al empezar un conjuro con tiempo de lanzamiento: {@link #tryAct} encoló el
-	 * avance para el tick siguiente, y sin esto el conjuro resolvería con el turno de otro ya empezado.</p>
+	 * <p>Holds back the auto-advance already queued by the action that was just spent. Used by
+	 * {@link CastingManager} when starting a spell with a casting time: {@link #tryAct} queued the advance
+	 * for the next tick, and without this the spell would resolve with someone else's turn already
+	 * started.</p>
 	 *
-	 * <p>Es el mismo mecanismo que {@link #undoAction} —subir el token invalida lo encolado— y no un
-	 * sistema nuevo. Sube el token de TODO lo pendiente, pero en el instante en que se llama lo único
-	 * pendiente es el avance del propio lanzador, que acaba de gastar su acción una línea antes.</p>
+	 * <p>It's the same mechanism {@link #undoAction} uses — bumping the token invalidates what's queued —
+	 * not a new system. It bumps the token for EVERYTHING pending, but at the instant it's called the only
+	 * thing pending is the caster's own advance, which just spent its action one line earlier.</p>
 	 */
 	public static void holdAutoAdvance() {
 		turnToken++;
 	}
 
 	/**
-	 * <p>Le devuelve el auto-avance al turno cuando el lanzamiento retenido termina (resuelto o
-	 * interrumpido, da igual: la acción se gastó de todos modos). Si mientras tanto el turno ya cambió de
-	 * dueño, o el combate acabó, no hay nada que reprogramar.</p>
+	 * <p>Gives the auto-advance back to the turn once the held casting finishes (resolved or interrupted,
+	 * doesn't matter: the action was spent either way). If the turn has already changed hands in the
+	 * meantime, or combat has ended, there's nothing to reschedule.</p>
 	 */
 	public static void resumeAutoAdvance(ServerLevel level, Entity actor) {
 		if (!active || !isCurrentActor(actor) || !actedThisTurn.contains(actor.getId())) return;
 		scheduleAutoAdvance(level, actor.getId());
 	}
 
-	//Usado por los ítems de comodidad (TurnItemManager): solo quien tiene el turno puede usarlos.
+	//Used by convenience items (TurnItemManager): only whoever has the turn can use them.
 	public static boolean isCurrentActor(Entity actor) {
 		TurnEntry currentEntry = current();
 		return active && currentEntry != null && currentEntry.entityId() == actor.getId();
 	}
 
-	//"Deshacer turno": le devuelve su acción a quien tiene el turno ahora mismo, sin perder su lugar en
-	//el orden ni pasarle el turno a nadie más — para corregir un ataque hecho por error, p.ej.
+	//"Undo turn": gives whoever currently has the turn their action back, without losing their spot in
+	//the order or passing the turn to anyone else — to correct an attack made by mistake, e.g.
 	public static void undoAction(ServerLevel level, Entity actor) {
 		if (!isCurrentActor(actor)) return;
 		actedThisTurn.remove(actor.getId());
-		turnToken++; //Invalida cualquier auto-avance ya encolado por la acción que se acaba de deshacer.
+		turnToken++; //Invalidates any auto-advance already queued by the action that's just been undone.
 		broadcast(level, Component.translatable("chat.dndsheets.turn.undo", current().name()).withStyle(ChatFormatting.YELLOW));
 		broadcastTurnState(level);
 	}
 
 	public static final double DEFAULT_RADIUS = 30.0;
 
-	//Tira iniciativa (1d20 + Destreza/mod) para todos los jugadores y monstruos invocados dentro de un
-	//radio, ordena de mayor a menor y arranca el modo turnos. Público: lo usan tanto TurnCommand
-	//(/dndturns start) como el Panel de DM (network.TurnControlMessage) y CombatManager.autoStartCombatIfNeeded
-	//(el primer golpe de un jugador a un monstruo arranca el combate solo si no había uno activo) — vivía
-	//antes en TurnCommand, invirtiendo la dependencia (lógica de dominio llamando a la capa de comandos).
+	//Rolls initiative (1d20 + Dexterity mod) for every player and summoned monster within a radius, sorts
+	//highest to lowest, and starts turn mode. Public: used both by TurnCommand (/dndturns start) and the
+	//DM Panel (network.TurnControlMessage) and CombatManager.autoStartCombatIfNeeded (a player's first
+	//hit on a monster starts combat on its own if none was active) — used to live in TurnCommand,
+	//inverting the dependency (domain logic calling the command layer).
 	public static int startAt(ServerLevel level, Vec3 pos, double radius) {
 		return startAt(level, pos, radius, null);
 	}
 
 	/**
-	 * <p>Igual, pero sabiendo <b>quién disparó el combate</b>: el que atacó abre el orden de turnos, por
-	 * encima de lo que digan los dados de iniciativa.</p>
+	 * <p>The same, but knowing <b>who triggered combat</b>: whoever attacked opens the turn order,
+	 * overriding whatever the initiative dice say.</p>
 	 *
-	 * <p>Sin esto, el golpe que arranca el encuentro se perdía. El combate se creaba, se tiraba iniciativa,
-	 * y si el atacante no ganaba su propia tirada su ataque quedaba rechazado por "no es tu turno": el
-	 * jugador pegaba y no pasaba nada. Peor aún, el mismo clic funcionaba o desaparecía según un d20 que
-	 * nadie había pedido tirar. Antes de que existiera el arranque automático ese golpe se resolvía entero,
-	 * así que la comodidad de no escribir {@code /dndturns start} estaba costando una acción.</p>
+	 * <p>Without this, the hit that starts the encounter used to get lost. Combat would be created,
+	 * initiative rolled, and if the attacker didn't win their own roll their attack was rejected as "not
+	 * your turn": the player would hit and nothing would happen. Worse, the very same click worked or
+	 * vanished depending on a d20 nobody had asked to roll. Before auto-start existed, that hit resolved
+	 * fully, so the convenience of not typing {@code /dndturns start} was costing an action.</p>
 	 *
-	 * <p>Que abra el orden y no que se resuelva "gratis" fuera de él es lo que mantiene el resto de reglas
-	 * en pie: su acción se gasta, su turno se acaba y nadie pega dos veces. Quien ataca primero <i>ha</i>
-	 * actuado primero, que es justo lo que la iniciativa intenta medir.</p>
+	 * <p>Having it open the order instead of resolving "for free" outside of it is what keeps the rest of
+	 * the rules standing: its action gets spent, its turn ends, and nobody hits twice. Whoever attacks
+	 * first genuinely <i>has</i> acted first, which is exactly what initiative is meant to measure.</p>
 	 *
-	 * @param initiator quien empieza el combate atacando, o {@code null} si lo arranca el DM a mano
-	 *                  ({@code /dndturns start}), donde mandan los dados y nada más.
+	 * @param initiator whoever starts combat by attacking, or {@code null} if the DM starts it by hand
+	 *                  ({@code /dndturns start}), where only the dice decide.
 	 */
 	public static int startAt(ServerLevel level, Vec3 pos, double radius, Entity initiator) {
-		//ponytail: solo se admite un combate a la vez en todo el servidor (ver el comentario de más abajo
-		//sobre debounce/guardado global) — antes, si dos grupos jugaban en zonas distintas del mapa, el
-		//segundo /dndturns start (o el primer golpe que dispara autoStartCombatIfNeeded) pisaba el
-		//combate del primero EN SILENCIO: turnToken subía, el orden viejo se borraba, y nadie del primer
-		//grupo se enteraba de que su encuentro había desaparecido a mitad de pelea. Esto no habilita
-		//combates simultáneos de verdad (seguiría haciendo falta el refactor completo para eso) — solo
-		//convierte la corrupción silenciosa en un aviso claro cuando las dos zonas ni siquiera se tocan.
+		//ponytail: only one combat is allowed at a time on the whole server (see the comment further down
+		//about the global debounce/lock) — before, if two groups were playing in different areas of the
+		//map, the second /dndturns start (or the first hit that triggers autoStartCombatIfNeeded) would
+		//SILENTLY clobber the first group's combat: turnToken would bump, the old order would be wiped,
+		//and nobody in the first group would learn their encounter had vanished mid-fight. This doesn't
+		//enable truly simultaneous combats (the full refactor would still be needed for that) — it only
+		//turns the silent corruption into a clear warning when the two areas don't even overlap.
 		if (active && combatOrigin != null && combatOrigin.distanceTo(pos) > radius + combatRadius) {
 			for (ServerPlayer player : level.players()) {
 				if (player.position().distanceToSqr(pos) <= radius * radius) {
@@ -546,24 +550,24 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 
 		record Rolled(int entityId, String name, int score, boolean isMonster, String playerUuid) {}
 		List<Rolled> rolled = new ArrayList<>();
-		//Un espectador no participa: está mirando, no jugando, y no puede ni recibir daño ni actuar en 5e.
-		//Sin este filtro, un DM/observador en modo espectador cerca del combate entraba a la iniciativa
-		//igual que cualquier PJ y se quedaba ocupando un turno que nadie iba a jugar nunca.
+		//A spectator doesn't participate: they're watching, not playing, and in 5e they can neither take
+		//damage nor act. Without this filter, a DM/observer in spectator mode near combat would join
+		//initiative just like any PC and end up occupying a turn nobody was ever going to play.
 		for (Entity entity : level.getEntities((Entity) null, box, e -> (e instanceof Player p && !p.isSpectator()) || isMonster(e))) {
 			String playerUuid = entity instanceof Player player ? player.getStringUUID() : null;
 			rolled.add(new Rolled(entity.getId(), nameOf(entity), rollInitiative(entity), isMonster(entity), playerUuid));
 		}
 		rolled.sort((a, b) -> b.score() - a.score());
 
-		//Quien disparó el combate va primero pase lo que pase con su dado. Se mueve después de ordenar, no
-		//falseando su tirada: la puntuación que se anuncia sigue siendo la que sacó de verdad.
+		//Whoever triggered combat goes first no matter what their die shows. It's moved after sorting, not
+		//by faking their roll: the score that gets announced is still the one they genuinely got.
 		if (initiator != null) moveToFront(rolled, Rolled::entityId, initiator.getId());
 
 		List<TurnEntry> combatants = new ArrayList<>();
-		for (Rolled r : rolled) //ponytail: el nombre y la iniciativa van pegados en un solo String, asi que la clave se
-			//resuelve AQUI, en el idioma del servidor, y no en el HUD de cada cliente. Separarlos pide
-			//cambiar la forma de TurnEntry y del mensaje que lo lleva; el resto de caminos al tracker
-			//(addLateMonster) si manda el nombre limpio y ese lo resuelve el cliente.
+		for (Rolled r : rolled) //ponytail: the name and the initiative score are glued into a single String, so the key gets
+			//resolved HERE, in the server's language, not in each client's HUD. Separating them would
+			//require changing TurnEntry's shape and the message that carries it; the tracker's other entry
+			//points (addLateMonster) do send the clean name, and the client resolves that one.
 			combatants.add(new TurnEntry(r.entityId(), ContentNames.plain(r.name()) + " (" + r.score() + ")", r.isMonster(), r.playerUuid()));
 
 		if (combatants.isEmpty()) return 0;
@@ -571,14 +575,14 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		boolean wasActive = active;
 		start(level, combatants);
 		if (active) {
-			//Se actualiza siempre (incluso en un reinicio en caliente con nuevo centro/radio), pero el escaneo
-			//solo se re-encola si no había uno ya corriendo — el que ya está en marcha relee estos dos campos
-			//frescos en cada pasada, así que un reinicio en caliente ya le llega el área nueva solo.
+			//Always updated (even on a hot restart with a new center/radius), but the scan is only
+			//re-queued if one wasn't already running — the one already underway rereads these two fields
+			//fresh on every pass, so a hot restart gets the new area on its own.
 			combatOrigin = pos;
 			combatRadius = radius;
 			if (!wasActive) scheduleLateMonsterScan(level);
-			//Se explica en el chat porque, si no, alguien con un 7 de iniciativa apareciendo el primero se
-			//lee como un error de orden y no como la regla que es.
+			//Explained in chat because otherwise, someone with a 7 initiative showing up first reads as an
+			//ordering bug rather than the rule it actually is.
 			if (initiator != null) {
 				broadcast(level, Component.translatable("chat.dndsheets.turn.initiator_first", nameOf(initiator)).withStyle(ChatFormatting.GOLD));
 			}
@@ -586,8 +590,8 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		return combatants.size();
 	}
 
-	//Re-escanea el área del encuentro cada LATE_MONSTER_SCAN_INTERVAL_TICKS y se vuelve a encolar sola
-	//mientras el combate siga activo — se corta de raíz en cuanto termina (ver end()).
+	//Re-scans the encounter's area every LATE_MONSTER_SCAN_INTERVAL_TICKS and re-queues itself while
+	//combat stays active — cut off at the root as soon as it ends (see end()).
 	private static void scheduleLateMonsterScan(ServerLevel level) {
 		DndsheetsMod.queueServerWork(LATE_MONSTER_SCAN_INTERVAL_TICKS, () -> {
 			if (!active || combatOrigin == null) return;
@@ -606,12 +610,12 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 	}
 
 	/**
-	 * <p>Mueve al iniciador al frente <b>conservando el orden relativo del resto</b>. Package-private y
-	 * genérica para poder comprobarla sin un servidor detrás.</p>
+	 * <p>Moves the initiator to the front <b>while preserving the relative order of the rest</b>.
+	 * Package-private and generic so it can be tested without a server behind it.</p>
 	 *
-	 * <p>Que el resto conserve su orden es la mitad importante: intercambiar el iniciador con quien estaba
-	 * primero —la implementación que sale sola— manda a ese primero al puesto que ocupaba el iniciador y
-	 * desordena la iniciativa de todos los demás, que sí es sagrada.</p>
+	 * <p>Preserving the rest's order is the important half: swapping the initiator with whoever was first
+	 * — the implementation that comes naturally — sends that first one to the spot the initiator occupied
+	 * and scrambles everyone else's initiative, which IS sacred.</p>
 	 */
 	static <T> void moveToFront(List<T> entries, java.util.function.ToIntFunction<T> idOf, int id) {
 		for (int i = 0; i < entries.size(); i++) {
@@ -645,11 +649,11 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 	public static void start(ServerLevel level, List<TurnEntry> rolledOrder) {
 		if (debounce(level)) return;
 
-		//Reinicio en caliente (un encuentro ya activo, p.ej. /dndturns start disparado dos veces o un golpe
-		//que arranca un segundo combate por error): sin esto, el combatiente que tenía el turno del
-		//encuentro VIEJO se quedaba con el efecto Brillo pegado para siempre (nada más lo limpiaba), y como
-		//turnToken no subía, un auto-avance ya encolado del encuentro viejo podía colarse y saltarse el
-		//primer turno del nuevo.
+		//Hot restart (an encounter already active, e.g. /dndturns start fired twice or a hit that starts a
+		//second combat by accident): without this, the combatant who had the turn in the OLD encounter
+		//would be left with the Glowing effect stuck forever (nothing else cleared it), and since
+		//turnToken wasn't bumped, an auto-advance already queued from the old encounter could sneak in and
+		//skip the new one's first turn.
 		if (active) {
 			clearGlow(level, current());
 			turnToken++;
@@ -658,12 +662,12 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 
 		order.clear();
 		effects.clear();
-		ZoneManager.clear(); //Sin orden de turnos no hay asaltos que contar, así que no hay muro que mantener.
-		SurfaceManager.clear(); //Mismo motivo: sin asaltos que contar, tampoco hay charco de fuego que mantener.
+		ZoneManager.clear(); //Without a turn order there are no rounds to count, so there's no wall to maintain.
+		SurfaceManager.clear(); //Same reason: no rounds to count, so no fire patch to maintain either.
 		actedThisTurn.clear();
 		reactionUsed.clear();
 		bonusActionUsed.clear();
-		TurnActionManager.clearAll(); //Fuera de combate, esquivar/correr/desengancharse no significan nada.
+		TurnActionManager.clearAll(); //Outside combat, dodging/dashing/disengaging mean nothing.
 		opportunityAttacks.clear();
 		movementAnchors.clear();
 		confirmedDefeated.clear();
@@ -674,19 +678,21 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		active = !order.isEmpty();
 		if (!active) return;
 
-		//Todos menos quien empieza quedan anclados donde estén parados ahora mismo.
+		//Everyone except whoever starts gets anchored wherever they're standing right now.
 		for (int i = 1; i < order.size(); i++) {
 			freeze(level, order.get(i));
 		}
 
-		//Y los que no hacen cola arrancan su propio reloj, con el aviso en pantalla a la mesa. Va aquí,
-		//con la iniciativa ya montada, porque el aviso solo tiene sentido cuando el combate ha empezado.
+		//And whoever doesn't wait in line starts its own clock, with the announcement shown to the table.
+		//Goes here, with initiative already assembled, because the announcement only makes sense once
+		//combat has started.
 		for (TurnEntry entry : order) {
 			Entity offClock = level.getEntity(entry.entityId());
 			if (offClock != null) OwnClockManager.start(level, offClock);
 		}
 
-		//Si a quien le toca abrir resulta llevar reloj propio, se pasa al siguiente: nunca es su turno.
+		//If whoever is supposed to open turns out to run on its own clock, it's skipped: it's never
+		//their turn.
 		for (int skipped = 0; skipped < order.size() && isOffClock(level, current()); skipped++) step(level);
 
 		StringBuilder orderText = new StringBuilder();
@@ -695,8 +701,9 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 			orderText.append(i + 1).append(". ").append(ContentNames.plain(order.get(i).name()));
 		}
 		broadcast(level, Component.translatable("chat.dndsheets.turn.order_announce", orderText.toString()).withStyle(ChatFormatting.GOLD));
-		//Ayuda para quien nunca jugó D&D: la primera vez que arranca un encuentro, explica la regla en una
-		//línea. El resto de turnos ya no repite esto — el HUD (ver network.TurnStateMessage) se encarga.
+		//Help for someone who's never played D&D: the first time an encounter starts, explain the rule in
+		//one line. The rest of the turns don't repeat this anymore — the HUD (see network.TurnStateMessage)
+		//takes care of it.
 		broadcast(level, Component.translatable("chat.dndsheets.turn.tutorial").withStyle(ChatFormatting.GRAY));
 		beginTurn(level);
 	}
@@ -706,8 +713,8 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		advance(level);
 	}
 
-	//Salta al siguiente combatiente. Como ya no se acumulan acciones en cola, esto simplemente adelanta
-	//el turno (para saltar a alguien AFK, p.ej.), sin nada más que "cancelar".
+	//Skips to the next combatant. Since actions no longer queue up, this simply advances the turn (to
+	//skip someone AFK, e.g.), with nothing more to "cancel".
 	public static void cancel(ServerLevel level) {
 		if (!active || debounce(level)) return;
 		advance(level);
@@ -720,56 +727,57 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		broadcast(level, Component.translatable("chat.dndsheets.turn.ended").withStyle(ChatFormatting.GRAY));
 		order.clear();
 		effects.clear();
-		ZoneManager.clear(); //Sin orden de turnos no hay asaltos que contar, así que no hay muro que mantener.
-		SurfaceManager.clear(); //Mismo motivo: sin asaltos que contar, tampoco hay charco de fuego que mantener.
+		ZoneManager.clear(); //Without a turn order there are no rounds to count, so there's no wall to maintain.
+		SurfaceManager.clear(); //Same reason: no rounds to count, so no fire patch to maintain either.
 		actedThisTurn.clear();
 		reactionUsed.clear();
 		bonusActionUsed.clear();
-		TurnActionManager.clearAll(); //Fuera de combate, esquivar/correr/desengancharse no significan nada.
+		TurnActionManager.clearAll(); //Outside combat, dodging/dashing/disengaging mean nothing.
 		opportunityAttacks.clear();
 		movementAnchors.clear();
 		confirmedDefeated.clear();
 		mobTurnStartTick.clear();
-		combatOrigin = null; //Corta el reescaneo de mobs tardíos (ver scheduleLateMonsterScan) en su próxima pasada.
+		combatOrigin = null; //Cuts off the late-monster re-scan (see scheduleLateMonsterScan) on its next pass.
 		active = false;
 		currentIndex = -1;
 		round = 0;
-		broadcastTurnState(level); //Con active=false ya, esto le dice a todos los HUD que se oculten.
+		broadcastTurnState(level); //With active=false already set, this tells every HUD to hide itself.
 
-		//Cualquier rasgo con duración en asaltos que quedara pendiente se da por terminado ya: sin modo
-		//turnos no hay forma de seguir contando asaltos, y dejarlo colgado para siempre sería peor.
+		//Any trait with a round-based duration still pending is treated as finished now: without turn
+		//mode there's no way to keep counting rounds, and leaving it hanging forever would be worse.
 		List<Runnable> pending = new ArrayList<>();
 		for (PendingRoundCallback callback : pendingRoundCallbacks) pending.add(callback.action());
 		pendingRoundCallbacks.clear();
 		pending.forEach(Runnable::run);
 	}
 
-	//Un monstruo invocado a mitad de encuentro (carta, /dndmonsters spawn, NPC genérico) no entraba nunca
-	//en order: nunca podía actuar (tryAct comparaba contra un id que no estaba en la lista) y, si además
-	//era el último con vida, allEnemiesDefeated daba por terminado el combate igual, con él todavía vivo y
-	//hostil. Se mete justo después de quien tiene el turno ahora (actúa pronto, sin recalcular iniciativa
-	//de todo el orden) — llamado desde MonsterRegistry.spawnAt (los cuatro caminos de invocación propios),
-	//scheduleLateMonsterScan (mob de compatibilidad que entra al área) y onMobHitsPlayer (uno que golpea
-	//desde fuera del área).
+	//A monster summoned mid-encounter (card, /dndmonsters spawn, generic NPC) never used to enter order:
+	//it could never act (tryAct compared against an id that wasn't in the list) and, if it was also the
+	//last one alive, allEnemiesDefeated would still declare combat over, with it still alive and hostile.
+	//It's inserted right after whoever has the turn now (acts soon, without recalculating initiative for
+	//the whole order) — called from MonsterRegistry.spawnAt (the four native summoning paths),
+	//scheduleLateMonsterScan (a compatibility mob entering the area), and onMobHitsPlayer (one that hits
+	//from outside the area).
 	public static void addLateMonster(ServerLevel level, Entity monster, String displayName) {
 		if (!active) return;
-		//isMonster aquí significa "es un ENEMIGO", y es lo que decide cuándo termina el encuentro (ver
-		//allEnemiesDefeated). Una invocación del jugador entra en la iniciativa —tiene que actuar— pero NO
-		//es un enemigo: marcarla como tal dejaría el combate sin terminar nunca mientras durase el Arma
-		//Espiritual. Mismo criterio que separa isMonster de isCombatTarget para los PNJ aliados.
+		//isMonster here means "is an ENEMY", and that's what decides when the encounter ends (see
+		//allEnemiesDefeated). A player's summon joins initiative — it has to act — but is NOT an enemy:
+		//marking it as one would leave combat never ending for as long as Spiritual Weapon lasted. Same
+		//criterion that separates isMonster from isCombatTarget for friendly NPCs.
 		boolean isEnemy = SummonManager.ownerOf(monster) == null;
 		TurnEntry newEntry = new TurnEntry(monster.getId(), displayName, isEnemy, null);
 		order.add(currentIndex + 1, newEntry);
-		freeze(level, newEntry); //Congela de entrada a un mob de compatibilidad recién sumado (no le toca aún); no-op para uno propio (ya NoAI desde que se invocó).
+		freeze(level, newEntry); //Freezes a freshly added compatibility mob right away (not its turn yet); a no-op for one of ours (already NoAI since it was summoned).
 		broadcast(level, Component.translatable("chat.dndsheets.turn.joins_combat", displayName).withStyle(ChatFormatting.GOLD));
 		broadcastTurnState(level);
 	}
 
-	//Un jugador que llega DESPUÉS de que el combate ya arrancó (autoStartCombatIfNeeded solo capturó lo que
-	//había a 30 bloques del monstruo en ESE instante) nunca entraba en order: tryAct le daba false para
-	//siempre en este encuentro y su golpe se cancelaba sin aplicar ni el daño vanilla. Se suma justo
-	//después de quien tiene el turno ahora (mismo patrón que addLateMonster) y queda anclado como
-	//cualquier otro combatiente en espera, ya que no es su turno todavía. No hace nada si ya tenía puesto.
+	//A player who arrives AFTER combat has already started (autoStartCombatIfNeeded only captured whoever
+	//was within 30 blocks of the monster AT THAT INSTANT) never used to enter order: tryAct would return
+	//false for them forever in this encounter, and their hit would get canceled without even vanilla
+	//damage applying. Added right after whoever has the turn now (same pattern as addLateMonster) and
+	//left anchored like any other waiting combatant, since it isn't their turn yet. Does nothing if they
+	//already had a spot.
 	public static void addLatePlayerIfMissing(ServerLevel level, ServerPlayer player) {
 		if (!active) return;
 		for (TurnEntry entry : order) {
@@ -783,11 +791,11 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		broadcastTurnState(level);
 	}
 
-	//Reconectarse (crash, relog) le da al jugador un entityId nuevo — Minecraft nunca reutiliza el viejo.
-	//Sin esto, su puesto en order quedaba huérfano para siempre: auto-skip perpetuo (ver beginTurn) y
-	//tryAct(nuevoEntity) nunca coincidía con el id guardado, bloqueándolo de actuar por el resto del
-	//encuentro. Se llama desde SheetLoader.clientJoinedServer en cada join Y en cada respawn (mismo
-	//EntityJoinLevelEvent), no hace nada si no hay combate activo o si el jugador no tenía puesto en order.
+	//Reconnecting (crash, relog) gives the player a new entityId — Minecraft never reuses the old one.
+	//Without this, their spot in order was left orphaned forever: a perpetual auto-skip (see beginTurn)
+	//and tryAct(newEntity) would never match the saved id, blocking them from acting for the rest of the
+	//encounter. Called from SheetLoader.clientJoinedServer on every join AND every respawn (same
+	//EntityJoinLevelEvent), does nothing if there's no active combat or if the player had no spot in order.
 	public static void reconcilePlayerEntity(ServerPlayer player) {
 		if (!active) return;
 		String uuid = player.getStringUUID();
@@ -804,16 +812,16 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 			if (reactionUsed.remove(oldId)) reactionUsed.add(newId);
 			if (bonusActionUsed.remove(oldId)) bonusActionUsed.add(newId);
 			opportunityAttacks.rekey(oldId, newId);
-			//Un jugador que muere de verdad (onPlayerRealDeath) queda en confirmedDefeated para siempre —
-			//correcto mientras siga muerto, pero nada lo sacaba de ahí si lo revivían y volvía a entrar: el
-			//id VIEJO se queda huérfano en el set (no lo pisa nada de lo de arriba) y el NUEVO nunca se
-			//marca, así que en teoría ya no cuenta como derrotado, pero tampoco lo trata como que sigue en
-			//el combate — quedaba en un limbo. Reconciliar solo pasa con un ServerPlayer recién unido o
-			//reaparecido, es decir, vivo ahora mismo: se le quita la marca de derrotado de los dos ids, viejo
-			//y nuevo, para que vuelva a contar en el encuentro igual que si nunca hubiera muerto.
+			//A player who genuinely dies (onPlayerRealDeath) stays in confirmedDefeated forever — correct
+			//while they remain dead, but nothing ever removed them from it if they were revived and came
+			//back: the OLD id was left orphaned in the set (nothing above overwrites it) and the NEW one
+			//was never marked, so in theory it no longer counted as defeated, but it also wasn't treated as
+			//still in combat — it was stuck in limbo. Reconciling only happens with a ServerPlayer freshly
+			//joined or respawned, i.e. alive right now: the defeated mark is removed from both ids, old and
+			//new, so they count in the encounter again just as if they'd never died.
 			confirmedDefeated.remove(oldId);
 			confirmedDefeated.remove(newId);
-			return; //Un solo puesto por UUID en el orden, no hace falta seguir buscando.
+			return; //Only one spot per UUID in the order, no need to keep searching.
 		}
 	}
 
@@ -822,33 +830,34 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 	}
 
 	/**
-	 * @param source quien lo provoca, o {@code null} si no se sabe (el DM aplicándolo a mano). Solo importa
-	 *               para hechizado y asustado, las dos condiciones de 5e cuyo efecto depende de quién es la
-	 *               fuente — ver {@link Combatant#cannotAttack} y {@link Combatant#seesSourceOf}.
+	 * @param source who caused it, or {@code null} if unknown (the DM applying it by hand). Only matters
+	 *               for charmed and frightened, the two 5e conditions whose effect depends on who the
+	 *               source is — see {@link Combatant#cannotAttack} and {@link Combatant#seesSourceOf}.
 	 */
 	public static void applyEffect(Entity target, String name, String dice, int turns, Entity source) {
 		effects.computeIfAbsent(target.getId(), id -> new ArrayList<>()).add(new StatusEffect(name, dice, turns));
-		//Si el nombre del efecto ES una condición de 5e ("derribado", "paralizado"...), además de contar los
-		//turnos y hacer su daño se aplica de verdad como condición, con sus consecuencias mecánicas. Así todo
-		//lo que ya sabía aplicar efectos —/dndturns effect, los ataques y hechizos de monstruo, los hechizos
-		//de jugador— empieza a producir condiciones reales sin un comando nuevo ni un campo nuevo en el JSON.
-		//Un nombre libre ("fuego", "sangrado") sigue siendo exactamente lo que era: un temporizador de daño.
+		//If the effect's name IS a 5e condition ("prone", "paralyzed"...), besides counting turns and
+		//dealing its damage it also gets genuinely applied as a condition, with its full mechanical
+		//consequences. This way, everything that already knew how to apply effects — /dndturns effect,
+		//monster attacks and spells, player spells — starts producing real conditions without a new
+		//command or a new JSON field. A free-form name ("fire", "bleeding") remains exactly what it was: a
+		//damage timer.
 		Condition condition = Condition.fromLabel(name);
 		if (condition == null) return;
 		Combatant combatant = Combatant.of(target);
 		if (combatant != null) combatant.addCondition(condition, source == null ? Combatant.NO_SOURCE : source.getId());
 	}
 
-	//Único camino para quitar un efecto ANTES de que expire solo por tickEffects — hasta ahora solo se
-	//podía perder por expiración natural o por el mapa entero vaciándose en start()/end(). Lo usa
-	//ConcentrationManager para revertir el efecto de un hechizo de concentración en cuanto se pierde la
-	//concentración (falla la salvación de Constitución) — antes eso solo tiraba el dado y mandaba un
-	//mensaje, sin deshacer nada de verdad. No-op si el efecto ya no está (ya expiró, ya se quitó, o el
-	//combate ya terminó y effects está vacío).
+	//The only way to remove an effect BEFORE it expires on its own via tickEffects — until now it could
+	//only be lost through natural expiration or the whole map being wiped in start()/end(). Used by
+	//ConcentrationManager to revert a concentration spell's effect the instant concentration is lost
+	//(failed Constitution save) — before, that only rolled the die and sent a message, without actually
+	//undoing anything. No-op if the effect is no longer there (already expired, already removed, or
+	//combat has already ended and effects is empty).
 	public static void removeEffect(ServerLevel level, int entityId, String name) {
-		//La condición se quita aunque el efecto ya no estuviera en el mapa: ambos caminos se aplicaron juntos
-		//en applyEffect, pero el temporizador vive en memoria y solo durante el combate, mientras que la
-		//condición se persiste. Sin esto, terminar un combate dejaba paralizado a alguien para siempre.
+		//The condition is removed even if the effect was no longer in the map: both paths got applied
+		//together in applyEffect, but the timer lives in memory and only during combat, while the
+		//condition is persisted. Without this, ending combat would leave someone paralyzed forever.
 		Condition condition = Condition.fromLabel(name);
 		if (condition != null && level != null) {
 			Entity target = level.getEntity(entityId);
@@ -864,23 +873,23 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 	}
 
 	/**
-	 * <p>Programa el fin de un rasgo con duración en la unidad que toque: <b>asaltos</b> si el modo turnos
-	 * está activo, <b>ticks reales</b> si no. Un "1 minuto" de 5e son 10 asaltos en combate, pero 1.200
-	 * ticks fuera de él, y contarlo en la unidad equivocada acorta o alarga el rasgo sin avisar.</p>
+	 * <p>Schedules a timed trait's end in whichever unit applies: <b>rounds</b> if turn mode is active,
+	 * <b>real ticks</b> if not. A 5e "1 minute" is 10 rounds in combat, but 1,200 ticks outside of it, and
+	 * counting it in the wrong unit shortens or lengthens the trait silently.</p>
 	 *
-	 * <p>La decisión estaba escrita a mano, idéntica, en los cuatro rasgos con duración (Furia, Forma
-	 * Salvaje, Marca del Cazador, Inspiración Bárdica), cada uno con su propio par de constantes. Lo que
-	 * hace cada uno al expirar sí es distinto —uno no avisa a nadie, otro comprueba un token— así que eso
-	 * se queda en cada manager: aquí solo vive lo que de verdad era la misma línea cuatro veces.</p>
+	 * <p>This decision used to be hand-written, identically, in the four timed traits (Rage, Wild Shape,
+	 * Hunter's Mark, Bardic Inspiration), each with its own pair of constants. What each one does upon
+	 * expiring IS different — one notifies nobody, another checks a token — so that stays in each manager:
+	 * only what was genuinely the same line four times over lives here.</p>
 	 */
 	public static void scheduleExpiry(int rounds, int ticks, Runnable onExpire) {
 		if (isActive()) onRoundsPass(rounds, onExpire);
 		else DndsheetsMod.queueServerWork(ticks, onExpire);
 	}
 
-	//Público: para que un rasgo con duración (Furia del bárbaro, etc.) cuente en asaltos completos en vez
-	//de ticks reales mientras el modo turnos esté activo — ver BarbarianRageManager. Si el modo turnos
-	//termina antes de que pasen los asaltos, se dispara igual (ver end()): no se queda colgado para siempre.
+	//Public: so a timed trait (barbarian Rage, etc.) counts in full rounds instead of real ticks while
+	//turn mode is active — see BarbarianRageManager. If turn mode ends before the rounds elapse, it still
+	//fires (see end()): it doesn't stay hanging forever.
 	public static void onRoundsPass(int rounds, Runnable action) {
 		pendingRoundCallbacks.add(new PendingRoundCallback(rounds, action));
 	}
@@ -898,17 +907,17 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		due.forEach(Runnable::run);
 	}
 
-	//Un puesto del orden. Sale de advance() porque saltar a un jefe con reloj propio tiene que descontar
-	//asalto igual que cualquier otro avance: si el salto no pasara por aquí, una ronda con el dragón al
-	//final nunca terminaría de contar.
+	//One spot in the order. Split out of advance() because skipping past a boss with its own clock still
+	//has to decrement a round like any other advance: if the skip didn't go through here, a round ending
+	//on the dragon would never finish being counted.
 	private static void step(ServerLevel level) {
 		currentIndex++;
 		if (currentIndex >= order.size()) {
 			currentIndex = 0;
 			round++;
 			fireDueRoundCallbacks();
-			ZoneManager.endRound(level); //Asalto completo: los muros descuentan duración y se redibujan.
-			SurfaceManager.endRound(level); //Mismo asalto: los charcos de fuego descuentan duración y se redibujan.
+			ZoneManager.endRound(level); //Full round: walls decrement their duration and get redrawn.
+			SurfaceManager.endRound(level); //Same round: fire patches decrement their duration and get redrawn.
 			tickWeaponBuffs(level);
 			SummonManager.endRound(level);
 		}
@@ -921,30 +930,30 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 	}
 
 	private static void advance(ServerLevel level) {
-		turnToken++; //Cualquier auto-avance encolado antes de este avance real queda invalidado.
+		turnToken++; //Any auto-advance queued before this real advance is invalidated.
 		TurnEntry finishing = current();
-		//Acciones legendarias: en 5e un jefe actúa AL TERMINAR el turno de otro, y este es ese momento
-		//exacto. Va antes de mover el índice para que "el que acaba de jugar" siga siendo quien es.
+		//Legendary actions: in 5e a boss acts RIGHT AS another's turn ENDS, and this is that exact moment.
+		//Goes before moving the index so "whoever just played" is still who it is.
 		LegendaryActionManager.onTurnEnded(level, finishing, order);
-		if (finishing != null) freeze(level, finishing); //Se ancla donde termine su turno.
+		if (finishing != null) freeze(level, finishing); //Anchored wherever their turn ends.
 		step(level);
-		//Los jefes con reloj propio siguen EN la lista —si no, el combate terminaría creyendo que ya no
-		//queda ningún enemigo mientras el dragón sigue vivo (ver allEnemiesDefeated)— pero nunca les toca:
-		//actúan por su cuenta cada 6 segundos. Ver OwnClockManager. El tope de vueltas es por si alguna vez
-		//TODOS fueran de reloj propio: mejor una ronda vacía que un bucle infinito en el hilo del servidor.
+		//Bosses with their own clock stay IN the list — otherwise, combat would end believing no enemy is
+		//left while the dragon is still alive (see allEnemiesDefeated) — but it's never their turn: they
+		//act on their own every 6 seconds. See OwnClockManager. The loop cap is in case EVERYONE ever ends
+		//up on their own clock: an empty round is better than an infinite loop on the server thread.
 		for (int skipped = 0; skipped < order.size() && isOffClock(level, current()); skipped++) step(level);
 		beginTurn(level);
 	}
 
-	//Los buffs de arma con duración (Favor Divino) se descuentan por asalto completo, no por turno: un
-	//"1 minuto" de 5e son 10 asaltos, y descontarlo por turno lo acortaría tantas veces como combatientes
-	//haya en la iniciativa.
+	//Timed weapon buffs (Divine Favor) decrement per full round, not per turn: a 5e "1 minute" is 10
+	//rounds, and decrementing it per turn would shorten it as many times as there are combatants in
+	//initiative.
 	private static void tickWeaponBuffs(ServerLevel level) {
 		for (ServerPlayer player : level.players()) {
 			JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
-			//Los dos tickRound son helpers puros sobre el JsonObject y descuentan asaltos en la hoja, asi
-			//que persistir es cosa de aqui (invariante 4). Solo se escribe cuando algo cambio de verdad:
-			//guardar la hoja de cada jugador en cada asalto seria una escritura por combatiente y ronda.
+			//Both tickRound calls are pure helpers over the JsonObject and decrement rounds on the sheet,
+			//so persisting is this method's job (invariant 4). Only written when something genuinely
+			//changed: saving every player's sheet on every round would be one write per combatant per round.
 			boolean changed = WeaponBuffManager.tickRound(sheet);
 			if (changed) {
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.spell.buff_faded").withStyle(ChatFormatting.GRAY));
@@ -960,24 +969,26 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 	private static void freeze(ServerLevel level, TurnEntry entry) {
 		Entity entity = level.getEntity(entry.entityId());
 		if (entity != null) {
-			//Un jefe con reloj propio no se ancla ni se congela: moverse por su cuenta es justo lo que es.
+			//A boss with its own clock is neither anchored nor frozen: moving on its own is exactly what
+			//that is.
 			if (MonsterRegistry.isOffClock(entity)) return;
 			movementAnchors.pin(level, entry.entityId(), entity.position());
-			//El criterio es "¿este mob tiene la IA encendida?", no "¿es de otro mod?". Antes eran lo mismo
-			//—los propios se invocaban SIEMPRE con NoAI— y dejaron de serlo con "ai": true en el bloque de
-			//monstruo (ver MonsterRegistry.keepsOwnAi): un NPC que patrulla o sigue al grupo tiene que
-			//quedarse quieto mientras no es su turno igual que cualquier otro, o se pasea por el combate
-			//entre turnos ajenos. Preguntar por la IA cubre los dos casos con una sola regla, y de paso
-			//incluye a un aliado con IA, que con el gate de isMonster se quedaba suelto.
+			//The criterion is "does this mob have its AI on?", not "is it from another mod?". They used to
+			//be the same thing — this mod's own monsters were ALWAYS summoned with NoAI — and stopped being
+			//so with "ai": true in the monster block (see MonsterRegistry.keepsOwnAi): an NPC that patrols
+			//or follows the party has to stay put while it isn't its turn just like anyone else, or it
+			//wanders around combat during other people's turns. Asking about the AI covers both cases with
+			//a single rule, and incidentally includes an ally with AI, who used to slip through isMonster's
+			//gate.
 			if (entity instanceof Mob mob && !mob.isNoAi()) setCompatMobActive(entity, false);
 		}
 		clearGlow(level, entry);
 	}
 
-	//Ayuda visual (sección "para jugadores nuevos"): a quien tiene el turno se lo marca con el efecto
-	//vanilla Brillo (visible a través de paredes), sin depender de leer el chat para saber a quién le
-	//toca. GLOWING no hace nada más (no es un buff de combate real), así que es seguro aplicarlo/quitarlo
-	//sin tocar ninguna otra mecánica.
+	//Visual aid (the "for new players" feature): whoever has the turn is marked with the vanilla Glowing
+	//effect (visible through walls), without relying on reading chat to know whose turn it is. GLOWING
+	//does nothing else (it isn't a real combat buff), so it's safe to apply/remove without touching any
+	//other mechanic.
 	private static void glow(Entity entity) {
 		if (entity instanceof LivingEntity living) living.addEffect(new MobEffectInstance(MobEffects.GLOWING, 30 * 20 * 60, 0, false, false));
 	}
@@ -997,29 +1008,29 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 
 		TurnEntry entry = current();
 		if (entry == null) return;
-		actedThisTurn.remove(entry.entityId()); //Turno nuevo, acción nueva disponible.
-		bonusActionUsed.remove(entry.entityId()); //Turno nuevo, acción adicional nueva disponible.
-		//Esquivar dura "hasta el comienzo de tu próximo turno", que es exactamente aquí. Correr y
-		//Desengancharse solo valían durante su propio turno, así que caducan en el mismo sitio.
+		actedThisTurn.remove(entry.entityId()); //New turn, new action available.
+		bonusActionUsed.remove(entry.entityId()); //New turn, new bonus action available.
+		//Dodge lasts "until the start of your next turn", which is exactly right here. Dash and Disengage
+		//only lasted for their own turn, so they expire in the same place.
 		TurnActionManager.clearFor(entry.entityId());
-		reactionUsed.remove(entry.entityId()); //Turno nuevo, reacción nueva disponible (regla real de 5e).
-		movementAnchors.release(entry.entityId()); //A quien le toca ahora, se le suelta el ancla.
+		reactionUsed.remove(entry.entityId()); //New turn, new reaction available (real 5e rule).
+		movementAnchors.release(entry.entityId()); //Whoever's turn it is now gets their anchor released.
 
 		Entity entity = level.getEntity(entry.entityId());
 		if (entity == null || !entity.isAlive()) {
-			//Ya no puede actuar (murió, se desconectó...): nadie va a escribir /dndturns next por él, así
-			//que se salta su turno solo en vez de dejar el encuentro colgado para siempre.
+			//Can no longer act (died, disconnected...): nobody's going to type /dndturns next for them, so
+			//their turn is skipped on its own instead of leaving the encounter hanging forever.
 			scheduleAutoAdvance(level, entry.entityId());
 			return;
 		}
 
-		//Un jefe recupera sus acciones legendarias al empezar su turno, que es como se recargan en 5e.
+		//A boss recovers its legendary actions at the start of its turn, which is how they recharge in 5e.
 		LegendaryActionManager.onOwnTurnStart(entity);
 		tickEffects(level, entity, entry);
-		//Muros persistentes: 5e los resuelve justo aquí, al empezar el turno de quien está dentro.
+		//Persistent walls: 5e resolves them right here, at the start of the turn of whoever's inside.
 		ZoneManager.onTurnStart(level, entity);
-		SurfaceManager.onTurnStart(level, entity); //Mismo momento: si hay un charco de fuego bajo los pies, arde ahora.
-		if (!entity.isAlive()) { //El propio efecto de estado (veneno...) pudo haberlo matado recién.
+		SurfaceManager.onTurnStart(level, entity); //Same moment: if there's a fire patch underfoot, it burns now.
+		if (!entity.isAlive()) { //The status effect itself (poison...) may have just killed them.
 			scheduleAutoAdvance(level, entry.entityId());
 			return;
 		}
@@ -1034,20 +1045,21 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 			movementAnchors.beginMovementBudget(level, entry.entityId(), serverPlayer.position());
 			broadcastTurnState(level);
 		} else if (MonsterRegistry.statBlockOf(entity) != null) {
-			//Sin DM en directo, un monstruo no puede esperar a que alguien le clique con la Vara de DM:
-			//actúa solo en cuanto le toca (ver MonsterActionManager.autoAct). autoAct siempre llega a
-			//tryAct (block/isAlive ya se comprobaron arriba), que ya manda su propio broadcastTurnState —
-			//no hace falta uno más acá, sería el mismo paquete duplicado.
+			//Without a live DM, a monster can't wait for someone to click it with the DM Wand: it acts on
+			//its own as soon as its turn comes (see MonsterActionManager.autoAct). autoAct always reaches
+			//tryAct (block/isAlive were already checked above), which already sends its own
+			//broadcastTurnState — no need for another one here, it would be the same packet duplicated.
 			MonsterActionManager.autoAct(level, entity);
 		} else {
-			//Mob de compatibilidad (Enemy de otro mod, o cualquier hostil vanilla suelto que entró por
-			//TurnManager.isMonster) sin bloque de estadísticas propio: no hay ataque/daño 5e que resolver
-			//como con los propios, así que se le devuelve su IA vanilla real para este turno (apagada de
-			//nuevo en freeze() en cuanto termine) y se le da un presupuesto de movimiento igual que a un
-			//jugador. Su turno se consume solo en cuanto ataca de verdad (onMobTurnAttack) o agota ese
-			//presupuesto sin llegar a nadie (onMobTick) — nunca se queda esperando un tryAct que nadie iba
-			//a llamar por él, y por si ninguna de las dos pasa nunca (el slime más pequeño, p.ej., jamás hace
-			//daño al tocar por diseño vanilla — ver mobTurnStartTick), un límite de tiempo se lo corta igual.
+			//Compatibility mob (another mod's Enemy, or any loose vanilla hostile that entered via
+			//TurnManager.isMonster) with no stat block of its own: there's no 5e attack/damage to resolve
+			//like with this mod's own monsters, so its real vanilla AI is given back for this turn (turned
+			//off again in freeze() once it ends) and it's given a movement budget just like a player. Its
+			//turn is only consumed once it genuinely attacks (onMobTurnAttack) or exhausts that budget
+			//without reaching anyone (onMobTick) — it never gets stuck waiting for a tryAct nobody was
+			//going to call for it, and in case neither of those two ever happens (the smallest slime, e.g.,
+			//never deals contact damage by vanilla design — see mobTurnStartTick), a time limit cuts it off
+			//regardless.
 			setCompatMobActive(entity, true);
 			movementAnchors.beginMovementBudget(level, entry.entityId(), entity.position());
 			mobTurnStartTick.put(entry.entityId(), level.getGameTime());
@@ -1055,29 +1067,29 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		}
 	}
 
-	//Fin automático: si el encuentro arrancó con al menos un monstruo y ya no queda ninguno vivo (muerto o
-	//borrado del mundo), se acabó solo — nadie tiene que escribir /dndturns end. No cuenta jugadores (que
-	//un jugador llegue a 0 PG no termina el combate, ver DeathSaveManager) ni encuentros que arrancaron sin
-	//monstruos (modo turnos usado para otra cosa, p.ej. una escena sin combate real).
+	//Automatic end: if the encounter started with at least one monster and none are left alive (dead or
+	//removed from the world), it ends on its own — nobody has to type /dndturns end. Doesn't count
+	//players (a player hitting 0 HP doesn't end combat, see DeathSaveManager) nor encounters that started
+	//with no monsters (turn mode used for something else, e.g. a scene with no real combat).
 	private static boolean allEnemiesDefeated(ServerLevel level) {
 		boolean hadMonster = false;
 		for (TurnEntry entry : order) {
 			if (!entry.isMonster()) continue;
 			hadMonster = true;
-			if (confirmedDefeated.contains(entry.entityId())) continue; //Muerto/borrado de verdad, confirmado.
+			if (confirmedDefeated.contains(entry.entityId())) continue; //Confirmed genuinely dead/removed.
 			Entity entity = level.getEntity(entry.entityId());
-			//entity==null sin confirmación de arriba puede ser un chunk descargado, no una muerte: se asume
-			//que sigue en pie para no terminar el combate de más (ver markDefeated).
+			//entity==null without the confirmation above could be an unloaded chunk, not a death: assumed
+			//to still be standing so as not to end combat prematurely (see markDefeated).
 			if (entity == null || entity.isAlive()) return false;
 		}
 		return hadMonster;
 	}
 
-	//Simétrico a allEnemiesDefeated: si TODOS los jugadores del encuentro murieron de verdad, se acaba
-	//solo — sin esto, morir dejaba a cualquier mob de compatibilidad congelado (NoAI) para siempre, sin
-	//nadie con permisos para correr /dndturns end si se jugaba sin DM en directo. Solo cuenta muerte real
-	//(ver onPlayerRealDeath), NO estar caído con salvaciones pendientes (la partida sigue mientras alguien
-	//pueda reanimar) ni desconexión (reconcilePlayerEntity ya asume que puede volver).
+	//Symmetric to allEnemiesDefeated: if ALL players in the encounter have genuinely died, it ends on its
+	//own — without this, dying would leave any compatibility mob frozen (NoAI) forever, with nobody having
+	//permission to run /dndturns end if playing without a live DM. Only counts a real death (see
+	//onPlayerRealDeath), NOT being down with pending death saves (the game continues while someone can
+	//still revive them) nor disconnecting (reconcilePlayerEntity already assumes they can come back).
 	private static boolean allPlayersDefeated() {
 		boolean hadPlayer = false;
 		for (TurnEntry entry : order) {
@@ -1088,9 +1100,9 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		return hadPlayer;
 	}
 
-	//Público: llamado por DeathSaveManager.killForReal justo donde un jugador muere de verdad (3 fallos de
-	//salvación, o "Dejarse morir"). Si era el último con vida del encuentro, lo termina ya mismo —
-	//restaura la IA de cualquier mob de compatibilidad que hubiera quedado congelado (ver end()).
+	//Public: called by DeathSaveManager.killForReal right where a player genuinely dies (3 failed death
+	//saves, or "Let Die"). If they were the last one alive in the encounter, it ends it right away —
+	//restores AI for any compatibility mob that had been left frozen (see end()).
 	public static void onPlayerRealDeath(ServerLevel level, ServerPlayer player) {
 		if (!active) return;
 		markDefeated(player.getId());
@@ -1100,18 +1112,18 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		}
 	}
 
-	//Servidor -> todos los clientes: estado actual del modo turnos, para el HUD (ver client.TurnHudOverlay).
-	//Se manda cada vez que algo visible cambia (arranca, avanza, alguien gasta/deshace su acción) — ningún
-	//cliente tiene que pedirlo, siempre llega solo.
-	//El nivel donde vive el combate activo, recordado para el latido de onCombatHeartbeat: el estado de
-	//esta clase no guarda dimensión (un combate por servidor, ver el techo en el javadoc de la clase) y
-	//los PG del tablero cambian por caminos que no pasan por ningún evento de turno (reacciones,
-	//multiataque, daño de zona). Se limpia solo: broadcastTurnState corre también al terminar el combate.
+	//Server -> every client: turn mode's current state, for the HUD (see client.TurnHudOverlay). Sent
+	//every time something visible changes (starts, advances, someone spends/undoes their action) —
+	//no client has to request it, it always just arrives.
+	//The level active combat lives on, remembered for onCombatHeartbeat's pulse: this class's state
+	//doesn't track dimension (one combat per server, see the ceiling in the class's javadoc) and the
+	//roster's HP changes through paths that don't go through any turn event (reactions, multiattack, zone
+	//damage). Clears itself: broadcastTurnState also runs when combat ends.
 	private static ServerLevel combatLevel;
 
-	//Refresco de PG/condiciones una vez por segundo mientras hay combate: perseguir cada punto de daño
-	//por separado significaría engancharse a todos los caminos de daño (y olvidarse de alguno); un
-	//latido de 20 ticks sobre un mensaje que ya existe es más simple y fuera de combate no corre nada.
+	//HP/condition refresh once a second while combat is ongoing: chasing every point of damage
+	//individually would mean hooking into every damage path (and missing one); a 20-tick pulse over an
+	//already-existing message is simpler, and nothing runs outside combat.
 	@SubscribeEvent
 	public static void onCombatHeartbeat(TickEvent.ServerTickEvent event) {
 		if (!active || event.phase != TickEvent.Phase.END || combatLevel == null) return;
@@ -1129,9 +1141,9 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 			new TurnStateMessage(active, round, entityId, actioned, origin.x, origin.y, origin.z, rosterOf(level)));
 	}
 
-	//La fila de iniciativa entera para el HUD (ver TurnStateMessage.RosterRow): quién va, quién ya actuó,
-	//quién cayó y qué condiciones lleva encima cada uno — todo lo que en una mesa real se ve con solo mirar
-	//el tablero, y que antes solo existía disperso en el chat.
+	//The entire initiative row for the HUD (see TurnStateMessage.RosterRow): who's up, who's already
+	//acted, who's down, and what conditions each one is carrying — everything that at a real table is
+	//seen just by looking at the board, and that used to only exist scattered across chat.
 	private static List<TurnStateMessage.RosterRow> rosterOf(ServerLevel level) {
 		List<TurnStateMessage.RosterRow> rows = new ArrayList<>(order.size());
 		for (TurnEntry entry : order) {
@@ -1144,15 +1156,15 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 				if (combatant != null) {
 					if (!combatant.conditions().isEmpty()) {
 						conditionLabels = new ArrayList<>(combatant.conditions().size());
-						for (Condition condition : combatant.conditions()) conditionLabels.add(condition.label());
+						for (Condition condition : combatant.conditions()) conditionLabels.add(condition.displayLabel());
 					}
 					currentHp = combatant.currentHp();
 					maxHp = combatant.maxHp();
 				} else if (entity instanceof LivingEntity living) {
-					//Mob de compatibilidad sin bloque de estadísticas (fuera de las reglas, invariante 9):
-					//sus PG de vanilla, SOLO para mostrar en el tablero y el nombre flotante — ninguna regla
-					//decide con esto. Sin este respaldo, un encuentro de creepers/esqueletos vanilla salía
-					//entero sin barra de vida, que era lo primero que se notaba en pantalla.
+					//Compatibility mob with no stat block (outside the rules, invariant 9): its vanilla HP,
+					//ONLY to show on the board and the floating name — no rule decides based on this.
+					//Without this fallback, an encounter with vanilla creepers/skeletons would come out
+					//entirely without a health bar, which was the first thing noticed on screen.
 					currentHp = (int) Math.ceil(living.getHealth());
 					maxHp = (int) Math.ceil(living.getMaxHealth());
 				}
@@ -1172,9 +1184,9 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		List<StatusEffect> remaining = new ArrayList<>();
 		for (StatusEffect effect : active_) {
 			DiceManager.RollOutcome outcome = DiceManager.roll(new JsonObject(), effect.damageDice());
-			//amount > 0, no solo "se pudo tirar": una condición pura (Inmovilizar Persona, Dormir) se guarda
-			//con dados "0" porque no hace daño, y sin este filtro anunciaba un tick de 0 puntos cada turno
-			//que dura — ruido en el chat justo cuando más lleno está.
+			//amount > 0, not just "could be rolled": a pure condition (Hold Person, Sleep) is stored with
+			//"0" dice because it deals no damage, and without this filter it would announce a 0-point tick
+			//every turn it lasts — noise in chat right when it's already at its busiest.
 			if (outcome.result() != null && outcome.result().getValue() > 0) {
 				int amount = outcome.result().getValue();
 				SpellCastManager.applyDamage(entity, amount, effect.name());
@@ -1184,9 +1196,9 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 			if (left > 0) {
 				remaining.add(new StatusEffect(effect.name(), effect.damageDice(), left));
 			} else {
-				//Se acabó el contador: si el efecto era una condición de verdad, se levanta también la
-				//condición. Sin esto expiraba el temporizador pero el personaje se quedaba derribado o
-				//paralizado para siempre, porque la condición se persiste y el temporizador no.
+				//The counter ran out: if the effect was a genuine condition, the condition is lifted too.
+				//Without this the timer would expire but the character would stay prone or paralyzed
+				//forever, because the condition is persisted and the timer isn't.
 				Condition condition = Condition.fromLabel(effect.name());
 				if (condition != null) {
 					Combatant combatant = Combatant.of(entity);
@@ -1199,9 +1211,9 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		else effects.put(entry.entityId(), remaining);
 	}
 
-	//ponytail: un solo guardado global para todos los mutadores en vez de uno por encuentro — solo se
-	//admite un encuentro de modo turnos a la vez. Si algún día hacen falta encuentros simultáneos, esto
-	//tendría que volverse un mapa por encuentro.
+	//ponytail: a single global debounce for every mutator instead of one per encounter — only one
+	//turn-mode encounter is ever allowed at a time. If simultaneous encounters are ever needed, this
+	//would have to become a map per encounter.
 	private static boolean debounce(ServerLevel level) {
 		long now = level.getGameTime();
 		if (lastActionTick == now) return true;
@@ -1209,11 +1221,11 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		return false;
 	}
 
-	//Antes era server-wide: los anuncios de turno ("turno de X", ronda N, fin del combate...) los veía
-	//cualquiera conectado, no solo quien estuviera en o cerca de este encuentro — mismo problema que
-	//ChatFeedback.broadcast, mismo criterio de solución (radio desde donde arrancó el combate, no todo el
-	//servidor). Sin zona conocida (no debería pasar con combate activo, pero por si acaso) cae a
-	//server-wide antes que perder el aviso.
+	//Used to be server-wide: turn announcements ("X's turn", round N, combat ended...) were seen by
+	//anyone connected, not just whoever was in or near this encounter — the same problem as
+	//ChatFeedback.broadcast, the same fix criterion (radius from where combat started, not the whole
+	//server). With no known zone (shouldn't happen with active combat, but just in case) it falls back to
+	//server-wide rather than lose the announcement.
 	private static void broadcast(ServerLevel level, Component message) {
 		if (combatOrigin == null) {
 			level.getServer().getPlayerList().broadcastSystemMessage(message, false);
@@ -1225,8 +1237,8 @@ public class TurnManager { //ponytail: un combate por servidor; estado por-encue
 		}
 	}
 
-	//Bloqueo de movimiento: a quien tiene una posición anclada (no le toca el turno) se le devuelve ahí en
-	//cuanto se aleja, y se le avisa por qué. Sin ancla (le toca a él, o modo turnos apagado) no hace nada.
+	//Movement lockdown: whoever has an anchored position (not their turn) gets sent back there as soon as
+	//they wander off, and is told why. With no anchor (it's their turn, or turn mode is off) it does nothing.
 	@SubscribeEvent
 	public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
 		if (event.phase != TickEvent.Phase.END || !active) return;

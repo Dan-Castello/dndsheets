@@ -14,9 +14,9 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * <p>Aplica un {@link PresetRegistry.ClassPreset} a la hoja real de un jugador: rellena clase, dado de
- * golpe y características, entrega el arma inicial si el preset tiene una, y empuja la hoja actualizada
- * al cliente. Usado tanto por {@code /dndpresets apply} como por el selector en la propia hoja.</p>
+ * <p>Applies a {@link PresetRegistry.ClassPreset} to a player's actual sheet: fills in class, hit dice,
+ * and ability scores, grants the starting weapon if the preset has one, and pushes the updated sheet to
+ * the client. Used both by {@code /dndpresets apply} and by the picker on the sheet itself.</p>
  */
 public class PresetManager {
 
@@ -27,19 +27,19 @@ public class PresetManager {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (sheet == null) return;
 
-		//Si ya tenía ESTE MISMO preset aplicado, no se le vuelve a dar el arma inicial ni el ítem de
-		//recurso de clase: sin este chequeo, pulsar "aplicar bárbaro" repetidas veces regalaba un Tótem de
-		//Furia (y un hacha) nuevo cada vez. Cambiar a un preset DISTINTO sigue entregando ambos, como antes.
+		//If this SAME preset was already applied, the starting weapon and class resource item aren't
+		//granted again: without this check, clicking "apply barbarian" repeatedly gave a new Rage totem
+		//(and a new axe) every time. Switching to a DIFFERENT preset still grants both, as before.
 		String previousPresetId = sheet.has("appliedPresetId") ? sheet.get("appliedPresetId").getAsString() : null;
 		boolean samePresetAlreadyApplied = preset.id().equals(previousPresetId);
 
-		//Cambiar a un preset DISTINTO retira lo que entregó el preset anterior (arma inicial + ítem de
-		//recurso de clase) antes de entregar lo nuevo — sin esto, cambiar de preset varias veces acumulaba
-		//un arma y un ítem de recurso por cada cambio en vez de reemplazarlos. Solo se toca lo que lleva la
-		//etiqueta NBT que puso este mismo mod (weaponId exacto, o el flag booleano del recurso de clase):
-		//un arma inicial que resuelva a un ítem vanilla puro (sin etiqueta, ver Config.buildWeaponStack)
-		//no se puede distinguir de forma segura de una que el jugador ya tuviera por su cuenta, así que esa
-		//no se toca — mejor dejar un extra ocasional que borrar algo que no era del preset.
+		//Switching to a DIFFERENT preset removes what the previous preset granted (starting weapon + class
+		//resource item) before granting the new one — without this, switching presets several times piled
+		//up a weapon and a resource item per switch instead of replacing them. Only items carrying the NBT
+		//tag this same mod put there are touched (exact weaponId, or the class resource boolean flag): a
+		//starting weapon that resolves to a plain vanilla item (untagged, see Config.buildWeaponStack)
+		//can't be safely distinguished from one the player already had on their own, so that one is left
+		//alone — better an occasional leftover than deleting something that wasn't from the preset.
 		if (!samePresetAlreadyApplied && previousPresetId != null) {
 			PresetRegistry.ClassPreset previous = PresetRegistry.get(previousPresetId);
 			if (previous != null) {
@@ -58,11 +58,11 @@ public class PresetManager {
 				player.getInventory().add(weapon);
 			}
 
-			//Por el mismo camino que el arma: buildWeaponStack resuelve primero un id de ítem de Minecraft
-			//tal cual, así que una cota de malla no necesita nada especial y un id del mod sigue valiendo.
-			//Se marca con el mismo criterio que el arma y el ítem de recurso (etiqueta NBT propia) para que
-			//SÍ se pueda retirar al cambiar a otro preset — antes no llevaba marca y quedaba pegado para
-			//siempre, así que probar varios presets iba llenando el inventario de equipo inicial acumulado.
+			//Through the same path as the weapon: buildWeaponStack resolves a plain Minecraft item id
+			//first, so chainmail needs nothing special and a mod id still works. It's marked with the same
+			//criterion as the weapon and the resource item (our own NBT tag) so it CAN be removed when
+			//switching to another preset — it used to carry no mark and stuck around forever, so trying
+			//several presets kept piling up starting gear in the inventory.
 			for (String gearId : preset.startingGear()) {
 				ItemStack gear = Config.buildWeaponStack(gearId, 1);
 				gear.getOrCreateTagElement("dndsheets").putString("startingGear", preset.id());
@@ -74,17 +74,17 @@ public class PresetManager {
 		}
 
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
-		//Ya no hace falta cerrar y reabrir: la hoja abierta se repinta sola al llegar la hoja completa (ver
-		//CharacterSheetScreen.refreshIfOpen). El aviso viejo pedía un paso que ya no existe.
+		//No need to close and reopen anymore: an open sheet repaints itself once the full sheet arrives
+		//(see CharacterSheetScreen.refreshIfOpen). The old notice asked for a step that no longer exists.
 		player.sendSystemMessage(Component.translatable("chat.dndsheets.preset.applied", preset.name()).withStyle(ChatFeedback.RESOURCE));
 	}
 
-	//El preset solo rellena la hoja (clase/características/rasgos); sin esto, el ítem que activa el
-	//recurso de esa clase (Furia, Segundo Aliento...) nunca llegaba al jugador salvo que el DM se
-	//acordara de dárselo aparte con /dndsheet. Los ids de preset
-	//son los mismos nombres de clase en inglés que ya usa test/dndsheets/presets/presets.json. Las clases
-	//sin entrada acá (mago, brujo, clérigo, pícaro, monje) no tienen ítem de recurso: su rasgo icónico ya
-	//llega por TraitRegistry (pícaro/monje) o es automático sin ítem (mago/brujo/clérigo).
+	//The preset only fills in the sheet (class/abilities/traits); without this, the item that activates
+	//that class's resource (Rage, Second Wind...) never reached the player unless the DM remembered to
+	//give it separately with /dndsheet. The preset ids
+	//are the same English class names already used by test/dndsheets/presets/presets.json. Classes with
+	//no entry here (wizard, warlock, cleric, rogue, monk) have no resource item: their signature feature
+	//already arrives via TraitRegistry (rogue/monk) or is automatic without an item (wizard/warlock/cleric).
 	private static ItemStack classResourceItem(String presetId) {
 		return switch (presetId) {
 			case "barbarian" -> BarbarianRageManager.buildRageItemStack();
@@ -98,7 +98,7 @@ public class PresetManager {
 		};
 	}
 
-	//Mismos flags booleanos que ya usa cada manager para marcar su ítem de recurso — ver classResourceItem.
+	//Same boolean flags each manager already uses to mark its resource item — see classResourceItem.
 	private static String resourceFlagFor(String presetId) {
 		return switch (presetId) {
 			case "barbarian" -> "rage";

@@ -1,0 +1,46 @@
+[
+  {
+    "id": "fighter", "name": "Fighter", "hitDiceType": "1d10",
+    "abilities": { "str": 15, "dex": 13, "con": 14, "int": 8, "wis": 12, "cha": 10 },
+    "startingWeapon": "minecraft:iron_sword",
+    "startingGear": ["minecraft:chainmail_chestplate", "minecraft:shield"],
+    "subclasses": [
+      { "id": "fighter:champion", "name": "Champion", "level": 3, "criticalFrom": 19 }
+    ]
+  },
+  {
+    "id": "wizard", "name": "Wizard", "hitDiceType": "1d6",
+    "abilities": { "str": 8, "dex": 14, "con": 12, "int": 15, "wis": 13, "cha": 10 },
+    "startingWeapon": "dndsheets:dagger",
+    "spellSlotsMax": 2,
+    "subclasses": [
+      { "id": "wizard:evocation", "name": "School of Evocation", "level": 2 }
+    ]
+  },
+  {
+    "id": "rogue", "name": "Rogue", "hitDiceType": "1d8",
+    "abilities": { "str": 10, "dex": 15, "con": 13, "int": 12, "wis": 8, "cha": 14 },
+    "startingWeapon": "dndsheets:dagger",
+    "traits": ["rogue:sneak_attack"],
+    "subclasses": [
+      { "id": "rogue:thief", "name": "Thief", "level": 3 }
+    ]
+  },
+  {
+    "id": "cleric", "name": "Cleric", "hitDiceType": "1d8",
+    "abilities": { "str": 12, "dex": 10, "con": 14, "int": 8, "wis": 15, "cha": 13 },
+    "startingWeapon": "dndsheets:warhammer",
+    "spellSlotsMax": 2,
+    "subclasses": [
+      { "id": "cleric:life", "name": "Life Domain", "level": 1, "spells": ["dndsheets:cure_wounds"] }
+    ]
+  },
+  {
+    "id": "monk", "name": "Monk", "hitDiceType": "1d8",
+    "abilities": { "str": 10, "dex": 15, "con": 13, "int": 8, "wis": 14, "cha": 10 },
+    "traits": ["monk:martial_arts"],
+    "subclasses": [
+      { "id": "monk:open_hand", "name": "Way of the Open Hand", "level": 3 }
+    ]
+  }
+]

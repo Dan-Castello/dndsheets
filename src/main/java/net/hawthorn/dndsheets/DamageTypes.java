@@ -8,61 +8,63 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * <p>Resistencias/vulnerabilidades/inmunidades por tipo de daño, guardadas en la hoja del jugador
- * como {@code damageAffinities: {"fuego":"resistant", ...}} (ver {@code /dndsheet damagetype}). Solo
- * protege/perjudica al jugador que la tiene — monstruos y armor stands no llevan esta capa.</p>
+ * <p>Resistances/vulnerabilities/immunities per damage type, stored on the player's sheet
+ * as {@code damageAffinities: {"fire":"resistant", ...}} (see {@code /dndsheet damagetype}). It only
+ * protects/hurts the player who has it — monsters and armor stands don't carry this layer.</p>
  *
- * <p>La Furia del bárbaro ({@link BarbarianRageManager}) se suma aquí en vez de escribirse como una
- * entrada más de "damageAffinities": es temporal y no debería sobrevivir a un reinicio de servidor ni
- * aparecer como algo que el DM "fijó a mano" con {@code /dndsheet damagetype}.</p>
+ * <p>Barbarian Rage ({@link BarbarianRageManager}) is added in here instead of being written as one more
+ * entry in "damageAffinities": it's temporary and shouldn't survive a server restart or show up as
+ * something the DM "set by hand" with {@code /dndsheet damagetype}.</p>
  */
 public class DamageTypes {
-	private static final Set<String> PHYSICAL_TYPES = Set.of("fisico", "cortante", "perforante", "contundente");
+	private static final Set<String> PHYSICAL_TYPES = Set.of("physical", "slashing", "piercing", "bludgeoning");
 
 	/**
-	 * <p>Los catorce tipos de dano de 5e como se escriben en este mod: sin acentos, en minusculas y en
-	 * espanol. Vive aqui y no en el comando que los sugiere porque es la misma lista que decide si una
-	 * resistencia aplica — dos copias que se separen serian una resistencia que el DM ve sugerida y que
-	 * luego no hace nada.</p>
+	 * <p>The fourteen 5e damage types as they're written in this mod: no accents, lowercase, and in
+	 * English. It lives here rather than in the command that suggests them because it's the same list
+	 * that decides whether a resistance applies — two copies drifting apart would mean a resistance the
+	 * DM sees suggested that then does nothing.</p>
 	 */
 	public static final String[] CANONICAL = {
-		"fisico", "cortante", "perforante", "contundente", "fuego", "frio", "rayo",
-		"acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno"
+		"physical", "slashing", "piercing", "bludgeoning", "fire", "cold", "lightning",
+		"acid", "poison", "psychic", "radiant", "necrotic", "force", "thunder"
 	};
 
-	private static final Map<String, String> ENGLISH = Map.ofEntries(
-		Map.entry("physical", "fisico"), Map.entry("slashing", "cortante"),
-		Map.entry("piercing", "perforante"), Map.entry("bludgeoning", "contundente"),
-		Map.entry("fire", "fuego"), Map.entry("cold", "frio"), Map.entry("lightning", "rayo"),
-		Map.entry("acid", "acido"), Map.entry("poison", "veneno"), Map.entry("psychic", "psiquico"),
-		Map.entry("radiant", "radiante"), Map.entry("necrotic", "necrotico"),
-		Map.entry("force", "fuerza"), Map.entry("thunder", "trueno"));
+	//The legacy Spanish names (sheets, packs and saves written before the English switch) map to the canonical ones.
+	private static final Map<String, String> LEGACY_SPANISH = Map.ofEntries(
+		Map.entry("fisico", "physical"), Map.entry("cortante", "slashing"),
+		Map.entry("perforante", "piercing"), Map.entry("contundente", "bludgeoning"),
+		Map.entry("fuego", "fire"), Map.entry("frio", "cold"), Map.entry("rayo", "lightning"),
+		Map.entry("acido", "acid"), Map.entry("veneno", "poison"), Map.entry("psiquico", "psychic"),
+		Map.entry("radiante", "radiant"), Map.entry("necrotico", "necrotic"),
+		Map.entry("fuerza", "force"), Map.entry("trueno", "thunder"));
 
 	/**
-	 * <p><b>Un tipo de dano escrito de cualquier manera, siempre igual.</b> Un tipo de dano no es una
-	 * etiqueta que se imprime: es una CLAVE que se compara contra las resistencias de la hoja y del bloque
-	 * de monstruo ({@code damageAffinities}). Por eso {@code "Fire"}, {@code "fuego"} y {@code "fuego "}
-	 * tienen que dar la misma cadena — si no, un pack importado en ingles atraviesa la resistencia al fuego
-	 * de un personaje sin que salte nada, que es la peor forma de fallar: el numero sale, y sale mal.</p>
+	 * <p><b>A damage type written any way, always the same.</b> A damage type isn't a label that gets
+	 * printed: it's a KEY compared against the resistances on the sheet and the monster block
+	 * ({@code damageAffinities}). That's why {@code "Fire"}, {@code "fuego"} (legacy) and {@code "fire "} have
+	 * to produce the same string — otherwise a pack imported in English slips straight through a
+	 * character's fire resistance with nothing flagging it, which is the worst way to fail: a number
+	 * still comes out, and it comes out wrong.</p>
 	 *
-	 * <p>Un tipo que no esta en la tabla <b>no se descarta</b>, se devuelve normalizado. Una mesa que se
-	 * invente "sangrado" sigue teniendo su tipo, y lo tiene igual en las dos puntas de la comparacion, que
-	 * es lo unico que hace falta para que su resistencia casera funcione.</p>
+	 * <p>A type that isn't in the table is <b>not discarded</b>, it's returned normalized. A table that
+	 * invents "bleed" still has its type, and has it the same on both ends of the comparison, which is
+	 * the only thing needed for its homebrew resistance to work.</p>
 	 */
 	public static String normalize(String raw) {
-		if (raw == null) return "fisico";
+		if (raw == null) return "physical";
 		String stripped = java.text.Normalizer.normalize(raw.trim().toLowerCase(java.util.Locale.ROOT),
 				java.text.Normalizer.Form.NFD)
 			.replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
 			.replaceAll("[\\s_-]", "");
-		if (stripped.isEmpty()) return "fisico";
-		return ENGLISH.getOrDefault(stripped, stripped);
+		if (stripped.isEmpty()) return "physical";
+		return LEGACY_SPANISH.getOrDefault(stripped, stripped);
 	}
 
 	public static double multiplierFor(Entity target, JsonObject sheet, String damageType) {
 		double multiplier = sheetMultiplierFor(sheet, damageType);
 		if (target instanceof ServerPlayer player && BarbarianRageManager.isRaging(player) && PHYSICAL_TYPES.contains(damageType)) {
-			multiplier = Math.min(multiplier, 0.5); //Ya inmune/resistente por otra vía no empeora; normal/vulnerable sí baja a resistente.
+			multiplier = Math.min(multiplier, 0.5); //Already immune/resistant some other way doesn't get worse; normal/vulnerable does drop to resistant.
 		}
 		return multiplier;
 	}
@@ -71,7 +73,7 @@ public class DamageTypes {
 		if (sheet == null || damageType == null || !sheet.has("damageAffinities")) return 1.0;
 		JsonObject affinities = sheet.getAsJsonObject("damageAffinities");
 		String key = normalize(damageType);
-		//Las claves de una hoja escrita a mano antes de que esto existiera pueden llevar acentos o mayusculas.
+		//Keys on a sheet handwritten before this existed may carry accents or capitals.
 		for (String written : affinities.keySet()) {
 			if (normalize(written).equals(key)) return multiplierForLabel(affinities.get(written).getAsString());
 		}
@@ -79,9 +81,9 @@ public class DamageTypes {
 	}
 
 	/**
-	 * <p>Traduce una afinidad declarada ({@code resistant}/{@code vulnerable}/{@code immune}) a su
-	 * multiplicador. Público porque los bloques de monstruo guardan las suyas en un mapa propio, no en una
-	 * hoja JSON: sin esto, el mismo vocabulario acabaría parseado en dos sitios que podrían discrepar.</p>
+	 * <p>Translates a declared affinity ({@code resistant}/{@code vulnerable}/{@code immune}) to its
+	 * multiplier. Public because monster blocks store theirs in their own map, not a JSON sheet:
+	 * without this, the same vocabulary would end up parsed in two places that could disagree.</p>
 	 */
 	public static double multiplierForLabel(String affinity) {
 		if (affinity == null) return 1.0;

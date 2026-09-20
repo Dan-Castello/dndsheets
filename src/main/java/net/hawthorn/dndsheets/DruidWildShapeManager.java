@@ -19,53 +19,55 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * <p>Forma Salvaje del druida: el jugador <b>se convierte</b> en una bestia del bestiario. Toma sus PG,
- * su CA, sus características físicas y su ataque, y se ve como ella. Al terminar —por tiempo, a voluntad,
- * o porque la forma cayó a 0 PG— vuelve a ser él, con la vida que tenía antes de transformarse.</p>
+ * <p>Druid Wild Shape: the player <b>turns into</b> a beast from the bestiary. It takes over their HP,
+ * their AC, their physical abilities and their attack, and they look like it. When it ends — by time, at
+ * will, or because the shape dropped to 0 HP — they become themselves again, with the health they had
+ * before transforming.</p>
  *
- * <p><b>Dónde vive el estado, y por qué importa.</b> En la <b>hoja</b>, no en memoria: la hoja se persiste
- * y se sincroniza sola, así que desconectarse a mitad de la forma —o que se caiga el servidor— no deja a
- * nadie con las características de un oso para siempre. Es la misma razón por la que las condiciones se
- * guardan donde se guardan (ver {@code Combatant}).</p>
+ * <p><b>Where the state lives, and why it matters.</b> On the <b>sheet</b>, not in memory: the sheet
+ * persists and syncs on its own, so disconnecting mid-shape — or the server crashing — doesn't leave
+ * anyone with a bear's stats forever. It's the same reason conditions are stored where they're stored
+ * (see {@code Combatant}).</p>
  *
- * <p><b>Por qué no hay un {@code WildShapeCombatant}.</b> Era la opción evidente y es la equivocada. Todo
- * lo que pregunta "¿cuál es su CA?", "¿cuántos PG le quedan?" o "¿cuál es su modificador de Fuerza?" ya
- * pasa por la hoja y por el atributo de vida de Minecraft. Así que la transformación <b>escribe ahí</b>
- * los números de la bestia y guarda los de antes para devolverlos: el motor entero —el monstruo que
- * decide si acierta, la lista de grupo del DM, el HUD, la concentración— ve la forma sin que ninguno de
- * ellos sepa que existe. Un combatiente nuevo habría obligado a que cada uno de esos caminos supiera
- * distinguirlo.</p>
+ * <p><b>Why there's no {@code WildShapeCombatant}.</b> It was the obvious choice and it's the wrong one.
+ * Everything that asks "what's its AC?", "how much HP does it have left?" or "what's its Strength
+ * modifier?" already goes through the sheet and Minecraft's health attribute. So the transformation
+ * <b>writes right there</b> the beast's numbers and stores the old ones to give back: the whole engine —
+ * the monster deciding whether it hits, the DM's party list, the HUD, concentration — sees the shape
+ * without any of them knowing it exists. A new combatant type would have forced every one of those paths
+ * to learn to tell it apart.</p>
  *
- * <p><b>Lo que no hace</b>, y es 5e de verdad: no conserva las competencias de salvación de la bestia, y
- * no limita por VD (el bestiario no trae el dato). El DM decide qué bestia vale, que es como se juega en
- * una mesa.</p>
+ * <p><b>What it doesn't do</b>, and this is real 5e: it doesn't preserve the beast's saving throw
+ * proficiencies, and it doesn't cap by CR (the bestiary doesn't carry that data). The DM decides which
+ * beast is fair, the same way it's played at a table.</p>
  */
 @Mod.EventBusSubscriber
 public class DruidWildShapeManager {
-	private static final int DURATION_ROUNDS = 10; //1 hora de 5e simplificada a 10 asaltos, igual que la Furia.
+	private static final int DURATION_ROUNDS = 10; //5e's 1 hour simplified to 10 rounds, same as Rage.
 	private static final int DURATION_TICKS = 20 * 60;
 
-	/** Golpe por defecto si la bestia elegida no declara ningún ataque. */
+	/** Default hit if the chosen beast declares no attack. */
 	private static final String FALLBACK_DICE = "1d6";
 	private static final String FALLBACK_ABILITY = "str";
 
-	//Lo de la bestia se ESCRIBE en la hoja, así que hay que guardar lo del druida para devolverlo. Todo
-	//bajo el mismo prefijo: si algún día algo sale mal, se ve de un vistazo qué dejó puesto la forma.
+	//The beast's stats get WRITTEN onto the sheet, so the druid's own have to be saved to give back
+	//later. All under the same prefix: if something ever goes wrong, it's obvious at a glance what the
+	//shape left behind.
 	private static final String SHAPE_ID = "wildShapeId";
 	private static final String RETURN_HP = "wildShapeReturnHp";
 	private static final String OLD_AC = "wildShapeOldAc";
 	private static final String OLD_ABILITY = "wildShapeOld_";
-	//Si podía volar ANTES de transformarse (creativo/espectador), no por la forma — para no quitarle un
-	//permiso que ya tenía al volver. Va en la hoja y no en memoria por la misma razón que todo lo demás
-	//aquí: sobrevive a una desconexión a mitad de los 10 asaltos.
+	//Whether they could fly BEFORE transforming (creative/spectator), not because of the shape — so
+	//reverting doesn't take away a permission they already had. It lives on the sheet and not in memory
+	//for the same reason as everything else here: it survives a disconnect midway through the 10 rounds.
 	private static final String OLD_MAYFLY = "wildShapeOldMayfly";
 
-	/** Las que cambia la forma. Int/Sab/Car se quedan: en 5e la bestia no te vuelve tonto. */
+	/** The abilities the shape changes. Int/Wis/Cha stay: in 5e the beast doesn't make you dumb. */
 	private static final List<String> PHYSICAL = List.of("str", "dex", "con");
 	private static final Map<String, String> LONG = Map.of(
 		"str", "strength", "dex", "dexterity", "con", "constitution");
 
-	/** El id de la bestia en la que está, o {@code null} si no está transformado. */
+	/** The id of the beast they're shaped into, or {@code null} if not transformed. */
 	public static String shapeOf(JsonObject sheet) {
 		if (sheet == null || !sheet.has(SHAPE_ID)) return null;
 		String id = sheet.get(SHAPE_ID).getAsString();
@@ -76,15 +78,15 @@ public class DruidWildShapeManager {
 		return shapeOf(SheetLoader.getServerSheet(player.getStringUUID())) != null;
 	}
 
-	/** Devuelve al druida a su forma sin avisar: la usa el cambio de personaje. Ver SheetLoader. */
+	/** Returns the druid to their own form without announcing it: used by character switching. See SheetLoader. */
 	public static void clearFor(ServerPlayer player) {
 		revert(player, false);
 	}
 
 	/**
-	 * <p>El zarpazo: los dados del primer ataque de la bestia en la que está, que es lo que 5e llama
-	 * "usas las estadísticas de la bestia". Sin ataque declarado, un 1d6 por Fuerza — el mismo de antes,
-	 * para que una bestia a medio escribir siga siendo jugable.</p>
+	 * <p>The claw swipe: the dice of the first attack of the beast they're shaped into, which is what 5e
+	 * calls "you use the beast's statistics." With no attack declared, a 1d6 by Strength — the same as
+	 * before, so a half-written beast stays playable.</p>
 	 */
 	public static TraitRegistry.UnarmedProfile unarmedProfile(ServerPlayer player) {
 		MonsterRegistry.MonsterStatBlock block = blockOf(SheetLoader.getServerSheet(player.getStringUUID()));
@@ -100,7 +102,7 @@ public class DruidWildShapeManager {
 		return id == null ? null : MonsterRegistry.get(id);
 	}
 
-	/** Las bestias que se pueden elegir: el bestiario filtrado por tipo, sin lista aparte que mantener. */
+	/** The beasts that can be chosen: the bestiary filtered by type, no separate list to maintain. */
 	public static List<String> beastIds() {
 		List<String> beasts = new java.util.ArrayList<>();
 		for (String id : MonsterRegistry.ids()) {
@@ -114,8 +116,8 @@ public class DruidWildShapeManager {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (sheet == null) return;
 		if (shapeOf(sheet) != null) {
-			//Ya transformado: el segundo clic deshace, que es lo que se espera de un botón de alternar y
-			//evita tener que acordarse de un comando para volver.
+			//Already transformed: the second click reverts, which is what's expected of a toggle button
+			//and avoids having to remember a command to change back.
 			revert(player, true);
 			return;
 		}
@@ -126,23 +128,24 @@ public class DruidWildShapeManager {
 			return;
 		}
 
-		//5e: transformarse es una acción. Se comprueba DESPUÉS de validar la bestia (elegir mal no debería
-		//gastar nada) pero ANTES de tocar la hoja. tryAct devuelve true sola fuera de combate (TurnManager.
-		//active==false), así que esto no restringe nada fuera de un encuentro — solo cuenta en turnos.
+		//5e: transforming is an action. Checked AFTER validating the beast (choosing badly shouldn't cost
+		//anything) but BEFORE touching the sheet. tryAct returns true on its own outside combat
+		//(TurnManager.active==false), so this doesn't restrict anything outside an encounter — it only
+		//matters during turns.
 		if (!TurnManager.tryAct(player)) {
 			TurnManager.notifyCantAct(player);
 			return;
 		}
 
-		//La vida a la que vuelve es la que tiene AHORA, antes de tocar nada. En 5e vuelves con los PG que
-		//tenías al transformarte, y el daño que se llevó la bestia se queda con la bestia.
+		//The health they return to is whatever they have RIGHT NOW, before anything is touched. In 5e you
+		//come back with the HP you had when you transformed, and whatever damage the beast took stays with the beast.
 		writeShape(sheet, block, (int) Math.ceil(player.getHealth()));
 		setMaxHealth(player, block.maxHp());
 		player.setHealth(block.maxHp());
 
-		//Velocidad de vuelo de verdad (águila gigante, búho gigante...), no solo el modelo — sin esto el
-		//jugador seguía cayendo como cualquier persona con el cuerpo de un ave. Se guarda si YA podía volar
-		//antes (creativo/espectador) para no quitárselo al volver; revert() lo restaura.
+		//Real flight speed (giant eagle, giant owl...), not just the model — without this the player kept
+		//falling like anyone else does with a bird's body. It's saved whether they could ALREADY fly
+		//before (creative/spectator) so reverting doesn't take it away; revert() restores it.
 		sheet.addProperty(OLD_MAYFLY, player.getAbilities().mayfly);
 		if (block.flies()) {
 			player.getAbilities().mayfly = true;
@@ -157,8 +160,9 @@ public class DruidWildShapeManager {
 		UUID uuid = player.getUUID();
 		MinecraftServer server = player.getServer();
 		TurnManager.scheduleExpiry(DURATION_ROUNDS, DURATION_TICKS, () -> {
-			//Se reengancha por UUID en vez de capturar al jugador: puede haberse desconectado durante los
-			//10 asaltos, y entonces no hay a quién devolver nada (la hoja lo espera para su próxima entrada).
+			//Reattached by UUID instead of capturing the player: they may have disconnected during the 10
+			//rounds, and then there's nobody to revert anything for (the sheet keeps it waiting for their
+			//next login).
 			ServerPlayer stillHere = server == null ? null : server.getPlayerList().getPlayer(uuid);
 			if (stillHere != null) revert(stillHere, true);
 		});
@@ -167,8 +171,8 @@ public class DruidWildShapeManager {
 	}
 
 	/**
-	 * <p>Deshace la transformación y devuelve al druida lo que era. {@code announce} en falso para el
-	 * camino silencioso (cambio de personaje): ahí no hay nada que anunciar porque ya no es ese personaje.</p>
+	 * <p>Undoes the transformation and gives the druid back who they were. {@code announce} false for the
+	 * silent path (character switching): there's nothing to announce there because it's no longer that character.</p>
 	 */
 	public static void revert(ServerPlayer player, boolean announce) {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
@@ -176,16 +180,17 @@ public class DruidWildShapeManager {
 
 		int back = clearShape(sheet, (int) Math.ceil(player.getMaxHealth()));
 
-		//El máximo se recalcula desde la clase y el nivel en vez de guardarse: es la misma cuenta que hace
-		//SheetLoader al entrar al mundo, y guardar un número que ya sabe derivar sería una segunda verdad.
+		//The max is recomputed from class and level instead of being stored: it's the same computation
+		//SheetLoader does when entering the world, and storing a number it already knows how to derive
+		//would be a second source of truth.
 		SheetLoader.applyClassHitPoints(player, sheet);
-		//Nunca por debajo de 1: la forma que cae no mata al druida, lo devuelve (5e). Quien lo quiera
-		//muerto tendrá que volver a bajarlo, ya en su cuerpo.
+		//Never below 1: a shape dropping doesn't kill the druid, it reverts them (5e). Whoever wants them
+		//dead will have to bring them down again, now in their own body.
 		player.setHealth(Math.max(1f, Math.min(player.getMaxHealth(), back)));
 
-		//Aterriza siempre (flying=false): si volvía de una bestia voladora, deja de planear en el aire de
-		//golpe, que es 5e de verdad. mayfly vuelve a lo que tenía ANTES de transformarse — no se le quita un
-		//permiso de creativo/espectador que ya era suyo, ni se le deja uno que la forma le dio prestado.
+		//Always lands (flying=false): if returning from a flying beast, they stop gliding in midair
+		//instantly, which is real 5e. mayfly goes back to whatever it was BEFORE transforming — no
+		//creative/spectator permission they already had gets taken away, and none the shape lent them stays either.
 		boolean restoreMayfly = sheet.has(OLD_MAYFLY) && sheet.get(OLD_MAYFLY).getAsBoolean();
 		sheet.remove(OLD_MAYFLY);
 		player.getAbilities().mayfly = restoreMayfly;
@@ -200,9 +205,10 @@ public class DruidWildShapeManager {
 	}
 
 	/**
-	 * <p>La forma cae a 0: el druida vuelve, no muere. Va en {@code HIGHEST} y cancela el evento para
-	 * llegar <b>antes</b> que {@code DeathSaveManager.onLivingDeath}, que es quien lo tumbaría a
-	 * salvaciones de muerte — un druida que sale de la forma no está caído, está en su cuerpo otra vez.</p>
+	 * <p>The shape drops to 0: the druid comes back, they don't die. It runs at {@code HIGHEST} and
+	 * cancels the event to arrive <b>before</b> {@code DeathSaveManager.onLivingDeath}, which would put
+	 * them into death saves — a druid coming out of the shape isn't downed, they're just back in their
+	 * own body.</p>
 	 */
 	@SubscribeEvent(priority = EventPriority.HIGHEST)
 	public static void onShapeDropped(LivingDeathEvent event) {
@@ -215,16 +221,17 @@ public class DruidWildShapeManager {
 	}
 
 	/**
-	 * <p>Escribe en la hoja los números de la bestia y guarda debajo los del druida. Puro y sin jugador
-	 * delante a propósito: es la parte que puede dejar una ficha corrupta para siempre —un druida con la
-	 * Fuerza de un oso y sin nada que se la devuelva— y {@code JsonContentSelfTest} corre sin juego.</p>
+	 * <p>Writes the beast's numbers onto the sheet and stores the druid's own underneath. Pure and with
+	 * no player in front on purpose: it's the part that can leave a sheet corrupted forever — a druid with
+	 * a bear's Strength and nothing to give it back — and {@code JsonContentSelfTest} runs without the
+	 * game running.</p>
 	 */
 	static void writeShape(JsonObject sheet, MonsterRegistry.MonsterStatBlock block, int returnHp) {
 		sheet.addProperty(SHAPE_ID, block.id());
 		sheet.addProperty(RETURN_HP, returnHp);
 
-		//Guardar que NO había override es tan importante como guardar cuál era: sin esta rama, un druida
-		//sin CA fijada volvería con la de la bestia puesta a mano para siempre.
+		//Recording that there was NO override is just as important as recording what it was: without this
+		//branch, a druid with no fixed AC would come back with the beast's AC set by hand forever.
 		if (sheet.has("armorClassOverride")) sheet.addProperty(OLD_AC, sheet.get("armorClassOverride").getAsInt());
 		else sheet.remove(OLD_AC);
 		sheet.addProperty("armorClassOverride", block.ac());
@@ -236,7 +243,7 @@ public class DruidWildShapeManager {
 		}
 	}
 
-	/** Deshace {@link #writeShape} y devuelve los PG a los que vuelve el druida. */
+	/** Undoes {@link #writeShape} and returns the HP the druid comes back to. */
 	static int clearShape(JsonObject sheet, int fallbackHp) {
 		for (String ability : PHYSICAL) {
 			String key = LONG.get(ability);
@@ -258,14 +265,14 @@ public class DruidWildShapeManager {
 		if (attribute != null) attribute.setBaseValue(value);
 	}
 
-	//--- Ítem de Forma Salvaje: se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos
-	//de interacción por separado. Mismo patrón que el Tótem de Furia
+	//--- Wild Shape item: activated from AbilityItemDispatcher instead of subscribing to the 3
+	//interaction events separately. Same pattern as the Rage Totem
 	//(BarbarianRageManager). ---
 
 	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
-		//Transformado ya: el clic deshace, sin abrir nada. Sin transformar: se elige bestia.
+		//Already transformed: the click reverts, without opening anything. Not transformed: a beast is chosen.
 		if (isShifted(player)) {
 			revert(player, true);
 			return;

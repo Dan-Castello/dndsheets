@@ -1,32 +1,32 @@
 package net.hawthorn.dndsheets;
 
 /**
- * <p>Los tres niveles de iluminación de 5e —luz brillante, penumbra y oscuridad— leídos del nivel de luz
- * real del bloque donde está la criatura. La oscuridad es "muy oscurecida" en el manual: quien está dentro
- * queda <b>efectivamente cegado</b>, y eso ya significa algo en este mod porque {@link Condition#CEGADO}
- * existe con todas sus consecuencias desde la Fase 0.</p>
+ * <p>The three 5e light levels —bright light, dim light, and darkness— read from the actual light level
+ * of the block the creature is standing in. Darkness is "heavily obscured" in the rulebook: whoever is
+ * inside it is <b>effectively blinded</b>, and that already means something in this mod because
+ * {@link Condition#BLINDED} exists with all its consequences since Phase 0.</p>
  *
- * <p>Es la misma jugada que {@link Cover}, en la otra mitad del entorno. Foundry vende iluminación dinámica
- * y Roll20 capas de niebla <em>para simular</em> qué se ve desde dónde; aquí la antorcha ya está encendida y
- * la cueva ya está oscura, con los números que el propio Minecraft calcula tick a tick. Lo único que faltaba
- * era que la mesa los leyera.</p>
+ * <p>It's the same move as {@link Cover}, on the other half of the environment. Foundry sells dynamic
+ * lighting and Roll20 fog-of-war layers <em>to simulate</em> what's visible from where; here the torch is
+ * already lit and the cave is already dark, with the numbers Minecraft itself computes tick by tick. All
+ * that was missing was for the table to read them.</p>
  *
- * <p><b>Dónde caen los cortes.</b> Minecraft da un nivel de luz de 0 a 15 ya mezclado (bloques y cielo, con
- * la hora del día aplicada), así que los umbrales se eligen contra ese número y no contra una escala propia:
- * de 8 en adelante es luz brillante, de 4 a 7 penumbra y por debajo oscuridad. Que la noche a cielo abierto
- * caiga en penumbra no es casualidad ni ajuste fino — es exactamente lo que dice el SRD de la luz de la
- * luna, y sale solo de usar el número de vanilla en vez de inventar uno.</p>
+ * <p><b>Where the cutoffs fall.</b> Minecraft gives a light level from 0 to 15 already blended (blocks and
+ * sky, time of day applied), so the thresholds are chosen against that number rather than a scale of
+ * their own: 8 and up is bright light, 4 to 7 is dim light, and below that is darkness. That open-sky
+ * night falls into dim light isn't coincidence or fine-tuning — it's exactly what the SRD says about
+ * moonlight, and it falls out just from using the vanilla number instead of inventing one.</p>
  *
- * <p>La penumbra da desventaja en las pruebas de Percepción que dependen de la vista — ver
- * {@link VisionManager#inDimLight} y su único llamador, {@code RollAnnouncerProcedure}, que la convierte
- * en desventaja real solo para esa habilidad, no para las otras 17.</p>
+ * <p>Dim light gives disadvantage on Perception checks that rely on sight — see
+ * {@link VisionManager#inDimLight} and its only caller, {@code RollAnnouncerProcedure}, which turns it
+ * into actual disadvantage only for that skill, not for the other 17.</p>
  */
 public enum Light {
 	BRIGHT, DIM, DARK;
 
-	/** Desde este nivel de luz de Minecraft hay luz brillante. */
+	/** From this Minecraft light level onward, it's bright light. */
 	static final int BRIGHT_FROM = 8;
-	/** Desde este nivel hay penumbra; por debajo, oscuridad. */
+	/** From this level onward, it's dim light; below it, darkness. */
 	static final int DIM_FROM = 4;
 
 	public static Light fromLightLevel(int lightLevel) {
@@ -36,21 +36,20 @@ public enum Light {
 	}
 
 	/**
-	 * <p>Lo que ve quien tiene visión en la oscuridad: la oscuridad le cuenta como penumbra, y la penumbra
-	 * sigue siendo penumbra. Es literalmente la frase del SRD, y por eso está escrita como una
-	 * transformación de un nivel a otro en vez de como un {@code if} suelto dentro de la regla que ciega —
-	 * así el rasgo entra una sola vez y cualquier regla que se escriba mañana sobre {@link Light} ya lo
-	 * respeta.</p>
+	 * <p>What someone with darkvision sees: darkness counts as dim light for them, and dim light stays
+	 * dim light. It's literally the SRD's wording, which is why it's written as a transformation from one
+	 * level to another instead of a loose {@code if} inside the blinding rule — that way the trait is
+	 * applied in exactly one place and any rule written tomorrow about {@link Light} already respects it.</p>
 	 *
-	 * <p>El <em>alcance</em> (60 pies, 120 los enanos de las profundidades) no entra aquí porque esta regla
-	 * mira dónde estás tú, no a qué distancia ves: de pie en una cueva a oscuras, tener alcance 60 o 120 da
-	 * el mismo resultado. Los pies se guardan igualmente en la ficha, que es donde un jugador los lee.</p>
+	 * <p>The <em>range</em> (60 feet, 120 for deep gnomes) doesn't enter here because this rule looks at
+	 * where you are, not how far you can see: standing in a dark cave, having a range of 60 or 120 gives
+	 * the same result. The feet are still stored on the sheet, which is where a player reads them.</p>
 	 */
 	public Light withDarkvision(boolean hasDarkvision) {
 		return hasDarkvision && this == DARK ? DIM : this;
 	}
 
-	/** En oscuridad se está "muy oscurecido": ciego a efectos de reglas. */
+	/** In darkness you are "heavily obscured": blind for rules purposes. */
 	public boolean blinds() {
 		return this == DARK;
 	}

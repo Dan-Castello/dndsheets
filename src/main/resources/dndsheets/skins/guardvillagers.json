@@ -2,7 +2,7 @@
   "mod": "guardvillagers",
   "name": "Guard Villagers",
   "url": "https://www.curseforge.com/minecraft/mc-mods/guard-villagers",
-  "_nota": "Un humano armado de verdad, ni saqueador ni zombi con casco. Dibuja el equipo del bloque \"appearance\", asi que cada uno sigue viendose distinto del de al lado.",
+  "_note": "A truly armed human, neither a pillager nor a zombie in a helmet. It draws the equipment of the \"appearance\" block, so each one still looks different from the one next to it.",
   "skins": {
     "dndsheets:guard": "guardvillagers:guard",
     "dndsheets:knight": "guardvillagers:guard",

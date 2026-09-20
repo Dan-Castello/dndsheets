@@ -31,17 +31,17 @@ public class SheetClientMessage {
 	}
 
 	public static void handle(byte[] data) {
-		//UTF-8 explícito: sin esto, un jugador y otro maquina en un mismo LAN pueden tener codificaciones
-		//por defecto distintas, y un nombre de raza/trasfondo con tilde llega ilegible o directamente rompe
-		//el JSON (ver el mismo fix en cada .getBytes()/new String(...) del transporte de hojas).
+		//Explicit UTF-8: without this, one player's machine and another's on the same LAN can have different
+		//default encodings, and a race/background name with an accent arrives unreadable or outright breaks
+		//the JSON (see the same fix on every .getBytes()/new String(...) in sheet transport).
 		String json = new String(data, java.nio.charset.StandardCharsets.UTF_8);
 		JsonObject sheet = JsonParser.parseString(json).getAsJsonObject();
 		SheetLoader.setClient(sheet);
-		//Y si la hoja está ABIERTA en pantalla, se vuelve a rellenar. Sin esto, cambiar de personaje (o
-		//descansar, o aplicar un preset) con la hoja abierta la dejaba enseñando al personaje anterior; y
-		//como casi cualquier interacción de esa pantalla guarda lo que tienen sus campos
-		//(CharacterSheetSaveProcedure), la primera tirada después de cambiar escribía los datos del
-		//personaje viejo ENCIMA del nuevo. No era solo que no se refrescara: se perdían datos.
+		//And if the sheet is OPEN on screen, it gets refilled. Without this, switching character (or
+		//resting, or applying a preset) with the sheet open left it showing the previous character; and
+		//since almost any interaction on that screen saves whatever its fields hold
+		//(CharacterSheetSaveProcedure), the first roll after switching would write the old character's
+		//data OVER the new one. It wasn't just a stale display: data was actually lost.
 		net.hawthorn.dndsheets.client.gui.CharacterSheetScreen.refreshIfOpen();
 		net.hawthorn.dndsheets.client.gui.SkillProficiencyScreen.refreshIfOpen();
 		net.hawthorn.dndsheets.client.gui.CharacterSetupScreen.refreshIfOpen();

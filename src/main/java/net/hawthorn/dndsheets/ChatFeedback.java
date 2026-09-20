@@ -9,11 +9,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 
 /**
- * <p>Punto único de formato para todo lo que el mod anuncia por chat (tiradas, ataques, hechizos,
- * salvaciones de muerte). Antes cada sitio armaba una línea de texto plano; ahora todo pasa por aquí,
- * con una etiqueta de categoría en color, nombres en oro, impactos en verde, fallos en gris, daño en
- * rojo y eventos de muerte en rojo oscuro — para poder seguir lo que pasa de un vistazo en un chat con
- * mucho movimiento, en vez de tener que leer cada línea entera.</p>
+ * <p>Single formatting point for everything the mod announces in chat (rolls, attacks, spells, death
+ * saves). Previously every call site built its own plain-text line; now it all goes through here, with a
+ * colored category tag, names in gold, hits in green, misses in gray, damage in red, and death events in
+ * dark red — so what's happening can be followed at a glance in a busy chat, instead of having to read
+ * every full line.</p>
  */
 public class ChatFeedback {
 	private static final ChatFormatting NAME = ChatFormatting.GOLD;
@@ -27,17 +27,17 @@ public class ChatFeedback {
 	private static final ChatFormatting MAGIC_TAG = ChatFormatting.LIGHT_PURPLE;
 	private static final ChatFormatting ROLL_TAG = ChatFormatting.BLUE;
 
-	//Color único para activar un recurso de clase (Furia, Segundo Aliento, Inspiración Bárdica...).
-	//Antes cada manager elegía su propio ChatFormatting suelto — Furia en RED, el mismo color que ya
-	//significa "daño recibido" en el resto del mod — sin relación con ninguna paleta real. Package-private
-	//a propósito: solo lo usan los managers de recurso de clase, todos en este mismo paquete.
+	//Single color for activating a class resource (Rage, Second Wind, Bardic Inspiration...). Previously
+	//each manager picked its own loose ChatFormatting — Rage in RED, the same color that already means
+	//"damage taken" everywhere else in the mod — with no relation to any real palette. Package-private on
+	//purpose: only used by the class-resource managers, all in this same package.
 	static final ChatFormatting RESOURCE = ChatFormatting.YELLOW;
 
-	//Antes era server-wide (broadcastSystemMessage): con una mesa grande, cada tirada/ataque/hechizo de UN
-	//combate lo veía todo el servidor, ahogando el chat de cualquiera que no estuviera metido en esa pelea
-	//(ni hablar de dos grupos jugando escenas separadas a la vez). Se acota a quien esté cerca de verdad —
-	//mismo radio que ya usa el modo turnos para decidir quién participa (TurnManager.DEFAULT_RADIUS),
-	//consistente con "quién podría llegar a estar en este encuentro".
+	//Used to be server-wide (broadcastSystemMessage): with a large table, every roll/attack/spell from
+	//ONE fight was seen by the whole server, drowning out the chat of anyone not involved in that fight
+	//(not to mention two groups playing separate scenes at once). Scoped to whoever's actually nearby —
+	//same radius the turn-order mode already uses to decide who participates (TurnManager.DEFAULT_RADIUS),
+	//consistent with "who could plausibly be part of this encounter".
 	public static void broadcast(Entity source, Component message) {
 		Level level = source.level();
 		if (level.isClientSide() || !(level instanceof ServerLevel serverLevel)) return;
@@ -54,18 +54,18 @@ public class ChatFeedback {
 		return result;
 	}
 
-	//Nombres de personaje/monstruo/arma/hechizo vienen de JSON de contenido o de la hoja, no de código fijo
-	//— un "§" en un nombre es el código de formato de Minecraft, así que sangraría color/negrita al resto
-	//de la línea de chat de TODOS los jugadores aunque venga dentro de un Component.literal. name() y
-	//dim() son los dos puntos por los que pasa ese texto interpolado en todo este archivo.
+	//Character/monster/weapon/spell names come from content JSON or the sheet, not from fixed code — a
+	//"§" in a name is Minecraft's formatting code, so it would bleed color/bold into the rest of the chat
+	//line for ALL players even inside a Component.literal. name() and dim() are the two points that all
+	//interpolated text in this whole file passes through.
 	private static String stripFormatting(String text) {
 		return text == null ? null : text.replace('§', '?');
 	}
 
-	//ContentNames y no literal: por aqui pasan tanto el nombre de un PERSONAJE (texto libre de la hoja)
-	//como el de un MONSTRUO (viene del pack de contenido y puede ser una clave de idioma). El primero no
-	//se parece a ninguna clave y se pinta igual que antes; el segundo se resuelve en el idioma de quien
-	//lee. Distinguirlos aqui haria falta pasar de donde viene cada uno por media docena de firmas.
+	//ContentNames and not literal: both a CHARACTER's name (free text from the sheet) and a MONSTER's
+	//(comes from the content pack and can be a language key) pass through here. The former doesn't look
+	//like any key and renders the same as before; the latter resolves in the reader's language.
+	//Distinguishing them here would mean threading where each one comes from through half a dozen signatures.
 	private static MutableComponent name(String text) {
 		return ContentNames.of(stripFormatting(text)).withStyle(NAME, ChatFormatting.BOLD);
 	}
@@ -74,7 +74,7 @@ public class ChatFeedback {
 		return Component.literal(stripFormatting(text)).withStyle(ChatFormatting.GRAY);
 	}
 
-	//Overloads para texto ya traducido (Component.translatable) en vez de español fijo interpolado a mano.
+	//Overloads for text that's already translated (Component.translatable) instead of hand-interpolated fixed text.
 	private static MutableComponent name(Component text) {
 		return text.copy().withStyle(NAME, ChatFormatting.BOLD);
 	}
@@ -83,28 +83,28 @@ public class ChatFeedback {
 		return text.copy().withStyle(ChatFormatting.GRAY);
 	}
 
-	/** Marca del resumen dentro de una insertion. Público: {@code client.CombatLogOverlay} lo extrae. */
+	/** Marker for the summary inside an insertion. Public: {@code client.CombatLogOverlay} extracts it. */
 	public static final String SUMMARY_PREFIX = "dndlog:";
 
-	//Resumen de UNA línea para el panel en pantalla (CombatLogOverlay), colgado DENTRO del propio
-	//Component como "insertion" de un trozo vacío: el chat no lo pinta, la red lo serializa gratis con
-	//el estilo, y el overlay lo extrae — una sola fuente de verdad (este archivo) y cero mensajes
-	//nuevos. Solo datos (nombres, números, símbolos), nunca prosa: las palabras viven en las claves
-	//traducibles de la línea completa, y un resumen con palabras fijas repetiría el bug #15.
+	//ONE-line summary for the on-screen panel (CombatLogOverlay), hung INSIDE the Component itself as
+	//the "insertion" of an empty chunk: chat doesn't render it, the network serializes it for free along
+	//with the style, and the overlay extracts it — a single source of truth (this file) and zero new
+	//messages. Data only (names, numbers, symbols), never prose: the words live in the full line's
+	//translatable keys, and a summary with fixed words would repeat bug #15.
 	private static MutableComponent withSummary(MutableComponent full, String summary) {
 		return full.append(Component.literal("").withStyle(style -> style.withInsertion(SUMMARY_PREFIX + summary)));
 	}
 
-	//"15 = 13[1d20] + 2" → "15": el total es lo único que el resumen necesita del desglose.
+	//"15 = 13[1d20] + 2" → "15": the total is the only thing the summary needs from the breakdown.
 	private static String totalOf(String rollText) {
 		if (rollText == null) return "";
 		int equals = rollText.indexOf('=');
 		return (equals > 0 ? rollText.substring(0, equals) : rollText).trim();
 	}
 
-	//"20 = 18[1d20] + 2 (Iniciativa)" → "Iniciativa": algunos llamadores pegan el contexto al final de
-	//la propia expresión en vez de pasarlo aparte, y sin rescatarlo el resumen quedaba en "Mago · 22" a
-	//secas — el número sin saber de qué era.
+	//"20 = 18[1d20] + 2 (Initiative)" → "Initiative": some callers append the context to the end of the
+	//expression itself instead of passing it separately, and without recovering it the summary was left
+	//as just "Wizard · 22" — the number with no idea what it was for.
 	private static String contextOf(String rollText) {
 		if (rollText == null) return "";
 		int open = rollText.lastIndexOf('(');
@@ -112,7 +112,7 @@ public class ChatFeedback {
 		return open >= 0 && close > open ? rollText.substring(open + 1, close).trim() : "";
 	}
 
-	//[Tirada] Fulano tira Fuerza: 15=15[1d20]+2
+	//[Roll] So-and-so rolls Strength: 15=15[1d20]+2
 	public static MutableComponent roll(String characterName, String context, String rollText) {
 		MutableComponent msg = tag("chat.dndsheets.tag.roll", ROLL_TAG).append(name(characterName));
 		msg.append(dim(context != null && !context.isBlank()
@@ -124,7 +124,7 @@ public class ChatFeedback {
 			+ (summaryContext.isBlank() ? "" : " · " + summaryContext));
 	}
 
-	//[Tirada] Fulano tira: 15=15[1d20]+2 (Fuerza) y 7=7[1d6]+2 (Daño)  — botones con varias tiradas a la vez.
+	//[Roll] So-and-so rolls: 15=15[1d20]+2 (Strength) and 7=7[1d6]+2 (Damage) — buttons with several rolls at once.
 	public static MutableComponent multiRoll(String characterName, java.util.List<String> contexts, java.util.List<String> rollTexts) {
 		MutableComponent msg = tag("chat.dndsheets.tag.roll", ROLL_TAG).append(name(characterName))
 			.append(dim(Component.translatable("chat.dndsheets.roll.multi_intro")));
@@ -136,20 +136,20 @@ public class ChatFeedback {
 			if (context != null && !context.isBlank()) msg.append(dim(Component.translatable("chat.dndsheets.roll.context_paren", context)));
 			if (totals.length() > 0) totals.append(" / ");
 			totals.append(totalOf(rollTexts.get(i)));
-			//El contexto también en el resumen — la mayoría de las tiradas simples entra por AQUÍ (una
-			//lista de un elemento), y sin esto el panel enseñaba "Mago · 22" sin decir 22 de QUÉ.
+			//The context in the summary too — most simple rolls go through HERE (a one-element list),
+			//and without this the panel showed "Wizard · 22" without saying 22 of WHAT.
 			String pieceContext = context != null && !context.isBlank() ? context : contextOf(rollTexts.get(i));
 			if (!pieceContext.isBlank()) totals.append(rollTexts.size() == 1 ? " · " : " ").append(pieceContext);
 		}
 		return withSummary(msg, characterName + " · " + totals);
 	}
 
-	//[Tirada] La tirada no funcionó: <motivo>
+	//[Roll] The roll didn't work: <reason>
 	public static MutableComponent rollFailed(String reason) {
 		return tag("chat.dndsheets.tag.roll", ChatFormatting.RED).append(Component.literal(reason).withStyle(ChatFormatting.RED));
 	}
 
-	//[Combate] Fulano golpea con Espada: 7=7[1d6]+4  (muñeco de pruebas, sin CA de por medio)
+	//[Combat] So-and-so hits with Sword: 7=7[1d6]+4  (training dummy, no AC involved)
 	public static MutableComponent damageOnly(String characterName, String weaponName, String rollText) {
 		return withSummary(tag("chat.dndsheets.tag.combat", COMBAT_TAG)
 			.append(name(characterName))
@@ -158,7 +158,7 @@ public class ChatFeedback {
 			characterName + " · " + ContentNames.plain(weaponName) + " · " + totalOf(rollText));
 	}
 
-	//[Combate] Fulano ataca a Mengano con Espada: 15 vs CA 13 → ¡Impacto! Daño: 7=7[1d6]+4
+	//[Combat] So-and-so attacks Whoever with Sword: 15 vs AC 13 → Hit! Damage: 7=7[1d6]+4
 	public static MutableComponent attackResult(String attackerName, String targetName, String weaponName, String rollText, int ac, boolean hit, String damageText) {
 		MutableComponent msg = tag("chat.dndsheets.tag.combat", COMBAT_TAG)
 			.append(name(attackerName))
@@ -172,15 +172,15 @@ public class ChatFeedback {
 		} else {
 			msg.append(Component.translatable("chat.dndsheets.combat.miss").withStyle(MISS, ChatFormatting.ITALIC));
 		}
-		//"✓ 6" = impactó por 6 de daño; "—" = falló. Solo símbolos ya usados por el resto del mod.
+		//"✓ 6" = hit for 6 damage; "—" = missed. Only symbols already used elsewhere in the mod.
 		return withSummary(msg, ContentNames.plain(attackerName) + " ▶ " + ContentNames.plain(targetName) + " · " + totalOf(rollText)
 			+ (hit ? " ✓ " + totalOf(damageText) : " —"));
 	}
 
-	//Igual que arriba, más una nota de Inspiración de Bardo pegada a la MISMA línea (0 = sin inspiración,
-	//no agrega nada). Antes cada ataque con inspiración activa eran DOS broadcast() separados ("Fulano usa
-	//su Inspiración de Bardo" + la línea del ataque en sí) — mismo evento, mismo turno, el doble de líneas
-	//en un chat que ya se llena rápido con varios jugadores y enemigos actuando por ronda.
+	//Same as above, plus a Bardic Inspiration note appended to the SAME line (0 = no inspiration, adds
+	//nothing). Previously every attack with active inspiration was TWO separate broadcast() calls
+	//("So-and-so uses their Bardic Inspiration" + the attack line itself) — same event, same turn, twice
+	//the lines in a chat that already fills up fast with several players and enemies acting per round.
 	public static MutableComponent attackResult(String attackerName, String targetName, String weaponName, String rollText, int ac, boolean hit, String damageText, int inspiration) {
 		MutableComponent msg = attackResult(attackerName, targetName, weaponName, rollText, ac, hit, damageText);
 		if (inspiration > 0) msg.append(dim(Component.translatable("chat.dndsheets.combat.inspiration_note", inspiration)));
@@ -188,9 +188,9 @@ public class ChatFeedback {
 	}
 
 	/**
-	 * <p>Nota de Resistencia Legendaria en la misma línea de la salvación. Sin decirlo, un jefe que falla la
-	 * tirada y no recibe daño se lee como un fallo del mod, no como el recurso que acaba de gastar — y el
-	 * grupo necesita saber que le queda uno menos, que es justo la información que hace interesante la regla.</p>
+	 * <p>Legendary Resistance note on the same line as the save. Without saying so, a boss that fails the
+	 * roll and takes no damage reads as a mod bug, not as the resource it just spent — and the group needs
+	 * to know it has one fewer left, which is exactly the information that makes the rule interesting.</p>
 	 */
 	public static MutableComponent withLegendaryResistance(MutableComponent msg, boolean used, int left) {
 		if (!used) return msg;
@@ -199,16 +199,16 @@ public class ChatFeedback {
 	}
 
 	/**
-	 * <p>Pega una nota de cobertura a la MISMA línea del ataque, igual que hace la de Inspiración. Sin ella,
-	 * un fallo contra una CA más alta de lo que dice la hoja del monstruo se lee como un error del mod y no
-	 * como el parapeto que es.</p>
+	 * <p>Appends a cover note to the SAME line as the attack, the same way the Inspiration note does.
+	 * Without it, a miss against an AC higher than the monster's sheet says reads as a mod error and not
+	 * as the cover it actually is.</p>
 	 */
 	public static MutableComponent withCover(MutableComponent msg, Cover cover) {
 		if (cover == Cover.NONE) return msg;
-		return msg.append(dim(Component.translatable("chat.dndsheets.combat.cover_note", cover.label(), cover.bonus())));
+		return msg.append(dim(Component.translatable("chat.dndsheets.combat.cover_note", Component.translatable(cover.langKey()), cover.bonus())));
 	}
 
-	//[Magia] Fulano cura a Mengano con Curar Heridas: 8=8[1d8]+3 PG
+	//[Magic] So-and-so heals Whoever with Cure Wounds: 8=8[1d8]+3 HP
 	public static MutableComponent healResult(String casterName, String targetName, String spellName, String healText) {
 		return withSummary(tag("chat.dndsheets.tag.magic", MAGIC_TAG)
 			.append(name(casterName))
@@ -219,7 +219,7 @@ public class ChatFeedback {
 			casterName + " ▶ " + ContentNames.plain(targetName) + " · +" + totalOf(healText));
 	}
 
-	//[Magia] Fulano lanza Bola de Fuego contra Mengano: salvación 12 vs CD 15 → Falla la salvación. Daño: 24
+	//[Magic] So-and-so casts Fireball at Whoever: save 12 vs DC 15 → Fails the save. Damage: 24
 	public static MutableComponent saveResult(String casterName, String targetName, String spellName, String saveRollText, int dc, boolean saved, Component outcomeLabel, String damageText) {
 		MutableComponent msg = tag("chat.dndsheets.tag.magic", MAGIC_TAG)
 			.append(name(casterName))
@@ -231,19 +231,19 @@ public class ChatFeedback {
 			msg.append(dim(Component.translatable("chat.dndsheets.magic.damage_label")));
 			msg.append(Component.literal(damageText).withStyle(DAMAGE, ChatFormatting.BOLD));
 		}
-		//"12/CD 15 ✓" = salvó; "— 24" = falló y comió 24. Mismos símbolos que el resumen de ataque.
-		return withSummary(msg, ContentNames.plain(spellName) + " ▶ " + ContentNames.plain(targetName) + " · " + totalOf(saveRollText) + "/CD " + dc
+		//"12/DC 15 ✓" = saved; "— 24" = failed and took 24. Same symbols as the attack summary.
+		return withSummary(msg, ContentNames.plain(spellName) + " ▶ " + ContentNames.plain(targetName) + " · " + totalOf(saveRollText) + "/DC " + dc
 			+ (saved ? " ✓" : " —") + (damageText != null ? " " + totalOf(damageText) : ""));
 	}
 
-	//[Muerte] ¡Fulano ha caído a 0 PG y necesita salvaciones de muerte!
+	//[Death] So-and-so has dropped to 0 HP and needs death saves!
 	public static MutableComponent downed(String characterName) {
 		return tag("chat.dndsheets.tag.death", DANGER)
 			.append(name(characterName))
 			.append(Component.translatable("chat.dndsheets.death.downed").withStyle(DANGER));
 	}
 
-	//[Muerte] Fulano tira salvación de muerte: 15 → Éxitos ●●○ Fallos ○○○
+	//[Death] So-and-so rolls a death save: 15 → Successes ●●○ Failures ○○○
 	public static MutableComponent deathSaveRoll(String characterName, int rollValue, int successes, int failures) {
 		return withSummary(tag("chat.dndsheets.tag.death", DANGER)
 			.append(name(characterName))
@@ -262,14 +262,14 @@ public class ChatFeedback {
 		return builder.toString();
 	}
 
-	//[Muerte] ¡Fulano saca un 20 natural en su salvación de muerte: vuelve en sí!
+	//[Death] So-and-so rolls a natural 20 on their death save: they come to!
 	public static MutableComponent naturalTwenty(String characterName) {
 		return tag("chat.dndsheets.tag.death", GOOD)
 			.append(name(characterName))
 			.append(Component.translatable("chat.dndsheets.death.natural_twenty").withStyle(GOOD, ChatFormatting.BOLD));
 	}
 
-	//[Muerte] Fulano reanima a Mengano.
+	//[Death] So-and-so revives Whoever.
 	public static MutableComponent revived(String reviverName, String targetName) {
 		return tag("chat.dndsheets.tag.death", GOOD)
 			.append(name(reviverName))
@@ -278,7 +278,7 @@ public class ChatFeedback {
 			.append(dim("."));
 	}
 
-	//[Muerte] Fulano deja de luchar y muere.
+	//[Death] So-and-so stops fighting and dies.
 	public static MutableComponent givesUp(String characterName) {
 		return tag("chat.dndsheets.tag.death", DANGER)
 			.append(name(characterName))

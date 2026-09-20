@@ -10,8 +10,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: entrega un arma cargada a un jugador (equivalente en GUI a /dndweapons
-//give), desde WeaponGiveListScreen.
+//Client (the DM) -> server: hands a loaded weapon to a player (the GUI equivalent of /dndweapons
+//give), from WeaponGiveListScreen.
 public class WeaponGiveMessage {
 	String targetUuid;
 	String weaponId;

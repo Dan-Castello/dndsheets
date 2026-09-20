@@ -1,0 +1,16 @@
+{
+  "name": "gui.dndsheets.guide.entry.glossary",
+  "category": "dndsheets:first_steps",
+  "icon": "minecraft:book",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.glossary_1"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.glossary_2"
+    }
+  ]
+}

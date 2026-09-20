@@ -9,15 +9,15 @@ import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * <p>Dos ítems de comodidad para no depender del DM tecleando {@code /dndturns} cada vez: un jugador
- * con el turno puede pasarlo él mismo ({@code {dndsheets:{turnNext:true}}}, Brújula) o deshacer su
- * propia acción para elegir de nuevo sin perder el turno ({@code {dndsheets:{turnUndo:true}}}, Añico de
- * Eco). Ambos solo funcionan para quien tiene el turno ahora mismo — ver {@link TurnManager#isCurrentActor}.</p>
+ * <p>Two convenience items so players don't depend on the DM typing {@code /dndturns} every time: a
+ * player with the turn can end it themself ({@code {dndsheets:{turnNext:true}}}, Compass) or undo their
+ * own action to choose again without losing the turn ({@code {dndsheets:{turnUndo:true}}}, Echo Shard).
+ * Both only work for whoever has the turn right now — see {@link TurnManager#isCurrentActor}.</p>
  */
 public class TurnItemManager {
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos de interacción por
-	//separado.
+	//Triggered from AbilityItemDispatcher instead of subscribing to the 3 interaction events
+	//separately.
 	static void tryUse(PlayerInteractEvent event, boolean isNext) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player) || !(event.getEntity().level() instanceof ServerLevel level)) return;

@@ -9,8 +9,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: entrega uno de los ítems "fijos" de GiveableItem a un jugador, desde
-//GiveItemListScreen (equivalente en GUI a /dndsheet restkit|rageitem|..., /dndmonsters dmtool|movetool,
+//Client (the DM) -> server: gives one of GiveableItem's "fixed" items to a player, from
+//GiveItemListScreen (GUI equivalent of /dndsheet restkit|rageitem|..., /dndmonsters dmtool|movetool,
 ///dndnotes give).
 public class GiveItemMessage {
 	GiveableItem kind;
@@ -35,7 +35,7 @@ public class GiveItemMessage {
 		NetworkEvent.Context context = contextSupplier.get();
 		NetworkUtil.handleOnServer(context, () -> DndsheetsMod.withDmTarget(context, message.targetUuid, target -> {
 			for (ItemStack stack : message.kind.stacks()) target.getInventory().add(stack);
-			target.sendSystemMessage(Component.translatable("chat.dndsheets.item.received", message.kind.label()));
+			target.sendSystemMessage(Component.translatable("chat.dndsheets.item.received", Component.translatable(message.kind.label())));
 		}));
 	}
 }

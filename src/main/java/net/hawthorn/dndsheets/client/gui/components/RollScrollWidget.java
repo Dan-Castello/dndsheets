@@ -56,12 +56,12 @@ public class RollScrollWidget extends AbstractScrollWidget {
     }
 
     /**
-     * <p>Fondo del tomo en vez del de vanilla. {@code AbstractScrollWidget.renderBorder} rellena todo el
-     * rectángulo de gris y mete un negro un píxel por dentro, con los dos colores fijos — sobre el
-     * pergamino de la hoja eso es un ladrillo gris y negro, el widget más grande de la pestaña y el que
-     * más desentonaba.</p>
+     * <p>Tome background instead of vanilla's. {@code AbstractScrollWidget.renderBorder} fills the whole
+     * rectangle in gray and puts a black one pixel inside, with both colors fixed — on the
+     * character sheet's parchment that's a gray-and-black brick, the tab's largest widget and the
+     * one that clashed the most.</p>
      *
-     * <p>Se conserva la señal de foco que daba el blanco de vanilla: el marco se enciende igual.</p>
+     * <p>The focus signal that vanilla's white used to give is preserved: the frame still lights up.</p>
      */
     @Override
     protected void renderBackground(GuiGraphics guiGraphics) {
@@ -96,13 +96,13 @@ public class RollScrollWidget extends AbstractScrollWidget {
     }
 
     /**
-     * <p>Vacía la lista interna y devuelve los widgets de cada fila para que el screen los saque de sí
-     * mismo con {@code removeWidget} (este widget no controla ese registro — ver el comentario de
-     * {@link #addListItem}). Sin esto, repoblar la lista tras una hoja nueva del servidor (cambiar de
-     * raza, aplicar un preset, descansar, subir de nivel...) apilaba filas viejas encima de las nuevas
-     * para siempre: cada fila de más quedaba con un botón de borrar cuyo índice ya no correspondía a
-     * nada real en el array de la hoja, y tarde o temprano reventaba con
-     * {@code IndexOutOfBoundsException} al borrar.</p>
+     * <p>Empties the internal list and returns each row's widgets so the screen can remove them from
+     * itself with {@code removeWidget} (this widget doesn't control that registration — see the comment on
+     * {@link #addListItem}). Without this, repopulating the list after a new sheet from the server (changing
+     * race, applying a preset, resting, leveling up...) would stack old rows on top of the new ones
+     * forever: each leftover row ended up with a delete button whose index no longer matched
+     * anything real in the sheet's array, and sooner or later it would blow up with
+     * {@code IndexOutOfBoundsException} on delete.</p>
      */
     public List<AbstractWidget> clearAndCollectWidgets() {
         List<AbstractWidget> widgets = new ArrayList<>();
@@ -122,8 +122,8 @@ public class RollScrollWidget extends AbstractScrollWidget {
      * @param button
      */
     public int removeListItem(Button button) {
-        int toRemove = -1; //Antes se quedaba en 0 si no encontraba el botón, que es un índice real: borraba
-        //la fila equivocada en silencio en vez de avisar que ese botón no era de esta lista.
+        int toRemove = -1; //Previously it stayed at 0 if the button wasn't found, which is a real index: it would silently
+        //delete the wrong row instead of signaling that button wasn't part of this list.
         for (int i = 0; i < list.size(); i++) {
             ListItem item = list.get(i);
             if (item.deleteButton == button) {
@@ -192,9 +192,9 @@ public class RollScrollWidget extends AbstractScrollWidget {
         return names.toArray(arr);
     }
 
-    //F12 del audit: containerTick() llamaba a esto 20 veces por segundo solo para iterar el resultado una
-    //vez y tirarlo — se reconstruía un ArrayList + array nuevos en cada tick aunque la lista de armas no
-    //hubiera cambiado. tickNameBoxes()/forwardKeyToFocusedNameBox() iteran la lista interna directo.
+    //Audit finding F12: containerTick() called this 20 times per second just to iterate the result
+    //once and discard it — a new ArrayList + array were rebuilt every tick even when the weapon list
+    //hadn't changed. tickNameBoxes()/forwardKeyToFocusedNameBox() iterate the internal list directly.
     public void tickNameBoxes() {
         list.forEach((item) -> item.nameBox.tick());
     }
@@ -237,11 +237,11 @@ public class RollScrollWidget extends AbstractScrollWidget {
     @Override
     protected void renderContents(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
         if (list.isEmpty()) return;
-        //Rango de filas realmente visibles calculado directo, no recorriendo todas para comparar límites:
-        //antes CADA frame reposicionaba y comprobaba límites de las 3 pilas de botones + el EditBox de
-        //CADA fila, visible o no (varios EditBox.render() de sobra son bastante más caros que un botón
-        //simple) — con una pestaña de Ataques larga (muchas armas auto-pobladas + añadidas a mano) eso se
-        //notaba al desplazar. Un margen de una fila de cada lado evita "pop" en el borde del recorte.
+        //Range of actually visible rows computed directly, without iterating all of them to check bounds:
+        //before, EVERY frame repositioned and checked bounds for the 3 button stacks + the EditBox of
+        //EVERY row, visible or not (several extra EditBox.render() calls are considerably more expensive than a
+        //simple button) — with a long Attacks tab (many auto-populated weapons + manually added ones) this was
+        //noticeable while scrolling. A one-row margin on each side avoids "pop" at the clip's edge.
         int scroll = (int) this.scrollAmount();
         int first = Math.max(0, scroll / separation - 1);
         int last = Math.min(list.size() - 1, (scroll + this.getHeight()) / separation + 1);
@@ -293,9 +293,9 @@ public class RollScrollWidget extends AbstractScrollWidget {
             isActive = (item.nameBox.getY() >= this.getY() - 16) && (item.nameBox.getY() <= this.getY() + 16 + this.getHeight());
             if (isActive) {
                 item.nameBox.render(guiGraphics, mouseX, mouseY, partialTicks);
-                //Después de render(): el marco tapa el anillo gris que el EditBox se pinta solo. Los campos
-                //de la pestaña principal se enmarcan desde CharacterSheetScreen recorriendo el guistate,
-                //pero estos se crean aquí dentro y no pasan por ahí, así que se quedaban sin marco.
+                //After render(): the frame covers the gray ring the EditBox paints on its own. The fields
+                //on the main tab get framed by CharacterSheetScreen iterating over the guistate,
+                //but these are created here internally and don't go through that, so they were left without a frame.
                 TomeField.frameWidget(guiGraphics, item.nameBox.getX(), item.nameBox.getY(),
                     item.nameBox.getWidth(), item.nameBox.getHeight(), item.nameBox.isFocused());
             }

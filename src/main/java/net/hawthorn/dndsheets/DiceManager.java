@@ -14,20 +14,20 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
-//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
-//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
-//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
+//No stability contract: this mod doesn't publish a versioned API (the DndSheetsApi facade was
+//deleted — 233 lines that not a single caller used, not even the addons, which come in through here).
+//An external mod calling these methods is exposed to their signature changing without notice. The only
+//thing intended for external consumption is the api/event events, which do have real consumers.
 public class DiceManager {
 
-	//Motor de TODAS las tiradas del mod: estos Pattern/Logger se compilaban/re-obtenían en cada tirada
-	//(cada golpe, cada tirada de habilidad), así que se cachean una sola vez como campos estáticos.
+	//Engine behind ALL of the mod's rolls: these Pattern/Logger objects used to be compiled/re-fetched on
+	//every roll (every hit, every skill check), so they're cached once as static fields.
 	private static final Logger LOGGER = LogManager.getLogger(DndsheetsMod.MODID);
-	//El pretty-printer mete ENTRE CORCHETES los dados de un grupo, separados por coma cuando hay más de
-	//uno: "1d1" sale como "1 = 1[1]", pero "2d6 + 1" sale como "5 = 4[1, 3] + 1". El patrón de antes era
-	//\[(\d+)] —un solo número— así que en cuanto había dos dados NO casaba y sumaba cero. Eso hacía que un
-	//crítico no doblara NADA en ningún arma de varios dados: mandoble y martillo (2d6) y los ataques de
-	//monstruo de 2d8/2d10 pegaban en un crítico exactamente lo mismo que en un golpe normal.
+	//The pretty-printer puts the dice of a group IN BRACKETS, comma-separated when there's more than
+	//one: "1d1" comes out as "1 = 1[1]", but "2d6 + 1" comes out as "5 = 4[1, 3] + 1". The old pattern was
+	//\[(\d+)] — a single number — so as soon as there were two dice it did NOT match and added zero. That
+	//meant a critical hit doubled NOTHING on any multi-die weapon: greatsword and maul (2d6), and the 2d8/2d10
+	//monster attacks, hit on a critical exactly the same as on a normal hit.
 	private static final Pattern BRACKETED_DIE_PATTERN = Pattern.compile("\\[([\\d,\\s]+)]");
 	private static final Pattern ABSURD_DICE_COUNT_PATTERN = Pattern.compile("(\\d+)d\\d");
 	private static final Pattern DICE_NOTATION_PATTERN = Pattern.compile("\\d*d\\d+");
@@ -43,15 +43,15 @@ public class DiceManager {
 	public enum Advantage { NORMAL, ADVANTAGE, DISADVANTAGE }
 
 	public static Advantage advantageFromLabel(String label) {
-		if ("ventaja".equalsIgnoreCase(label)) return Advantage.ADVANTAGE;
-		if ("desventaja".equalsIgnoreCase(label)) return Advantage.DISADVANTAGE;
+		if ("advantage".equalsIgnoreCase(label) || "ventaja".equalsIgnoreCase(label)) return Advantage.ADVANTAGE;
+		if ("disadvantage".equalsIgnoreCase(label) || "desventaja".equalsIgnoreCase(label)) return Advantage.DISADVANTAGE;
 		return Advantage.NORMAL;
 	}
 
 	/**
-	 * <p>Junta ventaja/desventaja de varias fuentes a la vez (el {@code /dndsheet advantage} del DM, las
-	 * condiciones del atacante, las del objetivo). En 5e no se acumulan: por muchas de cada lado que haya,
-	 * basta una de cada para que se anulen entre sí y quede una tirada normal.</p>
+	 * <p>Combines advantage/disadvantage from several sources at once (the DM's
+	 * {@code /dndsheet advantage}, the attacker's conditions, the target's). In 5e they don't stack:
+	 * no matter how many there are on each side, one of each is enough to cancel out and leave a normal roll.</p>
 	 */
 	public static Advantage combineAdvantage(Advantage... sources) {
 		boolean advantage = false;
@@ -71,29 +71,29 @@ public class DiceManager {
 	 */
 	public record AttackRoll(RollOutcome outcome, boolean criticalHit, boolean criticalMiss) {}
 
-	//Tirada de ataque (siempre "1d20 + ..."): con ventaja/desventaja se tira dos veces la expresión
-	//completa y se queda con el total mayor/menor, que es equivalente a comparar solo el d20 porque el
-	//modificador no cambia entre una tirada y otra. El crítico se detecta mirando el primer dado
-	//realmente tirado dentro de la tirada elegida (ver firstDieValue).
+	//Attack roll (always "1d20 + ..."): with advantage/disadvantage the whole expression is rolled twice
+	//and the higher/lower total is kept, which is equivalent to comparing only the d20 since the
+	//modifier doesn't change between rolls. The critical is detected by looking at the first die
+	//actually rolled within the chosen roll (see firstDieValue).
 	public static AttackRoll rollAttack(JsonObject sheet, String expression, Advantage advantage) {
 		return toAttackRoll(sheet, rollWithAdvantage(sheet, expression, advantage));
 	}
 
 	/**
-	 * <p>El "roll twice, keep higher/lower" de ventaja/desventaja, sin el envoltorio de crítico de
-	 * {@link #rollAttack} — misma mecánica de 5e para CUALQUIER d20 (ataque, salvación, prueba de
-	 * habilidad), separada de aquí para que una prueba de habilidad (que no tiene crítico automático en
-	 * el SRD) pueda usarla sin heredar {@code criticalHit}/{@code criticalMiss}, que solo significan algo
-	 * en un ataque. Ver {@code VisionManager}/{@code RollAnnouncerProcedure} para el primer uso fuera de
-	 * ataques: la desventaja de Percepción por penumbra.</p>
+	 * <p>The "roll twice, keep higher/lower" of advantage/disadvantage, without the critical wrapper from
+	 * {@link #rollAttack} — the same 5e mechanic for ANY d20 (attack, save, ability check), split out
+	 * from here so an ability check (which has no automatic critical in the SRD) can use it without
+	 * inheriting {@code criticalHit}/{@code criticalMiss}, which only mean something on an attack. See
+	 * {@code VisionManager}/{@code RollAnnouncerProcedure} for the first use outside of attacks:
+	 * disadvantage on Perception from dim light.</p>
 	 */
 	public static RollOutcome rollWithAdvantage(JsonObject sheet, String expression, Advantage advantage) {
-		//Tiene que TENER un dado. La libreria no rechaza una expresion que no entiende: le saca un numero
-		//igual, y ese numero entraba como si fuera el d20 — un dado mal escrito en un pack de contenido daba
-		//CRITICO AUTOMATICO cada vez que ese numero caia en 20 (relevante solo para rollAttack, pero el
-		//filtro de "hay un dado de verdad" aplica igual a cualquier d20). Se filtra con el mismo patron que
-		//ya usa el propio parser, asi que lo que aqui se considera "un dado" y lo que se tira despues no
-		//pueden separarse.
+		//It has to HAVE a die. The library doesn't reject an expression it doesn't understand: it still
+		//produces a number, and that number went in as if it were the d20 — a misspelled die in a content
+		//pack gave an AUTOMATIC CRITICAL every time that number landed on 20 (relevant only to rollAttack,
+		//but the "there's an actual die" filter applies the same to any d20). It's filtered with the same
+		//pattern the parser itself already uses, so what counts as "a die" here and what gets rolled
+		//afterward can't drift apart.
 		if (!DICE_NOTATION_PATTERN.matcher(expression.toLowerCase()).find()) {
 			return roll(sheet, expression);
 		}
@@ -110,31 +110,31 @@ public class DiceManager {
 			: first.result().getValue() <= second.result().getValue();
 		RollOutcome kept = keepFirst ? first : second;
 		RollOutcome discarded = keepFirst ? second : first;
-		String label = advantage == Advantage.ADVANTAGE ? "ventaja" : "desventaja";
-		return new RollOutcome(kept.result(), kept.formatted() + " (" + label + ", se descarta " + discarded.formatted() + ")");
+		String label = advantage == Advantage.ADVANTAGE ? "advantage" : "disadvantage";
+		return new RollOutcome(kept.result(), kept.formatted() + " (" + label + ", discarding " + discarded.formatted() + ")");
 	}
 
 	private static AttackRoll toAttackRoll(JsonObject sheet, RollOutcome outcome) {
 		if (outcome.result() == null) return new AttackRoll(outcome, false, false);
 		int natural = firstDieValue(outcome.result());
-		//Una tirada de ataque es SIEMPRE 1d20, asi que el dado natural solo puede caer entre 1 y 20. Fuera de
-		//ese rango no hubo d20: la libreria de dados no rechaza una expresion que no entiende, le saca un
-		//numero igual, y ese numero entraba aqui como si fuera el dado. Un dado mal escrito en un pack de
-		//contenido daba CRITICO AUTOMATICO cada vez que ese numero salia 20 o mas.
+		//An attack roll is ALWAYS 1d20, so the natural die can only fall between 1 and 20. Outside that
+		//range there was no d20: the dice library doesn't reject an expression it doesn't understand, it
+		//still produces a number, and that number went in here as if it were the die. A misspelled die in
+		//a content pack gave an AUTOMATIC CRITICAL every time that number came out 20 or higher.
 		if (natural < 1 || natural > 20) return new AttackRoll(outcome, false, false);
-		//El 1 natural sigue siendo pifia pase lo que pase: ampliar el rango de crítico no estrecha el de
-		//fallo, y en 5e no hay nada que lo haga.
+		//A natural 1 is still a miss no matter what: widening the critical range doesn't narrow the miss
+		//range, and nothing in 5e does.
 		return new AttackRoll(outcome, natural >= criticalFrom(sheet), natural == 1);
 	}
 
 	/**
-	 * <p>Desde qué dado natural critica esta ficha. 20 salvo que algo lo baje: hoy solo el Campeón del
-	 * guerrero (19), que es el rasgo de subclase del SRD que este motor puede sostener sin inventar nada.</p>
+	 * <p>From which natural die this sheet crits. 20 unless something lowers it: today only the Fighter's
+	 * Champion subclass (19), which is the SRD subclass trait this engine can support without inventing anything.</p>
 	 *
-	 * <p>Se lee de la hoja y no de la subclase para que el motor no tenga que saber qué es una subclase: la
-	 * regla vive en un sitio y quien la conceda solo escribe un número, igual que hace el pacto del brujo.
-	 * El tope inferior es un cortafuegos, no una regla: un 2 escrito en un JSON convertiría cada ataque en
-	 * crítico, y eso se descubriría en mitad de un combate.</p>
+	 * <p>It's read from the sheet and not the subclass so the engine doesn't have to know what a subclass
+	 * is: the rule lives in one place and whoever grants it just writes a number, the same way the
+	 * warlock's pact does. The lower bound is a safety net, not a rule: a 2 written into a JSON would turn
+	 * every attack into a critical, and that would be discovered in the middle of a fight.</p>
 	 */
 	static int criticalFrom(JsonObject sheet) {
 		if (sheet == null || !sheet.has("criticalFrom")) return 20;
@@ -156,22 +156,22 @@ public class DiceManager {
 		if (!critical) return new DamageResult(outcome.result().getValue(), outcome.formatted());
 
 		int diceSum = sumDiceValues(outcome.result());
-		return new DamageResult(outcome.result().getValue() + diceSum, outcome.formatted() + " ¡CRÍTICO! (+" + diceSum + ")");
+		return new DamageResult(outcome.result().getValue() + diceSum, outcome.formatted() + " CRITICAL! (+" + diceSum + ")");
 	}
 
-	//El pretty-printer de la librería muestra cada dado tirado entre corchetes (p.ej. "[15] + 3 = 18").
-	//El primer corchete siempre corresponde al d20 en una tirada de ataque ("1d20 + ..."), así que basta
-	//con leerlo para saber si salió natural 20/1, sin recorrer el árbol interno de DiceResult.
+	//The library's pretty-printer shows every rolled die in brackets (e.g. "[15] + 3 = 18"). The first
+	//bracket always corresponds to the d20 in an attack roll ("1d20 + ..."), so it's enough to read it to
+	//know whether it came up natural 20/1, without walking DiceResult's internal tree.
 	private static int firstDieValue(DiceResult result) {
 		Matcher m = BRACKETED_DIE_PATTERN.matcher(new DiceResultPrettyPrinter().prettyPrint(result));
 		if (!m.find()) return -1;
-		//El primero del grupo: una tirada de ataque es siempre 1d20, pero ahora el grupo puede traer varios
-		//numeros, y el natural que decide critico/pifia es el primero.
+		//The first of the group: an attack roll is always 1d20, but now the group can carry several
+		//numbers, and the natural that decides critical/miss is the first one.
 		return Integer.parseInt(m.group(1).split(",")[0].trim());
 	}
 
-	//Suma todos los dados tirados (todos los corchetes), para poder doblar solo la parte de dados de una
-	//tirada de daño en un crítico sin doblar también el modificador plano.
+	//Sums every die rolled (every bracket), so only the dice portion of a damage roll can be doubled on a
+	//critical without also doubling the flat modifier.
 	private static int sumDiceValues(DiceResult result) {
 		Matcher m = BRACKETED_DIE_PATTERN.matcher(new DiceResultPrettyPrinter().prettyPrint(result));
 		int sum = 0;
@@ -235,20 +235,21 @@ public class DiceManager {
 			RollLog.record(sheet, outcome);
 			return outcome;
 		} catch (Throwable e) {
-			//Throwable, no solo Exception: un conteo de dados absurdo en un JSON de contenido (arma,
-			//hechizo, monstruo, rasgo) puede hacer que la librería de dados reserve memoria sin límite y
-			//tire OutOfMemoryError, que es un Error, no una Exception — un catch (Exception e) no lo
-			//atrapaba, y eso tumbaba el hilo del servidor entero. hasAbsurdDiceCount ya corta el caso común
-			//antes de llegar aquí; este catch es el respaldo para cualquier otro fallo raro de la librería.
+			//Throwable, not just Exception: an absurd dice count in a content JSON (weapon, spell,
+			//monster, trait) can make the dice library allocate unbounded memory and throw
+			//OutOfMemoryError, which is an Error, not an Exception — a catch (Exception e) wouldn't
+			//catch it, and that would crash the entire server thread. hasAbsurdDiceCount already cuts
+			//off the common case before reaching here; this catch is the fallback for any other rare
+			//library failure.
 			LOGGER.log(Level.INFO, "Some roll turned up an error, so it will be ignored.");
 			return new RollOutcome(null, null);
 		}
 
 	}
 
-	//Techo defensivo: una expresión como "999999999d6" no es un error de sintaxis (parsea bien), pero hace
-	//que la librería de dados reserve un resultado por cada dado y agote la memoria. Cualquier "Nd..." con
-	//N por encima del techo se rechaza antes de intentar tirarlo, en vez de confiar solo en el catch de arriba.
+	//Defensive ceiling: an expression like "999999999d6" isn't a syntax error (it parses fine), but it
+	//makes the dice library allocate one result per die and exhaust memory. Any "Nd..." with N above the
+	//ceiling is rejected before attempting to roll it, instead of relying solely on the catch above.
 	private static final long MAX_DICE_COUNT = 10_000;
 
 	private static boolean hasAbsurdDiceCount(String expression) {
@@ -257,28 +258,28 @@ public class DiceManager {
 			try {
 				if (Long.parseLong(m.group(1)) > MAX_DICE_COUNT) return true;
 			} catch (NumberFormatException e) {
-				return true; //Ni siquiera cabe en un long: seguro que es absurdo.
+				return true; //Doesn't even fit in a long: definitely absurd.
 			}
 		}
 		return false;
 	}
 
-	//Workaround de un bug de precedencia en la librería de dados de terceros (io.github.tfriedrichs:dicebot,
-	//ver build.gradle): su gramática solo deja que un grupo de dados con conteo explícito ("1d4") aparezca
-	//como el PRIMER término de toda la expresión — cualquiera que venga después de un +/-/*// no consigue
-	//parsear (la gramática le da menos precedencia que a la suma/resta) y la tirada entera falla en
-	//silencio, cae al catch de abajo con un resultado nulo (ver README, sección "Known Bugs": "1d20 + 1d4"
-	//no tiraba bien). Encerrar cada grupo de dados entre paréntesis lo esquiva sin tocar la librería: dentro
-	//de un paréntesis la precedencia se reinicia, así que "1d8 + 1d4" se manda como "1d8 + (1d4)" y parsea
-	//normal. No reordena nada — DICE_NOTATION_PATTERN sigue encontrando los grupos en el mismo orden en el
-	//texto, así que prettyPrintWithNotation (más abajo) no se ve afectado.
+	//Workaround for a precedence bug in the third-party dice library (io.github.tfriedrichs:dicebot,
+	//see build.gradle): its grammar only lets a dice group with an explicit count ("1d4") appear as the
+	//FIRST term of the whole expression — any that comes after a +/-/*// fails to parse (the grammar
+	//gives it lower precedence than addition/subtraction) and the entire roll fails silently, falling
+	//through to the catch below with a null result (see README, "Known Bugs" section: "1d20 + 1d4" didn't
+	//roll correctly). Wrapping each dice group in parentheses sidesteps this without touching the
+	//library: inside parentheses precedence resets, so "1d8 + 1d4" is sent as "1d8 + (1d4)" and parses
+	//normally. It doesn't reorder anything — DICE_NOTATION_PATTERN still finds the groups in the same
+	//order in the text, so prettyPrintWithNotation (below) isn't affected.
 	private static String wrapDiceTermsInParens(String expression) {
 		return DICE_NOTATION_PATTERN.matcher(expression).replaceAll("($0)");
 	}
 
-	//ponytail: asume que las tiradas de dado aparecen en el mismo orden, de izquierda a derecha, en el
-	//texto de la expresión y en el árbol de resultados. Vale para las expresiones simples de esta hoja
-	//(p.ej. "1d10 + 3"); si algún día se admiten paréntesis que reordenen los términos, revisar esto.
+	//ponytail: assumes the dice rolls appear in the same order, left to right, in the expression's text
+	//and in the result tree. Holds for this sheet's simple expressions (e.g. "1d10 + 3"); if parentheses
+	//that reorder terms are ever supported, revisit this.
 	private static String prettyPrintWithNotation(DiceResult result, String substitutedExpression) {
 		String pretty = new DiceResultPrettyPrinter().prettyPrint(result);
 		Matcher diceMatcher = DICE_NOTATION_PATTERN.matcher(substitutedExpression);

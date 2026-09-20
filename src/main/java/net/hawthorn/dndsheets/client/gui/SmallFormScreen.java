@@ -6,16 +6,16 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Formulario corto: se rellenan unos campos y se pulsa <b>Confirmar</b> una vez. Añade a
- * {@link FormPanelScreen} lo único que es suyo — la fila Confirmar/Cancelar, la de Borrar opcional, y el
- * {@link #onConfirm()} que dispara el envío.</p>
+ * <p>Short form: fill in a few fields and hit <b>Confirm</b> once. Adds to
+ * {@link FormPanelScreen} the only things that are its own — the Confirm/Cancel row, the optional
+ * Delete row, and the {@link #onConfirm()} that fires the send.</p>
  *
- * <p>El marco, las filas, los campos y el {@code tick} viven en la base: los comparte con
- * {@link SheetAdjustScreen}, que es un panel de control (diez acciones sueltas, ningún Confirmar) y por
- * eso no puede heredar de aquí por mucho que dibuje el mismo pergamino.</p>
+ * <p>The frame, the rows, the fields, and {@code tick} live in the base class: they're shared with
+ * {@link SheetAdjustScreen}, which is a control panel (ten independent actions, no Confirm) and so
+ * can't inherit from here no matter how much it draws the same parchment.</p>
  *
- * <p>"Cancelar" (y "Confirmar", una vez enviado el mensaje) vuelven a {@code parent} en vez de cerrar todo
- * el menú — mismo mecanismo de navegación que ListPickerScreen, ver esa clase.</p>
+ * <p>"Cancel" (and "Confirm", once the message is sent) go back to {@code parent} instead of closing
+ * the whole menu — same navigation mechanism as ListPickerScreen, see that class.</p>
  */
 public abstract class SmallFormScreen extends FormPanelScreen {
 
@@ -23,15 +23,15 @@ public abstract class SmallFormScreen extends FormPanelScreen {
 		super(title, titleRows, parent);
 	}
 
-	/** Se llama al pulsar "Confirmar", antes de cerrar la pantalla. */
+	/** Called when "Confirm" is pressed, before closing the screen. */
 	protected abstract void onConfirm();
 
-	/** true agrega una fila "Borrar" propia bajo Confirmar/Cancelar — ver {@link #onDelete()}. */
+	/** true adds its own "Delete" row below Confirm/Cancel — see {@link #onDelete()}. */
 	protected boolean showDeleteButton() {
 		return false;
 	}
 
-	/** Solo se llama si {@link #showDeleteButton()} es true; cierra la pantalla después, igual que onConfirm. */
+	/** Only called if {@link #showDeleteButton()} is true; closes the screen afterward, same as onConfirm. */
 	protected void onDelete() {
 	}
 
@@ -45,8 +45,8 @@ public abstract class SmallFormScreen extends FormPanelScreen {
 		buildForm();
 
 		int y = nextRowY();
-		//TomeButton, igual que las filas de ListPickerScreen: los dos son las únicas fábricas de botones
-		//del mod, así que el aspecto se cambia en dos sitios y llega a todas las pantallas.
+		//TomeButton, same as ListPickerScreen's rows: the two are the mod's only button factories,
+		//so the look gets changed in two places and reaches every screen.
 		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.confirm"), button -> {
 			onConfirm();
 			this.onClose();
@@ -57,9 +57,9 @@ public abstract class SmallFormScreen extends FormPanelScreen {
 
 		formBottom = y + FIELD_HEIGHT + 10;
 
-		//Borrar vive en el detalle de lo que se está editando en vez de una fila aparte en la lista de
-		//afuera (ManageCustomAttacksScreen/DungeonPieceListScreen/ContentEntryListScreen usaban antes una
-		//fila "Borrar: X" extra por cada elemento — ocupaba el doble de alto que hacía falta).
+		//Delete lives in the detail view of whatever is being edited instead of a separate row in the
+		//outer list (ManageCustomAttacksScreen/DungeonPieceListScreen/ContentEntryListScreen used to have
+		//an extra "Delete: X" row per item — it took up twice the height needed).
 		if (showDeleteButton()) {
 			int deleteY = nextRowY();
 			this.addRenderableWidget(TomeButton.of(deleteButtonLabel(), button -> {

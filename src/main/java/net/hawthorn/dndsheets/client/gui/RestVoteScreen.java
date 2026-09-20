@@ -7,8 +7,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Se abre para todos al recibir una propuesta de descanso (ver {@link net.hawthorn.dndsheets.RestManager#propose}).
- * Aceptar o rechazar manda la respuesta; el descanso solo se aplica si TODOS aceptan.</p>
+ * <p>Opens for everyone when a rest proposal is received (see {@link net.hawthorn.dndsheets.RestManager#propose}).
+ * Accepting or rejecting sends the answer; the rest is only applied if EVERYONE accepts.</p>
  */
 public class RestVoteScreen extends ModalDialogScreen {
 	private static final int WIDTH = 240;
@@ -55,7 +55,7 @@ public class RestVoteScreen extends ModalDialogScreen {
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderPanel(guiGraphics);
 		int top = dialogTop();
-		guiGraphics.drawCenteredString(this.font, Component.literal(proposerName + " propone un descanso " + typeLabel + "."), this.width / 2, top + 8, 0xFFFFFF);
+		guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.rest_vote.proposal", proposerName, Component.translatable("gui.dndsheets.rest_type." + typeLabel)), this.width / 2, top + 8, 0xFFFFFF);
 		guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.rest_vote.hint"), this.width / 2, top + 22, 0xAAAAAA);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 	}

@@ -11,6 +11,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -21,15 +22,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>{@code /dndchar}: varios personajes por jugador. Hasta ahora una hoja estaba atada al UUID de quien
- * la usaba y no había forma de tener un segundo PJ, cambiar de personaje ni llevar una ficha de PNJ — ver
- * {@link SheetLoader}, donde vive el cambio de verdad.</p>
+ * <p>{@code /dndchar}: multiple characters per player. Until now a sheet was tied to the UUID of whoever
+ * used it, with no way to have a second PC, switch characters, or maintain an NPC sheet — see
+ * {@link SheetLoader}, where the real change lives.</p>
  *
  * <ul>
- *   <li>{@code /dndchar list} — tus personajes, con el activo marcado. Sin permisos: es sobre lo tuyo.</li>
- *   <li>{@code /dndchar new <nombre>} — crea uno más, sin ponértelo.</li>
- *   <li>{@code /dndchar switch <id>} — te pones ese personaje (tiene que ser tuyo).</li>
- *   <li>{@code /dndchar npc <nombre>} — solo DM: ficha de PNJ, sin dueño, con las mismas reglas que un PJ.</li>
+ *   <li>{@code /dndchar list} — your characters, with the active one marked. No permissions: it's about
+ *   your own stuff.</li>
+ *   <li>{@code /dndchar new <name>} — creates one more, without switching to it.</li>
+ *   <li>{@code /dndchar switch <id>} — switches to that character (must be yours).</li>
+ *   <li>{@code /dndchar npc <name>} — DM only: NPC sheet, no owner, with the same rules as a PC.</li>
  * </ul>
  */
 @Mod.EventBusSubscriber
@@ -38,71 +40,83 @@ public class CharacterCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndchar")
-			//Sin requires(hasPermission) en la raíz: list/new/switch son sobre los personajes de uno mismo,
-			//no hay nada que gatear. Solo "npc" y "spawn" piden operador, y lo piden en su propia rama.
-			//Sin subcomando abre la pantalla, que es lo que va a querer el 90% de las veces; "list" sigue
-			//existiendo para quien prefiera el chat o esté leyendo la salida de un script.
+			//No requires(hasPermission) at the root: list/new/switch are about one's own characters, there's
+			//nothing to gate. Only "npc" and "spawn" require operator, and they require it on their own
+			//branch. No subcommand opens the screen, which is what will be wanted 90% of the time; "list"
+			//still exists for whoever prefers chat or is reading a script's output.
 			.executes(CharacterCommand::openScreen)
 			.then(Commands.literal("list")
 				.executes(CharacterCommand::list))
+			//With no name it opens the wizard, just like /dndchar with no subcommand opens the list. Before,
+			//bare "new" was a syntax error ("unknown or incomplete command"), which is the worst possible
+			//response: the player who wants to create a character types exactly that, and the mod tells
+			//them it doesn't exist. With the name given, it skips the wizard and creates it directly, as
+			//before.
 			.then(Commands.literal("new")
-				.then(Commands.argument("nombre", StringArgumentType.greedyString())
+				.executes(CharacterCommand::openNewCharacter)
+				.then(Commands.argument("name", StringArgumentType.greedyString())
 					.executes(CharacterCommand::create)))
-			//greedyString y no word(): los personajes se llaman "Elara la Gris", no "elara2". Pedir un id
-			//derivado del UUID para cambiar de personaje es pedir que se copie una cadena que no significa
-			//nada — se acepta el nombre, y el id sigue valiendo porque es lo que sale en los mensajes.
+			//greedyString and not word(): characters are named "Elara the Grey", not "elara2". Requiring a
+			//UUID-derived id to switch characters is requiring the player to copy a string that means
+			//nothing — the name is accepted, and the id still works because it's what shows up in
+			//messages.
 			.then(Commands.literal("switch")
-				.then(Commands.argument("personaje", StringArgumentType.greedyString())
+				.then(Commands.argument("character", StringArgumentType.greedyString())
 					.suggests((ctx, builder) -> suggestCharacters(builder, ownedIds(ctx)))
 					.executes(CharacterCommand::switchTo)))
-			//Sin permiso: la Mejora de Característica la elige QUIEN lleva el personaje, no el DM. El servidor
-			//solo la deja gastar si de verdad quedaba alguna pendiente (ver LevelUpManager.applyImprovement),
-			//así que abrir la pantalla no concede nada por sí solo.
-			.then(Commands.literal("mejora")
+			//No permission: the Ability Score Improvement is chosen by WHOEVER plays the character, not the
+			//DM. The server only lets it be spent if one was really still pending (see
+			//LevelUpManager.applyImprovement), so opening the screen doesn't grant anything by itself.
+			.then(Commands.literal("improve")
 				.executes(CharacterCommand::openImprovement))
-			//Borrar es sobre lo tuyo, así que tampoco pide permiso; el permiso solo entra para los PNJ del
-			//DM, y lo comprueba SheetLoader.deleteCharacter, no esta rama.
+			//Deleting is about your own stuff, so it doesn't require permission either; permission only
+			//comes into play for the DM's NPCs, and SheetLoader.deleteCharacter checks it, not this branch.
 			.then(Commands.literal("delete")
-				.then(Commands.argument("personaje", StringArgumentType.greedyString())
+				.then(Commands.argument("character", StringArgumentType.greedyString())
 					.suggests((ctx, builder) -> suggestCharacters(builder, deletableIds(ctx)))
 					.executes(CharacterCommand::delete)))
 			.then(Commands.literal("npc")
 				.requires(source -> DndsheetsMod.canActAsDm(source))
-				.then(Commands.argument("nombre", StringArgumentType.greedyString())
+				.then(Commands.argument("name", StringArgumentType.greedyString())
 					.executes(CharacterCommand::createNpc)))
 			.then(Commands.literal("spawn")
 				.requires(source -> DndsheetsMod.canActAsDm(source))
 				.then(Commands.argument("id", StringArgumentType.word())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(npcIds(), builder))
 					.executes(ctx -> spawn(ctx, "minecraft:villager", false))
-					.then(Commands.argument("entidad", StringArgumentType.string())
+					//ResourceLocationArgument and NOT StringArgumentType.string(): an entity id has a ":"
+					//("minecraft:villager") and Brigadier does NOT allow a colon in an unquoted string. The
+					//autocomplete offered "minecraft:villager", typing it failed with "unknown or incomplete
+					//command", and the only way to get it right was to quote it by hand — nobody guesses that.
+					.then(Commands.argument("entity", ResourceLocationArgument.id())
 						.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
 							new String[]{"minecraft:villager", "minecraft:zombie", "minecraft:skeleton", "minecraft:armor_stand", "minecraft:iron_golem"}, builder))
-						.executes(ctx -> spawn(ctx, StringArgumentType.getString(ctx, "entidad"), false))
-						//El tercer argumento solo tiene sentido con el segundo puesto: dejarle la IA a un
-						//aldeano vanilla es un aldeano que se va andando, y a una entidad de un mod de NPC
-						//es lo único que la hace servir para algo. Ver MonsterRegistry.keepsOwnAi.
-						.then(Commands.argument("ia", BoolArgumentType.bool())
-							.executes(ctx -> spawn(ctx, StringArgumentType.getString(ctx, "entidad"),
-								BoolArgumentType.getBool(ctx, "ia"))))))));
+						.executes(ctx -> spawn(ctx, ResourceLocationArgument.getId(ctx, "entity").toString(), false))
+						//The third argument only makes sense with the second one given: leaving AI on a
+						//vanilla villager gets you a villager that wanders off, and on an entity from an NPC
+						//mod it's the only thing that makes it useful. See MonsterRegistry.keepsOwnAi.
+						.then(Commands.argument("ai", BoolArgumentType.bool())
+							.executes(ctx -> spawn(ctx, ResourceLocationArgument.getId(ctx, "entity").toString(),
+								BoolArgumentType.getBool(ctx, "ai"))))))));
 	}
 
-	//Sugerencias de tab con los ids propios: sin esto habría que copiarlos a mano del /dndchar list, y son
-	//UUID con un sufijo — exactamente el tipo de cadena que nadie teclea bien a la primera.
+	//Tab suggestions with one's own ids: without this they'd have to be copied by hand from /dndchar list,
+	//and they're a UUID with a suffix — exactly the kind of string nobody types correctly on the first try.
 	/**
-	 * <p>Autocompleta con los NOMBRES, y deja el id como pista al lado. Sugerir ids sería autocompletar con
-	 * lo único que el jugador no reconoce.</p>
+	 * <p>Autocompletes with the NAMES, and leaves the id as a hint alongside. Suggesting ids would be
+	 * autocompleting with the one thing the player doesn't recognize.</p>
 	 *
-	 * <p>Un nombre con espacios se sugiere tal cual, sin comillas, porque el argumento es greedyString: lo
-	 * que se ve en la lista es exactamente lo que hay que escribir.</p>
+	 * <p>A name with spaces is suggested as-is, without quotes, because the argument is greedyString: what
+	 * shows up in the list is exactly what needs to be typed.</p>
 	 */
 	private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestCharacters(
 			com.mojang.brigadier.suggestion.SuggestionsBuilder builder, List<String> ids) {
 		String written = builder.getRemaining().toLowerCase(java.util.Locale.ROOT);
 		for (String id : ids) {
-			//El rótulo lleva el id SOLO si otro personaje se llama igual: así cada sugerencia es distinta de
-			//las demás y, sobre todo, resoluble. Sugiriendo el nombre a secas, dos personajes llamados igual
-			//daban dos opciones idénticas que el comando rechazaba después por ambiguas.
+			//The label carries the id ONLY if another character has the same name: that way each suggestion
+			//is distinct from the others and, above all, resolvable. Suggesting the bare name, two
+			//characters with the same name gave two identical options that the command would later reject
+			//as ambiguous.
 			String label = SheetLoader.suggestionLabelFor(ids, id);
 			if (!label.toLowerCase(java.util.Locale.ROOT).startsWith(written)) continue;
 			builder.suggest(label, Component.literal(id));
@@ -118,10 +132,21 @@ public class CharacterCommand {
 		}
 	}
 
-	//El servidor ya sabe qué personajes tiene: manda la lista directamente, sin que el cliente tenga que
-	//pedirla primero. La ida y vuelta solo hace falta desde un botón de GUI (ver BrowseActionMessage).
+	//The server already knows which characters it has: it sends the list directly, without the client
+	//having to request it first. The round trip is only needed from a GUI button (see BrowseActionMessage).
 	private static int openScreen(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		net.hawthorn.dndsheets.network.BrowseActionMessage.sendOwnCharacters(ctx.getSource().getPlayerOrException());
+		return 1;
+	}
+
+	private static int openNewCharacter(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		//The player is resolved OUTSIDE the lambda: getPlayerOrException throws CommandSyntaxException and
+		//PacketDistributor.with() doesn't accept a supplier that throws.
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		net.hawthorn.dndsheets.DndsheetsMod.PACKET_HANDLER.send(
+			net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+			new net.hawthorn.dndsheets.network.ScreenActionMessage(
+				net.hawthorn.dndsheets.network.ScreenActionMessage.Action.NEW_CHARACTER_OPEN));
 		return 1;
 	}
 
@@ -138,13 +163,14 @@ public class CharacterCommand {
 
 	private static int delete(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
-		String query = StringArgumentType.getString(ctx, "personaje");
+		String query = StringArgumentType.getString(ctx, "character");
 		String characterId = SheetLoader.resolveCharacter(deletableIds(ctx), query);
 		if (characterId == null) {
-			ctx.getSource().sendFailure(Component.literal("No encuentro \"" + query + "\", o el nombre vale para varios. Mira /dndchar list."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.character.delete_not_found", query));
 			return 0;
 		}
-		//El nombre se lee ANTES de borrar: después, la hoja ya no está en memoria y el mensaje diría el id.
+		//The name is read BEFORE deleting: afterward, the sheet is no longer in memory and the message
+		//would show the id.
 		String name = SheetLoader.nameOfCharacter(characterId);
 		boolean wasNpc = SheetLoader.ownerOf(characterId, SheetLoader.getCharacterSheet(characterId)) == null;
 		String error = SheetLoader.deleteCharacter(player, characterId, DndsheetsMod.canActAsDm(ctx.getSource()));
@@ -152,11 +178,11 @@ public class CharacterCommand {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.character.delete_failed"));
 			return 0;
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Personaje \"" + name + "\" borrado. Queda una copia en charactersheets/"
-			+ characterId + SheetLoader.DELETED_SUFFIX + " por si te arrepientes.").withStyle(ChatFormatting.GREEN), false);
-		//Un PNJ puede tener su cuerpo puesto en el mundo. Al quedarse sin ficha, Combatant.of lo degrada a
-		//mob vanilla EN SILENCIO: sigue ahí, se le puede pegar, y ya no juega con ninguna regla. Decirlo es
-		//más honesto que dejar al DM descubrirlo en mitad de un combate.
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.character.deleted_with_path",
+			name, characterId + SheetLoader.DELETED_SUFFIX).withStyle(ChatFormatting.GREEN), false);
+		//An NPC can have its body placed in the world. Once it's left without a sheet, Combatant.of
+		//SILENTLY downgrades it to a vanilla mob: it's still there, it can be hit, and it no longer plays
+		//by any rules. Saying so is more honest than letting the DM discover it mid-combat.
 		if (wasNpc) {
 			ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.character.delete_body_hint")
 				.withStyle(ChatFormatting.GRAY), false);
@@ -164,14 +190,14 @@ public class CharacterCommand {
 		return 1;
 	}
 
-	//Lo tuyo, más los PNJ si eres DM: exactamente lo mismo que deleteCharacter va a aceptar, para no
-	//sugerir un id que después se rechaza.
+	//Your own stuff, plus NPCs if you're the DM: exactly what deleteCharacter is going to accept, so as
+	//not to suggest an id that gets rejected afterward.
 	private static List<String> deletableIds(CommandContext<CommandSourceStack> ctx) {
 		List<String> ids = new ArrayList<>();
 		try {
 			ids.addAll(SheetLoader.charactersOf(ctx.getSource().getPlayerOrException().getStringUUID()));
 		} catch (CommandSyntaxException ignored) {
-			//Consola: no tiene personajes propios, solo puede tocar PNJ.
+			//Console: has no characters of its own, can only touch NPCs.
 		}
 		if (DndsheetsMod.canActAsDm(ctx.getSource())) ids.addAll(SheetLoader.npcIds());
 		return ids;
@@ -190,10 +216,10 @@ public class CharacterCommand {
 		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.character.list_header").withStyle(ChatFormatting.GOLD), false);
 		for (String characterId : owned) {
 			JsonObject sheet = SheetLoader.getCharacterSheet(characterId);
-			String name = sheet != null && sheet.has("characterName") ? sheet.get("characterName").getAsString() : "(sin nombre)";
+			String name = sheet != null && sheet.has("characterName") ? sheet.get("characterName").getAsString() : "(unnamed)";
 			boolean isActive = characterId.equals(activeId);
-			//Mismo texto que sugiere el autocompletado, para que lo que se lee aquí sea literalmente lo que hay
-			//que escribir. El id solo sale cuando dos personajes comparten nombre, que es cuando importa.
+			//Same text the autocomplete suggests, so what's read here is literally what needs to be typed.
+			//The id only shows up when two characters share a name, which is when it matters.
 			String label = SheetLoader.suggestionLabelFor(owned, characterId);
 			String suffix = label.equals(name) ? "  [" + characterId + "]" : "";
 			ctx.getSource().sendSuccess(() -> Component.literal((isActive ? " ▶ " : "   ") + label + suffix)
@@ -204,38 +230,39 @@ public class CharacterCommand {
 
 	private static int create(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
-		String name = StringArgumentType.getString(ctx, "nombre");
+		String name = StringArgumentType.getString(ctx, "name");
 		String characterId = SheetLoader.createCharacter(player.getStringUUID(), name);
-		//Se dice el comando exacto para ponérselo: crear sin activar es deliberado, pero sin esta línea
-		//parecería que el comando no hizo nada.
-		ctx.getSource().sendSuccess(() -> Component.literal("Personaje \"" + name + "\" creado. Ponértelo: /dndchar switch " + characterId)
+		//The exact command to switch to it is given: creating without activating is deliberate, but
+		//without this line it would look like the command did nothing.
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.character.created_switch_hint", name, characterId)
 			.withStyle(ChatFormatting.GREEN), false);
 		return 1;
 	}
 
 	private static int switchTo(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
 		ServerPlayer player = ctx.getSource().getPlayerOrException();
-		String query = StringArgumentType.getString(ctx, "personaje");
+		String query = StringArgumentType.getString(ctx, "character");
 		String characterId = SheetLoader.resolveCharacter(SheetLoader.charactersOf(player.getStringUUID()), query);
 		if (characterId == null || !SheetLoader.switchCharacter(player, characterId)) {
-			ctx.getSource().sendFailure(Component.literal("No encuentro \"" + query + "\" entre tus personajes, o el nombre vale para varios. Mira /dndchar list."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.character.switch_not_found", query));
 			return 0;
 		}
 		JsonObject sheet = SheetLoader.getCharacterSheet(characterId);
 		String name = sheet != null && sheet.has("characterName") ? sheet.get("characterName").getAsString() : characterId;
-		ctx.getSource().sendSuccess(() -> Component.literal("Ahora llevas a " + name + ".").withStyle(ChatFormatting.GREEN), false);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.character.switched", name).withStyle(ChatFormatting.GREEN), false);
 		return 1;
 	}
 
-	//Solo fichas sin dueño: dar cuerpo al PJ de alguien que lo está jugando no tiene sentido, tendrías dos.
+	//Only ownerless sheets: giving a body to the PC of someone who's playing it makes no sense, you'd have
+	//two.
 	private static List<String> npcIds() {
 		return SheetLoader.npcIds();
 	}
 
 	/**
-	 * <p>Le da cuerpo a una ficha de PNJ en el punto donde mira el DM. La entidad base es configurable
-	 * porque un tabernero y un capitán de la guardia no deberían verse igual; por defecto un aldeano, que
-	 * es lo que más se parece a "una persona".</p>
+	 * <p>Gives a body to an NPC sheet at the point the DM is looking at. The base entity is configurable
+	 * because a tavern keeper and a guard captain shouldn't look the same; a villager by default, which is
+	 * the closest thing to "a person".</p>
 	 */
 	private static int spawn(CommandContext<CommandSourceStack> ctx, String baseEntityId, boolean keepsOwnAi) throws CommandSyntaxException {
 		String characterId = StringArgumentType.getString(ctx, "id");
@@ -244,21 +271,22 @@ public class CharacterCommand {
 
 		net.minecraft.world.entity.Entity spawned = SheetLoader.spawnNpc(level, pos.x, pos.y, pos.z, characterId, baseEntityId, keepsOwnAi);
 		if (spawned == null) {
-			//Los dos motivos posibles se distinguen, en vez de un "no se pudo" que obliga a adivinar cuál es.
-			ctx.getSource().sendFailure(Component.literal(
+			//The two possible reasons are distinguished, instead of a "couldn't do it" that forces guessing
+			//which one it was.
+			ctx.getSource().sendFailure(
 				SheetLoader.getCharacterSheet(characterId) == null
-					? "No existe el personaje \"" + characterId + "\". Créalo con /dndchar npc <nombre>."
-					: "\"" + baseEntityId + "\" no es un tipo de entidad válido."));
+					? Component.translatable("chat.dndsheets.character.npc_sheet_missing", characterId)
+					: Component.translatable("chat.dndsheets.character.invalid_entity", baseEntityId));
 			return 0;
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Invocado " + spawned.getName().getString() + ".").withStyle(ChatFormatting.GREEN), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.character.npc_spawned", spawned.getName().getString()).withStyle(ChatFormatting.GREEN), true);
 		return 1;
 	}
 
 	private static int createNpc(CommandContext<CommandSourceStack> ctx) {
-		String name = StringArgumentType.getString(ctx, "nombre");
+		String name = StringArgumentType.getString(ctx, "name");
 		String characterId = SheetLoader.createNpc(name);
-		ctx.getSource().sendSuccess(() -> Component.literal("PNJ \"" + name + "\" creado con id " + characterId + ".")
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.character.npc_created", name, characterId)
 			.withStyle(ChatFormatting.GREEN), true);
 		return 1;
 	}

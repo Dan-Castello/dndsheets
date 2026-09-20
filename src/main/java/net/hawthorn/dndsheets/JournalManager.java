@@ -14,26 +14,27 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * <p>Diario de campaña y handouts. <b>Son la misma cosa</b>, y por eso hay una sola clase: una entrada
- * con título, cuerpo y visibilidad. Un apunte del diario es una entrada visible para el grupo; un handout
- * es una entrada visible solo para quien se la diste; una nota privada del DM es una entrada que no ve
- * nadie más. Separarlos en dos sistemas habría duplicado la persistencia, la GUI y el mensaje de red para
- * cambiar únicamente quién puede leerlas.</p>
+ * <p>Campaign journal and handouts. <b>They're the same thing</b>, which is why there's a single class:
+ * an entry with a title, a body, and a visibility. A journal note is an entry visible to the whole
+ * party; a handout is an entry visible only to whoever it was given to; a private DM note is an entry
+ * nobody else sees. Splitting them into two systems would have duplicated the persistence, the GUI, and
+ * the network message just to change who can read them.</p>
  *
- * <p><b>El texto sale de un Libro y Pluma.</b> Minecraft ya trae un editor de texto multilínea, y el mod
- * ya reparte un "Cuaderno del DM" que es exactamente eso ({@code NotesCommand}). Escribir en el libro y
- * publicarlo aprovecha ese editor en vez de intentar meter párrafos por un argumento de comando o por una
- * caja de texto de una sola línea, que es lo único que da una GUI de Minecraft.</p>
+ * <p><b>The text comes from a Book and Quill.</b> Minecraft already ships a multiline text editor, and
+ * the mod already hands out a "DM Notebook" that is exactly that ({@code NotesCommand}). Writing in the
+ * book and publishing it makes use of that editor instead of trying to cram paragraphs through a
+ * command argument or a single-line text box, which is the only thing a Minecraft GUI offers.</p>
  *
- * <p>Se guarda por instalación junto al resto del contenido, no por jugador: es material de la mesa. Todo
- * cambio escribe a disco en el momento — el mod ya perdió una vez cambios que solo vivían en memoria.</p>
+ * <p>Saved per installation alongside the rest of the content, not per player: it's table material.
+ * Every change writes to disk immediately — the mod has already lost changes once that only lived in
+ * memory.</p>
  */
 public class JournalManager {
 
 	/**
-	 * @param sharedWith UUIDs de quienes pueden leerla además del autor. Vacío y {@code party} false = solo
-	 *                   el DM que la escribió.
-	 * @param party      visible para todo el mundo.
+	 * @param sharedWith UUIDs of who can read it besides the author. Empty with {@code party} false =
+	 *                   only the DM who wrote it.
+	 * @param party      visible to everyone.
 	 */
 	public record Entry(String id, String title, String body, String authorUuid,
 	                    Set<String> sharedWith, boolean party) {
@@ -41,12 +42,12 @@ public class JournalManager {
 		public boolean canRead(ServerPlayer player) {
 			if (party) return true;
 			String uuid = player.getStringUUID();
-			//El autor siempre puede leer lo suyo, y un operador ve todo: el DM tiene que poder repasar lo
-			//que reparti� sin tener que compartírselo a sí mismo.
+			//The author can always read their own, and an operator sees everything: the DM needs to be able
+			//to review what they handed out without having to share it with themselves.
 			return uuid.equals(authorUuid) || sharedWith.contains(uuid) || DndsheetsMod.canActAsDm(player);
 		}
 
-		/** Etiqueta de a quién alcanza, para que el DM lo vea sin abrir la entrada. */
+		/** Label showing who it reaches, so the DM can see it without opening the entry. */
 		public Component visibilityLabel() {
 			if (party) return Component.translatable("gui.dndsheets.journal.visibility_party");
 			if (sharedWith.isEmpty()) return Component.translatable("gui.dndsheets.journal.visibility_private");
@@ -60,7 +61,7 @@ public class JournalManager {
 	private static final Map<String, Entry> entries = new LinkedHashMap<>();
 	private static boolean loaded = false;
 
-	//--- Lectura y escritura ---------------------------------------------------------------------------
+	//--- Reading and writing ----------------------------------------------------------------------------
 
 	private static void ensureLoaded() {
 		if (loaded) return;
@@ -76,7 +77,7 @@ public class JournalManager {
 				}
 				Entry entry = new Entry(
 					json.get("id").getAsString(),
-					json.has("title") ? json.get("title").getAsString() : "(sin título)",
+					json.has("title") ? json.get("title").getAsString() : "(untitled)",
 					json.has("body") ? json.get("body").getAsString() : "",
 					json.has("author") ? json.get("author").getAsString() : "",
 					shared,
@@ -84,9 +85,9 @@ public class JournalManager {
 				entries.put(entry.id(), entry);
 			}
 		} catch (Exception e) {
-			//Por archivo y no por entrada, a diferencia de los packs de contenido: aquí un JSON corrupto es
-			//el diario entero, y seguir con la mitad sería peor que avisar y arrancar vacío.
-			DndsheetsMod.LOGGER.error("No se pudo leer el diario de campaña; se arranca vacío.", e);
+			//Per-file, not per-entry, unlike the content packs: here a corrupt JSON is the whole journal,
+			//and continuing with half of it would be worse than warning and starting empty.
+			DndsheetsMod.LOGGER.error("Could not read the campaign journal; starting empty.", e);
 		}
 	}
 
@@ -108,15 +109,15 @@ public class JournalManager {
 			Files.createDirectories(DndPaths.ROOT);
 			Files.writeString(FILE, DndsheetsMod.PRETTY_GSON.toJson(array));
 		} catch (IOException e) {
-			DndsheetsMod.LOGGER.error("No se pudo guardar el diario de campaña.", e);
+			DndsheetsMod.LOGGER.error("Could not save the campaign journal.", e);
 		}
 	}
 
-	//--- Operaciones -----------------------------------------------------------------------------------
+	//--- Operations --------------------------------------------------------------------------------------
 
 	/**
-	 * <p>Convierte el Libro y Pluma que el jugador lleva en la mano en una entrada del diario. Devuelve
-	 * {@code null} si no lleva ninguno o si está en blanco.</p>
+	 * <p>Converts the Book and Quill the player is holding into a journal entry. Returns
+	 * {@code null} if they're not holding one or if it's blank.</p>
 	 */
 	public static Entry publishFromBook(ServerPlayer author, ItemStack book, String title) {
 		String body = readPages(book);
@@ -131,9 +132,9 @@ public class JournalManager {
 	}
 
 	/**
-	 * <p>Páginas de un Libro y Pluma, unidas. Un libro SIN firmar guarda sus páginas como texto plano; uno
-	 * firmado las guarda como componentes JSON. Se acepta el sin firmar, que es el que reparte el mod y el
-	 * único que el jugador puede seguir editando.</p>
+	 * <p>Pages of a Book and Quill, joined together. An UNSIGNED book stores its pages as plain text; a
+	 * signed one stores them as JSON components. The unsigned one is accepted, since that's the one the
+	 * mod hands out and the only one the player can keep editing.</p>
 	 */
 	private static String readPages(ItemStack book) {
 		CompoundTag tag = book.getTag();
@@ -153,7 +154,7 @@ public class JournalManager {
 			.toLowerCase(Locale.ROOT)
 			.replaceAll("[^a-z0-9]+", "-")
 			.replaceAll("(^-|-$)", "");
-		if (slug.isEmpty()) slug = "nota"; //Un título entero en caracteres no latinos no debe dar un id vacío.
+		if (slug.isEmpty()) slug = "nota"; //A title entirely in non-Latin characters shouldn't produce an empty id.
 		String candidate = slug;
 		for (int n = 2; entries.containsKey(candidate); n++) candidate = slug + "-" + n;
 		return candidate;
@@ -164,7 +165,7 @@ public class JournalManager {
 		return entries.get(id);
 	}
 
-	/** Las entradas que ese jugador puede leer, en orden de creación. */
+	/** The entries that player can read, in creation order. */
 	public static List<Entry> readableBy(ServerPlayer player) {
 		ensureLoaded();
 		List<Entry> visible = new ArrayList<>();
@@ -174,7 +175,7 @@ public class JournalManager {
 		return visible;
 	}
 
-	/** Comparte con jugadores concretos (handout). No toca {@code party}. */
+	/** Shares with specific players (handout). Doesn't touch {@code party}. */
 	public static boolean share(String id, Collection<ServerPlayer> targets) {
 		ensureLoaded();
 		Entry entry = entries.get(id);
@@ -186,7 +187,7 @@ public class JournalManager {
 		return true;
 	}
 
-	/** Publica para todo el grupo, o lo revierte a privada dejando los compartidos concretos intactos. */
+	/** Publishes to the whole party, or reverts to private while leaving specific shares intact. */
 	public static boolean setParty(String id, boolean party) {
 		ensureLoaded();
 		Entry entry = entries.get(id);

@@ -5,13 +5,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-//Esqueleto repetido en TraitRegistry/PresetRegistry/SpellRegistry/MonsterRegistry: un mapa en memoria de
-//id -> definición, cargado en caliente por su comando /dnd... load, perdido al reiniciar el servidor salvo
-//que se recargue el mismo archivo.
+//Skeleton repeated in TraitRegistry/PresetRegistry/SpellRegistry/MonsterRegistry: an in-memory map of
+//id -> definition, hot-loaded by its /dnd... load command, lost on server restart unless the same file
+//is reloaded.
 public class NamedRegistry<T> {
 	private final Map<String, T> items = new LinkedHashMap<>();
 	private final Function<T, String> idOf;
-	private final String kindName; //Para el aviso de sobreescritura, p.ej. "rasgo", "preset", "hechizo", "monstruo".
+	private final String kindName; //For the overwrite warning, e.g. "trait", "preset", "spell", "monster".
 
 	public NamedRegistry(String kindName, Function<T, String> idOf) {
 		this.kindName = kindName;
@@ -21,35 +21,36 @@ public class NamedRegistry<T> {
 	public void register(T item) {
 		String id = idOf.apply(item);
 		if (items.containsKey(id)) {
-			DndsheetsMod.LOGGER.warn("El {} \"{}\" ya estaba cargado, se pisa con la nueva definición.", kindName, id);
+			DndsheetsMod.LOGGER.warn("The {} \"{}\" was already loaded; overwriting it with the new definition.", kindName, id);
 		}
 		items.put(id, item);
 	}
 
 	/**
-	 * <p>Igual, pero sin avisar de que pisa lo anterior. Para quien reescribe una entrada <b>a propósito y
-	 * en cada uso</b>: el bloque de una invocación se regenera en cada lanzado para recoger los cambios del
-	 * JSON del conjuro (ver {@code SummonManager}), así que el aviso salía una vez por Esfera Flamígera
-	 * lanzada — un WARN por algo que funciona como debe, que es la clase de ruido que hace que se dejen de
-	 * leer los avisos de verdad.</p>
+	 * <p>Same thing, but without warning that it's overwriting the previous entry. For whoever rewrites an
+	 * entry <b>on purpose and on every use</b>: a summon's stat block gets regenerated on every cast to
+	 * pick up changes to the spell's JSON (see {@code SummonManager}), so the warning used to fire once per
+	 * Flaming Sphere cast — a WARN for something working as intended, which is exactly the kind of noise
+	 * that makes people stop reading the warnings that actually matter.</p>
 	 */
 	public void replace(T item) {
 		items.put(idOf.apply(item), item);
 	}
 
 	/**
-	 * <p>El id tal y como está guardado y, si no aparece, el mismo sin el {@code minecraft:} de delante.</p>
+	 * <p>The id exactly as stored and, if not found, the same id without a leading {@code minecraft:}.</p>
 	 *
-	 * <p>Todos los comandos de contenido leen su id con {@code ResourceLocationArgument}, y eso le completa
-	 * el namespace por defecto a cualquier palabra sin {@code ":"} — no es cosa de los comandos, es lo que
-	 * hace {@code ResourceLocation} con cualquier id pelado. Pero acá los ids se guardan <b>tal cual vienen
-	 * del JSON</b>, y lo que crea el DM in-game no lleva namespace ("emboscada_goblin", "fighter"): escribir
-	 * lo mismo que sugiere el autocompletado no encontraba nada, y los botones del Panel de DM —que mandan
-	 * ese comando— fallaban igual. Se parcheó una vez para los presets ({@code PresetCommand}) y volvió a
-	 * aparecer en encuentros, que es de donde salió esto: el arreglo va donde pasan TODAS las búsquedas.</p>
+	 * <p>Every content command reads its id with {@code ResourceLocationArgument}, and that fills in the
+	 * default namespace for any word without a {@code ":"} — that's not something the commands do, it's
+	 * what {@code ResourceLocation} does with any bare id. But here ids are stored <b>exactly as they come
+	 * from the JSON</b>, and what a DM creates in-game has no namespace ("goblin_ambush", "fighter"):
+	 * typing exactly what autocomplete suggested would find nothing, and the DM Panel buttons — which send
+	 * that same command — failed the same way. It got patched once for presets ({@code PresetCommand}) and
+	 * resurfaced for encounters, which is where this fix came from: it belongs wherever ALL lookups pass
+	 * through.</p>
 	 *
-	 * <p>Un id de un addon con namespace propio ({@code miaddon:algo}) nunca entra por esta rama: ahí el
-	 * namespace es real y la primera búsqueda ya acierta.</p>
+	 * <p>An id from an addon with its own namespace ({@code myaddon:something}) never falls into this
+	 * branch: there the namespace is real and the first lookup already succeeds.</p>
 	 */
 	public T get(String id) {
 		T item = items.get(id);
@@ -63,9 +64,9 @@ public class NamedRegistry<T> {
 		return items.keySet();
 	}
 
-	//Público: usado por el creador de contenido in-game para borrar una entrada creada en el propio juego
-	//(ver ContentPackFile) — sin esto no había forma de sacar algo de un *Registry una vez cargado salvo
-	//reiniciar el servidor sin recargar el archivo que lo trajo.
+	//Public: used by the in-game content creator to delete an entry created in-game itself
+	//(see ContentPackFile) — without this there was no way to remove something from a *Registry once
+	//loaded except restarting the server without reloading the file that brought it in.
 	public boolean remove(String id) {
 		return items.remove(id) != null;
 	}

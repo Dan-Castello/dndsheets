@@ -14,32 +14,33 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * <p>Carga contenido de <b>datapacks y de otros mods</b>: cualquier JSON en
- * {@code data/<loquesea>/dndsheets/<tipo>/*.json} entra al registro solo, sin comandos y sin escribir una
- * línea de Java.</p>
+ * <p>Loads content from <b>datapacks and other mods</b>: any JSON at
+ * {@code data/<whatever>/dndsheets/<type>/*.json} joins the registry on its own, with no commands and
+ * without writing a line of Java.</p>
  *
- * <p><b>Por qué existe.</b> Hasta ahora el contenido solo podía venir de dos sitios: el pack que trae el
- * propio mod, y los archivos que un DM pone a mano en la carpeta de su mundo. Otro mod que quisiera añadir
- * treinta conjuros tenía que llamar a la API desde Java, compilar contra dndsheets y acertar con el momento
- * del arranque. Eso es una barrera que decide si hay ecosistema o no: los mods con cientos de addons —Create
- * es el ejemplo— lo son porque extenderlos es <em>poner datos en una carpeta</em>, no programar.</p>
+ * <p><b>Why it exists.</b> Until now content could only come from two places: the pack the mod itself
+ * ships with, and the files a DM places by hand in their world folder. Another mod wanting to add thirty
+ * spells had to call the API from Java, compile against dndsheets, and get the startup timing right.
+ * That's a barrier that decides whether an ecosystem exists at all: mods with hundreds of addons — Create
+ * being the example — are that way because extending them means <em>putting data in a folder</em>, not
+ * programming.</p>
  *
- * <p><b>Qué gana cada uno.</b> Un mod addon mete sus JSON en su jar y ya está: no depende de la API, no se
- * rompe si cambia una firma, y funciona con cualquier versión de dndsheets que lea el mismo esquema. Un DM
- * sin conocimientos de mods puede repartir su bestiario como un datapack normal. Y {@code /reload} recarga
- * todo, que es el ciclo de trabajo que ya conoce cualquiera que haya tocado recetas.</p>
+ * <p><b>What each side gains.</b> An addon mod drops its JSON in its jar and that's it: no dependency on
+ * the API, nothing breaks if a signature changes, and it works with any dndsheets version that reads the
+ * same schema. A DM with no modding knowledge can hand out their bestiary as a normal datapack. And
+ * {@code /reload} reloads everything, the same workflow anyone who has touched recipes already knows.</p>
  *
- * <p><b>Orden y prioridad.</b> Los datapacks se cargan al preparar el servidor, ANTES de que
- * {@code DndPaths} lea la carpeta del mundo, así que en un choque de ids gana lo que el DM escribió a mano.
- * Es el orden que se quiere: el contenido de un addon es un punto de partida, y la última palabra la tiene
- * quien lleva la partida.</p>
+ * <p><b>Order and priority.</b> Datapacks are loaded when the server starts up, BEFORE
+ * {@code DndPaths} reads the world folder, so in an id clash whatever the DM wrote by hand wins. That's
+ * the order we want: an addon's content is a starting point, and whoever is running the game has the
+ * final word.</p>
  */
 @Mod.EventBusSubscriber
 public class ContentDatapackLoader extends SimpleJsonResourceReloadListener {
 
 	private static final Gson GSON = new Gson();
 
-	/** Qué hacer con cada JSON encontrado. Firma común a los seis registros. */
+	/** What to do with each JSON found. Signature shared by the six registries. */
 	@FunctionalInterface
 	private interface JsonLoader {
 		int load(JsonElement root, String source, java.util.function.Consumer<String> onId);
@@ -56,11 +57,11 @@ public class ContentDatapackLoader extends SimpleJsonResourceReloadListener {
 
 	@SubscribeEvent
 	public static void onAddReloadListeners(AddReloadListenerEvent event) {
-		//Una carpeta por tipo, con el mismo nombre que ya usa la carpeta del mundo: quien sepa poner un
-		//hechizo en <mundo>/dndsheets/spells/ no tiene que aprender un segundo esquema de rutas.
-		//Su propia tabla en vez de reusar ContentType: ese enum significa "lo que el editor in-game sabe
-		//editar" —los objetos mágicos no están— y ensancharlo para esto habría cambiado su contrato. El
-		//compilador lo dijo en cuanto lo intenté, rompiendo un switch exhaustivo de la pantalla del editor.
+		//One folder per type, with the same name the world folder already uses: whoever knows how to
+		//place a spell in <world>/dndsheets/spells/ doesn't have to learn a second path scheme.
+		//Its own table instead of reusing ContentType: that enum means "what the in-game editor knows how
+		//to edit" — magic items aren't in it — and widening it for this would have changed its contract.
+		//The compiler said so the moment I tried, breaking an exhaustive switch in the editor screen.
 		event.addListener(new ContentDatapackLoader("weapons", Config::loadJson));
 		event.addListener(new ContentDatapackLoader("spells", SpellRegistry::loadJson));
 		event.addListener(new ContentDatapackLoader("monsters", MonsterRegistry::loadJson));
@@ -73,9 +74,9 @@ public class ContentDatapackLoader extends SimpleJsonResourceReloadListener {
 
 	@Override
 	protected void apply(Map<ResourceLocation, JsonElement> files, ResourceManager manager, ProfilerFiller profiler) {
-		//Quién trajo cada id EN ESTA recarga. Sirve para distinguir dos cosas que se ven igual en el registro
-		//y no lo son: que un datapack se recargue sobre sí mismo (normal, silencioso) y que dos addons
-		//distintos reclamen el mismo id (un choque de verdad, que hay que decir y con los dos nombres).
+		//Who brought each id in THIS reload. Used to distinguish two things that look the same in the
+		//registry but aren't: a datapack reloading over itself (normal, silent) versus two different
+		//addons claiming the same id (a real clash, which must be reported with both names).
 		Map<String, ResourceLocation> claimedHere = new HashMap<>();
 		int loaded = 0;
 
@@ -85,21 +86,21 @@ public class ContentDatapackLoader extends SimpleJsonResourceReloadListener {
 				loaded += loader.load(entry.getValue(), source.toString(), id -> {
 					ResourceLocation previous = claimedHere.put(id, source);
 					if (previous != null) {
-						DndsheetsMod.LOGGER.warn("dndsheets: dos datapacks reclaman el id \"{}\" ({} y {}); gana el segundo.",
+						DndsheetsMod.LOGGER.warn("dndsheets: two datapacks claim the id \"{}\" ({} and {}); the second one wins.",
 							id, previous, source);
 					}
 				});
 			} catch (RuntimeException e) {
-				//Por archivo, no por recarga entera: un JSON roto de un addon no puede dejar sin contenido a
-				//los demás. Mismo criterio que JsonRegistryLoader ya aplica por entrada.
+				//Per file, not for the whole reload: a broken JSON from one addon can't leave everyone
+				//else without content. Same criterion JsonRegistryLoader already applies per entry.
 				DndsheetsMod.LOGGER.warn("dndsheets: no pude cargar {}: {}", source, e.toString());
 			}
 		}
 
 		if (loaded > 0) DndsheetsMod.LOGGER.info("dndsheets: cargadas {} entradas de {} desde datapacks.", loaded, label);
 
-		//Un /reload registra los monstruos otra vez, con el modelo que diga su JSON: sin esto, recargar
-		//deshace los packs de aspecto y el dragón de Ice and Fire vuelve a ser un devastador.
+		//A /reload registers the monsters again, with whatever model their JSON specifies: without this,
+		//reloading would undo the appearance packs and the Ice and Fire dragon would go back to being a ravager.
 		if ("monsters".equals(label)) MonsterSkins.reapplyIfStarted();
 	}
 }

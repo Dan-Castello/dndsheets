@@ -12,41 +12,50 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * <p>Rasgos (pasivas/habilidades de clase) cargados en caliente por {@code /dndtraits load}, en memoria
- * (igual que {@link SpellRegistry}/{@link MonsterRegistry}: se pierden al reiniciar a menos que se
- * recargue el mismo archivo). Un preset de clase los concede solos por id (campo {@code "traits"} en su
- * JSON, ver {@link PresetRegistry}); {@code /dndtraits grant} los concede a mano.</p>
+ * <p>Traits (class passives/features) hot-loaded by {@code /dndtraits load}, in memory
+ * (same as {@link SpellRegistry}/{@link MonsterRegistry}: lost on restart unless the same file is
+ * reloaded). A class preset grants them automatically by id (the {@code "traits"} field in its JSON, see
+ * {@link PresetRegistry}); {@code /dndtraits grant} grants them by hand.</p>
  *
- * <p>Dos efectos por ahora, ambos "dado que escala por nivel" — {@link LevelDice} es la misma forma para
- * los dos, solo cambia qué campo del JSON se lee y dónde se consume:</p>
+ * <p>Two effects for now, both "a die that scales by level" — {@link LevelDice} is the same shape for
+ * both, only the JSON field read and where it's consumed differ:</p>
  * <ul>
- *   <li>{@code unarmedDiceByLevel}: sustituye el golpe a mano desnuda por una tirada real de 5e (Artes
- *   Marciales del monje) — ver {@link #unarmedProfileFor}, consumido por {@link CombatManager}.</li>
- *   <li>{@code sneakAttackDiceByLevel}: dados extra que se SUMAN a la tirada de daño cuando el ataque se
- *   hizo con ventaja (Ataque Furtivo del pícaro) — ver {@link #sneakAttackDiceFor}, consumido también por
- *   {@link CombatManager}. Simplificación deliberada: 5e también lo permite con un aliado adyacente sin
- *   desventaja; aquí solo cuenta la ventaja real, no hay noción de "aliado adyacente" en el motor.</li>
+ *   <li>{@code unarmedDiceByLevel}: replaces the bare-handed strike with a real 5e roll (the monk's
+ *   Martial Arts) — see {@link #unarmedProfileFor}, consumed by {@link CombatManager}.</li>
+ *   <li>{@code sneakAttackDiceByLevel}: extra dice that get ADDED to the damage roll when the attack was
+ *   made with advantage (the rogue's Sneak Attack) — see {@link #sneakAttackDiceFor}, also consumed by
+ *   {@link CombatManager}. Deliberate simplification: 5e also allows it with an adjacent ally and no
+ *   disadvantage; here only real advantage counts, there's no notion of "adjacent ally" in the engine.</li>
  * </ul>
- * <p>Añadir un tipo de efecto nuevo es el mismo patrón: un campo más aquí, una rama más donde se consuma
- * — no hace falta un motor de reglas genérico para esto.</p>
+ * <p>Adding a new effect type is the same pattern: one more field here, one more branch where it's
+ * consumed — no generic rules engine needed for this.</p>
  */
-//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
-//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
-//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
-//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
+//No stability contract: this mod doesn't publish a versioned API (the DndSheetsApi facade was
+//deleted — 233 lines that not a single caller used, addons included, which come in through here).
+//An external mod calling these methods risks their signature changing without notice. The only
+//thing meant for external consumption is the api/event events, which do have real consumers.
 public class TraitRegistry {
 	public record LevelDice(int level, String dice) {}
 	public record Trait(String id, String name, String unarmedAbility, List<LevelDice> unarmedDiceByLevel, List<LevelDice> sneakAttackDiceByLevel) {}
 	public record UnarmedProfile(String dice, String ability) {}
 
-	private static final NamedRegistry<Trait> REGISTRY = new NamedRegistry<>("rasgo", Trait::id);
+	private static final NamedRegistry<Trait> REGISTRY = new NamedRegistry<>("trait", Trait::id);
 
 	public static void register(Trait trait) {
 		REGISTRY.register(trait);
 	}
 
 	public static Trait get(String id) {
-		return REGISTRY.get(id);
+		return REGISTRY.get(canonical(id));
+	}
+
+	//Trait ids written into sheets when they were Spanish ("monje:artes_marciales") still resolve.
+	private static String canonical(String id) {
+		return switch (id) {
+			case "monje:artes_marciales" -> "monk:martial_arts";
+			case "picaro:ataque_furtivo" -> "rogue:sneak_attack";
+			default -> id;
+		};
 	}
 
 	public static Set<String> ids() {
@@ -57,11 +66,11 @@ public class TraitRegistry {
 		return REGISTRY.remove(id);
 	}
 
-	//Público: usado por TraitCommand (/dndtraits load) y por DndPaths para precargar solo todos los .json
-	//de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de comandos.
-	private static final JsonRegistryLoader<Trait> LOADER = new JsonRegistryLoader<>("rasgo", TraitRegistry::parse, TraitRegistry::register);
+	//Public: used by TraitCommand (/dndtraits load) and by DndPaths to preload all the folder's .json
+	//files on server startup, without DndPaths having to depend on the command layer.
+	private static final JsonRegistryLoader<Trait> LOADER = new JsonRegistryLoader<>("trait", TraitRegistry::parse, TraitRegistry::register);
 
-	/** Carga desde un JSON ya leído (datapack o jar de otro mod) — ver ContentDatapackLoader. */
+	/** Loads from an already-parsed JSON (datapack or another mod's jar) — see ContentDatapackLoader. */
 	public static int loadJson(com.google.gson.JsonElement root, String source, java.util.function.Consumer<String> onId) {
 		return LOADER.loadJson(root, source, onId);
 	}
@@ -89,43 +98,43 @@ public class TraitRegistry {
 			JsonObject tier = el.getAsJsonObject();
 			tiers.add(new LevelDice(tier.has("level") ? tier.get("level").getAsInt() : 1, tier.get("dice").getAsString()));
 		}
-		tiers.sort((a, b) -> b.level() - a.level()); //Descendente: el primer nivel que "quepa" es el más alto que corresponde.
+		tiers.sort((a, b) -> b.level() - a.level()); //Descending: the first level that "fits" is the highest applicable one.
 		return tiers;
 	}
 
-	//--- Sheet: lista de ids de rasgos concedidos en "traits" (ver SheetLoader.validateSheet) ---
+	//--- Sheet: list of granted trait ids in "traits" (see SheetLoader.validateSheet) ---
 
-	//Añade el rasgo si no lo tenía ya; usado tanto al aplicar un preset (PresetRegistry.applyToSheet)
-	//como por /dndtraits grant, para no duplicar entradas si se concede dos veces por error.
+	//Adds the trait if it wasn't already there; used both when applying a preset (PresetRegistry.applyToSheet)
+	//and by /dndtraits grant, to avoid duplicate entries if granted twice by mistake.
 	public static void grant(JsonObject sheet, String traitId) {
 		if (!sheet.has("traits")) sheet.add("traits", new JsonArray());
 		JsonArray granted = sheet.getAsJsonArray("traits");
 		for (JsonElement el : granted) {
-			if (el.getAsString().equals(traitId)) return;
+			if (canonical(el.getAsString()).equals(canonical(traitId))) return;
 		}
 		granted.add(traitId);
 	}
 
-	//Usado por PresetRegistry.applyToSheet al cambiar de preset: sin esto, cambiar de "monje" a "mago"
-	//dejaba Artes Marciales concedido para siempre, ya que grant() solo sabe añadir, nunca quitar.
+	//Used by PresetRegistry.applyToSheet when switching presets: without this, switching from "monk" to
+	//"wizard" left Martial Arts granted forever, since grant() only knows how to add, never remove.
 	public static void revoke(JsonObject sheet, String traitId) {
 		if (!sheet.has("traits")) return;
 		JsonArray granted = sheet.getAsJsonArray("traits");
 		JsonArray kept = new JsonArray();
 		for (JsonElement el : granted) {
-			if (!el.getAsString().equals(traitId)) kept.add(el);
+			if (!canonical(el.getAsString()).equals(canonical(traitId))) kept.add(el);
 		}
 		sheet.add("traits", kept);
 	}
 
-	//Golpe a mano desnuda: recorre los rasgos concedidos buscando uno que defina dado por nivel (p.ej.
-	//Artes Marciales); devuelve el de mayor nivel aplicable, o null si ninguno de los rasgos concedidos
-	//toca esto (comportamiento normal de Minecraft para el puñetazo, sin cambios).
+	//Bare-handed strike: walks the granted traits looking for one that defines a die by level (e.g.
+	//Martial Arts); returns the highest applicable level, or null if none of the granted traits touch this
+	//(normal unmodified Minecraft behavior for punching).
 	public static UnarmedProfile unarmedProfileFor(JsonObject sheet, int level) {
 		if (sheet == null || !sheet.has("traits")) return null;
 
 		for (JsonElement el : sheet.getAsJsonArray("traits")) {
-			Trait trait = REGISTRY.get(el.getAsString());
+			Trait trait = REGISTRY.get(canonical(el.getAsString()));
 			if (trait == null || trait.unarmedDiceByLevel().isEmpty()) continue;
 
 			for (LevelDice tier : trait.unarmedDiceByLevel()) {
@@ -135,14 +144,14 @@ public class TraitRegistry {
 		return null;
 	}
 
-	//Ataque furtivo: dado extra que se suma a la tirada de daño (no la sustituye) cuando el ataque se hizo
-	//con ventaja. Null si ninguno de los rasgos concedidos lo define, o si el personaje aún no llega al
-	//nivel de la primera entrada de la tabla.
+	//Sneak Attack: extra die added to the damage roll (not replacing it) when the attack was made with
+	//advantage. Null if none of the granted traits define it, or if the character hasn't yet reached the
+	//level of the table's first entry.
 	public static String sneakAttackDiceFor(JsonObject sheet, int level) {
 		if (sheet == null || !sheet.has("traits")) return null;
 
 		for (JsonElement el : sheet.getAsJsonArray("traits")) {
-			Trait trait = REGISTRY.get(el.getAsString());
+			Trait trait = REGISTRY.get(canonical(el.getAsString()));
 			if (trait == null || trait.sneakAttackDiceByLevel().isEmpty()) continue;
 
 			for (LevelDice tier : trait.sneakAttackDiceByLevel()) {

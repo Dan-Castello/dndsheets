@@ -10,9 +10,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Ventana forzada mientras el personaje está caído a 0 PG: no se puede cerrar con ESC, solo el
- * servidor la cierra cuando el jugador se estabiliza (3 éxitos, un 20 natural, o alguien lo reanima)
- * o muere de verdad (3 fallos). Ver {@link net.hawthorn.dndsheets.DeathSaveManager}.</p>
+ * <p>Forced window while the character is downed at 0 HP: it can't be closed with ESC, only the
+ * server closes it when the player stabilizes (3 successes, a natural 20, or someone revives them)
+ * or actually dies (3 failures). See {@link net.hawthorn.dndsheets.DeathSaveManager}.</p>
  */
 public class DeathSaveScreen extends ModalDialogScreen {
 	private static final int WIDTH = 240;
@@ -37,9 +37,9 @@ public class DeathSaveScreen extends ModalDialogScreen {
 		addModalButton(20, 60, WIDTH - 40, 20, Component.translatable("gui.dndsheets.death_save.roll"), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new DeathSaveMessage(DeathSaveMessage.Kind.ROLL))
 		);
-		//Dejarse morir: para quien no quiere seguir tirando (personaje que ya cumplió su arco, sesión que
-		//se tiene que cortar, etc.) — mata de verdad al instante, mismo camino que 3 fallos de salvación
-		//(ver DeathSaveManager.handleGiveUpRequest). Sin confirmación extra: un solo clic, igual que tirar.
+		//Give up: for someone who doesn't want to keep rolling (a character whose arc is already done, a
+		//session that needs to wrap up, etc.) — kills them for real, instantly, same path as 3 failed saves
+		//(see DeathSaveManager.handleGiveUpRequest). No extra confirmation: a single click, same as rolling.
 		addModalButton(20, 85, WIDTH - 40, 20, Component.translatable("gui.dndsheets.death_save.give_up").withStyle(ChatFormatting.DARK_RED), button ->
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new DeathSaveMessage(DeathSaveMessage.Kind.GIVE_UP))
 		);

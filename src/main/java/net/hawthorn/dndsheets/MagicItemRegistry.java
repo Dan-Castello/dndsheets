@@ -17,29 +17,29 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * <p>Objetos mágicos. Sexto tipo de contenido, con la misma forma que los otros cinco:
- * {@link NamedRegistry} en memoria + {@link JsonRegistryLoader} desde un JSON por carpeta.</p>
+ * <p>Magic items. Sixth content type, with the same shape as the other five:
+ * {@link NamedRegistry} in memory + {@link JsonRegistryLoader} from a JSON per folder.</p>
  *
- * <p><b>Por qué su importación no se parece a la de hechizos y monstruos:</b> el SRD publica los objetos
- * mágicos solo como <em>prosa</em> — nombre, rareza, categoría y un párrafo de descripción. No hay campo
- * de bonificador ni de resistencia que leer, así que sus mecánicas no se pueden derivar automáticamente
- * sin inventárselas. De ahí que un objeto tenga dos mitades: la de <b>referencia</b> (nombre, rareza,
- * descripción), importable entera y ya útil para que un DM lo consulte y lo entregue, y la <b>mecánica</b>
- * (CA, salvaciones, resistencias), que se escribe a mano y solo existe donde de verdad repite un patrón.</p>
+ * <p><b>Why importing it doesn't look like spells and monsters:</b> the SRD publishes magic items only
+ * as <em>prose</em> — name, rarity, category, and a description paragraph. There's no bonus field or
+ * resistance field to read, so their mechanics can't be derived automatically without making them up.
+ * Hence an item has two halves: the <b>reference</b> half (name, rarity, description), importable
+ * wholesale and already useful for a DM to look up and hand out, and the <b>mechanical</b> half (AC,
+ * saves, resistances), which is written by hand and only exists where it genuinely repeats a pattern.</p>
  *
- * <p>Un objeto sin mecánicas no es un objeto roto: es un objeto que el DM narra, que es como funciona la
- * mayoría de los objetos mágicos en una mesa real.</p>
+ * <p>An item with no mechanics isn't a broken item: it's an item the DM narrates, which is how most
+ * magic items work at a real table.</p>
  */
 public class MagicItemRegistry {
 
 	/**
-	 * @param acBonus        suma a la CA mientras está equipado o sintonizado.
-	 * @param saveBonus      suma a todas las salvaciones (Anillo/Capa de Protección).
-	 * @param affinities     resistencias que concede, mismo vocabulario que el resto del mod.
-	 * @param grantsSpellId  hechizo que permite lanzar (varitas y bastones), o {@code null}.
-	 * @param attunement     si necesita sintonización. En 5e limita a 3 objetos por personaje, que es lo
-	 *                       que impide que alguien acumule veinte anillos — y en Minecraft resuelve además
-	 *                       que no haya ranura de anillo ni de capa donde "llevarlos" puestos.
+	 * @param acBonus        adds to AC while equipped or attuned.
+	 * @param saveBonus      adds to all saving throws (Ring/Cloak of Protection).
+	 * @param affinities     resistances it grants, same vocabulary as the rest of the mod.
+	 * @param grantsSpellId  spell it lets you cast (wands and staves), or {@code null}.
+	 * @param attunement     whether it needs attunement. In 5e it caps a character at 3 items, which is
+	 *                       what stops someone from stacking twenty rings — and on top of that, in
+	 *                       Minecraft it solves the fact that there's no ring or cloak slot to "wear" them in.
 	 */
 	public record MagicItem(String id, String name, String rarity, String description, String itemId,
 	                        int acBonus, int saveBonus, Map<String, String> affinities,
@@ -48,23 +48,24 @@ public class MagicItemRegistry {
 	                        Map<String, String> temporaryAffinities, int durationRounds) {
 
 		/**
-		 * <p>Se usa gastándolo (pociones, aceites). Sus efectos NO son pasivos: modelar una poción de
-		 * resistencia como afinidad permanente protegería a quien lleva la botella en el bolsillo sin
-		 * beberla, que es justo el falso positivo que hubo que excluir al derivar mecánicas de la prosa.</p>
+		 * <p>Used by consuming it (potions, oils). Its effects are NOT passive: modeling a potion of
+		 * resistance as a permanent affinity would protect whoever carries the bottle in their pocket
+		 * without drinking it, which is exactly the false positive that had to be excluded when deriving
+		 * mechanics from prose.</p>
 		 */
 		public boolean isConsumable() {
 			return healDice != null || temporaryHpDice != null || grantsCondition != null
 				|| !temporaryAffinities.isEmpty();
 		}
 
-		/** Un objeto puramente narrativo: el DM lo describe, el motor no tiene nada que aplicar. */
+		/** A purely narrative item: the DM describes it, the engine has nothing to apply. */
 		public boolean hasMechanics() {
 			return acBonus != 0 || saveBonus != 0 || !affinities.isEmpty() || grantsSpellId != null
 				|| isConsumable();
 		}
 	}
 
-	private static final NamedRegistry<MagicItem> REGISTRY = new NamedRegistry<>("objeto mágico", MagicItem::id);
+	private static final NamedRegistry<MagicItem> REGISTRY = new NamedRegistry<>("magic item", MagicItem::id);
 
 	public static void register(MagicItem item) { REGISTRY.register(item); }
 
@@ -75,9 +76,9 @@ public class MagicItemRegistry {
 	public static boolean remove(String id) { return REGISTRY.remove(id); }
 
 	private static final JsonRegistryLoader<MagicItem> LOADER =
-		new JsonRegistryLoader<>("objeto mágico", MagicItemRegistry::parse, MagicItemRegistry::register);
+		new JsonRegistryLoader<>("magic item", MagicItemRegistry::parse, MagicItemRegistry::register);
 
-	/** Carga desde un JSON ya leído (datapack o jar de otro mod) — ver ContentDatapackLoader. */
+	/** Loads from an already-parsed JSON (datapack or another mod's jar) — see ContentDatapackLoader. */
 	public static int loadJson(com.google.gson.JsonElement root, String source, java.util.function.Consumer<String> onId) {
 		return LOADER.loadJson(root, source, onId);
 	}
@@ -91,10 +92,10 @@ public class MagicItemRegistry {
 		return new MagicItem(
 			id,
 			json.has("name") ? json.get("name").getAsString() : id,
-			json.has("rarity") ? json.get("rarity").getAsString() : "común",
+			json.has("rarity") ? json.get("rarity").getAsString() : "common",
 			json.has("description") ? json.get("description").getAsString() : "",
-			//El ítem vanilla que le presta la apariencia. Un lingote de oro por defecto: neutro, y no se
-			//confunde con un arma o una armadura de verdad.
+			//The vanilla item that lends it its appearance. A gold ingot by default: neutral, and not
+			//mistaken for a real weapon or armor.
 			json.has("item") ? json.get("item").getAsString() : "minecraft:gold_ingot",
 			json.has("acBonus") ? json.get("acBonus").getAsInt() : 0,
 			json.has("saveBonus") ? json.get("saveBonus").getAsInt() : 0,
@@ -105,7 +106,7 @@ public class MagicItemRegistry {
 			json.has("temporaryHpDice") ? json.get("temporaryHpDice").getAsString() : null,
 			json.has("grantsCondition") ? json.get("grantsCondition").getAsString() : null,
 			temporaryAffinities,
-			//10 asaltos = 1 minuto de 5e, que es lo que dura la mayoría de las pociones.
+			//10 rounds = 1 minute in 5e, which is how long most potions last.
 			json.has("durationRounds") ? json.get("durationRounds").getAsInt() : 10);
 	}
 
@@ -119,17 +120,17 @@ public class MagicItemRegistry {
 		return result;
 	}
 
-	//--- Etiqueta NBT del ItemStack, mismo patrón que quickSpell y monsterSpawn ---
+	//--- ItemStack NBT tag, same pattern as quickSpell and monsterSpawn ---
 
 	public static ItemStack tag(ItemStack stack, String itemId) {
 		CompoundTag tag = stack.getOrCreateTag();
 		CompoundTag dnd = tag.getCompound("dndsheets");
 		dnd.putString("magicItem", itemId);
 
-		//Una varita o un bastón que lanza un conjuro se etiqueta ADEMÁS como báculo rápido: ese camino ya
-		//existe entero (ver QuickSpellManager y AbilityItemDispatcher) y hace justo lo que hace falta —
-		//clic derecho lanza el conjuro con las características y los espacios del portador. Reutilizarlo
-		//sale gratis; escribir un segundo mecanismo de "objeto que lanza algo" no.
+		//A wand or staff that casts a spell is ALSO tagged as a quick staff: that path already exists in
+		//full (see QuickSpellManager and AbilityItemDispatcher) and does exactly what's needed — right-click
+		//casts the spell using the holder's ability scores and spell slots. Reusing it is free; writing a
+		//second "item that casts something" mechanism isn't.
 		MagicItem item = get(itemId);
 		if (item != null && item.grantsSpellId() != null && SpellRegistry.get(item.grantsSpellId()) != null) {
 			dnd.putString("quickSpell", item.grantsSpellId());
@@ -147,11 +148,11 @@ public class MagicItemRegistry {
 		return id == null || id.isEmpty() ? null : id;
 	}
 
-	//--- Qué objetos le están aplicando ahora mismo a un jugador ---
+	//--- Which items are currently affecting a player ---
 
-	//En 5e son 3 y no es un número redondo por casualidad: es el freno que impide acumular objetos sin
-	//límite. Aquí además resuelve un problema propio de Minecraft — no hay ranura de anillo ni de capa, así
-	//que sin sintonización no habría forma de "llevar puesto" un Anillo de Protección.
+	//It's 3 in 5e, and it's not a round number by coincidence: it's the brake that stops items from
+	//stacking without limit. Here it also solves a Minecraft-specific problem — there's no ring or cloak
+	//slot, so without attunement there would be no way to "wear" a Ring of Protection.
 	public static final int MAX_ATTUNED = 3;
 
 	public static List<String> attunedIds(JsonObject sheet) {
@@ -161,7 +162,7 @@ public class MagicItemRegistry {
 		return attuned;
 	}
 
-	/** @return false si ya llegó al límite o si ya lo tenía sintonizado. */
+	/** @return false if the limit was already reached or if it was already attuned. */
 	public static boolean attune(JsonObject sheet, String itemId) {
 		List<String> attuned = attunedIds(sheet);
 		if (attuned.contains(itemId) || attuned.size() >= MAX_ATTUNED) return false;
@@ -184,11 +185,11 @@ public class MagicItemRegistry {
 	}
 
 	/**
-	 * <p>Los objetos cuyos efectos están activos sobre ese jugador. Uno que exige sintonización cuenta
-	 * solo si está sintonizado; uno que no la exige, solo si lo lleva en las manos o puesto como armadura.</p>
+	 * <p>The items whose effects are active on that player. One that requires attunement counts only if
+	 * it's attuned; one that doesn't, only if it's held in hand or worn as armor.</p>
 	 *
-	 * <p>Esa distinción es lo que evita el caso absurdo de un jugador con el inventario lleno de objetos
-	 * sumando bonificadores por el mero hecho de cargarlos.</p>
+	 * <p>That distinction is what avoids the absurd case of a player with an inventory full of items
+	 * stacking bonuses for the mere fact of carrying them.</p>
 	 */
 	public static List<MagicItem> activeFor(Player player, JsonObject sheet) {
 		List<MagicItem> active = new ArrayList<>();
@@ -203,15 +204,15 @@ public class MagicItemRegistry {
 		for (String id : attuned) {
 			MagicItem item = get(id);
 			if (item == null) continue;
-			//Con Curios instalado hay dónde llevar puesto un anillo o una capa, así que se exige lo mismo
-			//que 5e: sintonizado Y equipado. Sin Curios no existe esa ranura, y exigirlo dejaría el objeto
-			//inservible para siempre — ahí la sintonización hace de las dos cosas a la vez.
+			//With Curios installed there's somewhere to wear a ring or a cloak, so the same rule as 5e
+			//applies: attuned AND equipped. Without Curios that slot doesn't exist, and requiring it would
+			//leave the item permanently unusable — there, attunement does double duty.
 			if (net.hawthorn.dndsheets.compat.CuriosCompat.isLoaded() && !wornIds.contains(id)) continue;
 			active.add(item);
 		}
 
 		for (String id : wornIds) {
-			if (attuned.contains(id)) continue; //Ya contado arriba: no se aplica dos veces.
+			if (attuned.contains(id)) continue; //Already counted above: don't apply it twice.
 			MagicItem item = get(id);
 			if (item != null && !item.attunement()) active.add(item);
 		}
@@ -219,12 +220,12 @@ public class MagicItemRegistry {
 	}
 
 	/**
-	 * <p>Lo que el jugador lleva puesto de verdad. Con Curios instalado esto incluye sus ranuras (anillo,
-	 * collar, capa, cinturón), que es donde un Anillo de Protección debería ir de forma natural; sin
-	 * Curios, la lista es la de siempre y esos objetos siguen dependiendo de la sintonización.</p>
+	 * <p>What the player is actually wearing. With Curios installed this includes its slots (ring,
+	 * necklace, cloak, belt), which is where a Ring of Protection should naturally go; without Curios,
+	 * the list is the usual one and those items still just depend on attunement.</p>
 	 *
-	 * <p>La integración es blanda: {@link net.hawthorn.dndsheets.compat.CuriosCompat} devuelve una lista
-	 * vacía si Curios no está, así que aquí no hay ninguna rama que mantener.</p>
+	 * <p>The integration is soft: {@link net.hawthorn.dndsheets.compat.CuriosCompat} returns an empty
+	 * list if Curios isn't present, so there's no branch here to maintain.</p>
 	 */
 	private static List<ItemStack> equippedStacks(Player player) {
 		List<ItemStack> stacks = new ArrayList<>();

@@ -1,0 +1,6 @@
+[
+  { "id": "dndsheets:dagger", "dice": "1d4", "ability": "dex", "damageType": "slashing", "name": "Dagger", "item": "minecraft:iron_sword" },
+  { "id": "dndsheets:rapier", "dice": "1d8", "ability": "dex", "damageType": "piercing", "name": "Rapier", "item": "minecraft:iron_sword" },
+  { "id": "dndsheets:greataxe", "dice": "1d12", "ability": "str", "damageType": "slashing", "name": "Greataxe", "item": "minecraft:diamond_axe", "hands": "two" },
+  { "id": "dndsheets:warhammer", "dice": "1d8", "ability": "str", "damageType": "bludgeoning", "name": "Warhammer", "item": "minecraft:iron_axe", "hands": "versatile", "versatileDice": "1d10" }
+]

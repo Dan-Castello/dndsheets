@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.hawthorn.dndsheets.compat.PehkuiCompat;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -27,31 +28,33 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * <p>Bloques de estadísticas de monstruo cargados en caliente por {@code /dndmonsters load}, en memoria
- * (se pierden al reiniciar el servidor a menos que se recargue el mismo archivo). Los monstruos spawneados
- * son mobs vanilla reales con {@code NoAI:1} y una etiqueta NBT persistente {@code {dndsheets:{monster:"id",
- * currentHp:N}}} que los liga a su bloque de estadísticas y trackea su vida real de D&amp;D.</p>
+ * <p>Monster stat blocks hot-loaded by {@code /dndmonsters load}, in memory (lost on server restart
+ * unless the same file is reloaded). Spawned monsters are real vanilla mobs with {@code NoAI:1} and a
+ * persistent NBT tag {@code {dndsheets:{monster:"id", currentHp:N}}} that ties them to their stat block
+ * and tracks their real D&amp;D health.</p>
  */
-//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
-//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
-//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
-//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
+//No stability contract: this mod doesn't publish a versioned API (the DndSheetsApi facade was
+//deleted — 233 lines that not a single caller used, not even the addons, which come in through here).
+//An external mod calling these methods is exposed to their signature changing without notice. The only
+//thing intended for external consumption is the api/event events, which do have real consumers.
 public class MonsterRegistry {
 	/**
-	 * <p>Cómo se VE un monstruo, con piezas de Minecraft y sin traer ningún modelo nuevo.</p>
+	 * <p>How a monster LOOKS, using Minecraft's own pieces without bringing in any new model.</p>
 	 *
-	 * <p>El bestiario usa 41 modelos vanilla para 330 monstruos, y muy mal repartidos: 52 criaturas son un
-	 * devastador, los 43 dragones entre ellas. Para quien juega, eso es "todo es lo mismo con otro nombre" —
-	 * y es la ventaja más clara que le sacan los VTT con bibliotecas de fichas y arte.</p>
+	 * <p>The bestiary uses 41 vanilla models for 330 monsters, and very unevenly distributed: 52
+	 * creatures are a vindicator, the 43 dragons among them. To someone playing, that reads as "it's all
+	 * the same thing with a different name" — and it's the clearest edge VTTs with sheet and art
+	 * libraries have over this.</p>
 	 *
-	 * <p>Sin poder enviar arte de terceros (licencias) ni inventar modelos, lo que sí se puede hacer es
-	 * usar las piezas que Minecraft ya tiene: <b>equipo visible</b> (un esqueleto con yelmo de hierro y
-	 * espada no se lee como el mismo bicho que uno pelado), <b>tamaño de cría</b> y <b>brillo</b>. Es
-	 * gratis, no pesa nada, y diferencia sobre todo a los 51 humanoides, que es donde más se notaba.</p>
+	 * <p>Without the ability to ship third-party art (licensing) or invent models, what can actually be
+	 * done is use the pieces Minecraft already has: <b>visible equipment</b> (a skeleton with an iron
+	 * helmet and sword doesn't read as the same critter as a bare one), <b>baby size</b>, and
+	 * <b>glowing</b>. It's free, weighs nothing, and mostly differentiates the 51 humanoids, which is
+	 * where it showed the most.</p>
 	 *
-	 * <p>La respuesta de fondo, la que da un ecosistema de verdad, está en {@code baseEntity}: acepta
-	 * CUALQUIER entidad registrada, también la de otro mod. Un addon con dragones de verdad se enchufa
-	 * escribiendo su id ahí, sin tocar este mod.</p>
+	 * <p>The real long-term answer, the one that gives a true ecosystem, is in {@code baseEntity}: it
+	 * accepts ANY registered entity, including one from another mod. An addon with real dragons plugs in
+	 * by writing its id there, without touching this mod.</p>
 	 */
 	public record Appearance(String mainHand, String offHand, String helmet, String chestplate, String leggings,
 			String boots, boolean baby, boolean glowing) {
@@ -73,16 +76,16 @@ public class MonsterRegistry {
 	}
 
 	/**
-	 * @param nonmagicalAffinities igual que {@code damageAffinities}, pero solo frente a ataques NO mágicos.
-	 *                             Es la forma mas comun del SRD ("contundente, perforante y cortante de
-	 *                             ataques no magicos") y afecta a licantropos, demonios, diablos y buena
-	 *                             parte del bestiario de VD medio. Las variantes con plata o adamantina se
-	 *                             tratan aqui como simplemente "no magico": el mod no tiene esos materiales,
-	 *                             y la alternativa era ignorar la resistencia entera.
-	 * @param damageAffinities tipo de daño → {@code resistant}/{@code vulnerable}/{@code immune}, mismo
-	 *                         vocabulario que {@code damageAffinities} en la hoja de un jugador (ver
-	 *                         {@link DamageTypes#multiplierForLabel}). Vacío = sin afinidades, que es como
-	 *                         se comportaban todos los monstruos hasta ahora.
+	 * @param nonmagicalAffinities same as {@code damageAffinities}, but only against NON-magical attacks.
+	 *                             It's the SRD's most common form ("bludgeoning, piercing, and slashing
+	 *                             from nonmagical attacks") and affects lycanthropes, demons, devils, and
+	 *                             a good chunk of the mid-CR bestiary. The silver/adamantine variants are
+	 *                             treated here as simply "nonmagical": the mod doesn't have those
+	 *                             materials, and the alternative was ignoring the resistance entirely.
+	 * @param damageAffinities damage type → {@code resistant}/{@code vulnerable}/{@code immune}, the same
+	 *                         vocabulary as {@code damageAffinities} on a player's sheet (see
+	 *                         {@link DamageTypes#multiplierForLabel}). Empty = no affinities, which is how
+	 *                         every monster behaved until now.
 	 */
 	public record MonsterStatBlock(
 		String id, String name, String baseEntityId, int ac, int maxHp,
@@ -90,26 +93,32 @@ public class MonsterRegistry {
 		List<MonsterAttack> attacks, List<MonsterSpell> spells,
 		Map<String, String> damageAffinities, Map<String, String> nonmagicalAffinities,
 		CreatureType type, int legendaryResistances, int legendaryActions, int attacksPerTurn,
+		//Alongside "type" and not inside "appearance": in 5e, size is a declared property of the
+		//creature, just like its type, and the SRD writes it that way. Today only PehkuiCompat reads it to
+		//render it, but the day some rule asks about it (grappling a Large creature, a tight space,
+		//shoving) the data is already in place and no pack needs migrating. Absent = UNKNOWN = renders as always.
+		CreatureSize size,
 		Appearance appearance,
-		//"ai": true deja viva la IA de la entidad base en vez de invocarla congelada. Existe para las
-		//entidades de mods de NPC (EasyNPC y compañía), que traen sus propios objetivos —patrullar, seguir
-		//al grupo, quedarse en su puesto— y son el motivo por el que baseEntityId acepta cualquier entidad
-		//instalada: sin esto, el setNoAi de spawnAt los mataba en el instante de aparecer y quedaban de
-		//adorno. En COMBATE sigue mandando el mod: TurnManager.freeze apaga esa IA mientras dura el
-		//encuentro y la devuelve al acabar, así que el monstruo resuelve su turno con las reglas de 5e
-		//(MonsterActionManager.autoAct) y no con la IA de vanilla. Es decir: la IA es para FUERA del
-		//combate, que es donde hoy no había nada.
+		//"ai": true keeps the base entity's AI alive instead of summoning it frozen. It exists for NPC mod
+		//entities (EasyNPC and friends), which bring their own goals — patrolling, following the party,
+		//staying at their post — and are the reason baseEntityId accepts any installed entity: without
+		//this, spawnAt's setNoAi killed them the instant they appeared and left them as decoration. In
+		//COMBAT the mod still runs the show: TurnManager.freeze switches that AI off for the duration of
+		//the encounter and gives it back when it ends, so the monster resolves its turn with 5e rules
+		//(MonsterActionManager.autoAct) rather than vanilla AI. In other words: the AI is for OUTSIDE
+		//combat, which is where there used to be nothing.
 		boolean keepsOwnAi,
-		//"ownClock": true saca a esta criatura del ORDEN de turnos sin sacarla del combate. Sigue contando
-		//para el fin del encuentro, sigue recibiendo daño con todas las reglas de 5e y sigue parándose si
-		//la dejan paralizada o aturdida — lo único que ignora es tener que esperar su turno: actúa por su
-		//cuenta cada 6 segundos, que es lo que dura un asalto de 5e (ver OwnClockManager). No es "sin
-		//reglas", es "sin cola": la economía de acciones es la misma, solo que desincronizada.
+		//"ownClock": true pulls this creature out of the turn ORDER without pulling it out of combat. It
+		//still counts toward ending the encounter, still takes damage under every 5e rule, and still
+		//stops moving if it gets paralyzed or stunned — the only thing it skips is having to wait for its
+		//turn: it acts on its own every 6 seconds, which is how long a 5e round lasts (see
+		//OwnClockManager). It's not "no rules," it's "no queue": the action economy is the same, just out
+		//of sync.
 		boolean ownClock,
-		//"flies": true — la criatura tiene velocidad de vuelo en su bloque de estadísticas del SRD (águila
-		//gigante, búho gigante, pteranodonte...). Solo lo usa DruidWildShapeManager: transformarse en una
-		//bestia voladora concede vuelo de verdad (no solo el modelo), y volver la quita, igual que con la CA
-		//y las características físicas. Ausente = false = como se comportaba todo el bestiario antes de esto.
+		//"flies": true — the creature has a flying speed in its SRD stat block (giant eagle, giant owl,
+		//pteranodon...). Only DruidWildShapeManager uses it: transforming into a flying beast grants real
+		//flight (not just the model), and reverting takes it away, same as with AC and physical abilities.
+		//Absent = false = how the whole bestiary behaved before this.
 		boolean flies
 	) {
 		public int abilityModifier(String key) {
@@ -119,19 +128,19 @@ public class MonsterRegistry {
 	}
 
 	/**
-	 * <p>Tipo de criatura de un monstruo del mundo, o {@link CreatureType#UNKNOWN} si no lo tiene (un mob
-	 * de compatibilidad, un PNJ genérico o un pack escrito antes de que el campo existiera).</p>
+	 * <p>Creature type of a world monster, or {@link CreatureType#UNKNOWN} if it has none (a
+	 * compatibility mob, a generic NPC, or a pack written before this field existed).</p>
 	 */
-	//--- Resistencia Legendaria: usos que le quedan a ESTE monstruo concreto, no a su especie. Van en su
-	//etiqueta NBT junto a los PG, igual que todo lo demás que es de la instancia: dos dragones del mismo id
-	//gastan las suyas por separado, y Minecraft ya guarda y carga ese compartimento solo.
+	//--- Legendary Resistance: uses left for THIS specific monster, not its species. They live in its NBT
+	//tag alongside HP, same as everything else that's per-instance: two dragons with the same id spend
+	//theirs separately, and Minecraft already saves and loads that compartment on its own.
 
 	private static final String LEGENDARY_LEFT = "legendaryLeft";
 
 	/**
-	 * <p>Usos de Resistencia Legendaria que le quedan. Sin la etiqueta puesta todavía (un monstruo invocado
-	 * antes de que existiera la regla, o recién aparecido) devuelve los de su bloque: el valor por defecto
-	 * es "las tiene todas", no "no tiene ninguna".</p>
+	 * <p>Legendary Resistance uses left. With the tag not set yet (a monster summoned before the rule
+	 * existed, or freshly spawned) it returns its block's own: the default value is "has them all," not
+	 * "has none."</p>
 	 */
 	public static int legendaryResistancesLeft(Entity entity) {
 		MonsterStatBlock block = statBlockOf(entity);
@@ -140,7 +149,7 @@ public class MonsterRegistry {
 		return tag.contains(LEGENDARY_LEFT) ? Math.max(0, tag.getInt(LEGENDARY_LEFT)) : block.legendaryResistances();
 	}
 
-	/** Gasta una. Devuelve false si no le quedaba ninguna. */
+	/** Spends one. Returns false if it had none left. */
 	public static boolean spendLegendaryResistance(Entity entity) {
 		int left = legendaryResistancesLeft(entity);
 		if (left <= 0) return false;
@@ -152,21 +161,21 @@ public class MonsterRegistry {
 	}
 
 	public static CreatureType typeOf(Entity entity) {
-		//Un jugador es humanoide, y esto no es un detalle: sin ello, Inmovilizar Persona no funcionaría
-		//sobre un PJ —el caso más común del conjuro en la mesa— porque un jugador no tiene bloque de
-		//estadísticas del que sacar el tipo. Todas las razas jugables del SRD son humanoides.
+		//A player is humanoid, and this isn't a minor detail: without it, Hold Person wouldn't work
+		//on a PC — the spell's most common use at the table — because a player has no stat block to pull
+		//a type from. Every playable SRD race is humanoid.
 		if (entity instanceof Player) return CreatureType.HUMANOID;
 		MonsterStatBlock block = statBlockOf(entity);
 		return block != null ? block.type() : CreatureType.UNKNOWN;
 	}
 
-	private static final NamedRegistry<MonsterStatBlock> REGISTRY = new NamedRegistry<>("monstruo", MonsterStatBlock::id);
+	private static final NamedRegistry<MonsterStatBlock> REGISTRY = new NamedRegistry<>("monster", MonsterStatBlock::id);
 
 	public static void register(MonsterStatBlock block) {
 		REGISTRY.register(block);
 	}
 
-	/** Reescribe sin avisar: ver {@link NamedRegistry#replace}. Lo usa SummonManager en cada invocación. */
+	/** Overwrites without warning: see {@link NamedRegistry#replace}. Used by SummonManager on every summon. */
 	public static void replace(MonsterStatBlock block) {
 		REGISTRY.replace(block);
 	}
@@ -176,14 +185,14 @@ public class MonsterRegistry {
 	}
 
 	/**
-	 * <p>Cambia SOLO el modelo de un monstruo ya registrado, dejando intactas sus reglas. Lo usa
-	 * {@link MonsterSkins} para que un dragón pase a ser el dragón de otro mod sin tocar su ficha.</p>
+	 * <p>Changes ONLY the model of an already-registered monster, leaving its rules intact. Used by
+	 * {@link MonsterSkins} so a dragon can become another mod's dragon without touching its stat block.</p>
 	 *
-	 * <p>Comprueba que la entidad exista antes de cambiar nada, y esa comprobación es toda la seguridad de
-	 * la idea: un id equivocado en un pack de aspecto deja el modelo vanilla como estaba en vez de degradar
-	 * a un monstruo que funcionaba. Sin ella, una errata convertiría un devastador en un zombi.</p>
+	 * <p>It checks that the entity exists before changing anything, and that check is the whole safety
+	 * net for the idea: a wrong id in an appearance pack leaves the vanilla model as it was instead of
+	 * degrading a monster that worked. Without it, a typo would turn a vindicator into a zombie.</p>
 	 *
-	 * @return {@code true} si se aplicó.
+	 * @return {@code true} if it was applied.
 	 */
 	public static boolean reskin(String id, String entityId) {
 		MonsterStatBlock block = REGISTRY.get(id);
@@ -194,7 +203,7 @@ public class MonsterRegistry {
 		REGISTRY.replace(new MonsterStatBlock(block.id(), block.name(), entityId, block.ac(), block.maxHp(),
 			block.abilities(), block.proficiencyBonus(), block.attacks(), block.spells(), block.damageAffinities(),
 			block.nonmagicalAffinities(), block.type(), block.legendaryResistances(), block.legendaryActions(),
-			block.attacksPerTurn(), block.appearance(), block.keepsOwnAi(), block.ownClock(), block.flies()));
+			block.attacksPerTurn(), block.size(), block.appearance(), block.keepsOwnAi(), block.ownClock(), block.flies()));
 		return true;
 	}
 
@@ -206,14 +215,14 @@ public class MonsterRegistry {
 		return REGISTRY.remove(id);
 	}
 
-	//Público: usado por MonsterCommand (/dndmonsters load) y por DndPaths para precargar solo todos los
-	//.json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de
-	//comandos. Antes, un monstruo malformado a mitad del archivo abortaba
-	//el resto (visible solo como un WARN de carga, invisible para el DM en el chat) — JsonRegistryLoader
-	//ya salta por elemento, no por archivo.
-	private static final JsonRegistryLoader<MonsterStatBlock> LOADER = new JsonRegistryLoader<>("monstruo", MonsterRegistry::parse, MonsterRegistry::register);
+	//Public: used by MonsterCommand (/dndmonsters load) and by DndPaths to solo-preload every .json in
+	//the folder at server startup, without DndPaths having to depend on the command layer. It used to be
+	//that a malformed monster halfway through the file aborted
+	//the rest (visible only as a load WARN, invisible to the DM in chat) — JsonRegistryLoader now skips
+	//per element, not per file.
+	private static final JsonRegistryLoader<MonsterStatBlock> LOADER = new JsonRegistryLoader<>("monster", MonsterRegistry::parse, MonsterRegistry::register);
 
-	/** Carga desde un JSON ya leído (datapack o jar de otro mod) — ver ContentDatapackLoader. */
+	/** Loads from an already-parsed JSON (a datapack or another mod's jar) — see ContentDatapackLoader. */
 	public static int loadJson(com.google.gson.JsonElement root, String source, java.util.function.Consumer<String> onId) {
 		return LOADER.loadJson(root, source, onId);
 	}
@@ -270,7 +279,7 @@ public class MonsterRegistry {
 					s.has("saveDc") ? s.get("saveDc").getAsInt() : 10,
 					s.get("dice").getAsString(),
 					!s.has("halfOnSave") || s.get("halfOnSave").getAsBoolean(),
-					s.has("damageType") ? DamageTypes.normalize(s.get("damageType").getAsString()) : "fisico",
+					s.has("damageType") ? DamageTypes.normalize(s.get("damageType").getAsString()) : "physical",
 					effect != null ? effect.get("name").getAsString() : null,
 					effect != null ? effect.get("dice").getAsString() : null,
 					effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0
@@ -278,26 +287,29 @@ public class MonsterRegistry {
 			}
 		}
 
-		//Opcionales: un monstruo sin ellas se comporta exactamente como antes, sin resistencias.
+		//Optional: a monster without them behaves exactly as before, with no resistances.
 		Map<String, String> damageAffinities = readAffinities(json, "damageAffinities");
 		Map<String, String> nonmagicalAffinities = readAffinities(json, "nonmagicalAffinities");
 
-		//Opcional tambien: un pack escrito antes de que existiera el campo carga igual, con UNKNOWN, y lo
-		//unico que pierde es acceso a las reglas que preguntan por el tipo.
+		//Also optional: a pack written before this field existed still loads fine, with UNKNOWN, and the
+		//only thing it loses is access to the rules that ask about type.
 		CreatureType type = CreatureType.parse(json.has("type") ? json.get("type").getAsString() : null);
-		//Ausente = 0 = no es un jefe. Es lo correcto por defecto: la Resistencia Legendaria la tiene una
-		//docena larga de criaturas del SRD, no el bestiario entero.
+		//Absent = 0 = not a boss. That's the correct default: Legendary Resistance belongs to a good
+		//dozen SRD creatures, not the entire bestiary.
 		int legendaryResistances = json.has("legendaryResistances") ? Math.max(0, json.get("legendaryResistances").getAsInt()) : 0;
-		//Cuántas acciones legendarias puede gastar por asalto (3 en casi todo el SRD). Ausente = 0 = actúa
-		//solo en su turno, como cualquier otro monstruo.
+		//How many legendary actions it can spend per round (3 in almost all of the SRD). Absent = 0 = acts
+		//only on its own turn, like any other monster.
 		int legendaryActions = json.has("legendaryActions") ? Math.max(0, json.get("legendaryActions").getAsInt()) : 0;
-		//Multiataque: cuántos ataques hace en SU turno. 1 por defecto, que es como se comportaba todo el
-		//bestiario. El tope de 6 no es una regla de 5e, es un cortafuegos: un número absurdo en un JSON (a
-		//propósito o por un dedo) convierte un turno en una ráfaga de mensajes de chat imposible de leer.
+		//Multiattack: how many attacks it makes on ITS turn. 1 by default, which is how the whole bestiary
+		//used to behave. The cap of 6 isn't a 5e rule, it's a safety net: an absurd number in a JSON
+		//(deliberate or a typo) turns a turn into a burst of chat messages nobody can read.
 		int attacksPerTurn = json.has("multiattack") ? Math.max(1, Math.min(6, json.get("multiattack").getAsInt())) : 1;
+		//Just as optional as "type," and for the same reason: a pack from before this field loads with
+		//UNKNOWN, which is exactly the size it used to render as before the field existed.
+		CreatureSize size = CreatureSize.parse(json.has("size") ? json.get("size").getAsString() : null);
 		Appearance appearance = parseAppearance(json.has("appearance") ? json.getAsJsonObject("appearance") : null);
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, appearance, keepsOwnAi, ownClock, flies);
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, size, appearance, keepsOwnAi, ownClock, flies);
 	}
 
 	private static Map<String, String> readAffinities(JsonObject json, String field) {
@@ -305,15 +317,16 @@ public class MonsterRegistry {
 		if (!json.has(field)) return result;
 		JsonObject affinities = json.getAsJsonObject(field);
 		for (String type : affinities.keySet()) {
-			//La CLAVE se normaliza como el tipo del golpe que la va a consultar: un bloque escrito en ingles
-			//("fire") tiene que casar con el dano que le llega ("fuego") o la resistencia no existe.
+			//The KEY is normalized the same way as the hit's damage type that will look it up: a block
+			//written in English ("fire") has to match the damage that arrives ("fire") or the resistance
+			//doesn't exist.
 			result.put(DamageTypes.normalize(type), affinities.get(type).getAsString().toLowerCase(Locale.ROOT));
 		}
 		return result;
 	}
 
-	//Extraído de parse() para que también lo use el ataque personalizado que un DM añade en vivo a un
-	//monstruo ya invocado (ver addCustomAttack) — mismo formato, un objeto de "attacks" suelto.
+	//Extracted from parse() so it's also used by the custom attack a DM adds live to an already-summoned
+	//monster (see addCustomAttack) — same format, one loose "attacks" object.
 	private static MonsterAttack parseAttack(JsonObject a) {
 		JsonObject effect = a.has("appliesEffect") ? a.getAsJsonObject("appliesEffect") : null;
 		return new MonsterAttack(
@@ -321,22 +334,22 @@ public class MonsterRegistry {
 			a.has("toHitAbility") ? a.get("toHitAbility").getAsString().toLowerCase(Locale.ROOT) : "str",
 			a.get("dice").getAsString(),
 			a.has("damageAbility") ? a.get("damageAbility").getAsString().toLowerCase(Locale.ROOT) : "str",
-			a.has("damageType") ? DamageTypes.normalize(a.get("damageType").getAsString()) : "fisico",
+			a.has("damageType") ? DamageTypes.normalize(a.get("damageType").getAsString()) : "physical",
 			effect != null ? effect.get("name").getAsString() : null,
 			effect != null ? effect.get("dice").getAsString() : null,
 			effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0
 		);
 	}
 
-	//Público: usado por el creador de contenido in-game para guardar un monstruo invocado (normalmente un
-	//NPC genérico ya armado con ataques en vivo, ver client.gui.MonsterTemplateSaveScreen) como plantilla
-	//JSON reusable — mismos nombres de campo que parse() espera, para que cargarlo de vuelta funcione igual
-	//que cualquier otro pack de monstruos.
+	//Public: used by the in-game content creator to save a summoned monster (usually a generic NPC
+	//already built up with live attacks, see client.gui.MonsterTemplateSaveScreen) as a reusable JSON
+	//template — same field names parse() expects, so loading it back works the same as any other monster pack.
 	public static JsonObject toJson(MonsterStatBlock block) {
 		JsonObject json = new JsonObject();
 		json.addProperty("id", block.id());
 		json.addProperty("name", block.name());
 		if (block.type() != CreatureType.UNKNOWN) json.addProperty("type", block.type().label());
+		if (block.size() != CreatureSize.UNKNOWN) json.addProperty("size", block.size().label());
 		if (block.legendaryResistances() > 0) json.addProperty("legendaryResistances", block.legendaryResistances());
 		if (block.legendaryActions() > 0) json.addProperty("legendaryActions", block.legendaryActions());
 		if (block.attacksPerTurn() > 1) json.addProperty("multiattack", block.attacksPerTurn());
@@ -357,16 +370,16 @@ public class MonsterRegistry {
 			json.add("attacks", attacks);
 		}
 
-		//Se omite si está vacío, para no ensuciar cada monstruo guardado con un objeto que no dice nada:
-		//parse() ya trata "sin campo" y "vacío" igual.
+		//Omitted if empty, to avoid cluttering every saved monster with an object that says nothing:
+		//parse() already treats "no field" and "empty" the same way.
 		writeAffinities(json, "damageAffinities", block.damageAffinities());
 		writeAffinities(json, "nonmagicalAffinities", block.nonmagicalAffinities());
 		writeAppearance(json, block.appearance());
 		return json;
 	}
 
-	//Se omite si está vacío, para no ensuciar cada monstruo guardado con un objeto que no dice nada:
-	//parse() ya trata "sin campo" y "vacío" igual.
+	//Omitted if empty, to avoid cluttering every saved monster with an object that says nothing:
+	//parse() already treats "no field" and "empty" the same way.
 	private static void writeAffinities(JsonObject json, String field, Map<String, String> affinities) {
 		if (affinities.isEmpty()) return;
 		JsonObject out = new JsonObject();
@@ -398,7 +411,7 @@ public class MonsterRegistry {
 		return a;
 	}
 
-	//--- Etiqueta NBT persistente del mob spawneado (Entity#getPersistentData, la guarda y carga Minecraft solo) ---
+	//--- Persistent NBT tag of the spawned mob (Entity#getPersistentData, saved and loaded by Minecraft itself) ---
 
 	public static void tagAsMonster(Entity entity, String monsterId, int currentHp) {
 		CompoundTag tag = new CompoundTag();
@@ -407,7 +420,7 @@ public class MonsterRegistry {
 		entity.getPersistentData().put("dndsheets", tag);
 	}
 
-	/** Si esta criatura juega fuera del orden de turnos. Ver {@code OwnClockManager}. */
+	/** Whether this creature plays outside the turn order. See {@code OwnClockManager}. */
 	public static boolean isOffClock(Entity entity) {
 		MonsterStatBlock block = statBlockOf(entity);
 		return block != null && block.ownClock();
@@ -433,24 +446,24 @@ public class MonsterRegistry {
 
 	public static void setCurrentHp(Entity entity, int hp) {
 		CompoundTag data = entity.getPersistentData();
-		CompoundTag tag = data.getCompound("dndsheets"); //Vacío si no existía, ya está puesta por tagAsMonster.
+		CompoundTag tag = data.getCompound("dndsheets"); //Empty if it didn't exist; tagAsMonster already sets it.
 		tag.putInt("currentHp", hp);
 		data.put("dndsheets", tag);
 	}
 
-	//--- Ataques personalizados por instancia: para poder editar EN VIVO un monstruo ya invocado (species
-	//compartida entre todos los de su id) sin tocar JSON ni reiniciar el servidor. Se guardan aparte del
-	//bloque de estadísticas compartido, en la propia etiqueta NBT del mob invocado. Simplificación
-	//deliberada: sin "appliesEffect" (veneno, etc.) en los personalizados, solo ataque+daño — si hace
-	//falta un efecto, se edita/carga el monstruo entero por JSON como hasta ahora.
+	//--- Per-instance custom attacks: so an already-summoned monster (its species
+	//shared among everything with its id) can be edited LIVE without touching JSON or restarting the server.
+	//They are stored apart from the shared stat block, in the summoned mob's own NBT tag. Deliberate
+	//simplification: no "appliesEffect" (poison, etc.) on custom ones, just attack+damage; if an effect is
+	//needed, the whole monster is edited/loaded via JSON as before.
 
-	//Se llama en cada acción de un monstruo (turno automático, ataque de oportunidad, o el DM abriendo su
-	//menú), así que el JSON parseado se cachea por entityId en vez de reparsearse cada vez — invalidado
-	//solo en los dos sitios que de verdad cambian el NBT (saveCustomAttacks/clearCustomAttacks).
-	//Indexado por UUID y NO por entity.getId(): el id numerico de una entidad se RECICLA cuando la
-	//entidad muere o se descarga, asi que un monstruo nuevo podia heredar el id de uno muerto y con el
-	//los ataques personalizados del anterior. No era solo una fuga de memoria: devolvia datos de otro.
-	//Se desaloja ademas al morir (ver TurnManager.onMonsterDeath) para que no crezca sin cota.
+	//Called on every monster action (automatic turn, opportunity attack, or the DM opening its
+	//menu), so the parsed JSON is cached by entity UUID instead of being reparsed each time; invalidated
+	//only in the two places that actually change the NBT (saveCustomAttacks/clearCustomAttacks).
+	//Keyed by UUID and NOT by entity.getId(): an entity's numeric id gets RECYCLED when the
+	//entity dies or is unloaded, so a new monster could inherit a dead one's id and with it
+	//the previous one's custom attacks. It wasn't just a memory leak: it returned another monster's data.
+	//It is also evicted on death (see TurnManager.onMonsterDeath) so it doesn't grow without bound.
 	private static final Map<java.util.UUID, List<MonsterAttack>> customAttacksCache = new HashMap<>();
 
 	public static List<MonsterAttack> customAttacksOf(Entity entity) {
@@ -478,7 +491,7 @@ public class MonsterRegistry {
 
 	public static void addCustomAttack(Entity entity, MonsterAttack attack) {
 		List<MonsterAttack> current = new ArrayList<>(customAttacksOf(entity));
-		current.removeIf(existing -> existing.name().equalsIgnoreCase(attack.name())); //Reemplaza si ya había uno con ese nombre.
+		current.removeIf(existing -> existing.name().equalsIgnoreCase(attack.name())); //Replaces any existing attack with that name.
 		current.add(attack);
 		saveCustomAttacks(entity, current);
 	}
@@ -490,7 +503,7 @@ public class MonsterRegistry {
 		return removed;
 	}
 
-	/** Desaloja el caché de un monstruo que acaba de morir. Llamado desde TurnManager.onMonsterDeath. */
+	/** Evicts the cache entry of a monster that has just died. Called from TurnManager.onMonsterDeath. */
 	public static void forgetCustomAttacks(Entity entity) {
 		customAttacksCache.remove(entity.getUUID());
 	}
@@ -506,29 +519,29 @@ public class MonsterRegistry {
 		for (MonsterAttack attack : attacks) array.add(attackToJson(attack));
 
 		CompoundTag data = entity.getPersistentData();
-		CompoundTag tag = data.getCompound("dndsheets"); //Vacío si no existía; solo pasa si el objetivo no era un monstruo tageado.
+		CompoundTag tag = data.getCompound("dndsheets"); //Empty if it didn't exist; only happens if the target was not a tagged monster.
 		tag.putString("customAttacks", array.toString());
 		data.put("dndsheets", tag);
 
-		customAttacksCache.put(entity.getUUID(), List.copyOf(attacks)); //Refresca el caché con lo que ya tenemos en memoria, en vez de invalidar y reparsear el JSON que se acaba de escribir.
+		customAttacksCache.put(entity.getUUID(), List.copyOf(attacks)); //Refresh the cache with what we already have in memory, instead of invalidating and reparsing the JSON we just wrote.
 	}
 
-	//--- Vara de DM: cualquier ítem etiquetado {dndsheets:{dmtool:true}} (mismo patrón que las armas personalizadas) ---
+	//--- DM Rod: any item tagged {dndsheets:{dmtool:true}} (same pattern as custom weapons) ---
 
 	public static boolean isDmTool(ItemStack stack) {
 		CompoundTag tag = stack.getTag();
 		return tag != null && tag.contains("dndsheets") && tag.getCompound("dndsheets").getBoolean("dmtool");
 	}
 
-	//--- Vara de Movimiento: mismo patrón que la Vara de DM, pero para reposicionar un monstruo ya invocado
-	//sin pasar por su menú de ataques (ver MonsterActionManager.onSelectMonsterToMove) ---
+	//--- Movement Rod: same pattern as the DM Rod, but for repositioning an already-summoned monster
+	//without going through its attack menu (see MonsterActionManager.onSelectMonsterToMove) ---
 
 	public static boolean isMoveTool(ItemStack stack) {
 		CompoundTag tag = stack.getTag();
 		return tag != null && tag.contains("dndsheets") && tag.getCompound("dndsheets").getBoolean("movetool");
 	}
 
-	//--- Carta de invocación: cualquier ítem etiquetado {dndsheets:{monsterSpawn:"id"}} (usada como un huevo de spawn vanilla) ---
+	//--- Summon card: any item tagged {dndsheets:{monsterSpawn:"id"}} (used like a vanilla spawn egg) ---
 
 	public static String monsterSpawnIdOf(ItemStack stack) {
 		CompoundTag tag = stack.getTag();
@@ -537,7 +550,7 @@ public class MonsterRegistry {
 		return dndTag.contains("monsterSpawn") ? dndTag.getString("monsterSpawn") : null;
 	}
 
-	//Para la pestaña creativa (DndsheetsModCreativeTab): un huevo de spawn reetiquetado por monstruo cargado.
+	//For the creative tab (DndsheetsModCreativeTab): one relabeled spawn egg per loaded monster.
 	public static ItemStack buildSpawnCard(String monsterId) {
 		MonsterStatBlock block = get(monsterId);
 		ItemStack stack = ItemLook.SUMMON_CARD.applyTo(
@@ -545,18 +558,18 @@ public class MonsterRegistry {
 		CompoundTag dndTag = new CompoundTag();
 		dndTag.putString("monsterSpawn", monsterId);
 		stack.getOrCreateTag().put("dndsheets", dndTag);
-		//"Invocar: " estaba escrito a mano aquí. El lint de textos fijos no lo vio porque busca una minúscula
-		//seguida de espacio y esto lleva dos puntos en medio — ver checkChatMessagesAreTranslatable, que
-		//ahora además prohíbe cualquier literal dentro de un setHoverName.
+		//"Invocar: " ("Summon: ") used to be hand-written here. The fixed-text lint didn't catch it because it looks for a lowercase letter
+		//followed by a space and this one has a colon in between; see checkChatMessagesAreTranslatable, which
+		//now also forbids any literal inside a setHoverName.
 		stack.setHoverName(Component.translatable("chat.dndsheets.monster.summon_card_name",
 			ContentNames.of(block != null ? block.name() : monsterId)));
 		return stack;
 	}
 
-	//--- NPC genérico: un bloque de estadísticas en blanco registrado al vuelo, sin JSON de por medio, para
-	//que el DM tenga una base que rellenar en vivo con /dndmonsters attack add (ver MonsterCommand). Cada
-	//invocación se registra con un id propio, así que dos NPCs genéricos nunca comparten bloque de
-	//estadísticas aunque tengan el mismo nombre.
+	//--- Generic NPC: a blank stat block registered on the fly, with no JSON involved, so
+	//the DM has a base to fill in live with /dndmonsters attack add (see MonsterCommand). Each
+	//summon is registered under its own id, so two generic NPCs never share a stat
+	//block even if they have the same name.
 
 	private static int genericCounter = 0;
 
@@ -565,26 +578,26 @@ public class MonsterRegistry {
 		Map<String, Integer> abilities = new LinkedHashMap<>();
 		for (String key : Combatant.ABILITIES) abilities.put(key, 10);
 
-		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0, 1, Appearance.DEFAULT, false, false, false));
+		register(new MonsterStatBlock(id, name, baseEntityId, Math.max(0, ac), Math.max(1, hp), abilities, 2, new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>(), CreatureType.UNKNOWN, 0, 0, 1, CreatureSize.UNKNOWN, Appearance.DEFAULT, false, false, false));
 		return spawnAt(level, x, y, z, id);
 	}
 
 	/**
-	 * <p>Invoca el mob base de un monstruo cargado en la posición dada, igual que hace
-	 * {@code /dndmonsters spawn} (y la carta de invocación de la pestaña creativa): sin IA, con su nombre
-	 * visible, y con la etiqueta NBT persistente que lo liga a su bloque de estadísticas.</p>
-	 * @return la entidad invocada, o null si el monstruo no existe o su ítem base no es válido.
+	 * <p>Summons a loaded monster's base mob at the given position, just like
+	 * {@code /dndmonsters spawn} does (and the summon card in the creative tab): with no AI, with its name
+	 * visible, and with the persistent NBT tag that ties it to its stat block.</p>
+	 * @return the summoned entity, or null if the monster doesn't exist or its base item is not valid.
 	 */
 	public static Entity spawnAt(ServerLevel level, double x, double y, double z, String monsterId) {
 		return spawnAt(level, x, y, z, monsterId, null);
 	}
 
 	/**
-	 * @param configure se ejecuta sobre la entidad recién creada ANTES de que entre al orden de turnos.
-	 *                  Existe porque hay estado que decide cómo entra: una invocación se etiqueta con su
-	 *                  dueño, y {@code addLateMonster} lee esa etiqueta para saber si es enemigo o aliado.
-	 *                  Etiquetarla después la metía en la iniciativa como enemigo, y entonces el combate no
-	 *                  terminaba nunca mientras durase.
+	 * @param configure runs on the freshly created entity BEFORE it enters the turn order.
+	 *                  It exists because some state decides how it enters: a summon is tagged with its
+	 *                  owner, and {@code addLateMonster} reads that tag to know whether it is an enemy or an ally.
+	 *                  Tagging it afterwards put it into the initiative as an enemy, and then the combat never
+	 *                  ended for as long as it lasted.
 	 */
 	public static Entity spawnAt(ServerLevel level, double x, double y, double z, String monsterId,
 			java.util.function.Consumer<Entity> configure) {
@@ -594,10 +607,10 @@ public class MonsterRegistry {
 		ResourceLocation entityLoc = ResourceLocation.tryParse(block.baseEntityId());
 		EntityType<?> type = entityLoc != null ? ForgeRegistries.ENTITY_TYPES.getValue(entityLoc) : null;
 		if (type == null) {
-			//Un id desconocido es casi siempre un addon que apunta a una entidad de OTRO mod que no está
-			//instalado. Devolver null dejaba al DM con un comando que no hacía nada y sin explicación. Un
-			//zombi con el nombre y las estadísticas correctas es una ficha jugable; nada no lo es.
-			DndsheetsMod.LOGGER.warn("dndsheets: el monstruo \"{}\" pide la entidad \"{}\", que no existe (¿falta el mod que la trae?). Uso un zombi.",
+			//An unknown id is almost always an addon pointing at an entity from ANOTHER mod that isn't
+			//installed. Returning null left the DM with a command that did nothing and no explanation. A
+			//zombie with the right name and stats is a playable token; nothing is not.
+			DndsheetsMod.LOGGER.warn("dndsheets: monster \"{}\" asks for entity \"{}\", which does not exist (is the mod that provides it missing?). Using a zombie.",
 				monsterId, block.baseEntityId());
 			type = EntityType.ZOMBIE;
 		}
@@ -608,60 +621,60 @@ public class MonsterRegistry {
 		entity.moveTo(x, y, z, 0, 0);
 		entity.setCustomName(ContentNames.of(block.name()));
 		entity.setCustomNameVisible(true);
-		//Congelado salvo que el bloque pida lo contrario con "ai": true — ver keepsOwnAi. Un jefe con
-		//reloj propio la necesita encendida por definición: se mueve por su cuenta durante todo el combate.
+		//Frozen unless the block asks otherwise with "ai": true; see keepsOwnAi. A boss with its own
+		//clock needs it switched on by definition: it moves on its own throughout the combat.
 		if (entity instanceof Mob mob) mob.setNoAi(!block.keepsOwnAi() && !block.ownClock());
-		applyAppearance(entity, block.appearance());
-		//Escalado por dificultad, mismo método que Combatant.MonsterCombatant.maxHp() — así el monstruo
-		//nace con el PG que su propia barra va a anunciar, en vez de aparecer "ya golpeado" en fácil o
-		//"de más" en difícil.
+		applyLooks(entity, block);
+		//Difficulty scaling, same method as Combatant.MonsterCombatant.maxHp(), so the monster
+		//is born with the HP its own bar is going to announce, instead of appearing "already hit" on easy or
+		//"overhealed" on hard.
 		tagAsMonster(entity, monsterId, Config.scaleMonsterMaxHp(block.maxHp()));
 		if (configure != null) configure.accept(entity);
 
 		level.addFreshEntity(entity);
 
-		//Sin esto, NoAI + yaw 0 hace que todos los monstruos invocados miren siempre al norte.
-		//Se orientan hacia el jugador más cercano para que quede claro a quién amenazan.
+		//Without this, NoAI + yaw 0 makes every summoned monster always face north.
+		//They are oriented toward the nearest player so it's clear who they are threatening.
 		Player nearest = level.getNearestPlayer(entity, 30);
 		if (nearest != null) faceTarget(entity, nearest);
 
-		//Si se invoca a mitad de un combate ya en marcha, se suma al orden de turnos ya mismo — si no,
-		//quedaría incontrolable y podía hacer que el combate se diera por terminado con él todavía vivo.
+		//If summoned in the middle of a combat already under way, it joins the turn order right away; otherwise it
+		//would be uncontrollable and could cause the combat to be considered over while it was still alive.
 		TurnManager.addLateMonster(level, entity, block.name());
 
 		return entity;
 	}
 
 	/**
-	 * <p>Viste al monstruo con lo que diga su bloque {@code appearance}. Todo lo que toca aquí es vanilla:
-	 * equipo visible, tamaño de cría y brillo.</p>
+	 * <p>Dresses the monster with whatever its {@code appearance} block says. Everything touched here is vanilla:
+	 * visible equipment, baby size and glow.</p>
 	 *
-	 * <p>Las probabilidades de soltar el equipo se ponen a 0. Un monstruo de mesa es una ficha, no una
-	 * fuente de botín: si el yelmo que le pusiste para que se distinga de sus tres hermanos cae al suelo al
-	 * matarlo, has convertido una decisión visual en una recompensa que el DM no había repartido.</p>
+	 * <p>Equipment drop chances are set to 0. A tabletop monster is a token, not a source of loot:
+	 * if the helmet you gave it to tell it apart from its three siblings falls to the ground when it is
+	 * killed, you've turned a visual decision into a reward the DM hadn't handed out.</p>
 	 */
 	/**
-	 * <p>Le pega un bloque de estadísticas a una criatura que <b>ya existe</b>. Desde ese momento
-	 * {@code Combatant.of} la resuelve como cualquier monstruo del bestiario: CA, PG, resistencias,
-	 * ataques, condiciones y turno propio, porque el vínculo es la misma etiqueta NBT persistente que
-	 * escribe {@link #spawnAt}.</p>
+	 * <p>Attaches a stat block to a creature that <b>already exists</b>. From that moment on
+	 * {@code Combatant.of} resolves it like any bestiary monster: AC, HP, resistances,
+	 * attacks, conditions and its own turn, because the link is the same persistent NBT tag that
+	 * {@link #spawnAt} writes.</p>
 	 *
-	 * <p>Existe para poder construir la criatura donde mejor se construya —un mod de NPC da piel, pose,
-	 * diálogos y objetivos que este mod no tiene— y declararle aquí qué es. Por eso mismo es
-	 * <b>conservador</b> con lo que ya traía puesto:</p>
+	 * <p>It exists so the creature can be built wherever it is best built (an NPC mod provides skin, pose,
+	 * dialogue and goals that this mod lacks) and then declared here for what it is. For that reason it is
+	 * <b>conservative</b> about what the creature already came with:</p>
 	 * <ul>
-	 *   <li><b>Los PG sí</b> se fijan a los del bloque. Heredar los 20 del aldeano que era hace un segundo
-	 *       para un capitán de 52 no es conservar nada, es un bloque mal aplicado.</li>
-	 *   <li><b>El nombre no</b>, si ya tenía uno propio: quien la construyó le puso el que quería, y ese
-	 *       es más específico que el de la especie.</li>
-	 *   <li><b>El equipo, solo las ranuras que el bloque declara</b> ({@code equip} ignora las vacías), así
-	 *       que un bloque que solo dice "espada" le pone la espada y le deja su armadura.</li>
-	 *   <li><b>La IA no se toca.</b> Si sabía patrullar, sigue sabiendo; el modo turnos la apaga mientras
-	 *       dure el combate y se la devuelve al acabar (ver {@code TurnManager.freeze}).</li>
+	 *   <li><b>HP do</b> get set to the block's. Inheriting the 20 of the villager it was a second ago
+	 *       for a 52-HP captain preserves nothing; it's a badly applied block.</li>
+	 *   <li><b>The name does not</b>, if it already had its own: whoever built it gave it the name they wanted, and that
+	 *       is more specific than the species name.</li>
+	 *   <li><b>Equipment, only the slots the block declares</b> ({@code equip} ignores empty ones), so
+	 *       a block that only says "sword" gives it the sword and leaves its armor alone.</li>
+	 *   <li><b>The AI is left untouched.</b> If it could patrol, it still can; turn mode switches it off for the
+	 *       duration of combat and gives it back when it ends (see {@code TurnManager.freeze}).</li>
 	 * </ul>
 	 */
 	public static void applyStatBlock(Entity target, MonsterStatBlock block) {
-		//Mismo escalado por dificultad que spawnAt — ver el comentario de ahí.
+		//Same difficulty scaling as spawnAt; see the comment there.
 		int scaledMaxHp = Config.scaleMonsterMaxHp(block.maxHp());
 		tagAsMonster(target, block.id(), scaledMaxHp);
 		if (target instanceof net.minecraft.world.entity.LivingEntity living
@@ -673,14 +686,26 @@ public class MonsterRegistry {
 			target.setCustomName(ContentNames.of(block.name()));
 			target.setCustomNameVisible(true);
 		}
-		applyAppearance(target, block.appearance());
+		applyLooks(target, block);
 	}
 
-	private static void applyAppearance(Entity entity, Appearance look) {
+	/**
+	 * <p>Everything that decides how a creature LOOKS, in a single place: equipment, baby size, glow and size. It takes
+	 * the whole block rather than a bare {@link Appearance} precisely because of size, which lives alongside the type and not
+	 * inside the appearance (see the record), so there are no two calls someone could make halfway from a
+	 * third place.</p>
+	 */
+	private static void applyLooks(Entity entity, MonsterStatBlock block) {
+		//BEFORE the early return below, not after: a Gargantuan with no equipment, no baby flag and no glow
+		//has the DEFAULT appearance (the most common case in the bestiary), so with the order reversed it
+		//would go unscaled, which is exactly the majority of monsters this field exists to fix.
+		PehkuiCompat.applySize(entity, block.size());
+
+		Appearance look = block.appearance();
 		if (look == null || look.isDefault()) return;
 		if (look.glowing()) entity.setGlowingTag(true);
 		if (look.baby()) {
-			//Zombie NO es AgeableMob (los no-muertos no crecen), así que hacen falta las dos ramas.
+			//Zombie is NOT an AgeableMob (the undead don't grow up), so both branches are needed.
 			if (entity instanceof net.minecraft.world.entity.monster.Zombie zombie) zombie.setBaby(true);
 			else if (entity instanceof net.minecraft.world.entity.AgeableMob ageable) ageable.setBaby(true);
 		}
@@ -698,17 +723,17 @@ public class MonsterRegistry {
 		ResourceLocation loc = ResourceLocation.tryParse(itemId);
 		net.minecraft.world.item.Item item = loc != null ? ForgeRegistries.ITEMS.getValue(loc) : null;
 		if (item == null) {
-			//Se avisa y se sigue: un objeto que no existe no debe impedir que el monstruo aparezca.
-			DndsheetsMod.LOGGER.warn("dndsheets: \"{}\" no es un objeto conocido; no equipo esa ranura.", itemId);
+			//Warn and carry on: a nonexistent item must not stop the monster from appearing.
+			DndsheetsMod.LOGGER.warn("dndsheets: \"{}\" is not a known item; not equipping that slot.", itemId);
 			return;
 		}
 		mob.setItemSlot(slot, new net.minecraft.world.item.ItemStack(item));
 		mob.setDropChance(slot, 0.0f);
 	}
 
-	//Público: CombatManager lo llama cada vez que un jugador golpea a un monstruo, para que gire a verlo
-	//en vez de quedarse mirando a quien tenía más cerca al invocarse (o al suelo, si se usa la posición
-	//de los pies del objetivo en vez de sus ojos).
+	//Public: CombatManager calls it every time a player hits a monster, so it turns to look at them
+	//instead of staring at whoever was closest when it was summoned (or at the ground, if the target's
+	//feet position is used instead of its eyes).
 	public static void faceTarget(Entity monster, Entity target) {
 		monster.lookAt(EntityAnchorArgument.Anchor.EYES, target.getEyePosition());
 	}

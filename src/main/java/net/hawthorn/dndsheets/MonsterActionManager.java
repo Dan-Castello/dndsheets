@@ -24,10 +24,10 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * <p>El DM controla los monstruos sin IA con la Vara de DM ({@link MonsterRegistry#isDmTool}): clic
- * derecho sobre uno abre un menú con sus ataques/hechizos; al elegir uno, se resuelve contra el jugador
- * más cercano al monstruo (tirada de ataque/salvación real, daño real aplicado). Agachado + clic derecho
- * (sobre un monstruo O un armor stand) lo elimina al instante, para limpiar si se invocó de más.</p>
+ * <p>The DM controls AI-less monsters with the DM Wand ({@link MonsterRegistry#isDmTool}): right-clicking
+ * one opens a menu with its attacks/spells; picking one resolves it against the player nearest the
+ * monster (a real attack/save roll, real damage applied). Sneak + right-click (on a monster OR an armor
+ * stand) removes it instantly, to clean up if too many were summoned.</p>
  */
 @Mod.EventBusSubscriber
 public class MonsterActionManager {
@@ -38,18 +38,19 @@ public class MonsterActionManager {
 	}
 
 	/**
-	 * <p>Un armor stand <b>nunca</b> llega por {@code EntityInteract}, así que borrarlo con la Vara de DM
-	 * no funcionaba desde el día que se escribió. La causa está en vanilla y no se ve leyendo este
-	 * archivo: {@code ArmorStand.interactAt} devuelve {@code CONSUME} en cuanto detecta que está en el
-	 * cliente —antes de mirar el objeto, la ranura ni nada— para poder equiparlo con clic derecho. Y
-	 * {@code Minecraft.startUseItem} solo reintenta con {@code interact} <em>si el primero no consumió</em>
-	 * ({@code if (!interactionresult.consumesAction())}), así que el paquete INTERACT no se manda jamás y
-	 * el evento normal no se dispara nunca. El que sí llega es este, el del INTERACT_AT.</p>
+	 * <p>An armor stand <b>never</b> arrives through {@code EntityInteract}, so deleting it with the DM
+	 * Wand hasn't worked since the day this was written. The cause is in vanilla and doesn't show up
+	 * reading this file: {@code ArmorStand.interactAt} returns {@code CONSUME} as soon as it detects it's
+	 * on the client — before looking at the item, the slot, or anything else — so it can be equipped with
+	 * a right-click. And {@code Minecraft.startUseItem} only retries with {@code interact}
+	 * <em>if the first one didn't consume</em> ({@code if (!interactionresult.consumesAction())}), so the
+	 * INTERACT packet is never sent and the normal event never fires. The one that does arrive is this
+	 * one, the INTERACT_AT.</p>
 	 *
-	 * <p>Se filtra por armor stand a propósito: cualquier otra entidad manda los DOS paquetes (su
-	 * {@code interactAt} devuelve PASS y el cliente reintenta), así que atender los dos eventos sin filtro
-	 * ejecutaría el manejador dos veces por clic — el mismo fallo de doble pasada que documenta
-	 * {@link InteractionEvents}, por otra puerta.</p>
+	 * <p>It's filtered to armor stands on purpose: any other entity sends BOTH packets (its
+	 * {@code interactAt} returns PASS and the client retries), so handling both events with no filter
+	 * would run the handler twice per click — the same double-pass bug {@link InteractionEvents}
+	 * documents, through a different door.</p>
 	 */
 	@SubscribeEvent
 	public static void onInteractWithArmorStand(PlayerInteractEvent.EntityInteractSpecific event) {
@@ -60,45 +61,45 @@ public class MonsterActionManager {
 	private static void handleDmWand(PlayerInteractEvent event, Entity target) {
 		if (event.getEntity().level().isClientSide()) return;
 		Player dm = event.getEntity();
-		//event.getItemStack() es el objeto de LA MANO DE ESTE EVENTO, no "cualquiera de las dos". El
-		//cliente lanza un evento por mano (Minecraft.startUseItem recorre InteractionHand.values() y
-		//reintenta con la otra si la primera no consume), asi que mirar ambas manos hacia que el
-		//manejador corriese DOS veces por clic — el mensaje de chat duplicado. Sigue valiendo llevar la
-		//vara en la mano secundaria: entonces la pasada que coincide es la de esa mano.
+		//event.getItemStack() is the item in THE HAND OF THIS EVENT, not "either hand." The client fires
+		//one event per hand (Minecraft.startUseItem walks InteractionHand.values() and retries with the
+		//other if the first didn't consume), so checking both hands would make the handler run TWICE per
+		//click — the duplicated chat message. It's still fine to carry the wand in the off hand: then the
+		//pass that matches is the one for that hand.
 		if (!MonsterRegistry.isDmTool(event.getItemStack())) return;
-		if (!DndsheetsMod.canActAsDm(dm)) return; //La Vara de DM solo funciona en manos de un op (o cualquiera en modo solo, ver DndsheetsMod.canActAsDm), aunque un jugador la consiga.
+		if (!DndsheetsMod.canActAsDm(dm)) return; //The DM Wand only works in an op's hands (or anyone's in solo mode, see DndsheetsMod.canActAsDm), even if a player gets hold of one.
 
-		//A un jugador la vara no le hace nada: tiene su propia hoja, y el clic sigue su curso normal.
+		//The wand does nothing to a player: they have their own sheet, and the click follows its normal course.
 		if (target instanceof Player) return;
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(target);
 		boolean isArmorStand = target instanceof ArmorStand;
 
 		InteractionEvents.consume(event);
 
-		//Agachado + clic derecho con la Vara de DM: borra al monstruo o armor stand al instante, para
-		//limpiar si se invocó de más. Sin agacharse, se comporta como siempre (menú de acciones).
+		//Sneak + right-click with the DM Wand: deletes the monster or armor stand instantly, to clean up
+		//if too many were summoned. Without sneaking, it behaves as always (action menu).
 		if (dm.isShiftKeyDown()) {
-			//Borrar sigue valiendo SOLO para lo que invocó el mod (y los armor stands de práctica). Una
-			//criatura de otro mod a la que todavía no se le ha dado ficha no es nuestra para borrarla, y
-			//un agachado + clic de más se llevaría por delante el NPC que alguien acaba de construir.
+			//Deletion still only works for what the mod summoned (and practice armor stands). A creature
+			//from another mod that hasn't been given a sheet yet isn't ours to delete, and an extra
+			//sneak + click would take out the NPC someone just built.
 			if (block == null && !isArmorStand) return;
 			Component deletedName = block != null ? ContentNames.of(block.name()) : Component.translatable("chat.dndsheets.monster.the_armor_stand");
-			TurnManager.markDefeated(target.getId()); //Borrado a mano por el DM: ya no es un enemigo en pie, cuenta igual que muerto para el fin automático de combate.
+			TurnManager.markDefeated(target.getId()); //Deleted by hand by the DM: it's no longer a standing enemy, it counts the same as dead for auto-ending combat.
 			target.remove(Entity.RemovalReason.DISCARDED);
 			if (dm instanceof ServerPlayer serverDm) {
 				serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.monster.deleted", deletedName).withStyle(ChatFormatting.GRAY));
 			}
-			//Si era el último enemigo con vida, el combate termina AHORA, no cuando le vuelva a tocar el
-			//turno a alguien (único punto que antes comprobaba esto) — ver TurnManager.checkAllEnemiesDefeated.
+			//If it was the last living enemy, combat ends NOW, not when it's next someone's turn (the only
+			//point that used to check this) — see TurnManager.checkAllEnemiesDefeated.
 			if (target.level() instanceof ServerLevel level) TurnManager.checkAllEnemiesDefeated(level);
 			return;
 		}
 
 		if (!(dm instanceof ServerPlayer serverDm)) return;
 
-		//Sin ficha todavía: en vez de no hacer nada (que es lo que hacía antes), se ofrece dársela. Es el
-		//puente con cualquier mod de NPC — se construye la criatura allí, con sus herramientas, y aquí se
-		//le dice qué es. Ver MonsterBindMessage.
+		//No sheet yet: instead of doing nothing (which is what used to happen), offer to give it one.
+		//It's the bridge with any NPC mod — the creature gets built there, with its own tools, and here
+		//it's told what it is. See MonsterBindMessage.
 		if (block == null) {
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> serverDm),
 				new net.hawthorn.dndsheets.network.MonsterBindMessage(target.getId(), new ArrayList<>(MonsterRegistry.ids())));
@@ -113,18 +114,18 @@ public class MonsterActionManager {
 		actionNames.addAll(customAttackNames);
 		for (MonsterRegistry.MonsterSpell spell : block.spells()) actionNames.add(spell.name());
 
-		//Ya no se corta aquí si está vacío: el menú siempre se abre, aunque solo sea para usar
-		//"+ Añadir ataque" y darle su primera acción a un monstruo recién invocado (p.ej. un NPC genérico).
+		//No longer bails here if it's empty: the menu always opens, if only to use
+		//"+ Add attack" and give a freshly summoned monster (e.g. a generic NPC) its first action.
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> serverDm), new MonsterActionOpenMessage(target.getId(), actionNames, customAttackNames));
 	}
 
-	//Vara de Movimiento: reposicionar un monstruo ya invocado sin pasar por su menú de ataques ni tener que
-	//esperar a que le toque el turno — para montar la escena (o corregir dónde cayó al invocarlo) sin
-	//comandos ni coordenadas a mano. Selección en memoria por jugador: clic derecho en un monstruo lo
-	//selecciona (sobreescribe la selección anterior si había una), clic derecho en un bloque lo mueve ahí.
+	//Move Wand: reposition an already-summoned monster without going through its attack menu or having to
+	//wait for its turn — for staging a scene (or fixing where it landed when summoned) without commands or
+	//hand-typed coordinates. Selection kept in memory per player: right-clicking a monster selects it
+	//(overwriting any previous selection), right-clicking a block moves it there.
 	private static final Map<UUID, Integer> pendingMove = new HashMap<>();
 
-	/** El DM que empezo a mover un monstruo y se desconecto sin elegir destino dejaba su entrada dentro. */
+	/** A DM who started moving a monster and disconnected without picking a destination left their entry behind. */
 	static void clearFor(ServerPlayer player) {
 		pendingMove.remove(player.getUUID());
 	}
@@ -133,11 +134,11 @@ public class MonsterActionManager {
 	public static void onSelectMonsterToMove(PlayerInteractEvent.EntityInteract event) {
 		if (event.getEntity().level().isClientSide()) return;
 		Player dm = event.getEntity();
-		//event.getItemStack() es el objeto de LA MANO DE ESTE EVENTO, no "cualquiera de las dos". El
-		//cliente lanza un evento por mano (Minecraft.startUseItem recorre InteractionHand.values() y
-		//reintenta con la otra si la primera no consume), asi que mirar ambas manos hacia que el
-		//manejador corriese DOS veces por clic — el mensaje de chat duplicado. Sigue valiendo llevar la
-		//vara en la mano secundaria: entonces la pasada que coincide es la de esa mano.
+		//event.getItemStack() is the item in THE HAND OF THIS EVENT, not "either hand." The client fires
+		//one event per hand (Minecraft.startUseItem walks InteractionHand.values() and retries with the
+		//other if the first didn't consume), so checking both hands would make the handler run TWICE per
+		//click — the duplicated chat message. It's still fine to carry the wand in the off hand: then the
+		//pass that matches is the one for that hand.
 		if (!MonsterRegistry.isMoveTool(event.getItemStack())) return;
 		if (!DndsheetsMod.canActAsDm(dm)) return;
 
@@ -155,11 +156,11 @@ public class MonsterActionManager {
 	public static void onSelectMoveDestination(PlayerInteractEvent.RightClickBlock event) {
 		if (event.getEntity().level().isClientSide()) return;
 		Player dm = event.getEntity();
-		//event.getItemStack() es el objeto de LA MANO DE ESTE EVENTO, no "cualquiera de las dos". El
-		//cliente lanza un evento por mano (Minecraft.startUseItem recorre InteractionHand.values() y
-		//reintenta con la otra si la primera no consume), asi que mirar ambas manos hacia que el
-		//manejador corriese DOS veces por clic — el mensaje de chat duplicado. Sigue valiendo llevar la
-		//vara en la mano secundaria: entonces la pasada que coincide es la de esa mano.
+		//event.getItemStack() is the item in THE HAND OF THIS EVENT, not "either hand." The client fires
+		//one event per hand (Minecraft.startUseItem walks InteractionHand.values() and retries with the
+		//other if the first didn't consume), so checking both hands would make the handler run TWICE per
+		//click — the duplicated chat message. It's still fine to carry the wand in the off hand: then the
+		//pass that matches is the one for that hand.
 		if (!MonsterRegistry.isMoveTool(event.getItemStack())) return;
 
 		Integer entityId = pendingMove.get(dm.getUUID());
@@ -170,7 +171,7 @@ public class MonsterActionManager {
 		if (!(event.getLevel() instanceof ServerLevel level)) return;
 
 		Entity monster = level.getEntity(entityId);
-		if (monster == null || !monster.isAlive()) return; //Ya no existe (muerto/borrado desde que se seleccionó): nada que mover.
+		if (monster == null || !monster.isAlive()) return; //No longer exists (dead/deleted since it was selected): nothing to move.
 
 		BlockPos destination = event.getPos().relative(event.getFace());
 		monster.teleportTo(destination.getX() + 0.5, destination.getY(), destination.getZ() + 0.5);
@@ -179,8 +180,8 @@ public class MonsterActionManager {
 		}
 	}
 
-	//Carta de invocación (pestaña creativa o /dndspells... análogo): clic derecho en un bloque la invoca
-	//encima, igual que un huevo de spawn vanilla. En creativo no se gasta; en supervivencia sí.
+	//Summoning card (creative tab, or the analogous /dndspells...): right-clicking a block summons it on
+	//top, just like a vanilla spawn egg. Not consumed in creative; consumed in survival.
 	@SubscribeEvent
 	public static void onUseSpawnCard(PlayerInteractEvent.RightClickBlock event) {
 		if (event.getEntity().level().isClientSide()) return;
@@ -201,9 +202,9 @@ public class MonsterActionManager {
 	}
 
 	/**
-	 * <p>Llamado al recibir un {@code MonsterActionChooseMessage}: el DM eligió la acción {@code actionIndex}
-	 * (0..N-1 ataques, luego 0..M-1 hechizos) para el monstruo {@code entityId}, y a quién apuntarla
-	 * ({@code targetUuid}, elegido en {@link net.hawthorn.dndsheets.client.gui.MonsterActionScreen} vía
+	 * <p>Called on receiving a {@code MonsterActionChooseMessage}: the DM chose action {@code actionIndex}
+	 * (0..N-1 attacks, then 0..M-1 spells) for the monster {@code entityId}, and who to aim it at
+	 * ({@code targetUuid}, chosen in {@link net.hawthorn.dndsheets.client.gui.MonsterActionScreen} via
 	 * {@link net.hawthorn.dndsheets.client.gui.PlayerPickerScreen}).</p>
 	 */
 	public static void resolveAction(ServerPlayer dm, int entityId, int actionIndex, String targetUuid) {
@@ -217,20 +218,21 @@ public class MonsterActionManager {
 		Player target = resolveTarget(dm, monsterEntity, targetUuid);
 		if (target == null) return;
 
-		//En modo turnos, un monstruo también gasta su única acción del turno: si el DM insiste en hacerlo
-		//actuar de nuevo antes de que le vuelva a tocar, se ignora igual que le pasaría a un jugador.
+		//In turn mode, a monster also spends its one action for the turn: if the DM insists on making it
+		//act again before its turn comes back around, it's ignored just like it would be for a player.
 		if (!TurnManager.tryAct(monsterEntity)) {
 			dm.sendSystemMessage(net.minecraft.network.chat.Component.translatable("chat.dndsheets.monster.cant_act", ContentNames.of(block.name())).withStyle(ChatFormatting.RED));
 			return;
 		}
 
-		//Mismo acercamiento que ya usa autoAct (turno automático sin DM) — sin esto, un monstruo controlado
-		//a mano con la Vara de DM atacaba siempre desde donde apareció, sin acercarse nunca (NoAI fijo desde
-		//que se invoca, ver MonsterRegistry.spawnAt), aunque el jugador estuviera fuera de su alcance.
+		//Same approach autoAct already uses (automatic turn with no DM) — without this, a monster
+		//controlled by hand with the DM Wand always attacked from wherever it spawned, never closing
+		//distance (NoAI fixed since it's summoned, see MonsterRegistry.spawnAt), even when the player was
+		//out of its reach.
 		moveTowardIfNeeded(monsterEntity, target);
 
-		//Mismo orden que onInteractWithMonster arma el menú: ataques de la especie, luego los personalizados
-		//de esta instancia (ver MonsterRegistry.addCustomAttack), luego hechizos.
+		//Same order onInteractWithMonster builds the menu in: species attacks first, then this
+		//instance's custom ones (see MonsterRegistry.addCustomAttack), then spells.
 		List<MonsterRegistry.MonsterAttack> attacks = new ArrayList<>(block.attacks());
 		attacks.addAll(MonsterRegistry.customAttacksOf(monsterEntity));
 
@@ -244,96 +246,96 @@ public class MonsterActionManager {
 		resolveSpell(block, monsterEntity, block.spells().get(spellIndex), target);
 	}
 
-	//Antes esto SIEMPRE resolvía contra level.getNearestPlayer, sin dejarle al DM elegir a quién de verdad
-	//quería apuntar (ni revisar línea de visión) — un DM no podía hacer que el ogro se ensañara con el
-	//pícaro que lo insultó en vez de con el tanque más cercano. Cae al más cercano solo si el UUID llega
-	//vacío/inválido o ese jugador ya no está conectado (elegido en el picker, pero se desconectó antes de
-	//que el mensaje llegara) — mejor un objetivo razonable que ninguno.
+	//This used to ALWAYS resolve against level.getNearestPlayer, with no way for the DM to pick who they
+	//actually wanted to target (or check line of sight) — a DM couldn't make the ogre focus the rogue who
+	//just insulted it instead of the nearest tank. It falls back to the nearest player only if the UUID
+	//comes in empty/invalid or that player is no longer connected (chosen in the picker, but disconnected
+	//before the message arrived) — a reasonable target beats none at all.
 	private static Player resolveTarget(ServerPlayer dm, Entity monsterEntity, String targetUuid) {
 		if (targetUuid != null && !targetUuid.isEmpty()) {
 			try {
 				ServerPlayer target = dm.getServer().getPlayerList().getPlayer(java.util.UUID.fromString(targetUuid));
 				if (target != null) return target;
 			} catch (IllegalArgumentException ignored) {
-				//UUID malformado: nunca debería pasar viniendo del picker, pero cualquier cliente puede
-				//mandar cualquier string — cae al más cercano en vez de tumbar la resolución.
+				//Malformed UUID: should never happen coming from the picker, but any client can send any
+				//string — falls back to the nearest player instead of crashing the resolution.
 			}
 		}
 		return monsterEntity.level().getNearestPlayer(monsterEntity, 30);
 	}
 
-	//Turno automático del monstruo: TurnManager.beginTurn lo llama en cuanto le toca a un monstruo, sin
-	//esperar a la Vara de DM — es la pieza que hace que "sin DM" sea real. Ataca al jugador más cercano con
-	//un ataque elegido al azar entre los disponibles (de especie + personalizados); si no tiene ataques,
-	//prueba con un hechizo al azar entre los suyos. ponytail: el azar solo decide QUÉ ataque usa, sin
-	//selección táctica de objetivo (no elige blanco más débil, no huye con poca vida) — un monstruo siempre
-	//golpea al más cercano. El DM sigue pudiendo intervenir a mano en cualquier otro momento (p.ej. entre
-	//rondas) con la Vara de DM de siempre.
+	//Monster's automatic turn: TurnManager.beginTurn calls this as soon as it's a monster's turn, without
+	//waiting for the DM Wand — it's the piece that makes "no DM" actually work. It attacks the nearest
+	//player with an attack chosen at random among the available ones (species + custom); if it has no
+	//attacks, it tries a random one of its own spells. ponytail: randomness only decides WHICH attack is
+	//used, with no tactical target selection (it doesn't pick the weakest target, doesn't flee at low
+	//health) — a monster always hits the nearest one. The DM can still step in by hand at any other
+	//moment (e.g. between rounds) with the usual DM Wand.
 	public static void autoAct(ServerLevel level, Entity monsterEntity) {
 		if (!monsterEntity.isAlive()) return;
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monsterEntity);
 		if (block == null) return;
 
-		//tryAct primero, SIEMPRE, aunque no haya a quién atacar: es lo que le avisa a TurnManager que este
-		//combatiente ya gastó su turno y dispara el auto-avance (ver TurnManager.scheduleAutoAdvance). Sin
-		//esto, un monstruo sin nadie cerca se quedaría con el turno colgado para siempre — nadie va a
-		//escribir /dndturns next por él.
-		//Un jefe con reloj propio no pide turno (nunca es el suyo): pide poder actuar. Y NO puede pasar por
-		//tryAct ni de rebote — ese método programa el auto-avance del turno, así que llamarlo desde fuera
-		//del orden le pasaría el turno a otro cada seis segundos.
+		//tryAct first, ALWAYS, even with nobody to attack: it's what tells TurnManager this combatant
+		//already spent its turn and triggers the auto-advance (see TurnManager.scheduleAutoAdvance).
+		//Without this, a monster with nobody nearby would be left holding the turn forever — nobody's
+		//going to type /dndturns next for it.
+		//A boss with its own clock doesn't request a turn (it's never theirs to begin with): it requests
+		//to be allowed to act. And it must NOT go through tryAct even indirectly — that method schedules
+		//the turn's auto-advance, so calling it out of order would hand the turn to someone else every six seconds.
 		if (MonsterRegistry.isOffClock(monsterEntity)) {
 			if (!TurnManager.canActIgnoringTurn(monsterEntity)) return;
 		} else if (!TurnManager.tryAct(monsterEntity)) return;
 
-		//Una invocación del jugador ataca a los enemigos de su dueño; un monstruo del DM, al jugador más
-		//cercano. Sin esta distinción, el Arma Espiritual le pegaba a quien la invocó.
+		//A player's summon attacks its owner's enemies; a DM monster attacks the nearest player. Without
+		//this distinction, Spiritual Weapon would hit whoever summoned it.
 		Entity target = SummonManager.ownerOf(monsterEntity) != null
 			? SummonManager.findEnemyTarget(level, monsterEntity, 30)
 			: level.getNearestPlayer(monsterEntity, 30);
-		if (target == null) return; //Nadie cerca: pasa el turno sin hacer nada, ya quedó consumido arriba.
+		if (target == null) return; //Nobody nearby: pass the turn without doing anything, it was already consumed above.
 
 		moveTowardIfNeeded(monsterEntity, target);
 
 		List<MonsterRegistry.MonsterAttack> attacks = new ArrayList<>(block.attacks());
 		attacks.addAll(MonsterRegistry.customAttacksOf(monsterEntity));
 		if (!attacks.isEmpty()) {
-			//Multiataque: un dragón adulto hace tres ataques por turno en 5e (mordisco y dos garras) y aquí
-			//hacía UNO, o sea un tercio de su amenaza. Se eligen al azar de los suyos, uno por golpe, para que
-			//un monstruo con mordisco y garra no repita el mismo tres veces.
+			//Multiattack: an adult dragon makes three attacks per turn in 5e (a bite and two claws), and
+			//here it used to make ONE, i.e. a third of its threat. They're chosen at random among its
+			//own, one per hit, so a monster with a bite and a claw doesn't repeat the same one three times.
 			for (int i = 0; i < block.attacksPerTurn(); i++) {
-				//Se comprueba entre golpe y golpe: si el primero mata al objetivo, los demás no ocurren. Un
-				//muerto no recibe dos ataques más, y sin esto el chat anunciaba golpes contra un cadáver.
+				//Checked between hits: if the first one kills the target, the rest don't happen. A dead
+				//target doesn't take two more attacks, and without this the chat announced hits against a corpse.
 				if (!monsterEntity.isAlive() || !target.isAlive()) break;
 				resolveAttack(block, monsterEntity, randomOf(attacks), target);
 			}
 			return;
 		}
-		//Los hechizos de monstruo siguen exigiendo un jugador: su resolución lee la hoja del objetivo.
+		//Monster spells still require a player: their resolution reads the target's sheet.
 		if (!block.spells().isEmpty() && target instanceof Player playerTarget) {
 			resolveSpell(block, monsterEntity, randomOf(block.spells()), playerTarget);
 		}
 	}
 
-	//Elige entre varias opciones (ataques o hechizos) al azar en vez de siempre la primera — así un
-	//monstruo con "mordisco" y "garra" no repite el mismo golpe en cada turno. Con una sola opción,
-	//nextInt(1) siempre da 0: no hace falta un caso especial para ese tamaño.
+	//Picks among several options (attacks or spells) at random instead of always the first — so a
+	//monster with "bite" and "claw" doesn't repeat the same hit every turn. With a single option,
+	//nextInt(1) always returns 0: no special case needed for that size.
 	private static <T> T randomOf(List<T> options) {
 		return options.get(java.util.concurrent.ThreadLocalRandom.current().nextInt(options.size()));
 	}
 
-	//Antes el monstruo atacaba desde donde estuviera parado, sin importar la distancia real al objetivo
-	//(NoAI fijo desde que se invoca, ver MonsterRegistry.spawnAt) — nunca podía perseguir a nadie que se
-	//alejara, ni flanquear, ni siquiera acercarse a golpear: le pegaba a cualquiera hasta 30 bloques como
-	//si tuviera alcance infinito. Se acerca en línea recta hasta el alcance de melé (mismo valor que ya
-	//usa OpportunityAttackTracker) antes de resolver su acción, con el mismo presupuesto de movimiento por
-	//turno que ya usan los mobs de compatibilidad (ver MovementAnchorTracker.speedBlocksForMob).
-	//ponytail: línea recta en el plano horizontal, sin pathfinding real (no esquiva obstáculos, no rodea
-	//paredes) — sigue siendo NoAI de verdad, esto es solo simular "se acercó", no IA de movimiento real.
+	//Before, the monster attacked from wherever it stood, regardless of the real distance to the target
+	//(NoAI fixed since it's summoned, see MonsterRegistry.spawnAt) — it could never chase anyone who moved
+	//away, or flank, or even close in to hit: it hit anyone up to 30 blocks away as if it had infinite
+	//reach. It closes in a straight line up to melee reach (the same value OpportunityAttackTracker
+	//already uses) before resolving its action, with the same per-turn movement budget the compatibility
+	//mobs already use (see MovementAnchorTracker.speedBlocksForMob).
+	//ponytail: straight line on the horizontal plane, no real pathfinding (doesn't dodge obstacles,
+	//doesn't go around walls) — it's still truly NoAI, this only simulates "it closed the distance," not real movement AI.
 	private static void moveTowardIfNeeded(Entity monster, Entity target) {
-		//Velocidad 0: agarrado, apresado, paralizado, petrificado o inconsciente. Se comprobaba solo en
-		//MovementAnchorTracker, que gobierna a los jugadores y a los mobs de compatibilidad — los monstruos
-		//propios se mueven por AQUÍ, con un teleport, así que la regla no les llegaba. Un monstruo dentro de
-		//un Enmarañar salía andando de él, que es exactamente lo que ese conjuro existe para impedir.
+		//Speed 0: grappled, restrained, paralyzed, petrified, or unconscious. This used to be checked only
+		//in MovementAnchorTracker, which governs players and the compatibility mobs — the mod's own
+		//monsters move THROUGH HERE, via a teleport, so the rule never reached them. A monster inside an
+		//Entangle would just walk out of it, which is exactly what that spell exists to prevent.
 		Combatant combatant = Combatant.of(monster);
 		if (combatant != null && combatant.cannotMove()) return;
 
@@ -352,14 +354,14 @@ public class MonsterActionManager {
 		MonsterRegistry.faceTarget(monster, target);
 	}
 
-	//Ataque de oportunidad: TurnManager lo dispara cuando quien tiene el turno sale del alcance cuerpo a
-	//cuerpo de un monstruo sin haber usado ya su reacción esta ronda (ver OpportunityAttackTracker.checkOpportunityAttacks).
-	//Usa un ataque real al azar entre los disponibles (de especie o personalizado), sin pasar por
-	//resolveAction: esto es una reacción del monstruo, no su acción del turno, así que no toca TurnManager.tryAct.
+	//Opportunity attack: TurnManager triggers this when whoever has the turn leaves a monster's melee
+	//reach without having already used their reaction this round (see OpportunityAttackTracker.checkOpportunityAttacks).
+	//Uses a real attack chosen at random among the available ones (species or custom), without going
+	//through resolveAction: this is the monster's reaction, not its turn action, so it doesn't touch TurnManager.tryAct.
 	/**
-	 * <p>Un ataque de acción legendaria: mismo camino que el de oportunidad —una de sus armas, resuelta con
-	 * las reglas de siempre— con su propio aviso, porque en el chat hay que poder distinguir por qué el jefe
-	 * acaba de pegar fuera de su turno.</p>
+	 * <p>A legendary action attack: same path as the opportunity one — one of its weapons, resolved with
+	 * the usual rules — with its own announcement, because chat needs to be able to distinguish why the
+	 * boss just hit outside its turn.</p>
 	 */
 	public static void resolveLegendaryAttack(Entity monsterEntity, Player target) {
 		attackOutsideOwnTurn(monsterEntity, target, "chat.dndsheets.monster.legendary_action");
@@ -376,8 +378,8 @@ public class MonsterActionManager {
 		attackOutsideOwnTurn(monsterEntity, mover, "chat.dndsheets.monster.opportunity_attack");
 	}
 
-	//Cuerpo común de los dos ataques fuera de turno: la única diferencia real entre un ataque de oportunidad
-	//y uno legendario es qué dice el chat, y tenerlo escrito dos veces era pedir que se separaran.
+	//Common body for both out-of-turn attacks: the only real difference between an opportunity attack and
+	//a legendary one is what chat says, and having it written twice was asking for the two to drift apart.
 	private static void attackOutsideOwnTurn(Entity monsterEntity, Player target, String messageKey) {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monsterEntity);
 		if (block == null) return;
@@ -393,24 +395,24 @@ public class MonsterActionManager {
 	}
 
 	/**
-	 * <p>Objetivo {@code Entity} y no {@code Player}: un invocado del jugador (Arma Espiritual, Esfera
-	 * Flamígera) ataca a monstruos, no a jugadores. Todo lo específico del objetivo —CA, resistencias,
-	 * PG temporales, cómo recibe el daño— ya lo resuelve {@link Combatant}, así que generalizarlo no
-	 * costó una segunda rama sino borrar las que quedaban.</p>
+	 * <p>Target is {@code Entity} and not {@code Player}: a player's summon (Spiritual Weapon, Flaming
+	 * Sphere) attacks monsters, not players. Everything target-specific — AC, resistances, temporary HP,
+	 * how it takes damage — is already resolved by {@link Combatant}, so generalizing this didn't cost a
+	 * second branch, it meant deleting the ones that were left.</p>
 	 */
 	private static void resolveAttack(MonsterRegistry.MonsterStatBlock block, Entity monsterEntity, MonsterRegistry.MonsterAttack attack, Entity target) {
 		Combatant targetCombatant = Combatant.of(target);
 		if (targetCombatant == null) return;
 
 		int toHitMod = block.abilityModifier(attack.toHitAbility()) + block.proficiencyBonus();
-		//Se asume cuerpo a cuerpo: un bloque de estadísticas no dice el alcance de sus ataques, y el monstruo
-		//se acerca hasta MELEE_REACH antes de pegar (ver moveTowardIfNeeded).
+		//Assumed melee: a stat block doesn't say its attacks' reach, and the monster closes in to
+		//MELEE_REACH before hitting (see moveTowardIfNeeded).
 		boolean melee = true;
-		//Un monstruo no trae ventaja propia todavía (no tiene hoja ni flags), así que solo pasa lo del
-		//objetivo. El día que la traiga, entra por el mismo sitio y se combina con todo lo demás de una vez.
-		//Las condiciones del PROPIO monstruo también cuentan: invisible ataca con ventaja, asustado con
-		//desventaja. Esto solo se pasaba desde el lado del jugador, así que un monstruo invisible atacaba
-		//plano — la misma asimetría de siempre, en la fuente en vez de en el objetivo.
+		//A monster doesn't carry its own advantage yet (no sheet, no flags), so only the target's side is
+		//passed in. The day it does, it goes in through the same place and combines with everything else at once.
+		//The monster's OWN conditions matter too: invisible attacks with advantage, frightened with
+		//disadvantage. This used to only be passed from the player's side, so an invisible monster
+		//attacked flat — the same old asymmetry, on the source instead of the target.
 		Combatant attackerCombatant = Combatant.of(monsterEntity);
 		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(new JsonObject(), "1d20 + " + toHitMod,
 			AttackRules.advantageAgainst(monsterEntity, targetCombatant, melee,
@@ -418,10 +420,9 @@ public class MonsterActionManager {
 		if (attackRoll.outcome().result() == null) return;
 		CombatFx.diceTick(monsterEntity);
 
-		//El monstruo juega con las MISMAS reglas que el jugador, y ahora literalmente con el mismo código:
-		//cobertura, CA efectiva, acierto y crítico salen de AttackRules. Que esto estuviera escrito dos veces
-		//es lo que dejó a los monstruos ignorando la ventaja por estado y la cobertura, cada una durante
-		//meses y descubierta por separado.
+		//The monster plays by the SAME rules as the player, and now literally with the same code: cover,
+		//effective AC, hit and critical all come from AttackRules. Having this written twice is what left
+		//monsters ignoring condition-based advantage and cover, each for months, and each discovered separately.
 		AttackRules.Against result = AttackRules.against(monsterEntity, targetCombatant, attackRoll, melee);
 		int targetAc = result.targetAc();
 		String targetName = targetCombatant.name();
@@ -436,22 +437,22 @@ public class MonsterActionManager {
 		DiceManager.DamageResult damageRoll = DiceManager.rollDamage(new JsonObject(), attack.dice() + " + " + damageMod, critical);
 		if (damageRoll.formatted() == null) return;
 
-		//Un ataque natural de monstruo no es mágico salvo que su bloque lo diga, y el esquema todavía no lo dice.
+		//A monster's natural attack isn't magical unless its block says so, and the schema doesn't say so yet.
 		int finalAmount = DamageTypes.applyMultiplier(damageRoll.amount(), targetCombatant.effectiveDamageMultiplier(attack.damageType(), false));
-		//Escalado por dificultad (Config.scaleMonsterDamage): DESPUÉS de resistencias, no antes — la
-		//dificultad de mesa no debe volver inútil una inmunidad de verdad ni viceversa.
-		targetCombatant.takeDamage(Config.scaleMonsterDamage(finalAmount)); //Cubre PG temporales, concentración y muerte en un solo sitio.
+		//Scaled by difficulty (Config.scaleMonsterDamage): AFTER resistances, not before — table difficulty
+		//shouldn't make a real immunity useless, or the other way around.
+		targetCombatant.takeDamage(Config.scaleMonsterDamage(finalAmount)); //Covers temporary HP, concentration and death in a single place.
 		CombatFx.hit(target, critical, attack.damageType());
 		ChatFeedback.broadcast(monsterEntity, ChatFeedback.withCover(ChatFeedback.attackResult(block.name(), targetName, attack.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()), result.cover()));
 
 		if (attack.appliesEffect()) applyEffectFromHit(target, attack.effectName(), attack.effectDice(), attack.effectTurns(), monsterEntity);
 	}
 
-	//Deja el efecto listo para que TurnManager lo vaya aplicando al empezar cada uno de los turnos del objetivo.
+	//Leaves the effect ready for TurnManager to keep applying it at the start of each of the target's turns.
 	private static void applyEffectFromHit(Entity target, String name, String dice, int turns, Entity source) {
 		TurnManager.applyEffect(target, name, dice, turns, source);
-		//Nombre del personaje, no el de la cuenta de Minecraft: es el mismo criterio que el resto de líneas
-		//de combate, y aquí se colaba el otro. Sin Combatant (un mob de compatibilidad) queda el de siempre.
+		//Character name, not the Minecraft account's: same standard as the rest of the combat lines, and
+		//the wrong one was slipping in here. With no Combatant (a compatibility mob) it stays the usual one.
 		Combatant combatant = Combatant.of(target);
 		String targetName = combatant != null ? combatant.name() : target.getName().getString();
 		ChatFeedback.broadcast(target, net.minecraft.network.chat.Component.translatable("chat.dndsheets.monster.effect_applied", targetName, name, turns).withStyle(ChatFormatting.DARK_PURPLE));
@@ -470,9 +471,9 @@ public class MonsterActionManager {
 		Combatant targetCombatant = Combatant.of(target);
 		if (targetCombatant == null) return;
 
-		//Cobertura, CD real, salvación y daño final: mismas reglas, y mismo código, que cuando el que lanza
-		//es un jugador (ver SaveRules). La CD sí sale de sitios distintos — el monstruo la trae escrita en su
-		//bloque y el jugador la calcula de su hoja — y esa diferencia es real, no duplicación.
+		//Cover, real DC, save, and final damage: same rules, and the same code, as when a player is the
+		//caster (see SaveRules). The DC does come from different places — the monster carries it written
+		//in its block and the player computes it from their sheet — and that difference is real, not duplication.
 		SaveRules.Outcome save = SaveRules.resolve(monsterEntity, target, spell.saveAbility(),
 			spell.saveDc(), spell.dice(), spell.halfOnSave());
 		if (save == null) return;
@@ -480,21 +481,21 @@ public class MonsterActionManager {
 
 		CombatFx.spellCast(monsterEntity);
 		CombatFx.spellImpact(target, saved, spell.damageType());
-		//targetCombatant.name() y no target.getName(): el resto del mod anuncia el nombre del PERSONAJE, y
-		//aquí se colaba el de la cuenta de Minecraft.
+		//targetCombatant.name() and not target.getName(): the rest of the mod announces the CHARACTER's
+		//name, and the Minecraft account's was slipping in here.
 		ChatFeedback.broadcast(monsterEntity, ChatFeedback.withLegendaryResistance(
 			ChatFeedback.withCover(ChatFeedback.saveResult(block.name(), targetCombatant.name(), spell.name(),
 				save.roll().formatted(), save.dc(), saved, save.label(), save.damageFormatted()), save.cover()),
 			save.legendaryResistance(), MonsterRegistry.legendaryResistancesLeft(target)));
 
-		//Una sola implementación de "aplicar daño de conjuro": afinidades, PG temporales, concentración y
-		//muerte. Un conjuro siempre cuenta como mágico. Escalado por dificultad igual que el ataque físico
-		//de arriba — SaveRules.resolve es compartido con el jugador lanzando el mismo hechizo, así que la
-		//dificultad de monstruo no puede vivir ahí; se aplica acá, solo del lado del monstruo.
+		//A single implementation of "apply spell damage": affinities, temporary HP, concentration and
+		//death. A spell always counts as magical. Scaled by difficulty just like the physical attack
+		//above — SaveRules.resolve is shared with a player casting the same spell, so monster difficulty
+		//can't live there; it's applied here, only on the monster's side.
 		if (save.finalDamage() > 0) SpellCastManager.applyDamage(target, Config.scaleMonsterDamage(save.finalDamage()), spell.damageType());
-		//Mismo criterio que SpellCastManager.castSaveSpell: la condición la decide la salvación, no el daño.
-		//Un aliento paralizante que no hace daño debe paralizar igual, y uno que sí lo hace no debe imponer
-		//su condición a quien superó la tirada.
+		//Same standard as SpellCastManager.castSaveSpell: the save decides the condition, not the damage.
+		//A paralyzing breath that deals no damage should still paralyze, and one that does damage
+		//shouldn't impose its condition on someone who made the save.
 		if (!saved && spell.appliesEffect()) applyEffectFromHit(target, spell.effectName(), spell.effectDice(), spell.effectTurns(), monsterEntity);
 	}
 }

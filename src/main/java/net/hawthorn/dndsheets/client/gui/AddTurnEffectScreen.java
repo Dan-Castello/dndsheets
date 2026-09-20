@@ -8,10 +8,10 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Formulario para aplicar un efecto de estado (veneno, etc.) a UN jugador ya elegido en
- * {@link PlayerPickerScreen}, abierto desde el botón "Aplicar efecto" de {@link TurnControlScreen}
- * (equivalente en GUI a {@code /dndturns effect}). El dado se elige con un
- * botón cíclico sobre las mismas sugerencias que ya usa {@code TurnCommand}, en vez de texto libre.</p>
+ * <p>Form to apply a status effect (poison, etc.) to ONE player already chosen in
+ * {@link PlayerPickerScreen}, opened from {@link TurnControlScreen}'s "Apply effect" button
+ * (the GUI equivalent of {@code /dndturns effect}). The die is picked with a
+ * cycle button over the same suggestions {@code TurnCommand} already uses, instead of free text.</p>
  */
 public class AddTurnEffectScreen extends SmallFormScreen {
 	private static final String[] DICE_OPTIONS = {"1d4", "1d6", "1d8", "1d10", "1d12", "2d6", "2d8"};
@@ -32,14 +32,14 @@ public class AddTurnEffectScreen extends SmallFormScreen {
 
 	@Override
 	protected void buildForm() {
-		nameBox = addField("Nombre", "veneno", 40);
-		dice = addCycleButton("Dado", DICE_OPTIONS);
-		turnsBox = addField("Turnos", "3", 2);
+		nameBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.name"), "poison", 40);
+		dice = addCycleButton(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.dice"), DICE_OPTIONS);
+		turnsBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.turns"), "3", 2);
 	}
 
 	@Override
 	protected void onConfirm() {
-		String name = nameBox.getValue().isBlank() ? "veneno" : nameBox.getValue();
+		String name = nameBox.getValue().isBlank() ? "poison" : nameBox.getValue();
 		int turns = parseIntOr(turnsBox.getValue(), 3);
 		DndsheetsMod.PACKET_HANDLER.sendToServer(new TurnEffectApplyMessage(targetUuid, name, dice.value(), turns));
 	}

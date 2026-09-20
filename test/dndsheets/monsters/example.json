@@ -1,0 +1,45 @@
+[
+  {
+    "id": "dndsheets:goblin", "name": "Goblin", "type": "humanoid", "baseEntity": "minecraft:zombie",
+    "ac": 15, "hp": 7,
+    "abilities": { "str": 8, "dex": 14, "con": 10, "int": 10, "wis": 8, "cha": 8 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Scimitar", "toHitAbility": "dex", "dice": "1d6", "damageAbility": "dex", "damageType": "slashing" }
+    ]
+  },
+  {
+    "id": "dndsheets:orc", "name": "Orc", "type": "humanoid", "baseEntity": "minecraft:zombie",
+    "ac": 13, "hp": 15,
+    "abilities": { "str": 16, "dex": 12, "con": 16, "int": 7, "wis": 11, "cha": 10 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      { "name": "Greataxe", "toHitAbility": "str", "dice": "1d12", "damageAbility": "str", "damageType": "slashing" }
+    ]
+  },
+  {
+    "id": "dndsheets:fire_mage", "name": "Fire Mage", "type": "humanoid", "baseEntity": "minecraft:skeleton",
+    "ac": 12, "hp": 20,
+    "abilities": { "str": 8, "dex": 12, "con": 12, "int": 16, "wis": 12, "cha": 10 },
+    "proficiencyBonus": 3,
+    "damageAffinities": { "fire": "resistant", "cold": "vulnerable" },
+    "attacks": [
+      { "name": "Staff", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "bludgeoning" }
+    ],
+    "abilities_special": [
+      { "name": "Fireball", "saveAbility": "dex", "saveDc": 13, "dice": "8d6", "halfOnSave": true, "damageType": "fire" }
+    ]
+  },
+  {
+    "id": "dndsheets:giant_spider", "name": "Giant Spider", "type": "beast", "baseEntity": "minecraft:spider",
+    "ac": 14, "hp": 26,
+    "abilities": { "str": 14, "dex": 16, "con": 12, "int": 2, "wis": 11, "cha": 4 },
+    "proficiencyBonus": 2,
+    "attacks": [
+      {
+        "name": "Bite", "toHitAbility": "dex", "dice": "1d8", "damageAbility": "dex", "damageType": "piercing",
+        "appliesEffect": { "name": "poison", "dice": "2d8", "turns": 3 }
+      }
+    ]
+  }
+]

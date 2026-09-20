@@ -42,18 +42,18 @@ import java.util.Locale;
 import java.util.function.Supplier;
 
 /**
- * <p>Utilidades de administración de hoja que no tenían dueño natural en ningún otro comando.
- * {@code /dndsheet setslots} tapa el hueco más urgente de la auditoría: antes de esto,
- * {@code spellSlotsMax} nunca se escribía en ningún sitio salvo el 0 por defecto, así que el Grimorio
- * era inutilizable sin editar el JSON de la hoja a mano en el disco.</p>
+ * <p>Sheet administration utilities that had no natural home in any other command.
+ * {@code /dndsheet setslots} covers the most urgent gap found in the audit: before this,
+ * {@code spellSlotsMax} was never written anywhere except its default of 0, so the Spellbook
+ * was unusable without editing the sheet's JSON by hand on disk.</p>
  */
 @Mod.EventBusSubscriber
 public class SheetCommand {
-	//Solo sugerencias de tab (los 13 tipos de daño de 5e en español): cualquier otro texto sigue siendo
-	//válido, pero para que DamageTypes.multiplierFor coincida de verdad con lo que digan las armas/
-	//hechizos, conviene escribir siempre el mismo nombre exacto — de ahí que valga la pena sugerirlo.
-	//La lista vive en DamageTypes, que es quien decide si una resistencia aplica. Duplicarla aqui era
-	//sugerirle al DM un tipo que luego podia no comparar igual.
+	//Tab suggestions only (5e's 13 damage types): any other text is still valid, but for
+	//DamageTypes.multiplierFor to actually match what weapons/spells say, it's best to always write the
+	//same exact name — hence why it's worth suggesting. The list lives in DamageTypes, which is what
+	//decides whether a resistance applies. Duplicating it here would risk suggesting the DM a type that
+	//later wouldn't compare equal.
 	private static final String[] DAMAGE_TYPE_SUGGESTIONS = net.hawthorn.dndsheets.DamageTypes.CANONICAL;
 
 	@SubscribeEvent
@@ -61,108 +61,108 @@ public class SheetCommand {
 		event.getDispatcher().register(Commands.literal("dndsheet")
 			.requires(source -> DndsheetsMod.canActAsDm(source))
 			.then(Commands.literal("setslots")
-				.then(Commands.argument("jugadores", EntityArgument.players())
-					.then(Commands.argument("maximo", IntegerArgumentType.integer())
-						.executes(ctx -> setSlots(ctx, IntegerArgumentType.getInteger(ctx, "maximo"), true))
-						.then(Commands.argument("actual", IntegerArgumentType.integer())
-							.executes(ctx -> setSlots(ctx, IntegerArgumentType.getInteger(ctx, "maximo"), false))))))
+				.then(Commands.argument("players", EntityArgument.players())
+					.then(Commands.argument("max", IntegerArgumentType.integer())
+						.executes(ctx -> setSlots(ctx, IntegerArgumentType.getInteger(ctx, "max"), true))
+						.then(Commands.argument("current", IntegerArgumentType.integer())
+							.executes(ctx -> setSlots(ctx, IntegerArgumentType.getInteger(ctx, "max"), false))))))
 				.then(Commands.literal("restkit")
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(SheetCommand::giveRestKit)))
 				.then(Commands.literal("advantage")
-					.then(Commands.argument("jugadores", EntityArgument.players())
-						.then(Commands.argument("estado", StringArgumentType.word())
-							.suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(new String[]{"normal", "ventaja", "desventaja"}, builder))
+					.then(Commands.argument("players", EntityArgument.players())
+						.then(Commands.argument("state", StringArgumentType.word())
+							.suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(new String[]{"normal", "advantage", "disadvantage"}, builder))
 							.executes(SheetCommand::setAdvantage))))
 				.then(Commands.literal("damagetype")
-					.then(Commands.argument("jugadores", EntityArgument.players())
-						.then(Commands.argument("tipo", StringArgumentType.word())
+					.then(Commands.argument("players", EntityArgument.players())
+						.then(Commands.argument("type", StringArgumentType.word())
 							.suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(DAMAGE_TYPE_SUGGESTIONS, builder))
-							.then(Commands.argument("afinidad", StringArgumentType.word())
+							.then(Commands.argument("affinity", StringArgumentType.word())
 								.suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(new String[]{"normal", "resistant", "vulnerable", "immune"}, builder))
 								.executes(SheetCommand::setDamageAffinity)))))
 				.then(Commands.literal("gold")
-					.then(Commands.argument("jugadores", EntityArgument.players())
-						.then(Commands.argument("modo", StringArgumentType.word())
+					.then(Commands.argument("players", EntityArgument.players())
+						.then(Commands.argument("mode", StringArgumentType.word())
 							.suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(new String[]{"add", "set"}, builder))
-							.then(Commands.argument("cantidad", IntegerArgumentType.integer())
+							.then(Commands.argument("amount", IntegerArgumentType.integer())
 								.executes(SheetCommand::setGold)))))
 				.then(Commands.literal("passive")
-					.then(Commands.argument("jugador", EntityArgument.player())
+					.then(Commands.argument("player", EntityArgument.player())
 						.executes(SheetCommand::showPassivePerception)))
 				.then(Commands.literal("turnitems")
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(SheetCommand::giveTurnItems)))
 				.then(Commands.literal("rageitem")
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(SheetCommand::giveRageItem)))
 				.then(Commands.literal("secondwinditem")
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(SheetCommand::giveSecondWindItem)))
 				.then(Commands.literal("inspirationitem")
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(SheetCommand::giveInspirationItem)))
 				.then(Commands.literal("wildshapeitem")
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(SheetCommand::giveWildShapeItem)))
 				.then(Commands.literal("metamagicitem")
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(SheetCommand::giveMetamagicItem)))
 				.then(Commands.literal("smiteitem")
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(SheetCommand::giveSmiteItem)))
 				.then(Commands.literal("huntermarkitem")
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(SheetCommand::giveHunterMarkItem)))
 				.then(Commands.literal("shielditem")
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(SheetCommand::giveShieldItem)))
 				.then(Commands.literal("counterspellitem")
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(SheetCommand::giveCounterspellItem)))
 				.then(Commands.literal("pact")
-					.then(Commands.argument("jugadores", EntityArgument.players())
-						.then(Commands.argument("pacto", StringArgumentType.word())
-							.suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(new String[]{"cadena", "hoja", "vara"}, builder))
+					.then(Commands.argument("players", EntityArgument.players())
+						.then(Commands.argument("pactType", StringArgumentType.word())
+							.suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(new String[]{"chain", "blade", "tome"}, builder))
 							.executes(SheetCommand::setPact))))
 				.then(Commands.literal("levelup")
-					.then(Commands.argument("jugadores", EntityArgument.players())
+					.then(Commands.argument("players", EntityArgument.players())
 						.executes(SheetCommand::levelUp)))
-				//Multiclase: un nivel EN una clase, no un nivel a secas. Lo concede el DM, como el resto de
-				//los niveles.
+				//Multiclass: a level IN a class, not a bare level. Granted by the DM, like the rest of the
+				//levels.
 				.then(Commands.literal("multiclass")
-					.then(Commands.argument("jugadores", EntityArgument.players())
-						.then(Commands.argument("clase", StringArgumentType.word())
+					.then(Commands.argument("players", EntityArgument.players())
+						.then(Commands.argument("class", StringArgumentType.word())
 							.suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(
 								net.hawthorn.dndsheets.PresetRegistry.ids(), builder))
 							.executes(SheetCommand::multiclass))))
 				.then(Commands.literal("setlevel")
-					.then(Commands.argument("jugadores", EntityArgument.players())
-						.then(Commands.argument("nivel", IntegerArgumentType.integer(1, 20))
+					.then(Commands.argument("players", EntityArgument.players())
+						.then(Commands.argument("level", IntegerArgumentType.integer(1, 20))
 							.executes(SheetCommand::setLevel))))
 				.then(Commands.literal("setac")
-					.then(Commands.argument("jugadores", EntityArgument.players())
-						.then(Commands.argument("valor", StringArgumentType.word())
+					.then(Commands.argument("players", EntityArgument.players())
+						.then(Commands.argument("value", StringArgumentType.word())
 							.suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(new String[]{"auto"}, builder))
 							.executes(SheetCommand::setAc))))
 				.then(Commands.literal("setroll")
-					.then(Commands.argument("jugadores", EntityArgument.players())
-						.then(Commands.argument("categoria", StringArgumentType.word())
+					.then(Commands.argument("players", EntityArgument.players())
+						.then(Commands.argument("category", StringArgumentType.word())
 							.suggests((ctx, builder) -> net.minecraft.commands.SharedSuggestionProvider.suggest(new String[]{"checks", "saves", "skills"}, builder))
-							.then(Commands.argument("nombre", StringArgumentType.string())
+							.then(Commands.argument("name", StringArgumentType.string())
 								.suggests(SheetCommand::suggestRollNames)
-								.then(Commands.argument("expresion", StringArgumentType.greedyString())
+								.then(Commands.argument("rollExpression", StringArgumentType.greedyString())
 									.executes(SheetCommand::setRoll)))))));
 	}
 
-	//Ahora que checks/saves/skills son de solo-operador (ver network.SheetServerMessage), esta es la vía de
-	//un DM/OP para seguir ajustándolas a distancia sin necesitar abrir la hoja de OTRO jugador como si fuera
-	//la propia (cambio de arquitectura mayor, deliberadamente fuera de esta pasada). "nombre"
-	//acepta el nombre en inglés que ya usa RollIndex.getBasicContext (p.ej. "Persuasion Check") o, para quien
-	//prefiera no acordarse del nombre exacto, directamente el índice numérico.
+	//Now that checks/saves/skills are operator-only (see network.SheetServerMessage), this is the way for
+	//a DM/OP to keep adjusting them remotely without needing to open ANOTHER player's sheet as if it were
+	//their own (a bigger architecture change, deliberately out of scope for this pass). "name"
+	//accepts the English name RollIndex.getBasicContext already uses (e.g. "Persuasion Check") or, for
+	//whoever prefers not to remember the exact name, the numeric index directly.
 	private static java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestRollNames(
 			CommandContext<CommandSourceStack> ctx, com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
-		RollIndex.Category category = parseRollCategory(StringArgumentType.getString(ctx, "categoria"));
+		RollIndex.Category category = parseRollCategory(StringArgumentType.getString(ctx, "category"));
 		if (category == null) return builder.buildFuture();
 		return net.minecraft.commands.SharedSuggestionProvider.suggest(RollIndex.basicNames(category), builder);
 	}
@@ -176,36 +176,36 @@ public class SheetCommand {
 		};
 	}
 
-	private static int indexForRollName(RollIndex.Category category, String nombre) {
+	private static int indexForRollName(RollIndex.Category category, String name) {
 		try {
-			int parsed = Integer.parseInt(nombre);
+			int parsed = Integer.parseInt(name);
 			if (parsed >= 0 && parsed < RollIndex.basicNames(category).size()) return parsed;
 		} catch (NumberFormatException ignored) {
-			//No era un índice numérico: se sigue probando por nombre debajo.
+			//Not a numeric index: fall through and keep trying by name below.
 		}
 		List<String> names = RollIndex.basicNames(category);
 		for (int i = 0; i < names.size(); i++) {
-			if (names.get(i).equalsIgnoreCase(nombre)) return i;
+			if (names.get(i).equalsIgnoreCase(name)) return i;
 		}
 		return -1;
 	}
 
 	private static int setRoll(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		RollIndex.Category category = parseRollCategory(StringArgumentType.getString(ctx, "categoria"));
+		RollIndex.Category category = parseRollCategory(StringArgumentType.getString(ctx, "category"));
 		if (category == null) {
 			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.roll.unknown_category"));
 			return 0;
 		}
 
-		String nombre = StringArgumentType.getString(ctx, "nombre");
-		int index = indexForRollName(category, nombre);
+		String name = StringArgumentType.getString(ctx, "name");
+		int index = indexForRollName(category, name);
 		if (index < 0) {
-			ctx.getSource().sendFailure(Component.literal("No encuentro \"" + nombre + "\" en " + StringArgumentType.getString(ctx, "categoria") + "."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.sheet.roll_not_found", name, StringArgumentType.getString(ctx, "category")));
 			return 0;
 		}
 
-		String expresion = StringArgumentType.getString(ctx, "expresion");
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		String expresion = StringArgumentType.getString(ctx, "rollExpression");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) {
 			JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 			if (sheet == null) continue;
@@ -213,90 +213,91 @@ public class SheetCommand {
 			new RollIndex(category, index).saveInSheet(sheet, expresion);
 			sendSheetUpdate(target, sheet);
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal(nombre + " actualizado para " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.sheet.roll_updated", name, targets.size()), true);
 		return targets.size();
 	}
 
-	//CA es un valor CALCULADO (10 + mod. Destreza + armadura real, ver CombatManager.armorClassOf) — no
-	//había ninguna forma de fijarlo a mano para un caso especial (un objeto mágico, una regla de mesa
-	//puntual) sin mentirle a Minecraft sobre la armadura real equipada. "auto" quita el override y vuelve
-	//al cálculo normal.
+	//AC is a CALCULATED value (10 + Dex mod + real armor, see CombatManager.armorClassOf) — there was no
+	//way to fix it by hand for a special case (a magic item, a one-off table rule) without lying to
+	//Minecraft about the real armor equipped. "auto" removes the override and goes back to the normal
+	//calculation.
 	private static int setAc(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		String valor = StringArgumentType.getString(ctx, "valor");
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		String value = StringArgumentType.getString(ctx, "value");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) {
 			JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 			if (sheet == null) continue;
-			if ("auto".equalsIgnoreCase(valor)) {
+			if ("auto".equalsIgnoreCase(value)) {
 				sheet.remove("armorClassOverride");
 			} else {
 				try {
-					sheet.addProperty("armorClassOverride", Integer.parseInt(valor));
+					sheet.addProperty("armorClassOverride", Integer.parseInt(value));
 				} catch (NumberFormatException e) {
-					ctx.getSource().sendFailure(Component.literal("\"" + valor + "\" no es un número válido ni \"auto\"."));
+					ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.sheet.invalid_ac_value", value));
 					continue;
 				}
 			}
 			sendSheetUpdate(target, sheet);
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("CA actualizada para " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.sheet.ac_updated", targets.size()), true);
 		return targets.size();
 	}
 
-	//Un solo lugar donde entregar UN ítem "botón" a cada jugador de "jugadores" — antes cada
-	//give*Item repetía este mismo cuerpo de 5 líneas, variando solo el builder del ítem y el mensaje.
-	private static int giveItemToTargets(CommandContext<CommandSourceStack> ctx, Supplier<ItemStack> stackSupplier, String givenLabel) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+	//A single place to hand out ONE "button" item to each player in "players" — every give*Item used
+	//to repeat this same 5-line body, varying only the item builder and the message.
+	private static int giveItemToTargets(CommandContext<CommandSourceStack> ctx, Supplier<ItemStack> stackSupplier, String givenLabelKey) throws CommandSyntaxException {
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) {
 			target.getInventory().add(stackSupplier.get());
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal(givenLabel + " a " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable(givenLabelKey, targets.size()), true);
 		return targets.size();
 	}
 
 	private static int giveSmiteItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		return giveItemToTargets(ctx, PaladinSmiteManager::buildDivineSmiteStack, "Castigo Divino entregado");
+		return giveItemToTargets(ctx, PaladinSmiteManager::buildDivineSmiteStack, "chat.dndsheets.sheet.smite_given");
 	}
 
 	private static int giveHunterMarkItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		return giveItemToTargets(ctx, RangerHunterMarkManager::buildHunterMarkStack, "Marca del Cazador entregada");
+		return giveItemToTargets(ctx, RangerHunterMarkManager::buildHunterMarkStack, "chat.dndsheets.sheet.hunter_mark_given");
 	}
 
 	private static int giveShieldItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		return giveItemToTargets(ctx, ShieldManager::buildShieldStack, "Escudo entregado");
+		return giveItemToTargets(ctx, ShieldManager::buildShieldStack, "chat.dndsheets.sheet.shield_given");
 	}
 
 	private static int giveCounterspellItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		return giveItemToTargets(ctx, CounterspellManager::buildCounterspellStack, "Contrahechizo entregado");
+		return giveItemToTargets(ctx, CounterspellManager::buildCounterspellStack, "chat.dndsheets.sheet.counterspell_given");
 	}
 
-	//Pacto del brujo (Cadena/Hoja/Vara): elección permanente de subclase, al estilo de un preset — se
-	//escribe en la hoja y ahí se queda. Único gancho mecánico real que encaja sin inventar un subsistema
-	//nuevo: Pacto de la Hoja cambia la característica de ataque con arma a Carisma (ver
-	//CombatManager.resolveWeapon). Cadena (familiar) y Vara (cantrips extra) se quedan como identidad
-	//grabada en la hoja — este mod no modela familiares ni una lista de "hechizos conocidos" por
-	//personaje, así que no hay dónde engancharlos sin inventar esos subsistemas para un solo pacto.
+	//Warlock's Pact (Chain/Blade/Tome): a permanent subclass choice, preset-style — it gets written on
+	//the sheet and stays there. The only real mechanical hook that fits without inventing a new
+	//subsystem: Pact of the Blade switches the weapon attack ability to Charisma (see
+	//CombatManager.resolveWeapon). Chain (familiar) and Tome (extra cantrips) remain as identity recorded
+	//on the sheet — this mod doesn't model familiars or a per-character "known spells" list, so there's
+	//nowhere to hook them without inventing those subsystems for a single pact.
 	private static int setPact(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		String pacto = StringArgumentType.getString(ctx, "pacto").toLowerCase(java.util.Locale.ROOT);
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) applyPact(target, pacto);
-		ctx.getSource().sendSuccess(() -> Component.literal("Pacto de " + pacto + " fijado para " + targets.size() + " jugador(es)."), true);
+		String pact = StringArgumentType.getString(ctx, "pactType").toLowerCase(java.util.Locale.ROOT);
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
+		for (ServerPlayer target : targets) applyPact(target, pact);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.sheet.pact_set", pact, targets.size()), true);
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage).
-	public static void applyPact(ServerPlayer target, String pacto) {
+	//Public: also used by the DM Panel (see network.SheetAdjustMessage).
+	public static void applyPact(ServerPlayer target, String pact) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;
-		sheet.addProperty("warlockPact", pacto);
+		sheet.addProperty("warlockPact", pact);
 		sendSheetUpdate(target, sheet);
 	}
 
 	/**
-	 * <p>Pone o quita una condición de 5e a un jugador. Público: lo usa el Panel de DM (ver
-	 * {@code network.SheetAdjustMessage}). No pasa por {@code sendSheetUpdate}: la condición la persiste
-	 * {@code Combatant.setConditionSources} por su cuenta, y avisar al propio afectado importa más que
-	 * reenviarle la hoja entera — sin el aviso, quedarse paralizado parece que el juego se rompió.</p>
+	 * <p>Applies or removes a 5e condition on a player. Public: used by the DM Panel (see
+	 * {@code network.SheetAdjustMessage}). It doesn't go through {@code sendSheetUpdate}: the condition
+	 * is persisted by {@code Combatant.setConditionSources} on its own, and notifying the affected player
+	 * matters more than resending them the whole sheet — without the notice, being paralyzed looks like
+	 * the game broke.</p>
 	 */
 	public static void applyCondition(ServerPlayer target, String conditionLabel, boolean apply) {
 		net.hawthorn.dndsheets.Condition condition = net.hawthorn.dndsheets.Condition.fromLabel(conditionLabel);
@@ -306,82 +307,81 @@ public class SheetCommand {
 		if (apply) combatant.addCondition(condition);
 		else combatant.removeCondition(condition);
 		target.sendSystemMessage(Component.translatable(
-			apply ? "chat.dndsheets.condition.gained" : "chat.dndsheets.condition.lost", condition.label())
+			apply ? "chat.dndsheets.condition.gained" : "chat.dndsheets.condition.lost", condition.displayLabel())
 			.withStyle(apply ? ChatFormatting.DARK_PURPLE : ChatFormatting.GRAY));
 	}
 
-	//Nivel de personaje, desacoplado del XP de Minecraft (ver SheetLoader.characterLevelOf, que ya leía
-	//"characterLevel" de la hoja pero nunca tenía quién lo escribiera).
+	//Character level, decoupled from Minecraft XP (see SheetLoader.characterLevelOf, which already read
+	//"characterLevel" from the sheet but never had anything writing it).
 	private static int setLevel(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		int nivel = IntegerArgumentType.getInteger(ctx, "nivel");
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) applyLevel(target, nivel);
-		ctx.getSource().sendSuccess(() -> Component.literal("Nivel de personaje puesto a " + nivel + " para " + targets.size() + " jugador(es)."), true);
+		int level = IntegerArgumentType.getInteger(ctx, "level");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
+		for (ServerPlayer target : targets) applyLevel(target, level);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.sheet.level_set", level, targets.size()), true);
 		return targets.size();
 	}
 
-	//Subir UN nivel contándolo, frente a setlevel, que pone un número. Lo dispara el DM porque en una mesa
-	//quien reparte los niveles es quien lleva la partida.
+	//Gaining ONE level by incrementing, as opposed to setlevel, which sets a number. Triggered by the DM
+	//because at a table it's whoever runs the game who hands out levels.
 	private static int levelUp(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) LevelUpManager.levelUp(target);
-		ctx.getSource().sendSuccess(() -> Component.literal("Subido de nivel a " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.sheet.leveled_up", targets.size()), true);
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage).
-	public static void applyLevel(ServerPlayer target, int nivel) {
+	//Public: also used by the DM Panel (see network.SheetAdjustMessage).
+	public static void applyLevel(ServerPlayer target, int level) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;
-		//Las Mejoras de Puntuacion de Caracteristica se conceden AQUI, el unico punto por el que pasa un
-		//cambio de nivel (comando y Panel de DM). Se cuentan por los niveles cruzados, asi que saltar del 1
-		//al 8 concede las dos que tocan en vez de perder una — ver LevelUpManager.
-		//El nivel EXPLÍCITO, por lo mismo que en LevelUpManager.levelUp: contar desde el nivel de XP le
-		//quitaría al jugador las Mejoras de los niveles que el fallback se saltó de un brinco.
-		LevelUpManager.grantImprovementsFor(sheet, SheetLoader.characterLevelOf(sheet), nivel);
-		sheet.addProperty("characterLevel", nivel);
-		//Sin esto, el PG máximo (que depende del nivel) se quedaba con el valor viejo hasta la próxima
-		//reconexión — SheetLoader.applyClassHitPoints solo se llamaba antes en EntityJoinLevelEvent.
+		//Ability Score Improvements are granted HERE, the only point every level change (command and DM
+		//Panel) passes through. They're counted by the levels crossed, so jumping from 1 to 8 grants the
+		//two that are due instead of losing one — see LevelUpManager.
+		//The EXPLICIT level, for the same reason as in LevelUpManager.levelUp: counting from the XP level
+		//would strip the player of the Improvements for the levels the fallback skipped over in one jump.
+		LevelUpManager.grantImprovementsFor(sheet, SheetLoader.characterLevelOf(sheet), level);
+		sheet.addProperty("characterLevel", level);
+		//Without this, max HP (which depends on level) would keep its old value until the next
+		//reconnect — SheetLoader.applyClassHitPoints used to only be called in EntityJoinLevelEvent.
 		SheetLoader.applyClassHitPoints(target, sheet);
 		sendSheetUpdate(target, sheet);
 	}
 
 	/**
-	 * <p>Sube un nivel <b>en una clase concreta</b>. Es lo mismo que {@code levelup} salvo en la única cosa
-	 * que la multiclase cambia: de qué clase es el nivel que se gana.</p>
+	 * <p>Gains a level <b>in a specific class</b>. It's the same as {@code levelup} except for the one
+	 * thing multiclassing changes: which class the gained level belongs to.</p>
 	 *
-	 * <p>Pasa por {@code applyLevel} igual que todo lo demás, así que la Mejora de Característica se concede
-	 * por el mismo sitio y en los mismos niveles totales — un guerrero 3 / mago 1 la recibe al llegar a 4,
-	 * que es lo que dice 5e. Escribir el nivel por otro camino habría sido la forma de perderla.</p>
+	 * <p>It goes through {@code applyLevel} like everything else, so the Ability Score Improvement is
+	 * granted through the same place and at the same total levels — a fighter 3 / wizard 1 gets it upon
+	 * reaching 4, which is what 5e says. Writing the level through another path would have been the way
+	 * to lose it.</p>
 	 */
 	private static int multiclass(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		String classId = StringArgumentType.getString(ctx, "clase");
+		String classId = StringArgumentType.getString(ctx, "class");
 		if (net.hawthorn.dndsheets.PresetRegistry.get(classId) == null) {
-			ctx.getSource().sendFailure(Component.literal("No conozco la clase \"" + classId
-				+ "\". Míralas con /dndpresets list."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.sheet.no_such_class", classId));
 			return 0;
 		}
 
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) applyMulticlass(target, classId);
 
-		ctx.getSource().sendSuccess(() -> Component.literal("Nivel de " + classId + " concedido a "
-			+ targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.sheet.class_level_granted", classId, targets.size()), true);
 		return targets.size();
 	}
 
 	/**
-	 * <p>Sube un nivel <b>en una clase concreta</b> para UN jugador. Es lo mismo que {@code applyLevel}
-	 * salvo en la única cosa que la multiclase cambia: de qué clase es el nivel que se gana.</p>
+	 * <p>Gains a level <b>in a specific class</b> for ONE player. It's the same as {@code applyLevel}
+	 * except for the one thing multiclassing changes: which class the gained level belongs to.</p>
 	 *
-	 * <p>Pasa por {@link #applyLevel} igual que todo lo demás, así que la Mejora de Característica se
-	 * concede por el mismo sitio y en los mismos niveles totales — un guerrero 3 / mago 1 la recibe al
-	 * llegar a 4, que es lo que dice 5e. Escribir el nivel por otro camino habría sido la forma de
-	 * perderla.</p>
+	 * <p>It goes through {@link #applyLevel} like everything else, so the Ability Score Improvement is
+	 * granted through the same place and at the same total levels — a fighter 3 / wizard 1 gets it upon
+	 * reaching 4, which is what 5e says. Writing the level through another path would have been the way
+	 * to lose it.</p>
 	 *
-	 * <p>Público: también lo usa {@code network.MulticlassMessage} (botón "Multiclasear" de la propia
-	 * ficha). Devuelve {@code false} sin tocar nada si {@code classId} no existe en {@code
-	 * PresetRegistry} o el jugador no tiene hoja — el llamador decide qué hacer con eso.</p>
+	 * <p>Public: also used by {@code network.MulticlassMessage} (the sheet's own "Multiclass" button).
+	 * Returns {@code false} without touching anything if {@code classId} doesn't exist in {@code
+	 * PresetRegistry} or the player has no sheet — the caller decides what to do with that.</p>
 	 */
 	public static boolean applyMulticlass(ServerPlayer target, String classId) {
 		if (net.hawthorn.dndsheets.PresetRegistry.get(classId) == null) return false;
@@ -392,65 +392,65 @@ public class SheetCommand {
 		java.util.Map<String, Integer> levels = net.hawthorn.dndsheets.ClassLevels.addLevel(
 			sheet, classId, currentClassId, SheetLoader.characterLevelOf(sheet));
 
-		//applyLevel escribe el nivel total y concede lo que toque; el reparto ya está en la hoja, así que
-		//los PG y los espacios se recalculan solos leyéndolo.
+		//applyLevel writes the total level and grants whatever's due; the class split is already on the
+		//sheet, so HP and slots recalculate themselves by reading it.
 		applyLevel(target, net.hawthorn.dndsheets.ClassLevels.total(levels));
 		target.sendSystemMessage(Component.translatable("chat.dndsheets.character.now_you_are", net.hawthorn.dndsheets.ClassLevels.describe(levels)).withStyle(net.minecraft.ChatFormatting.GREEN));
 		return true;
 	}
 
 	private static int giveInspirationItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		return giveItemToTargets(ctx, BardInspirationManager::buildInspirationStack, "Cuerno de Inspiración entregado");
+		return giveItemToTargets(ctx, BardInspirationManager::buildInspirationStack, "chat.dndsheets.sheet.inspiration_given");
 	}
 
 	private static int giveWildShapeItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		return giveItemToTargets(ctx, DruidWildShapeManager::buildWildShapeStack, "Forma Salvaje entregada");
+		return giveItemToTargets(ctx, DruidWildShapeManager::buildWildShapeStack, "chat.dndsheets.sheet.wildshape_given");
 	}
 
 	private static int giveMetamagicItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		return giveItemToTargets(ctx, SorcererMetamagicManager::buildTwinnedSpellStack, "Metamagia: Hechizo Gemelo entregada");
+		return giveItemToTargets(ctx, SorcererMetamagicManager::buildTwinnedSpellStack, "chat.dndsheets.sheet.metamagic_given");
 	}
 
 	private static int giveRageItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		return giveItemToTargets(ctx, BarbarianRageManager::buildRageItemStack, "Tótem de Furia entregado");
+		return giveItemToTargets(ctx, BarbarianRageManager::buildRageItemStack, "chat.dndsheets.sheet.rage_given");
 	}
 
 	private static int giveSecondWindItem(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		return giveItemToTargets(ctx, FighterSecondWindManager::buildSecondWindStack, "Segundo Aliento entregado");
+		return giveItemToTargets(ctx, FighterSecondWindManager::buildSecondWindStack, "chat.dndsheets.sheet.second_wind_given");
 	}
 
 	private static int giveTurnItems(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) {
 			target.getInventory().add(TurnItemManager.buildNextTurnStack());
 			target.getInventory().add(TurnItemManager.buildUndoTurnStack());
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Ítems de turno entregados a " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.sheet.turn_items_given", targets.size()), true);
 		return targets.size();
 	}
 
 	private static int giveRestKit(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		return giveItemToTargets(ctx, RestManager::buildRestKitStack, "Kit de Descanso entregado");
+		return giveItemToTargets(ctx, RestManager::buildRestKitStack, "chat.dndsheets.sheet.rest_kit_given");
 	}
 
-	//Fija ventaja/desventaja para la SIGUIENTE tirada de ataque (arma o hechizo) de cada jugador; se
-	//consume sola al resolverse esa tirada (ver CombatManager.consumeAdvantage).
+	//Sets advantage/disadvantage for the NEXT attack roll (weapon or spell) of each player; it consumes
+	//itself once that roll resolves (see CombatManager.consumeAdvantage).
 	private static int setAdvantage(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		String estado = StringArgumentType.getString(ctx, "estado");
-		if (!"normal".equalsIgnoreCase(estado) && !"ventaja".equalsIgnoreCase(estado) && !"desventaja".equalsIgnoreCase(estado)) {
-			ctx.getSource().sendFailure(Component.literal("Estado \"" + estado + "\" no reconocido. Usa: normal, ventaja o desventaja."));
+		String state = StringArgumentType.getString(ctx, "state");
+		if (!"normal".equalsIgnoreCase(state) && !"advantage".equalsIgnoreCase(state) && !"disadvantage".equalsIgnoreCase(state)) {
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.sheet.unknown_advantage_state", state));
 			return 0;
 		}
-		String label = estado.toLowerCase(java.util.Locale.ROOT);
+		String label = state.toLowerCase(java.util.Locale.ROOT);
 
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) applyAdvantage(target, label);
-		ctx.getSource().sendSuccess(() -> Component.literal("Próximo ataque en " + label + " para " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.sheet.next_attack_state", label, targets.size()), true);
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage). "label" ya debe ser
-	//"normal"/"ventaja"/"desventaja" — el llamador es quien decide con qué texto exacto llegar aquí.
+	//Public: also used by the DM Panel (see network.SheetAdjustMessage). "label" must already be
+	//"normal"/"advantage"/"disadvantage" — the caller is the one who decides what exact text arrives here.
 	public static void applyAdvantage(ServerPlayer target, String label) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;
@@ -458,24 +458,26 @@ public class SheetCommand {
 		sendSheetUpdate(target, sheet);
 	}
 
-	//Fija resistencia/vulnerabilidad/inmunidad a un tipo de daño (p.ej. "fuego", "veneno") en la hoja;
-	//"normal" borra la entrada (ver DamageTypes.multiplierFor, que lee esta misma "damageAffinities").
+	//Sets resistance/vulnerability/immunity to a damage type (e.g. "fire", "poison") on the sheet;
+	//"normal" removes the entry (see DamageTypes.multiplierFor, which reads this same "damageAffinities").
 	private static int setDamageAffinity(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		String tipo = net.hawthorn.dndsheets.DamageTypes.normalize(StringArgumentType.getString(ctx, "tipo"));
-		String afinidad = StringArgumentType.getString(ctx, "afinidad").toLowerCase(java.util.Locale.ROOT);
+		String damageType = net.hawthorn.dndsheets.DamageTypes.normalize(StringArgumentType.getString(ctx, "type"));
+		String affinity = StringArgumentType.getString(ctx, "affinity").toLowerCase(java.util.Locale.ROOT);
 
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) applyDamageAffinity(target, tipo, afinidad);
-		ctx.getSource().sendSuccess(() -> Component.literal("Afinidad a " + tipo + " puesta a " + afinidad + " para " + targets.size() + " jugador(es)."), true);
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
+		for (ServerPlayer target : targets) applyDamageAffinity(target, damageType, affinity);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.sheet.damage_affinity_set", damageType, affinity, targets.size()), true);
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage).
+	//Public: also used by the DM Panel (see network.SheetAdjustMessage).
 	public static void applyDamageAffinity(ServerPlayer target, String damageType, String affinity) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;
 
 		JsonObject affinities = sheet.has("damageAffinities") ? sheet.getAsJsonObject("damageAffinities") : new JsonObject();
+		//A key saved under an old Spanish spelling ("fuego") is the same type as "fire": drop it so the two never coexist.
+		affinities.keySet().removeIf(written -> net.hawthorn.dndsheets.DamageTypes.normalize(written).equals(damageType));
 		if ("normal".equals(affinity)) {
 			affinities.remove(damageType);
 		} else {
@@ -485,28 +487,28 @@ public class SheetCommand {
 		sendSheetUpdate(target, sheet);
 	}
 
-	//Economía simple: un solo contador de "gold" por hoja (equivalente en piezas de oro). "add" suma
-	//(puede ser negativo para gastar), "set" fija el valor directamente.
+	//Simple economy: a single "gold" counter per sheet (in gold-piece equivalent). "add" adds
+	//(can be negative to spend), "set" sets the value directly.
 	private static int setGold(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		String modo = StringArgumentType.getString(ctx, "modo");
-		int cantidad = IntegerArgumentType.getInteger(ctx, "cantidad");
+		String mode = StringArgumentType.getString(ctx, "mode");
+		int amount = IntegerArgumentType.getInteger(ctx, "amount");
 
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
-		for (ServerPlayer target : targets) applyGold(target, modo, cantidad);
-		ctx.getSource().sendSuccess(() -> Component.literal("Oro actualizado para " + targets.size() + " jugador(es)."), true);
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
+		for (ServerPlayer target : targets) applyGold(target, mode, amount);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.sheet.gold_updated", targets.size()), true);
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage). Devuelve el oro resultante,
-	//para que el panel pueda refrescar lo que muestra sin pedirlo aparte.
+	//Public: also used by the DM Panel (see network.SheetAdjustMessage). Returns the resulting gold, so
+	//the panel can refresh what it shows without requesting it separately.
 	public static int applyGold(ServerPlayer target, String mode, int amount) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return 0;
 
 		int current = sheet.has("gold") ? sheet.get("gold").getAsInt() : 0;
-		//En long antes de volver a int: current + amount en int puro podía desbordar a negativo con
-		//valores grandes (oro ya alto + un "add" grande), y el Math.max(0, ...) de después convertía ese
-		//desborde en "vaciar el oro" en vez de sumar.
+		//As a long before going back to int: current + amount in plain int could overflow into negative
+		//with large values (already-high gold + a big "add"), and the Math.max(0, ...) that follows would
+		//turn that overflow into "wipe the gold out" instead of adding.
 		int updated;
 		if ("add".equals(mode)) {
 			long sum = (long) current + (long) amount;
@@ -519,57 +521,57 @@ public class SheetCommand {
 		return updated;
 	}
 
-	//Tirada secreta del DM: solo la ve quien ejecuta el comando (sendSuccess con allowLogging=false),
-	//no se anuncia en el chat público.
+	//Secret DM roll: only seen by whoever ran the command (sendSuccess with allowLogging=false),
+	//not announced in public chat.
 	private static int showPassivePerception(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		ServerPlayer target = EntityArgument.getPlayer(ctx, "jugador");
+		ServerPlayer target = EntityArgument.getPlayer(ctx, "player");
 		int passive = passivePerceptionOf(target);
 		String name = SheetLoader.characterNameOf(SheetLoader.getServerSheet(target.getStringUUID()), target);
-		ctx.getSource().sendSuccess(() -> Component.literal("Percepción pasiva de " + name + ": " + passive), false);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.character.passive_perception", name, passive), false);
 		return passive;
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.PassivePerceptionRequestMessage).
+	//Public: also used by the DM Panel (see network.PassivePerceptionRequestMessage).
 	public static int passivePerceptionOf(ServerPlayer target) {
 		return PassiveScores.passivePerception(SheetLoader.getServerSheet(target.getStringUUID()));
 	}
 
 	private static int setSlots(CommandContext<CommandSourceStack> ctx, int max, boolean fillCurrent) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) {
-			int current = fillCurrent ? max : IntegerArgumentType.getInteger(ctx, "actual");
+			int current = fillCurrent ? max : IntegerArgumentType.getInteger(ctx, "current");
 			applySlots(target, max, current);
 		}
 
-		ctx.getSource().sendSuccess(() -> Component.literal("Espacios de conjuro máximos puestos a " + max + " para " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.sheet.spell_slots_set", max, targets.size()), true);
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.SheetAdjustMessage). "current" se recorta a "max" igual que el comando.
+	//Public: also used by the DM Panel (see network.SheetAdjustMessage). "current" is clamped to "max" just like the command.
 	public static void applySlots(ServerPlayer target, int max, int current) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;
 
-		//El comando ya acota [0,99] con Brigadier, pero el Panel de DM llega acá directo por
-		//network.SheetAdjustMessage (un VarInt crudo, sin cota) — se acota acá, en el único punto por el
-		//que pasan los dos caminos, para no depender de que cada llamador se acuerde de validar.
+		//The command already bounds [0,99] via Brigadier, but the DM Panel arrives here directly through
+		//network.SheetAdjustMessage (a raw VarInt, no bound) — it's bounded here, the single point both
+		//paths pass through, so as not to depend on every caller remembering to validate.
 		max = Math.max(0, Math.min(max, 99));
 		current = Math.max(0, Math.min(current, 99));
 
 		SheetLoader.validateSheet(sheet);
-		//Un comando de un solo número no puede decir de qué nivel son, así que van como espacios de nivel 1
-		//—lo más conservador— y de paso quedan en la tabla: escribir solo el total dejaría al personaje sin
-		//poder lanzar nada, porque lanzar mira la tabla.
+		//A single-number command can't say which level they're for, so they go in as level-1 slots
+		//—the most conservative choice— and end up in the table along the way: writing only the total
+		//would leave the character unable to cast anything, because casting looks at the table.
 		SpellSlots.setFlat(sheet, max, current);
 		sendSheetUpdate(target, sheet);
 	}
 
-	//Sin el saveServer, un cambio de oro/nivel/espacios/etc. hecho por un DM (comando o Panel de DM) solo
-	//tocaba la copia en memoria — sobrevivía a que el propio jugador reabriera su hoja (eso sí guarda,
-	//ver network.SheetServerMessage) pero se perdía si el servidor se reiniciaba/caía antes del autoguardado
-	//periódico de 5 min o de un /stop limpio. Todos los métodos de esta clase pasan por este único método
-	//de salida, así que arreglarlo acá cierra el hueco para gold/level/slots/advantage/damageAffinity/pact
-	//a la vez, sin tener que acordarse en cada uno.
+	//Without saveServer, a gold/level/slots/etc. change made by a DM (command or DM Panel) only touched
+	//the in-memory copy — it survived the player reopening their own sheet (that does save, see
+	//network.SheetServerMessage) but was lost if the server restarted/crashed before the periodic 5-min
+	//autosave or a clean /stop. Every method in this class routes through this single exit point, so
+	//fixing it here closes the gap for gold/level/slots/advantage/damageAffinity/pact all at once, without
+	//having to remember it in each one.
 	private static void sendSheetUpdate(ServerPlayer target, JsonObject sheet) {
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 		SheetLoader.saveServer(sheet, target.getStringUUID());

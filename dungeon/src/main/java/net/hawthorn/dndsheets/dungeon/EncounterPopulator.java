@@ -10,20 +10,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>Puebla las salas de una mazmorra recién generada sin que un DM las rellene a mano —ver
- * {@link DungeonManager#generate}, que llama aquí justo después de plantar la estructura, con el
- * bounding box real de cada pieza (no se puede recalcular después: la colocación jigsaw es
- * aleatoria).</p>
+ * <p>Populates the rooms of a freshly generated dungeon so a DM doesn't have to fill them by hand —
+ * see {@link DungeonManager#generate}, which calls here right after planting the structure, with the
+ * real bounding box of each piece (it can't be recomputed afterward: jigsaw placement is random).</p>
  *
- * <p><b>Heurística deliberadamente mínima, no un presupuesto de encuentro estilo DMG:</b>
- * {@link MonsterRegistry.MonsterStatBlock} no trae Valor de Desafío ni nivel — solo PG, CA y ataques—,
- * así que "filtrar por nivel de personaje" se aproxima con una banda de PG máximos
- * ({@code HP_FLOOR + playerLevel * HP_PER_LEVEL}). No calcula presupuesto de XP por sala ni balancea
- * dificultad real; si el playtesting muestra que la banda queda mal calibrada, ese ajuste es una
- * iteración posterior, no parte de esta pasada.</p>
+ * <p><b>Deliberately minimal heuristic, not a DMG-style encounter budget:</b>
+ * {@link MonsterRegistry.MonsterStatBlock} carries no Challenge Rating or level — only HP, AC and
+ * attacks — so "filter by character level" is approximated with a max-HP band
+ * ({@code HP_FLOOR + playerLevel * HP_PER_LEVEL}). It doesn't compute an XP budget per room or balance
+ * real difficulty; if playtesting shows the band is miscalibrated, that tuning is a later iteration,
+ * not part of this pass.</p>
  *
- * <p>ponytail: banda de PG plana, no una tabla de VD real — subir a algo más fiel al DMG cuando haya
- * datos de VD reales en el bloque de estadísticas o el playtesting lo pida.</p>
+ * <p>ponytail: flat HP band, not a real CR table — upgrade to something closer to the DMG once real
+ * CR data exists on the stat block or playtesting calls for it.</p>
  */
 public final class EncounterPopulator {
 	private EncounterPopulator() {}
@@ -33,13 +32,13 @@ public final class EncounterPopulator {
 	private static final int MAX_MONSTERS_PER_ROOM = 3;
 	private static final int HP_FLOOR = 10;
 	private static final int HP_PER_LEVEL = 15;
-	//Descarta pasillos angostos como "sala": un corredor de 3 bloques de ancho no es donde un DM
-	//pondría un encuentro, y llenarlo de monstruos los deja pegados contra los jigsaw de conexión.
+	//Excludes narrow corridors from counting as a "room": a 3-block-wide corridor isn't where a DM
+	//would put an encounter, and filling it with monsters leaves them stuck against the connector jigsaws.
 	private static final int MIN_ROOM_VOLUME = 4 * 4 * 3;
 
 	public static void populate(ServerLevel level, List<BoundingBox> roomBounds, int playerLevel) {
 		List<String> candidates = candidateMonsters(playerLevel);
-		if (candidates.isEmpty()) return; //Sin bestiario cargado que encaje, no hay nada que poblar.
+		if (candidates.isEmpty()) return; //No loaded bestiary entry fits, nothing to populate.
 
 		RandomSource random = level.getRandom();
 		for (BoundingBox room : roomBounds) {
@@ -50,7 +49,7 @@ public final class EncounterPopulator {
 			int count = MIN_MONSTERS_PER_ROOM + random.nextInt(MAX_MONSTERS_PER_ROOM - MIN_MONSTERS_PER_ROOM + 1);
 			for (int i = 0; i < count; i++) {
 				String monsterId = candidates.get(random.nextInt(candidates.size()));
-				//Un poco de dispersión (±1 bloque) para que no queden los tres apilados en la misma casilla.
+				//A bit of scatter (±1 block) so they don't all stack up on the same tile.
 				double x = center.getX() + random.nextInt(3) - 1;
 				double z = center.getZ() + random.nextInt(3) - 1;
 				MonsterRegistry.spawnAt(level, x, center.getY(), z, monsterId);

@@ -15,32 +15,32 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * <p>Expulsar Muertos Vivientes del clérigo (Canalizar Divinidad): todo no-muerto a {@value #RADIUS}
- * bloques tira una salvación de Sabiduría contra la CD de conjuro del clérigo, y el que falla queda
- * <b>asustado</b> durante {@value #DURATION_ROUNDS} asaltos. Una vez por descanso, corto o largo.</p>
+ * <p>Cleric Turn Undead (Channel Divinity): every undead within {@value #RADIUS} blocks rolls a Wisdom
+ * save against the cleric's spell DC, and whoever fails is <b>frightened</b> for {@value #DURATION_ROUNDS}
+ * rounds. Once per rest, short or long.</p>
  *
- * <p>El clérigo era la <b>única</b> clase con preset y sin ningún recurso propio: bárbaro, bardo, druida,
- * guerrero, hechicero, explorador, mago, monje y paladín tenían el suyo, y quien elegía clérigo se
- * encontraba un lanzador de conjuros a secas. Este es su botón.</p>
+ * <p>The cleric was the <b>only</b> class with a preset and no resource of its own: barbarian, bard,
+ * druid, fighter, sorcerer, ranger, wizard, monk, and paladin each had theirs, and whoever picked cleric
+ * just got a plain spellcaster. This is their button.</p>
  *
- * <p>No se pudo escribir hasta que los monstruos tuvieron tipo de criatura ({@link CreatureType}): un
- * "expulsar muertos vivientes" que no sabe distinguir un muerto viviente es un empujón a todo el mundo.</p>
+ * <p>Couldn't be written until monsters had a creature type ({@link CreatureType}): a "turn undead" that
+ * can't tell an undead apart is a shove at everyone.</p>
  *
- * <p><b>Lo que no está</b>: Destruir Muertos Vivientes, la mejora de nivel 5 que fulmina en el acto a los
- * de VD baja. Un bloque de estadísticas de este mod no tiene VD, y sustituirla por los PG haría desaparecer
- * a un no-muerto legendario de pocos PG y sobrevivir a uno flojo con muchos: el umbral estaría midiendo
- * otra cosa. Requiere un campo nuevo, no una aproximación.</p>
+ * <p><b>What's missing</b>: Destroy Undead, the level-5 upgrade that instantly destroys low-CR undead. A
+ * stat block in this mod has no CR, and substituting it with HP would make a legendary undead with few
+ * HP disappear while a weak one with lots of HP survives: the threshold would be measuring the wrong
+ * thing. It needs a new field, not an approximation.</p>
  */
 public class ClericTurnUndeadManager {
-	/** 30 pies de 5e, a un bloque por cada 5 pies. */
+	/** 30 feet in 5e, at one block per 5 feet. */
 	private static final int RADIUS = 6;
-	/** 1 minuto de 5e = 10 asaltos, igual que la Furia. */
+	/** 1 minute in 5e = 10 rounds, same as Rage. */
 	private static final int DURATION_ROUNDS = 10;
-	private static final String CONDITION = "asustado";
+	private static final String CONDITION = "frightened";
 
-	//Mismo "usado/no usado" que Segundo Aliento, y por lo mismo: Canalizar Divinidad no tiene duración que
-	//contar, solo se gasta y se recupera al descansar. En la hoja, para que sea del personaje y sobreviva a
-	//un reinicio — ver RestResource.
+	//Same "used/not used" as Second Wind, and for the same reason: Channel Divinity has no duration to
+	//track, it's just spent and recovered on rest. On the sheet, so it belongs to the character and
+	//survives a restart — see RestResource.
 
 	public static void use(ServerPlayer cleric) {
 		if (!RestResource.spend(cleric, RestResource.CHANNEL_DIVINITY)) {
@@ -51,14 +51,14 @@ public class ClericTurnUndeadManager {
 		JsonObject sheet = SheetLoader.getServerSheet(cleric.getStringUUID());
 		if (sheet == null) return;
 
-		//Misma CD que cualquier conjuro suyo (8 + competencia + Sabiduría): Expulsar es una capacidad de
-		//clérigo, no un efecto aparte con sus propios números.
+		//Same DC as any of their spells (8 + proficiency + Wisdom): Turn Undead is a cleric ability, not
+		//a separate effect with its own numbers.
 		int proficiency = CharacterRules.proficiencyBonusFor(SheetLoader.characterLevelOf(sheet, cleric));
 		int saveDc = 8 + proficiency + CombatManager.abilityModifier(sheet, "wisdom");
 		String clericName = SheetLoader.characterNameOf(sheet, cleric);
 
 		CombatFx.activate(cleric);
-		ChatFeedback.broadcast(cleric, Component.literal(clericName + " expulsa a los muertos vivientes (CD " + saveDc + ").").withStyle(ChatFeedback.RESOURCE));
+		ChatFeedback.broadcast(cleric, Component.translatable("chat.dndsheets.cleric.turn_undead", clericName, saveDc).withStyle(ChatFeedback.RESOURCE));
 
 		int turned = 0;
 		AABB box = new AABB(cleric.position(), cleric.position()).inflate(RADIUS);
@@ -68,18 +68,18 @@ public class ClericTurnUndeadManager {
 		}
 
 		if (turned == 0) {
-			//Se avisa aunque no haya funcionado nada: sin esto, gastar el recurso sin ningún no-muerto cerca
-			//se ve exactamente igual que un uso que salió mal, y el clérigo no sabe cuál de las dos fue.
+			//Notified even when nothing actually turned: without this, spending the resource with no
+			//undead nearby looks exactly like a use that went wrong, and the cleric can't tell which it was.
 			cleric.sendSystemMessage(Component.translatable("chat.dndsheets.resource.turn_undead_none").withStyle(ChatFormatting.GRAY));
 		}
 	}
 
-	/** @return true si de verdad quedó expulsado. */
+	/** @return true if it was actually turned. */
 	private static boolean turnOne(ServerPlayer cleric, Entity target, int saveDc) {
 		Combatant combatant = Combatant.of(target);
-		//Sin bloque de estadísticas no hay Sabiduría que tirar. No puede pasar hoy (typeOf solo devuelve
-		//no-muerto para un monstruo del mod), pero dejarlo sin comprobar convierte un cambio futuro en un
-		//NullPointerException dentro de un bucle.
+		//Without a stat block there's no Wisdom to roll. Can't happen today (typeOf only returns undead
+		//for a mod monster), but leaving it unchecked would turn a future change into a
+		//NullPointerException inside a loop.
 		if (combatant == null) return false;
 
 		Combatant.SaveRoll save = combatant.rollSave("wis");
@@ -91,22 +91,23 @@ public class ClericTurnUndeadManager {
 			return false;
 		}
 
-		//El clérigo va como fuente porque "asustado" en 5e depende de QUIÉN te asusta: no puedes acercarte a
-		//él, y tienes desventaja mientras lo veas (ver TurnManager.applyEffect y Condition).
+		//The cleric goes in as the source because "frightened" in 5e depends on WHO is frightening you:
+		//you can't approach them, and you have disadvantage while you can see them (see
+		//TurnManager.applyEffect and Condition).
 		TurnManager.applyEffect(target, CONDITION, "0", DURATION_ROUNDS, cleric);
-		CombatFx.spellImpact(target, false, "radiante");
-		ChatFeedback.broadcast(cleric, Component.literal(targetName + " es expulsado: " + save.formatted() + " vs CD " + saveDc + ".").withStyle(ChatFormatting.GOLD));
+		CombatFx.spellImpact(target, false, "radiant");
+		ChatFeedback.broadcast(cleric, Component.translatable("chat.dndsheets.cleric.turned", targetName, save.formatted(), saveDc).withStyle(ChatFormatting.GOLD));
 		return true;
 	}
 
-	//Público: RestManager lo llama para los dos tipos de descanso — en 5e Canalizar Divinidad se recupera
-	//con un descanso corto, igual que Segundo Aliento.
+	//Public: RestManager calls it for both rest types — in 5e Channel Divinity recovers on a short rest,
+	//same as Second Wind.
 	public static void resetOnRest(ServerPlayer player) {
 		RestResource.restore(player, RestResource.CHANNEL_DIVINITY);
 	}
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a los eventos de interacción por su cuenta
-	//. Mismo patrón que el resto de ítems de capacidad.
+	//Triggered from AbilityItemDispatcher instead of subscribing to interaction events on its own.
+	//Same pattern as the rest of the ability items.
 	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (event.getEntity() instanceof ServerPlayer player) use(player);

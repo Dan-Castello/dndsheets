@@ -9,21 +9,21 @@ import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * <p>Escudo: clic derecho marca el hechizo como "listo" en la hoja (mismo patrón que Castigo Divino/
- * Hechizo Gemelo), pero a diferencia de esos NO se consume solo por dispararse una vez: en 5e de verdad se
- * decide lanzarlo ya sabiendo si el ataque entrante acertaría, así que aquí se comprueba justo donde ya se
- * compara la tirada de ataque contra la CA ({@link CombatManager#onLivingHurt},
- * {@link MonsterActionManager#resolveAttack}) y solo gasta espacio de conjuro + reacción cuando el +5 de
- * CA de verdad convierte un acierto en un fallo. Si el golpe iba a fallar igual, o acertaría de todas
- * formas incluso con Escudo, no se gasta nada y el flag sigue listo para el siguiente ataque de la ronda.</p>
+ * <p>Shield: right-click marks the spell as "ready" on the sheet (same pattern as Divine Smite/Twinned
+ * Spell), but unlike those it does NOT get consumed just by firing once: in real 5e you decide to cast it
+ * already knowing whether the incoming attack would hit, so here it's checked right where the attack roll
+ * already gets compared against AC ({@link CombatManager#onLivingHurt},
+ * {@link MonsterActionManager#resolveAttack}), and it only spends a spell slot + reaction when the +5 AC
+ * actually turns a hit into a miss. If the attack was going to miss anyway, or would hit regardless even
+ * with Shield, nothing is spent and the flag stays ready for the next attack of the round.</p>
  */
 public class ShieldManager {
 
-	//Escudo es un conjuro de nivel 1 en 5e.
+	//Shield is a level 1 spell in 5e.
 	private static final int LEVEL = 1;
 	private static final int AC_BONUS = 5;
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta.
+	//Triggered from AbilityItemDispatcher instead of subscribing to RightClickItem on its own.
 	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -36,16 +36,16 @@ public class ShieldManager {
 		player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.shield_ready").withStyle(ChatFeedback.RESOURCE));
 	}
 
-	//Público: comprobado justo donde ya se compara la tirada de ataque contra la CA, tanto en PvP como en
-	//un monstruo atacando a un jugador. Devuelve la CA a usar en ESA comparación: +5 si Escudo protegió de
-	//verdad (y ya gastó el espacio + la reacción), la CA normal si no aplicaba o no hacía falta.
+	//Public: checked right where the attack roll already gets compared against AC, both in PvP and for a
+	//monster attacking a player. Returns the AC to use in THAT comparison: +5 if Shield actually protected
+	//(and already spent the slot + reaction), the normal AC if it didn't apply or wasn't needed.
 	public static int effectiveAc(ServerPlayer victim, int attackRollValue, int normalAc) {
-		if (attackRollValue < normalAc || attackRollValue >= normalAc + AC_BONUS) return normalAc; //No cambiaría el resultado.
+		if (attackRollValue < normalAc || attackRollValue >= normalAc + AC_BONUS) return normalAc; //Wouldn't change the outcome.
 
 		JsonObject sheet = SheetLoader.getServerSheet(victim.getStringUUID());
 		if (sheet == null || !sheet.has("shieldReady") || !sheet.get("shieldReady").getAsBoolean()) return normalAc;
 
-		//Escudo es un conjuro de NIVEL 1: le sirve cualquier espacio, pero gasta el más bajo que tenga.
+		//Shield is a LEVEL 1 spell: any slot works, but the lowest one available is spent.
 		if (!SpellSlots.hasSlotFor(sheet, LEVEL) || !TurnManager.tryReact(victim)) return normalAc;
 
 		SpellSlots.spend(sheet, LEVEL);

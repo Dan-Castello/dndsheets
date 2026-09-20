@@ -9,13 +9,14 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Servidor -> cliente: la Guía (ver GuideBook). Con /dndguide la abre directamente; en el primer
-//ingreso al mundo (SheetLoader.clientJoinedServer, firstJoin=true) ya NO — un libro a pantalla
-//completa nada más entrar a un mundo nuevo se cerraba por reflejo sin leerse, y encima interrumpía el
-//primer vistazo al mundo. Ahora es un toast de esquina con la tecla: informa sin secuestrar la pantalla.
+//Server -> client: the Guide (see GuideBook). With /dndguide it opens it directly; on first
+//joining the world (SheetLoader.clientJoinedServer, firstJoin=true) it no longer does — a
+//full-screen book right as you enter a new world got closed reflexively without being read, and it
+//also interrupted the first look at the world. Now it's a corner toast with the keybind: informs
+//without hijacking the screen.
 public class TutorialOpenMessage {
 	final boolean includeDmPages;
-	//Al FINAL del payload — invariante 2, los campos nuevos nunca se insertan en medio.
+	//At the END of the payload — invariant 2, new fields are never inserted in the middle.
 	final boolean firstJoin;
 
 	public TutorialOpenMessage(boolean includeDmPages) {
@@ -39,8 +40,8 @@ public class TutorialOpenMessage {
 
 	public static void handler(TutorialOpenMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
-		//No le robamos la pantalla a algo que el jugador ya tenga abierto (mismo criterio que
-		//DndsheetsModKeyMappings.KeyEventListener para las teclas H/P).
+		//We don't steal the screen from something the player already has open (same criterion as
+		//DndsheetsModKeyMappings.KeyEventListener for the H/P keys).
 		NetworkUtil.handleOnClient(context, () -> {
 			Minecraft minecraft = Minecraft.getInstance();
 			if (message.firstJoin) {

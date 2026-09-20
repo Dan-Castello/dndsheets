@@ -12,17 +12,17 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Editor de UN rasgo ya creado (ver {@code ContentEntryListScreen}, que abre esta pantalla en vez de
- * {@link ContentFormScreen} para el tipo TRAIT): a diferencia de armas/hechizos/presets, un rasgo tiene
- * dos listas de nivel/dado anidadas ({@code unarmedDiceByLevel}/{@code sneakAttackDiceByLevel}, ver
- * {@code TraitRegistry}) que no encajan en un formulario plano de una columna.</p>
+ * <p>Editor for ONE already-created trait (see {@code ContentEntryListScreen}, which opens this screen
+ * instead of {@link ContentFormScreen} for the TRAIT type): unlike weapons/spells/presets, a trait has
+ * two nested level/dice lists ({@code unarmedDiceByLevel}/{@code sneakAttackDiceByLevel}, see
+ * {@code TraitRegistry}) that don't fit into a flat, single-column form.</p>
  *
- * <p>Cada acción (editar nombre/característica, añadir o borrar un nivel) reconstruye la entrada
- * COMPLETA en el cliente y la manda entera por {@code ContentEntrySaveMessage} — el servidor no sabe
- * "parchear" un campo suelto, solo guardar/reemplazar la entrada entera (mismo criterio que
- * {@code ContentPackFile.upsert}). Reabre esta misma pantalla con la copia local actualizada al instante
- * en vez de esperar el eco del servidor, para no rebotar al DM a la lista general en cada nivel que
- * añade/borra.</p>
+ * <p>Every action (editing name/ability, adding or deleting a level) rebuilds the ENTIRE entry on the
+ * client and sends it whole via {@code ContentEntrySaveMessage} — the server doesn't know how to
+ * "patch" a single field, only save/replace the entire entry (same rule as
+ * {@code ContentPackFile.upsert}). It reopens this same screen with the updated local copy instantly
+ * instead of waiting for the server's echo, so the DM isn't bounced back to the general list on every
+ * level added/deleted.</p>
  */
 public class TraitEditScreen extends ListPickerScreen {
 	private final JsonObject entry;
@@ -45,10 +45,10 @@ public class TraitEditScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.trait_edit.name", name), b -> TraitBasicInfoScreen.open(entry));
 		addRow(Component.translatable("gui.dndsheets.trait_edit.unarmed", unarmedAbility), b -> TraitBasicInfoScreen.open(entry));
 
-		addTierRows("unarmedDiceByLevel", "Artes marciales");
+		addTierRows("unarmedDiceByLevel", Component.translatable("gui.dndsheets.trait_edit.tier_martial"));
 		addRow(Component.translatable("gui.dndsheets.trait_edit.add_martial"), b -> TierAddScreen.open(entry, "unarmedDiceByLevel"));
 
-		addTierRows("sneakAttackDiceByLevel", "Ataque furtivo");
+		addTierRows("sneakAttackDiceByLevel", Component.translatable("gui.dndsheets.trait_edit.tier_sneak"));
 		addRow(Component.translatable("gui.dndsheets.trait_edit.add_sneak"), b -> TierAddScreen.open(entry, "sneakAttackDiceByLevel"));
 
 		addRow(Component.translatable("gui.dndsheets.trait_edit.delete"), b -> {
@@ -57,7 +57,7 @@ public class TraitEditScreen extends ListPickerScreen {
 		});
 	}
 
-	private void addTierRows(String field, String label) {
+	private void addTierRows(String field, Component label) {
 		if (!entry.has(field)) return;
 		for (JsonElement el : entry.getAsJsonArray(field)) {
 			JsonObject tier = el.getAsJsonObject();

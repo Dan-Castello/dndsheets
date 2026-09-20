@@ -8,11 +8,12 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Servidor -> cliente: abre/cierra una pantalla modal sin payload propio. Reemplaza DeathSaveOpenMessage,
-//DeathSaveCloseMessage y RestChoiceOpenMessage, que eran 3 clases idénticas salvo qué pantalla accionaban.
+//Server -> client: opens/closes a modal screen with no payload of its own. Replaces DeathSaveOpenMessage,
+//DeathSaveCloseMessage, and RestChoiceOpenMessage, which were 3 identical classes except for which screen
+//they triggered.
 public class ScreenActionMessage {
-	//Al final, nunca en medio: writeEnum viaja por ordinal (invariante 2 de PROJECT_CONTEXT.md).
-	public enum Action { DEATH_SAVE_OPEN, DEATH_SAVE_CLOSE, REST_CHOICE_OPEN, COMPENDIUM_OPEN, TURN_ACTION_OPEN, ABILITY_IMPROVEMENT_OPEN }
+	//At the end, never in the middle: writeEnum travels by ordinal (invariant 2 in PROJECT_CONTEXT.md).
+	public enum Action { DEATH_SAVE_OPEN, DEATH_SAVE_CLOSE, REST_CHOICE_OPEN, COMPENDIUM_OPEN, TURN_ACTION_OPEN, ABILITY_IMPROVEMENT_OPEN, NEW_CHARACTER_OPEN }
 
 	final Action action;
 
@@ -38,6 +39,7 @@ public class ScreenActionMessage {
 				case COMPENDIUM_OPEN -> net.hawthorn.dndsheets.client.gui.CompendiumScreen.open();
 				case TURN_ACTION_OPEN -> net.hawthorn.dndsheets.client.gui.TurnActionScreen.open();
 				case ABILITY_IMPROVEMENT_OPEN -> net.hawthorn.dndsheets.client.gui.AbilityImprovementScreen.open();
+				case NEW_CHARACTER_OPEN -> net.hawthorn.dndsheets.client.gui.NewCharacterScreen.open();
 			}
 		});
 	}

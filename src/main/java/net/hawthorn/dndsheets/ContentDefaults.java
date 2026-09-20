@@ -7,29 +7,29 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 /**
- * <p>Mantiene al día el pack de contenido que trae el mod dentro de la carpeta del mundo.</p>
+ * <p>Keeps the mod's built-in content pack up to date inside the world folder.</p>
  *
- * <p>Antes esto era una siembra <b>única</b>, y solo si la carpeta estaba vacía ({@code seedDefaultsIfEmpty}).
- * El efecto era que la copia del mundo se congelaba en la versión del día en que se creó la partida: los
- * hechizos nuevos, las resistencias añadidas a un monstruo o el escalado por nivel de espacio no llegaban
- * <b>nunca</b> a un mundo que ya existía. Se descubrió por el síntoma: subir el nivel de un conjuro no hacía
- * nada en una partida en curso, porque el servidor seguía cargando un pack anterior a esa regla.</p>
+ * <p>This used to be a <b>one-time</b> seeding, and only if the folder was empty ({@code seedDefaultsIfEmpty}).
+ * The effect was that the world's copy froze at the version from the day the save was created: new
+ * spells, resistances added to a monster, or slot-level scaling <b>never</b> reached a world that
+ * already existed. It was discovered by the symptom: bumping a spell's level did nothing in an ongoing
+ * game, because the server kept loading a pack from before that rule.</p>
  *
- * <p>Ahora el pack del mod tiene nombre propio ({@link #FILE}) y se reescribe en cada arranque. Lo que el DM
- * escriba en cualquier otro archivo de la carpeta se carga <b>después</b> (ver {@code DndPaths.autoLoadAll})
- * y pisa por id lo que traiga el nuestro — ese orden es lo que hace seguro reescribirlo.</p>
+ * <p>Now the mod's pack has its own name ({@link #FILE}) and gets rewritten on every startup. Whatever
+ * the DM writes in any other file in the folder is loaded <b>afterward</b> (see {@code DndPaths.autoLoadAll})
+ * and overrides ours by id — that ordering is what makes rewriting it safe.</p>
  *
- * <p>Vive fuera de {@link DndPaths} por una razón concreta: {@code DndPaths} resuelve sus rutas contra
- * {@code SheetLoader.GAME_DIR}, que solo existe dentro del juego, así que su inicialización estática revienta
- * fuera de él. Separado, esto se comprueba de verdad en el self-test con una carpeta temporal, que es lo
- * mínimo que merece la lógica que decide qué archivo de contenido gana.</p>
+ * <p>Lives outside {@link DndPaths} for a specific reason: {@code DndPaths} resolves its paths against
+ * {@code SheetLoader.GAME_DIR}, which only exists inside the game, so its static initialization blows up
+ * outside it. Kept separate, this gets properly tested in the self-test with a temp folder, which is the
+ * least the logic deciding which content file wins deserves.</p>
  */
 public final class ContentDefaults {
 
 	/**
-	 * <p>Nombre reservado del pack del mod dentro de cada carpeta de contenido. <b>Se reescribe en cada
-	 * arranque</b>, así que no es sitio para escribir nada a mano: cualquier otro {@code .json} de la
-	 * carpeta es del DM y no se toca nunca.</p>
+	 * <p>Reserved name of the mod's pack inside each content folder. <b>Rewritten on every startup</b>,
+	 * so it's not a place to write anything by hand: any other {@code .json} in the folder belongs to the
+	 * DM and is never touched.</p>
 	 */
 	public static final String FILE = "mod_defaults.json";
 
@@ -37,14 +37,14 @@ public final class ContentDefaults {
 	}
 
 	/**
-	 * <p>Deja el pack del mod al día en {@code dir}, apartando antes la copia que sembró la versión
-	 * anterior si todavía está ahí.</p>
+	 * <p>Brings the mod's pack up to date in {@code dir}, first setting aside the copy the previous
+	 * version seeded, if it's still there.</p>
 	 *
-	 * <p>No registra nada en el log a propósito: tocar {@code DndsheetsMod.LOGGER} inicializa la clase
-	 * entera del mod, y con ella el canal de red de Forge, que fuera del juego no existe. Quien llama pone
-	 * el aviso (ver {@code DndPaths.refreshDefaultsLogging}).</p>
+	 * <p>Deliberately logs nothing: touching {@code DndsheetsMod.LOGGER} initializes the entire mod
+	 * class, and with it Forge's network channel, which doesn't exist outside the game. The caller is
+	 * responsible for the log message (see {@code DndPaths.refreshDefaultsLogging}).</p>
 	 *
-	 * @return el pack antiguo que se ha apartado, o {@code null} si no había ninguno.
+	 * @return the old pack that was set aside, or {@code null} if there wasn't one.
 	 */
 	public static Path refresh(Path dir, String resourceFileName) throws IOException {
 		Path retired = retireLegacySeed(dir, resourceFileName);
@@ -56,14 +56,14 @@ public final class ContentDefaults {
 	}
 
 	/**
-	 * <p>Aparta la copia sembrada por la versión antigua ({@code spells.json} y compañía). Sin esto seguiría
-	 * cargándose <b>después</b> del pack nuevo y lo pisaría entero por id: justo el contenido viejo que
-	 * veníamos a arreglar, ahora ganando a propósito.</p>
+	 * <p>Sets aside the copy seeded by the old version ({@code spells.json} and friends). Without this it
+	 * would keep loading <b>after</b> the new pack and override it entirely by id: exactly the stale
+	 * content we came here to fix, now winning on purpose.</p>
 	 *
-	 * <p>Se renombra en vez de borrarse, y solo la primera vez (mientras no exista aún el pack con nombre
-	 * propio). Un DM que hubiera escrito a mano un archivo con ese nombre no pierde nada: sigue ahí, con
-	 * extensión {@code .old} para que deje de autocargarse, y el aviso del log dice dónde está y qué hacer.
-	 * Pasada esa primera vez, un archivo con ese nombre es del DM y no se vuelve a tocar.</p>
+	 * <p>It gets renamed instead of deleted, and only the first time (while the pack with its own name
+	 * doesn't exist yet). A DM who had hand-written a file with that name loses nothing: it stays there,
+	 * with a {@code .old} extension so it stops auto-loading, and the log message says where it is and
+	 * what to do. Past that first time, a file with that name belongs to the DM and is never touched again.</p>
 	 */
 	private static Path retireLegacySeed(Path dir, String resourceFileName) throws IOException {
 		Path legacy = dir.resolve(resourceFileName);

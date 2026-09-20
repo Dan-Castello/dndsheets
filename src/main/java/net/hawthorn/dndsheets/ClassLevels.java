@@ -6,28 +6,29 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * <p>Multiclase: los niveles de un personaje repartidos entre varias clases, escritos en la hoja como
+ * <p>Multiclassing: a character's levels split across several classes, written on the sheet as
  * {@code "classLevels": {"fighter": 3, "wizard": 2}}.</p>
  *
- * <p><b>Se dejó para el final del roadmap a propósito</b> y por una razón concreta: es lo único que
- * rehace tablas que ya estaban fijadas nivel por nivel ({@link SpellSlots}, el bono de competencia, los PG
- * máximos). Por eso entra como <b>un campo opcional que manda cuando está</b> y no como un cambio del
- * modelo: una hoja sin {@code classLevels} —o sea, todas las que existen hoy— se comporta exactamente
- * igual que antes, y el resto del mod no se entera de que la multiclase existe. El único punto que sí
- * cambia es que, cuando está, {@code characterLevel} se reescribe como la suma, para que los ~70 sitios
- * que leen el nivel total sigan leyendo un número y no tengan que aprender nada.</p>
+ * <p><b>Deliberately left for the end of the roadmap</b>, for a concrete reason: it's the only thing
+ * that redoes tables that were already fixed level by level ({@link SpellSlots}, the proficiency bonus,
+ * max HP). That's why it comes in as <b>an optional field that takes over when present</b> rather than a
+ * model change: a sheet without {@code classLevels} — i.e. every sheet that exists today — behaves
+ * exactly as before, and the rest of the mod never learns multiclassing exists. The one thing that does
+ * change is that, when present, {@code characterLevel} gets rewritten as the sum, so the ~70 call sites
+ * that read the total level keep reading a plain number and don't need to learn anything.</p>
  *
- * <p><b>Lo que no se modela, y por qué:</b></p>
+ * <p><b>What isn't modeled, and why:</b></p>
  * <ul>
- *   <li><b>Los requisitos de característica</b> (13 en las dos clases). En la mesa eso lo mira el DM antes
- *       de conceder el nivel, y aquí el nivel <em>lo concede el DM</em>: una comprobación automática solo
- *       podría estorbar a una mesa que juega con otra regla.</li>
- *   <li><b>Los rasgos de la clase nueva</b> no se conceden solos. Aplicar su preset entero sería peor que
- *       no hacer nada: reescribiría las seis características, el dado de golpe y el equipo del personaje
- *       que ya existe. El DM concede los rasgos que toquen, que es lo que ya hace con {@code /dndtraits}.</li>
- *   <li><b>Los espacios de pacto no se apilan</b> con los de un lanzador. Un brujo multiclase tiene en 5e
- *       dos reservas distintas y esta hoja solo sabe llevar una, así que se lleva la del lanzador. Quedarse
- *       corto es la dirección segura — la contraria sería regalar espacios que el personaje no tiene.</li>
+ *   <li><b>Ability score prerequisites</b> (13 in both classes). At the table that's the DM's call before
+ *       granting the level, and here the level <em>is granted by the DM</em>: an automatic check could
+ *       only get in the way of a table playing with a different rule.</li>
+ *   <li><b>The new class's traits</b> aren't granted automatically. Applying its whole preset would be
+ *       worse than doing nothing: it would overwrite the six ability scores, hit die, and equipment of
+ *       the character that already exists. The DM grants whichever traits apply, which is already what
+ *       they do with {@code /dndtraits}.</li>
+ *   <li><b>Pact slots don't stack</b> with a caster's. A multiclassed warlock has two separate pools in
+ *       5e and this sheet only knows how to carry one, so it carries the caster's. Undershooting is the
+ *       safe direction — the opposite would hand out slots the character doesn't have.</li>
  * </ul>
  */
 public final class ClassLevels {
@@ -38,9 +39,9 @@ public final class ClassLevels {
 	}
 
 	/**
-	 * <p>Los niveles por clase de esta hoja, en el orden en que se escribieron. El orden importa: el
-	 * <b>primero</b> es la clase con la que empezó el personaje, y en 5e esa es la única que da el dado de
-	 * golpe entero a su nivel 1.</p>
+	 * <p>This sheet's per-class levels, in the order they were written. Order matters: the <b>first</b>
+	 * one is the class the character started with, and in 5e that's the only one that grants the full
+	 * hit die at its level 1.</p>
 	 */
 	public static Map<String, Integer> of(JsonObject sheet) {
 		Map<String, Integer> levels = new LinkedHashMap<>();
@@ -51,8 +52,8 @@ public final class ClassLevels {
 				int level = json.get(classId).getAsInt();
 				if (level > 0) levels.put(classId, level);
 			} catch (RuntimeException ignored) {
-				//Una entrada que no es un número se salta, como cualquier otra línea rota de contenido: el
-				//resto del reparto sigue valiendo.
+				//An entry that isn't a number is skipped, like any other broken content line: the rest
+				//of the split still counts.
 			}
 		}
 		return levels;
@@ -69,14 +70,14 @@ public final class ClassLevels {
 	}
 
 	/**
-	 * <p>El nivel de lanzador de un multiclase: los niveles de lanzador completo enteros, más la
-	 * <b>mitad hacia abajo</b> de los de semilanzador. Los de brujo no entran — el pacto es otra reserva.</p>
+	 * <p>A multiclass character's caster level: full-caster levels count whole, plus half-casters'
+	 * levels <b>rounded down</b>. Warlock levels don't count — the pact is a separate pool.</p>
 	 *
-	 * <p>Ese redondeo es la trampa clásica de la regla y por eso está escrito aparte de
-	 * {@link SpellSlots#maxSlots}: un semilanzador <em>de una sola clase</em> usa la mitad hacia
-	 * <b>arriba</b> (un paladín de nivel 2 ya lanza), y multiclase usa la mitad hacia <b>abajo</b> (un
-	 * paladín 2 aporta 1). Escribir las dos con el mismo redondeo da una tabla que cuadra en la mitad de
-	 * los casos, que es la peor clase de error: parece que funciona.</p>
+	 * <p>That rounding is the rule's classic trap, which is why it's written separately from
+	 * {@link SpellSlots#maxSlots}: a half-caster <em>in a single class</em> rounds up (a level-2 paladin
+	 * already casts), while multiclassing rounds down (a paladin 2 contributes 1). Writing both with the
+	 * same rounding gives a table that's right half the time, which is the worst kind of bug: it looks
+	 * like it works.</p>
 	 */
 	public static int casterLevel(Map<String, Integer> levels) {
 		int caster = 0;
@@ -91,10 +92,10 @@ public final class ClassLevels {
 	}
 
 	/**
-	 * <p>PG máximos de un reparto: el dado entero de la <b>primera</b> clase, y media del dado + 1 por cada
-	 * nivel restante, cada uno con el dado de <em>su</em> clase. El modificador de Constitución entra una
-	 * vez por nivel, y cada nivel da al menos 1 PG aunque la Constitución sea penosa — las mismas reglas que
-	 * {@code CharacterRules.maxHitPointsFor}, aplicadas dado a dado en vez de con uno solo.</p>
+	 * <p>Max HP for a class split: the <b>first</b> class's full die, then half the die + 1 for each
+	 * remaining level, each using <em>its own</em> class's die. The Constitution modifier applies once
+	 * per level, and every level grants at least 1 HP even with a terrible Constitution — the same rules
+	 * as {@code CharacterRules.maxHitPointsFor}, applied die by die instead of with a single one.</p>
 	 */
 	public static int maxHitPoints(Map<String, Integer> levels, int constitution) {
 		if (levels.isEmpty()) return 1;
@@ -116,7 +117,7 @@ public final class ClassLevels {
 		return Math.max(1, maxHp);
 	}
 
-	/** Cómo se lee un reparto en la hoja y en el chat: "Guerrero 3 / Mago 2". */
+	/** How a class split reads on the sheet and in chat: "Fighter 3 / Wizard 2". */
 	public static String describe(Map<String, Integer> levels) {
 		StringBuilder text = new StringBuilder();
 		for (Map.Entry<String, Integer> entry : levels.entrySet()) {
@@ -128,12 +129,13 @@ public final class ClassLevels {
 	}
 
 	/**
-	 * <p>Añade un nivel en {@code classId} y deja la hoja coherente: el reparto, el nivel total y el texto de
-	 * la clase. No toca PG ni espacios — de eso se encargan sus dueños ({@code SheetLoader.applyClassHitPoints}
-	 * y {@link SpellSlots#applyProgression}), que ya saben leer el reparto.</p>
+	 * <p>Adds a level in {@code classId} and keeps the sheet consistent: the split, the total level, and
+	 * the class text. Doesn't touch HP or slots — their respective owners handle that
+	 * ({@code SheetLoader.applyClassHitPoints} and {@link SpellSlots#applyProgression}), which already
+	 * know how to read the split.</p>
 	 *
-	 * <p>Si la hoja todavía no tenía reparto, se siembra con la clase que ya llevaba y su nivel actual: sin
-	 * eso, multiclasar a un guerrero de nivel 5 lo convertiría en un guerrero 0 / mago 1.</p>
+	 * <p>If the sheet had no split yet, it's seeded with the class it already had and its current level:
+	 * without that, multiclassing a level-5 fighter would turn it into a fighter 0 / wizard 1.</p>
 	 */
 	public static Map<String, Integer> addLevel(JsonObject sheet, String classId, String currentClassId, int currentLevel) {
 		Map<String, Integer> levels = of(sheet);

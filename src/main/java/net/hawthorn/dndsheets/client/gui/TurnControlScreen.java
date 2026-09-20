@@ -7,14 +7,14 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Control de modo turnos desde el Panel de DM (equivalente en GUI a {@code /dndturns
- * start|next|cancel|end}). "Iniciar" siempre usa el radio por defecto ({@link
- * net.hawthorn.dndsheets.command.TurnCommand#DEFAULT_RADIUS}) — para un radio distinto sigue haciendo
- * falta el comando.</p>
+ * <p>Turn mode control from the DM Panel (GUI equivalent of {@code /dndturns
+ * start|next|cancel|end}). "Start" always uses the default radius ({@link
+ * net.hawthorn.dndsheets.command.TurnCommand#DEFAULT_RADIUS}) — a different radius still requires
+ * the command.</p>
  */
 public class TurnControlScreen extends ListPickerScreen {
 	private static final String[] ACTIONS = {"start", "next", "cancel", "end"};
-	private static final String[] LABELS = {"Iniciar turnos", "Siguiente turno", "Saltar (cancelar)", "Terminar turnos"};
+	private static final String[] LABELS = {"gui.dndsheets.turn_control.start", "gui.dndsheets.turn_control.next", "gui.dndsheets.turn_control.cancel", "gui.dndsheets.turn_control.end"};
 
 	private TurnControlScreen(Screen parent) {
 		super(Component.translatable("gui.dndsheets.dm_panel.turn_mode"), parent);
@@ -28,14 +28,14 @@ public class TurnControlScreen extends ListPickerScreen {
 	protected void buildRows() {
 		for (int i = 0; i < ACTIONS.length; i++) {
 			String action = ACTIONS[i];
-			addRow(Component.literal(LABELS[i]), b -> {
+			addRow(Component.translatable(LABELS[i]), b -> {
 				DndsheetsMod.PACKET_HANDLER.sendToServer(new TurnControlMessage(action));
 				this.onClose();
 			});
 		}
 
-		//Aplicar un efecto de estado (veneno, etc.) solo existía como /dndturns effect tecleado a mano,
-		//sin GUI para elegir dado ni duración.
+		//Applying a status effect (poison, etc.) previously only existed as a hand-typed /dndturns effect,
+		//with no GUI to pick the die or duration.
 		addRow(Component.translatable("gui.dndsheets.add_effect.title"), b ->
 			PlayerPickerScreen.open(Component.translatable("gui.dndsheets.turn_control.pick_effect_target"), AddTurnEffectScreen::open));
 	}

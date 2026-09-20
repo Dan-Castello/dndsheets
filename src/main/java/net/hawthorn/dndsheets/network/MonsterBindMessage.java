@@ -13,34 +13,34 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * <p>Darle un bloque de estadísticas a una criatura que ya existe, desde el juego: clic derecho con la
- * Vara de DM sobre cualquier criatura sin ficha abre el selector, y elegir en él se la pega.</p>
+ * <p>Giving a stat block to a creature that already exists, from within the game: right-clicking any
+ * creature without a sheet with the DM Rod opens the picker, and choosing one there applies it.</p>
  *
- * <p>Es lo que hace jugable a un NPC construido en otro mod. Un mod de NPC (EasyNPC y compañía) es mucho
- * mejor que este para <em>construir</em> un personaje —piel, pose, diálogos, objetivos de patrulla o de
- * seguir al grupo— y este es el que sabe de 5e. Con esto no hay que elegir: se construye allí y se le
- * dice aquí qué es. La versión de comando es {@code /dndmonsters bind}.</p>
+ * <p>This is what makes an NPC built in another mod playable. An NPC mod (EasyNPC and friends) is far
+ * better than this one at <em>building</em> a character — skin, pose, dialogue, patrol or follow-the-party
+ * goals — and this mod is the one that knows 5e. With this there's no need to choose: it's built there and
+ * told here what it is. The command version is {@code /dndmonsters bind}.</p>
  *
- * <p><b>Una sola clase para los dos sentidos</b>, en vez de dos mensajes casi iguales (invariante 3): el
- * servidor la manda con {@code monsterId} vacío, que significa "abre el selector para esta criatura", y
- * el cliente la devuelve con el id elegido, que significa "pégaselo". Los dos campos que hacen falta son
- * los mismos en ambas direcciones, así que separarlas habría sido copiar el buffer dos veces.</p>
+ * <p><b>A single class for both directions</b>, instead of two nearly identical messages (invariant 3):
+ * the server sends it with an empty {@code monsterId}, meaning "open the picker for this creature," and
+ * the client sends it back with the chosen id, meaning "apply it to it." The two fields needed are the
+ * same in both directions, so splitting them would have meant copying the buffer twice.</p>
  *
- * <p>{@code ids} solo viaja en el sentido servidor → cliente: el bestiario para llenar el selector, ya
- * resuelto aquí. El registro de monstruos solo vive en el servidor, y un DM que sea un cliente aparte
- * (invitado por LAN) lo vería siempre vacío si el selector intentara leerlo directo.</p>
+ * <p>{@code ids} only travels server → client: the bestiary to fill the picker, already resolved here.
+ * The monster registry only lives on the server, and a DM who is a separate client (invited over LAN)
+ * would always see it empty if the picker tried to read it directly.</p>
  */
 public class MonsterBindMessage {
 	final int entityId;
 	final String monsterId;
 	final List<String> ids;
 
-	/** Cliente → servidor: "pégale este bloque a esta entidad". */
+	/** Client → server: "apply this stat block to this entity." */
 	public MonsterBindMessage(int entityId, String monsterId) {
 		this(entityId, monsterId, List.of());
 	}
 
-	/** Servidor → cliente: "abre el selector para esta entidad, con este bestiario". */
+	/** Server → client: "open the picker for this entity, with this bestiary." */
 	public MonsterBindMessage(int entityId, List<String> ids) {
 		this(entityId, "", ids);
 	}
@@ -67,19 +67,19 @@ public class MonsterBindMessage {
 		NetworkEvent.Context context = contextSupplier.get();
 
 		if (message.monsterId.isEmpty()) {
-			//Servidor -> cliente. Si llegara al revés (cliente modificado), handleOnClient no hace nada en
-			//el servidor y el paquete se queda en nada, que es el comportamiento correcto.
+			//Server -> client. If it arrived the other way around (modified client), handleOnClient does
+			//nothing on the server and the packet goes nowhere, which is the correct behavior.
 			NetworkUtil.handleOnClient(context, () ->
 				net.hawthorn.dndsheets.client.gui.MonsterBindListScreen.open(message.entityId, message.ids));
 			return;
 		}
 
-		//Cliente -> servidor. Por la puerta de DM: el cliente puede mandar este paquete sin tener el menú
-		//abierto, y sin el permiso cualquiera convertiría en tarrasca a la vaca del vecino.
+		//Client -> server. Through the DM gate: the client can send this packet without the menu being
+		//open, and without the permission check anyone could turn their neighbor's cow into a tarrasque.
 		NetworkUtil.handleOnServerAsDm(context, dm -> {
 			if (!(dm.level() instanceof ServerLevel level)) return;
 			Entity target = level.getEntity(message.entityId);
-			//Un jugador tiene su propia hoja y sus propias reglas: darle un bloque de monstruo las pisaría.
+			//A player has their own sheet and their own rules: giving them a monster stat block would override them.
 			if (target == null || target instanceof Player) return;
 
 			MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(message.monsterId);

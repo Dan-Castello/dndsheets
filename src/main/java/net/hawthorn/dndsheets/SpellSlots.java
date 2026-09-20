@@ -5,39 +5,39 @@ import com.google.gson.JsonObject;
 import java.util.Locale;
 
 /**
- * <p>Espacios de conjuro por nivel de conjuro, que es como funcionan en 5e: un conjuro de nivel 3 gasta un
- * espacio de nivel 3 o superior, no "un espacio" a secas.</p>
+ * <p>Spell slots by spell level, which is how they work in 5e: a level-3 spell spends a
+ * level-3-or-higher slot, not just "a slot" period.</p>
  *
- * <p>Antes la hoja llevaba una bolsa única ({@code spellSlotsMax}/{@code spellSlotsCurrent}), fijada una
- * vez por el preset de clase y nunca escalada. Eso rompía dos cosas a la vez: un Bola de Fuego costaba lo
- * mismo que un Proyectil Mágico, y un mago de nivel 10 tenía los mismos espacios que uno de nivel 1.</p>
+ * <p>The sheet used to carry a single flat pool ({@code spellSlotsMax}/{@code spellSlotsCurrent}), set
+ * once by the class preset and never scaled. That broke two things at once: a Fireball cost the same as
+ * a Magic Missile, and a level-10 wizard had the same slots as a level-1 one.</p>
  *
- * <p><b>Los totales antiguos se siguen manteniendo</b> ({@link #syncTotals}) como suma de la tabla nueva.
- * No es deuda: el HUD, el Grimorio, el resumen de hoja y {@code /dndsheet} solo enseñan "cuántos me
- * quedan", y esa pregunta sigue teniendo la misma respuesta. Cambiar también todo eso a la vez habría
- * hecho el cambio mucho más grande sin mejorar nada de lo que se ve.</p>
+ * <p><b>The old totals are still kept</b> ({@link #syncTotals}) as the sum of the new table. This isn't
+ * debt: the HUD, the Spellbook, the sheet summary, and {@code /dndsheet} only show "how many do I have
+ * left", and that question still has the same answer. Changing all of those at once too would have made
+ * the change much bigger without improving anything visible.</p>
  *
- * <p>Clase pura, sin nada de Minecraft, para poder comprobar las tablas en el self-test.</p>
+ * <p>Pure class, nothing Minecraft-specific, so the tables can be checked in the self-test.</p>
  *
- * <p>Tablas del SRD 5.1 (CC-BY-4.0); la atribución que exige la licencia vive en PROJECT_CONTEXT.md.</p>
+ * <p>Tables from the SRD 5.1 (CC-BY-4.0); the attribution the license requires lives in PROJECT_CONTEXT.md.</p>
  */
 public final class SpellSlots {
 
-	/** Nivel de conjuro más alto que existe. El índice 0 no se usa: los trucos no gastan espacio. */
+	/** Highest spell level that exists. Index 0 is unused: cantrips don't spend a slot. */
 	public static final int MAX_SPELL_LEVEL = 9;
 
 	public enum Caster { NONE, FULL, HALF, PACT }
 
-	//Un dígito por nivel de conjuro, empezando por el 1. FULL[nivel de personaje] — el índice 0 está vacío
-	//para que el nivel 1 sea FULL[1] y no haya que restar uno en cada uso.
+	//One digit per spell level, starting at 1. FULL[character level] — index 0 is left empty so level 1
+	//is FULL[1] and nothing needs subtracting on every use.
 	private static final String[] FULL = {
 		"", "2", "3", "42", "43", "432", "433", "4331", "4332", "43331", "43332",
 		"433321", "433321", "4333211", "4333211", "43332111", "43332111",
 		"433321111", "433331111", "433332111", "433332211",
 	};
 
-	//Magia de Pacto del brujo: pocos espacios, TODOS del mismo nivel, y se recuperan con un descanso
-	//corto. Por eso es una tabla aparte y no un caso de FULL — no es "menos espacios", es otro recurso.
+	//Warlock's Pact Magic: few slots, ALL the same level, and they recover on a short rest. That's why
+	//it's a separate table and not a case of FULL — it isn't "fewer slots", it's a different resource.
 	private static final int[] PACT_COUNT = {0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4};
 	private static final int[] PACT_LEVEL = {0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
 
@@ -45,9 +45,9 @@ public final class SpellSlots {
 	}
 
 	/**
-	 * <p>Qué tipo de lanzador es una clase. Se compara contra el id inglés del preset Y contra su nombre
-	 * mostrado, porque la hoja guarda en {@code characterClass} el nombre traducido ("Mago", no "wizard")
-	 * y {@code Config.hitDieFor} ya sufre lo mismo. Por subcadena y en minúsculas, igual que aquella.</p>
+	 * <p>What kind of caster a class is. Compared against both the preset's English id AND its displayed
+	 * name, because the sheet stores the translated name in {@code characterClass} ("Mago", not "wizard")
+	 * and {@code Config.hitDieFor} already suffers the same issue. By substring and lowercased, same as that one.</p>
 	 */
 	public static Caster casterFor(String characterClass) {
 		if (characterClass == null) return Caster.NONE;
@@ -60,14 +60,14 @@ public final class SpellSlots {
 	}
 
 	/**
-	 * <p>Con qué característica lanza una clase, en clave corta ({@code "int"}/{@code "wis"}/{@code "cha"}),
-	 * o {@code null} si esa clase no lanza nada. Hermana de {@link #casterFor} y con su misma tolerancia:
-	 * por subcadena, en minúsculas, contra el id inglés y el nombre traducido, porque la hoja guarda en
-	 * {@code characterClass} lo que se muestra ("Mago", no "wizard").</p>
+	 * <p>Which ability score a class casts with, in short key form ({@code "int"}/{@code "wis"}/{@code
+	 * "cha"}), or {@code null} if that class doesn't cast anything. Sibling of {@link #casterFor} with the
+	 * same tolerance: by substring, lowercased, against both the English id and the translated name,
+	 * because the sheet stores in {@code characterClass} whatever is displayed ("Mago", not "wizard").</p>
 	 *
-	 * <p>La usa el límite de hechizos preparados ({@code CharacterRules.preparedLimitFor}). El conjuro trae
-	 * su propia {@code castingAbility} para RESOLVERSE, que es otra pregunta: cuántos puedes preparar
-	 * depende de tu clase, no de con qué se tira cada uno.</p>
+	 * <p>Used by the prepared-spells limit ({@code CharacterRules.preparedLimitFor}). The spell carries its
+	 * own {@code castingAbility} for RESOLVING itself, which is a different question: how many you can
+	 * prepare depends on your class, not on what each one is rolled with.</p>
 	 */
 	public static String castingAbilityFor(String characterClass) {
 		if (characterClass == null) return null;
@@ -86,9 +86,9 @@ public final class SpellSlots {
 	}
 
 	/**
-	 * <p>Escribe un máximo nuevo y ajusta lo que queda: los espacios ganados entran <b>llenos</b> y los que
-	 * ya se habían gastado siguen gastados. Compartido por la ruta de una clase y la de multiclase, que solo
-	 * se diferencian en qué tabla leen.</p>
+	 * <p>Writes a new max and adjusts what's left: newly gained slots come in <b>full</b> and ones already
+	 * spent stay spent. Shared by the single-class path and the multiclass path, which only differ in
+	 * which table they read.</p>
 	 */
 	private static void applySlots(JsonObject sheet, int[] max) {
 		int[] before = readSlots(sheet, "spellSlotsMaxByLevel");
@@ -105,8 +105,8 @@ public final class SpellSlots {
 	}
 
 	/**
-	 * <p>Espacios máximos por nivel de conjuro. El índice es el nivel de conjuro (1..9); el 0 va siempre a
-	 * cero porque los trucos son a voluntad.</p>
+	 * <p>Max slots per spell level. The index is the spell level (1..9); 0 always stays zero because
+	 * cantrips are at-will.</p>
 	 */
 	public static int[] maxSlots(Caster caster, int characterLevel) {
 		int level = Math.min(20, Math.max(1, characterLevel));
@@ -114,10 +114,10 @@ public final class SpellSlots {
 
 		switch (caster) {
 			case FULL -> fill(slots, FULL[level]);
-			//Un semilanzador es exactamente un lanzador completo a la mitad de nivel, redondeando hacia
-			//arriba — comprobado nivel por nivel contra la tabla del SRD antes de apoyarse en ello, porque
-			//"la mitad" con el redondeo al revés desplaza toda la progresión un nivel. Y no lanza nada
-			//hasta el nivel 2, que es el único punto donde la regla no es la división.
+			//A half-caster is exactly a full caster at half level, rounded up — checked level by level
+			//against the SRD table before relying on it, because "half" with the rounding backward shifts
+			//the whole progression by one level. And it casts nothing until level 2, which is the only
+			//point where the rule isn't the division.
 			case HALF -> { if (level >= 2) fill(slots, FULL[(level + 1) / 2]); }
 			case PACT -> slots[PACT_LEVEL[level]] = PACT_COUNT[level];
 			case NONE -> { }
@@ -130,28 +130,28 @@ public final class SpellSlots {
 	}
 
 	/**
-	 * <p>Gasta un espacio para un conjuro de nivel {@code spellLevel}, cogiendo <b>el más bajo que sirva</b>.
-	 * Devuelve el nivel del espacio gastado, 0 si era un truco (no gasta nada) y -1 si no quedaba ninguno.</p>
+	 * <p>Spends a slot for a spell of level {@code spellLevel}, taking <b>the lowest one that works</b>.
+	 * Returns the level of the slot spent, 0 if it was a cantrip (spends nothing), and -1 if none were left.</p>
 	 *
-	 * <p>El más bajo y no el exacto porque en 5e se puede lanzar con un espacio superior, y gastar el más
-	 * alto disponible pudiendo usar uno bajo es tirar el recurso caro.</p>
+	 * <p>The lowest, not the exact one, because in 5e you can cast with a higher slot, and spending the
+	 * highest one available when a lower one would do wastes the expensive resource.</p>
 	 */
 	public static int spend(JsonObject sheet, int spellLevel) {
 		return spend(sheet, spellLevel, 0);
 	}
 
 	/**
-	 * <p>Igual, pero sin bajar de {@code minSlotLevel}: es lo que permite <b>lanzar a nivel superior</b> a
-	 * propósito (Bola de Fuego con un espacio de 5º hace más daño, ver {@code Spell.upcastTo}). Devolver el
-	 * nivel gastado y no un booleano es justo lo que hace posible esa regla: quien lanza necesita saber con
-	 * qué espacio salió de verdad, no solo que salió.</p>
+	 * <p>Same thing, but never going below {@code minSlotLevel}: this is what allows <b>deliberately
+	 * upcasting</b> (Fireball with a 5th-level slot deals more damage, see {@code Spell.upcastTo}).
+	 * Returning the level spent instead of a boolean is exactly what makes that rule possible: the caster
+	 * needs to know which slot it actually went out with, not just that it went out.</p>
 	 *
-	 * <p>Si el nivel pedido está agotado sigue subiendo en vez de fallar. Es la lectura amable: quien pide
-	 * "gástame uno de 3º" está pidiendo <i>al menos</i> 3º, y negarle el lanzado teniendo uno de 4º libre
-	 * sería un no por un tecnicismo.</p>
+	 * <p>If the requested level is exhausted it keeps going up instead of failing. This is the generous
+	 * reading: whoever asks "spend a 3rd-level one on me" is asking for <i>at least</i> 3rd level, and
+	 * denying the cast while a 4th-level one is free would be a no on a technicality.</p>
 	 */
 	public static int spend(JsonObject sheet, int spellLevel, int minSlotLevel) {
-		if (spellLevel <= 0) return 0; //Truco: a voluntad, no gasta nada.
+		if (spellLevel <= 0) return 0; //Cantrip: at-will, spends nothing.
 		int[] current = currentSlots(sheet);
 		for (int level = Math.max(spellLevel, minSlotLevel); level <= MAX_SPELL_LEVEL; level++) {
 			if (current[level] > 0) {
@@ -165,30 +165,30 @@ public final class SpellSlots {
 	}
 
 	/**
-	 * <p>Parche mínimo para el cliente después de tocar los espacios: <b>la tabla por nivel y el total que
-	 * sale de ella</b>.</p>
+	 * <p>Minimal client patch after touching the slots: <b>the per-level table and the total derived from
+	 * it</b>.</p>
 	 *
-	 * <p>Existe porque mandar solo el total dejaba al cliente con una tabla vieja: el Grimorio enseña una
-	 * columna por nivel y decide con ellas qué niveles se pueden elegir, así que con solo el total las
-	 * columnas se quedaban clavadas y el selector ofrecía niveles ya gastados. Quien manda un parche corto
-	 * tiene que mandar TODO lo que cambió, y desde que los espacios son por nivel eso son dos campos.</p>
+	 * <p>Exists because sending only the total left the client with a stale table: the Spellbook shows one
+	 * column per level and decides from them which levels can be chosen, so with only the total the
+	 * columns stayed frozen and the selector offered levels already spent. Whoever sends a short patch has
+	 * to send EVERYTHING that changed, and since slots are per-level that's two fields.</p>
 	 */
 	public static JsonObject clientPatch(JsonObject sheet) {
 		JsonObject patch = new JsonObject();
-		//Con cuidado: en un parche, un valor nulo significa "borra esta clave" en la hoja del cliente (ver
-		//SheetLoader.applyClientDelta), así que un campo ausente se omite en vez de mandarse vacío.
-		//Los CUATRO campos, no solo los que cambian al gastar. El máximo es DERIVADO (clase y nivel, ver
-		//applyProgression) y se recalcula en el servidor cada vez que se guarda la hoja, sin que el cliente
-		//se entere: mandando solo el actual, el cliente se quedaba con un máximo viejo para siempre y el HUD
-		//acababa enseñando "Conjuros: 4/2" —más de los que caben— mientras el servidor tenía 4/7. Reportado
-		//tal cual jugando.
+		//Careful: in a patch, a null value means "delete this key" on the client's sheet (see
+		//SheetLoader.applyClientDelta), so an absent field is omitted instead of sent empty.
+		//All FOUR fields, not just the ones that change on spend. The max is DERIVED (class and level, see
+		//applyProgression) and gets recomputed server-side every time the sheet is saved, without the
+		//client knowing: sending only the current value left the client stuck with an old max forever and
+		//the HUD ended up showing "Spells: 4/2" — more than fit — while the server had 4/7. Reported
+		//exactly like this while playing.
 		for (String field : new String[]{"spellSlotsByLevel", "spellSlotsMaxByLevel", "spellSlotsCurrent", "spellSlotsMax"}) {
 			if (sheet.has(field)) patch.add(field, sheet.get(field));
 		}
 		return patch;
 	}
 
-	/** ¿Queda algún espacio con el que lanzar esto? Misma regla que {@link #spend}, sin gastar. */
+	/** Is there any slot left to cast this with? Same rule as {@link #spend}, without spending. */
 	public static boolean hasSlotFor(JsonObject sheet, int spellLevel) {
 		if (spellLevel <= 0) return true;
 		int[] current = currentSlots(sheet);
@@ -199,13 +199,13 @@ public final class SpellSlots {
 	}
 
 	/**
-	 * <p>Recupera espacios gastados hasta agotar un <b>presupuesto de niveles sumados</b>, no un número de
-	 * espacios: es como funciona la Recuperación Arcana del mago (recuperas espacios cuyos niveles sumen
-	 * la mitad de tu nivel, ninguno por encima del 5º). Devuelve cuántos ha devuelto.</p>
+	 * <p>Restores spent slots until exhausting a <b>budget of summed levels</b>, not a number of slots:
+	 * this is how the wizard's Arcane Recovery works (you recover slots whose levels add up to half your
+	 * level, none above 5th). Returns how many it restored.</p>
 	 *
-	 * <p>Coge primero los más altos que quepan, que es lo que elegiría cualquiera en la mesa: con el mismo
-	 * presupuesto, un espacio de nivel 3 vale más que tres de nivel 1. Hasta que existió la tabla por
-	 * niveles esta regla no se podía escribir — con una bolsa única no hay "de qué nivel" que recuperar.</p>
+	 * <p>Takes the highest ones that fit first, which is what anyone at the table would choose: for the
+	 * same budget, a level-3 slot is worth more than three level-1 ones. This rule couldn't be written
+	 * until the per-level table existed — with a single flat pool there's no "which level" to restore.</p>
 	 */
 	public static int restoreBudget(JsonObject sheet, int levelBudget, int maxLevel) {
 		int[] max = maxSlotsOf(sheet);
@@ -228,21 +228,22 @@ public final class SpellSlots {
 		return restored;
 	}
 
-	/** Descanso: los espacios vuelven a su máximo. */
+	/** Rest: slots return to their max. */
 	public static void restoreAll(JsonObject sheet) {
 		writeSlots(sheet, "spellSlotsByLevel", maxSlotsOf(sheet));
 		syncTotals(sheet);
 	}
 
 	/**
-	 * <p>Recalcula el máximo desde clase y nivel, y ajusta lo que queda para que nunca supere al máximo
-	 * nuevo. Al subir de nivel los espacios nuevos entran <b>llenos</b>: en 5e se ganan al terminar el
-	 * descanso largo con el que se sube, así que darlos vacíos obligaría a otro descanso para estrenarlos.</p>
+	 * <p>Recomputes the max from class and level, and adjusts what's left so it never exceeds the new max.
+	 * On leveling up, newly gained slots come in <b>full</b>: in 5e they're gained upon finishing the long
+	 * rest that levels you up, so granting them empty would require another rest to use them.</p>
 	 */
 	public static void applyProgression(JsonObject sheet, String characterClass, int characterLevel) {
-		//Un multiclase no lee su tabla por el nombre de la clase: la lee por su nivel de lanzador, que sale
-		//del reparto (ver ClassLevels.casterLevel). Y la tabla que lee es SIEMPRE la de lanzador completo —
-		//esa es la regla de 5e, no una aproximación: el semilanzador ya se pagó al mitad al sumar.
+		//A multiclass character doesn't read its table by class name: it reads it by caster level, which
+		//comes from the level split (see ClassLevels.casterLevel). And the table it reads is ALWAYS the
+		//full-caster one — that's the 5e rule, not an approximation: the half-caster contribution was
+		//already accounted for at half value when summed.
 		if (ClassLevels.isMulticlass(sheet)) {
 			java.util.Map<String, Integer> mix = ClassLevels.of(sheet);
 			int casterLevel = ClassLevels.casterLevel(mix);
@@ -250,9 +251,9 @@ public final class SpellSlots {
 				applySlots(sheet, maxSlots(Caster.FULL, casterLevel));
 				return;
 			}
-			//Sin nivel de lanzador puede quedar el pacto: un guerrero/brujo no aporta nada a la tabla de
-			//arriba y sin embargo lanza. Si hubiera las dos cosas manda la de arriba, porque esta hoja solo
-			//sabe llevar una reserva y quedarse corto es la dirección segura.
+			//With no caster level, Pact Magic might still be there: a fighter/warlock contributes nothing
+			//to the table above and yet casts. If both were present the one above wins, because this sheet
+			//only knows how to carry one pool, and falling short is the safe direction.
 			for (java.util.Map.Entry<String, Integer> entry : mix.entrySet()) {
 				if (casterFor(entry.getKey()) == Caster.PACT) {
 					applySlots(sheet, maxSlots(Caster.PACT, entry.getValue()));
@@ -265,9 +266,9 @@ public final class SpellSlots {
 
 		Caster caster = casterFor(characterClass);
 		if (caster == Caster.NONE) {
-			//Una clase que no lanza no lleva progresión, pero eso NO significa "sin espacios": el DM puede
-			//habérselos puesto a mano (un guerrero con un objeto, una clase de la casa). Recalcular a cero
-			//le borraría la configuración en el primer sincronizado.
+			//A non-caster class carries no progression, but that does NOT mean "no slots": the DM may have
+			//set them by hand (a fighter with an item, a homebrew class). Recomputing to zero would erase
+			//that configuration on the first sync.
 			migrateFlatPool(sheet);
 			return;
 		}
@@ -276,12 +277,13 @@ public final class SpellSlots {
 	}
 
 	/**
-	 * <p>Hojas anteriores a la tabla: llevan solo la bolsa única. Sin esto, {@link #hasSlotFor} las vería
-	 * vacías y el personaje no podría lanzar nada pese a que su hoja dice que le quedan espacios.</p>
+	 * <p>Sheets predating the table: they only carry the single flat pool. Without this, {@link
+	 * #hasSlotFor} would see them empty and the character couldn't cast anything despite their sheet
+	 * saying they have slots left.</p>
 	 *
-	 * <p>Se colocan como espacios de <b>nivel 1</b>. Es la lectura conservadora: la bolsa no decía de qué
-	 * nivel eran, y repartirlos hacia arriba les daría un poder que nunca tuvieron. Para una clase
-	 * lanzadora esto ni se llega a usar — la progresión recalcula su tabla de verdad.</p>
+	 * <p>They're placed as <b>level 1</b> slots. This is the conservative reading: the pool didn't say
+	 * what level they were, and spreading them upward would give them power they never had. For a caster
+	 * class this doesn't even get used — the progression recomputes its real table.</p>
 	 */
 	private static void migrateFlatPool(JsonObject sheet) {
 		if (sheet == null || sheet.has("spellSlotsMaxByLevel")) return;
@@ -298,7 +300,7 @@ public final class SpellSlots {
 		syncTotals(sheet);
 	}
 
-	/** Espacios fijados a mano por el DM ({@code /dndsheet setslots} y el Panel de DM), todos de nivel 1. */
+	/** Slots set by hand by the DM ({@code /dndsheet setslots} and the DM Panel), all level 1. */
 	public static void setFlat(JsonObject sheet, int max, int current) {
 		int[] maxSlots = new int[MAX_SPELL_LEVEL + 1];
 		int[] currentSlots = new int[MAX_SPELL_LEVEL + 1];
@@ -318,9 +320,9 @@ public final class SpellSlots {
 	}
 
 	/**
-	 * <p>Mantiene {@code spellSlotsMax}/{@code spellSlotsCurrent} como la suma de la tabla. Todo lo que
-	 * solo enseña "cuántos me quedan" (HUD, Grimorio, resumen de hoja, {@code /dndsheet}) sigue leyendo
-	 * esos dos sin cambiar.</p>
+	 * <p>Keeps {@code spellSlotsMax}/{@code spellSlotsCurrent} as the sum of the table. Everything that
+	 * only shows "how many do I have left" (HUD, Spellbook, sheet summary, {@code /dndsheet}) keeps
+	 * reading those two unchanged.</p>
 	 */
 	public static void syncTotals(JsonObject sheet) {
 		sheet.addProperty("spellSlotsMax", total(maxSlotsOf(sheet)));
@@ -343,7 +345,7 @@ public final class SpellSlots {
 				try {
 					slots[level] = Math.max(0, stored.get(name).getAsInt());
 				} catch (RuntimeException ignored) {
-					//Una hoja tocada a mano no debe impedir jugar: ese nivel se queda a cero.
+					//A sheet edited by hand shouldn't block play: that level just stays at zero.
 				}
 			}
 		}
@@ -352,8 +354,8 @@ public final class SpellSlots {
 
 	private static void writeSlots(JsonObject sheet, String key, int[] slots) {
 		JsonObject stored = new JsonObject();
-		//Solo los niveles con espacios: una hoja de guerrero no necesita nueve ceros, y así se ve de un
-		//vistazo qué tiene de verdad al abrir el .json.
+		//Only the levels with slots: a fighter's sheet doesn't need nine zeros, and this way it's clear at
+		//a glance what it actually has when opening the .json.
 		for (int level = 1; level <= MAX_SPELL_LEVEL; level++) {
 			if (slots[level] > 0) stored.addProperty(String.valueOf(level), slots[level]);
 		}

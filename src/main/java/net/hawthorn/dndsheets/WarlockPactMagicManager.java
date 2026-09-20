@@ -8,20 +8,20 @@ import net.minecraft.server.level.ServerPlayer;
 import java.util.Locale;
 
 /**
- * <p>Magia de Pacto del brujo: a diferencia de todos los demás casters (que solo recuperan espacios de
- * conjuro con un descanso LARGO), el brujo los recupera enteros con cualquier descanso, incluido el
- * CORTO — es la diferencia mecánica que de verdad distingue a un brujo de un mago en 5e, y se engancha
- * exactamente igual que la Recuperación Arcana del mago ({@link WizardArcaneRecoveryManager}): un
- * descanso corto en {@link RestManager#applyRest} llama aquí en vez de a él, comprobando la clase por
- * subcadena contra "Clase y Nivel" (mismo patrón que {@link Config#hitDieFor}).</p>
+ * <p>Warlock Pact Magic: unlike every other caster (who only recover spell slots on a LONG rest), the
+ * warlock recovers them all on any rest, including a SHORT one — this is the mechanical difference that
+ * truly sets a warlock apart from a wizard in 5e, and it hooks in exactly like the wizard's Arcane
+ * Recovery ({@link WizardArcaneRecoveryManager}): a short rest in {@link RestManager#applyRest} calls
+ * here instead of there, checking the class by substring against "Class and Level" (same pattern as
+ * {@link Config#hitDieFor}).</p>
  *
- * <p>Más simple que Recuperación Arcana en un sentido: recupera TODOS los espacios, no la mitad del
- * nivel, y no tiene límite de una vez por descanso largo — un brujo de verdad puede encadenar descansos
- * cortos y recargar cada vez, que es exactamente la razón por la que esta regla existe en 5e.</p>
+ * <p>Simpler than Arcane Recovery in one sense: it recovers ALL slots, not half the level, and has no
+ * once-per-long-rest limit — a true warlock can chain short rests and recharge every time, which is
+ * exactly why this rule exists in 5e.</p>
  */
 public class WarlockPactMagicManager {
-	//Público: RestManager lo llama en cada descanso CORTO, con la MISMA hoja que ya está a punto de
-	//guardar/enviar (igual que WizardArcaneRecoveryManager.onShortRest).
+	//Public: RestManager calls it on every SHORT rest, with the SAME sheet that's already about to be
+	//saved/sent (same as WizardArcaneRecoveryManager.onShortRest).
 	public static void onShortRest(ServerPlayer player, JsonObject sheet) {
 		if (!isWarlock(sheet)) return;
 

@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets;
 
+import net.minecraft.network.chat.Component;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.network.ScreenActionMessage;
 import net.hawthorn.dndsheets.network.SheetClientMessage;
@@ -23,10 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * <p>Cuando un jugador llegaría a 0 PG, se cancela su muerte real: se congela en 1 PG, incapacitado
- * (ciego, débil y casi inmóvil), y se le abre una ventana para tirar sus 3 salvaciones de muerte. Otro
- * jugador puede reanimarlo al instante interactuando con él. 3 éxitos (o un 20 natural) lo estabiliza;
- * 3 fallos (o un 1 natural cuenta doble) sí lo mata de verdad.</p>
+ * <p>When a player would hit 0 HP, their real death is canceled instead: they freeze at 1 HP,
+ * incapacitated (blind, weakened and nearly immobile), and a window opens for them to roll their 3
+ * death saves. Another player can revive them instantly by interacting with them. 3 successes (or a
+ * natural 20) stabilizes them; 3 failures (or a natural 1, which counts double) does kill them for real.</p>
  */
 @Mod.EventBusSubscriber
 public class DeathSaveManager {
@@ -37,18 +38,18 @@ public class DeathSaveManager {
 		allowRealDeath.remove(player.getUUID());
 	}
 
-	//Se cancela la muerte real y se pasa al estado "caído" en su lugar, salvo que ya se le haya dejado
-	//morir de verdad (3 fallos de salvación) o ya esté caído (para no reiniciar el conteo por accidente).
+	//Real death is canceled and the "downed" state is entered instead, unless the player has already
+	//been let die for real (3 failed saves) or is already downed (to avoid resetting the count by accident).
 	@SubscribeEvent
 	public static void onLivingDeath(LivingDeathEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
 		if (allowRealDeath.remove(player.getUUID())) {
-			//Muerte real de verdad (3 fallos de salvación): antes de esto la hoja se quedaba con
-			//downed=true para siempre. El jugador reaparecía con vida llena pero
-			//onAttackWhileDowned/onLivingHurtWhileDowned seguían tratándolo como caído (no podía atacar
-			//ni recibir daño nunca más) y resendStateOnJoin le reabría la pantalla de salvaciones en
-			//cada reconexión. Se limpia igual que stabilize(), porque esto ES el fin del estado "caído".
+			//Actual real death (3 failed saves): before this the sheet stayed with downed=true forever.
+			//The player respawned at full health but onAttackWhileDowned/onLivingHurtWhileDowned kept
+			//treating them as downed (unable to attack or take damage ever again), and resendStateOnJoin
+			//reopened the death-save screen on every reconnect. It's cleared the same way as stabilize(),
+			//because this IS the end of the "downed" state.
 			JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 			if (sheet != null) {
 				sheet.addProperty("downed", false);
@@ -67,17 +68,17 @@ public class DeathSaveManager {
 		goDown(player, sheet);
 	}
 
-	//ponytail: protege al jugador caído con invulnerabilidad total en vez de tratar el daño extra como
-	//fallo automático de salvación (regla real de 5e). Más simple y evita que lo rematen sin querer;
-	//si se quiere ese matiz, añadirlo aquí.
+	//ponytail: protects the downed player with total invulnerability instead of treating extra damage as
+	//an automatic failed save (the real 5e rule). Simpler, and it stops them from being finished off by
+	//accident; add that nuance here if it's ever wanted.
 	@SubscribeEvent(priority = EventPriority.HIGH)
 	public static void onLivingHurtWhileDowned(LivingHurtEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
 		if (!(event.getEntity() instanceof Player victim)) return;
-		//El golpe de gracia por 3 fallos de salvación (ver handleRollRequest) también pasa por acá antes de
-		//llegar a LivingDeathEvent: si se cancelara igual que cualquier otro daño mientras está caído, el PG
-		//nunca bajaba de 1 y el jugador se quedaba caído para siempre sin morir de verdad. allowRealDeath
-		//es la misma marca que ya usa onLivingDeath para no cancelar ESE evento en particular.
+		//The killing blow from 3 failed saves (see handleRollRequest) also passes through here before
+		//reaching LivingDeathEvent: if it were canceled like any other damage while downed, HP would
+		//never drop below 1 and the player would stay downed forever without ever dying for real.
+		//allowRealDeath is the same flag onLivingDeath already uses to avoid canceling THAT particular event.
 		if (allowRealDeath.contains(victim.getUUID())) return;
 		JsonObject sheet = SheetLoader.getServerSheet(victim.getStringUUID());
 		if (sheet != null && isDowned(sheet)) event.setCanceled(true);
@@ -90,37 +91,37 @@ public class DeathSaveManager {
 		if (sheet != null && isDowned(sheet)) event.setCanceled(true);
 	}
 
-	//Reanimar: interactuar con un jugador caído lo estabiliza al instante, sin tirada.
+	//Revive: interacting with a downed player stabilizes them instantly, no roll needed.
 	@SubscribeEvent
 	public static void onInteractWithDowned(PlayerInteractEvent.EntityInteract event) {
 		if (event.getEntity().level().isClientSide()) return;
-		//Solo la mano principal: reanimar no depende de llevar nada, así que sin esto las DOS pasadas del
-		//clic (una por mano, ver InteractionEvents) reanimaban y anunciaban por duplicado.
+		//Main hand only: reviving doesn't depend on holding anything, so without this the TWO passes of
+		//the click (one per hand, see InteractionEvents) would revive and announce it twice.
 		if (event.getHand() != InteractionHand.MAIN_HAND) return;
 		if (!(event.getTarget() instanceof ServerPlayer target)) return;
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null || !isDowned(sheet)) return;
 
-		//Sin esto el manejador corría dos veces (una por mano) y el anuncio de reanimación salía duplicado
-		//para toda la mesa. Ver InteractionEvents.
+		//Without this the handler ran twice (once per hand) and the revive announcement came out
+		//duplicated for the whole table. See InteractionEvents.
 		InteractionEvents.consume(event);
 
 		String reviverName = event.getEntity().getName().getString();
 		String targetName = characterName(sheet, target);
-		stabilize(target, sheet, "¡" + reviverName + " te ha reanimado!");
+		stabilize(target, sheet, Component.translatable("chat.dndsheets.death.revived_title", reviverName));
 		ChatFeedback.broadcast(target, ChatFeedback.revived(reviverName, targetName));
 	}
 
 	/**
-	 * <p>Llamado al recibir un {@code DeathSaveRollMessage} del cliente caído.</p>
+	 * <p>Called on receiving a {@code DeathSaveRollMessage} from the downed client.</p>
 	 */
 	public static void handleRollRequest(ServerPlayer player) {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (sheet == null || !isDowned(sheet)) return;
 
-		//Mismo gating que un ataque o un hechizo: en 5e real solo se tira UNA salvación de muerte por
-		//turno. Sin esto, hacer clic repetido resolvía las 3 tiradas en fracciones de segundo, sin dar
-		//tiempo a que un aliado reanime. Fuera de modo turnos (tryAct siempre deja pasar) no cambia nada.
+		//Same gating as an attack or a spell: in real 5e only ONE death save is rolled per turn. Without
+		//this, repeated clicking would resolve all 3 rolls in a fraction of a second, giving no time for
+		//an ally to revive. Outside turn mode (tryAct always lets it through) this changes nothing.
 		if (!TurnManager.tryAct(player)) { TurnManager.notifyCantAct(player); return; }
 
 		int roll = ThreadLocalRandom.current().nextInt(1, 21);
@@ -128,7 +129,7 @@ public class DeathSaveManager {
 		CombatFx.diceTick(player);
 
 		if (roll == 20) {
-			stabilize(player, sheet, "¡20 Natural! Vuelves en ti");
+			stabilize(player, sheet, Component.translatable("chat.dndsheets.death.natural_twenty_title"));
 			ChatFeedback.broadcast(player, ChatFeedback.naturalTwenty(characterName));
 			return;
 		}
@@ -148,7 +149,7 @@ public class DeathSaveManager {
 		ChatFeedback.broadcast(player, ChatFeedback.deathSaveRoll(characterName, roll, successes, failures));
 
 		if (successes >= 3) {
-			stabilize(player, sheet, "¡Estabilizado!");
+			stabilize(player, sheet, Component.translatable("chat.dndsheets.death.stabilized_title"));
 		} else if (failures >= 3) {
 			killForReal(player, sheet);
 		} else {
@@ -157,10 +158,10 @@ public class DeathSaveManager {
 	}
 
 	/**
-	 * <p>Llamado al recibir un {@code DeathSaveGiveUpMessage} del cliente caído: se rinde y muere de
-	 * verdad ahora mismo, sin más tiradas — mismo camino de muerte real que 3 fallos de salvación (ver
-	 * killForReal). Sin gating de turno: rendirse no es una acción de 5e, así que no tiene sentido
-	 * obligar a esperar el propio turno para hacerlo.</p>
+	 * <p>Called on receiving a {@code DeathSaveGiveUpMessage} from the downed client: they give up and
+	 * die for real right now, with no more rolls — the same real-death path as 3 failed saves (see
+	 * killForReal). No turn gating: giving up isn't a 5e action, so it makes no sense to force waiting
+	 * for your own turn to do it.</p>
 	 */
 	public static void handleGiveUpRequest(ServerPlayer player) {
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
@@ -170,22 +171,21 @@ public class DeathSaveManager {
 		killForReal(player, sheet);
 	}
 
-	//Muerte real de verdad (3 fallos de salvación, o rendirse a mano): allowRealDeath es la marca que le
-	//dice a onLivingDeath/onLivingHurtWhileDowned que ESTA muerte no se cancele como cualquier otro daño
-	//mientras está caído.
+	//Actual real death (3 failed saves, or giving up by hand): allowRealDeath is the flag that tells
+	//onLivingDeath/onLivingHurtWhileDowned not to cancel THIS death like any other damage while downed.
 	private static void killForReal(ServerPlayer player, JsonObject sheet) {
 		allowRealDeath.add(player.getUUID());
 		sendSheetUpdate(player, sheet);
 		player.hurt(player.damageSources().generic(), Float.MAX_VALUE);
-		//player.hurt() ya disparó (y limpió) la marca si de verdad murió. Si algo interceptó la muerte
-		//antes de LivingDeathEvent (un tótem de inmortalidad, absorción total...), la marca se habría
-		//quedado pegada para siempre y la PRÓXIMA muerte real de este jugador, por cualquier causa no
-		//relacionada, se habría saltado el sistema de salvaciones en silencio. No-op si ya se limpió.
+		//player.hurt() already fired (and cleared) the flag if the player really died. If something
+		//intercepted the death before LivingDeathEvent (a totem of undying, total absorption...), the
+		//flag would have stayed stuck forever, and this player's NEXT real death, from any unrelated
+		//cause, would have silently skipped the death-save system. No-op if it's already cleared.
 		allowRealDeath.remove(player.getUUID());
 
-		//Si esta era la última persona con vida en un encuentro activo, termina el modo turnos ya mismo —
-		//sin esto, cualquier mob de compatibilidad quedaba congelado (NoAI) para siempre, sin nadie con
-		//permisos para correr /dndturns end en una partida sin DM en directo.
+		//If this was the last person alive in an active encounter, end turn mode right now — without
+		//this, any compatibility mob stayed frozen (NoAI) forever, with nobody having permission to run
+		///dndturns end in a session with no DM live.
 		if (player.level() instanceof net.minecraft.server.level.ServerLevel level) TurnManager.onPlayerRealDeath(level, player);
 	}
 
@@ -205,7 +205,7 @@ public class DeathSaveManager {
 		ChatFeedback.broadcast(player, ChatFeedback.downed(characterName(sheet, player)));
 	}
 
-	private static void stabilize(ServerPlayer player, JsonObject sheet, String titleText) {
+	private static void stabilize(ServerPlayer player, JsonObject sheet, Component titleText) {
 		sheet.addProperty("downed", false);
 		sheet.addProperty("deathSaveSuccesses", 0);
 		sheet.addProperty("deathSaveFailures", 0);
@@ -221,13 +221,13 @@ public class DeathSaveManager {
 	}
 
 	/**
-	 * <p>Pone la pantalla de salvaciones de muerte acorde a la hoja: la abre si el personaje está caído y la
-	 * cierra si no. La usan la conexión (por si se cayó antes de desconectarse) y el cambio de personaje.</p>
+	 * <p>Sets the death-save screen to match the sheet: opens it if the character is downed and closes it
+	 * otherwise. Used by connecting (in case they went down before disconnecting) and by character switching.</p>
 	 *
-	 * <p>Cierra además de abrir porque "caído" es del PERSONAJE (vive en su hoja, ver {@code downed}) y el
-	 * cambio de personaje puede ir en las dos direcciones: dejar a un moribundo para ponerse a otro tenía
-	 * que cerrar su pantalla, y volver con él tiene que reabrirla. Mandar el cierre a quien no tiene ninguna
-	 * abierta no hace nada, así que la versión simétrica sirve para los dos sitios.</p>
+	 * <p>It closes as well as opens because "downed" belongs to the CHARACTER (it lives on their sheet, see
+	 * {@code downed}), and switching characters can go either direction: leaving a dying character to
+	 * switch to another had to close their screen, and coming back to them has to reopen it. Sending a
+	 * close to someone with none open does nothing, so the symmetric version serves both cases.</p>
 	 */
 	public static void resendState(ServerPlayer player, JsonObject sheet) {
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new ScreenActionMessage(
@@ -242,10 +242,10 @@ public class DeathSaveManager {
 		return SheetLoader.characterNameOf(sheet, player);
 	}
 
-	//Los 5 caminos que tocan la hoja de un caido (rendirse, estabilizar, morir, tirar, y el reset al
-	//reaparecer) salen por aqui, asi que persistir en este unico sitio los cubre a todos. Antes solo
-	//avisaba al cliente: un reinicio a mitad de salvaciones devolvia al personaje en pie y con el
-	//contador a cero (invariante 4).
+	//All 5 paths that touch a downed character's sheet (giving up, stabilizing, dying, rolling, and the
+	//reset on respawn) go out through here, so persisting in this one place covers all of them. It used
+	//to just notify the client: a restart mid-saves would bring the character back standing with the
+	//counter reset to zero (invariant 4).
 	private static void sendSheetUpdate(ServerPlayer player, JsonObject sheet) {
 		SheetLoader.saveAndSync(player, sheet);
 	}

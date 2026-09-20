@@ -8,36 +8,36 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Punto de entrada del DM a todo lo que antes solo eran comandos: turnos, invocar un NPC en blanco,
- * conceder un rasgo. Se abre con la tecla de acceso rápido (ver
- * {@link net.hawthorn.dndsheets.init.DndsheetsModKeyMappings#DM_PANEL}), que ya comprueba permisos de
- * operador antes de abrir esto — dar/quitar ataques a un monstruo concreto sigue viviendo en su propio
- * menú (clic derecho con la Vara de DM, ver {@link MonsterActionScreen}), porque ese ya necesita el
- * monstruo señalado y no tiene sentido pedirlo aparte aquí.</p>
+ * <p>The DM's entry point to everything that used to be commands only: turns, spawning a blank NPC,
+ * granting a trait. Opened with the quick-access key (see
+ * {@link net.hawthorn.dndsheets.init.DndsheetsModKeyMappings#DM_PANEL}), which already checks operator
+ * permissions before opening this — giving/removing attacks on a specific monster still lives in its
+ * own menu (right-click with the DM Wand, see {@link MonsterActionScreen}), because that one already
+ * needs the targeted monster and it makes no sense to request it separately here.</p>
  */
 public class DmPanelScreen extends ListPickerScreen {
 	private DmPanelScreen(Screen parent) {
 		super(Component.translatable("gui.dndsheets.dm_panel.title"), parent);
 	}
 
-	/** Desde la tecla de acceso rápido: pantalla raíz, Escape cierra el menú. */
+	/** From the quick-access key: root screen, Escape closes the menu. */
 	public static void open() {
 		open(null);
 	}
 
-	/** Desde el Menú del jugador (ver {@link PlayerPanelScreen}): "&lt; Atrás" vuelve allí. */
+	/** From the Player Menu (see {@link PlayerPanelScreen}): "&lt; Back" returns there. */
 	public static void open(Screen parent) {
 		Minecraft.getInstance().setScreen(new DmPanelScreen(parent));
 	}
 
-	//Cinco secciones con cabecera (ver ListPickerScreen.addHeader) en vez de 17 filas planas: con tantas
-	//acciones, "todo junto por orden de llegada" obligaba a leer la lista entera para encontrar una.
-	//El orden de las secciones es el de frecuencia en sesión: primero lo que se mira cada combate.
+	//Five headed sections (see ListPickerScreen.addHeader) instead of 17 flat rows: with this many
+	//actions, "everything together in arrival order" forced reading the whole list to find one.
+	//The section order follows in-session frequency: what gets checked every combat comes first.
 	@Override
 	protected void buildRows() {
 		addHeader(Component.translatable("gui.dndsheets.dm_panel.section_party"));
-		//Es lo que un DM mira más veces por sesión, y hasta ahora había que abrir los Ajustes de hoja de
-		//cada jugador por separado para ver sus PG.
+		//This is what a DM checks most often per session, and until now each player's Sheet Adjust screen
+		//had to be opened separately to see their HP.
 		addRow(Component.translatable("gui.dndsheets.dm_panel.party"),
 			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.LIST_PARTY)));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.turn_mode"), b -> TurnControlScreen.open());
@@ -46,12 +46,12 @@ public class DmPanelScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.dm_panel.spawn_npc"), b -> SpawnGenericScreen.open());
 		addRow(Component.translatable("gui.dndsheets.dm_panel.spawn_monster"),
 			b -> send(BrowseActionMessage.Action.SPAWN_MONSTERS, ""));
-		//Encuentros completos ("goblin x4, lobo x2"): la lista viene del servidor y cada fila dispara el
-		///dndencounters spawn de siempre — antes solo existía tecleado a mano.
+		//Full encounters ("goblin x4, wolf x2"): the list comes from the server and each row triggers the
+		//usual /dndencounters spawn — before, this only existed typed by hand.
 		addRow(Component.translatable("gui.dndsheets.dm_panel.encounters"),
 			b -> send(BrowseActionMessage.Action.LIST_ENCOUNTERS, ""));
-		//Armar uno nuevo viendo la dificultad que le sale al grupo, en vez de escribir "goblin x4" a ciegas
-		//en el creador de contenido — ver EncounterDesignerScreen.
+		//Build a new one while watching the difficulty it produces for the party, instead of writing
+		//"goblin x4" blindly in the content creator — see EncounterDesignerScreen.
 		addRow(Component.translatable("gui.dndsheets.dm_panel.design_encounter"),
 			b -> send(BrowseActionMessage.Action.DESIGN_ENCOUNTER, ""));
 
@@ -69,26 +69,28 @@ public class DmPanelScreen extends ListPickerScreen {
 			uuid -> send(BrowseActionMessage.Action.LIST_PRESETS, uuid)));
 
 		addHeader(Component.translatable("gui.dndsheets.dm_panel.section_world"));
-		//El toolkit de mazmorras vive en su propio addon (dndsheets_dungeon) desde PROJECT_CONTEXT.md /
-		//Modularity Map: este panel ya no conoce sus mensajes de red, solo dispara su comando — mismo
-		//patrón que "journal" más abajo. Si el addon no está instalado, Brigadier ya rechaza el comando.
+		//The dungeon toolkit lives in its own addon (dndsheets_dungeon) since PROJECT_CONTEXT.md /
+		//Modularity Map: this panel no longer knows its network messages, it only triggers its command —
+		//same pattern as "journal" below. If the addon isn't installed, Brigadier already rejects the command.
 		addRow(Component.translatable("gui.dndsheets.dm_panel.dungeons"),
 			b -> Minecraft.getInstance().player.connection.sendCommand("dnddungeon gui"));
-		//La dificultad de monstruos son tres opciones fijas que ya viven en /dnddifficulty: la lista se
-		//arma en el cliente (no hay nada que preguntarle al servidor) y el clic manda el comando.
+		//Monster difficulty no longer has its own command: it reads from the WORLD's difficulty (see
+		//Config.difficultyMultiplier), so these rows send vanilla's /difficulty. There used to be two
+		//commands for the same question and they could contradict each other — world on Hard, the mod's
+		//monsters on Easy, with nothing warning about it. It's still offered here because that's where the DM will look for it.
 		addRow(Component.translatable("gui.dndsheets.dm_panel.difficulty"), b -> CommandListScreen.open(
 			Component.translatable("gui.dndsheets.dm_panel.difficulty"),
 			java.util.List.of(
-				new CommandListScreen.Row(Component.translatable("gui.dndsheets.difficulty.facil"), "dnddifficulty facil"),
-				new CommandListScreen.Row(Component.translatable("gui.dndsheets.difficulty.normal"), "dnddifficulty normal"),
-				new CommandListScreen.Row(Component.translatable("gui.dndsheets.difficulty.dificil"), "dnddifficulty dificil"))));
-		//El registro de tiradas ya se imprime bonito por chat; la fila solo evita tener que saberse el comando.
+				new CommandListScreen.Row(Component.translatable("gui.dndsheets.difficulty.easy"), "difficulty easy"),
+				new CommandListScreen.Row(Component.translatable("gui.dndsheets.difficulty.normal"), "difficulty normal"),
+				new CommandListScreen.Row(Component.translatable("gui.dndsheets.difficulty.hard"), "difficulty hard"))));
+		//The roll log already prints nicely to chat; the row just avoids having to know the command.
 		addRow(Component.translatable("gui.dndsheets.dm_panel.roll_log"), b -> {
 			Minecraft.getInstance().player.connection.sendCommand("dndrolls");
 			Minecraft.getInstance().setScreen(null);
 		});
-		//El diario se abre por comando (/dndjournal) y no desde aquí con un mensaje: el servidor ya sabe
-		//qué puede leer cada uno, y pedirlo desde el cliente sería un viaje de más para el mismo resultado.
+		//The journal opens via command (/dndjournal) and not from here with a message: the server already
+		//knows what each person can read, and requesting it from the client would be an extra round trip for the same result.
 		addRow(Component.translatable("gui.dndsheets.dm_panel.journal"), b -> {
 			net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndjournal");
 		});

@@ -6,6 +6,14 @@ pluginManagement {
             url = 'https://maven.minecraftforge.net/'
         }
         maven { url = 'https://maven.parchmentmc.org' }
+
+        // ModPublisher (the `publishMod` task of build.gradle). It is NOT in Gradle's plugin portal: it is
+        // published only on its author's maven, so without this entry the build's `plugins {}` doesn't
+        // even evaluate.
+        maven {
+            name = 'FirstDarkDev'
+            url = 'https://maven.firstdarkdev.xyz/releases'
+        }
     }
 }
 
@@ -15,12 +23,12 @@ plugins {
 
 rootProject.name = 'dndsheets'
 
-// Addon separado con su propio modid ("dndsheets_dungeon"), dependencia DURA del core: ver
-// dungeon/build.gradle y PROJECT_CONTEXT.md (split core/addons). No comparte sourceSet con el
-// core — compila contra su jar via `implementation project(':')`.
+// Separate addon with its own modid ("dndsheets_dungeon"), a HARD dependency of the core: see
+// dungeon/build.gradle and PROJECT_CONTEXT.md (core/addons split). It doesn't share a sourceSet with the
+// core — it compiles against its jar via `implementation project(':')`.
 include 'dungeon'
 
-// Addon separado con su propio modid ("dndsheets_species"), dependencia DURA del core Y de Origins
-// (ver species/build.gradle): Origins elige la raza, este addon aplica el Aumento de Característica
-// y los rasgos SRD con el propio código de dndsheets — Origins nunca escribe la ficha directo.
+// Separate addon with its own modid ("dndsheets_species"), a HARD dependency of the core AND of Origins
+// (see species/build.gradle): Origins picks the race, this addon applies the Ability Score Increase
+// and the SRD traits with dndsheets' own code — Origins never writes the sheet directly.
 include 'species'

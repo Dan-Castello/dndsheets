@@ -8,21 +8,21 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 /**
- * <p>Los dos botones de la ventana de salvaciones de muerte, en un mensaje con un enum en vez de dos
- * clases sin ni un campo cuyos handlers solo se diferenciaban en a qué método llamaban (invariante 3).</p>
+ * <p>The two buttons on the death saves window, in one message with an enum instead of two classes with
+ * not even a single field, whose handlers only differed in which method they called (invariant 3).</p>
  *
  * <ul>
- *   <li>{@code ROLL} — "Tirar salvación de muerte".</li>
- *   <li>{@code GIVE_UP} — "Dejarse morir": mata al instante, mismo camino que 3 fallos.</li>
+ *   <li>{@code ROLL} — "Roll death save".</li>
+ *   <li>{@code GIVE_UP} — "Let yourself die": kills instantly, same path as 3 failures.</li>
  * </ul>
  *
- * <p>Los dos van de cliente a servidor y ninguno lleva a quién afecta: es siempre quien manda el
- * paquete. Un cliente modificado solo puede tirar —o rendir— su propio personaje, y {@code
- * DeathSaveManager} comprueba además que esté de verdad caído.</p>
+ * <p>Both go from client to server and neither carries who it affects: it's always whoever sent the
+ * packet. A modified client can only roll for — or give up — its own character, and {@code
+ * DeathSaveManager} additionally checks that they're actually down.</p>
  */
 public class DeathSaveMessage {
 
-	//Al final, nunca en medio: writeEnum viaja por ordinal (ver la invariante 2 de PROJECT_CONTEXT.md).
+	//At the end, never in the middle: writeEnum travels by ordinal (see invariant 2 in PROJECT_CONTEXT.md).
 	public enum Kind { ROLL, GIVE_UP }
 
 	final Kind kind;

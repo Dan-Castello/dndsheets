@@ -19,9 +19,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: reemplaza la lista COMPLETA de una categoría (race/background/class) desde
-//OptionsManageScreen — CharacterOptionsRegistry.loadFile reemplaza, no fusiona (ver su javadoc), así que
-//"añadir una opción" es en realidad "guardar la lista entera con la opción de más/menos".
+//Client (the DM) -> server: replaces the WHOLE list for a category (race/background/class) from
+//OptionsManageScreen — CharacterOptionsRegistry.loadFile replaces, it doesn't merge (see its javadoc), so
+//"adding an option" is actually "saving the entire list with one more/fewer option".
 public class OptionsSaveMessage {
 	String category;
 	String arrayJson;
@@ -66,8 +66,8 @@ public class OptionsSaveMessage {
 			CharacterOptionsRegistry.replace(message.category, values);
 
 			dm.sendSystemMessage(Component.translatable("chat.dndsheets.options.updated", message.category, values.size()));
-			//El eco relee el registro, que se acaba de reemplazar dos líneas arriba: mismo contenido que
-			//el array recibido, sin reconstruirlo aquí a mano.
+			//The echo rereads the registry, which was just replaced two lines above: same content as
+			//the array received, without rebuilding it here by hand.
 			BrowseActionMessage.sendOptions(dm, BrowseListMessage.Kind.MANAGE_OPTIONS, message.category);
 		});
 	}

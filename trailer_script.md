@@ -1,52 +1,52 @@
-# dndsheets — Guion de trailer de lanzamiento (60-75s)
+# dndsheets — Launch trailer script (60-75s)
 
-Mod de Forge 1.20.1 que convierte Minecraft en una VTT de D&D 5e: ficha de personaje,
-combate 5e opt-in sobre el combate vanilla, mazmorras generadas y panel de DM.
+A Forge 1.20.1 mod that turns Minecraft into a D&D 5e VTT: character sheet,
+opt-in 5e combat on top of vanilla combat, generated dungeons and a DM panel.
 
-## Estructura (7 tomas)
+## Structure (7 shots)
 
-**1. Gancho (0:00-0:06)**
-- Pantalla en negro → texto: "¿Y si Minecraft fuera tu mesa de D&D?"
-- Corte a: jugador abre la ficha de personaje con una tecla (CharacterSheetScreen).
-- VO: "Minecraft, ahora con reglas de D&D 5e de verdad."
+**1. Hook (0:00-0:06)**
+- Black screen → text: "What if Minecraft were your D&D table?"
+- Cut to: a player opens the character sheet with a key (CharacterSheetScreen).
+- VO: "Minecraft, now with real D&D 5e rules."
 
-**2. Ficha de personaje (0:06-0:18)**
-- Recorrido rápido por CharacterSheetScreen: stats, HP, dados de golpe, inventario de clase.
-- Subir de nivel en vivo (AbilityImprovementScreen / SubclassScreen).
-- Texto en pantalla: "Ficha completa. Un botón."
+**2. Character sheet (0:06-0:18)**
+- Quick tour of CharacterSheetScreen: stats, HP, hit dice, class inventory.
+- Level up live (AbilityImprovementScreen / SubclassScreen).
+- On-screen text: "A complete sheet. One button."
 
-**3. Combate real (0:18-0:32)**
-- Pelea contra un mob: tirada de ataque con ventaja/desventaja (RollEditorScreen), daño con
-  resistencias, casteo de un hechizo (GrimoireScreen) con coste de espacio.
-- Iniciativa y turnos (TurnControlScreen / TurnActionScreen).
-- VO: "Ataques, salvaciones, hechizos, iniciativa — 5e de verdad, encima del combate que ya conoces."
-- Texto: "Compatible con cualquier mob o arma sin configurar."
+**3. Real combat (0:18-0:32)**
+- Fight against a mob: attack roll with advantage/disadvantage (RollEditorScreen), damage with
+  resistances, casting a spell (GrimoireScreen) with a slot cost.
+- Initiative and turns (TurnControlScreen / TurnActionScreen).
+- VO: "Attacks, saves, spells, initiative — real 5e, on top of the combat you already know."
+- Text: "Works with any mob or weapon with no setup."
 
-**4. Herramientas de DM (0:32-0:48)**
-- DmPanelScreen: spawnear un monstruo con stat block real (MonsterSpawnListScreen).
-- Generar una mazmorra al vuelo (DungeonGenerateScreen) — corte rápido mostrando el resultado.
-- Diario de sesión (JournalScreen) y encuentro con varios jugadores (PartyScreen).
-- VO: "Para el DM: monstruos con stat block real, mazmorras generadas, diario de sesión."
+**4. DM tools (0:32-0:48)**
+- DmPanelScreen: spawn a monster with a real stat block (MonsterSpawnListScreen).
+- Generate a dungeon on the fly (DungeonGenerateScreen) — a quick cut showing the result.
+- Session journal (JournalScreen) and an encounter with several players (PartyScreen).
+- VO: "For the DM: monsters with real stat blocks, generated dungeons, a session journal."
 
-**5. Contenido propio (0:48-0:56)**
-- ContentFormScreen: crear un hechizo o un objeto mágico nuevo desde el propio juego, sin salir.
-- Texto: "Crea tu propio contenido. Sin editar JSON a mano."
+**5. Your own content (0:48-0:56)**
+- ContentFormScreen: create a new spell or magic item from inside the game, without leaving.
+- Text: "Create your own content. No hand-editing JSON."
 
-**6. Multijugador (0:56-1:04)**
-- Dos-tres jugadores en la misma partida, cada uno con su ficha, votando un descanso (RestVoteScreen).
-- VO: "Una mesa de rol, dentro de tu servidor."
+**6. Multiplayer (0:56-1:04)**
+- Two or three players in the same game, each with their own sheet, voting on a rest (RestVoteScreen).
+- VO: "A tabletop RPG, inside your server."
 
-**7. Cierre (1:04-1:15)**
-- Logo del mod + nombre "dndsheets".
-- Texto: "Forge 1.20.1 · Cliente y servidor · Descárgalo ahora."
-- Link/plataforma de descarga en pantalla.
+**7. Closing (1:04-1:15)**
+- Mod logo + the name "dndsheets".
+- Text: "Forge 1.20.1 · Client and server · Download it now."
+- Download link/platform on screen.
 
-## Notas de grabación
-- Graba en runClient con un mundo ya preparado (personaje de nivel 3+, inventario con un par de
-  hechizos/objetos, un segundo jugador o bot para las tomas de grupo).
-- Usa `/dnd monster spawn` y `/dnd dungeon generate` antes de grabar para tener el resultado listo,
-  luego repite en vivo para la toma real.
-- Música: algo tipo fantasía/aventura, sin voz, para no chocar con la VO.
-- Exporta en 1080p60; recorta cada toma a 1-2s más de lo que se ve arriba y ajusta en edición.
+## Recording notes
+- Record in runClient with an already prepared world (a level 3+ character, an inventory with a couple of
+  spells/items, a second player or bot for the group shots).
+- Use `/dnd monster spawn` and `/dnd dungeon generate` before recording to have the result ready,
+  then repeat live for the real shot.
+- Music: something fantasy/adventure, without vocals, so it doesn't clash with the VO.
+- Export at 1080p60; trim each shot 1-2s longer than shown above and adjust in editing.
 
-→ Guion listo para grabar. Falta: grabar el material (no puedo operar tu Minecraft/OBS desde aquí).
+→ Script ready to record. Missing: recording the footage (I can't operate your Minecraft/OBS from here).

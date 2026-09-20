@@ -4,22 +4,22 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * <p>Un báculo (o cualquier ítem) etiquetado {@code {dndsheets:{quickSpell:"id"}}} (ver
- * {@code /dndspells staff}) lanza ese hechizo de un clic derecho, sin pasar por el Grimorio: usa las
- * mismas características/espacios de conjuro del portador que un lanzado normal, apuntando a lo que
- * esté mirando (ver {@link SpellCastManager}). Se engancha a los tres eventos de "clic derecho" de
- * Minecraft (ítem al aire, bloque, entidad) porque cuál de los tres dispara depende de qué haya delante
- * del jugador, y el báculo debe funcionar igual en los tres casos.</p>
+ * <p>A staff (or any item) tagged {@code {dndsheets:{quickSpell:"id"}}} (see
+ * {@code /dndspells staff}) casts that spell with a right-click, bypassing the Spellbook: it uses the
+ * same caster ability scores/spell slots as a normal cast, targeting whatever they're looking at (see
+ * {@link SpellCastManager}). It hooks into all three of Minecraft's "right-click" events (item-in-air,
+ * block, entity) because which of the three fires depends on what's in front of the player, and the
+ * staff must work the same way in all three cases.</p>
  *
- * <p>Agachado + clic con un báculo de área o de zona: en vez de lanzar, previsualiza dónde caería
- * ({@link SpellCastManager#previewAoe}) — de pie, el clic sigue lanzando de verdad como siempre.</p>
+ * <p>Sneaking + clicking with an area or zone staff: instead of casting, it previews where it would land
+ * ({@link SpellCastManager#previewAoe}) — standing up, the click still casts for real as always.</p>
  */
 public class QuickSpellManager {
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a los 3 eventos de interacción por
-	//separado. A diferencia de los demás ítems de un solo flag booleano,
-	//el dispatcher detecta este por SpellRegistry.quickSpellIdOf (equivalente a dndTag.contains("quickSpell"))
-	//y ya trae el id extraído.
+	//Triggered from AbilityItemDispatcher instead of subscribing to the 3 interaction events
+	//separately. Unlike the other single-boolean-flag items,
+	//the dispatcher detects this one via SpellRegistry.quickSpellIdOf (equivalent to dndTag.contains("quickSpell"))
+	//and already arrives with the id extracted.
 	static void tryUse(PlayerInteractEvent event, String spellId) {
 		event.setCanceled(true);
 		if (event.getEntity() instanceof ServerPlayer player) {

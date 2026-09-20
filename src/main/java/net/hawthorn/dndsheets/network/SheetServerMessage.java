@@ -20,13 +20,12 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 public class SheetServerMessage {
-	//Únicos campos que la propia hoja del jugador (CharacterSheetSaveProcedure/RollIndex) escribe alguna
-	//vez. Todo lo demás (oro, espacios de conjuro, afinidades de daño, ventaja, nivel de personaje, pacto
-	//del brujo, recursos de clase, salvaciones de muerte...) lo escribe el SERVIDOR por su cuenta a través
-	//de comandos/mensajes ya gateados con permiso de operador (SheetAdjustMessage, /dndsheet...) — sin
-	//esta lista, un cliente modificado podía mandar de
-	//vuelta el JSON completo que el servidor le dio, con esos campos alterados, y pisaba el candado de
-	//esos otros mensajes por completo.
+	//The only fields the player's own sheet (CharacterSheetSaveProcedure/RollIndex) ever writes.
+	//Everything else (gold, spell slots, damage affinities, advantage, character level, warlock pact,
+	//class resources, death saves...) is written by the SERVER on its own, through
+	//commands/messages already gated behind operator permission (SheetAdjustMessage, /dndsheet...) —
+	//without this list, a modified client could send back the full JSON the server had given it, with
+	//those fields altered, and completely bypass the lock those other messages enforce.
 	private static final Set<String> PLAYER_EDITABLE_KEYS = Set.of(
 		"characterName", "characterClass", "characterRace", "background",
 		"hitPoints", "hitPointsMax", "hitPointsTemp", "armorClass", "level", "speed",
@@ -34,20 +33,20 @@ public class SheetServerMessage {
 		"strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"
 	);
 
-	//La FÓRMULA de una tirada (no solo su resultado) es poder real: "1d20 + 999" siempre acierta. Antes
-	//cualquier jugador podía reescribirla desde su propia hoja (checks/saves/skills/attacks viajaban en
-	//PLAYER_EDITABLE_KEYS sin más control) — ahora solo un operador puede tocarlas. "attacks" es la
-	//excepción a medias: CharacterSheetLoadProcedure.autoPopulateWeapons SÍ necesita poder seguir
-	//añadiendo, del lado del jugador normal, una entrada nueva por cada arma reconocida que lleve encima
-	//(con la expresión por defecto de la config, no una inventada) — ver mergeAttacks.
+	//The FORMULA of a roll (not just its result) is real power: "1d20 + 999" always hits. Previously
+	//any player could rewrite it from their own sheet (checks/saves/skills/attacks traveled in
+	//PLAYER_EDITABLE_KEYS with no further control) — now only an operator can touch them. "attacks" is
+	//a partial exception: CharacterSheetLoadProcedure.autoPopulateWeapons DOES need to keep being able
+	//to add, from the regular player's side, a new entry for each recognized weapon they're carrying
+	//(with the config's default expression, never a made-up one) — see mergeAttacks.
 	private static final Set<String> OP_ONLY_ROLL_KEYS = Set.of("checks", "saves", "skills", "attacks");
 
-	//Rango [min,max] para cada campo numérico de PLAYER_EDITABLE_KEYS. Sin esto, un cliente modificado
-	//podía mandar p.ej. "dexterity":"999999" y volverse prácticamente invulnerable/imparable: estos
-	//valores alimentan directo CA real (CombatManager.armorClassOf), PG máximo real
-	//(SheetLoader.applyClassHitPoints) y los modificadores $str/$dex/.../$prof de CUALQUIER tirada
-	//(DiceManager.roll). Los campos que no aparecen aquí (nombre, clase, raza, trasfondo, tipo de dado de
-	//golpe) son texto libre sin un rango numérico que aplicar.
+	//[min,max] range for each numeric field in PLAYER_EDITABLE_KEYS. Without this, a modified client
+	//could send e.g. "dexterity":"999999" and become practically invulnerable/unstoppable: these
+	//values feed directly into real AC (CombatManager.armorClassOf), real max HP
+	//(SheetLoader.applyClassHitPoints), and the $str/$dex/.../$prof modifiers of ANY roll
+	//(DiceManager.roll). Fields not listed here (name, class, race, background, hit die type) are free
+	//text with no numeric range to enforce.
 	private static final Map<String, int[]> NUMERIC_FIELD_BOUNDS = Map.ofEntries(
 		Map.entry("strength", new int[]{1, 30}),
 		Map.entry("dexterity", new int[]{1, 30}),
@@ -89,14 +88,14 @@ public class SheetServerMessage {
 		try {
 			incoming = JsonParser.parseString(new String(data, java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
 		} catch (JsonSyntaxException | IllegalStateException e) {
-			//Payload de un cliente (cualquiera, no solo op) que no es JSON válido o no es un objeto: se
-			//descarta el mensaje en vez de tumbar el hilo principal del servidor con una excepción sin capturar.
-			DndsheetsMod.LOGGER.warn("Descartado SheetServerMessage con JSON inválido de {}: {}", uuid, e.toString());
+			//Payload from a client (any client, not just an op) that isn't valid JSON or isn't an object:
+			//the message is discarded instead of crashing the server's main thread with an uncaught exception.
+			DndsheetsMod.LOGGER.warn("Discarded SheetServerMessage with invalid JSON from {}: {}", uuid, e.toString());
 			return;
 		}
 
 		JsonObject sheet = SheetLoader.getServerSheet(uuid);
-		if (sheet == null) return; //No debería pasar: SheetLoader.clientJoinedServer ya le da una hoja a todo jugador conectado.
+		if (sheet == null) return; //Shouldn't happen: SheetLoader.clientJoinedServer already gives a sheet to every connected player.
 
 		for (String key : PLAYER_EDITABLE_KEYS) {
 			if (!incoming.has(key)) continue;
@@ -112,20 +111,20 @@ public class SheetServerMessage {
 			} else if ("attacks".equals(key)) {
 				sheet.add(key, mergeAttacks(sheet.has(key) ? sheet.get(key) : null, incoming.get(key)));
 			}
-			//checks/saves/skills: un jugador normal no tiene ningún motivo legítimo para tocarlas (a
-			//diferencia de "attacks", nada las auto-rellena), así que su intento se ignora en silencio —
-			//la hoja del servidor se queda con lo que ya tenía.
+			//checks/saves/skills: a regular player has no legitimate reason to touch these (unlike
+			//"attacks", nothing auto-populates them), so their attempt is silently ignored — the
+			//server's sheet keeps whatever it already had.
 		}
 
 		SheetLoader.saveServer(sheet, uuid);
 		SheetLoader.applyClassHitPoints(entity, sheet);
 	}
 
-	//Único punto de entrada de datos de PLAYER_EDITABLE_KEYS: descarta valores no-primitivos (un
-	//objeto/array donde se esperaba texto o número tumbaba después el hilo del servidor la primera vez
-	//que CombatManager.abilityModifier/SheetLoader.sheetInt intentaban leerlo como número) y clampea los
-	//campos numéricos a NUMERIC_FIELD_BOUNDS. Si el valor no es válido para el campo, se descarta entero
-	//y la hoja del servidor conserva lo que ya tenía, en vez de guardar basura.
+	//Single entry point for PLAYER_EDITABLE_KEYS data: discards non-primitive values (an
+	//object/array where text or a number was expected would later crash the server thread the first
+	//time CombatManager.abilityModifier/SheetLoader.sheetInt tried to read it as a number) and clamps
+	//numeric fields to NUMERIC_FIELD_BOUNDS. If the value isn't valid for the field, it's discarded
+	//entirely and the server's sheet keeps what it already had, instead of storing garbage.
 	private static JsonElement sanitizeIncoming(String key, JsonElement value) {
 		if (!value.isJsonPrimitive()) return null;
 		int[] bounds = NUMERIC_FIELD_BOUNDS.get(key);
@@ -139,12 +138,12 @@ public class SheetServerMessage {
 		}
 	}
 
-	//Fusión segura de "attacks" para un jugador SIN permiso de operador: conserva cada entrada que YA
-	//existía en el servidor tal cual estaba (ignora cualquier cambio que el cliente le haya hecho a su
-	//expresión de tirada, así se cuele en el mismo paquete que el auto-poblado), y solo deja pasar
-	//entradas nuevas (itemId que el servidor todavía no conocía) — exactamente lo que
-	//CharacterSheetLoadProcedure.autoPopulateWeapons agrega solo, con la expresión por defecto de la
-	//config, nunca una inventada a mano.
+	//Safe merge of "attacks" for a player WITHOUT operator permission: keeps every entry that ALREADY
+	//existed on the server exactly as it was (ignores any change the client made to its roll
+	//expression, even if it's smuggled in the same packet as the auto-populate), and only lets new
+	//entries through (an itemId the server didn't already know about) — exactly what
+	//CharacterSheetLoadProcedure.autoPopulateWeapons adds on its own, with the config's default
+	//expression, never a hand-crafted one.
 	private static JsonElement mergeAttacks(JsonElement serverSide, JsonElement clientSide) {
 		if (!(clientSide instanceof JsonArray incomingArr)) return serverSide != null ? serverSide : new JsonArray();
 		JsonArray serverArr = serverSide instanceof JsonArray arr ? arr : new JsonArray();
@@ -158,14 +157,14 @@ public class SheetServerMessage {
 			}
 		}
 		for (JsonElement el : incomingArr) {
-			if (!el.isJsonObject() || !el.getAsJsonObject().has("itemId")) continue; //Sin itemId no es un arma auto-poblada real: se descarta.
+			if (!el.isJsonObject() || !el.getAsJsonObject().has("itemId")) continue; //Without an itemId it's not a real auto-populated weapon: discard it.
 			JsonObject clientForm = el.getAsJsonObject();
 			String itemId = clientForm.get("itemId").getAsString();
 			if (!knownItemIds.add(itemId)) continue;
 
-			//La expresión de tirada NUNCA viene del cliente: se reconstruye aquí desde la config del
-			//servidor, igual que autoPopulateWeapons. Un itemId que la config no reconoce como arma no
-			//tiene una expresión de confianza que ofrecerle, así que se descarta entero.
+			//The roll expression NEVER comes from the client: it's rebuilt here from the server's
+			//config, same as autoPopulateWeapons. An itemId the config doesn't recognize as a weapon
+			//has no trusted expression to offer, so it's discarded entirely.
 			Config.WeaponDefault weaponDefault = Config.weaponDefaultFor(itemId);
 			if (weaponDefault == null) continue;
 			merged.add(trustedAttackEntry(clientForm, itemId, weaponDefault));
@@ -179,7 +178,7 @@ public class SheetServerMessage {
 		rollForm.addProperty("itemId", itemId);
 
 		JsonObject roll = new JsonObject();
-		roll.addProperty("context", "Daño");
+		roll.addProperty("context", "Damage");
 		roll.addProperty("expression", weaponDefault.dice() + " + $" + weaponDefault.ability());
 
 		JsonArray rollGroup = new JsonArray();

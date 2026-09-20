@@ -2,7 +2,7 @@
   "mod": "twilightforest",
   "name": "The Twilight Forest",
   "url": "https://www.curseforge.com/minecraft/mc-mods/the-twilight-forest",
-  "_nota": "Fantasia clasica que vanilla no tiene: minotauro, liche, hidra, espectro y kobold.",
+  "_note": "Classic fantasy that vanilla lacks: minotaur, lich, hydra, wraith and kobold.",
   "skins": {
     "dndsheets:minotaur": "twilightforest:minotaur",
     "dndsheets:lich": "twilightforest:lich",

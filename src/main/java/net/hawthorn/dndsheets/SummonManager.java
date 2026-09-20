@@ -15,69 +15,73 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * <p>Invocaciones que actúan por su cuenta en turnos posteriores: Arma Espiritual, Esfera Flamígera,
- * Sabueso Fiel. Es la diferencia con un hechizo de daño normal — no se resuelve una vez y ya, deja algo
- * en el mundo que entra en la iniciativa y ataca solo.</p>
+ * <p>Summons that act on their own on later turns: Spiritual Weapon, Flaming Sphere,
+ * Find Familiar. That's the difference from a normal damage spell — it isn't resolved once and done, it
+ * leaves something in the world that joins initiative and attacks by itself.</p>
  *
- * <p>Casi toda la maquinaria ya existía y esta clase apenas la conecta: {@link MonsterRegistry#spawnAt}
- * invoca entidades con bloque de estadísticas, {@link TurnManager#addLateMonster} las mete en el orden
- * de turnos a mitad de encuentro, y {@link MonsterActionManager#autoAct} ya hace que un monstruo ataque
- * solo cuando le toca. Lo único que faltaba de verdad era <b>a quién</b> ataca: {@code autoAct} apunta al
- * jugador más cercano, que para un invocado del propio jugador es exactamente el objetivo equivocado.</p>
+ * <p>Almost all the machinery already existed and this class barely wires it together: {@link
+ * MonsterRegistry#spawnAt} spawns entities with a stat block, {@link TurnManager#addLateMonster} adds
+ * them to the turn order mid-encounter, and {@link MonsterActionManager#autoAct} already makes a monster
+ * attack on its own when its turn comes. The one thing genuinely missing was <b>who</b> it attacks: {@code
+ * autoAct} targets the nearest player, which for a player's own summon is exactly the wrong target.</p>
  *
- * <p>El bloque de estadísticas se genera al vuelo desde el hechizo y se registra con un id sintético, en
- * vez de exigir que el DM dé de alta un monstruo por cada invocación posible.</p>
+ * <p>The stat block is generated on the fly from the spell and registered with a synthetic id, instead of
+ * requiring the DM to register a monster for every possible summon.</p>
  */
 public class SummonManager {
 
 	private static final String OWNER_KEY = "summonOwner";
 	private static final String ROUNDS_KEY = "summonRounds";
 
-	//Un invocado no aguanta golpes: en 5e la mayoría son objetos o efectos que se disipan al recibir daño,
-	//y darles PG de verdad los convertiría en un escudo gratis. 1 PG y CA baja: existen para atacar, no
-	//para tanquear.
+	//A summon can't take hits: in 5e most are objects or effects that dissipate on taking damage, and
+	//giving them real HP would turn them into a free shield. 1 HP and low AC: they exist to attack, not
+	//to tank.
 	private static final int SUMMON_HP = 1;
 	private static final int SUMMON_AC = 10;
 
 	/**
-	 * <p>Invoca la entidad del hechizo delante del lanzador y la mete en la iniciativa. El bloque de
-	 * estadísticas hereda la característica de lanzamiento y la competencia del invocador, que es como 5e
-	 * calcula el ataque de un arma invocada.</p>
+	 * <p>Spawns the spell's entity in front of the caster and adds it to initiative. The stat block
+	 * inherits the summoner's casting ability score and proficiency, which is how 5e calculates a summoned
+	 * weapon's attack.</p>
 	 */
 	public static Entity summon(ServerPlayer caster, SpellRegistry.Spell spell, int proficiency, int abilityMod) {
 		if (!(caster.level() instanceof ServerLevel level)) return null;
 
 		String monsterId = "dndsheets:summon_" + spell.id().replace(':', '_');
-		//El bloque se re-registra en cada invocación a propósito: así un cambio en el JSON del hechizo se
-		//nota en la siguiente sin recargar nada, y no hay que mantener un registro paralelo de invocables.
+		//The stat block is re-registered on every summon on purpose: that way a change to the spell's JSON
+		//shows up on the next cast with no reload needed, and there's no parallel registry of summonables
+		//to maintain.
 		MonsterRegistry.replace(new MonsterRegistry.MonsterStatBlock(
 			monsterId, spell.name(), spell.summonEntityId(), SUMMON_AC, SUMMON_HP,
-			//Las características se fijan para que abilityModifier devuelva exactamente el modificador del
-			//invocador: 10 + 2*mod da ese mod, y así el ataque sale con los números del lanzador sin
-			//inventar un campo nuevo en el bloque.
+			//Ability scores are set so abilityModifier returns exactly the summoner's modifier:
+			//10 + 2*mod gives that mod back, so the attack comes out with the caster's own numbers without
+			//inventing a new field on the block.
 			Map.of("str", 10 + 2 * abilityMod, "dex", 10 + 2 * abilityMod, "con", 10,
 				"int", 10, "wis", 10, "cha", 10),
 			proficiency,
 			List.of(new MonsterRegistry.MonsterAttack(spell.name(), "str", spell.dice(), "str",
 				spell.damageType(), null, null, 0)),
 			List.of(), Map.of(), Map.of(),
-			//Un arma espiritual o una esfera de fuego son autómatas: no son criaturas vivas, son magia con
-			//forma. Importa poco hoy, pero dejarlo en UNKNOWN sería decir "no lo sé" de algo que sí se sabe.
-			//Una invocación no es un jefe: sin Resistencia Legendaria.
-			//Brilla: una invocación es tuya y dura poco, y en una mesa de seis jugadores hay que poder
-			//distinguirla de un monstruo del DM de un vistazo, incluso a través de una pared.
-			//Congelada, como cualquier monstruo del mod: una invocación actúa en su turno por autoAct, no
-			//por su cuenta. La IA propia es para los PNJ de ambiente, no para esto.
-			CreatureType.CONSTRUCT, 0, 0, 1, MonsterRegistry.Appearance.GLOWING, false, false, false));
+			//A spiritual weapon or a flaming sphere is a construct: it isn't a living creature, it's magic
+			//given shape. Barely matters today, but leaving it as UNKNOWN would say "I don't know" about
+			//something that is, in fact, known.
+			//A summon isn't a boss: no Legendary Resistance.
+			//It glows: a summon belongs to you and lasts briefly, and at a table of six players you need to
+			//be able to tell it apart from a DM's monster at a glance, even through a wall.
+			//Frozen, like any of the mod's monsters: a summon acts on its turn via autoAct, not on its own.
+			//Its own AI is for ambient NPCs, not for this.
+			//No declared size: a summon is drawn at the size of the entity lending it a body, which is
+			//exactly what the spell chose. Scaling it would contradict that choice.
+			CreatureType.CONSTRUCT, 0, 0, 1, CreatureSize.UNKNOWN, MonsterRegistry.Appearance.GLOWING, false, false, false));
 
-		//Delante del lanzador, no encima: invocarlo dentro de su propia hitbox lo dejaría empujándolo.
+		//In front of the caster, not on top of them: spawning it inside their own hitbox would leave it pushing them.
 		Vec3 spot = caster.position().add(caster.getViewVector(1.0f).scale(2.0));
-		//La etiqueta de dueño se pone ANTES de que entre al orden de turnos: addLateMonster la lee para
-		//decidir si es enemigo, y hacerlo después la metía como tal — el combate no habría terminado nunca
-		//mientras durase la invocación.
+		//The owner tag is set BEFORE it joins the turn order: addLateMonster reads it to decide whether
+		//it's an enemy, and doing it afterward would add it as one — combat would never end for as long as
+		//the summon lasted.
 		Entity summoned = MonsterRegistry.spawnAt(level, spot.x, spot.y, spot.z, monsterId, entity -> {
 			CompoundTag data = entity.getPersistentData();
-			CompoundTag tag = data.getCompound("dndsheets"); //Mismo compartimento que el resto del estado NBT.
+			CompoundTag tag = data.getCompound("dndsheets"); //Same compartment as the rest of the NBT state.
 			tag.putString(OWNER_KEY, caster.getStringUUID());
 			tag.putInt(ROUNDS_KEY, ZoneManager.DEFAULT_ROUNDS);
 			data.put("dndsheets", tag);
@@ -90,7 +94,7 @@ public class SummonManager {
 		return summoned;
 	}
 
-	/** UUID del jugador que la invocó, o {@code null} si esa entidad no es una invocación. */
+	/** UUID of the player who summoned it, or {@code null} if that entity isn't a summon. */
 	public static String ownerOf(Entity entity) {
 		CompoundTag data = entity.getPersistentData();
 		if (!data.contains("dndsheets")) return null;
@@ -99,9 +103,9 @@ public class SummonManager {
 	}
 
 	/**
-	 * <p>A quién ataca una invocación en su turno: al enemigo más cercano de su dueño, no al jugador más
-	 * cercano. Sin esto, el Arma Espiritual de un jugador le pegaría a él, que es el objetivo exactamente
-	 * contrario al que existe para atacar.</p>
+	 * <p>Who a summon attacks on its turn: its owner's nearest enemy, not the nearest player. Without
+	 * this, a player's Spiritual Weapon would attack them, which is exactly the opposite of the target it
+	 * exists to attack.</p>
 	 */
 	public static Entity findEnemyTarget(ServerLevel level, Entity summoned, double range) {
 		Entity best = null;
@@ -118,16 +122,16 @@ public class SummonManager {
 		return best;
 	}
 
-	//getAllEntities() devuelve un Iterable, no una colección, y además hay que copiarlo antes de recorrer:
-	//dismiss() elimina entidades, y hacerlo sobre la vista viva del nivel es una ConcurrentModificationException
-	//esperando a que alguien tenga dos invocaciones a la vez.
+	//getAllEntities() returns an Iterable, not a collection, and it also has to be copied before iterating:
+	//dismiss() removes entities, and doing that over the level's live view is a ConcurrentModificationException
+	//waiting for someone to have two summons at once.
 	private static List<Entity> snapshot(ServerLevel level) {
 		List<Entity> all = new ArrayList<>();
 		level.getAllEntities().forEach(all::add);
 		return all;
 	}
 
-	/** Descuenta un asalto a cada invocación y disipa las que expiran. */
+	/** Decrements one round for each summon and dismisses the ones that expire. */
 	public static void endRound(ServerLevel level) {
 		for (Entity entity : snapshot(level)) {
 			if (ownerOf(entity) == null) continue;
@@ -142,7 +146,7 @@ public class SummonManager {
 		}
 	}
 
-	/** Disipa las invocaciones de ese jugador: estos hechizos son de concentración. */
+	/** Dismisses that player's summons: these spells require concentration. */
 	public static void removeFor(ServerLevel level, UUID ownerId) {
 		String owner = ownerId.toString();
 		for (Entity entity : snapshot(level)) {
@@ -150,8 +154,8 @@ public class SummonManager {
 		}
 	}
 
-	//DISCARDED y no KILLED: una invocación que se disipa no "muere", así que no debe soltar botín ni XP ni
-	//contar como enemigo abatido. markDefeated sí hace falta para que no bloquee el fin del combate.
+	//DISCARDED and not KILLED: a summon that dissipates doesn't "die", so it shouldn't drop loot, grant XP,
+	//or count as a defeated enemy. markDefeated is still needed so it doesn't block combat from ending.
 	private static void dismiss(ServerLevel level, Entity entity) {
 		TurnManager.markDefeated(entity.getId());
 		CombatFx.defeated(entity);

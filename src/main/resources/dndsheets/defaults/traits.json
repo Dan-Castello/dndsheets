@@ -1,7 +1,7 @@
 [
   {
-    "id": "monje:artes_marciales",
-    "name": "content.dndsheets.trait.monje.artes_marciales",
+    "id": "monk:martial_arts",
+    "name": "content.dndsheets.trait.monk.martial_arts",
     "unarmedAbility": "dex",
     "unarmedDiceByLevel": [
       { "level": 1, "dice": "1d4" },
@@ -11,8 +11,8 @@
     ]
   },
   {
-    "id": "picaro:ataque_furtivo",
-    "name": "content.dndsheets.trait.picaro.ataque_furtivo",
+    "id": "rogue:sneak_attack",
+    "name": "content.dndsheets.trait.rogue.sneak_attack",
     "sneakAttackDiceByLevel": [
       { "level": 1, "dice": "1d6" },
       { "level": 3, "dice": "2d6" },

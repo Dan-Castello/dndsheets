@@ -12,10 +12,10 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
- * <p>Elegir un bloque de CUALQUIER mod instalado — sin esto, un mueble de un mod de decoración no
- * tendría forma de entrar al editor de trazado ({@code DungeonTraceScreen}). Lista
- * {@link ForgeRegistries#BLOCKS}, el registro global donde vive todo bloque de todo mod cargado, así
- * que no hace falta compatibilidad especial por mod: un mueble ajeno es solo una fila más.</p>
+ * <p>Pick a block from ANY installed mod — without this, furniture from a decoration mod would have
+ * no way to enter the trace editor ({@code DungeonTraceScreen}). Lists
+ * {@link ForgeRegistries#BLOCKS}, the global registry where every block from every loaded mod lives,
+ * so no special per-mod compatibility is needed: furniture from another mod is just one more row.</p>
  */
 public class BlockPickerScreen extends ListPickerScreen {
 	private final Consumer<ResourceLocation> onPick;

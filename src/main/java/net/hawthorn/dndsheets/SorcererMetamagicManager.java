@@ -9,21 +9,20 @@ import net.minecraft.world.item.Items;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * <p>Metamagia: Hechizo Gemelo. Clic derecho en el ítem marca la SIGUIENTE tirada de hechizo del hechicero
- * (un flag de un solo uso en la hoja, mismo patrón que {@code nextAttackAdvantage}) para que también
- * alcance a un segundo objetivo válido cercano — {@link SpellCastManager#handleCastRequest} lo consume
- * justo después de resolver el hechizo contra el objetivo normal.</p>
+ * <p>Metamagic: Twinned Spell. Right-clicking the item marks the sorcerer's NEXT spell cast (a one-use
+ * flag on the sheet, same pattern as {@code nextAttackAdvantage}) so it also reaches a second valid target
+ * nearby — {@link SpellCastManager#handleCastRequest} consumes it right after resolving the spell against
+ * the normal target.</p>
  *
- * <p><b>Simplificaciones deliberadas</b>: en 5e de verdad cuesta puntos de hechicero (no hay reserva de
- * puntos de hechicero modelada aquí, solo el pool plano de espacios de conjuro) y solo vale con hechizos
- * que ya de por sí solo tocan a un objetivo (aquí no se comprueba explícitamente, pero un hechizo de área
- * ya reparte daño a todos los del radio, así que gemelarlo no tendría sentido — se deja sin activar el
- * flag para esos casos en {@code handleCastRequest}, ver el comentario ahí). Sin límite de usos por
- * descanso, igual que Furia/Segundo Aliento.</p>
+ * <p><b>Deliberate simplifications</b>: in real 5e this actually costs sorcery points (there's no sorcery
+ * point pool modeled here, only the flat spell slot pool), and it only applies to spells that already
+ * target just one creature (not explicitly checked here, but an area spell already deals damage to
+ * everyone in the radius, so twinning it wouldn't make sense — the flag is left unset for those cases in
+ * {@code handleCastRequest}, see the comment there). No uses-per-rest limit, same as Rage/Second Wind.</p>
  */
 public class SorcererMetamagicManager {
 
-	//Se activa desde AbilityItemDispatcher en vez de suscribirse a RightClickItem por su cuenta.
+	//Triggered from AbilityItemDispatcher instead of subscribing to RightClickItem on its own.
 	static void tryUse(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -36,8 +35,8 @@ public class SorcererMetamagicManager {
 		player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.twinned_armed").withStyle(ChatFeedback.RESOURCE));
 	}
 
-	//Público: SpellCastManager lo consume al lanzar el siguiente hechizo, con o sin segundo objetivo real
-	//cerca — se gasta igual, tal como en 5e gastas el punto de hechicero aunque no haya nadie más a mano.
+	//Public: SpellCastManager consumes this when casting the next spell, with or without an actual second
+	//target nearby — it's spent either way, just as in 5e you spend the sorcery point even with no one else around.
 	public static boolean consumePending(JsonObject sheet) {
 		if (sheet == null || !sheet.has("twinnedSpellPending") || !sheet.get("twinnedSpellPending").getAsBoolean()) return false;
 		sheet.remove("twinnedSpellPending");

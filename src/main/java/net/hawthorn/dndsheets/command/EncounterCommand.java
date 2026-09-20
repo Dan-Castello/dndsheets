@@ -22,21 +22,21 @@ import java.nio.file.Path;
 import java.util.Set;
 
 /**
- * <p>{@code /dndencounters}: grupos de monstruos preparados antes de la sesión y soltados de una vez.</p>
+ * <p>{@code /dndencounters}: groups of monsters prepared before the session and dropped in all at once.</p>
  *
- * <p>El formato del archivo es el de siempre —un array de objetos con {@code id} en
- * {@code <mundo>/dndsheets/encounters/}, cargado solo al arrancar— y la composición se escribe como texto:</p>
+ * <p>The file format is the usual one — an array of objects with {@code id} in
+ * {@code <world>/dndsheets/encounters/}, loaded only at startup — and the composition is written as text:</p>
  *
  * <pre>
  * {
- *   "id": "emboscada_goblin",
- *   "name": "Emboscada de goblins",
+ *   "id": "goblin_ambush",
+ *   "name": "Goblin ambush",
  *   "monsters": ["dndsheets:goblin x4", "dndsheets:wolf x2"]
  * }
  * </pre>
  *
- * <p>Sin {@code load} no hace falta tocar nada: la carpeta se lee entera al arrancar el servidor, igual que
- * el resto del contenido. {@code load} existe para recargar en caliente lo que acabas de editar.</p>
+ * <p>Without {@code load} nothing needs to be touched: the whole folder is read at server startup, same
+ * as the rest of the content. {@code load} exists to hot-reload what you just edited.</p>
  */
 @Mod.EventBusSubscriber
 public class EncounterCommand {
@@ -46,25 +46,24 @@ public class EncounterCommand {
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndencounters")
 			.requires(source -> DndsheetsMod.canActAsDm(source))
-			.then(ContentCommands.loadBranch(ENCOUNTERS_DIR, EncounterRegistry::loadFile, "encuentros"))
+			.then(ContentCommands.loadBranch(ENCOUNTERS_DIR, EncounterRegistry::loadFile, "encounters"))
 			.then(Commands.literal("list").executes(EncounterCommand::list))
 			.then(Commands.literal("spawn")
-				.then(Commands.argument("encuentroId", ResourceLocationArgument.id())
+				.then(Commands.argument("encounterId", ResourceLocationArgument.id())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(EncounterRegistry.ids(), builder))
 					.executes(ctx -> spawn(ctx, ctx.getSource().getPosition()))
-					//Con posición explícita: preparar la emboscada al otro lado de la puerta sin tener que ir
-					//hasta allí, que es justo cuando un DM quiere un encuentro guardado.
-					.then(Commands.argument("donde", Vec3Argument.vec3())
-						.executes(ctx -> spawn(ctx, Vec3Argument.getVec3(ctx, "donde")))))));
+					//With an explicit position: prepare the ambush on the other side of the door without
+					//having to go there, which is exactly when a DM wants a saved encounter.
+					.then(Commands.argument("position", Vec3Argument.vec3())
+						.executes(ctx -> spawn(ctx, Vec3Argument.getVec3(ctx, "position")))))));
 	}
 
 
 	private static int list(CommandContext<CommandSourceStack> ctx) {
 		Set<String> ids = EncounterRegistry.ids();
 		if (ids.isEmpty()) {
-			ctx.getSource().sendSuccess(() -> Component.literal(
-				"No hay encuentros. Créalos en el Panel de DM (Crear contenido > Encuentros) o en "
-					+ ENCOUNTERS_DIR.toAbsolutePath() + "."), false);
+			ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.encounter.none",
+				ENCOUNTERS_DIR.toAbsolutePath().toString()), false);
 			return 0;
 		}
 		for (String id : ids) {
@@ -76,10 +75,10 @@ public class EncounterCommand {
 	}
 
 	private static int spawn(CommandContext<CommandSourceStack> ctx, Vec3 where) {
-		String id = ResourceLocationArgument.getId(ctx, "encuentroId").toString();
+		String id = ResourceLocationArgument.getId(ctx, "encounterId").toString();
 		EncounterRegistry.Encounter encounter = EncounterRegistry.get(id);
 		if (encounter == null) {
-			ctx.getSource().sendFailure(Component.literal("No conozco el encuentro \"" + id + "\". Míralos con /dndencounters list."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.encounter.no_such", id));
 			return 0;
 		}
 
@@ -88,16 +87,14 @@ public class EncounterCommand {
 		int total = encounter.total();
 
 		if (spawned == 0) {
-			ctx.getSource().sendFailure(Component.literal("No se invocó nada: los monstruos de \"").append(ContentNames.of(encounter.name()))
-				.append("\" no existen. Míralos con /dndmonsters list."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.encounter.nothing_spawned", ContentNames.of(encounter.name())));
 			return 0;
 		}
 
-		//Se dice cuántos faltan y no solo cuántos salieron: un encuentro al que le falta el jefe porque su id
-		//está mal escrito se juega igual y nadie se entera hasta después.
-		String missing = spawned < total ? " (faltan " + (total - spawned) + ", ids que no existen)" : "";
-		ctx.getSource().sendSuccess(() -> ContentNames.of(encounter.name()).append(
-			": " + spawned + " monstruos" + missing + ". La iniciativa arranca sola con el primer golpe."), true);
+		//How many are missing is stated, not just how many spawned: an encounter missing its boss because
+		//its id is misspelled still plays out, and nobody notices until later.
+		Component missing = spawned < total ? Component.translatable("chat.dndsheets.encounter.missing", total - spawned) : Component.empty();
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.encounter.spawned", ContentNames.of(encounter.name()), spawned, missing), true);
 		return spawned;
 	}
 }

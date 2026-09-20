@@ -12,32 +12,32 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>El <b>panel sobre pergamino</b> y su aritmética: el marco, el título, el filete, el tope que impide
- * que se salga por arriba, las filas que se van apilando y los {@code EditBox} con su etiqueta encima.
- * Nada más. No decide qué botones lleva abajo ni cuándo se envía nada.</p>
+ * <p>The <b>panel-on-parchment</b> and its arithmetic: the frame, the title, the rule, the clamp that
+ * keeps it from running off the top, the rows that stack up, and the {@code EditBox}es with their label
+ * above. Nothing else. It doesn't decide what buttons go at the bottom or when anything gets sent.</p>
  *
- * <p>Existe porque había dos pantallas escribiendo esto mismo por separado. {@link SmallFormScreen} es un
- * formulario: se rellena y se pulsa <i>Confirmar</i> una vez. {@link SheetAdjustScreen} es un panel de
- * control: diez acciones sueltas que se aplican cada una por su cuenta, sin ningún <i>Confirmar</i>. Son
- * dos contratos distintos y por eso la segunda nunca pudo heredar de la primera — pero el marco que
- * dibujan es el mismo, y esa parte sí se duplicaba: {@code parseIntOr}, {@code cycleLabel}, el
- * {@code onClose} que vuelve al padre, el {@code tick} de los campos, el {@code Math.max(44, ...)} y el
- * padding de 14px del panel estaban escritos dos veces.</p>
+ * <p>It exists because two screens were writing this same thing separately. {@link SmallFormScreen} is a
+ * form: it gets filled in and <i>Confirm</i> is pressed once. {@link SheetAdjustScreen} is a control
+ * panel: ten independent actions that each apply on their own, with no <i>Confirm</i> at all. They're
+ * two different contracts, which is why the latter could never extend the former — but the frame they
+ * draw is the same, and that part really was duplicated: {@code parseIntOr}, {@code cycleLabel}, the
+ * {@code onClose} that returns to the parent, the fields' {@code tick}, the {@code Math.max(44, ...)},
+ * and the panel's 14px padding were all written twice.</p>
  *
- * <p>El detalle que lo delataba: {@code SmallFormScreen} llevaba el comentario <i>"Mismo tope que
- * SheetAdjustScreen"</i>. La base había copiado el número de la pantalla que iba por libre, no al revés.
- * Con esto el número vive en un sitio.</p>
+ * <p>The detail that gave it away: {@code SmallFormScreen} carried the comment <i>"Same clamp as
+ * SheetAdjustScreen"</i>. The base class had copied the number from the screen that went its own way,
+ * not the other way around. With this, the number lives in one place.</p>
  */
 public abstract class FormPanelScreen extends Screen {
 
 	protected static final int FIELD_WIDTH = 160;
 	protected static final int FIELD_HEIGHT = 20;
-	//30, no 26: deja 10px libres arriba de cada campo para su etiqueta (ver addField) sin pisar el
-	//campo anterior — antes ningún campo de este formulario mostraba en pantalla para qué era, solo su
-	//Component de narración (invisible, solo lectores de accesibilidad) y el valor por defecto ya escrito.
+	//30, not 26: leaves 10px free above each field for its label (see addField) without overlapping the
+	//previous field — before this, no field on this form showed on screen what it was for, only its
+	//narration Component (invisible, screen readers only) and the default value already typed in.
 	protected static final int ROW_HEIGHT = 30;
-	//Alto de la banda de cabecera por encima de la primera fila: tiene que dejar sitio al título (8 px), al
-	//filete y a la etiqueta del primer campo, que se dibuja en formTop-10.
+	//Height of the header band above the first row: it has to leave room for the title (8px), the rule,
+	//and the first field's label, which is drawn at formTop-10.
 	protected static final int TITLE_BAND = 34;
 
 	private final int titleRows;
@@ -55,33 +55,34 @@ public abstract class FormPanelScreen extends Screen {
 		this.parent = parent;
 	}
 
-	/** Añade las filas del panel, en orden, con addField(...)/addFieldRow(...)/addCycleButton(...). */
+	/** Adds the panel's rows, in order, with addField(...)/addFieldRow(...)/addCycleButton(...). */
 	protected abstract void buildForm();
 
 	/**
-	 * <p>Ancho de una fila. Por defecto {@link #FIELD_WIDTH}, que es lo que han usado siempre las pantallas
-	 * que heredan de {@link SmallFormScreen}: mientras nadie lo sobrescriba, la aritmética es idéntica.</p>
+	 * <p>A row's width. Defaults to {@link #FIELD_WIDTH}, which is what the screens that inherit from
+	 * {@link SmallFormScreen} have always used: as long as nobody overrides it, the arithmetic is
+	 * identical.</p>
 	 */
 	protected int formWidth() {
 		return FIELD_WIDTH;
 	}
 
-	/** Separación vertical entre filas. Un panel apretado puede bajarla para que le quepan más. */
+	/** Vertical spacing between rows. A tight panel can lower it to fit more. */
 	protected int rowHeight() {
 		return ROW_HEIGHT;
 	}
 
-	/** Alto de la banda de cabecera. Un panel que pinte una segunda línea bajo el título necesita más. */
+	/** Height of the header band. A panel that paints a second line under the title needs more. */
 	protected int titleBand() {
 		return TITLE_BAND;
 	}
 
-	/** Alto por fila para el centrado inicial: cuántas filas caben por encima del centro. */
+	/** Height per row for the initial centering: how many rows fit above the center. */
 	protected final void layoutTop() {
 		centerX = this.width / 2;
-		//Sin este tope, un panel con muchas filas centrado en height/2 empujaba las primeras (y su título)
-		//fuera de la pantalla en ventanas bajas o con GUI Scale alto, en vez de solo quedar apretado: no se
-		//veía ni se podía pulsar lo de arriba.
+		//Without this cap, a panel with many rows centered on height/2 pushed the first ones (and its
+		//title) off screen on short windows or with a high GUI Scale, instead of just ending up cramped:
+		//the top couldn't be seen or clicked.
 		formTop = Math.max(44, this.height / 2 - rowHeight() * titleRows);
 		cursorY = formTop;
 		editBoxes.clear();
@@ -100,21 +101,22 @@ public abstract class FormPanelScreen extends Screen {
 	}
 
 	/**
-	 * <p>Con posición explícita, para una fila que mezcla un campo con botones que no son de este panel
-	 * (aplicar, fijar...). Sigue quedando registrado, así que hereda igual el {@code tick} del cursor y su
-	 * etiqueta encima — que es justo lo que se olvidaba al colocarlos a mano con {@code new EditBox}.</p>
+	 * <p>With an explicit position, for a row that mixes a field with buttons that don't belong to this
+	 * panel (apply, set...). It still gets registered, so it inherits the cursor's {@code tick} and its
+	 * label above just the same — which is exactly what used to get forgotten when placing them by hand
+	 * with {@code new EditBox}.</p>
 	 */
 	protected EditBox addFieldAt(String label, String defaultValue, int maxLength, int y, int x, int width) {
 		return registerBox(label, defaultValue, maxLength, x, y, width);
 	}
 
 	/**
-	 * <p>Varios campos en UNA fila, repartidos a lo ancho de {@link #formWidth()} con 4px de separación.</p>
+	 * <p>Several fields in ONE row, spread across {@link #formWidth()} with 4px of spacing.</p>
 	 *
-	 * <p>El reparto se calcula, no se escribe a mano: {@code SheetAdjustScreen} tenía dos campos de 90px
-	 * fijos dentro de 190px, y cuando quiso meter un botón en esa misma fila le quedaron 190-188 = <b>2
-	 * píxeles</b> de ancho, prácticamente imposible de pulsar. Ese es uno de los dos peores bugs de layout
-	 * del proyecto, y sale justo de repartir a ojo.</p>
+	 * <p>The split is computed, not hand-written: {@code SheetAdjustScreen} had two fixed 90px fields
+	 * inside 190px, and when it wanted to fit a button into that same row it was left with 190-188 =
+	 * <b>2 pixels</b> of width, practically impossible to click. That's one of the project's two worst
+	 * layout bugs, and it comes straight from eyeballing the split.</p>
 	 */
 	protected EditBox[] addFieldRow(String[] labels, String[] defaults, int maxLength) {
 		int y = nextRowY();
@@ -132,13 +134,14 @@ public abstract class FormPanelScreen extends Screen {
 
 	private EditBox registerBox(String label, String defaultValue, int maxLength, int x, int y, int width) {
 		EditBox box = new EditBox(this.font, x, y, width, FIELD_HEIGHT, Component.literal(label));
-		//El tope PRIMERO y el valor después, nunca al revés. Las dos llamadas recortan: setValue corta a lo
-		//que valga maxLength EN ESE MOMENTO, y un EditBox recién construido trae 32 —el defecto de vanilla—,
-		//así que rellenar antes de subir el tope cortaba todo formulario prellenado a 32 caracteres. Se veía
-		//dos pasos más allá y con otra cara: un encuentro guardado con "dndsheets:adult_bronze_dragon, d" se
-		//invocaba como "ids que no existen", sin nada que señalara a esta línea.
-		//El máximo, además, nunca por debajo de lo que la pantalla acaba de rellenar: un tope existe para lo
-		//que TECLEA el usuario, y lo que ya venía puesto no es "de más".
+		//The cap FIRST and the value after, never the other way around. Both calls truncate: setValue cuts
+		//to whatever maxLength is worth AT THAT MOMENT, and a freshly constructed EditBox comes with 32 —
+		//vanilla's default — so filling in before raising the cap truncated every prefilled form to 32
+		//characters. It showed up two steps removed and wearing a different face: a saved encounter with
+		//"dndsheets:adult_bronze_dragon, d" got summoned as "ids that don't exist", with nothing pointing
+		//back to this line.
+		//The maximum, moreover, never goes below what the screen just prefilled: a cap exists for what the
+		//user TYPES, and what was already there isn't "excess".
 		box.setMaxLength(Math.max(maxLength, defaultValue.length()));
 		box.setValue(defaultValue);
 		this.addWidget(box);
@@ -152,20 +155,20 @@ public abstract class FormPanelScreen extends Screen {
 		return addCycleButton(prefix, options, options, 0);
 	}
 
-	//Para opciones cuyo valor real (guardado/enviado al servidor) es un código interno poco claro para un
-	//DM (p.ej. "str"/"dex") — displayLabels es SOLO lo que se muestra en el botón, en el mismo orden que
-	//options; CycleField.value() sigue devolviendo el código interno de options, no el texto mostrado.
+	//For options whose real value (saved/sent to the server) is an internal code that isn't clear to a
+	//DM (e.g. "str"/"dex") — displayLabels is ONLY what's shown on the button, in the same order as
+	//options; CycleField.value() still returns options' internal code, not the displayed text.
 	protected CycleField addCycleButton(String prefix, String[] options, String[] displayLabels) {
 		return addCycleButton(prefix, options, displayLabels, 0);
 	}
 
-	//Con índice inicial: para prellenar un formulario de EDICIÓN (ver ContentFormScreen) con el valor que ya
-	//tenía la entrada, en vez de arrancar siempre en options[0] como si fuera nueva.
+	//With an initial index: to prefill an EDIT form (see ContentFormScreen) with the value the entry
+	//already had, instead of always starting at options[0] as if it were new.
 	protected CycleField addCycleButton(String prefix, String[] options, String[] displayLabels, int initialIndex) {
 		return addCycleButton(prefix, options, displayLabels, initialIndex, nextRowY(), centerX - formWidth() / 2, formWidth());
 	}
 
-	/** Con posición explícita: para un panel que comparte fila entre un cíclico y su botón de aplicar. */
+	/** With an explicit position: for a panel that shares a row between a cycle field and its apply button. */
 	protected CycleField addCycleButton(String prefix, String[] options, String[] displayLabels, int initialIndex,
 			int y, int x, int width) {
 		CycleField field = new CycleField(options);
@@ -195,7 +198,7 @@ public abstract class FormPanelScreen extends Screen {
 		return Component.literal(prefix + ": " + value);
 	}
 
-	/** Botón cíclico con su índice actual — ver addCycleButton. */
+	/** Cycle button with its current index — see addCycleButton. */
 	protected static final class CycleField {
 		private final String[] options;
 		private Button button;
@@ -211,20 +214,20 @@ public abstract class FormPanelScreen extends Screen {
 	}
 
 	/**
-	 * <p>Marco, título y filete. Se llama desde el {@code render} de cada subclase, que decide qué más
-	 * pinta encima — un panel de control puede querer una segunda línea de solo lectura bajo el título.</p>
+	 * <p>Frame, title, and rule. Called from each subclass's {@code render}, which decides what else to
+	 * paint on top — a control panel might want a second read-only line under the title.</p>
 	 */
 	protected final void renderPanelChrome(GuiGraphics guiGraphics) {
-		//La cabecera necesita su propia banda. El título estaba en formTop-16 (ocupa hasta formTop-8) y la
-		//etiqueta del primer campo arranca en formTop-10: se pisaban dos filas de píxeles, y con la fuente
-		//de Minecraft eso no se lee como "juntos", se lee como texto duplicado y emborronado.
+		//The header needs its own band. The title used to be at formTop-16 (occupying up to formTop-8) and
+		//the first field's label starts at formTop-10: two rows of pixels overlapped, and with Minecraft's
+		//font that doesn't read as "close together", it reads as duplicated, smeared text.
 		GuiStyle.panel(guiGraphics, centerX - formWidth() / 2 - 14, formTop - titleBand(), centerX + formWidth() / 2 + 14, formBottom);
 		guiGraphics.drawCenteredString(this.font, title, this.width / 2, formTop - titleBand() + 6, GuiStyle.TITLE_COLOR);
-		//Filete de separación, el mismo recurso que usa ListPickerScreen para su cabecera.
+		//Separator rule, the same resource ListPickerScreen uses for its header.
 		GuiStyle.rule(guiGraphics, centerX - formWidth() / 2 - 6, centerX + formWidth() / 2 + 6, formTop - 18);
 	}
 
-	/** Los campos con su etiqueta encima. Va después de super.render para quedar por delante del panel. */
+	/** The fields with their label above. Goes after super.render so it stays in front of the panel. */
 	protected final void renderFields(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		for (int i = 0; i < editBoxes.size(); i++) {
 			EditBox box = editBoxes.get(i);
@@ -233,8 +236,8 @@ public abstract class FormPanelScreen extends Screen {
 		}
 	}
 
-	//Vuelve a la pantalla anterior en vez de cerrar todo el menú — mismo mecanismo de navegación que
-	//ListPickerScreen, ver esa clase.
+	//Returns to the previous screen instead of closing the whole menu — same navigation mechanism as
+	//ListPickerScreen, see that class.
 	@Override
 	public void onClose() {
 		Minecraft.getInstance().setScreen(parent);

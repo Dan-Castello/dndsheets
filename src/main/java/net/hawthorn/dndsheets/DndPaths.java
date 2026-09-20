@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * <p>Carpeta única para todo el contenido cargable por JSON del mod: {@code <mundo>/dndsheets/weapons},
- * {@code /spells}, {@code /monsters} y {@code /presets}. Se crean solas al arrancar cualquier servidor
- * (mono o multijugador), y CADA .json que haya dentro se carga solo, sin necesidad de correr
- * {@code /dndweapons load} (etc.) a mano — esos comandos siguen sirviendo para recargar en caliente sin
- * reiniciar el servidor.</p>
+ * <p>Single folder for all of the mod's JSON-loadable content: {@code <world>/dndsheets/weapons},
+ * {@code /spells}, {@code /monsters} and {@code /presets}. They're created on their own when any server
+ * starts (singleplayer or multiplayer), and EVERY .json inside gets loaded automatically, with no need
+ * to run {@code /dndweapons load} (etc.) by hand — those commands still work for hot-reloading without
+ * restarting the server.</p>
  */
 @Mod.EventBusSubscriber
 public class DndPaths {
@@ -32,13 +32,13 @@ public class DndPaths {
 	public static final Path BACKGROUNDS_DIR = ROOT.resolve("backgrounds");
 	public static final Path CLASSES_DIR = ROOT.resolve("classes");
 	/**
-	 * <p>Biblioteca de estructuras {@code .nbt} que el DM trae de fuera, para importarlas como piezas de
-	 * mazmorra (ver {@code DungeonManager.importStructure}). Va aquí y no en la carpeta del mundo <b>a
-	 * propósito</b>: las piezas son de una partida, pero una casa descargada sirve en todas.</p>
+	 * <p>Library of {@code .nbt} structures the DM brings in from outside, to import as dungeon pieces
+	 * (see {@code DungeonManager.importStructure}). It lives here and not in the world folder <b>on
+	 * purpose</b>: pieces belong to one campaign, but a downloaded house is useful in all of them.</p>
 	 */
 	public static final Path STRUCTURES_DIR = ROOT.resolve("structures");
 
-	/** Packs de aspecto del DM: ver {@link MonsterSkins}. No es contenido, es "qué modelo usa cada ficha". */
+	/** The DM's appearance packs: see {@link MonsterSkins}. Not content, it's "which model each block uses." */
 	public static final Path SKINS_DIR = ROOT.resolve("skins");
 
 	@FunctionalInterface
@@ -62,10 +62,10 @@ public class DndPaths {
 		createIfMissing(STRUCTURES_DIR);
 		createIfMissing(SKINS_DIR);
 
-		//Contenido por defecto: para que un jugador nuevo no tenga que escribir armas/hechizos/monstruos/
-		//presets/rasgos desde cero antes de poder jugar (el mismo pack empaquetado dentro del mod).
-		//Razas/trasfondos/clases no lo necesitan: CharacterOptionsRegistry ya trae una lista por defecto en
-		//código, sin JSON de por medio.
+		//Default content: so a new player doesn't have to write weapons/spells/monsters/presets/traits
+		//from scratch before being able to play (the same pack bundled inside the mod).
+		//Races/backgrounds/classes don't need this: CharacterOptionsRegistry already ships a default
+		//list in code, with no JSON involved.
 		refreshDefaultsLogging(WEAPONS_DIR, "weapons.json");
 		refreshDefaultsLogging(SPELLS_DIR, "spells.json");
 		refreshDefaultsLogging(ITEMS_DIR, "items.json");
@@ -75,42 +75,44 @@ public class DndPaths {
 		refreshDefaultsLogging(ENCOUNTERS_DIR, "encounters.json");
 		refreshDefaultsLogging(FEATS_DIR, "feats.json");
 
-		autoLoadAll(WEAPONS_DIR, Config::loadFile, "armas");
-		autoLoadAll(SPELLS_DIR, SpellRegistry::loadFile, "hechizos");
-		autoLoadAll(ITEMS_DIR, MagicItemRegistry::loadFile, "objetos mágicos");
-		autoLoadAll(MONSTERS_DIR, MonsterRegistry::loadFile, "monstruos");
-		autoLoadAll(TRAITS_DIR, TraitRegistry::loadFile, "rasgos");
+		autoLoadAll(WEAPONS_DIR, Config::loadFile, "weapons");
+		autoLoadAll(SPELLS_DIR, SpellRegistry::loadFile, "spells");
+		autoLoadAll(ITEMS_DIR, MagicItemRegistry::loadFile, "magic items");
+		autoLoadAll(MONSTERS_DIR, MonsterRegistry::loadFile, "monsters");
+		autoLoadAll(TRAITS_DIR, TraitRegistry::loadFile, "traits");
 		autoLoadAll(PRESETS_DIR, PresetRegistry::loadFile, "presets");
-		autoLoadAll(ENCOUNTERS_DIR, EncounterRegistry::loadFile, "encuentros");
-		autoLoadAll(FEATS_DIR, FeatRegistry::loadFile, "dotes");
-		//RACES_DIR y BACKGROUNDS_DIR ya no los carga esto: raza y trasfondo se mudaron al addon
-		//dndsheets_species (Origins elige, el addon aplica el SRD) — ver RaceRegistry/BackgroundRegistry,
-		//que escuchan su propio ServerStartingEvent sobre esas mismas carpetas. Solo Clase sigue acá.
-		autoLoadAll(CLASSES_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.CLASS, file), "clases");
+		autoLoadAll(ENCOUNTERS_DIR, EncounterRegistry::loadFile, "encounters");
+		autoLoadAll(FEATS_DIR, FeatRegistry::loadFile, "feats");
+		//RACES_DIR and BACKGROUNDS_DIR are no longer loaded here: race and background moved to the
+		//dndsheets_species addon (Origins picks, the addon applies the SRD) — see
+		//RaceRegistry/BackgroundRegistry, which listen for their own ServerStartingEvent over those same
+		//folders. Only Class remains here.
+		autoLoadAll(CLASSES_DIR, file -> CharacterOptionsRegistry.loadFile(CharacterOptionsRegistry.CLASS, file), "classes");
 
-		//Lo ÚLTIMO que toca el bestiario: cambia el modelo de lo que ya esté registrado, venga del pack del
-		//mod, de un datapack o del DM. Si fuese antes, la carga siguiente lo pisaría.
+		//The LAST thing that touches the bestiary: it changes the model of whatever is already
+		//registered, whether it came from the mod's pack, a datapack, or the DM. If this ran earlier, the
+		//next load would overwrite it.
 		MonsterSkins.applyAll();
 
-		//La carga de piezas de mazmorra vivía aquí (por-mundo, con la ruta real de
-		//server.getWorldPath(...)) hasta que el toolkit de mazmorras se mudó a su propio addon
-		//(dndsheets_dungeon, ver Modularity Map). Ese addon escucha este mismo evento por su cuenta —
-		//este mod ya no puede importar su clase sin invertir la dependencia core→addon.
+		//Dungeon piece loading used to live here (per-world, with the real path from
+		//server.getWorldPath(...)) until the dungeon toolkit moved to its own addon (dndsheets_dungeon,
+		//see Modularity Map). That addon listens for this same event on its own — this mod can no longer
+		//import its class without inverting the core→addon dependency.
 	}
 
-	//Archivo único donde el creador de contenido in-game (ver ContentPackFile) guarda todo lo que un DM crea
-	//desde el juego, por tipo — separado de cualquier pack escrito a mano para no arriesgarnos a pisarlo.
+	//Single file where the in-game content creator (see ContentPackFile) saves everything a DM creates
+	//from within the game, per type — kept separate from any hand-written pack to avoid risking overwriting it.
 	public static Path dmCreatedFile(Path dir) {
 		return dir.resolve("dm_created.json");
 	}
 
-	//Público: cada comando *Command lo usa para que el argumento "archivo" de su "load" se autocomplete
-	//con tab en el chat, en vez de dejar al DM adivinar de memoria el nombre exacto del .json.
+	//Public: every *Command uses it so the "file" argument of its "load" tab-completes in chat, instead
+	//of leaving the DM to guess the exact .json name from memory.
 	public static List<String> jsonFileNames(Path dir) {
 		return fileNames(dir, ".json");
 	}
 
-	/** Los nombres (sin extensión) de los archivos de un tipo que hay en una carpeta, para autocompletar. */
+	/** The names (without extension) of the files of a type in a folder, for tab-completion. */
 	public static List<String> fileNames(Path dir, String extension) {
 		try (Stream<Path> files = Files.list(dir)) {
 			return files.filter(p -> p.toString().endsWith(extension))
@@ -128,21 +130,21 @@ public class DndPaths {
 		try {
 			Files.createDirectories(dir);
 		} catch (IOException e) {
-			//No pasa nada grave: los comandos /dnd* fallan con un mensaje claro si de verdad no existe al leer.
+			//Nothing serious happens: the /dnd* commands fail with a clear message if it truly doesn't exist on read.
 		}
 	}
 
-	/** {@link ContentDefaults#refresh} con el aviso al log, que es lo único que no se puede comprobar en el self-test. */
+	/** {@link ContentDefaults#refresh} with the log warning, the one part that can't be checked by the self-test. */
 	private static void refreshDefaultsLogging(Path dir, String resourceFileName) {
 		try {
 			Path retired = ContentDefaults.refresh(dir, resourceFileName);
 			if (retired == null) return;
-			DndsheetsMod.LOGGER.warn("dndsheets: {} era el pack por defecto de una versión anterior y se ha apartado como {}. "
-				+ "El contenido del mod vive ahora en {}, que se actualiza solo en cada arranque. Si lo habías editado a mano, "
-				+ "renómbralo a algo propio (p. ej. mis_{}) y volverá a cargarse, pisando lo del mod por id.",
+			DndsheetsMod.LOGGER.warn("dndsheets: {} was the default pack of a previous version and has been set aside as {}. "
+				+ "The mod's content now lives in {}, which is refreshed on every startup. If you had edited it by hand, "
+				+ "rename it to something of your own (e.g. my_{}) and it will load again, overriding the mod's entries by id.",
 				dir.resolve(resourceFileName), retired.getFileName(), ContentDefaults.FILE, resourceFileName);
 		} catch (IOException e) {
-			DndsheetsMod.LOGGER.warn("dndsheets: no pude actualizar el contenido por defecto de {}: {}", dir, e.getMessage());
+			DndsheetsMod.LOGGER.warn("dndsheets: could not update the default content of {}: {}", dir, e.getMessage());
 		}
 	}
 
@@ -150,10 +152,10 @@ public class DndPaths {
 		int filesLoaded = 0;
 		int itemsLoaded = 0;
 		try (Stream<Path> files = Files.list(dir)) {
-			//El pack del mod SIEMPRE primero, y el resto detrás por nombre: NamedRegistry.register pisa por
-			//id, así que quien carga el último gana. Ese orden es lo que convierte "reescribimos el pack del
-			//mod en cada arranque" en algo seguro — lo que el DM escriba en su propio archivo sigue mandando.
-			//Sin ordenar, el orden lo decidía el sistema de archivos y quién ganaba era cuestión de suerte.
+			//The mod's pack ALWAYS first, and the rest afterward by name: NamedRegistry.register
+			//overwrites by id, so whoever loads last wins. That ordering is what makes "we rewrite the
+			//mod's pack on every startup" safe — whatever the DM writes in their own file still wins.
+			//Without sorting, the order was up to the filesystem and who won was a matter of luck.
 			for (Path file : files.filter(p -> p.toString().endsWith(".json"))
 					.sorted(java.util.Comparator.comparing((Path p) -> ContentDefaults.FILE.equals(p.getFileName().toString()) ? 0 : 1)
 						.thenComparing(p -> p.getFileName().toString()))
@@ -162,15 +164,15 @@ public class DndPaths {
 					itemsLoaded += loader.load(file);
 					filesLoaded++;
 				} catch (IOException | RuntimeException e) {
-					DndsheetsMod.LOGGER.warn("dndsheets: no pude precargar {}: {}", file.getFileName(), e.getMessage());
+					DndsheetsMod.LOGGER.warn("dndsheets: could not preload {}: {}", file.getFileName(), e.getMessage());
 				}
 			}
 		} catch (IOException e) {
-			DndsheetsMod.LOGGER.warn("dndsheets: no pude listar {}", dir);
+			DndsheetsMod.LOGGER.warn("dndsheets: could not list {}", dir);
 			return;
 		}
 		if (filesLoaded > 0) {
-			DndsheetsMod.LOGGER.info("dndsheets: precargados {} {} desde {} archivo(s) en {}", itemsLoaded, label, filesLoaded, dir);
+			DndsheetsMod.LOGGER.info("dndsheets: preloaded {} {} from {} file(s) in {}", itemsLoaded, label, filesLoaded, dir);
 		}
 	}
 }

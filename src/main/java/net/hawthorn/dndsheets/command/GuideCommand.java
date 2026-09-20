@@ -13,9 +13,9 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 
 /**
- * <p>{@code /dndguide}: reabre la Guía (ver {@link net.hawthorn.dndsheets.client.gui.GuideBook}) a
- * demanda, sin tener que recordar el botón de la hoja o del Panel de DM. Abierto a cualquier jugador,
- * como {@code /dnddistance}; las páginas de DM se incluyen solas si quien lo ejecuta es operador.</p>
+ * <p>{@code /dndguide}: reopens the Guide (see {@link net.hawthorn.dndsheets.client.gui.GuideBook}) on
+ * demand, without having to remember the sheet's or the DM Panel's button. Open to any player,
+ * like {@code /dnddistance}; the DM pages are included automatically if whoever runs it is an operator.</p>
  */
 @Mod.EventBusSubscriber
 public class GuideCommand {

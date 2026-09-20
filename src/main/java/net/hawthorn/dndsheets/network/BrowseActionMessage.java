@@ -22,34 +22,35 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * <p>Cliente → servidor: "enséñame una lista que solo conoce el servidor". Empezó siendo solo el roster
- * de personajes y se ensanchó al compendio, que tiene exactamente la misma forma — el cliente no guarda
- * ni las hojas ni los registros de contenido, así que en ambos casos pide, el servidor formatea y el
- * cliente pinta. Se renombró de {@code RosterActionMessage} al ensancharse: un nombre que ya no describe
- * lo que hace la clase es deuda, no un detalle.</p>
+ * <p>Client → server: "show me a list that only the server knows about." It started out as just the
+ * character roster and widened to the compendium, which has exactly the same shape — the client stores
+ * neither the sheets nor the content registries, so in both cases the client asks, the server formats, and
+ * the client paints. Renamed from {@code RosterActionMessage} when it widened: a name that no longer
+ * describes what the class does is debt, not a detail.</p>
  *
- * <p>Un solo mensaje parametrizado por {@link Action} en vez de una clase por consulta, siguiendo el
- * mismo patrón que {@link SheetAdjustMessage} (que ya agrupa siete acciones) y {@link ScreenActionMessage}.
- * El id de red no cambia al renombrar: se asigna por orden de registro, no por nombre.</p>
+ * <p>A single message parameterized by {@link Action} instead of one class per query, following the same
+ * pattern as {@link SheetAdjustMessage} (which already groups seven actions) and {@link ScreenActionMessage}.
+ * The network id doesn't change on a rename: it's assigned by registration order, not by name.</p>
  *
- * <p>{@code LIST_PARTY} es la única que exige operador: ver la ficha de todo el mundo es información de
- * DM. Listar los personajes propios y cambiar entre ellos son acciones sobre lo tuyo, sin nada que gatear.</p>
+ * <p>{@code LIST_PARTY} is the only one that requires operator permission: seeing everyone's sheet is DM
+ * information. Listing your own characters and switching between them are actions on your own stuff, with
+ * nothing to gate.</p>
  */
 public class BrowseActionMessage {
 
-	//Al final, nunca en medio: writeEnum viaja por ordinal (ver la invariante 2 de PROJECT_CONTEXT.md).
-	//Desde GIVE_WEAPONS hacia abajo son las antiguas parejas *ListRequestMessage (ocho clases casi
-	//idénticas: pedir una lista que solo vive en memoria del servidor), fundidas aquí — invariante 3.
-	//characterId, que ya era texto libre, carga el uuid del objetivo, la categoría o el ContentType.
+	//At the end, never in the middle: writeEnum travels by ordinal (see invariant 2 in PROJECT_CONTEXT.md).
+	//From GIVE_WEAPONS downward are the former *ListRequestMessage pairs (eight nearly identical classes:
+	//requesting a list that only lives in the server's memory), merged here — invariant 3.
+	//characterId, which was already free-form text, carries the target's uuid, the category, or the ContentType.
 	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL, JOURNAL_DETAIL, DELETE, CREATE, SKILL_TOGGLE, LIST_SUBCLASSES, SUBCLASS_CHOOSE, LIST_FEATS, FEAT_CHOOSE,
 		GIVE_WEAPONS, GIVE_SPELLS, GRANT_TRAITS, LIST_PRESETS, LIST_PRESETS_MULTICLASS, SPAWN_MONSTERS,
 		MANAGE_OPTIONS, CONTENT_ENTRIES, CHARACTER_OPTIONS, LIST_ENCOUNTERS,
 		SPELL_PREPARE, SPELL_UNPREPARE, DESIGN_ENCOUNTER }
 
 	final Action action;
-	//Lo usan SWITCH y DELETE (un id), CREATE (el nombre del personaje nuevo) y SKILL_TOGGLE (el índice de
-	//la habilidad); las demás lo mandan vacío.
-	//El campo es un texto libre, así que CREATE cabe aquí sin registrar un mensaje más — invariante 3.
+	//Used by SWITCH and DELETE (an id), CREATE (the new character's name), and SKILL_TOGGLE (the skill's
+	//index); the rest send it empty.
+	//The field is free-form text, so CREATE fits here without registering another message — invariant 3.
 	final String characterId;
 
 	public BrowseActionMessage(Action action) {
@@ -79,36 +80,36 @@ public class BrowseActionMessage {
 			switch (message.action) {
 				case LIST_MINE -> sendOwnCharacters(sender);
 				case LIST_PARTY -> {
-					//Se comprueba aquí y no solo al pintar el botón: un cliente modificado puede mandar el
-					//mensaje igual, y el permiso tiene que valer del lado del servidor para significar algo.
+					//Checked here and not just when painting the button: a modified client can send the
+					//message regardless, and the permission has to hold on the server side to mean anything.
 					if (DndsheetsMod.canActAsDm(sender)) sendParty(sender);
 				}
-				//El compendio es de consulta y no revela nada que el jugador no pueda ver ya en su Grimorio
-				//o en la ficha de un monstruo al pelearlo: no se gatea por operador.
+				//The compendium is read-only and reveals nothing a player can't already see in their
+				//Grimoire or in a monster's sheet while fighting it: not gated by operator.
 				case LIST_CONTENT -> CompendiumQuery.sendList(sender, message.characterId);
 				case CONTENT_DETAIL -> CompendiumQuery.sendDetail(sender, message.characterId);
 				case JOURNAL_DETAIL -> sendJournalEntry(sender, message.characterId);
 				case CREATE -> {
 					String name = message.characterId.trim();
-					//Se valida en el servidor aunque la pantalla ya lo haga: un cliente puede mandar lo que
-					//quiera, y un personaje sin nombre no se puede ni elegir después por nombre.
+					//Validated on the server even though the screen already does: a client can send whatever
+					//it wants, and a nameless character can't even be selected afterward by name.
 					if (name.isEmpty()) {
 						sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.needs_name").withStyle(ChatFormatting.RED));
 						return;
 					}
 					String created = SheetLoader.createCharacter(sender.getStringUUID(), name);
-					//Creado pero NO puesto: ponérselo es una acción aparte y deliberada (ver
-					//SheetLoader.createCharacter). Se dice, porque si no parece que no ha pasado nada.
+					//Created but NOT equipped: equipping it is a separate, deliberate action (see
+					//SheetLoader.createCharacter). Said out loud, because otherwise it looks like nothing happened.
 					sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.created", name).withStyle(ChatFormatting.GREEN));
-					//Sin esto, un personaje recién creado es una hoja en blanco y ninguna pista de que hay
-					//cuatro cosas que elegir ni de dónde están.
+					//Without this, a freshly created character is a blank sheet with no hint that there are
+					//four things to choose, or where they are.
 					sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.setup_hint").withStyle(ChatFormatting.GRAY));
-					sendOwnCharacters(sender); //Reabre la lista ya con el nuevo dentro.
-					DndsheetsMod.LOGGER.info("dndsheets: personaje {} creado para {}", created, sender.getName().getString());
+					sendOwnCharacters(sender); //Reopens the list, now with the new one already in it.
+					DndsheetsMod.LOGGER.info("dndsheets: character {} created for {}", created, sender.getName().getString());
 				}
 				case DELETE -> {
-					//El permiso solo abre la puerta a los PNJ del DM; el propio SheetLoader sigue negándose a
-					//borrar el personaje de otro jugador, tenga el permiso que tenga quien lo pida.
+					//The permission only opens the door for the DM's NPCs; SheetLoader itself still refuses
+					//to delete another player's character, no matter what permission the requester has.
 					String error = SheetLoader.deleteCharacter(sender, message.characterId, DndsheetsMod.canActAsDm(sender));
 					if (error == null) {
 						sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.deleted", message.characterId).withStyle(ChatFormatting.GREEN));
@@ -117,27 +118,28 @@ public class BrowseActionMessage {
 						sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.delete_failed").withStyle(ChatFormatting.RED));
 					}
 				}
-				//Elegir en qué eres competente es una acción sobre tu propio personaje, como cambiar de uno
-				//a otro: no se gatea por operador. Lo que NO puede hacer un jugador es escribir la expresión
-				//—"skills" es una clave de solo-operador en SheetServerMessage, justo para eso—, así que aquí
-				//el cliente manda un índice y la regla la escribe el servidor. Un cliente modificado solo
-				//puede pedir competencia en una habilidad suya, que es lo que la pantalla ya ofrece.
+				//Choosing what you're proficient in is an action on your own character, like switching
+				//between characters: not gated by operator. What a player CANNOT do is write the raw
+				//expression — "skills" is an operator-only key in SheetServerMessage for exactly that reason
+				//— so here the client sends an index and the server writes the rule. A modified client can
+				//only request proficiency in one of its own skills, which is what the screen already offers.
 				case SKILL_TOGGLE -> toggleSkill(sender, message.characterId);
-				//La subclase es de tu personaje, como el resto de esta pantalla: sin operador. Lo que decide
-				//qué puedes elegir lo pone el servidor (tu preset y tu nivel), no la lista que tenga el cliente.
+				//The subclass belongs to your character, like the rest of this screen: no operator needed.
+				//What decides which ones you can choose is set by the server (your preset and your level),
+				//not whatever list the client has.
 				case LIST_SUBCLASSES -> sendSubclasses(sender);
 				case SUBCLASS_CHOOSE -> chooseSubclass(sender, message.characterId);
-				//Las dotes se listan siempre; lo que decide si se puede coger una es tener una mejora
-				//pendiente, y eso lo comprueba LevelUpManager al elegirla.
+				//Feats are always listed; what decides whether one can be picked is having a pending
+				//improvement, and LevelUpManager checks that when it's chosen.
 				case LIST_FEATS -> sendFeats(sender);
 				case FEAT_CHOOSE -> {
 					if (!net.hawthorn.dndsheets.LevelUpManager.applyFeat(sender, message.characterId)) {
 						sender.sendSystemMessage(Component.translatable("chat.dndsheets.levelup.feat_unavailable").withStyle(ChatFormatting.RED));
 					}
 				}
-				//Los cuatro "dar/conceder a otro jugador" del Panel de DM: mismo candado servidor-side que
-				//LIST_PARTY (un cliente modificado puede mandar lo que quiera), lista del registro que toca,
-				//y el uuid del objetivo viaja de vuelta en context para la pantalla que se abre.
+				//The four "give/grant to another player" actions from the DM Panel: same server-side lock
+				//as LIST_PARTY (a modified client can send whatever it wants), the list from the matching
+				//registry, and the target's uuid travels back in context for the screen that opens.
 				case GIVE_WEAPONS -> {
 					if (DndsheetsMod.canActAsDm(sender)) BrowseListMessage.send(sender, BrowseListMessage.Kind.GIVE_WEAPON,
 						new ArrayList<>(net.hawthorn.dndsheets.Config.loadedWeaponIds()), List.of(), message.characterId);
@@ -150,12 +152,12 @@ public class BrowseActionMessage {
 					if (DndsheetsMod.canActAsDm(sender)) sendTraits(sender, message.characterId);
 				}
 				case LIST_PRESETS -> sendPresets(sender, message.characterId, false);
-				//Preparar y despreparar son acciones sobre TU propia lista, como cambiar de personaje o
-				//marcar una competencia: sin operador. El límite lo pone el servidor (ver
-				//CharacterRules.preparedLimitFor), no la pantalla — un cliente modificado no se salta nada.
+				//Preparing and unpreparing are actions on YOUR OWN list, like switching characters or
+				//toggling a proficiency: no operator needed. The limit is set by the server (see
+				//CharacterRules.preparedLimitFor), not the screen — a modified client can't skip it.
 				case SPELL_PREPARE -> setPrepared(sender, message.characterId, true);
 				case SPELL_UNPREPARE -> setPrepared(sender, message.characterId, false);
-				//El botón "Multiclasear" de la ficha es sobre uno mismo, nunca sobre otro jugador.
+				//The "Multiclass" button on the sheet is about yourself, never about another player.
 				case LIST_PRESETS_MULTICLASS -> sendPresets(sender, "", true);
 				case SPAWN_MONSTERS -> {
 					if (DndsheetsMod.canActAsDm(sender)) BrowseListMessage.send(sender, BrowseListMessage.Kind.SPAWN_MONSTER,
@@ -167,15 +169,16 @@ public class BrowseActionMessage {
 				case CONTENT_ENTRIES -> {
 					if (DndsheetsMod.canActAsDm(sender)) sendContentEntries(sender, message.characterId);
 				}
-				//Sin permiso especial: cualquier jugador elige su propia raza/trasfondo/clase. Es el camino de
-				//respaldo cuando el addon species (que delega en Origins) no está instalado.
+				//No special permission needed: any player chooses their own race/background/class. It's the
+				//fallback path when the species addon (which delegates to Origins) isn't installed.
 				case CHARACTER_OPTIONS -> sendCharacterOptions(sender, message.characterId);
 				case LIST_ENCOUNTERS -> {
 					if (DndsheetsMod.canActAsDm(sender)) sendEncounters(sender);
 				}
-				//El diseñador arma un encuentro NUEVO, así que lo que necesita del servidor no es la lista de
-				//encuentros sino el bestiario con su coste en PX y los umbrales del grupo: con eso el cliente
-				//recalcula la dificultad a cada clic sin otro viaje por fila (ver EncounterDesignerScreen).
+				//The designer builds a NEW encounter, so what it needs from the server isn't the list of
+				//encounters but the bestiary with its XP cost and the party's thresholds: with that the
+				//client recalculates difficulty on every click without another round trip per row (see
+				//EncounterDesignerScreen).
 				case DESIGN_ENCOUNTER -> {
 					if (DndsheetsMod.canActAsDm(sender)) sendEncounterDesign(sender);
 				}
@@ -184,7 +187,7 @@ public class BrowseActionMessage {
 						JsonObject sheet = SheetLoader.getCharacterSheet(message.characterId);
 						String name = sheet != null && sheet.has("characterName") ? sheet.get("characterName").getAsString() : message.characterId;
 						sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.now_playing", name).withStyle(ChatFormatting.GREEN));
-						sendOwnCharacters(sender); //Reabre la lista con la marca ya movida, sin otro viaje de ida y vuelta.
+						sendOwnCharacters(sender); //Reopens the list with the marker already moved, without another round trip.
 					} else {
 						sender.sendSystemMessage(Component.translatable("chat.dndsheets.character.no_such").withStyle(ChatFormatting.RED));
 					}
@@ -203,9 +206,9 @@ public class BrowseActionMessage {
 		BrowseListMessage.send(dm, BrowseListMessage.Kind.GRANT_TRAIT, ids, names, targetUuid);
 	}
 
-	//La validación que traía PresetListRequestMessage, intacta: con objetivo ajeno hace falta permiso de
-	//DM y que el jugador exista; un uuid malformado de un cliente roto se descarta en vez de tumbar el
-	//hilo del servidor con la excepción sin capturar.
+	//The validation carried over intact from PresetListRequestMessage: targeting someone else requires DM
+	//permission and the player to actually exist; a malformed uuid from a broken client is discarded
+	//instead of crashing the server thread with an uncaught exception.
 	private static void sendPresets(ServerPlayer player, String targetUuid, boolean multiclass) {
 		if (!targetUuid.isEmpty()) {
 			if (!DndsheetsMod.canActAsDm(player)) return;
@@ -224,9 +227,9 @@ public class BrowseActionMessage {
 	}
 
 	/**
-	 * <p>La lista viva de una categoría de {@code CharacterOptionsRegistry} como array JSON en etiqueta
-	 * única (mismo truco que DETAIL). Público: también la reenvían como eco {@code OptionsSaveMessage} y
-	 * los guardados del creador de contenido, que antes duplicaban este envío cada uno por su lado.</p>
+	 * <p>The live list of a {@code CharacterOptionsRegistry} category as a JSON array in a single label
+	 * (same trick as DETAIL). Public: also re-sent as an echo by {@code OptionsSaveMessage} and by the
+	 * content creator's saves, which used to duplicate this send independently, each on its own.</p>
 	 */
 	public static void sendOptions(ServerPlayer player, BrowseListMessage.Kind kind, String category) {
 		if (!net.hawthorn.dndsheets.CharacterOptionsRegistry.isValidCategory(category)) return;
@@ -235,7 +238,7 @@ public class BrowseActionMessage {
 		BrowseListMessage.send(player, kind, List.of(), List.of(Component.literal(array.toString())), category);
 	}
 
-	/** Público: también lo reenvían como eco los guardados/borrados del creador de contenido. */
+	/** Public: also re-sent as an echo by the content creator's saves/deletes. */
 	public static void sendContentEntries(ServerPlayer dm, String typeName) {
 		net.hawthorn.dndsheets.ContentType type;
 		try {
@@ -243,32 +246,33 @@ public class BrowseActionMessage {
 		} catch (IllegalArgumentException e) {
 			return;
 		}
-		//Dos arrays: lo que creó el DM (editable y borrable) y lo que viene del pack (se enseña para poder
-		//partir de ello — guardar una copia con el mismo id la deja mandando, ver ContentPackFile).
+		//Two arrays: what the DM created (editable and deletable) and what comes from the pack (shown so it
+		//can be used as a starting point — saving a copy with the same id lets it take precedence, see
+		//ContentPackFile).
 		String mine = net.hawthorn.dndsheets.ContentPackFile.readArrayText(type.dmCreatedFile());
 		String fromPacks = net.hawthorn.dndsheets.ContentPackFile.readOtherArraysText(type.dir, type.dmCreatedFile());
 		BrowseListMessage.send(dm, BrowseListMessage.Kind.CONTENT_ENTRY, List.of(),
 			List.of(Component.literal(mine), Component.literal(fromPacks)), type.name());
 	}
 
-	//Cada fila viaja con su descripción de composición ("goblin x4, lobo x2") para que el DM elija
-	//sabiendo qué invoca; el clic del cliente dispara el /dndencounters spawn de siempre.
+	//Each row travels with its composition description ("goblin x4, wolf x2") so the DM chooses knowing
+	//what they're summoning; the client's click fires the usual /dndencounters spawn.
 	private static void sendEncounters(ServerPlayer dm) {
 		List<String> ids = new ArrayList<>(net.hawthorn.dndsheets.EncounterRegistry.ids());
 		java.util.Collections.sort(ids);
 		List<Component> labels = new ArrayList<>(ids.size());
 		for (String id : ids) {
 			net.hawthorn.dndsheets.EncounterRegistry.Encounter encounter = net.hawthorn.dndsheets.EncounterRegistry.get(id);
-			//El nombre del encuentro sale del pack, asi que va como Component; la composicion
-			//("goblin x4, lobo x2") la arma describe() en texto plano — ver ContentNames.plain.
+			//The encounter's name comes from the pack, so it goes as a Component; the composition
+			//("goblin x4, wolf x2") is built by describe() as plain text — see ContentNames.plain.
 			if (encounter == null) {
 				labels.add(Component.literal(id));
 				continue;
 			}
 			net.minecraft.network.chat.MutableComponent label = ContentNames.of(encounter.name())
 				.append(" · " + net.hawthorn.dndsheets.EncounterRegistry.describe(encounter));
-			//Y qué tan dura le sale a los que están conectados ahora mismo: es la mitad de la pregunta al
-			//elegir de una lista de encuentros preparados, y hasta acá solo se veía la composición.
+			//And how tough it turns out for whoever is currently connected: that's half the question when
+			//choosing from a list of prepared encounters, and until now only the composition was shown.
 			int rating = net.hawthorn.dndsheets.EncounterBudget.rate(encounter, dm.server);
 			if (rating >= 0) label.append(" · ").append(difficultyName(rating));
 			labels.add(label);
@@ -276,14 +280,14 @@ public class BrowseActionMessage {
 		BrowseListMessage.send(dm, BrowseListMessage.Kind.ENCOUNTER, ids, labels, "");
 	}
 
-	/** La palabra del veredicto ("Media", "Mortal") — ver {@code EncounterBudget.RATINGS}. */
+	/** The verdict word ("Medium", "Deadly") — see {@code EncounterBudget.RATINGS}. */
 	public static Component difficultyName(int rating) {
 		return Component.translatable("gui.dndsheets.encounter.difficulty." + net.hawthorn.dndsheets.EncounterBudget.RATINGS[rating]);
 	}
 
-	//El bestiario con su coste en PX estimado, más los umbrales del grupo conectado, en el context como
-	//JSON (mismo truco que sendOptions/sendContentEntries: una carga que no es una lista de filas viaja
-	//como texto en vez de inventarse un mensaje nuevo — invariante 3).
+	//The bestiary with its estimated XP cost, plus the connected party's thresholds, in context as JSON
+	//(same trick as sendOptions/sendContentEntries: a payload that isn't a list of rows travels as text
+	//instead of inventing a new message — invariant 3).
 	private static void sendEncounterDesign(ServerPlayer dm) {
 		List<String> ids = new ArrayList<>(net.hawthorn.dndsheets.MonsterRegistry.ids());
 		java.util.Collections.sort(ids);
@@ -320,12 +324,12 @@ public class BrowseActionMessage {
 		List<Component> labels = new ArrayList<>();
 		for (String id : net.hawthorn.dndsheets.FeatRegistry.ids()) {
 			net.hawthorn.dndsheets.FeatRegistry.Feat feat = net.hawthorn.dndsheets.FeatRegistry.get(id);
-			//Las que aun no le tocan por nivel SI se quitan, al contrario que las ya cogidas: un Don Epico de
-			//nivel 19 en la lista de un nivel 4 no es informacion, es una opcion que el servidor va a rechazar.
+			//Ones not yet available at this level ARE removed, unlike ones already taken: a level-19 Epic
+			//Boon in a level-4 list isn't information, it's an option the server is going to reject.
 			if (!net.hawthorn.dndsheets.FeatRegistry.availableAt(feat, level)) continue;
 			ids.add(id);
-			//Las que ya tiene se mandan marcadas en vez de quitarlas: que una lista encoja sin explicación
-			//se lee como que falta contenido, y esto es justo lo contrario.
+			//Ones already taken are sent marked instead of removed: a list that shrinks without explanation
+			//reads as missing content, and this is exactly the opposite.
 			labels.add(Component.literal(taken.contains(id) ? "✔ " : "").append(ContentNames.of(feat.name())));
 		}
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
@@ -361,16 +365,16 @@ public class BrowseActionMessage {
 	}
 
 	/**
-	 * <p>Marca o desmarca un hechizo como preparado en la hoja de quien lo pide. Preparar por encima del
-	 * límite se rechaza con un aviso; despreparar nunca se rechaza — bajar siempre es válido, y hace falta
-	 * poder bajar para poder cambiar de lista.</p>
+	 * <p>Marks or unmarks a spell as prepared on the requester's sheet. Preparing above the limit is
+	 * rejected with a warning; unpreparing is never rejected — going down is always valid, and being able
+	 * to go down is required to be able to change your list.</p>
 	 */
 	private static void setPrepared(ServerPlayer sender, String spellId, boolean prepared) {
 		JsonObject sheet = SheetLoader.getServerSheet(sender.getStringUUID());
 		if (sheet == null) return;
 
 		int limit = net.hawthorn.dndsheets.SpellRegistry.preparedLimitFor(sheet);
-		//Límite 0 = no es una clase lanzadora, así que no hay lista que gestionar y la regla no se dispara.
+		//Limit 0 = not a spellcasting class, so there's no list to manage and the rule doesn't fire.
 		if (limit <= 0) return;
 		if (prepared && net.hawthorn.dndsheets.SpellRegistry.preparedCount(sheet) >= limit) {
 			sender.sendSystemMessage(Component.translatable("chat.dndsheets.spell.prepared_full", limit)
@@ -378,8 +382,8 @@ public class BrowseActionMessage {
 			return;
 		}
 		if (!net.hawthorn.dndsheets.SpellRegistry.setPrepared(sheet, spellId, prepared)) return;
-		//Invariante 4: la lista de preparados es estado de la hoja y se pierde en el reinicio si no se
-		//guarda. saveAndSync y no saveServer porque la pantalla se repinta desde la hoja completa.
+		//Invariant 4: the prepared list is sheet state and gets lost on restart if not saved. saveAndSync
+		//rather than saveServer because the screen repaints itself from the full sheet.
 		SheetLoader.saveAndSync(sender, sheet);
 	}
 
@@ -393,22 +397,22 @@ public class BrowseActionMessage {
 
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (sheet == null) return;
-		SheetLoader.validateSheet(sheet); //Una hoja vieja puede no tener aún las 18 habilidades.
+		SheetLoader.validateSheet(sheet); //An old sheet might not yet have all 18 skills.
 
 		boolean proficient = !net.hawthorn.dndsheets.RollIndex.isSkillProficient(sheet, index);
 		if (!net.hawthorn.dndsheets.RollIndex.setSkillProficiency(sheet, index, proficient)) return;
 
-		//Invariante 4: lo que cambia una hoja tiene que llegar a saveServer. El autoguardado es una red de
-		//seguridad, no el camino de escritura.
+		//Invariant 4: whatever changes a sheet has to reach saveServer. Autosave is a safety net, not the
+		//write path.
 		SheetLoader.saveServer(sheet, player.getStringUUID());
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player),
 			new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 	}
 
 	/**
-	 * <p>El diario con lo que ESE jugador puede leer. El filtro se aplica en el servidor y no en el
-	 * cliente: mandar entradas que luego se ocultan al pintarlas dejaría los secretos del DM en la memoria
-	 * de quien no debe verlos, que no es ocultarlos.</p>
+	 * <p>The journal with what THAT player can read. The filter is applied on the server and not on the
+	 * client: sending entries that later get hidden while painting them would leave the DM's secrets in
+	 * the memory of whoever shouldn't see them, which is not the same as hiding them.</p>
 	 */
 	public static void sendJournal(ServerPlayer player) {
 		List<String> ids = new ArrayList<>();
@@ -416,8 +420,8 @@ public class BrowseActionMessage {
 		boolean isDm = DndsheetsMod.canActAsDm(player);
 		for (net.hawthorn.dndsheets.JournalManager.Entry entry : net.hawthorn.dndsheets.JournalManager.readableBy(player)) {
 			ids.add(entry.id());
-			//La etiqueta de visibilidad solo se le enseña al DM: a un jugador no le aporta nada saber que
-			//lo que acaba de recibir es "2 jugadores", y sí le dice que hay alguien más en el ajo.
+			//The visibility label is only shown to the DM: a player gains nothing from knowing that what
+			//they just received is "2 players," and it does tell them someone else is in on it.
 			labels.add(isDm
 				? Component.translatable("gui.dndsheets.journal.row", entry.title(), entry.visibilityLabel())
 				: Component.literal(entry.title()));
@@ -426,8 +430,8 @@ public class BrowseActionMessage {
 			new BrowseListMessage(BrowseListMessage.Kind.JOURNAL, ids, labels));
 	}
 
-	//Se vuelve a comprobar la visibilidad al pedir la entrada concreta: la lista que tiene el cliente pudo
-	//quedarse vieja, y un cliente modificado puede pedir cualquier id. Filtrar solo al listar no es filtrar.
+	//Visibility is checked again when requesting the specific entry: the list the client has may have gone
+	//stale, and a modified client can request any id. Filtering only at listing time isn't filtering.
 	private static void sendJournalEntry(ServerPlayer player, String id) {
 		net.hawthorn.dndsheets.JournalManager.Entry entry = net.hawthorn.dndsheets.JournalManager.get(id);
 		if (entry == null || !entry.canRead(player)) return;
@@ -436,7 +440,7 @@ public class BrowseActionMessage {
 				List.of(Component.literal(entry.title() + "\n" + entry.body()))));
 	}
 
-	/** Público: también lo usa {@code /dndchar} sin argumentos, que ya está del lado del servidor. */
+	/** Public: also used by {@code /dndchar} with no arguments, which already runs server-side. */
 	public static void sendOwnCharacters(ServerPlayer player) {
 		String activeId = SheetLoader.activeCharacterOf(player.getStringUUID());
 		List<String> ids = new ArrayList<>();
@@ -445,9 +449,9 @@ public class BrowseActionMessage {
 		List<String> owned = SheetLoader.charactersOf(player.getStringUUID());
 		for (String characterId : owned) {
 			JsonObject sheet = SheetLoader.getCharacterSheet(characterId);
-			//Con el id detrás solo si otro se llama igual (ver CharacterRules.suggestionLabelFor): pulsar una
-			//fila manda el id exacto, así que aquí no había ambigüedad que resolver — pero dos filas idénticas
-			//obligan a elegir a ciegas cuál es cuál.
+			//With the id appended only if another one shares the same name (see
+			//CharacterRules.suggestionLabelFor): clicking a row sends the exact id, so there was no
+			//ambiguity to resolve here — but two identical rows force a blind choice between them.
 			String label = SheetLoader.suggestionLabelFor(owned, characterId);
 			String characterClass = sheet != null && sheet.has("characterClass") ? sheet.get("characterClass").getAsString() : "";
 			ids.add(characterId);
@@ -459,17 +463,17 @@ public class BrowseActionMessage {
 	}
 
 	/**
-	 * <p>Vista de grupo: cada jugador conectado con el personaje que lleva puesto, y cada PNJ con cuerpo en
-	 * el mundo, con sus PG y CA reales y sus condiciones activas. Los PG y la CA salen del
-	 * {@link Combatant}, no de la hoja, porque la hoja solo los refleja — y esto se mira en mitad de un
-	 * combate, cuando lo que importa es el número de verdad.</p>
+	 * <p>Party view: every connected player with the character they're currently playing, and every NPC
+	 * with a body in the world, with their real HP and AC and their active conditions. HP and AC come from
+	 * the {@link Combatant}, not the sheet, because the sheet only reflects them — and this is checked in
+	 * the middle of combat, when what matters is the real number.</p>
 	 *
-	 * <p>Los PNJ entran aquí porque juegan con las reglas completas de un PJ (ver
-	 * {@code Combatant.NpcCombatant}) y no salían en ninguna lista: para saber cómo iba el que acompaña al
-	 * grupo había que ir a buscarlo y mirarlo. Se recorren las <b>entidades cargadas</b> y no las fichas
-	 * ({@code SheetLoader.npcIds}) a propósito — una ficha sin cuerpo no está en la partida, y un PNJ con
-	 * dos cuerpos son dos cosas distintas que atender. El recorrido se paga al abrir un menú, nunca en un
-	 * bucle de combate, que es el mismo criterio con el que {@code npcIds} recorre todas las hojas.</p>
+	 * <p>NPCs are included here because they play by the full rules of a PC (see
+	 * {@code Combatant.NpcCombatant}) and didn't show up in any list: to check on the one accompanying the
+	 * party you had to go find it and look. It iterates <b>loaded entities</b> and not the sheets
+	 * ({@code SheetLoader.npcIds}) on purpose — a sheet with no body isn't in the game, and an NPC with two
+	 * bodies is two distinct things to track. The traversal is paid for when opening a menu, never in a
+	 * combat loop, which is the same criterion by which {@code npcIds} iterates every sheet.</p>
 	 */
 	private static void sendParty(ServerPlayer dm) {
 		List<String> ids = new ArrayList<>();
@@ -477,7 +481,7 @@ public class BrowseActionMessage {
 
 		for (ServerPlayer player : dm.server.getPlayerList().getPlayers()) {
 			Combatant combatant = Combatant.of(player);
-			if (combatant == null) continue; //Sin hoja cargada todavía: no hay nada que enseñar de él.
+			if (combatant == null) continue; //No sheet loaded yet: there's nothing to show for them.
 			ids.add(player.getStringUUID());
 			labels.add(partyRow(combatant));
 		}
@@ -486,11 +490,11 @@ public class BrowseActionMessage {
 			for (Entity entity : level.getAllEntities()) {
 				String characterId = Combatant.characterIdOf(entity);
 				if (characterId == null) continue;
-				//Ficha borrada con el cuerpo todavía en el mundo: Combatant.of cae a monstruo o a null. Sin
-				//ficha ya no es un PNJ, así que tampoco es del grupo.
+				//Sheet deleted while the body is still in the world: Combatant.of falls back to monster or
+				//null. Without a sheet it's no longer an NPC, so it's not part of the party either.
 				if (!(Combatant.of(entity) instanceof Combatant.NpcCombatant combatant)) continue;
-				//Id vacío a propósito: la fila de un PNJ no es clicable (Ajustes de hoja resuelve por
-				//jugador conectado, y un PNJ no lo es) — ver PartyScreen.
+				//Id deliberately empty: an NPC's row isn't clickable (Sheet Adjust resolves by connected
+				//player, and an NPC isn't one) — see PartyScreen.
 				ids.add("");
 				labels.add(partyRow(combatant).copy()
 					.append(Component.translatable("gui.dndsheets.party.npc_tag").withStyle(ChatFormatting.DARK_GRAY)));
@@ -501,23 +505,23 @@ public class BrowseActionMessage {
 			new BrowseListMessage(BrowseListMessage.Kind.PARTY, ids, labels));
 	}
 
-	/** Una fila del grupo: nombre, PG, CA y las condiciones que lleva encima. */
+	/** One party row: name, HP, AC, and the conditions currently in effect. */
 	private static Component partyRow(Combatant combatant) {
-		StringBuilder label = new StringBuilder(combatant.name())
-			.append(" · PG ").append(combatant.currentHp()).append('/').append(combatant.maxHp())
-			.append(" · CA ").append(combatant.armorClass());
+		StringBuilder label = new StringBuilder();
 
-		//Las condiciones son lo que un DM necesita ver de un vistazo y lo que si no no se ve en ningún
-		//sitio sin abrir la ficha de cada uno por separado.
+		//Conditions are what a DM needs to see at a glance, and otherwise are not visible anywhere without
+		//opening each character's sheet separately.
 		if (!combatant.conditions().isEmpty()) {
 			label.append(" · ");
 			boolean first = true;
 			for (Condition condition : combatant.conditions()) {
 				if (!first) label.append(", ");
-				label.append(condition.label());
+				label.append(condition.displayLabel());
 				first = false;
 			}
 		}
-		return Component.literal(label.toString());
+		return Component.literal(combatant.name())
+			.append(Component.translatable("gui.dndsheets.party.row_stats", combatant.currentHp(), combatant.maxHp(), combatant.armorClass()))
+			.append(label.toString());
 	}
 }

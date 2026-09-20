@@ -20,20 +20,20 @@ import java.util.function.Function;
 import java.util.function.BiConsumer;
 
 /**
- * <p>Punto de entrada del addon del toolkit de mazmorras: modid propio ({@code dndsheets_dungeon}),
- * canal de red propio. No es un mod independiente de verdad — {@code mods.toml} lo declara con
- * dependencia OBLIGATORIA de {@code dndsheets} — pero necesita su propio canal porque un
- * {@link SimpleChannel} pertenece a un modid, y mezclar los mensajes de dos mods en el canal del
- * core habria atado la version de red de este addon a la del core para siempre (ver la invariante de
- * PROTOCOL_VERSION en {@code DndsheetsMod}).</p>
+ * <p>Entry point of the dungeon toolkit addon: its own modid ({@code dndsheets_dungeon}), its own
+ * network channel. It isn't really a standalone mod — {@code mods.toml} declares it with a MANDATORY
+ * dependency on {@code dndsheets} — but it needs its own channel because a {@link SimpleChannel}
+ * belongs to a modid, and mixing the messages of two mods into the core's channel would have tied
+ * this addon's network version to the core's forever (see the PROTOCOL_VERSION invariant in
+ * {@code DndsheetsMod}).</p>
  */
 @Mod("dndsheets_dungeon")
 public class DndsheetsDungeonMod {
 	public static final Logger LOGGER = LogManager.getLogger(DndsheetsDungeonMod.class);
 	public static final String MODID = "dndsheets_dungeon";
 
-	//Mismo patron que DndsheetsMod.PROTOCOL_VERSION: sube cuando cambia la forma o el orden de los
-	//mensajes de ESTE canal. Empieza en "1" porque el canal es nuevo — no hereda el "16" del core.
+	//Same pattern as DndsheetsMod.PROTOCOL_VERSION: bumps when the shape or order of THIS channel's
+	//messages changes. Starts at "1" because the channel is new — it doesn't inherit the core's "16".
 	private static final String PROTOCOL_VERSION = "1";
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(
 		new net.minecraft.resources.ResourceLocation(MODID, MODID),
@@ -51,8 +51,8 @@ public class DndsheetsDungeonMod {
 		messageID++;
 	}
 
-	//Igual que en el core: el id de red de cada mensaje es su orden de registro. Añade siempre al
-	//final de esta lista, nunca en medio.
+	//Same as in the core: each message's network id is its registration order. Always add to the
+	//end of this list, never in the middle.
 	private static void registerNetworkMessages(FMLCommonSetupEvent event) {
 		addNetworkMessage(DungeonGenerateMessage.class, DungeonGenerateMessage::buffer, DungeonGenerateMessage::new, DungeonGenerateMessage::handler);
 		addNetworkMessage(DungeonJigsawConfigureMessage.class, DungeonJigsawConfigureMessage::buffer, DungeonJigsawConfigureMessage::new, DungeonJigsawConfigureMessage::handler);

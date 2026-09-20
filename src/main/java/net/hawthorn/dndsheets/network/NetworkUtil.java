@@ -5,10 +5,10 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
-//Encapsula el esqueleto de framework repetido en cada handler de mensaje (enqueueWork+setPacketHandled,
-//y DistExecutor para los que solo deben correr en el cliente) — ver el hallazgo F13. No aplica
-//a encode/decode: los campos difieren demasiado entre mensajes como para generalizarlos con genéricos
-//sin perder legibilidad.
+//Encapsulates the framework boilerplate repeated in every message handler (enqueueWork+setPacketHandled,
+//and DistExecutor for ones that should only run on the client) — see finding F13. Doesn't apply
+//to encode/decode: fields differ too much between messages to generalize them with generics without
+//losing readability.
 public final class NetworkUtil {
 	private NetworkUtil() {}
 
@@ -18,23 +18,25 @@ public final class NetworkUtil {
 	}
 
 	/**
-	 * <p>Como {@link #handleOnServer}, pero solo para quien es DM: resuelve el emisor, comprueba el permiso
-	 * de operador y le pasa el jugador ya validado. Si no lo es, el paquete se descarta sin hacer nada.</p>
+	 * <p>Like {@link #handleOnServer}, but only for whoever is DM: resolves the sender, checks the
+	 * operator permission, and passes the already-validated player. If they aren't one, the packet is
+	 * discarded without doing anything.</p>
 	 *
-	 * <p>Existe porque el guard estaba copiado <b>22 veces</b>, palabra por palabra, en los mensajes que
-	 * solo debería poder mandar un DM. Y eso no es fealdad: es una comprobación de permisos que hay que
-	 * acordarse de escribir. Un mensaje nuevo que se olvide de ella no falla ni avisa — deja que cualquier
-	 * jugador borre piezas de mazmorra, invoque monstruos o edite el contenido, porque el cliente puede
-	 * mandar el paquete igual sin tener el menú abierto. Aquí no se puede olvidar: o pides el jugador por
-	 * esta puerta, o no lo tienes.</p>
+	 * <p>Exists because the guard was copied <b>22 times</b>, word for word, across messages that only a
+	 * DM should be able to send. And that isn't ugliness: it's a permission check that has to be
+	 * remembered. A new message that forgets it doesn't fail or warn — it lets any player delete dungeon
+	 * pieces, spawn monsters, or edit content, because the client can send the packet regardless of
+	 * whether the menu is even open. Here it can't be forgotten: either you request the player through
+	 * this door, or you don't have one.</p>
 	 */
 	public static void handleOnServerAsDm(NetworkEvent.Context context, java.util.function.Consumer<net.minecraft.server.level.ServerPlayer> action) {
 		handleOnServer(context, () -> {
 			net.minecraft.server.level.ServerPlayer dm = context.getSender();
 			if (dm == null) return;
-			//Se avisa en vez de descartar en silencio: el Panel de DM se abre para cualquiera a propósito
-			//(el cliente no puede saber si el modo solo está encendido — ver DndsheetsModKeyMappings), así
-			//que sin esto cada botón "no hacía nada" para un jugador sin permiso, que se lee como mod roto.
+			//A notice is sent instead of discarding silently: the DM Panel is deliberately opened for
+			//anyone (the client has no way to know whether Solo mode is on — see DndsheetsModKeyMappings),
+			//so without this every button "did nothing" for a player without permission, which reads as a
+			//broken mod.
 			if (!DndsheetsMod.canActAsDm(dm)) {
 				dm.sendSystemMessage(net.minecraft.network.chat.Component
 					.translatable("chat.dndsheets.dm_required").withStyle(net.minecraft.ChatFormatting.RED));

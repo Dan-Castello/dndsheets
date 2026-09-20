@@ -11,23 +11,23 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>En qué habilidades es competente este personaje. Hasta ahora la competencia se conseguía escribiendo
- * {@code + $prof} a mano en la expresión de la tirada, cosa que además <b>un jugador no puede hacer</b>:
- * {@code "skills"} es una clave de solo-operador en {@code SheetServerMessage} desde que se cerró el
- * agujero de que cualquiera se reescribiera sus propias tiradas. O sea que la mitad de una ficha de nivel 1
- * dependía de que el DM la escribiera por ti.</p>
+ * <p>Which skills this character is proficient in. Until now, proficiency was obtained by hand-typing
+ * {@code + $prof} into the roll expression, which <b>a player can't even do</b> in the first place:
+ * {@code "skills"} has been an operator-only key in {@code SheetServerMessage} ever since the hole that
+ * let anyone rewrite their own rolls was closed. Which meant half of a level 1 sheet depended on the DM
+ * typing it in for you.</p>
  *
- * <p>Aquí el cliente solo manda <b>qué habilidad</b>, y la expresión la escribe el servidor: se puede pedir
- * competencia, no un {@code +99}. Es la misma frontera de siempre —el cliente pide, el servidor decide— y
- * es lo que permite que esto sea una acción del jugador y no otra cosa que tenga que hacer el DM.</p>
+ * <p>Here the client only sends <b>which skill</b>, and the server writes the expression: you can request
+ * proficiency, not a {@code +99}. It's the same boundary as always —the client requests, the server
+ * decides— and that's what lets this be a player action instead of something the DM has to do.</p>
  *
- * <p>No se repinta al pulsar: la fila cambia cuando llega la hoja nueva del servidor
- * ({@link #refreshIfOpen}), por el mismo motivo que {@link CharacterListScreen} tampoco lo hace — pintar
- * una marca que el servidor todavía no ha concedido es enseñar un estado que no existe.</p>
+ * <p>It doesn't repaint on click: the row changes when the new sheet arrives from the server
+ * ({@link #refreshIfOpen}), for the same reason {@link CharacterListScreen} doesn't either — painting
+ * a checkmark the server hasn't granted yet would be showing a state that doesn't exist.</p>
  *
- * <p><b>No limita cuántas ni cuáles</b>, a propósito: en 5e el número y la lista salen de la clase y el
- * trasfondo, y esa parte todavía no está (ver Fase 5.2). Un límite inventado sería peor que ninguno —
- * bloquearía mesas legítimas, y en la mesa el DM ya mira la ficha.</p>
+ * <p><b>It doesn't limit how many or which ones</b>, on purpose: in 5e the number and the list come from
+ * class and background, and that part isn't implemented yet (see Phase 5.2). A made-up limit would be
+ * worse than none — it would block legitimate tables, and at the table the DM already looks at the sheet.</p>
  */
 public class SkillProficiencyScreen extends ListPickerScreen {
 
@@ -39,7 +39,7 @@ public class SkillProficiencyScreen extends ListPickerScreen {
 		Minecraft.getInstance().setScreen(new SkillProficiencyScreen(parent));
 	}
 
-	/** La llama {@code SheetClientMessage} cuando llega una hoja completa: ver el comentario de la clase. */
+	/** Called by {@code SheetClientMessage} when a full sheet arrives: see the class comment. */
 	public static void refreshIfOpen() {
 		if (Minecraft.getInstance().screen instanceof SkillProficiencyScreen screen) {
 			screen.rebuildWidgets();

@@ -7,9 +7,9 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Servidor -> cliente (el DM): abre el formulario de "Añadir pieza" prellenado con el id que ya tenía el
-//bloque de estructura al que le acaba de hacer clic derecho con la Vara de DM (ver DungeonToolManager) —
-//sin esto, el DM tenía que retipear a mano el mismo id que ya escribió una vez al guardar la estructura.
+//Server -> client (the DM): opens the "Add piece" form pre-filled with the id already held by the
+//structure block they just right-clicked with the DM Wand (see DungeonToolManager) — without this, the
+//DM had to retype by hand the same id they already wrote once when saving the structure.
 public class DungeonPieceAddOpenMessage {
 	String structureId, suggestedId;
 

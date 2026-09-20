@@ -46,8 +46,8 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 	}
 
 
-	//renderLabels corre cada frame: estos Component (texto estático, nunca cambia) se cachean una sola
-	//vez en vez de construirse de nuevo en cada uno.
+	//renderLabels runs every frame: these Components (static text, never changes) are cached once
+	//instead of being rebuilt on every single one.
 	private static final Component LABEL_ROLL_EDITOR_1 = Component.translatable("gui.dndsheets.roll_editor.label_roll_editor_1");
 	private static final Component LABEL_ROLL_EDITOR_2 = Component.translatable("gui.dndsheets.roll_editor.label_roll_editor_2");
 	private static final Component LABEL_ROLL_CONTEXT = Component.translatable("gui.dndsheets.roll_editor.label_roll_context");
@@ -67,10 +67,11 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 
 	@Override
 	protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int gx, int gy) {
-		//Panel procedural en vez de un PNG. El que había era el azul marino con remaches rojos que trae
-		//MCreator por defecto: no era del mod, y encima ataba el tamaño de la pantalla al tamaño de una
-		//imagen. GuiStyle.panel es lo que ya pinta las otras cuarenta pantallas, así que estas dos dejan de
-		//poder desincronizarse del resto — y se dibuja en el mismo rectángulo, así que ningún offset cambia.
+		//Procedural panel instead of a PNG. What was there before was the navy blue with red rivets that
+		//MCreator ships by default: it wasn't part of the mod, and on top of that it tied the screen's size
+		//to an image's size. GuiStyle.panel is what already paints the other forty screens, so these two
+		//stop being able to drift out of sync with the rest — and it's drawn in the same rectangle, so no
+		//offset changes.
 		GuiStyle.panel(guiGraphics, this.leftPos, this.topPos, this.leftPos + this.imageWidth, this.topPos + this.imageHeight);
 	}
 
@@ -249,7 +250,7 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 		String stringCategory = category.toString();
 
 		if (!category.isAdvanced()) {
-			DndsheetsMod.LOGGER.warn("Advanced Roll Editor abierto sobre una categoría que no es avanzada.");
+			DndsheetsMod.LOGGER.warn("Advanced Roll Editor opened on a category that is not advanced.");
 			this.minecraft.player.closeContainer();
 
 		}
@@ -271,7 +272,7 @@ public class AdvancedRollEditorScreen extends AbstractContainerScreen<AdvancedRo
 			}
 		}
 		catch(Exception e){
-			DndsheetsMod.LOGGER.warn("No se pudieron leer los valores de la tirada avanzada, los campos quedarán vacíos.", e);
+			DndsheetsMod.LOGGER.warn("Could not read the advanced roll values; the fields will be left empty.", e);
 		}
 
 

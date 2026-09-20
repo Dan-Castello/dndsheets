@@ -15,12 +15,12 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 /**
- * <p>Lee/escribe el archivo {@code dm_created.json} de un tipo de contenido (ver
- * {@link DndPaths#dmCreatedFile}) — el mismo formato que ya leen {@code Config.loadFile},
- * {@code JsonRegistryLoader} y {@code CharacterOptionsRegistry.loadFile}, solo que desde el lado de
- * ESCRITURA. Usado por el creador de contenido in-game: guardar/borrar una entrada es reescribir este
- * archivo entero y luego llamar al {@code loadFile} normal del tipo para recargarlo en caliente — no hay
- * ninguna persistencia nueva, es el mismo pipeline de siempre visto al revés.</p>
+ * <p>Reads/writes the {@code dm_created.json} file for a content type (see
+ * {@link DndPaths#dmCreatedFile}) — the same format already read by {@code Config.loadFile},
+ * {@code JsonRegistryLoader} and {@code CharacterOptionsRegistry.loadFile}, just from the WRITE side.
+ * Used by the in-game content creator: saving/deleting an entry means rewriting this entire file and
+ * then calling the type's normal {@code loadFile} to hot-reload it — there's no new persistence, it's
+ * the same pipeline as always seen in reverse.</p>
  */
 public final class ContentPackFile {
 	private static final Gson PRETTY_GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -35,7 +35,7 @@ public final class ContentPackFile {
 			if (json.isBlank()) return new JsonArray();
 			return JsonParser.parseString(json).getAsJsonArray();
 		} catch (IOException | RuntimeException e) {
-			DndsheetsMod.LOGGER.warn("dndsheets: no pude leer {}, se trata como vacío: {}", file, e.toString());
+			DndsheetsMod.LOGGER.warn("dndsheets: could not read {}, treating it as empty: {}", file, e.toString());
 			return new JsonArray();
 		}
 	}
@@ -48,8 +48,8 @@ public final class ContentPackFile {
 	}
 
 	/**
-	 * <p>Añade {@code entry} al archivo, o reemplaza la entrada existente cuyo campo {@code idField}
-	 * coincida (edición = mismo id, campos nuevos) — mismo criterio de "pisa si ya existe" que
+	 * <p>Adds {@code entry} to the file, or replaces the existing entry whose {@code idField} field
+	 * matches (edit = same id, new fields) — the same "overwrite if it already exists" criterion as
 	 * {@link NamedRegistry#register}.</p>
 	 */
 	public static void upsert(Path file, String idField, JsonObject entry) throws IOException {
@@ -64,7 +64,7 @@ public final class ContentPackFile {
 		writeArray(file, updated);
 	}
 
-	/** @return true si había una entrada con ese id (y se borró). */
+	/** @return true if there was an entry with that id (and it was deleted). */
 	public static boolean removeById(Path file, String idField, String id) throws IOException {
 		JsonArray current = readArray(file);
 		JsonArray updated = new JsonArray();
@@ -81,31 +81,31 @@ public final class ContentPackFile {
 		return removed;
 	}
 
-	//Para razas/trasfondos/clases (CharacterOptionsRegistry.loadFile REEMPLAZA la categoría entera, no hay
-	//"id" que fusionar) — escribe la lista completa tal cual, sin leer nada antes.
+	//For races/backgrounds/classes (CharacterOptionsRegistry.loadFile REPLACES the entire category, there's
+	//no "id" to merge on) — writes the full list as-is, without reading anything first.
 	public static void writeStringArray(Path file, List<String> values) throws IOException {
 		JsonArray array = new JsonArray();
 		for (String value : values) array.add(value);
 		writeArray(file, array);
 	}
 
-	//Texto crudo del array (posiblemente vacío "[]") — lo que manda el servidor al cliente para listar
-	//entradas ya creadas (ver BrowseListMessage kinds CONTENT_ENTRY/MANAGE_OPTIONS): el cliente no tiene
-	//acceso al sistema de archivos del servidor, así que el JSON viaja entero por red en vez de un id suelto.
+	//Raw array text (possibly empty "[]") — what the server sends to the client to list already-created
+	//entries (see BrowseListMessage kinds CONTENT_ENTRY/MANAGE_OPTIONS): the client has no access to the
+	//server's filesystem, so the whole JSON travels over the network instead of a bare id.
 	public static String readArrayText(Path file) {
 		return readArray(file).toString();
 	}
 
 	/**
-	 * <p>Las entradas de los DEMÁS archivos del tipo —el pack del mod y cualquier .json que el DM haya
-	 * dejado a mano— en un solo array, para poder enseñarlas junto a las suyas en el creador de contenido.</p>
+	 * <p>The entries from the OTHER files of the type — the mod's pack and any .json the DM has left by
+	 * hand — in a single array, so they can be shown alongside the DM's own in the content creator.</p>
 	 *
-	 * <p>Sin esto, ese menú solo listaba {@code dm_created.json}: un DM que abría "Encuentros" antes de
-	 * crear ninguno veía una pantalla vacía pese a tener cinco encuentros cargados y jugables, y la lectura
-	 * evidente de eso es "esto no gestiona nada". Se enseñan aparte y no mezclados porque no se comportan
-	 * igual: {@code mod_defaults.json} se reescribe desde el jar en cada arranque, así que editar uno no es
-	 * cambiar el archivo del pack sino <b>guardar tu versión</b> en el tuyo, que es la que gana al cargar
-	 * (ver el orden de {@code DndPaths.autoLoadAll}).</p>
+	 * <p>Without this, that menu only listed {@code dm_created.json}: a DM opening "Encounters" before
+	 * creating any would see an empty screen despite having five encounters loaded and playable, and the
+	 * obvious reading of that is "this doesn't manage anything." They're shown separately, not merged,
+	 * because they don't behave the same: {@code mod_defaults.json} gets rewritten from the jar on every
+	 * startup, so editing one doesn't change the pack's file but instead <b>saves your version</b> into
+	 * yours, which wins on load (see the ordering in {@code DndPaths.autoLoadAll}).</p>
 	 */
 	public static String readOtherArraysText(Path dir, Path exclude) {
 		JsonArray all = new JsonArray();
@@ -116,7 +116,7 @@ public final class ContentPackFile {
 				all.addAll(readArray(file));
 			}
 		} catch (IOException e) {
-			DndsheetsMod.LOGGER.warn("dndsheets: no pude listar {}: {}", dir, e.toString());
+			DndsheetsMod.LOGGER.warn("dndsheets: could not list {}: {}", dir, e.toString());
 		}
 		return all.toString();
 	}

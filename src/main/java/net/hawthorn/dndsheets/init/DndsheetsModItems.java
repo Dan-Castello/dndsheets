@@ -7,17 +7,17 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * <p>El único ítem que registra el mod: la <b>ficha</b>, que es el cuerpo de todo lo que reparte —varas,
- * tótems de clase, báculos, cartas de invocación—. Cada uno se distingue por su
- * {@code CustomModelData} (ver {@link net.hawthorn.dndsheets.ItemLook}), no por ser un ítem distinto.</p>
+ * <p>The only item the mod registers: the <b>token</b>, which is the body of everything it hands out —
+ * wands, class totems, staves, summon cards. Each one is distinguished by its {@code CustomModelData}
+ * (see {@link net.hawthorn.dndsheets.ItemLook}), not by being a separate item.</p>
  *
- * <p>Uno y no veinte a propósito: veinte ítems registrados saldrían en {@code /give} y en la búsqueda del
- * inventario creativo, y un {@code /give dndsheets:totem_de_furia} daría una ficha <b>sin</b> la etiqueta
- * NBT que la hace funcionar. Un ítem que solo se obtiene por los comandos del mod no puede engañar a
- * nadie así.</p>
+ * <p>One and not twenty, deliberately: twenty registered items would show up in {@code /give} and in
+ * creative-inventory search, and a {@code /give dndsheets:rage_totem} would hand out a token
+ * <b>without</b> the NBT tag that makes it work. An item obtainable only through the mod's commands
+ * can't mislead anyone that way.</p>
  *
- * <p>{@code stacksTo(1)}: son botones, no material. Apilarlos no significa nada y esconde que cada uno
- * lleva su propia etiqueta.</p>
+ * <p>{@code stacksTo(1)}: these are buttons, not materials. Stacking them wouldn't mean anything and
+ * would hide the fact that each one carries its own tag.</p>
  */
 public class DndsheetsModItems {
 	public static final DeferredRegister<Item> REGISTRY = DeferredRegister.create(ForgeRegistries.ITEMS, DndsheetsMod.MODID);

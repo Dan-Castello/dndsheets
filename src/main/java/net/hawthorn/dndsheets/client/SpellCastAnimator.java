@@ -10,30 +10,30 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * <p>La mano del lanzador mientras conjura. Un conjuro con tiempo de lanzamiento (ver
- * {@code CastingManager}) ya no sale en el mismo instante en que se pide, y sin nada que lo acompañe ese
- * segundo de espera se lee como que el mod se colgó: la mano sube, se echa atrás y tiembla un poco
- * mientras la carga de partículas crece delante de ella.</p>
+ * <p>The caster's hand while casting. A spell with a casting time (see {@code CastingManager}) no longer
+ * resolves the instant it's requested, and with nothing to accompany it that second of waiting reads as
+ * the mod having frozen: the hand rises, pulls back, and trembles a little while the particle charge
+ * builds up in front of it.</p>
  *
- * <p><b>Solo primera persona, y es una decisión, no un olvido.</b> Poner la pose de brazos en tercera
- * persona significaría escribir en {@code HumanoidModel.rightArmPose}, y {@code PlayerRenderer} la
- * reescribe en {@code setModelProperties} DESPUÉS de {@code RenderPlayerEvent.Pre} — o sea que sin un
- * mixin no hay dónde engancharse, y este mod no lleva mixins a propósito (ver "Portability" en
- * PROJECT_CONTEXT.md, comprobado por {@code checkPortabilityCoupling}). Lo que ven los demás jugadores es
- * la carga de partículas de {@code CombatFx.spellCharge}, que es de servidor y por tanto la ve todo el
- * mundo: la historia se cuenta igual, sin tocar la portabilidad.</p>
+ * <p><b>First person only, and that's a decision, not an oversight.</b> Setting the arm pose in third
+ * person would mean writing to {@code HumanoidModel.rightArmPose}, and {@code PlayerRenderer} overwrites
+ * it in {@code setModelProperties} AFTER {@code RenderPlayerEvent.Pre} — meaning there's nowhere to hook
+ * in without a mixin, and this mod deliberately carries no mixins (see "Portability" in
+ * PROJECT_CONTEXT.md, enforced by {@code checkPortabilityCoupling}). What other players see is the
+ * particle charge from {@code CombatFx.spellCharge}, which is server-side and therefore visible to
+ * everyone: the story reads the same without touching portability.</p>
  *
- * <p>El estado llega por el parche de campo que {@code CastingManager} ya manda a la hoja del cliente
- * ({@code castingSpell}/{@code castingTicks}/{@code castingUntil}) — la misma tubería que la concentración
- * y la ventaja pendiente, sin ningún mensaje de red propio.</p>
+ * <p>State arrives through the field patch {@code CastingManager} already sends to the client sheet
+ * ({@code castingSpell}/{@code castingTicks}/{@code castingUntil}) — the same pipeline as concentration
+ * and pending advantage, with no network message of its own.</p>
  */
 @Mod.EventBusSubscriber(value = Dist.CLIENT)
 public class SpellCastAnimator {
 
 	/**
-	 * <p>Cuánto lleva conjurado, de 0 a 1, o -1 si no se está conjurando nada. Se calcula del tick de fin y
-	 * de la duración en vez de recibir un parche por tick: la red ya trajo los dos números una sola vez, al
-	 * empezar, y el resto lo saca el cliente solo.</p>
+	 * <p>How far into casting we are, from 0 to 1, or -1 if nothing is being cast. Computed from the end
+	 * tick and the duration instead of receiving a patch every tick: the network already delivered both
+	 * numbers once, at the start, and the client works out the rest on its own.</p>
 	 */
 	private static float progress(float partialTick) {
 		JsonObject sheet = SheetLoader.getClientSheet();
@@ -45,8 +45,8 @@ public class SpellCastAnimator {
 		int total = sheet.get("castingTicks").getAsInt();
 		if (total <= 0) return -1;
 		float left = sheet.get("castingUntil").getAsLong() - (level.getGameTime() + partialTick);
-		//Fuera del intervalo no se pinta nada: si el parche de "he terminado" se perdiera, la mano volvería
-		//sola a su sitio en vez de quedarse levantada para siempre.
+		//Nothing is drawn outside the interval: if the "I'm done" patch were ever lost, the hand would
+		//return to its place on its own instead of staying raised forever.
 		if (left <= 0 || left > total) return -1;
 		return 1.0f - left / total;
 	}
@@ -56,16 +56,16 @@ public class SpellCastAnimator {
 		float progress = progress(event.getPartialTick());
 		if (progress < 0) return;
 
-		//Solo la mano principal: conjurar con las dos a la vez se ve como un tic nervioso, no como un gesto.
+		//Main hand only: casting with both at once reads as a nervous tic, not as a gesture.
 		if (event.getHand() != net.minecraft.world.InteractionHand.MAIN_HAND) return;
 
-		//Se echa atrás y arriba según avanza la carga, con un tope: pasado cierto punto la mano se sale del
-		//encuadre y deja de contar nada.
+		//Pulls back and up as the charge progresses, with a cap: past a certain point the hand leaves the
+		//frame and stops conveying anything.
 		event.getPoseStack().translate(0.0, progress * 0.22, progress * 0.30);
 		event.getPoseStack().mulPose(Axis.XP.rotationDegrees(-progress * 45.0f));
 
-		//Un temblor pequeño y rápido que CRECE con la carga: es lo que separa "sostiene algo" de "sostiene
-		//algo que le cuesta". Sin él, la mano quieta en alto se lee como un fotograma congelado.
+		//A small, fast tremor that GROWS with the charge: it's what separates "holding something" from
+		//"holding something that's a strain". Without it, the still raised hand reads as a frozen frame.
 		float time = (Minecraft.getInstance().level.getGameTime() + event.getPartialTick()) * 0.9f;
 		float tremor = (float) Math.sin(time) * 0.012f * progress;
 		event.getPoseStack().translate(tremor, tremor * 0.5f, 0.0);

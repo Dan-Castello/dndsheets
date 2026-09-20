@@ -7,8 +7,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-//Lista de ítems "fijos" entregables a un jugador ya elegido (ver GiveableItem) — abierta desde el Panel de
-//DM vía PlayerPickerScreen.open("...", uuid -> GiveItemListScreen.open(uuid)).
+//List of "fixed" items that can be given to a player already chosen (see GiveableItem) — opened from the
+//DM Panel via PlayerPickerScreen.open("...", uuid -> GiveItemListScreen.open(uuid)).
 public class GiveItemListScreen extends ListPickerScreen {
 	private final String targetUuid;
 

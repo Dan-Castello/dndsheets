@@ -9,9 +9,9 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.network.PacketDistributor;
 
 /**
- * <p>{@code /dndcompendium}: abre el compendio. Sin permisos a propósito — es material de referencia, y
- * no revela nada que un jugador no pueda ver ya en su Grimorio o en la ficha de un monstruo al pelearlo.
- * El DM lo tiene además como fila del Panel de DM.</p>
+ * <p>{@code /dndcompendium}: opens the compendium. No permissions required on purpose — it's reference
+ * material, and it reveals nothing a player couldn't already see in their Spellbook or in a monster's
+ * sheet while fighting it. The DM also has it as a row in the DM Panel.</p>
  */
 @Mod.EventBusSubscriber
 public class CompendiumCommand {

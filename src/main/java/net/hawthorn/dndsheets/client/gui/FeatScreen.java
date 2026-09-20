@@ -8,13 +8,13 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>Las dotes cargadas, con una marca en las que este personaje ya tiene. Se llega desde la pantalla de
- * Mejora de Característica, porque una dote <b>gasta esa misma mejora</b>: son las dos caras de la misma
- * elección de 5e y por eso se eligen en el mismo sitio.</p>
+ * <p>The loaded feats, with a mark on the ones this character already has. Reached from the Ability
+ * Score Improvement screen, because a feat <b>spends that same improvement</b>: they're two faces of
+ * the same 5e choice and that's why they're picked in the same place.</p>
  *
- * <p>La lista la manda el servidor, que es quien tiene el registro; que se pueda coger o no lo decide él
- * también al elegirla. Aquí no se apaga ninguna fila: una fila apagada sin explicación se lee como un
- * fallo, y el servidor sí puede decir por qué.</p>
+ * <p>The server sends the list, since it holds the registry; whether a feat can be taken or not is also
+ * decided by the server when it's picked. No row is grayed out here: a grayed-out row with no explanation
+ * reads as a bug, and the server can actually say why.</p>
  */
 public class FeatScreen extends ListPickerScreen {
 

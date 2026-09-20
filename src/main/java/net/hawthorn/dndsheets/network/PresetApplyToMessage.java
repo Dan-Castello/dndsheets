@@ -7,8 +7,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: eligió un preset en PresetScreen para OTRO jugador, elegido antes en
-//PlayerPickerScreen (equivalente en GUI a /dndpresets apply <jugador> <presetId>).
+//Client (the DM) -> server: chose a preset in PresetScreen for ANOTHER player, picked earlier in
+//PlayerPickerScreen (GUI equivalent of /dndpresets apply <player> <presetId>).
 public class PresetApplyToMessage {
 	String targetUuid, presetId;
 

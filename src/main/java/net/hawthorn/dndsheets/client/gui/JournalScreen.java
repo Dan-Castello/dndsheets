@@ -9,11 +9,12 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>Diario de campaña y handouts. La lista que llega ya viene filtrada por el servidor: aquí solo hay
- * entradas que este jugador puede leer, así que la pantalla no oculta nada — no le llegó.</p>
+ * <p>Campaign journal and handouts. The list that arrives is already filtered by the server: only
+ * entries this player is allowed to read show up here, so the screen isn't hiding anything — it simply
+ * never received it.</p>
  *
- * <p>El texto se lee en el mismo diálogo que las fichas del compendio: los dos son «un texto largo con
- * un título», y una segunda pantalla para lo mismo solo sería otra que mantener.</p>
+ * <p>The text is read in the same dialog as compendium entries: both are "a long piece of text with a
+ * title", and a second screen for the same thing would just be one more to maintain.</p>
  */
 public class JournalScreen extends ListPickerScreen {
 
@@ -32,7 +33,7 @@ public class JournalScreen extends ListPickerScreen {
 
 	@Override
 	protected boolean searchable() {
-		return true; //Una campaña larga acumula entradas; buscar por título es lo que las hace consultables.
+		return true; //A long campaign accumulates entries; searching by title is what keeps them navigable.
 	}
 
 	@Override

@@ -13,12 +13,12 @@ import net.minecraftforge.network.NetworkHooks;
 import java.util.function.Supplier;
 
 /**
- * <p>Cliente -&gt; servidor: abre la ficha de personaje, o la cierra si ya estaba abierta (la tecla H y
- * el botón "Ficha" de los dos editores de tiradas alternan con el mismo mensaje).</p>
+ * <p>Client -&gt; server: opens the character sheet, or closes it if it was already open (the H key and
+ * the "Sheet" button on both roll editors toggle it with the same message).</p>
  *
- * <p>Ya no lleva los campos {@code type} y {@code pressedms} que generaba MCreator: los tres llamadores
- * mandaban {@code (0, 0)} y el handler solo tenía rama para {@code type == 0}. Quitarlos cambia lo que
- * viaja por el cable, así que sube {@code PROTOCOL_VERSION} — ver la invariante 1.</p>
+ * <p>No longer carries the {@code type} and {@code pressedms} fields that MCreator generated: all three
+ * callers sent {@code (0, 0)} and the handler only had a branch for {@code type == 0}. Removing them
+ * changes what travels over the wire, so it bumps {@code PROTOCOL_VERSION} — see invariant 1.</p>
  */
 public class CharacterSheetOpenMessage {
 
@@ -37,10 +37,11 @@ public class CharacterSheetOpenMessage {
 	}
 
 	/**
-	 * <p>Público y con {@code Player} (no {@code ServerPlayer}) porque el cliente también lo llama con su
-	 * propio jugador nada más mandar el paquete (ver {@code DndsheetsModKeyMappings}): así el cierre se ve
-	 * al instante en vez de esperar al viaje de ida y vuelta. En el cliente solo entra por la rama de
-	 * cerrar; abrir es cosa del servidor, que es quien tiene el {@code ServerPlayer}.</p>
+	 * <p>Public and typed as {@code Player} (not {@code ServerPlayer}) because the client also calls it
+	 * with its own player right after sending the packet (see {@code DndsheetsModKeyMappings}): that way
+	 * closing is seen instantly instead of waiting on the round trip. On the client it only ever enters
+	 * through the close branch; opening is the server's job, since it's the one holding the {@code
+	 * ServerPlayer}.</p>
 	 */
 	public static void pressAction(Player entity) {
 		if (entity == null) return;
@@ -48,9 +49,9 @@ public class CharacterSheetOpenMessage {
 		if (entity.containerMenu instanceof CharacterSheetMenu) {
 			entity.closeContainer();
 		} else if (entity instanceof ServerPlayer player) {
-			//Sin BlockPos: la pantalla no depende de dónde se abrió. De paso se va el guard de
-			//"hasChunkAt" que traía la plantilla — protegía de generar chunk en coordenadas arbitrarias, y
-			//aquí ya no hay coordenada ninguna que pasar.
+			//No BlockPos: the screen doesn't depend on where it was opened. That also drops the
+			//"hasChunkAt" guard the template used to carry — it protected against generating a chunk at
+			//arbitrary coordinates, and here there's no coordinate left to pass at all.
 			NetworkHooks.openScreen(player, new SimpleMenuProvider(
 				(id, inventory, viewer) -> new CharacterSheetMenu(id, inventory, null), Component.literal("CharacterSheet")));
 		}

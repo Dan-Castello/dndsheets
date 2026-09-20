@@ -11,29 +11,29 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * <p>Las reglas de personaje que no dependen de Minecraft: de quién es cada hoja, cuál lleva puesta su
- * dueño, y los PG máximos que salen de clase/nivel/Constitución. Separadas de {@link SheetLoader}, separadas de {@link SheetLoader}
- * porque este resuelve {@code FMLPaths.GAMEDIR} al inicializarse y por tanto
- * ni siquiera se puede cargar fuera de una instancia de Forge arrancada — y estas son justo las reglas
- * con ramas que conviene poder fijar en {@code JsonContentSelfTest}.</p>
+ * <p>Character rules that don't depend on Minecraft: whose each sheet is, which one its owner has
+ * equipped, and the max HP that comes out of class/level/Constitution. Kept separate from
+ * {@link SheetLoader} because the latter resolves {@code FMLPaths.GAMEDIR} on initialization and
+ * therefore can't even be loaded outside a running Forge instance — and these are exactly the
+ * branch-heavy rules worth being able to pin down in {@code JsonContentSelfTest}.</p>
  *
- * <p>Todo aquí son funciones puras sobre el mapa de hojas: no hay estado propio que pueda
- * desincronizarse del de {@code SheetLoader}.</p>
+ * <p>Everything here is pure functions over the sheet map: there's no own state that could fall out of
+ * sync with {@code SheetLoader}'s.</p>
  */
 final class CharacterRules {
 
 	private CharacterRules() {}
 
 	/**
-	 * <p>PG máximos por clase, nivel y Constitución, con la regla de media del SRD: dado de golpe completo
-	 * a nivel 1, y media del dado + 1 (más el modificador de Constitución) por cada nivel siguiente, con un
-	 * mínimo de 1 PG por nivel aunque la Constitución sea penosa.</p>
+	 * <p>Max HP by class, level and Constitution, with the SRD's average rule: full hit die at level 1,
+	 * and half the die + 1 (plus the Constitution modifier) per subsequent level, with a minimum of 1 HP
+	 * per level even with dismal Constitution.</p>
 	 */
 	static int maxHitPointsFor(JsonObject sheet, int level) {
 		int con = intField(sheet, "constitution", 10);
-		//Con reparto de niveles manda el reparto: cada clase pone su propio dado, y el texto de la clase
-		//("Guerrero 3 / Mago 2") ya no sirve para deducir uno solo — Config.hitDieFor cogería el primero
-		//que encontrara dentro de la frase.
+		//With a level split, the split rules: each class contributes its own hit die, and the class text
+		//("Fighter 3 / Wizard 2") is no longer usable to derive a single one — Config.hitDieFor would
+		//grab whichever it found first inside the phrase.
 		if (ClassLevels.isMulticlass(sheet)) return ClassLevels.maxHitPoints(ClassLevels.of(sheet), con);
 		int hitDie = Config.hitDieFor(sheet != null && sheet.has("characterClass") ? sheet.get("characterClass").getAsString() : "");
 		int conMod = Math.floorDiv(con - 10, 2);
@@ -46,30 +46,30 @@ final class CharacterRules {
 	}
 
 	/**
-	 * <p>Nivel de personaje de una hoja sin jugador detrás. La versión con {@code Player} cae al XP real de
-	 * Minecraft cuando el DM no fijó un nivel; una ficha de PNJ no tiene XP del que caer, así que empieza en
-	 * 1 — en 5e ningún personaje es de nivel 0.</p>
+	 * <p>Character level for a sheet with no player behind it. The {@code Player} version falls back to
+	 * real Minecraft XP when the DM didn't set a level; an NPC sheet has no XP to fall back on, so it
+	 * starts at 1 — in 5e no character is level 0.</p>
 	 */
 	/**
-	 * <p>Bono de competencia por nivel: +2 del 1 al 4, +3 del 5 al 8, +4 del 9 al 12, +5 del 13 al 16 y +6
-	 * del 17 al 20. Es la tabla de 5e, y no es un detalle menor — entra en toda tirada de ataque, toda CD
-	 * de salvación y toda prueba con competencia.</p>
+	 * <p>Proficiency bonus by level: +2 from 1 to 4, +3 from 5 to 8, +4 from 9 to 12, +5 from 13 to 16 and
+	 * +6 from 17 to 20. This is the 5e table, and it's not a minor detail — it enters every attack roll,
+	 * every save DC and every proficient check.</p>
 	 *
-	 * <p>Antes no lo calculaba nadie: la hoja arrancaba con "2" fijo y ahí se quedaba, así que un
-	 * personaje de nivel 20 atacaba con el bono de uno de nivel 1. La hoja además ya pintaba el campo en
-	 * ámbar y sin poder editarlo, o sea marcado como "se rellena solo" — prometía un cálculo que no
-	 * existía.</p>
+	 * <p>Previously nobody computed it: the sheet started with a fixed "2" and stayed there, so a level 20
+	 * character attacked with the bonus of a level 1 one. The sheet also already rendered the field in
+	 * amber and non-editable, i.e. marked as "fills itself in" — it promised a calculation that didn't
+	 * exist.</p>
 	 */
 	static int proficiencyBonusFor(int level) {
 		return 2 + (Math.min(20, Math.max(1, level)) - 1) / 4;
 	}
 
 	/**
-	 * <p>Bono de daño de la Furia del bárbaro: +2 hasta el nivel 8, +3 del 9 al 15 y +4 del 16 en adelante.</p>
+	 * <p>Barbarian Rage damage bonus: +2 up to level 8, +3 from 9 to 15 and +4 from 16 onward.</p>
 	 *
-	 * <p>Estaba fijo en +2 y anotado como simplificación. Un bárbaro es la clase que menos botones tiene:
-	 * su progresión <em>es</em> este número, así que congelarlo dejaba a un bárbaro de nivel 20 pegando
-	 * exactamente igual que uno de nivel 1 salvo por los dados del arma.</p>
+	 * <p>It used to be fixed at +2 and marked as a simplification. A barbarian is the class with the fewest
+	 * buttons: its progression <em>is</em> this number, so freezing it left a level 20 barbarian hitting
+	 * exactly like a level 1 one except for the weapon's dice.</p>
 	 */
 	static int rageDamageBonusFor(int level) {
 		if (level >= 16) return 4;
@@ -78,10 +78,10 @@ final class CharacterRules {
 	}
 
 	/**
-	 * <p>Dado de Inspiración Bárdica: d6, y sube a d8/d10/d12 en los niveles 5, 10 y 15.</p>
+	 * <p>Bardic Inspiration die: d6, upgrading to d8/d10/d12 at levels 5, 10 and 15.</p>
 	 *
-	 * <p>También estaba fijo, con la misma consecuencia: el recurso que define a la clase no mejoraba
-	 * nunca.</p>
+	 * <p>This was also fixed, with the same consequence: the resource that defines the class never
+	 * improved.</p>
 	 */
 	static String bardicInspirationDieFor(int level) {
 		if (level >= 15) return "1d12";
@@ -96,12 +96,12 @@ final class CharacterRules {
 	}
 
 	/**
-	 * <p><b>Cuántos hechizos puede llevar preparados.</b> En 5e: modificador de la característica de
-	 * lanzamiento de su clase + su nivel, mínimo 1. Los trucos no cuentan (son a voluntad, no se preparan).</p>
+	 * <p><b>How many spells they can have prepared.</b> In 5e: their class's spellcasting ability modifier
+	 * + their level, minimum 1. Cantrips don't count (they're at-will, not prepared).</p>
 	 *
-	 * <p>Devuelve 0 para quien no lanza nada, y eso es lo que apaga la regla entera: sin clase lanzadora no
-	 * hay lista que preparar, así que todo lo que sepa se puede lanzar igual que antes de que esto
-	 * existiera. Es la misma forma que el resto del mod — nada se dispara por adivinar.</p>
+	 * <p>Returns 0 for someone who casts nothing, and that's what turns off the whole rule: with no
+	 * casting class there's no list to prepare, so everything they know can be cast the same as before
+	 * this existed. Same shape as the rest of the mod — nothing fires off a guess.</p>
 	 */
 	static int preparedLimitFor(JsonObject sheet) {
 		if (sheet == null || !sheet.has("characterClass")) return 0;
@@ -112,7 +112,7 @@ final class CharacterRules {
 		return Math.max(1, Math.floorDiv(score - 10, 2) + levelOf(sheet));
 	}
 
-	//Las características se guardan como cadena en la hoja, y una hoja vieja puede tener ahí cualquier cosa.
+	//Abilities are stored as a string on the sheet, and an old sheet can have anything at all in there.
 	private static int intField(JsonObject sheet, String key, int fallback) {
 		if (sheet == null || !sheet.has(key)) return fallback;
 		try {
@@ -123,10 +123,10 @@ final class CharacterRules {
 	}
 
 	/**
-	 * <p>Dueño de una hoja, o {@code null} si no es de nadie (un PNJ). Sin campo {@code ownerUuid} —toda
-	 * hoja anterior a que existieran los personajes— el dueño es el propio id, porque entonces el id de
-	 * una hoja <em>era</em> el UUID de su jugador. Ese fallback es lo que hace que no haga falta migrar
-	 * nada en disco.</p>
+	 * <p>Owner of a sheet, or {@code null} if it belongs to nobody (an NPC). With no {@code ownerUuid}
+	 * field —every sheet predating characters existing— the owner is the id itself, because back then a
+	 * sheet's id <em>was</em> its player's UUID. That fallback is what makes it unnecessary to migrate
+	 * anything on disk.</p>
 	 */
 	static String ownerOf(String characterId, JsonObject sheet) {
 		if (sheet != null && sheet.has("ownerUuid")) {
@@ -136,7 +136,7 @@ final class CharacterRules {
 		return characterId;
 	}
 
-	/** Ids de los personajes de ese jugador, en orden estable. */
+	/** Ids of that player's characters, in stable order. */
 	static List<String> ownedBy(Map<String, JsonObject> sheets, String playerUuid) {
 		List<String> owned = new ArrayList<>();
 		for (Map.Entry<String, JsonObject> entry : sheets.entrySet()) {
@@ -147,13 +147,13 @@ final class CharacterRules {
 	}
 
 	/**
-	 * <p>Binding jugador → personaje activo, derivado del campo {@code active} de cada hoja en vez de
-	 * guardado como índice aparte: un índice puede desincronizarse de las hojas y dejar a alguien sin poder
-	 * jugar, mientras que el campo dentro de la propia hoja no puede contradecirse a sí mismo.</p>
+	 * <p>Player → active character binding, derived from each sheet's {@code active} field instead of
+	 * stored as a separate index: an index can fall out of sync with the sheets and leave someone unable
+	 * to play, whereas the field inside the sheet itself can't contradict itself.</p>
 	 *
-	 * <p>Si un jugador acabara con dos hojas marcadas activas (edición manual del JSON), gana la de id
-	 * menor. El desempate importa que sea determinista, no cuál gane: sin ordenar, el jugador se
-	 * encontraría con un personaje distinto según el arranque.</p>
+	 * <p>If a player ended up with two sheets marked active (manual JSON edit), the one with the lower id
+	 * wins. What matters is that the tie-break is deterministic, not which one wins: without sorting, the
+	 * player would find themselves with a different character depending on the boot order.</p>
 	 */
 	static Map<String, String> buildActive(Map<String, JsonObject> sheets) {
 		Map<String, String> active = new HashMap<>();
@@ -163,27 +163,26 @@ final class CharacterRules {
 			JsonObject sheet = sheets.get(characterId);
 			if (sheet == null || !sheet.has("active") || !sheet.get("active").getAsBoolean()) continue;
 			String owner = ownerOf(characterId, sheet);
-			if (owner == null) continue; //PNJ: no lo lleva puesto ningún jugador.
+			if (owner == null) continue; //NPC: no player has it equipped.
 			active.putIfAbsent(owner, characterId);
 		}
 		return active;
 	}
 
 	/**
-	 * <p>Resuelve lo que el jugador escribió —un <b>nombre</b> o un id— al id del personaje.</p>
+	 * <p>Resolves what the player typed —a <b>name</b> or an id— to the character's id.</p>
 	 *
-	 * <p>Los ids son derivados del UUID ({@code 380df991-...-2}), o sea que pedirle a alguien que escriba
-	 * uno para cambiar de personaje es pedirle que copie una cadena que no significa nada. El nombre es lo
-	 * que la persona sabe, así que es lo que se acepta; el id sigue valiendo porque es lo que sale en los
-	 * mensajes y en el nombre del archivo.</p>
+	 * <p>Ids are derived from the UUID ({@code 380df991-...-2}), so asking someone to type one to switch
+	 * characters is asking them to copy a string that means nothing to them. The name is what the person
+	 * knows, so that's what's accepted; the id is still valid because it's what shows up in messages and
+	 * in the file name.</p>
 	 *
-	 * <p>Orden deliberado: <b>id exacto, nombre exacto, y solo entonces prefijo único</b>. Un personaje que
-	 * se llame igual que el id de otro tiene que poder elegirse, y un prefijo no puede ganarle nunca a una
-	 * coincidencia exacta — escribir "Ana" con una Ana y una Anabel delante debe dar Ana, no un error de
-	 * ambigüedad.</p>
+	 * <p>Deliberate order: <b>exact id, exact name, and only then unique prefix</b>. A character sharing a
+	 * name with another's id has to be selectable, and a prefix can never beat an exact match — typing
+	 * "Ana" with both an Ana and an Anabel present must resolve to Ana, not an ambiguity error.</p>
 	 *
-	 * @return el id, o {@code null} si no se reconoce o si hay más de un candidato (ambiguo es tan "no" como
-	 *         no encontrarlo: elegir por él sería elegir mal la mitad de las veces).
+	 * @return the id, or {@code null} if it's not recognized or if there's more than one candidate
+	 *         (ambiguous is as much a "no" as not finding it: picking one would pick wrong half the time).
 	 */
 	static String resolveCharacter(Map<String, JsonObject> sheets, List<String> candidateIds, String query) {
 		if (query == null) return null;
@@ -194,9 +193,9 @@ final class CharacterRules {
 			if (id.equals(needle)) return id;
 		}
 
-		//"Nombre [id]": lo que sugiere el autocompletado cuando DOS personajes se llaman igual, y la única
-		//forma honesta de elegir entre ellos. Un personaje que de verdad se llame "Bruno [el Bravo]" no
-		//coincide con ningún id, así que cae al emparejado normal de abajo sin hacer nada raro.
+		//"Name [id]": what autocomplete suggests when TWO characters share a name, and the only honest way
+		//to choose between them. A character actually named "Bruno [el Bravo]" won't match any id, so it
+		//falls through to the normal matching below without doing anything strange.
 		String bracketed = idInsideBrackets(candidateIds, needle);
 		if (bracketed != null) return bracketed;
 
@@ -231,13 +230,13 @@ final class CharacterRules {
 	}
 
 	/**
-	 * <p>Cómo se le ofrece un personaje al jugador: su nombre a secas, o {@code Nombre [id]} si <b>otro</b>
-	 * de los candidatos se llama igual.</p>
+	 * <p>How a character is offered to the player: just its plain name, or {@code Name [id]} if
+	 * <b>another</b> of the candidates shares the name.</p>
 	 *
-	 * <p>El id solo aparece donde de verdad hace falta. Antes se sugería siempre el nombre, y dos personajes
-	 * llamados igual daban dos sugerencias idénticas que además no se podían resolver: el autocompletado
-	 * ofrecía una opción que el propio comando rechazaba después por ambigua. Una sugerencia que no funciona
-	 * es peor que no sugerir nada.</p>
+	 * <p>The id only shows up where it's actually needed. Before, the name was always suggested, and two
+	 * same-named characters produced two identical suggestions that couldn't even be resolved: autocomplete
+	 * offered an option the command itself would later reject as ambiguous. A suggestion that doesn't work
+	 * is worse than no suggestion at all.</p>
 	 */
 	static String suggestionLabelFor(Map<String, JsonObject> sheets, List<String> candidateIds, String characterId) {
 		String name = nameOf(sheets.get(characterId));
@@ -249,22 +248,23 @@ final class CharacterRules {
 		return name;
 	}
 
-	/** Nombre de una hoja, o null si no tiene: no todas lo llevan, y comparar contra null es peor que saltarla. */
+	/** Name of a sheet, or null if it doesn't have one: not all of them carry it, and comparing against null is worse than skipping it. */
 	static String nameOf(JsonObject sheet) {
 		return sheet != null && sheet.has("characterName") ? sheet.get("characterName").getAsString() : null;
 	}
 
 	/**
-	 * <p>Qué personaje debería llevar puesto un jugador cuando el que llevaba deja de existir: el mismo si
-	 * sigue estando, si no el primero que le quede, y {@code null} si se quedó sin ninguno.</p>
+	 * <p>Which character a player should end up wearing when the one they had stops existing: the same
+	 * one if it's still there, otherwise the first one left, and {@code null} if none are left.</p>
 	 *
-	 * <p>Existe como función aparte por el fallo que costó: {@code activeCharacterOf} <b>no distingue</b>
-	 * "lleva puesto este" de "no lleva ninguno", porque sin binding devuelve el propio UUID del jugador — el
-	 * id de la hoja de antes de que existieran los personajes. Preguntarle a esa función si el jugador sigue
-	 * teniendo personaje contestaba que sí en cuanto existiera un archivo con ese id, aunque no estuviera
-	 * puesto. La pregunta correcta se hace sobre el binding explícito, y ahora se puede comprobar sin juego.</p>
+	 * <p>Exists as a separate function because of the bug it cost: {@code activeCharacterOf} <b>doesn't
+	 * distinguish</b> "has this one equipped" from "has none equipped", because with no binding it returns
+	 * the player's own UUID — the sheet id from before characters existed. Asking that function whether
+	 * the player still has a character answered yes as soon as a file with that id existed, even if it
+	 * wasn't equipped. The right question is asked against the explicit binding, and now it can be checked
+	 * without a running game.</p>
 	 *
-	 * @param boundId el personaje registrado como activo, o {@code null} si no hay ninguno registrado.
+	 * @param boundId the character registered as active, or {@code null} if none is registered.
 	 */
 	static String characterToWearAfter(Set<String> existingIds, String boundId, List<String> ownedIds) {
 		if (boundId != null && existingIds.contains(boundId)) return boundId;
@@ -275,8 +275,8 @@ final class CharacterRules {
 	}
 
 	/**
-	 * Id para un personaje más de ese jugador. Derivado de su UUID, así que es único entre jugadores sin
-	 * necesitar un contador global, y sigue siendo un nombre de archivo válido en cualquier sistema.
+	 * Id for one more character of that player. Derived from their UUID, so it's unique across players
+	 * without needing a global counter, and still a valid file name on any system.
 	 */
 	static String nextCharacterId(Set<String> existing, String playerUuid) {
 		for (int n = 2; ; n++) {
@@ -286,13 +286,13 @@ final class CharacterRules {
 	}
 
 	/**
-	 * <p>El campo de la hoja para una característica escrita como {@code "str"} o como {@code "strength"}.
-	 * Devuelve null para cualquier otra cosa: una dote de un pack que diga {@code "fuerza"} no debe escribir
-	 * en un campo inventado ni, peor, en uno que exista por casualidad.</p>
+	 * <p>The sheet field for an ability written as {@code "str"} or as {@code "strength"}. Returns null
+	 * for anything else: a feat from a pack that says {@code "force"} must not write into a made-up
+	 * field or, worse, one that happens to exist by coincidence.</p>
 	 *
-	 * <p>Existe porque el contenido usa las claves cortas del SRD y la hoja los nombres largos. La conversión
-	 * estaba escrita a mano en {@code PresetRegistry.applyToSheet}, seis líneas seguidas; a la segunda cosa
-	 * que concede características —las dotes— eso ya son doce.</p>
+	 * <p>Exists because content uses the SRD's short keys and the sheet uses the long names. The
+	 * conversion used to be written by hand in {@code PresetRegistry.applyToSheet}, six lines in a row; by
+	 * the second thing that grants abilities —feats— that was already twelve.</p>
 	 */
 	static String abilityFieldFor(String ability) {
 		if (ability == null) return null;
@@ -307,31 +307,31 @@ final class CharacterRules {
 		};
 	}
 
-	/** Lo que ve en la oscuridad quien la tiene, en el SRD: 60 pies. */
+	/** How far whoever has darkvision sees in it, per the SRD: 60 feet. */
 	private static final int SRD_DARKVISION_FEET = 60;
 
 	/**
-	 * Razas del SRD con visión en la oscuridad. "elfo" cubre también a "semielfo" y "orco" a "semiorco" —
-	 * las dos mitades la tienen, así que la subcadena da la respuesta correcta sin repetir la entrada. Se
-	 * incluyen los nombres en inglés porque una mesa puede tener la lista de razas en cualquier idioma.
+	 * SRD races with darkvision. "elf" also covers "half-elf" and "orc" covers "half-orc" — both halves
+	 * have it, so the substring match gives the correct answer without repeating the entry. English names
+	 * are included too because a table might have its race list in any language.
 	 */
 	private static final List<String> DARKVISION_RACES =
 		List.of("enano", "dwarf", "elfo", "elf", "gnomo", "gnome", "orco", "orc", "tiefling", "drow");
 
 	/**
-	 * <p>Visión en la oscuridad del personaje de esta hoja, en pies; cero significa que no la tiene.</p>
+	 * <p>Darkvision of the character on this sheet, in feet; zero means they don't have it.</p>
 	 *
-	 * <p>Dos fuentes, en este orden: el campo {@code darkvision} de la ficha si está escrito —la salida para
-	 * una raza de la casa, un rasgo o un objeto que la conceda— y si no, la raza. La tabla es la del SRD:
-	 * enano, elfo (y por tanto semielfo), gnomo, semiorco y tiefling ven 60 pies; humano, mediano y
-	 * dracónido no ven nada.</p>
+	 * <p>Two sources, in this order: the sheet's {@code darkvision} field if it's set —the escape hatch
+	 * for a homebrew race, a trait, or an item that grants it— and if not, the race. The table is the
+	 * SRD's: dwarf, elf (and therefore half-elf), gnome, half-orc and tiefling see 60 feet; human, halfling
+	 * and dragonborn see nothing.</p>
 	 *
-	 * <p><b>Una raza que no se reconoce no concede el rasgo</b>, y es deliberado: las razas de este mod son
-	 * texto libre que un pack puede reemplazar entero ({@link CharacterOptionsRegistry}), así que aquí no se
-	 * puede distinguir "raza que no ve" de "raza que no conozco". Ante la duda no se concede — ninguna regla
-	 * debería dispararse sobre una suposición, que es la misma decisión que ya se tomó con
-	 * {@link CreatureType} — y el campo de la ficha es la corrección explícita. La comparación quita acentos
-	 * y va por subcadena para que "Elfo", "elfo del bosque" y "Elf" sean lo mismo.</p>
+	 * <p><b>An unrecognized race grants no trait</b>, and that's deliberate: this mod's races are free text
+	 * that a pack can replace entirely ({@link CharacterOptionsRegistry}), so there's no way here to tell
+	 * "race that can't see" from "race I don't know". When in doubt, nothing is granted — no rule should
+	 * fire based on a guess, which is the same decision already made with {@link CreatureType} — and the
+	 * sheet field is the explicit correction. The comparison strips accents and matches by substring so
+	 * "Elfo", "elfo del bosque" and "Elf" are all the same.</p>
 	 */
 	static int darkvisionFeetFor(JsonObject sheet) {
 		int explicit = intField(sheet, "darkvision", -1);
@@ -349,10 +349,10 @@ final class CharacterRules {
 	}
 
 	/**
-	 * <p>Id para una ficha de PNJ, legible y apta como nombre de archivo. Los acentos se descomponen y se
-	 * quitan ANTES de filtrar caracteres: sin eso, "Capitán" daba {@code npc-capit-n}, porque la "á" no
-	 * entra en {@code [a-z0-9]} y se convertía en separador. En un mod en español eso afecta a la mayoría
-	 * de los nombres, no a un caso raro.</p>
+	 * <p>Id for an NPC sheet, readable and valid as a file name. Accents are decomposed and stripped
+	 * BEFORE filtering characters: without that, "Capitán" produced {@code npc-capit-n}, because "á"
+	 * doesn't fall within {@code [a-z0-9]} and turned into a separator. In a mod with Spanish content that
+	 * affects most names, not some rare edge case.</p>
 	 */
 	static String npcIdFor(Set<String> existing, String characterName) {
 		String withoutAccents = characterName == null ? "" : java.text.Normalizer
@@ -361,7 +361,7 @@ final class CharacterRules {
 		String slug = withoutAccents.toLowerCase(Locale.ROOT)
 			.replaceAll("[^a-z0-9]+", "-")
 			.replaceAll("(^-|-$)", "");
-		if (slug.isEmpty()) slug = "pnj"; //Un nombre entero en caracteres no latinos no debe dar un id vacío.
+		if (slug.isEmpty()) slug = "pnj"; //A name entirely in non-Latin characters must not produce an empty id.
 		String candidate = "npc-" + slug;
 		for (int n = 2; existing.contains(candidate); n++) candidate = "npc-" + slug + "-" + n;
 		return candidate;

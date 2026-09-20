@@ -19,33 +19,32 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: capturar una pieza nueva DIBUJADA en DungeonTraceScreen, en vez de
-//construida a mano y escaneada con un bloque de estructura (ver DungeonPieceCaptureMessage para ese
-//otro camino). Planta los bloques y escanea igual que un bloque de estructura (DungeonPiecePlacer),
-//luego delega el registro en el mismo DungeonManager.capturePiece que usa el flujo manual.
+//Client (the DM) -> server: capture a new piece DRAWN in DungeonTraceScreen, instead of built by hand
+//and scanned with a structure block (see DungeonPieceCaptureMessage for that other path). Plants the
+//blocks and scans them the same way a structure block does (DungeonPiecePlacer), then delegates
+//registration to the same DungeonManager.capturePiece the manual flow uses.
 public class DungeonTraceCaptureMessage {
 	private static final int MAX_SIDE = 64;
 
 	String id, structureId, pool, tags;
 	int weight, height;
 	String[] rows;
-	//Objetos con bloque elegido por el DM (de cualquier mod instalado): posición dispersa en vez de una
-	//grilla densa paralela a "rows" — la mayoría de las celdas OBJECT no cambian el bloque por defecto.
+	//Objects with a block chosen by the DM (from any installed mod): sparse positions instead of a dense
+	//grid parallel to "rows" — most OBJECT cells don't change the default block.
 	int[] objX, objZ;
 	String[] objBlockId;
-	//Hacia dónde mira cada objeto ("" = sin girar); getSerializedName()/byName, nunca el ordinal — un
-	//Direction cruzando el cable por índice es justo el error que ya documenta la invariante 2 del mod.
+	//Which way each object faces ("" = not rotated); getSerializedName()/byName, never the ordinal — a
+	//Direction crossing the wire by index is exactly the mistake the mod's invariant 2 already documents.
 	String[] objFacing;
-	//Puertas/entradas con pool destino y/o dirección manual elegidos por el DM — igual de disperso que
-	//los objetos, la mayoría de las celdas DOOR/START se quedan con el comportamiento por defecto
-	//(pool de la pieza, dirección automática).
+	//Doors/starts with a destination pool and/or manual direction chosen by the DM — just as sparse as
+	//the objects, most DOOR/START cells keep the default behavior (the piece's pool, automatic direction).
 	int[] doorX, doorZ;
 	String[] doorPool, doorFacing;
-	//Material de pared/piso de TODA la pieza, no por celda (ver DungeonPiecePlacer.Materials); "" = el DM
-	//no eligió, usar el bloque por defecto.
+	//Wall/floor material for the WHOLE piece, not per cell (see DungeonPiecePlacer.Materials); "" = the
+	//DM didn't choose one, use the default block.
 	String wallBlockId, floorBlockId;
-	//Desplazamiento horizontal desde la posición del DM — el origen sigue siendo "donde está parado el
-	//DM", esto solo lo corre unos bloques sin obligarlo a caminar hasta el punto exacto.
+	//Horizontal offset from the DM's position — the origin is still "where the DM is standing," this
+	//just shifts it a few blocks without forcing them to walk to the exact spot.
 	int originDx, originDz;
 
 	public DungeonTraceCaptureMessage(String id, String structureId, String pool, int weight, String tags,
@@ -169,15 +168,15 @@ public class DungeonTraceCaptureMessage {
 			GridToStructure.CellOptions[][] options = new GridToStructure.CellOptions[grid.length][grid[0].length];
 			for (int i = 0; i < message.objBlockId.length; i++) {
 				int x = message.objX[i], z = message.objZ[i];
-				if (z < 0 || z >= grid.length || x < 0 || x >= grid[z].length) continue; //fila manipulada a mano, se ignora en vez de reventar
+				if (z < 0 || z >= grid.length || x < 0 || x >= grid[z].length) continue; //hand-tampered row, ignored instead of crashing
 				options[z][x] = new GridToStructure.CellOptions(
 					ResourceLocation.tryParse(message.objBlockId[i]), Direction.byName(message.objFacing[i]), null, null);
 			}
 			for (int i = 0; i < message.doorPool.length; i++) {
 				int x = message.doorX[i], z = message.doorZ[i];
 				if (z < 0 || z >= grid.length || x < 0 || x >= grid[z].length) continue;
-				//Un pool destino inválido no revienta la captura entera: se ignora esa sola puerta y cae
-				//al pool de la pieza, igual que si el DM nunca hubiera escrito nada ahí.
+				//An invalid destination pool doesn't blow up the whole capture: just that one door is
+				//ignored and falls back to the piece's pool, same as if the DM had never typed anything there.
 				String targetPool = message.doorPool[i].isEmpty() || !DungeonManager.isValidPoolName(message.doorPool[i])
 					? null : message.doorPool[i];
 				options[z][x] = new GridToStructure.CellOptions(null, null, targetPool, Direction.byName(message.doorFacing[i]));

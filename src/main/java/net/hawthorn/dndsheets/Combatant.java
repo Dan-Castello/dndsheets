@@ -14,21 +14,22 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * <p>Un participante en las reglas de 5e, sea un jugador (con hoja) o un monstruo (con bloque de
- * estadísticas). Antes no existía tal cosa: el estado vivía en dos sitios incompatibles — {@code JsonObject}
- * + atributo de salud de Minecraft para el jugador, {@link MonsterRegistry.MonsterStatBlock} + NBT de la
- * entidad para el monstruo — y cada regla que necesitaba "la CA del objetivo" o "quítale N puntos de
- * golpe" se escribía dos veces, con un {@code boolean isMonster} decidiendo cuál.</p>
+ * <p>A participant in the 5e rules, whether a player (with a sheet) or a monster (with a stat block).
+ * No such thing used to exist: state lived in two incompatible places — {@code JsonObject} + Minecraft's
+ * health attribute for the player, {@link MonsterRegistry.MonsterStatBlock} + the entity's NBT for the
+ * monster — and every rule that needed "the target's AC" or "take N hit points off it" was written
+ * twice, with a {@code boolean isMonster} deciding which.</p>
  *
- * <p>El coste de ese corte era medible y no era intencionado: el monstruo no tenía resistencias
- * ({@link DamageTypes#multiplierFor} exigía una hoja), ni reacción de Escudo
- * ({@link ShieldManager#effectiveAc} exigía un {@code ServerPlayer}), ni concentración
- * ({@link ConcentrationManager#onDamageTaken} hacía un cast duro). Ninguna de las tres ausencias era una
- * decisión de diseño. Al pasar por esta interfaz, cada una se arregla en un solo sitio.</p>
+ * <p>The cost of that split was measurable and unintended: the monster had no resistances
+ * ({@link DamageTypes#multiplierFor} required a sheet), no Shield reaction
+ * ({@link ShieldManager#effectiveAc} required a {@code ServerPlayer}), and no concentration
+ * ({@link ConcentrationManager#onDamageTaken} did a hard cast). None of those three omissions was a
+ * design decision. By going through this interface, each one gets fixed in a single place.</p>
  *
- * <p>Las implementaciones NO guardan estado propio: leen y escriben donde ese estado ya vivía (la hoja
- * JSON del jugador, el NBT del monstruo), así que se pueden crear y tirar en cada llamada sin cachear
- * nada, y las condiciones sobreviven a reinicios y reconexiones por el mismo camino que ya usaban los PG.</p>
+ * <p>Implementations do NOT keep their own state: they read and write wherever that state already
+ * lived (the player's JSON sheet, the monster's NBT), so they can be created and discarded on every call
+ * without caching anything, and conditions survive restarts and reconnections through the same path HP
+ * already used.</p>
  */
 public interface Combatant {
 
@@ -36,20 +37,20 @@ public interface Combatant {
 
 	String name();
 
-	/** CA base, sin contar reacciones. */
+	/** Base AC, not counting reactions. */
 	int armorClass();
 
 	int currentHp();
 
 	int maxHp();
 
-	/** Modificador de característica por clave corta: {@code str}, {@code dex}, {@code con}, {@code int}, {@code wis}, {@code cha}. */
+	/** Ability modifier by short key: {@code str}, {@code dex}, {@code con}, {@code int}, {@code wis}, {@code cha}. */
 	/**
-	 * <p>Las seis características de 5e con la clave exacta que acepta {@link #abilityModifier(String)}, en
-	 * el orden de la hoja. Vive aquí, junto al método que las consume, por el mismo motivo que
-	 * {@code DamageTypes.CANONICAL} vive junto a las resistencias: era la misma lista escrita a mano en
-	 * <b>ocho</b> sitios (dos registros, un comando, un mensaje de red y cuatro pantallas), y dos copias que
-	 * se separen son un menú que ofrece una característica que luego no modifica nada.</p>
+	 * <p>The six 5e abilities with the exact key {@link #abilityModifier(String)} accepts, in the sheet's
+	 * order. Lives here, next to the method that consumes them, for the same reason
+	 * {@code DamageTypes.CANONICAL} lives next to resistances: it was the same list written by hand in
+	 * <b>eight</b> places (two registries, a command, a network message, and four screens), and two
+	 * copies drifting apart is a menu that offers an ability that then modifies nothing.</p>
 	 */
 	String[] ABILITIES = {"str", "dex", "con", "int", "wis", "cha"};
 
@@ -58,47 +59,46 @@ public interface Combatant {
 	int proficiencyBonus();
 
 	/**
-	 * <p>Multiplicador de daño por resistencias/vulnerabilidades/inmunidades. Petrificado (resistencia a
-	 * todo) lo aplica {@link #effectiveDamageMultiplier}, común a los dos lados.</p>
+	 * <p>Damage multiplier from resistances/vulnerabilities/immunities. Petrified (resistance to
+	 * everything) is applied by {@link #effectiveDamageMultiplier}, shared by both sides.</p>
 	 *
-	 * @param magical si el golpe cuenta como mágico. Media docena de resistencias del SRD dependen de ello
-	 *                ("contundente, perforante y cortante de ataques no mágicos"), y sin el dato el
-	 *                bestiario entero resultaba más blando de lo que dice su bloque de estadísticas.
+	 * @param magical whether the hit counts as magical. Half a dozen SRD resistances depend on it
+	 *                ("bludgeoning, piercing, and slashing from nonmagical attacks"), and without that
+	 *                data the entire bestiary came out softer than its stat block says.
 	 */
 	double damageMultiplier(String damageType, boolean magical);
 
 	/**
-	 * <p>Aplica daño a los puntos de golpe reales, ya multiplicado y ya descontados los temporales. No se
-	 * llama directamente desde las reglas: el punto de entrada es {@link #takeDamage}, que es quien aplica
-	 * la absorción de PG temporales antes de llegar aquí.</p>
+	 * <p>Applies damage to the real hit points, already multiplied and with temporary HP already
+	 * deducted. Not called directly from the rules: the entry point is {@link #takeDamage}, which is what
+	 * applies the temporary HP absorption before reaching here.</p>
 	 */
 	void applyRealDamage(int amount);
 
 	/**
-	 * <p>Puntos de golpe temporales: una reserva que absorbe daño ANTES que los reales y que no se cura ni
-	 * se apila — un montón nuevo reemplaza al viejo, se queda el mayor. En 5e los dan Falsa Vida, Heroísmo,
-	 * Palabra de Ánimo y varios rasgos de clase.</p>
+	 * <p>Temporary hit points: a pool that absorbs damage BEFORE the real ones and that neither heals nor
+	 * stacks — a new pile replaces the old one, keeping the larger. In 5e these are granted by False
+	 * Life, Heroism, Word of Encouragement, and several class features.</p>
 	 */
 	int temporaryHp();
 
 	void setTemporaryHp(int amount);
 
 	/**
-	 * <p>Punto de entrada del daño para TODAS las reglas. Los PG temporales se descuentan primero y solo
-	 * el resto llega a los PG reales. Vive aquí y no en cada implementación porque la regla es idéntica
-	 * para jugador, PNJ y monstruo — repetirla tres veces es exactamente lo que {@link Combatant} vino a
-	 * evitar.</p>
+	 * <p>Damage entry point for ALL rules. Temporary HP is deducted first and only the remainder reaches
+	 * real HP. Lives here and not in each implementation because the rule is identical for player, NPC,
+	 * and monster — repeating it three times is exactly what {@link Combatant} came to avoid.</p>
 	 */
 	default void takeDamage(int amount) {
 		applyRealDamage(absorbWithTemporaryHp(amount));
 	}
 
 	/**
-	 * <p>Gasta los PG temporales contra ese daño y devuelve lo que queda por aplicar. Público porque hay
-	 * un camino que NO puede usar {@link #takeDamage}: el PvP con arma vive dentro del
-	 * {@code LivingHurtEvent} de Minecraft y entrega el daño con {@code setAmount}, así que necesita
-	 * descontar la reserva y quedarse con el resto en vez de aplicarlo él. Sin esto, los PG temporales
-	 * absorbían conjuros y golpes de monstruo pero no un espadazo de otro jugador.</p>
+	 * <p>Spends temporary HP against that damage and returns what's left to apply. Public because there's
+	 * a path that CANNOT use {@link #takeDamage}: PvP with a weapon lives inside Minecraft's
+	 * {@code LivingHurtEvent} and delivers damage with {@code setAmount}, so it needs to deduct the pool
+	 * and keep the remainder instead of applying it itself. Without this, temporary HP absorbed spells
+	 * and monster hits but not another player's sword swing.</p>
 	 */
 	default int absorbWithTemporaryHp(int amount) {
 		if (amount <= 0) return 0;
@@ -110,8 +110,9 @@ public interface Combatant {
 	}
 
 	/**
-	 * <p>Concede PG temporales. No se suman a los que ya haya: en 5e se elige uno de los dos montones, y
-	 * quedarse con el mayor es la lectura estándar y la que no castiga por relanzar el conjuro.</p>
+	 * <p>Grants temporary HP. It doesn't add to whatever is already there: in 5e you pick one of the two
+	 * piles, and keeping the larger one is the standard reading and the one that doesn't punish recasting
+	 * the spell.</p>
 	 */
 	default void grantTemporaryHp(int amount) {
 		if (amount > temporaryHp()) setTemporaryHp(amount);
@@ -120,23 +121,23 @@ public interface Combatant {
 	boolean isDefeated();
 
 	/**
-	 * <p>Condiciones activas y, para cada una, el id de entidad que la causó, o {@link #NO_SOURCE} si no se
-	 * sabe. La fuente hace falta para las dos condiciones de 5e cuyo efecto depende de <em>quién</em> las
-	 * provocó: hechizado (no puedes atacar a quien te hechizó) y asustado (desventaja solo mientras veas la
-	 * fuente). Para las otras doce sobra, y por eso se admite que no la haya.</p>
+	 * <p>Active conditions and, for each one, the entity id that caused it, or {@link #NO_SOURCE} if
+	 * unknown. The source is needed for the two 5e conditions whose effect depends on <em>who</em>
+	 * caused them: charmed (you can't attack whoever charmed you) and frightened (disadvantage only while
+	 * you can see the source). For the other twelve it's unnecessary, which is why it's allowed to be absent.</p>
 	 */
 	Map<Condition, Integer> conditionSources();
 
-	/** Único punto de escritura de condiciones: cada implementación persiste donde ya guarda lo demás. */
+	/** The single write point for conditions: each implementation persists it wherever it already stores everything else. */
 	void setConditionSources(Map<Condition, Integer> sources);
 
-	/** Fuente desconocida: la condición se aplicó sin decir quién la causó (p.ej. a mano por el DM). */
+	/** Unknown source: the condition was applied without saying who caused it (e.g. applied by hand by the DM). */
 	int NO_SOURCE = -1;
 
-	//El keySet del EnumMap recien construido, sin copiarlo a un EnumSet aparte: el mapa lo acaba de crear
-	//conditionSources() y no lo tiene nadie mas, asi que su keySet ya es una vista privada y de contains
-	//igual de rapido. Se ahorra una coleccion por llamada, y esto se llama entre 6 y 10 veces por
-	//resolucion de ataque (ventaja, auto-critico, resistencias, cannotAct, cannotMove...).
+	//The keySet of the freshly built EnumMap, without copying it to a separate EnumSet: the map was just
+	//created by conditionSources() and nobody else holds it, so its keySet is already a private view and
+	//just as fast for contains. Saves one collection per call, and this gets called 6 to 10 times per
+	//attack resolution (advantage, auto-crit, resistances, cannotAct, cannotMove...).
 	default Set<Condition> conditions() {
 		return conditionSources().keySet();
 	}
@@ -147,9 +148,9 @@ public interface Combatant {
 	}
 
 	/**
-	 * CA efectiva tras reacciones defensivas (Escudo). Por defecto, la CA base: un combatiente que aún no
-	 * sepa reaccionar simplemente no cambia nada, y el día que un monstruo tenga reacciones se sobreescribe
-	 * aquí sin tocar ninguna ruta de combate.
+	 * Effective AC after defensive reactions (Shield). Defaults to base AC: a combatant that doesn't yet
+	 * know how to react simply doesn't change anything, and the day a monster gets reactions this gets
+	 * overridden here without touching any combat path.
 	 */
 	default int reactiveArmorClass(int attackRollValue) {
 		return armorClass();
@@ -165,55 +166,55 @@ public interface Combatant {
 
 	default void addCondition(Condition condition, int sourceEntityId) {
 		Map<Condition, Integer> updated = new EnumMap<>(Condition.class);
-		updated.putAll(conditionSources()); //putAll y no el constructor de copia: EnumMap(Map) lanza si el mapa viene vacío y no es un EnumMap.
-		//Se reescribe aunque ya estuviera: volver a aplicar la misma condición desde otra fuente debe
-		//actualizarla (te asusta el dragón, no ya el goblin del turno pasado).
+		updated.putAll(conditionSources()); //putAll, not the copy constructor: EnumMap(Map) throws if the map comes in empty and isn't already an EnumMap.
+		//Overwritten even if already present: reapplying the same condition from a different source must
+		//update it (the dragon is scaring you now, not the goblin from last turn anymore).
 		Integer previous = updated.put(condition, sourceEntityId);
 		if (previous == null || previous != sourceEntityId) setConditionSources(updated);
 	}
 
 	default void removeCondition(Condition condition) {
 		Map<Condition, Integer> updated = new EnumMap<>(Condition.class);
-		updated.putAll(conditionSources()); //putAll y no el constructor de copia: EnumMap(Map) lanza si el mapa viene vacío y no es un EnumMap.
+		updated.putAll(conditionSources()); //putAll, not the copy constructor: EnumMap(Map) throws if the map comes in empty and isn't already an EnumMap.
 		if (updated.remove(condition) != null) setConditionSources(updated);
 	}
 
 	/**
-	 * <p>Si ve la fuente de esa condición. Sin fuente registrada devuelve {@code true}: la aproximación
-	 * conservadora, aplicar el efecto igual, que es lo que hacía el mod antes de rastrear fuentes.</p>
+	 * <p>Whether it can see the source of that condition. With no source registered returns {@code true}:
+	 * the conservative approach of applying the effect anyway, which is what the mod did before tracking sources.</p>
 	 */
 	default boolean seesSourceOf(Condition condition) {
 		int sourceId = sourceOf(condition);
 		if (sourceId == NO_SOURCE) return true;
 		Entity source = entity().level().getEntity(sourceId);
-		if (source == null) return false; //La fuente ya no está en el mundo: dejó de darte miedo.
+		if (source == null) return false; //The source is no longer in the world: it stopped scaring you.
 		return !(entity() instanceof LivingEntity living) || living.hasLineOfSight(source);
 	}
 
 	/**
-	 * <p>Hechizado: no puedes atacar a quien te hechizó. El resto de objetivos siguen siendo válidos, así
-	 * que esto depende del objetivo concreto y no se puede resolver mirando solo las condiciones.</p>
+	 * <p>Charmed: you can't attack whoever charmed you. Every other target is still valid, so this
+	 * depends on the specific target and can't be resolved by looking only at conditions.</p>
 	 */
 	default boolean cannotAttack(Entity target) {
-		if (target == null || !hasCondition(Condition.HECHIZADO)) return false;
-		return sourceOf(Condition.HECHIZADO) == target.getId();
+		if (target == null || !hasCondition(Condition.CHARMED)) return false;
+		return sourceOf(Condition.CHARMED) == target.getId();
 	}
 
-	/** No puede actuar (incapacitado, paralizado, petrificado, aturdido, inconsciente). */
+	/** Can't act (incapacitated, paralyzed, petrified, stunned, unconscious). */
 	default boolean cannotAct() {
 		return conditions().stream().anyMatch(Condition::preventsActions);
 	}
 
-	/** Velocidad 0 (agarrado, apresado, paralizado, petrificado, inconsciente). */
+	/** Speed 0 (grappled, restrained, paralyzed, petrified, unconscious). */
 	default boolean cannotMove() {
 		return conditions().stream().anyMatch(Condition::preventsMovement);
 	}
 
-	/** Ventaja/desventaja de las tiradas de ataque que hace ESTE combatiente, por sus propias condiciones. */
+	/** Advantage/disadvantage on attack rolls made BY this combatant, from its own conditions. */
 	default DiceManager.Advantage ownAttackAdvantage() {
-		//Asustado es la única cuya desventaja depende de ver la fuente; el resto aplican siempre.
+		//Frightened is the only one whose disadvantage depends on seeing the source; the rest always apply.
 		boolean disadvantage = conditions().stream()
-			.filter(condition -> condition != Condition.ASUSTADO || seesSourceOf(Condition.ASUSTADO))
+			.filter(condition -> condition != Condition.FRIGHTENED || seesSourceOf(Condition.FRIGHTENED))
 			.anyMatch(Condition::selfAttackDisadvantage);
 		return DiceManager.combineAdvantage(
 			conditions().stream().anyMatch(Condition::selfAttackAdvantage) ? DiceManager.Advantage.ADVANTAGE : DiceManager.Advantage.NORMAL,
@@ -221,13 +222,13 @@ public interface Combatant {
 	}
 
 	/**
-	 * Ventaja/desventaja de quien ataca a ESTE combatiente. {@code melee} decide el caso de derribado, la
-	 * única condición cuyo efecto cambia con la distancia (ventaja a 5 pies, desventaja a distancia).
+	 * Advantage/disadvantage for whoever attacks THIS combatant. {@code melee} decides the prone case,
+	 * the only condition whose effect changes with distance (advantage within 5 feet, disadvantage at range).
 	 */
 	default DiceManager.Advantage advantageAgainst(boolean melee) {
 		boolean advantage = conditions().stream().anyMatch(Condition::attackersAdvantage);
 		boolean disadvantage = conditions().stream().anyMatch(Condition::attackersDisadvantage);
-		if (hasCondition(Condition.DERRIBADO)) {
+		if (hasCondition(Condition.PRONE)) {
 			if (melee) advantage = true;
 			else disadvantage = true;
 		}
@@ -236,21 +237,21 @@ public interface Combatant {
 			disadvantage ? DiceManager.Advantage.DISADVANTAGE : DiceManager.Advantage.NORMAL);
 	}
 
-	/** Un impacto cuerpo a cuerpo contra él es crítico automático (paralizado, inconsciente). */
+	/** A melee hit against it is an automatic critical (paralyzed, unconscious). */
 	default boolean autoCritInMelee() {
 		return conditions().stream().anyMatch(Condition::autoCritInMelee);
 	}
 
-	/** Falla automáticamente salvaciones de Fuerza y Destreza. */
+	/** Automatically fails Strength and Dexterity saves. */
 	default boolean autoFailsStrDexSaves() {
 		return conditions().stream().anyMatch(Condition::autoFailsStrDexSaves);
 	}
 
 	/**
-	 * <p>Resultado de una salvación. Cuando una condición la hace fallar sin tirar —paralizado,
-	 * petrificado, aturdido e inconsciente fallan automáticamente las de Fuerza y Destreza en 5e—
-	 * {@code blockedBy} dice cuál y {@code outcome} es {@code null}: no se tira nada, así que no hay
-	 * número que enseñar.</p>
+	 * <p>Result of a saving throw. When a condition makes it fail without rolling — paralyzed,
+	 * petrified, stunned, and unconscious automatically fail Strength and Dexterity saves in 5e —
+	 * {@code blockedBy} says which one and {@code outcome} is {@code null}: nothing is rolled, so there's
+	 * no number to show.</p>
 	 */
 	record SaveRoll(DiceManager.RollOutcome outcome, Condition blockedBy) {
 
@@ -258,18 +259,17 @@ public interface Combatant {
 			return blockedBy == null && outcome != null && outcome.result() != null && outcome.result().getValue() >= dc;
 		}
 
-		/** Texto para el chat, o {@code null} si la expresión ni siquiera se pudo tirar. */
+		/** Text for chat, or {@code null} if the expression couldn't even be rolled. */
 		public String formatted() {
-			if (blockedBy != null) return "auto (" + blockedBy.label() + ")";
+			if (blockedBy != null) return "auto (" + blockedBy.displayLabel() + ")";
 			return outcome == null || outcome.result() == null ? null : outcome.formatted();
 		}
 	}
 
 	/**
-	 * Salvación de característica, por clave corta o larga ({@code dex} o {@code dexterity}). Antes esto
-	 * se resolvía con un {@code if (target instanceof Player)} en cada sitio que necesitaba una salvación;
-	 * al pasar por aquí, la regla de fallo automático se aplica a jugadores y monstruos por igual y en un
-	 * solo lugar.
+	 * Ability saving throw, by short or long key ({@code dex} or {@code dexterity}). This used to be
+	 * resolved with an {@code if (target instanceof Player)} at every site that needed a save; by going
+	 * through here, the auto-fail rule applies to players and monsters alike, in a single place.
 	 */
 	default SaveRoll rollSave(String ability) {
 		String key = ability == null ? "" : ability.toLowerCase(Locale.ROOT);
@@ -277,12 +277,12 @@ public interface Combatant {
 			Condition blocking = conditions().stream().filter(Condition::autoFailsStrDexSaves).findFirst().orElse(null);
 			return new SaveRoll(null, blocking);
 		}
-		//Expresión con el modificador ya resuelto en vez de "$dex": el objetivo puede ser un monstruo, que
-		//no tiene hoja de la que DiceManager pueda sacar la característica.
+		//Expression with the modifier already resolved instead of "$dex": the target can be a monster,
+		//which has no sheet DiceManager could pull the ability from.
 		return new SaveRoll(DiceManager.roll(new JsonObject(), "1d20 + " + abilityModifier(key)), null);
 	}
 
-	/** Resistencias propias más la resistencia a todo el daño de petrificado, que aplica a ambos lados. */
+	/** Its own resistances plus petrified's resistance to all damage, which applies to both sides. */
 	default double effectiveDamageMultiplier(String damageType, boolean magical) {
 		double multiplier = damageMultiplier(damageType, magical);
 		if (conditions().stream().anyMatch(Condition::resistsAllDamage)) multiplier = Math.min(multiplier, 0.5);
@@ -290,40 +290,40 @@ public interface Combatant {
 	}
 
 	/**
-	 * {@code null} si la entidad no participa en las reglas de 5e (un mob de otro mod sin bloque de
-	 * estadísticas, un armor stand de pruebas, un jugador sin hoja cargada): quien llame debe caer al
-	 * comportamiento normal de Minecraft, exactamente como hacía antes.
+	 * {@code null} if the entity doesn't participate in the 5e rules (a mob from another mod with no
+	 * stat block, a training armor stand, a player with no sheet loaded): the caller must fall back to
+	 * Minecraft's normal behavior, exactly as it did before.
 	 */
 	static Combatant of(Entity entity) {
 		if (entity instanceof Player player) {
 			JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 			return sheet == null ? null : new PlayerCombatant(player, sheet);
 		}
-		//El PNJ se comprueba ANTES que el bloque de monstruo: una entidad con ficha de personaje juega con
-		//las reglas completas de un PJ, y esas mandan sobre cualquier estadística de monstruo que arrastre.
+		//The NPC is checked BEFORE the monster stat block: an entity with a character sheet plays by the
+		//full rules of a PC, and those override any monster stats it might be carrying.
 		String characterId = characterIdOf(entity);
 		if (characterId != null) {
 			JsonObject sheet = SheetLoader.getCharacterSheet(characterId);
 			if (sheet != null) return new NpcCombatant(entity, sheet, characterId);
-			//Ficha borrada con su cuerpo todavía en el mundo: cae a monstruo/vanilla en vez de reventar.
+			//Sheet deleted with its body still in the world: falls back to monster/vanilla instead of crashing.
 		}
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(entity);
 		return block == null ? null : new MonsterCombatant(entity, block);
 	}
 
 	/**
-	 * <p>Liga una entidad del mundo a una ficha de personaje. Mismo compartimento NBT persistente que ya
-	 * usa {@code MonsterRegistry.tagAsMonster} —Minecraft lo guarda y lo carga solo— para no inventar un
-	 * segundo mecanismo de etiquetado que se comporte distinto al recargar el chunk.</p>
+	 * <p>Links a world entity to a character sheet. Same persistent NBT compartment
+	 * {@code MonsterRegistry.tagAsMonster} already uses — Minecraft saves and loads it on its own — so as
+	 * not to invent a second tagging mechanism that behaves differently on chunk reload.</p>
 	 */
 	static void tagAsCharacter(Entity entity, String characterId) {
 		CompoundTag data = entity.getPersistentData();
-		CompoundTag tag = data.getCompound("dndsheets"); //Vacío si no existía, igual que MonsterRegistry.
+		CompoundTag tag = data.getCompound("dndsheets"); //Empty if it didn't exist, same as MonsterRegistry.
 		tag.putString("character", characterId);
 		data.put("dndsheets", tag);
 	}
 
-	/** Id de personaje ligado a esa entidad, o {@code null} si no lleva ficha. */
+	/** Character id linked to that entity, or {@code null} if it carries no sheet. */
 	static String characterIdOf(Entity entity) {
 		CompoundTag data = entity.getPersistentData();
 		if (!data.contains("dndsheets")) return null;
@@ -332,27 +332,27 @@ public interface Combatant {
 		return characterId == null || characterId.isEmpty() ? null : characterId;
 	}
 
-	//--- Respaldado por una hoja -----------------------------------------------------------------------
+	//--- Backed by a sheet -------------------------------------------------------------------------------
 
 	/**
-	 * <p>Lo que comparten un jugador y un PNJ: los dos llevan una hoja de personaje, así que las
-	 * características, la competencia, las afinidades de daño y las condiciones se leen igual en ambos.
-	 * Existe para no reintroducir por la puerta de atrás el mismo corte que {@link Combatant} vino a
-	 * borrar — un PNJ con hoja no es "un monstruo raro", es un personaje sin nadie sentado detrás.</p>
+	 * <p>What a player and an NPC share: both carry a character sheet, so abilities, proficiency, damage
+	 * affinities, and conditions are read the same way for both. Exists so as not to reintroduce, through
+	 * the back door, the same split {@link Combatant} came to erase — an NPC with a sheet isn't "a weird
+	 * monster," it's a character with nobody sitting behind it.</p>
 	 *
-	 * <p>Lo que NO comparten queda fuera y lo pone cada implementación: de dónde salen los PG (el atributo
-	 * de salud de Minecraft para el jugador, la propia hoja para el PNJ), si la armadura y el escudo reales
-	 * equipados cuentan para la CA, y si sabe reaccionar.</p>
+	 * <p>What they DON'T share is left out and set by each implementation: where HP comes from
+	 * (Minecraft's health attribute for the player, the sheet itself for the NPC), whether real equipped
+	 * armor and shield count toward AC, and whether it knows how to react.</p>
 	 */
 	interface SheetBacked extends Combatant {
 
 		JsonObject sheet();
 
-		/** Id con el que se persiste la hoja: UUID del jugador, o id del personaje para un PNJ. */
+		/** Id the sheet is persisted under: the player's UUID, or the character's id for an NPC. */
 		String saveId();
 
-		//La hoja usa nombres largos ("dexterity"); las expresiones de tirada y los bloques de monstruo usan
-		//los cortos ("dex"). La interfaz habla en cortos, así que la traducción vive aquí una sola vez.
+		//The sheet uses long names ("dexterity"); roll expressions and monster stat blocks use short ones
+		//("dex"). The interface speaks in short ones, so the translation lives here in one single place.
 		Map<String, String> LONG_ABILITY_KEYS = Map.of(
 			"str", "strength", "dex", "dexterity", "con", "constitution",
 			"int", "intelligence", "wis", "wisdom", "cha", "charisma");
@@ -367,21 +367,20 @@ public interface Combatant {
 			try {
 				return Integer.parseInt(sheet().get("proficiencyBonus").getAsString());
 			} catch (RuntimeException e) {
-				return 2; //Mismo criterio que CombatManager.abilityModifier: una hoja vieja corrupta no debe tumbar el combate.
+				return 2; //Same criterion as CombatManager.abilityModifier: a corrupted old sheet shouldn't take down combat.
 			}
 		}
 
-		//Una hoja de personaje solo tiene afinidades incondicionales ("damageAffinities"), asi que ignora
-		//"magical" a proposito: el dia que un objeto magico conceda una condicional, se lee aqui y ya.
+		//A character sheet only has unconditional affinities ("damageAffinities"), so "magical" is
+		//deliberately ignored: the day a magic item grants a conditional one, it gets read here and that's it.
 		@Override default double damageMultiplier(String damageType, boolean magical) {
 			double multiplier = DamageTypes.multiplierFor(entity(), sheet(), damageType);
-			//Resistencia temporal de una poción: se combina quedándose con la más protectora, igual que las
-			//de objeto — beber dos pociones del mismo tipo no da inmunidad.
+			//Temporary resistance from a potion: combined by keeping the more protective one, same as
+			//item resistances — drinking two potions of the same type doesn't grant immunity.
 			String temporary = ConsumableManager.activeAffinity(sheet(), damageType == null ? null : damageType.toLowerCase(Locale.ROOT));
 			if (temporary != null) multiplier = Math.min(multiplier, DamageTypes.multiplierForLabel(temporary));
-			//Las resistencias de objetos mágicos se combinan con las de la hoja quedándose con la MÁS
-			//protectora, no sumándose: en 5e dos fuentes de resistencia al fuego siguen siendo resistencia
-			//al fuego, no inmunidad.
+			//Magic item resistances are combined with the sheet's by keeping the MORE protective one, not
+			//adding them: in 5e two sources of fire resistance are still fire resistance, not immunity.
 			if (entity() instanceof Player wearer && damageType != null) {
 				for (MagicItemRegistry.MagicItem item : MagicItemRegistry.activeFor(wearer, sheet())) {
 					String declared = item.affinities().get(damageType.toLowerCase(Locale.ROOT));
@@ -391,7 +390,7 @@ public interface Combatant {
 			return multiplier;
 		}
 
-		//En la hoja, igual que las condiciones: es lo que persiste y lo que el jugador ve al abrirla.
+		//On the sheet, same as conditions: it's what persists and what the player sees when opening it.
 		@Override default int temporaryHp() {
 			return sheet().has("temporaryHp") ? sheet().get("temporaryHp").getAsInt() : 0;
 		}
@@ -414,13 +413,13 @@ public interface Combatant {
 			JsonArray array = new JsonArray();
 			for (Map.Entry<Condition, Integer> entry : sources.entrySet()) array.add(formatEntry(entry));
 			sheet().add("conditions", array);
-			//A disco de inmediato, sin confiar en el autoguardado de 5 minutos: mismo fallo que ya costó
-			//perder cambios de oro/espacios hechos por el DM (ver PROJECT_CONTEXT.md, bug #5).
+			//To disk immediately, without relying on the 5-minute autosave: the same bug that already
+			//cost lost gold/slot changes made by the DM (see PROJECT_CONTEXT.md, bug #5).
 			SheetLoader.saveServer(sheet(), saveId());
 
-			//Y al cliente. Este es el ÚNICO punto de escritura de condiciones, así que es el único sitio
-			//donde hace falta: sin él, la copia del jugador se quedaba con las de hace un rato y el HUD no
-			//podía enseñar nada fiable. Un parche corto, no la hoja entera — llega a mitad de combate.
+			//And to the client. This is the ONLY write point for conditions, so it's the only place it's
+			//needed: without it, the player's copy was left with stale ones and the HUD couldn't show
+			//anything reliable. A short patch, not the whole sheet — it arrives mid-combat.
 			if (entity() instanceof net.minecraft.server.level.ServerPlayer player) {
 				JsonObject patch = new JsonObject();
 				patch.add("conditions", array);
@@ -429,7 +428,7 @@ public interface Combatant {
 		}
 	}
 
-	//--- Jugador ---------------------------------------------------------------------------------------
+	//--- Player ----------------------------------------------------------------------------------------
 
 	record PlayerCombatant(Player player, JsonObject sheet) implements SheetBacked {
 
@@ -439,12 +438,12 @@ public interface Combatant {
 
 		@Override public String name() { return SheetLoader.characterNameOf(sheet, player); }
 
-		/** Incluye la armadura y el escudo REALES equipados, cosa que solo un jugador tiene. */
+		/** Includes the REAL equipped armor and shield, something only a player has. */
 		@Override public int armorClass() {
 			int base = CombatManager.armorClassOf(player, sheet);
-			//Los objetos mágicos suman aquí y no en CombatManager porque este ES el punto único por el que
-			//pasa toda pregunta de "¿cuál es su CA?" — incluida la del Panel de DM y la de un monstruo
-			//decidiendo si acierta.
+			//Magic items are added here and not in CombatManager because this IS the single point every
+			//"what's their AC?" question passes through — including the DM Panel's and a monster deciding
+			//whether it hits.
 			for (MagicItemRegistry.MagicItem item : MagicItemRegistry.activeFor(player, sheet)) base += item.acBonus();
 			return base;
 		}
@@ -453,14 +452,14 @@ public interface Combatant {
 			Combatant.SaveRoll roll = SheetBacked.super.rollSave(ability);
 			int bonus = 0;
 			for (MagicItemRegistry.MagicItem item : MagicItemRegistry.activeFor(player, sheet)) bonus += item.saveBonus();
-			//Solo si de verdad se tiró: una salvación que falla sola por condición no mejora por llevar un
-			//anillo, y sumarle el bono la convertiría en un número que no significa nada.
+			//Only if it was actually rolled: a save that fails outright from a condition doesn't improve
+			//by wearing a ring, and adding the bonus to it would turn it into a number that means nothing.
 			if (bonus == 0 || roll.blockedBy() != null || roll.outcome() == null || roll.outcome().result() == null) return roll;
 			return new Combatant.SaveRoll(DiceManager.roll(sheet, "1d20 + " + (abilityModifier(ability) + bonus)), null);
 		}
 
-		//PG del atributo de salud real de Minecraft, no de la hoja: para un jugador esa ES su vida, y la
-		//hoja solo la refleja.
+		//HP from Minecraft's real health attribute, not from the sheet: for a player that IS their life,
+		//and the sheet only reflects it.
 		@Override public int currentHp() { return (int) Math.ceil(player.getHealth()); }
 
 		@Override public int maxHp() { return (int) Math.ceil(player.getMaxHealth()); }
@@ -471,9 +470,10 @@ public interface Combatant {
 		}
 
 		/**
-		 * OJO: no llamar desde dentro de un {@code LivingHurtEvent} — ahí el daño ya está en vuelo y lo
-		 * aplica el propio evento con {@code setAmount}; llamar a esto allí recurriría. Este camino existe
-		 * para el daño que NO nace de un golpe vanilla (hechizos, ataques de monstruo, efectos por turno).
+		 * WARNING: don't call from inside a {@code LivingHurtEvent} — there the damage is already in
+		 * flight and the event itself applies it with {@code setAmount}; calling this there would
+		 * recurse. This path exists for damage that does NOT originate from a vanilla hit (spells,
+		 * monster attacks, per-turn effects).
 		 */
 		@Override public void applyRealDamage(int amount) {
 			if (amount <= 0) return;
@@ -484,16 +484,16 @@ public interface Combatant {
 		@Override public boolean isDefeated() { return player.getHealth() <= 0; }
 	}
 
-	//--- PNJ (personaje con hoja, sin jugador detrás) ---------------------------------------------------
+	//--- NPC (character with a sheet, no player behind it) ----------------------------------------------
 
 	/**
-	 * <p>Una ficha de personaje que el DM lleva sobre una entidad del mundo: aliados, secundarios,
-	 * enemigos con nivel de clase. Juega con exactamente las mismas reglas que un PJ —de ahí que comparta
-	 * {@link SheetBacked}— en vez de tener que degradarse a un bloque de estadísticas de monstruo.</p>
+	 * <p>A character sheet the DM runs on a world entity: allies, sidekicks, enemies with class levels.
+	 * Plays by exactly the same rules as a PC — hence why it shares {@link SheetBacked} — instead of
+	 * having to be downgraded to a monster stat block.</p>
 	 *
-	 * <p>Sus PG viven en la hoja, no en el atributo de salud de Minecraft: la hoja es lo que persiste
-	 * entre sesiones y sobrevive a que la entidad se descargue o se vuelva a invocar. La entidad es el
-	 * cuerpo, no el personaje.</p>
+	 * <p>Its HP lives on the sheet, not in Minecraft's health attribute: the sheet is what persists
+	 * across sessions and survives the entity unloading or being resummoned. The entity is the body, not
+	 * the character.</p>
 	 */
 	record NpcCombatant(Entity npc, JsonObject sheet, String characterId) implements SheetBacked {
 
@@ -506,8 +506,8 @@ public interface Combatant {
 		}
 
 		/**
-		 * Sin armadura ni escudo reales que consultar (un mob no equipa como un jugador): CA del override
-		 * manual del DM si lo hay, y si no la base de 5e, 10 + mod. Destreza.
+		 * With no real armor or shield to check (a mob doesn't equip like a player): AC from the DM's
+		 * manual override if there is one, otherwise the 5e base, 10 + Dex mod.
 		 */
 		@Override public int armorClass() {
 			if (sheet.has("armorClassOverride")) return sheet.get("armorClassOverride").getAsInt();
@@ -518,8 +518,8 @@ public interface Combatant {
 			return SheetLoader.maxHitPointsFor(sheet, SheetLoader.characterLevelOf(sheet));
 		}
 
-		//Al invocarlo la hoja aún no trae "currentHp"; empieza a PG completos en vez de a 0, que lo mataría
-		//en el primer golpe.
+		//When it's summoned the sheet doesn't yet carry "currentHp"; it starts at full HP instead of 0,
+		//which would kill it on the first hit.
 		@Override public int currentHp() {
 			return sheet.has("currentHp") ? sheet.get("currentHp").getAsInt() : maxHp();
 		}
@@ -533,9 +533,9 @@ public interface Combatant {
 
 			CombatFx.defeated(npc);
 			TurnManager.markDefeated(npc.getId());
-			//Mismo baile que un monstruo: nuestra salud de 5e vive aparte de la de Minecraft, así que die()
-			//no puede inferir la muerte solo y setHealth(0) antes es imprescindible para que isDeadOrDying()
-			//deje de devolver false — sin eso el cuerpo se queda tirado sin desaparecer nunca.
+			//Same dance as a monster: our 5e health lives separately from Minecraft's, so die() can't
+			//infer death on its own, and setHealth(0) beforehand is essential for isDeadOrDying() to stop
+			//returning false — without that, the body would just lie there and never disappear.
 			if (npc instanceof LivingEntity living) {
 				living.setHealth(0.0F);
 				living.die(npc.damageSources().generic());
@@ -547,7 +547,7 @@ public interface Combatant {
 		@Override public boolean isDefeated() { return currentHp() <= 0; }
 	}
 
-	//--- Monstruo --------------------------------------------------------------------------------------
+	//--- Monster ---------------------------------------------------------------------------------------
 
 	record MonsterCombatant(Entity monster, MonsterRegistry.MonsterStatBlock block) implements Combatant {
 
@@ -561,12 +561,12 @@ public interface Combatant {
 
 		@Override public int currentHp() { return MonsterRegistry.currentHpOf(monster); }
 
-		//Escalado por dificultad (Config.scaleMonsterMaxHp): es el único sitio que lee el máximo de un
-		//monstruo ya existente, así que escalar acá basta para que la barra de PG cuadre con lo que de
-		//verdad tiene, sin tocar el bloque de estadísticas compartido (block.maxHp() sigue siendo el valor
-		//crudo del SRD, igual para todas las instancias). El PG inicial al invocar se escala aparte, en
-		//MonsterRegistry.spawnAt/applyStatBlock, con el mismo método — si algún día quedan desincronizados,
-		//un monstruo recién invocado aparecería con menos PG de los que su propia barra anuncia.
+		//Scaled by difficulty (Config.scaleMonsterMaxHp): this is the only place that reads an already
+		//existing monster's max, so scaling here is enough for the HP bar to match what it actually has,
+		//without touching the shared stat block (block.maxHp() stays the raw SRD value, the same for every
+		//instance). Initial HP on summon is scaled separately, in MonsterRegistry.spawnAt/applyStatBlock,
+		//with the same method — if the two ever drift apart, a freshly summoned monster would appear with
+		//less HP than its own bar announces.
 		@Override public int maxHp() { return Config.scaleMonsterMaxHp(block.maxHp()); }
 
 		@Override public int abilityModifier(String ability) { return block.abilityModifier(ability); }
@@ -574,18 +574,18 @@ public interface Combatant {
 		@Override public int proficiencyBonus() { return block.proficiencyBonus(); }
 
 		/**
-		 * Mismo vocabulario que las afinidades de la hoja de un jugador — ver
-		 * {@link DamageTypes#multiplierForLabel}. Se queda con la MAS protectora de las dos cuando ambas
-		 * aplican: una inmunidad incondicional no debe empeorar porque el golpe sea mágico.
+		 * Same vocabulary as a player sheet's affinities — see {@link DamageTypes#multiplierForLabel}.
+		 * Keeps the MORE protective of the two when both apply: an unconditional immunity shouldn't get
+		 * worse just because the hit happens to be magical.
 		 */
 		@Override public double damageMultiplier(String damageType, boolean magical) {
 			if (damageType == null) return 1.0;
 			String type = damageType.toLowerCase(Locale.ROOT);
 			double multiplier = DamageTypes.multiplierForLabel(block.damageAffinities().get(type));
-			//Solo si HAY entrada condicional para ese tipo: comparar contra el 1.0 que devuelve una ausente
-			//aplastaba cualquier resistencia incondicional a "daño normal", que es lo contrario de lo que se
-			//pretende. Cuando existen las dos gana la más protectora — una inmunidad no debe empeorar porque
-			//el golpe encima sea no mágico.
+			//Only if there IS a conditional entry for that type: comparing against the 1.0 an absent one
+			//returns would flatten any unconditional resistance down to "normal damage," the opposite of
+			//what's intended. When both exist, the more protective one wins — an immunity shouldn't get
+			//worse just because the hit also happens to be nonmagical.
 			String conditional = magical ? null : block.nonmagicalAffinities().get(type);
 			if (conditional != null) {
 				multiplier = Math.min(multiplier, DamageTypes.multiplierForLabel(conditional));
@@ -593,7 +593,7 @@ public interface Combatant {
 			return multiplier;
 		}
 
-		//En el mismo compartimento NBT que los PG y las condiciones — ver MonsterRegistry.setCurrentHp.
+		//In the same NBT compartment as HP and conditions — see MonsterRegistry.setCurrentHp.
 		@Override public int temporaryHp() {
 			CompoundTag data = monster.getPersistentData();
 			return data.contains("dndsheets") ? data.getCompound("dndsheets").getInt("temporaryHp") : 0;
@@ -615,10 +615,10 @@ public interface Combatant {
 			MonsterRegistry.setCurrentHp(monster, 0);
 			CombatFx.defeated(monster);
 			TurnManager.markDefeated(monster.getId());
-			//die(), no remove(): un remove() a secas nunca pasa por el camino de muerte vanilla (loot table,
-			//XP...). Nuestra salud real de Minecraft nunca baja (el PG de 5e se trackea aparte), así que die()
-			//no puede inferir la muerte solo; setHealth(0) antes es imprescindible porque isDeadOrDying()
-			//sigue devolviendo false con la salud llena y el mob se quedaría tirado sin desaparecer nunca.
+			//die(), not remove(): a plain remove() never goes through vanilla's death path (loot table,
+			//XP...). Our real Minecraft health never drops (5e HP is tracked separately), so die() can't
+			//infer death on its own; setHealth(0) beforehand is essential because isDeadOrDying() keeps
+			//returning false with full health and the mob would just lie there and never disappear.
 			if (monster instanceof LivingEntity living) {
 				living.setHealth(0.0F);
 				living.die(monster.damageSources().generic());
@@ -648,26 +648,26 @@ public interface Combatant {
 				joined.append(formatEntry(entry));
 			}
 			CompoundTag data = monster.getPersistentData();
-			CompoundTag tag = data.getCompound("dndsheets"); //Vacío si no existía, igual que MonsterRegistry.setCurrentHp.
+			CompoundTag tag = data.getCompound("dndsheets"); //Empty if it didn't exist, same as MonsterRegistry.setCurrentHp.
 			tag.putString(CONDITIONS_KEY, joined.toString());
 			data.put("dndsheets", tag);
 		}
 	}
 
-	//--- Formato en disco -------------------------------------------------------------------------------
+	//--- On-disk format ----------------------------------------------------------------------------------
 
 	/**
-	 * <p>Una condición se guarda como {@code etiqueta} o {@code etiqueta@idFuente}, en el array JSON de la
-	 * hoja y en la cadena NBT del monstruo por igual. El sufijo es opcional a propósito: lo guardado antes
-	 * de que existieran las fuentes se sigue leyendo tal cual, como condición sin fuente conocida.</p>
+	 * <p>A condition is stored as {@code label} or {@code label@sourceId}, both in the sheet's JSON array
+	 * and in the monster's NBT string alike. The suffix is deliberately optional: what was saved before
+	 * sources existed is still read as-is, as a condition with no known source.</p>
 	 *
-	 * <p>El id de entidad no sobrevive a un reinicio del servidor (Minecraft los reasigna), así que tras
-	 * reiniciar una condición conserva su efecto pero pierde a quién señalaba. Es aceptable: las dos que
-	 * usan la fuente ya tratan "no la veo" como "no aplica", que es el lado seguro.</p>
+	 * <p>The entity id doesn't survive a server restart (Minecraft reassigns them), so after a restart a
+	 * condition keeps its effect but loses track of who it was pointing at. That's acceptable: the two
+	 * conditions that use the source already treat "can't see it" as "doesn't apply," which is the safe side.</p>
 	 */
-	//Público, no privado, pese a que solo lo usan las dos implementaciones de aquí abajo: es el formato en
-	//disco, y romperlo hace que las condiciones dejen de sobrevivir a un reinicio SIN que falle nada
-	//visible. Expuesto para que JsonContentSelfTest pueda fijar la ida y vuelta.
+	//Public, not private, even though only the two implementations below use it: it's the on-disk
+	//format, and breaking it makes conditions stop surviving a restart WITHOUT anything visibly failing.
+	//Exposed so JsonContentSelfTest can pin down the round trip.
 	public static void parseEntry(String entry, Map<Condition, Integer> into) {
 		int separator = entry.indexOf('@');
 		String label = separator < 0 ? entry : entry.substring(0, separator);
@@ -678,7 +678,7 @@ public interface Combatant {
 			try {
 				source = Integer.parseInt(entry.substring(separator + 1));
 			} catch (NumberFormatException e) {
-				source = NO_SOURCE; //Etiqueta manipulada a mano: se queda sin fuente en vez de tumbar la carga.
+				source = NO_SOURCE; //Hand-tampered label: left with no source instead of taking down the load.
 			}
 		}
 		into.put(condition, source);

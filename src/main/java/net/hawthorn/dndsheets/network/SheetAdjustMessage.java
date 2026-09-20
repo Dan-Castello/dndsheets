@@ -9,24 +9,24 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: botones de SheetAdjustScreen que ajustan UN campo de la hoja de otro
-//jugador (equivalente en GUI a /dndsheet gold|setlevel|setslots|advantage|damagetype|pact). Reemplaza
+//Client (the DM) -> server: buttons in SheetAdjustScreen that adjust ONE field of another player's sheet
+//(GUI equivalent of /dndsheet gold|setlevel|setslots|advantage|damagetype|pact). Replaces
 //SheetGoldMessage, SheetLevelMessage, SheetSlotsMessage, SheetAdvantageMessage,
-//SheetDamageAffinityMessage y SheetPactMessage, que eran 6 clases casi idénticas (mismo targetUuid +
-//withDmTarget) salvo el payload y a qué SheetCommand.applyX delegaban — mismo patrón que ya usa
-//ScreenActionMessage para acciones sin payload. BREAKING CHANGE de protocolo: el id de red de estos 6
-//mensajes cambia (ver DndsheetsMod.registerNetworkMessages) — un cliente y un servidor de versiones
-//distintas del mod ya no son compatibles entre sí para estas acciones.
+//SheetDamageAffinityMessage, and SheetPactMessage, which were 6 nearly identical classes (same
+//targetUuid + withDmTarget) except for the payload and which SheetCommand.applyX they delegated to — the
+//same pattern already used by ScreenActionMessage for payload-less actions. Protocol BREAKING CHANGE: the
+//network id of these 6 messages changes (see DndsheetsMod.registerNetworkMessages) — a client and server
+//running different versions of the mod are no longer compatible with each other for these actions.
 public class SheetAdjustMessage {
-	//CONDITION se añade AL FINAL, no en orden alfabético: writeEnum/readEnum viajan por ordinal, así que
-	//insertarla en medio le cambiaría el número a todas las de después, exactamente el mismo fallo
-	//silencioso que el orden de registro de mensajes (ver DndsheetsMod.registerNetworkMessages).
+	//CONDITION is appended AT THE END, not in alphabetical order: writeEnum/readEnum travel by ordinal, so
+	//inserting it in the middle would shift the number of every one after it — exactly the same silent
+	//failure mode as message registration order (see DndsheetsMod.registerNetworkMessages).
 	public enum Field { GOLD, LEVEL, SLOTS, ADVANTAGE, DAMAGE_AFFINITY, PACT, CONDITION }
 
 	final String targetUuid;
 	final Field field;
-	//No todo Field usa las 4: GOLD usa strA+intA, LEVEL usa intA, SLOTS usa intA+intB, ADVANTAGE/PACT
-	//usan strA, DAMAGE_AFFINITY usa strA+strB. Las que sobran viajan vacías/0 y se ignoran en el handler.
+	//Not every Field uses all 4: GOLD uses strA+intA, LEVEL uses intA, SLOTS uses intA+intB, ADVANTAGE/PACT
+	//use strA, DAMAGE_AFFINITY uses strA+strB. The leftover ones travel empty/0 and are ignored in the handler.
 	String strA = "", strB = "";
 	int intA, intB;
 
@@ -42,9 +42,9 @@ public class SheetAdjustMessage {
 		return m;
 	}
 
-	public static SheetAdjustMessage level(String targetUuid, int nivel) {
+	public static SheetAdjustMessage level(String targetUuid, int level) {
 		SheetAdjustMessage m = new SheetAdjustMessage(targetUuid, Field.LEVEL);
-		m.intA = nivel;
+		m.intA = level;
 		return m;
 	}
 
@@ -68,13 +68,13 @@ public class SheetAdjustMessage {
 		return m;
 	}
 
-	public static SheetAdjustMessage pact(String targetUuid, String pacto) {
+	public static SheetAdjustMessage pact(String targetUuid, String pact) {
 		SheetAdjustMessage m = new SheetAdjustMessage(targetUuid, Field.PACT);
-		m.strA = pacto;
+		m.strA = pact;
 		return m;
 	}
 
-	/** {@code apply} false quita la condición en vez de ponerla — un solo mensaje para los dos sentidos. */
+	/** {@code apply} false removes the condition instead of applying it — a single message for both directions. */
 	public static SheetAdjustMessage condition(String targetUuid, String conditionLabel, boolean apply) {
 		SheetAdjustMessage m = new SheetAdjustMessage(targetUuid, Field.CONDITION);
 		m.strA = conditionLabel;
@@ -103,15 +103,15 @@ public class SheetAdjustMessage {
 	public static void handler(SheetAdjustMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
 		NetworkUtil.handleOnServer(context, () -> {
-			//withDmTarget no le da al llamador una referencia al DM (solo al target), así que el aviso de
-			//confirmación se manda acá aparte — sin esto, pulsar "Aplicar" en SheetAdjustScreen (cualquier
-			//fila: oro, espacios de conjuro, ventaja, tipo de daño, pacto, nivel) no daba NINGUNA señal de
-			//que había pasado algo, así que un cambio que sí funcionaba parecía no hacer nada.
+			//withDmTarget doesn't give the caller a reference to the DM (only to the target), so the
+			//confirmation notice is sent here separately — without this, pressing "Apply" in
+			//SheetAdjustScreen (any row: gold, spell slots, advantage, damage type, pact, level) gave NO
+			//sign that anything had happened, so a change that did work looked like it did nothing.
 			ServerPlayer dm = context.getSender();
 			DndsheetsMod.withDmTarget(context, message.targetUuid, target -> {
 				switch (message.field) {
 					case GOLD -> SheetCommand.applyGold(target, message.strA, message.intA);
-					//Mismo clamp [1,20] que aplicaba SheetLevelMessage.handler antes de delegar.
+					//Same [1,20] clamp that SheetLevelMessage.handler applied before delegating.
 					case LEVEL -> SheetCommand.applyLevel(target, Math.max(1, Math.min(20, message.intA)));
 					case SLOTS -> SheetCommand.applySlots(target, message.intA, message.intB);
 					case ADVANTAGE -> SheetCommand.applyAdvantage(target, message.strA);

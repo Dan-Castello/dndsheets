@@ -11,14 +11,14 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Edita pool/peso/tags de una pieza ya capturada, con un botón "Borrar pieza" propio (ver
- * {@link SmallFormScreen#showDeleteButton()}) — antes borrar vivía como una fila "Borrar: id" aparte en
- * {@link DungeonPieceListScreen}, que duplicaba el alto de la lista por cada pieza.</p>
+ * <p>Edits pool/weight/tags of an already-captured piece, with its own "Delete piece" button (see
+ * {@link SmallFormScreen#showDeleteButton()}) — deletion used to live as a separate "Delete: id" row in
+ * {@link DungeonPieceListScreen}, which doubled the list's height for every piece.</p>
  */
 public class DungeonPieceEditScreen extends SmallFormScreen {
-	//No se relee de DungeonPieceRegistry en el cliente: ese registro solo vive en memoria del servidor (ver
-	//DungeonPieceRegistry), así que los valores para prellenar el formulario vienen del propio objeto que
-	//ya mandó DungeonPieceListMessage, no de una relectura local que estaría siempre vacía.
+	//Not re-read from DungeonPieceRegistry on the client: that registry only lives in the server's
+	//memory (see DungeonPieceRegistry), so the values used to prefill the form come from the object
+	//already sent by DungeonPieceListMessage, not from a local re-read that would always be empty.
 	private final DungeonPieceRegistry.DungeonPiece piece;
 	private EditBox poolBox, weightBox, tagsBox;
 
@@ -34,7 +34,7 @@ public class DungeonPieceEditScreen extends SmallFormScreen {
 	@Override
 	protected void buildForm() {
 		poolBox = addField("Pool", piece.pool(), 32);
-		weightBox = addField("Peso (1-150)", String.valueOf(piece.weight()), 4);
+		weightBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.weight_range"), String.valueOf(piece.weight()), 4);
 		tagsBox = addField("Tags", piece.tags(), 64);
 	}
 

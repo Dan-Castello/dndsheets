@@ -2,7 +2,7 @@
   "mod": "naturalist",
   "name": "Naturalist",
   "url": "https://www.curseforge.com/minecraft/mc-mods/naturalist",
-  "_nota": "Fauna real. Se carga despues de Alexs Mobs: con los dos instalados, gana este donde coincidan. Sin hiena ni buho: no estan en el mod, y esas cuatro se quedan con su modelo vanilla.",
+  "_note": "Real fauna. It loads after Alex's Mobs: with both installed, this one wins where they overlap. No hyena or owl: they are not in the mod, and those four keep their vanilla model.",
   "skins": {
     "dndsheets:lion": "naturalist:lion",
     "dndsheets:deer": "naturalist:deer",

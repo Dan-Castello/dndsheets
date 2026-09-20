@@ -8,31 +8,31 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- * <p>Los ítems "fijos" que hasta ahora solo se podían entregar por comando (ver
+ * <p>The "fixed" items that until now could only be handed out by command (see
  * {@code command.SheetCommand}'s {@code give*Item}, {@code command.MonsterCommand.dmtool/movetool},
- * {@code command.NotesCommand.give}) — cada uno ya tenía un builder público reusado tal cual, esto solo
- * les da un nombre común para que {@code client.gui.GiveItemListScreen}/{@code network.GiveItemMessage}
- * los traten de forma genérica en vez de un mensaje de red por ítem.</p>
+ * {@code command.NotesCommand.give}) — each one already had a public builder reused as-is, this just
+ * gives them a common name so {@code client.gui.GiveItemListScreen}/{@code network.GiveItemMessage} can
+ * treat them generically instead of one network message per item.</p>
  */
 public enum GiveableItem {
-	RESTKIT("Kit de Descanso", () -> List.of(RestManager.buildRestKitStack())),
-	RAGE("Tótem de Furia (Bárbaro)", () -> List.of(BarbarianRageManager.buildRageItemStack())),
-	SECOND_WIND("Segundo Aliento (Guerrero)", () -> List.of(FighterSecondWindManager.buildSecondWindStack())),
-	INSPIRATION("Cuerno de Inspiración (Bardo)", () -> List.of(BardInspirationManager.buildInspirationStack())),
-	WILD_SHAPE("Forma Salvaje (Druida)", () -> List.of(DruidWildShapeManager.buildWildShapeStack())),
-	METAMAGIC("Metamagia: Hechizo Gemelo (Hechicero)", () -> List.of(SorcererMetamagicManager.buildTwinnedSpellStack())),
-	SMITE("Castigo Divino (Paladín)", () -> List.of(PaladinSmiteManager.buildDivineSmiteStack())),
-	TURN_UNDEAD("Símbolo Sagrado (Clérigo)", () -> List.of(ClericTurnUndeadManager.buildTurnUndeadStack())),
-	HUNTER_MARK("Marca del Cazador (Explorador)", () -> List.of(RangerHunterMarkManager.buildHunterMarkStack())),
-	SHIELD("Escudo (reacción)", () -> List.of(ShieldManager.buildShieldStack())),
-	COUNTERSPELL("Contrahechizo (reacción)", () -> List.of(CounterspellManager.buildCounterspellStack())),
-	TURN_ACTIONS("Acciones de Turno (esquivar/correr/desengancharse)", () -> List.of(TurnActionManager.buildTurnActionStack())),
-	HELP_ACTION("Ayudar (da ventaja a un aliado)", () -> List.of(HelpActionManager.buildHelpStack())),
-	TURN_ITEMS("Ítems de turno (siguiente/deshacer)", () -> List.of(TurnItemManager.buildNextTurnStack(), TurnItemManager.buildUndoTurnStack())),
-	DM_WAND("Vara de DM", () -> List.of(MonsterCommand.buildDmToolStack())),
-	MOVE_WAND("Vara de Movimiento", () -> List.of(MonsterCommand.buildMoveToolStack())),
-	NOTEBOOK("Cuaderno del DM", () -> List.of(NotesCommand.buildNotebookStack())),
-	SHOVE("Empujar (acción, cuerpo a cuerpo)", () -> List.of(ShoveManager.buildShoveStack()));
+	RESTKIT("gui.dndsheets.giveable.restkit", () -> List.of(RestManager.buildRestKitStack())),
+	RAGE("gui.dndsheets.giveable.rage", () -> List.of(BarbarianRageManager.buildRageItemStack())),
+	SECOND_WIND("gui.dndsheets.giveable.second_wind", () -> List.of(FighterSecondWindManager.buildSecondWindStack())),
+	INSPIRATION("gui.dndsheets.giveable.inspiration", () -> List.of(BardInspirationManager.buildInspirationStack())),
+	WILD_SHAPE("gui.dndsheets.giveable.wild_shape", () -> List.of(DruidWildShapeManager.buildWildShapeStack())),
+	METAMAGIC("gui.dndsheets.giveable.metamagic", () -> List.of(SorcererMetamagicManager.buildTwinnedSpellStack())),
+	SMITE("gui.dndsheets.giveable.smite", () -> List.of(PaladinSmiteManager.buildDivineSmiteStack())),
+	TURN_UNDEAD("gui.dndsheets.giveable.turn_undead", () -> List.of(ClericTurnUndeadManager.buildTurnUndeadStack())),
+	HUNTER_MARK("gui.dndsheets.giveable.hunter_mark", () -> List.of(RangerHunterMarkManager.buildHunterMarkStack())),
+	SHIELD("gui.dndsheets.giveable.shield", () -> List.of(ShieldManager.buildShieldStack())),
+	COUNTERSPELL("gui.dndsheets.giveable.counterspell", () -> List.of(CounterspellManager.buildCounterspellStack())),
+	TURN_ACTIONS("gui.dndsheets.giveable.turn_actions", () -> List.of(TurnActionManager.buildTurnActionStack())),
+	HELP_ACTION("gui.dndsheets.giveable.help_action", () -> List.of(HelpActionManager.buildHelpStack())),
+	TURN_ITEMS("gui.dndsheets.giveable.turn_items", () -> List.of(TurnItemManager.buildNextTurnStack(), TurnItemManager.buildUndoTurnStack())),
+	DM_WAND("gui.dndsheets.giveable.dm_wand", () -> List.of(MonsterCommand.buildDmToolStack())),
+	MOVE_WAND("gui.dndsheets.giveable.move_wand", () -> List.of(MonsterCommand.buildMoveToolStack())),
+	NOTEBOOK("gui.dndsheets.giveable.notebook", () -> List.of(NotesCommand.buildNotebookStack())),
+	SHOVE("gui.dndsheets.giveable.shove", () -> List.of(ShoveManager.buildShoveStack()));
 
 	private final String label;
 	private final Supplier<List<ItemStack>> stacks;

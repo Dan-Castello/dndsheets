@@ -13,14 +13,14 @@ import org.apache.logging.log4j.Logger;
 import java.util.function.Supplier;
 
 /**
- * <p>Cliente -&gt; servidor: pulsó un dado de la ficha. El servidor resuelve la tirada y la anuncia.</p>
+ * <p>Client -&gt; server: pressed a die on the sheet. The server resolves the roll and announces it.</p>
  *
- * <p>Ya no lleva {@code x}/{@code y}/{@code z}. Servían para una sola cosa —dónde suena el dado, en
- * {@code RollAnnouncerProcedure.announce}— y llegaban desde unos campos de {@code CharacterSheetScreen}
- * que se copiaban del menú <b>al abrir la ficha</b>. O sea que el sonido salía de donde estabas cuando
- * abriste la hoja, no de donde estás al tirar: con la ficha abierta y caminando, el dado sonaba a tu
- * espalda. El servidor ya tiene al jugador que manda el paquete, así que la posición se lee de él y
- * además está fresca.</p>
+ * <p>No longer carries {@code x}/{@code y}/{@code z}. They served a single purpose — where the die sound
+ * plays, in {@code RollAnnouncerProcedure.announce} — and came from fields on {@code CharacterSheetScreen}
+ * that were copied from the menu <b>when the sheet was opened</b>. In other words, the sound came from
+ * wherever you were when you opened the sheet, not from where you are when you roll: with the sheet open
+ * and walking, the die would sound behind you. The server already has the player who sent the packet, so
+ * the position is read from them, and it's always fresh.</p>
  */
 public class SheetRollButtonMessage {
 	int category, index, subIndex;

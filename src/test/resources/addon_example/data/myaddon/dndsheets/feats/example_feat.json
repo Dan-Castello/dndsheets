@@ -1,0 +1,5 @@
+{
+  "id": "myaddon:example_feat",
+  "name": "Example Feat",
+  "description": "An example feat to test the addon path."
+}

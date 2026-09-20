@@ -19,13 +19,13 @@ import com.google.gson.JsonObject;
 import com.mojang.brigadier.context.CommandContext;
 
 /**
- * <p>Los cuatro alias de tirada: {@code /roll} y su atajo {@code /r}, y sus dos gemelos privados
- * {@code /rollprivate} y {@code /rp}.</p>
+ * <p>The four roll aliases: {@code /roll} and its shortcut {@code /r}, and their two private twins
+ * {@code /rollprivate} and {@code /rp}.</p>
  *
- * <p>Privado quiere decir que la tirada solo le llega a quien tira y a los operadores conectados (ver
- * {@code RollAnnouncerProcedure.sendPrivately}). Es un comando aparte en vez de un argumento final
- * porque {@code expression} usa {@code MessageArgument.message()}, que captura todo el resto del texto:
- * no hay forma limpia de distinguir un flag final de la propia expresión de dados.</p>
+ * <p>Private means the roll only reaches whoever rolled it and connected operators (see
+ * {@code RollAnnouncerProcedure.sendPrivately}). It's a separate command instead of a trailing argument
+ * because {@code expression} uses {@code MessageArgument.message()}, which captures the rest of the
+ * text: there's no clean way to distinguish a trailing flag from the dice expression itself.</p>
  */
 @Mod.EventBusSubscriber
 public class RollCommand {
@@ -48,12 +48,12 @@ public class RollCommand {
 		Level world = source.getUnsidedLevel();
 
 		Entity entity = source.getEntity();
-		//Sin entidad —consola o bloque de comandos— se tira en nombre del jugador falso del servidor:
-		//RollAnnouncerProcedure necesita un uuid con el que buscar la hoja.
+		//With no entity —console or command block— the roll happens on behalf of the server's fake
+		//player: RollAnnouncerProcedure needs a uuid to look up the sheet with.
 		if (entity == null && world instanceof ServerLevel serverLevel)
 			entity = FakePlayerFactory.getMinecraft(serverLevel);
-		//Antes se llamaba a getStringUUID() sobre este entity sin comprobarlo: si el mundo no era un
-		//ServerLevel seguía siendo null y el comando reventaba con NPE en vez de no hacer nada.
+		//getStringUUID() used to be called on this entity without checking it: if the world wasn't a
+		//ServerLevel it stayed null and the command blew up with an NPE instead of just doing nothing.
 		if (entity == null) return 0;
 
 		Vec3 position = source.getPosition();

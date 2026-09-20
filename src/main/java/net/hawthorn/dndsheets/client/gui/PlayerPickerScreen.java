@@ -10,11 +10,11 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * <p>Primer paso genérico de cualquier herramienta del Panel de DM que actúa sobre OTRO jugador (conceder
- * un rasgo, ajustar oro/espacios/ventaja...): a quién. La lista de jugadores conectados ya la conoce el
- * cliente (tablist de {@link net.minecraft.client.multiplayer.ClientPacketListener}), así que no hace
- * falta pedírsela al servidor. Elegir uno pasa su UUID (como texto) a {@code onPick}, que decide qué
- * pantalla u mensaje viene después — así esta pantalla no necesita saber para qué se la está usando.</p>
+ * <p>Generic first step of any DM Panel tool that acts on ANOTHER player (grant a trait, adjust
+ * gold/slots/advantage...): who. The client already knows the list of connected players (the tablist
+ * from {@link net.minecraft.client.multiplayer.ClientPacketListener}), so there's no need to ask the
+ * server for it. Picking one passes their UUID (as text) to {@code onPick}, which decides what screen
+ * or message comes next — so this screen doesn't need to know what it's being used for.</p>
  */
 public class PlayerPickerScreen extends ListPickerScreen {
 	private final Consumer<String> onPick;
@@ -24,8 +24,8 @@ public class PlayerPickerScreen extends ListPickerScreen {
 		this.onPick = onPick;
 	}
 
-	//El prompt entra ya como Component para que pueda ser translatable: era un String suelto, y eso
-	//obligaba a que los once sitios que la abren escribieran su titulo en espanol fijo.
+	//The prompt comes in as a Component so it can be translatable: it used to be a plain String, which
+	//forced the eleven call sites that open it to hardcode their title in Spanish.
 	public static void open(Component prompt, Consumer<String> onPick) {
 		Minecraft.getInstance().setScreen(new PlayerPickerScreen(prompt, onPick, Minecraft.getInstance().screen));
 	}

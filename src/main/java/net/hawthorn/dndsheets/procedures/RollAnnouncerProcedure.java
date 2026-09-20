@@ -44,13 +44,13 @@ public class RollAnnouncerProcedure {
 		try {
 			DiceManager.RollOutcome outcome = DiceManager.roll(sheet, MessageArgument.getMessage(arguments, "expression").getString());
 			if (outcome.result() == null) {
-				message = ChatFeedback.rollFailed("revisa que la expresión esté bien escrita.");
+				message = ChatFeedback.rollFailed(Component.translatable("chat.dndsheets.roll.bad_expression").getString());
 			} else {
-				String characterName = roller != null ? SheetLoader.characterNameOf(sheet, roller) : "Alguien";
+				String characterName = roller != null ? SheetLoader.characterNameOf(sheet, roller) : Component.translatable("chat.dndsheets.roll.someone").getString();
 				message = ChatFeedback.roll(characterName, null, outcome.formatted());
 			}
 		} catch (CommandSyntaxException ignored) {
-			message = ChatFeedback.rollFailed("expresión inválida.");
+			message = ChatFeedback.rollFailed(Component.translatable("chat.dndsheets.roll.invalid_expression").getString());
 		}
 
 		announce(world, x, y, z, roller, message, isPrivate);
@@ -70,21 +70,22 @@ public class RollAnnouncerProcedure {
 		List<String> expressions = roll.findExpressionsInSheet(sheet);
 		List<String> contexts = roll.findContextsInSheet(sheet);
 
-		//Ventaja/desventaja pendiente e Inspiración Bárdica concedida solo se consumían al golpear de verdad
-		//a un objetivo (CombatManager/SpellCastManager) — clicar el botón de la pestaña Ataques las ignoraba
-		//por completo aunque estuvieran activas (el jugador las veía "desaparecer" sin aplicarse nunca a
-		//nada, ver feedback de playtesting). Se consumen acá solo si el grupo de verdad trae una tirada de
-		//ataque (empieza con "1d20") y solo se aplican a esa, no a las demás tiradas del mismo botón (p.ej.
-		//el daño va aparte). Fuera de la pestaña Ataques (Pruebas/Salvaciones/Habilidades) no se tocan: esos
-		//recursos son "próximo ataque", no cualquier tirada.
+		//Pending advantage/disadvantage and granted Bardic Inspiration used to only get consumed on an
+		//actual hit against a target (CombatManager/SpellCastManager) — clicking the button on the
+		//Attacks tab ignored them completely even when active (the player saw them "disappear" without
+		//ever being applied to anything, per playtesting feedback). They're consumed here only if the
+		//group actually carries an attack roll (starts with "1d20"), and only applied to that one, not
+		//to the other rolls in the same button (e.g. damage is separate). Outside the Attacks tab
+		//(Checks/Saves/Skills) they're left untouched: those resources are "next attack", not any roll.
 		boolean isAttackForm = roll.getCategory() == RollIndex.Category.ATTACKS;
 		boolean hasAttackRoll = isAttackForm && expressions.stream().anyMatch(e -> e.trim().toLowerCase().startsWith("1d20"));
 		DiceManager.Advantage advantage = hasAttackRoll ? CombatManager.consumeAdvantage(sheet) : DiceManager.Advantage.NORMAL;
 		int inspiration = hasAttackRoll ? BardInspirationManager.consumeAttackBonus(sheet) : 0;
 
-		//Penumbra: desventaja en Percepción, y en NINGUNA otra de las 18 habilidades — es la regla exacta
-		//del SRD (ver Light), no "desventaja en todo lo que hagas a oscuras". Solo mira al jugador que tira,
-		//así que un DM tirando por un PNJ (roller no ServerPlayer, o sin ficha) no dispara nada.
+		//Dim light: disadvantage on Perception, and on NONE of the other 18 skills — that's the exact
+		//SRD rule (see Light), not "disadvantage on everything you do in the dark". Only looks at the
+		//player who's rolling, so a DM rolling for an NPC (roller not a ServerPlayer, or has no sheet)
+		//triggers nothing.
 		boolean isPerceptionCheck = roll.getCategory() == RollIndex.Category.SKILLS && index == RollIndex.PERCEPTION_SKILL_INDEX;
 		boolean perceptionDisadvantage = isPerceptionCheck && roller instanceof ServerPlayer serverRoller
 			&& VisionManager.inDimLight(serverRoller);
@@ -97,7 +98,7 @@ public class RollAnnouncerProcedure {
 			if (isAttackRoll) {
 				String withInspiration = inspiration > 0 ? expression + " + " + inspiration : expression;
 				outcome = DiceManager.rollAttack(sheet, withInspiration, advantage).outcome();
-				attackBonusApplied = true; //Solo la primera tirada "1d20" del grupo consume el recurso, igual que un ataque físico real.
+				attackBonusApplied = true; //Only the first "1d20" roll in the group consumes the resource, same as a real physical attack.
 			} else if (perceptionDisadvantage && expression.trim().toLowerCase().startsWith("1d20")) {
 				outcome = DiceManager.rollWithAdvantage(sheet, expression, DiceManager.Advantage.DISADVANTAGE);
 			} else {
@@ -110,8 +111,8 @@ public class RollAnnouncerProcedure {
 			resultRolls.add(outcome.formatted());
 		}
 
-		//Antes reenviaba la hoja completa por cada tirada de ataque desde la pestaña de Ataques — ahora solo
-		//los dos campos que consumeAdvantage/consumeAttackBonus acaban de tocar.
+		//Previously resent the entire sheet for every attack roll from the Attacks tab — now only the
+		//two fields that consumeAdvantage/consumeAttackBonus just touched.
 		if (hasAttackRoll && roller instanceof ServerPlayer serverPlayer) {
 			JsonObject patch = new JsonObject();
 			patch.addProperty("nextAttackAdvantage", "normal");
@@ -121,36 +122,36 @@ public class RollAnnouncerProcedure {
 
 		Component message;
 		if (resultRolls.isEmpty()) {
-			message = ChatFeedback.rollFailed("revisa que las características estén puestas y que la expresión sea correcta.");
+			message = ChatFeedback.rollFailed(Component.translatable("chat.dndsheets.roll.missing_abilities").getString());
 		} else {
-			String characterName = roller != null ? SheetLoader.characterNameOf(sheet, roller) : "Alguien";
+			String characterName = roller != null ? SheetLoader.characterNameOf(sheet, roller) : Component.translatable("chat.dndsheets.roll.someone").getString();
 			message = ChatFeedback.multiRoll(characterName, contexts, resultRolls);
 		}
 
 		announce(world, x, y, z, roller, message, isPrivate);
 	}
 
-	//Punto único de entrega, para las dos formas de tirada (sheet y /roll): pública a quien esté cerca de
-	//verdad (ver ChatFeedback.broadcast, mismo radio), o privada (ver sendPrivately) — antes esto era
-	//broadcastSystemMessage server-wide, así que CUALQUIER tirada suelta de habilidad/salvación de
-	//CUALQUIER jugador (los botones de la hoja, /roll) llegaba a todo el servidor sin importar dónde
-	//estuviera — con una mesa grande esto era la mayor fuente de saturación del chat, muy por encima de
-	//combate/magia (que ya estaban acotados). El sonido de dado se oye igual en ambos casos, es ambiente,
-	//no delata el resultado.
+	//Single delivery point, for both roll forms (sheet and /roll): public to whoever is actually
+	//nearby (see ChatFeedback.broadcast, same radius), or private (see sendPrivately) — this used to
+	//be a server-wide broadcastSystemMessage, so ANY loose skill/save roll from ANY player (the
+	//sheet's buttons, /roll) reached the entire server no matter where they were — with a large table
+	//this was the biggest source of chat flooding, well above combat/magic (which were already
+	//scoped). The dice sound plays the same in both cases; it's ambience, it doesn't give away the
+	//result.
 	private static void announce(LevelAccessor world, double x, double y, double z, Entity roller, Component message, boolean isPrivate) {
 		if (isPrivate) sendPrivately(world, roller, message);
 		else if (roller != null) ChatFeedback.broadcast(roller, message);
-		else world.getServer().getPlayerList().broadcastSystemMessage(message, false); //Sin entidad de origen (no debería pasar, ver RollCommand), no hay desde dónde medir radio.
+		else world.getServer().getPlayerList().broadcastSystemMessage(message, false); //No origin entity (shouldn't happen, see RollCommand), there's nowhere to measure a radius from.
 
 		if (world instanceof Level level && !level.isClientSide()) {
 			level.playSound(null, BlockPos.containing(x, y, z), DndsheetsModSounds.DICE.get(), SoundSource.NEUTRAL, 1, 1);
 		}
 	}
 
-	//Tirada privada (Sigilo, Investigación...): solo le llega a quien tiró y a quien esté conectado como
-	//operador (mismo criterio hasPermissions(2) que ya usa el resto del mod para "es un DM") — sin canal
-	//de susurro nativo que reusar en este mod, así que es sendSystemMessage directo a cada destinatario,
-	//sin duplicar si el propio roller ya es op.
+	//Private roll (Stealth, Investigation...): only reaches whoever rolled and whoever is connected as
+	//an operator (same hasPermissions(2) criterion the rest of the mod already uses for "is a DM") —
+	//there's no native whisper channel to reuse in this mod, so it's a direct sendSystemMessage to
+	//each recipient, without duplicating if the roller themself is already an op.
 	private static void sendPrivately(LevelAccessor world, Entity roller, Component message) {
 		Set<ServerPlayer> recipients = new HashSet<>();
 		if (roller instanceof ServerPlayer serverRoller) recipients.add(serverRoller);

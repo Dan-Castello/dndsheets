@@ -21,13 +21,13 @@ import java.nio.file.Path;
 import java.util.Collection;
 
 /**
- * <p>Carga presets de clase desde JSON en {@code <carpeta del mundo>/dndsheets/presets/<archivo>.json}
- * (ver {@link PresetRegistry} para el formato) y los aplica a la hoja de un jugador.</p>
+ * <p>Loads class presets from JSON at {@code <world folder>/dndsheets/presets/<file>.json}
+ * (see {@link PresetRegistry} for the format) and applies them to a player's sheet.</p>
  *
- * <p>Formato del JSON, un array de objetos:</p>
+ * <p>JSON format, an array of objects:</p>
  * <pre>
  * [{
- *   "id": "fighter", "name": "Guerrero", "hitDiceType": "1d10",
+ *   "id": "fighter", "name": "Fighter", "hitDiceType": "1d10",
  *   "abilities": { "str": 15, "dex": 13, "con": 14, "int": 8, "wis": 12, "cha": 10 },
  *   "startingWeapon": "minecraft:iron_sword",
  *   "startingGear": ["minecraft:chainmail_chestplate", "minecraft:shield"]
@@ -45,7 +45,7 @@ public class PresetCommand {
 			.then(ContentCommands.loadBranch(PRESETS_DIR, PresetRegistry::loadFile, "presets"))
 			.then(ContentCommands.listBranch(PresetRegistry::ids, "Presets"))
 			.then(Commands.literal("apply")
-				.then(Commands.argument("jugadores", EntityArgument.players())
+				.then(Commands.argument("players", EntityArgument.players())
 					.then(Commands.argument("presetId", ResourceLocationArgument.id())
 						.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(PresetRegistry.ids(), builder))
 						.executes(PresetCommand::apply)))));
@@ -54,20 +54,20 @@ public class PresetCommand {
 
 
 	private static int apply(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		//El "minecraft:" que le pone ResourceLocationArgument a un id sin namespace ("fighter") lo resuelve
-		//NamedRegistry.get, que es por donde pasan todas las búsquedas de contenido — aquí ya no hace falta
-		//el reintento que vivía suelto en este comando.
+		//The "minecraft:" that ResourceLocationArgument prepends to a namespace-less id ("fighter") is
+		//resolved by NamedRegistry.get, which is what every content lookup goes through — the retry that
+		//used to live loose in this command is no longer needed here.
 		String presetId = ResourceLocationArgument.getId(ctx, "presetId").toString();
 		if (PresetRegistry.get(presetId) == null) {
-			ctx.getSource().sendFailure(Component.literal("No conozco el preset \"" + presetId + "\". Cárgalo con /dndpresets load."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.preset.no_such", presetId));
 			return 0;
 		}
 
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) {
 			PresetManager.applyPreset(target, presetId);
 		}
-		ctx.getSource().sendSuccess(() -> Component.literal("Preset aplicado a " + targets.size() + " jugador(es)."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.preset.applied_to_players", targets.size()), true);
 		return targets.size();
 	}
 }

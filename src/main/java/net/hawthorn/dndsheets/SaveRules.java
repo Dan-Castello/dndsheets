@@ -6,30 +6,29 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * <p>Lo que decide cómo le sienta a alguien un conjuro de salvación, lo lance quien lo lance: la cobertura
- * que le da el terreno, la CD contra la que tira de verdad, si la supera, y cuánto daño acaba recibiendo.</p>
+ * <p>What decides how a saving-throw spell lands on someone, whoever casts it: the cover the terrain
+ * gives them, the DC actually rolled against, whether it's beaten, and how much damage ends up applied.</p>
  *
- * <p>La otra mitad de {@link AttackRules}, y por la misma razón. Esto estaba escrito dos veces —
- * {@code SpellCastManager.castSaveSpell} cuando lanza un jugador y {@code MonsterActionManager.resolveSpell}
- * cuando lanza un monstruo— y las dos copias ya se habían separado: la cobertura solo contaba del lado del
- * jugador, así que parapetarse del aliento de un dragón, que es el caso de manual de la regla, no hacía
- * nada.</p>
+ * <p>The other half of {@link AttackRules}, and for the same reason. This was written twice —
+ * {@code SpellCastManager.castSaveSpell} for a player caster and {@code MonsterActionManager.resolveSpell}
+ * for a monster caster — and the two copies had already drifted apart: cover only counted on the player
+ * side, so taking cover from a dragon's breath, the textbook case for the rule, did nothing.</p>
  *
- * <p>La tolerancia con un objetivo sin bloque de estadísticas (un mob de otro mod: tira un d20 pelado en vez
- * de quedar fuera del conjuro) venía solo de la ruta del jugador. <b>No era un fallo</b> —el conjuro de un
- * monstruo apunta siempre a un jugador, así que su rama nunca llegaba ahí— pero ahora la regla es una sola,
- * y el día que un monstruo pueda apuntar a otra cosa ya se comporta igual.</p>
+ * <p>Tolerance for a target with no stat block (a mob from another mod: rolls a plain d20 instead of
+ * being excluded from the spell) only existed on the player's path. <b>It wasn't a bug</b> — a monster's
+ * spell always targets a player, so its branch never reached that case — but now the rule is a single
+ * one, and the day a monster can target something else it already behaves the same way.</p>
  *
- * <p>Lo que se queda fuera es lo que de verdad difiere entre las dos rutas: de dónde sale la CD (un jugador
- * la calcula de su hoja, un monstruo la trae escrita en su bloque), cómo se anuncia, y qué efecto de estado
- * cuelga del fallo.</p>
+ * <p>What's left out is what genuinely differs between the two paths: where the DC comes from (a player
+ * computes it from their sheet, a monster carries it written in its stat block), how it's announced, and
+ * what status effect hangs off a failed save.</p>
  */
 final class SaveRules {
 
 	/**
-	 * @param dc  la CD contra la que se tiró de verdad, ya con la cobertura descontada — es la que hay que
-	 *            anunciar, o el número no cuadraría con el resultado.
-	 * @param finalDamage lo que hay que aplicar: entero, mitad, o nada.
+	 * @param dc  the DC actually rolled against, already with cover subtracted — this is the one that must
+	 *            be announced, or the number wouldn't match the result.
+	 * @param finalDamage what must be applied: full, half, or none.
 	 */
 	record Outcome(Cover cover, int dc, Combatant.SaveRoll roll, boolean saved, int finalDamage,
 			String damageFormatted, Component label, boolean legendaryResistance) {}
@@ -38,19 +37,19 @@ final class SaveRules {
 	}
 
 	/**
-	 * <p>Resuelve la salvación. Devuelve {@code null} si no hay nada que resolver (el dado no se pudo tirar,
-	 * o el objetivo no tiene con qué salvarse), y entonces quien llama no debe anunciar nada.</p>
+	 * <p>Resolves the saving throw. Returns {@code null} if there's nothing to resolve (the die couldn't
+	 * be rolled, or the target has nothing to save with), in which case the caller must not announce anything.</p>
 	 *
-	 * @param baseDc CD del lanzador, antes de cobertura.
+	 * @param baseDc caster's DC, before cover.
 	 */
 	static Outcome resolve(Entity caster, Entity target, String saveAbility, int baseDc, String dice, boolean halfOnSave) {
-		//La cobertura sube las salvaciones de DESTREZA y solo esas: es esquivar lo que un parapeto ayuda a
-		//hacer, no aguantar un veneno ni resistir una sugestión. Se le resta a la CD en vez de sumarse a la
-		//tirada porque es el mismo margen y el objetivo puede no tener hoja donde apuntar un bono.
+		//Cover boosts DEXTERITY saves and only those: it's dodging that cover helps with, not
+		//withstanding poison or resisting suggestion. It's subtracted from the DC instead of added to the
+		//roll because it's the same margin either way, and the target might not have a sheet to write a bonus on.
 		Cover cover = "dex".equals(saveAbility) ? Cover.between(caster, target) : Cover.NONE;
 		int dc = baseDc - cover.bonus();
 
-		//Hoja vacía a propósito: el daño de un conjuro son dados pelados, sin la característica de nadie.
+		//Empty sheet on purpose: a spell's damage is plain dice, with no one's ability score involved.
 		DiceManager.RollOutcome damageRoll = DiceManager.roll(new JsonObject(), dice);
 		if (damageRoll.result() == null) return null;
 
@@ -58,11 +57,11 @@ final class SaveRules {
 		if (saveRoll == null || saveRoll.formatted() == null) return null;
 
 		boolean saved = saveRoll.succeeds(dc);
-		//Resistencia Legendaria: un jefe que falla puede decidir que no. Se resuelve AQUÍ, después de tirar y
-		//antes de contar el daño, porque es exactamente eso — convertir un fallo en un éxito— y porque este
-		//es el único sitio del mod donde se decide si una salvación se supera. Antes de unificar las dos
-		//rutas habría habido que escribirlo dos veces, y la del monstruo se habría quedado atrás como se
-		//quedó todo lo demás.
+		//Legendary Resistance: a boss that fails can choose not to. Resolved HERE, after rolling and
+		//before tallying damage, because that's exactly what it is — turning a failure into a success —
+		//and because this is the only place in the mod where whether a save succeeds gets decided. Before
+		//unifying the two paths this would have had to be written twice, and the monster copy would have
+		//fallen behind like everything else did.
 		boolean legendary = false;
 		if (!saved && MonsterRegistry.spendLegendaryResistance(target)) {
 			saved = true;
@@ -81,12 +80,12 @@ final class SaveRules {
 	private static Combatant.SaveRoll rollSave(Entity target, String saveAbility) {
 		Combatant combatant = Combatant.of(target);
 		if (combatant != null) return combatant.rollSave(saveAbility);
-		//Jugador sin hoja cargada: no se resuelve nada. Mejor no hacer daño que hacerlo con características
-		//inventadas.
+		//Player with no sheet loaded: nothing gets resolved. Better to deal no damage than to deal it
+		//with made-up ability scores.
 		if (target instanceof Player) return null;
-		//Mob de otro mod sin bloque de estadísticas (ver TurnManager.isMonster): no hay características que
-		//consultar, así que tira el d20 pelado. Esta rama existía solo del lado del jugador, de modo que el
-		//mismo mob era inmune a los conjuros de monstruo y no a los de jugador.
+		//Mob from another mod with no stat block (see TurnManager.isMonster): there are no ability scores
+		//to look up, so it rolls a plain d20. This branch used to exist only on the player's side, so the
+		//same mob was immune to monster spells but not to player spells.
 		return new Combatant.SaveRoll(DiceManager.roll(new JsonObject(), "1d20"), null);
 	}
 }

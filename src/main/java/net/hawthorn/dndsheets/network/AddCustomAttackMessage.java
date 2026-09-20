@@ -9,8 +9,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: añadió un ataque personalizado a un monstruo ya invocado desde
-//AddMonsterAttackScreen (equivalente en GUI a /dndmonsters attack add).
+//Client (the DM) -> server: added a custom attack to a monster already summoned, from
+//AddMonsterAttackScreen (GUI equivalent of /dndmonsters attack add).
 public class AddCustomAttackMessage {
 	int entityId;
 	String name, toHitAbility, dice, damageAbility, damageType;

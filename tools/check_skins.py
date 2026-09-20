@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
-"""Comprueba los packs de aspecto contra los jars de los mods, sin arrancar el juego.
+"""Checks the appearance packs against the mods' jars, without starting the game.
 
-    python tools/check_skins.py [carpeta de mods]
+    python tools/check_skins.py [mods folder]
 
-Por defecto mira runClient/mods-disabled. Apuntalo a la carpeta mods de la instalacion real para
-comprobarlos contra las versiones que de verdad se usan.
+By default it looks at runClient/mods-disabled. Point it at the mods folder of the real install to
+check them against the versions that are actually used.
 
-Existe porque la primera version de los packs se escribio desde la documentacion de cada mod y fallo
-en 44 lineas: los dragones de Ice and Fire son fire_dragon y no firedragon, y Naturalist no tiene ni
-hiena ni buho. Eso no rompe nada en juego —MonsterRegistry.reskin comprueba la entidad antes de tocar
-el bloque— pero deja al monstruo con su modelo vanilla y solo se ve leyendo el log del servidor.
+It exists because the first version of the packs was written from each mod's documentation and failed
+on 44 lines: Ice and Fire's dragons are fire_dragon and not firedragon, and Naturalist has neither
+hyena nor owl. That breaks nothing in game —MonsterRegistry.reskin checks the entity before touching
+the block— but it leaves the monster with its vanilla model and it only shows by reading the server log.
 
-La lista de ids sale del en_us.json de cada mod (las claves entity.<mod>.<id>), que es la unica
-fuente que viene con el propio jar y no hay que creerse.
+The list of ids comes from each mod's en_us.json (the entity.<mod>.<id> keys), which is the only
+source that ships with the jar itself and doesn't have to be taken on faith.
 """
 import io
 import json
@@ -25,7 +25,7 @@ SKINS = os.path.join('src', 'main', 'resources', 'dndsheets', 'skins')
 
 
 def entities_of(jar_path):
-    """modid -> conjunto de ids de entidad que declara ese jar."""
+    """modid -> set of entity ids that jar declares."""
     found = {}
     try:
         z = zipfile.ZipFile(jar_path)
@@ -59,7 +59,7 @@ def main(mods_dir):
         data = json.load(io.open(os.path.join(SKINS, pack), encoding='utf-8'))
         modid = data['mod']
         if modid not in known:
-            print('  %-18s no encuentro el jar (no puedo comprobarlo)' % pack)
+            print('  %-18s jar not found (cannot check it)' % pack)
             continue
         missing = []
         for monster, entity in data['skins'].items():
@@ -72,7 +72,7 @@ def main(mods_dir):
         for monster, entity in missing:
             print('        %s -> %s  NO EXISTE' % (monster, entity))
 
-    print('\n%d lineas comprobadas, %d apuntan a una entidad que no existe.' % (total, bad))
+    print('\n%d lines checked, %d point to an entity that does not exist.' % (total, bad))
     return 1 if bad else 0
 
 

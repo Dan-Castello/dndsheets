@@ -13,8 +13,8 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: invoca un monstruo YA CARGADO (equivalente en GUI a /dndmonsters spawn
-//<id>, a diferencia de SpawnGenericMessage que crea un NPC en blanco) en la posición del propio DM, desde
+//Client (the DM) -> server: spawns an ALREADY-LOADED monster (GUI equivalent of /dndmonsters spawn
+//<id>, as opposed to SpawnGenericMessage which creates a blank NPC) at the DM's own position, from
 //MonsterSpawnListScreen.
 public class MonsterSpawnMessage {
 	String monsterId;

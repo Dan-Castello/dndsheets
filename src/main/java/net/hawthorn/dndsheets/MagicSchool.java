@@ -4,50 +4,50 @@ import java.text.Normalizer;
 import java.util.Locale;
 
 /**
- * <p>Las ocho escuelas de magia de 5e, más {@link #UNKNOWN} para el conjuro que no declara ninguna.</p>
+ * <p>The eight 5e schools of magic, plus {@link #UNKNOWN} for a spell that declares none.</p>
  *
- * <p>Aquí la escuela no gatea ninguna regla: es <b>identidad</b>. Hasta ahora los 87 conjuros del pack
- * arrancaban con el mismo remolino morado y el mismo sonido de evocador ({@link CombatFx#spellCast}), así
- * que Revivir, Rayo de Escarcha y Bola de Fuego se veían idénticos en el único instante en el que un
- * conjuro se ve: al lanzarlo. El tipo de daño ya distinguía el IMPACTO (ver {@code FX_BY_DAMAGE_TYPE});
- * lo que faltaba era distinguir el LANZAMIENTO, y un conjuro de utilidad no tiene tipo de daño del que
- * sacarlo.</p>
+ * <p>Here the school gates no rule: it's <b>identity</b>. Until now the pack's 87 spells all launched
+ * with the same purple swirl and the same evoker sound ({@link CombatFx#spellCast}), so Revivify, Ray of
+ * Frost and Fireball looked identical at the one moment a spell is actually seen: when it's cast. Damage
+ * type already distinguished the IMPACT (see {@code FX_BY_DAMAGE_TYPE}); what was missing was
+ * distinguishing the CAST itself, and a utility spell has no damage type to pull that from.</p>
  *
- * <p>Mismo molde que {@link CreatureType} y por las mismas razones: un enum y no una cadena suelta porque
- * el conjunto está cerrado desde 2014, {@link #parse} normaliza acentos, mayúsculas, guiones y los
- * nombres en inglés (el SRD original está en inglés y un DM copia de ahí), y una escuela desconocida
- * <b>no</b> es un error — cae a {@link #UNKNOWN} y el conjuro se lanza con el efecto genérico de siempre,
- * que es exactamente como se comportaba el pack entero antes de que este campo existiera (invariante 8).</p>
+ * <p>Same mold as {@link CreatureType} and for the same reasons: an enum and not a loose string because
+ * the set has been closed since 2014, {@link #parse} normalizes accents, casing, hyphens and the English
+ * names (the original SRD is in English and a DM copies from there), and an unknown school is <b>not</b>
+ * an error — it falls back to {@link #UNKNOWN} and the spell is cast with the usual generic effect, which
+ * is exactly how the whole pack behaved before this field existed (invariant 8).</p>
  */
 public enum MagicSchool {
 	UNKNOWN(""),
-	ABJURATION("abjuracion"),
-	CONJURATION("conjuracion"),
-	DIVINATION("adivinacion"),
-	ENCHANTMENT("encantamiento"),
-	EVOCATION("evocacion"),
-	ILLUSION("ilusion"),
-	NECROMANCY("nigromancia"),
-	TRANSMUTATION("transmutacion");
+	ABJURATION("abjuration"),
+	CONJURATION("conjuration"),
+	DIVINATION("divination"),
+	ENCHANTMENT("enchantment"),
+	EVOCATION("evocation"),
+	ILLUSION("illusion"),
+	NECROMANCY("necromancy"),
+	TRANSMUTATION("transmutation");
 
-	/** Cómo se escribe en el JSON de contenido, ya normalizado (sin acentos, sin guiones, en minúscula). */
+	/** How it's written in content JSON, already normalized (no accents, no hyphens, lowercase). */
 	private final String key;
 
-	//Las mismas escuelas en inglés, indexadas por ordinal igual que en CreatureType.ENGLISH.
-	private static final String[] ENGLISH = {
-		"", "abjuration", "conjuration", "divination", "enchantment", "evocation", "illusion",
-		"necromancy", "transmutation",
+	//The legacy Spanish names, indexed by ordinal, still accepted so packs written before the English switch keep loading.
+	private static final String[] LEGACY_SPANISH = {
+		"", "abjuracion", "conjuracion", "adivinacion", "encantamiento", "evocacion", "ilusion",
+		"nigromancia", "transmutacion",
 	};
+
 
 	MagicSchool(String key) {
 		this.key = key;
 	}
 
 	/**
-	 * <p>Las escuelas como se escriben en el JSON, para el ciclador del editor in-game
-	 * ({@code ContentTypeForms.spellFields}). La cadena vacía va primera a propósito: "sin escuela" es el
-	 * valor por defecto de un conjuro y tiene que ser lo primero que ofrezca el botón, no algo a lo que
-	 * haya que dar la vuelta entera para volver.</p>
+	 * <p>The schools as they're written in JSON, for the in-game editor's cycle button
+	 * ({@code ContentTypeForms.spellFields}). The empty string goes first on purpose: "no school" is a
+	 * spell's default value and has to be the first thing the button offers, not something you have to
+	 * cycle all the way around to get back to.</p>
 	 */
 	public static final String[] KEYS = buildKeys();
 
@@ -58,9 +58,9 @@ public enum MagicSchool {
 	}
 
 	/**
-	 * <p>Lee una escuela del JSON. Devuelve {@link #UNKNOWN} para null, vacío o cualquier cosa que no
-	 * case: una escuela mal escrita deja al conjuro sin escuela —como estaban todos hasta ahora— en vez
-	 * de tumbar la carga del pack entero por una palabra.</p>
+	 * <p>Reads a school from JSON. Returns {@link #UNKNOWN} for null, empty, or anything that doesn't
+	 * match: a misspelled school leaves the spell with no school — as they all were until now — instead
+	 * of bringing down the whole pack's load over one word.</p>
 	 */
 	public static MagicSchool parse(String raw) {
 		if (raw == null) return UNKNOWN;
@@ -68,26 +68,28 @@ public enum MagicSchool {
 		if (normalized.isEmpty()) return UNKNOWN;
 
 		for (MagicSchool school : values()) {
-			if (school != UNKNOWN && (school.key.equals(normalized) || ENGLISH[school.ordinal()].equals(normalized))) return school;
+			if (school != UNKNOWN && (school.key.equals(normalized) || LEGACY_SPANISH[school.ordinal()].equals(normalized))) return school;
 		}
 		return UNKNOWN;
 	}
 
-	/** Cómo se escribe en el JSON, en español y con su acento. Vacío para {@link #UNKNOWN}. */
+	/** English name to display to the player/DM. Empty for {@link #UNKNOWN}. */
 	public String label() {
 		return switch (this) {
 			case UNKNOWN -> "";
-			case ABJURATION -> "abjuración";
-			case CONJURATION -> "conjuración";
-			case DIVINATION -> "adivinación";
-			case EVOCATION -> "evocación";
-			case ILLUSION -> "ilusión";
-			default -> key;
+			case ABJURATION -> "Abjuration";
+			case CONJURATION -> "Conjuration";
+			case DIVINATION -> "Divination";
+			case ENCHANTMENT -> "Enchantment";
+			case EVOCATION -> "Evocation";
+			case ILLUSION -> "Illusion";
+			case NECROMANCY -> "Necromancy";
+			case TRANSMUTATION -> "Transmutation";
 		};
 	}
 
-	//Acentos fuera y guiones/espacios fuera: "adivinación", "Adivinacion" y "adivinacion" son la misma
-	//palabra escrita por tres personas distintas, y ninguna de las tres está equivocada.
+	//Accents stripped and hyphens/spaces stripped: "divination", "Divination" and "DIVINATION" are the
+	//same word written by three different people, and none of the three is wrong.
 	private static String normalize(String raw) {
 		String stripped = Normalizer.normalize(raw.trim().toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
 			.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");

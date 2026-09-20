@@ -13,10 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>Lista/añade/borra las opciones de Raza, Trasfondo o Clase que ofrece el selector de la hoja (ver
- * {@code CharacterOptionsRegistry}). A diferencia de {@code ContentEntryListScreen} (armas/hechizos/
- * presets, que se fusionan por id), acá cualquier cambio reemplaza la lista completa de la categoría —
- * mismo comportamiento que ya tiene {@code /dndoptions load}, solo que sin escribir el JSON a mano.</p>
+ * <p>Lists/adds/deletes the Race, Background, or Class options offered by the sheet's selector (see
+ * {@code CharacterOptionsRegistry}). Unlike {@code ContentEntryListScreen} (weapons/spells/
+ * presets, which merge by id), here any change replaces the category's entire list —
+ * the same behavior {@code /dndoptions load} already has, just without hand-writing the JSON.</p>
  */
 public class OptionsManageScreen extends ListPickerScreen {
 	private final String category;

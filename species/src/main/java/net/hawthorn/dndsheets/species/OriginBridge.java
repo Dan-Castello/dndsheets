@@ -10,18 +10,18 @@ import net.minecraft.world.entity.player.Player;
 import java.util.Optional;
 
 /**
- * <p>Único punto de contacto con la API de Origins: leer qué origen de una capa eligió el jugador, una
- * sola vez, a pedido explícito (ver {@code RaceCommand}) — nunca por tick, nunca en un evento de alta
- * frecuencia. {@link IOriginContainer#get} devuelve la misma Capability nativa de Forge que ya expone
- * Origins (verificado con javap sobre origins-forge-1.20.1-1.10.0.9-all.jar), así que esto no toca ningún
- * mixin ni clase interna de Origins.</p>
+ * <p>Single point of contact with the Origins API: read which origin the player chose for a layer, once,
+ * on explicit request (see {@code RaceCommand}) — never per tick, never in a high-frequency event.
+ * {@link IOriginContainer#get} returns the same native Forge Capability that Origins already exposes
+ * (verified with javap on origins-forge-1.20.1-1.10.0.9-all.jar), so this doesn't touch any Origins mixin
+ * or internal class.</p>
  *
- * <p>Sirve para dos capas distintas: {@code dndsheets_species:race} (propia, ver {@link RaceRegistry}) y
- * {@code origins-classes:class} (del addon de terceros Origins:Classes, cuyo layer se reemplaza entero
- * con las 12 clases del SRD — ver {@code data/origins-classes/origin_layers/class.json}).</p>
+ * <p>Used for two distinct layers: {@code dndsheets_species:race} (our own, see {@link RaceRegistry}) and
+ * {@code origins-classes:class} (from the third-party addon Origins:Classes, whose layer is replaced
+ * entirely with the 12 SRD classes — see {@code data/origins-classes/origin_layers/class.json}).</p>
  */
 public class OriginBridge {
-	/** @return el path del origen elegido en esa capa, o vacío si el jugador todavía no eligió nada ahí. */
+	/** @return the path of the origin chosen in that layer, or empty if the player hasn't chosen anything there yet. */
 	public static Optional<String> chosenOriginId(Player player, ResourceLocation layerId) {
 		ResourceKey<OriginLayer> layerKey = ResourceKey.create(OriginsDynamicRegistries.LAYERS_REGISTRY, layerId);
 
@@ -33,13 +33,13 @@ public class OriginBridge {
 	}
 
 	/**
-	 * <p>La dirección inversa de {@link #chosenOriginId}: le dice a Origins qué origen tiene el personaje
-	 * ACTIVO en esa capa — Origins solo guarda una elección por CUENTA de jugador, no por personaje de
-	 * dndsheets (ver {@code CharacterSwitchListener}), así que sin esto el segundo personaje de alguien
-	 * heredaba en silencio la elección del primero. Solo se llama con un id que ya se aplicó una vez con
-	 * éxito (viene de {@code appliedRaceId}/{@code appliedBackgroundId}/{@code appliedPresetId} en la
-	 * hoja), así que si Origins lo rechaza igual es un cambio externo (el DM borró ese origen del pack) y
-	 * no un id inventado por este código.</p>
+	 * <p>The reverse direction of {@link #chosenOriginId}: tells Origins which origin the ACTIVE character
+	 * has in that layer — Origins only stores one choice per player ACCOUNT, not per dndsheets character
+	 * (see {@code CharacterSwitchListener}), so without this someone's second character would silently
+	 * inherit the first character's choice. Only ever called with an id that was already successfully
+	 * applied once (comes from {@code appliedRaceId}/{@code appliedBackgroundId}/{@code appliedPresetId}
+	 * on the sheet), so if Origins rejects it anyway that's an external change (the DM deleted that origin
+	 * from the pack), not an id invented by this code.</p>
 	 */
 	public static void pushOriginId(Player player, ResourceLocation layerId, ResourceLocation originNamespaceId) {
 		ResourceKey<OriginLayer> layerKey = ResourceKey.create(OriginsDynamicRegistries.LAYERS_REGISTRY, layerId);
@@ -51,7 +51,7 @@ public class OriginBridge {
 				container.setOrigin(layerKey, originKey);
 			} catch (RuntimeException e) {
 				net.hawthorn.dndsheets.DndsheetsMod.LOGGER.warn(
-					"dndsheets_species: no pude fijar {} en la capa {} para {}: {}",
+					"dndsheets_species: could not set {} on layer {} for {}: {}",
 					originNamespaceId, layerId, player.getGameProfile().getName(), e.toString());
 			}
 		});

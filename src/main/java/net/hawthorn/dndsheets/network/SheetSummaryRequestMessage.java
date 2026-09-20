@@ -11,8 +11,8 @@ import net.minecraftforge.network.PacketDistributor;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: eligió a quién ajustar la hoja en PlayerPickerScreen, pide sus valores
-//actuales (oro, espacios de conjuro) para abrir SheetAdjustScreen con datos reales en vez de en blanco.
+//Client (the DM) -> server: chose whose sheet to adjust in PlayerPickerScreen, requests their current
+//values (gold, spell slots) to open SheetAdjustScreen with real data instead of blank.
 public class SheetSummaryRequestMessage {
 	String targetUuid;
 
@@ -40,15 +40,15 @@ public class SheetSummaryRequestMessage {
 			int gold = sheet.has("gold") ? sheet.get("gold").getAsInt() : 0;
 			int slotsMax = sheet.get("spellSlotsMax").getAsInt();
 			int slotsCurrent = sheet.get("spellSlotsCurrent").getAsInt();
-			//PG/CA reales del jugador (no de la hoja, que solo los refleja)
-			//de esto no había forma de consultarlos en pleno combate sin pedirle al propio jugador que
-			//abriera su hoja.
+			//Player's real HP/AC (not the sheet's, which only reflects them) —
+			//previously there was no way to check these mid-combat without asking the player themself
+			//to open their sheet.
 			int hp = Math.round(target.getHealth());
 			int maxHp = Math.round(target.getMaxHealth());
 			int ac = CombatManager.armorClassOf(target, sheet);
 
-			//Condiciones activas, para que el DM abra la pantalla viendo cuáles tiene puestas en vez de a
-			//ciegas — ver Combatant y client.gui.ConditionListScreen.
+			//Active conditions, so the DM opens the screen already seeing which ones apply instead of
+			//going in blind — see Combatant and client.gui.ConditionListScreen.
 			StringBuilder conditions = new StringBuilder();
 			net.hawthorn.dndsheets.Combatant combatant = net.hawthorn.dndsheets.Combatant.of(target);
 			if (combatant != null) {

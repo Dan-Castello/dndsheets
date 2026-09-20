@@ -18,32 +18,32 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//Presupuesto de movimiento y anclaje de posición del modo turnos — extraído de TurnManager (ver
-//hallazgo F3): quien NO tiene el turno queda anclado donde estaba; quien SÍ lo tiene solo
-//puede alejarse hasta su "speed" de hoja antes de que se le devuelva a la última posición válida. Estado
-//propio, sin tocar el orden de turnos — recibe lo que necesita como parámetro en vez de leer los campos
-//de TurnManager directamente.
+//Movement budget and position anchoring for turn mode — extracted from TurnManager (see
+//finding F3): whoever does NOT have the turn stays anchored where they were; whoever DOES have it can only
+//move away up to their sheet "speed" before being sent back to the last valid position. Owns its own
+//state, without touching turn order — receives what it needs as a parameter instead of reading
+//TurnManager's fields directly.
 class MovementAnchorTracker {
 	private record Pinned(ResourceKey<Level> dimension, Vec3 pos) {}
 
-	//Posición donde debe quedarse quien no tiene el turno; sin entrada = libre para moverse (le toca a él).
+	//Position where whoever doesn't have the turn must stay; no entry = free to move (it's their turn).
 	private final Map<Integer, Pinned> anchors = new HashMap<>();
 	private static final double ANCHOR_TOLERANCE = 0.05;
 
-	//Presupuesto de movimiento de quien SÍ tiene el turno: dónde estaba al empezarlo (origin) y la última
-	//posición vista dentro de su alcance (lastGoodPos, a donde se le devuelve si se pasa).
+	//Movement budget of whoever DOES have the turn: where they were when it started (origin) and the last
+	//position seen within their range (lastGoodPos, where they get sent back if they overshoot).
 	private final Map<Integer, Pinned> moveOrigin = new HashMap<>();
 	private final Map<Integer, Pinned> lastGoodPos = new HashMap<>();
 	private static final int DEFAULT_SPEED_FEET = 30;
 	private static final double FEET_PER_BLOCK = 5.0;
-	//speedBlocksFor corre 20 veces/seg mientras dura el turno de un jugador: el Pattern se cachea en vez
-	//de recompilarse en cada tick.
+	//speedBlocksFor runs 20 times/sec for the duration of a player's turn: the Pattern is cached instead
+	//of being recompiled every tick.
 	private static final Pattern SPEED_FEET_PATTERN = Pattern.compile("\\d+");
 
-	//"speed" no está clampeado al guardarse (es texto libre tipo "30 ft (trepar 30 ft)", no un campo
-	//puramente numérico como los ability scores) — el límite tiene que aplicarse aquí, el único lugar
-	//donde ese texto se convierte en un número real que manda sobre el movimiento en combate. Sin esto,
-	//un jugador podía escribir "99999 ft" y saltarse por completo el presupuesto de movimiento.
+	//"speed" isn't clamped when saved (it's free-form text like "30 ft (climb 30 ft)", not a purely
+	//numeric field like the ability scores) — the cap has to be applied here, the only place where that
+	//text gets turned into an actual number that governs movement in combat. Without this, a player could
+	//write "99999 ft" and completely bypass the movement budget.
 	private static final int MAX_SPEED_FEET = 500;
 
 	void pin(ServerLevel level, int entityId, Vec3 pos) {
@@ -77,24 +77,23 @@ class MovementAnchorTracker {
 		return pinned != null ? pinned.pos() : Vec3.ZERO;
 	}
 
-	/** @return true si el tick de este jugador ya quedó resuelto por el anclaje (el llamador debe cortar ahí). */
+	/** @return true if this player's tick was already resolved by the anchor (the caller should stop there). */
 	boolean isAnchorHandledThisTick(ServerPlayer player) {
 		Pinned anchor = anchors.get(player.getId());
 		if (anchor == null) return false;
 
 		if (player.level().dimension() != anchor.dimension()) {
-			//Cambió de dimensión estando anclado (empujado a un portal, p.ej.): se suelta el ancla en vez
-			//de comparar/teletransportar entre niveles distintos.
+			//Changed dimension while anchored (pushed into a portal, e.g.): the anchor is released instead
+			//of comparing/teleporting across different levels.
 			anchors.remove(player.getId());
 			return false;
 		}
 
-		//Solo se corrige el plano horizontal (X/Z); la Y se deja completamente libre. Antes se
-		//comparaba/reponía la posición en 3D: si el turno terminaba con el jugador en el aire (p.ej.
-		//saltando para forzar un crítico de Minecraft), quedaba anclado exactamente en esa altura para
-		//siempre, con la gravedad peleando cada tick contra el teletransporte de vuelta — congelado en el
-		//aire. Dejando Y sin tocar, la gravedad aterriza solo y el anclaje horizontal sigue impidiendo
-		//caminar lejos.
+		//Only the horizontal plane (X/Z) is corrected; Y is left completely free. This used to
+		//compare/restore the position in 3D: if the turn ended with the player in the air (e.g. jumping
+		//to force a Minecraft crit), they'd stay anchored at exactly that height forever, with gravity
+		//fighting every tick against the teleport back — frozen in midair. Leaving Y untouched, gravity
+		//lands them on its own while the horizontal anchor still prevents walking away.
 		double dx = player.getX() - anchor.pos().x;
 		double dz = player.getZ() - anchor.pos().z;
 		if (dx * dx + dz * dz <= ANCHOR_TOLERANCE * ANCHOR_TOLERANCE) {
@@ -108,9 +107,9 @@ class MovementAnchorTracker {
 		return true;
 	}
 
-	//Cuántos bloques puede moverse este turno: la "speed" de la hoja (texto libre, p.ej. "30 ft") convertida
-	//a bloques a 5 pies por bloque (misma conversión de rejilla que usa el resto de VTTs de mesa). Sin campo
-	//o sin número reconocible, cae a la velocidad estándar de 5e (30 pies = 6 bloques).
+	//How many blocks can be moved this turn: the sheet's "speed" (free-form text, e.g. "30 ft") converted
+	//to blocks at 5 feet per block (the same grid conversion the rest of tabletop VTTs use). With no field
+	//or no recognizable number, it falls back to the standard 5e speed (30 feet = 6 blocks).
 	private static double speedBlocksFor(JsonObject sheet) {
 		int feet = DEFAULT_SPEED_FEET;
 		if (sheet != null && sheet.has("speed")) {
@@ -120,21 +119,21 @@ class MovementAnchorTracker {
 					feet = Integer.parseInt(matcher.group());
 				}
 			} catch (RuntimeException ignored) {
-				//NumberFormatException del parseo, o UnsupportedOperationException si "speed" quedó como
-				//un JsonObject/JsonArray en una hoja vieja: en ambos casos, cae a DEFAULT_SPEED_FEET.
+				//NumberFormatException from parsing, or UnsupportedOperationException if "speed" ended up
+				//as a JsonObject/JsonArray in an old sheet: either way, it falls back to DEFAULT_SPEED_FEET.
 			}
 		}
 		feet = Math.max(0, Math.min(MAX_SPEED_FEET, feet));
 		return feet / FEET_PER_BLOCK;
 	}
 
-	//Conversión aproximada de la velocidad vanilla de un mob (atributo MOVEMENT_SPEED, una unidad interna
-	//sin equivalencia exacta en bloques/turno por cómo funciona de verdad la física de movimiento de
-	//Minecraft: fricción, terreno, salto...) a un presupuesto de bloques por turno: se escala contra la
-	//velocidad base de un zombie (referencia común de "mob normal") como si esa velocidad representara los
-	//30 pies/6 bloques estándar de 5e, con un rango razonable para no dar presupuestos absurdos a mobs muy
-	//rápidos/lentos. ponytail: heurística, no una simulación real de física — si algún mob de un mod queda
-	//claramente corto o largo de más, ajustar ZOMBIE_BASELINE_SPEED o el rango del clamp.
+	//Approximate conversion of a mob's vanilla speed (MOVEMENT_SPEED attribute, an internal unit with no
+	//exact equivalence in blocks/turn given how Minecraft's movement physics actually work: friction,
+	//terrain, jumping...) into a blocks-per-turn budget: it's scaled against a zombie's base speed (a
+	//common "normal mob" reference) as if that speed represented the standard 5e 30 feet/6 blocks, with a
+	//reasonable clamp range so as not to give absurd budgets to very fast/slow mobs. ponytail: a heuristic,
+	//not a real physics simulation — if some modded mob ends up clearly too short or too long, adjust
+	//ZOMBIE_BASELINE_SPEED or the clamp range.
 	private static final double ZOMBIE_BASELINE_SPEED = 0.23;
 	private static final double MIN_MOB_SPEED_BLOCKS = 2.0;
 	private static final double MAX_MOB_SPEED_BLOCKS = 12.0;
@@ -147,13 +146,13 @@ class MovementAnchorTracker {
 		return Math.max(MIN_MOB_SPEED_BLOCKS, Math.min(MAX_MOB_SPEED_BLOCKS, blocks));
 	}
 
-	//Bloqueo de movimiento de quien SÍ tiene el turno: en cuanto se aleja más de su velocidad (en línea
-	//recta desde dónde empezó el turno) desde moveOrigin, se le devuelve a la última posición vista dentro
-	//de alcance. ponytail: distancia en línea recta desde el origen, no ruta acumulada ni solo horizontal —
-	//suficiente para cortar el "vuelo libre" de Minecraft, no un tracker de casillas real.
+	//Movement lockout for whoever DOES have the turn: as soon as they move further than their speed (in a
+	//straight line from where the turn started) away from moveOrigin, they get sent back to the last
+	//position seen within range. ponytail: straight-line distance from the origin, not accumulated path
+	//and not horizontal-only — enough to cut off Minecraft's "free flight," not a real grid-square tracker.
 	void enforceMovementBudget(ServerPlayer player) {
-		//Correr dobla el presupuesto, que es lo que hace la acción Correr en 5e: no da un movimiento
-		//"extra" aparte, duplica el que ya tenías.
+		//Dashing doubles the budget, which is what the Dash action does in 5e: it doesn't grant "extra"
+		//movement on the side, it doubles what you already had.
 		double speed = speedBlocksFor(SheetLoader.getServerSheet(player.getStringUUID()));
 		if (TurnActionManager.isDashing(player)) speed *= 2;
 		if (enforceBudget(player, speed)) {
@@ -161,10 +160,10 @@ class MovementAnchorTracker {
 		}
 	}
 
-	//Mismo mecanismo que arriba, para un mob de compatibilidad (ver TurnManager.isMonster): sin HUD que
-	//avisar, así que el llamador (TurnManager.onMobTick) es quien decide qué hacer con el resultado —
-	//gastar su turno, en su caso, ya que un mob no tiene "seguir intentando" tras quedarse sin movimiento.
-	//@return true si se agotó su presupuesto de movimiento (y se le devolvió a su última posición válida).
+	//Same mechanism as above, for a compatibility mob (see TurnManager.isMonster): there's no HUD to warn,
+	//so the caller (TurnManager.onMobTick) decides what to do with the result — in its case, ending the
+	//mob's turn, since a mob has no "keep trying" once it runs out of movement.
+	//@return true if its movement budget ran out (and it was sent back to its last valid position).
 	boolean enforceMobMovementBudget(Entity entity, double speedBlocks) {
 		return enforceBudget(entity, speedBlocks);
 	}
@@ -173,14 +172,14 @@ class MovementAnchorTracker {
 		int id = entity.getId();
 		Pinned origin = moveOrigin.get(id);
 		if (origin == null) return false;
-		//Velocidad 0 por condición (agarrado, apresado, paralizado, petrificado, inconsciente): se cobra
-		//aquí, el único punto por el que ya pasan tanto el jugador como el mob, en vez de en los dos
-		//llamadores. speedBlocks se ignora del todo, no se reduce: en 5e la velocidad es 0, no "menos".
+		//Speed 0 due to a condition (grappled, restrained, paralyzed, petrified, unconscious): this is
+		//enforced here, the single point that both the player and the mob already pass through, instead of
+		//in both callers. speedBlocks is ignored entirely, not reduced: in 5e the speed is 0, not "less".
 		Combatant combatant = Combatant.of(entity);
 		if (combatant != null && combatant.cannotMove()) speedBlocks = 0.0;
 		if (entity.level().dimension() != origin.dimension()) {
-			//Cruzó a otro nivel (portal) con el turno activo: las coordenadas grabadas ya no significan
-			//nada acá — se suelta el presupuesto en vez de comparar/teletransportar entre dimensiones.
+			//Crossed to another level (portal) with the turn active: the recorded coordinates no longer
+			//mean anything here — the budget is released instead of comparing/teleporting across dimensions.
 			moveOrigin.remove(id);
 			lastGoodPos.remove(id);
 			return false;

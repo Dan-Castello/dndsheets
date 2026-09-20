@@ -46,13 +46,13 @@ public class DndsheetsMod {
 	public static final Logger LOGGER = LogManager.getLogger(DndsheetsMod.class);
 
 	/**
-	 * <p>El escritor de JSON con sangria que usa todo el mod. Vive aqui por el mismo motivo que LOGGER y
-	 * PACKET_HANDLER: es infraestructura compartida, no de ningun subsistema.</p>
+	 * <p>The indenting JSON writer the whole mod uses. It lives here for the same reason as LOGGER and
+	 * PACKET_HANDLER: it's shared infrastructure, not owned by any one subsystem.</p>
 	 *
-	 * <p>Construir un Gson no es gratis —arma toda la lista de TypeAdapterFactory— y se estaba haciendo
-	 * <b>en cada escritura</b> en seis sitios. El peor era SheetLoader.saveAll(), que corre cada 5 minutos
-	 * y repetia la construccion UNA VEZ POR HOJA: con seis jugadores y varios PNJ, un puñado de Gson
-	 * nuevos en el mismo tick. Es inmutable y seguro entre hilos, asi que una sola instancia sirve.</p>
+	 * <p>Building a Gson isn't free — it assembles the whole TypeAdapterFactory list — and it was being
+	 * done <b>on every write</b> in six places. The worst was SheetLoader.saveAll(), which runs every 5
+	 * minutes and repeated the construction ONCE PER SHEET: with six players and several NPCs, a handful
+	 * of new Gsons in the same tick. It's immutable and thread-safe, so a single instance is enough.</p>
 	 */
 	public static final Gson PRETTY_GSON = new GsonBuilder().setPrettyPrinting().create();
 	public static final String MODID = "dndsheets";
@@ -70,114 +70,124 @@ public class DndsheetsMod {
 		ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC, "dndsheets-common.toml");
 	}
 
-	//Sube a "2": registerNetworkMessages() fusionó 6 mensajes en SheetAdjustMessage (ver F14 del audit).
-	//messageID se asigna por ORDEN de registro, no por constante fija por clase — fusionar/quitar/añadir
-	//una entrada renumera TODO lo que se registra después en la lista, no solo lo tocado. Sin subir esto,
-	//un cliente y un servidor de versiones de mod distintas igual pasarían el handshake (mismo string de
-	//antes) y acabarían desalineados en el id de mensaje para cualquier cosa después del punto de cambio,
-	//en vez de que Forge los rechace limpio al conectar por versión de protocolo incompatible.
-	//Sube a "3": SheetSummaryMessage gana un campo en el cable (las condiciones activas del objetivo),
-	//SheetAdjustMessage.Field gana la constante CONDITION, y se registran BrowseActionMessage/
-	//BrowseListMessage. Lo primero es lo verdaderamente peligroso: un campo más en un mensaje ya existente
-	//no cambia ningún id, así que sin subir esto el handshake pasaría y el cliente antiguo leería ese
-	//mensaje corrido un campo, en silencio y con datos plausibles, en vez de fallar limpio al conectar.
-	//Sube a "4": se registra TurnActionMessage y ScreenActionMessage.Action gana TURN_ACTION_OPEN. Lo
-	//segundo es lo peligroso de verdad: un cliente antiguo leeria ese ordinal como una accion que no
-	//conoce en vez de fallar limpio al conectar.
-	//Sube a "5": se registra AbilityImprovementMessage y ScreenActionMessage.Action gana
-	//ABILITY_IMPROVEMENT_OPEN. Lo segundo es lo peligroso: un cliente antiguo leeria ese ordinal como una
-	//accion que no conoce en vez de fallar limpio al conectar.
-	//Sube a "6": BrowseActionMessage.Action gana DELETE y CREATE. Añadir al FINAL de un enum no renumera
-	//nada, pero un cliente nuevo mandandole ese ordinal a un servidor viejo revienta al leerlo — que es
-	//exactamente lo que el handshake debe impedir. DELETE se colo sin subir la version: por eso existe
-	//ahora NETWORK_SHAPE, que hace fallar el build cuando la forma de la red cambia y esta linea no.
-	//Sube a "8": BrowseListMessage manda sus etiquetas como Component y ya no como texto plano, para que el
-	//compendio lo traduzca el CLIENTE en su idioma en vez de que el servidor le fije el suyo. Cambia el
-	//formato en el cable sin cambiar ni el numero de mensajes ni su orden — o sea que NI NETWORK_SHAPE ni
-	//NETWORK_ORDER lo ven, y por eso existe ahora tambien NETWORK_WIRE (ver abajo).
-	//Sube a "16": se registran 7 mensajes nuevos al FINAL (DungeonTraceCaptureMessage,
+	//Bumped to "2": registerNetworkMessages() merged 6 messages into SheetAdjustMessage (see audit item
+	//F14). messageID is assigned by REGISTRATION ORDER, not a fixed per-class constant — merging/removing/
+	//adding one entry renumbers EVERYTHING registered after it in the list, not just what was touched.
+	//Without bumping this, a client and a server on different mod versions would still pass the handshake
+	//(same string as before) and end up misaligned on the message id for anything after the change point,
+	//instead of Forge cleanly rejecting them on connect for an incompatible protocol version.
+	//Bumped to "3": SheetSummaryMessage gains a field on the wire (the target's active conditions),
+	//SheetAdjustMessage.Field gains the CONDITION constant, and BrowseActionMessage/BrowseListMessage get
+	//registered. The first one is the truly dangerous part: one more field on an already-existing message
+	//doesn't change any id, so without bumping this the handshake would pass and the old client would read
+	//that message shifted by one field, silently and with plausible-looking data, instead of failing
+	//cleanly on connect.
+	//Bumped to "4": TurnActionMessage gets registered and ScreenActionMessage.Action gains
+	//TURN_ACTION_OPEN. The second part is the truly dangerous one: an old client would read that ordinal
+	//as an action it doesn't know instead of failing cleanly on connect.
+	//Bumped to "5": AbilityImprovementMessage gets registered and ScreenActionMessage.Action gains
+	//ABILITY_IMPROVEMENT_OPEN. The second part is the dangerous one: an old client would read that
+	//ordinal as an action it doesn't know instead of failing cleanly on connect.
+	//Bumped to "6": BrowseActionMessage.Action gains DELETE and CREATE. Adding to the END of an enum
+	//doesn't renumber anything, but a new client sending that ordinal to an old server blows up on reading
+	//it — which is exactly what the handshake is supposed to prevent. DELETE slipped in without bumping
+	//the version: that's why NETWORK_SHAPE now exists, to fail the build when the network's shape changes
+	//and this line doesn't.
+	//Bumped to "8": BrowseListMessage sends its labels as a Component instead of plain text, so the
+	//compendium is translated by the CLIENT in its own language instead of the server fixing its own.
+	//This changes the wire format without changing either the message count or their order — so NEITHER
+	//NETWORK_SHAPE NOR NETWORK_ORDER sees it, which is why NETWORK_WIRE now also exists (see below).
+	//Bumped to "16": 7 new messages get registered at the END (DungeonTraceCaptureMessage,
 	//MonsterSpawnListRequestMessage, MonsterSpawnListMessage, SpellGiveListRequestMessage,
-	//SpellGiveListMessage, WeaponGiveListRequestMessage, WeaponGiveListMessage), y MonsterBindMessage y
-	//WildShapeMessage ganan campos nuevos en el cable (bestiario resuelto en servidor).
-	//Sube a "17": el toolkit de mazmorras se muda a su propio addon/mod (dndsheets_dungeon) con su
-	//propio canal — SALEN 10 mensajes de este canal (DungeonGenerateMessage,
-	//DungeonJigsawConfigureMessage, DungeonJigsawConfigureOpenMessage, DungeonPieceAddOpenMessage,
-	//DungeonPieceCaptureMessage, DungeonPieceListMessage, DungeonPieceListRequestMessage,
-	//DungeonPieceRemoveMessage, DungeonPieceUpdateMessage, DungeonTraceCaptureMessage). Un cliente
-	//viejo que aun los mande a este canal no encuentra receptor: correcto, porque ese addon ya no
-	//escucha aqui, escucha en su propio canal "dndsheets_dungeon".
-	//Sube a "18": nuevo mensaje StaffBindMessage (báculos de hechizo reconfigurables desde el Grimorio).
-	//Sube a "19": TurnStateMessage gana el tablero de iniciativa completo (roster con condiciones/estado
-	//por combatiente), para el HUD de turnos profesional.
-	//Sube a "20": RosterRow gana bonusActionUsed (acción adicional separada de la acción, ver TurnManager).
-	//Sube a "21": botón "Multiclasear" en la ficha (F25 del audit). Se registra MulticlassMessage al
-	//final, y PresetListRequestMessage/PresetListMessage ganan un campo "multiclass" en el cable (mismo
-	//viaje de ida y vuelta, ahora con un flag más) para que PresetScreen sepa en qué modo abrirse.
-	//Sube a "22": tres cosas en un mismo lote. (1) RosterRow gana currentHp/maxHp al final del payload
-	//(barra de vida en el tablero de turnos y en el nombre flotante). (2) BrowseListMessage gana el
-	//campo context al final. (3) La renumeración deliberada: las 8 parejas List/ListRequest (16 clases,
-	//incluida la pareja CharacterOptions* que ya no mandaba nadie) se funden como acciones/kinds nuevos
-	//de BrowseActionMessage/BrowseListMessage y sus registros se borran — todos los ids posteriores
-	//cambian, que es exactamente lo que este handshake convierte en un fallo limpio de conexión.
-	//Sube a "24": se limpia la cadena de coordenadas que traía MCreator, y dos mensajes adelgazan.
-	//(1) CharacterSheetOpenMessage pierde type/pressedms: los tres llamadores mandaban (0, 0) y el handler
-	//solo tenía rama para type == 0. (2) SheetRollButtonMessage pierde x/y/z: solo servían para colocar el
-	//sonido del dado, y venían de la posición del jugador AL ABRIR la ficha (sonaba donde estabas antes,
-	//no donde tiras); ahora se leen del jugador que manda el paquete, que el servidor ya tiene.
-	//Quitar campos rompe igual que añadirlos —un cliente viejo escribe ints que el servidor nuevo ya no
-	//lee y el buffer se desincroniza a mitad—, así que sube la versión.
-	//(3) En el mismo salto, la invariante 3 aplicada a dos grupos que aún no la seguían: los cuatro
-	//mensajes de la votación de descanso (RestPropose/RestVoteOpen/RestVoteResponse/RestVoteClose) se
-	//funden en RestMessage con un Kind, y los dos de salvaciones de muerte (DeathSaveRoll/
-	//DeathSaveGiveUp) en DeathSaveMessage. Seis registros menos y dos nuevos: TODOS los ids posteriores
-	//se renumeran, que es justo lo que este handshake convierte en un fallo limpio de conexión.
-	//Se mueven los tres números: NETWORK_SHAPE (114 → 116, seis mensajes menos pero seis constantes de
-	//enum más), NETWORK_ORDER y NETWORK_WIRE.
-	//Sube a "25": el diseñador de encuentros. Dos constantes de enum AL FINAL de sus listas
-	//(BrowseActionMessage.DESIGN_ENCOUNTER y BrowseListMessage.ENCOUNTER_DESIGN, invariante 2), sin
-	//mensajes nuevos: el bestiario con su coste en PX y los umbrales del grupo viajan en el context que
-	//BrowseListMessage ya tenía. Un cliente viejo no manda ni entiende esos dos ordinales, así que sube
-	//igual — NETWORK_SHAPE (116 → 118) y NETWORK_ORDER se mueven; el cable en sí no cambia.
-	//Sigue en "25", mismo lote sin publicar: TurnStateMessage pierde currentName. Era un writeUtf con el
-	//nombre del combatiente de turno, a TODOS los clientes en CADA cambio de turno, que aterrizaba en
-	//TurnHudState.currentName y no lo leía nadie — el HUD saca los nombres de las filas del roster. Se
-	//quita de las tres capas (mensaje, estado del cliente y TurnManager.broadcastTurnState). Mueve
-	//NETWORK_WIRE; ni la cuenta ni el orden cambian.
-	private static final String PROTOCOL_VERSION = "25";
+	//SpellGiveListMessage, WeaponGiveListRequestMessage, WeaponGiveListMessage), and MonsterBindMessage
+	//and WildShapeMessage gain new fields on the wire (bestiary resolved server-side).
+	//Bumped to "17": the dungeon toolkit moves to its own addon/mod (dndsheets_dungeon) with its own
+	//channel — 10 messages LEAVE this channel (DungeonGenerateMessage, DungeonJigsawConfigureMessage,
+	//DungeonJigsawConfigureOpenMessage, DungeonPieceAddOpenMessage, DungeonPieceCaptureMessage,
+	//DungeonPieceListMessage, DungeonPieceListRequestMessage, DungeonPieceRemoveMessage,
+	//DungeonPieceUpdateMessage, DungeonTraceCaptureMessage). An old client that still sends them to this
+	//channel finds no receiver: correct, because that addon no longer listens here, it listens on its own
+	//"dndsheets_dungeon" channel.
+	//Bumped to "18": new message StaffBindMessage (spell staves reconfigurable from the Grimoire).
+	//Bumped to "19": TurnStateMessage gains the full initiative board (roster with per-combatant
+	//conditions/state) for the professional turn HUD.
+	//Bumped to "20": RosterRow gains bonusActionUsed (bonus action tracked separately from the action, see TurnManager).
+	//Bumped to "21": "Multiclass" button on the sheet (audit item F25). MulticlassMessage gets registered
+	//at the end, and PresetListRequestMessage/PresetListMessage gain a "multiclass" field on the wire
+	//(same round trip, now with one more flag) so PresetScreen knows which mode to open in.
+	//Bumped to "22": three things in the same batch. (1) RosterRow gains currentHp/maxHp at the end of the
+	//payload (health bar on the turn board and on the floating name). (2) BrowseListMessage gains the
+	//context field at the end. (3) The deliberate renumbering: the 8 List/ListRequest pairs (16 classes,
+	//including the CharacterOptions* pair that nobody was sending anymore) get merged as new
+	//actions/kinds of BrowseActionMessage/BrowseListMessage and their registrations are deleted — every
+	//id after them changes, which is exactly what this handshake turns into a clean connection failure.
+	//Bumped to "24": the coordinate chain left over from MCreator gets cleaned up, and two messages get
+	//slimmer. (1) CharacterSheetOpenMessage loses type/pressedms: all three callers were sending (0, 0)
+	//and the handler only had a branch for type == 0. (2) SheetRollButtonMessage loses x/y/z: they only
+	//served to place the dice sound, and came from the player's position AT THE MOMENT THE SHEET WAS
+	//OPENED (it sounded where you were before, not where you roll); now they're read from the player who
+	//sends the packet, which the server already has.
+	//Removing fields breaks things just like adding them does — an old client writes ints the new server
+	//no longer reads and the buffer desyncs partway through — so the version bumps.
+	//(3) In the same jump, invariant 3 gets applied to two groups that didn't follow it yet: the four rest
+	//vote messages (RestPropose/RestVoteOpen/RestVoteResponse/RestVoteClose) merge into RestMessage with a
+	//Kind, and the two death-save ones (DeathSaveRoll/DeathSaveGiveUp) into DeathSaveMessage. Six fewer
+	//registrations and two new ones: EVERY id after them gets renumbered, which is exactly what this
+	//handshake turns into a clean connection failure.
+	//The three numbers move: NETWORK_SHAPE (114 → 116, six fewer messages but six more enum constants),
+	//NETWORK_ORDER and NETWORK_WIRE.
+	//Bumped to "25": the encounter designer. Two enum constants at the END of their lists
+	//(BrowseActionMessage.DESIGN_ENCOUNTER and BrowseListMessage.ENCOUNTER_DESIGN, invariant 2), no new
+	//messages: the bestiary with its XP cost and the party's thresholds travel in the context field
+	//BrowseListMessage already had. An old client neither sends nor understands those two ordinals, so it
+	//bumps anyway — NETWORK_SHAPE (116 → 118) and NETWORK_ORDER move; the wire itself doesn't change.
+	//Still on "25", same unreleased batch: TurnStateMessage loses currentName. It was a writeUtf with the
+	//name of the combatant on turn, sent to EVERY client on EVERY turn change, that landed on
+	//TurnHudState.currentName and nobody read it — the HUD gets its names from the roster rows. Removed
+	//from all three layers (message, client state, and TurnManager.broadcastTurnState). Moves
+	//NETWORK_WIRE; neither the count nor the order changes.
+	//Bumped to "26": fixes from the first round of human testing. ScreenActionMessage.Action gains
+	//NEW_CHARACTER_OPEN at the END (invariant 2) so that "/dndchar new" with no name opens the wizard
+	//instead of replying "unknown or incomplete command" — which is exactly what it told someone who was
+	//writing exactly what they wanted to do. An old client doesn't know that ordinal, so it bumps anyway.
+	//Moves NETWORK_SHAPE (118 -> 119) and NETWORK_ORDER; the wire itself doesn't change.
+	private static final String PROTOCOL_VERSION = "26";
 
 	/**
-	 * <p>Cuántas piezas cruzan el cable: mensajes registrados más constantes de los enums que viajan por
-	 * ordinal. <b>No lo usa el juego</b>: existe para que {@code JsonContentSelfTest} pueda comparar contra
-	 * la forma real y tumbar el build cuando alguien añade una y no toca {@link #PROTOCOL_VERSION}.</p>
+	 * <p>How many pieces cross the wire: registered messages plus the enum constants that travel by
+	 * ordinal. <b>The game doesn't use it</b>: it exists so {@code JsonContentSelfTest} can compare it
+	 * against the real shape and fail the build when someone adds one and doesn't touch
+	 * {@link #PROTOCOL_VERSION}.</p>
 	 *
-	 * <p>Las invariantes 1 y 2 de PROJECT_CONTEXT.md son las dos que más veces han costado una sesión de
-	 * depuración, y las dos fallan en silencio: nada se rompe al compilar, y el cliente y el servidor se dan
-	 * la mano igual para desalinearse después. Un número que hay que tocar a mano no impide el error, pero
-	 * lo convierte en una decisión en vez de un olvido.</p>
+	 * <p>Invariants 1 and 2 from PROJECT_CONTEXT.md are the two that have cost the most debugging
+	 * sessions, and both fail silently: nothing breaks at compile time, and the client and server still
+	 * shake hands only to end up misaligned later. A number that has to be touched by hand doesn't prevent
+	 * the mistake, but it turns it into a decision instead of an oversight.</p>
 	 */
-	public static final int NETWORK_SHAPE = 118;
+	public static final int NETWORK_SHAPE = 119;
 
 	/**
-	 * <p>El orden exacto en que las piezas cruzan el cable, resumido en un hash. {@link #NETWORK_SHAPE}
-	 * cuenta cuántas hay, y por eso no ve el fallo que la invariante 1 nombra primero: <b>reordenar</b> dos
-	 * entradas ya registradas no cambia la cuenta. Borrar baja el número, insertar en medio lo sube, pero
-	 * intercambiar dos deja {@link #NETWORK_SHAPE} igual — y los ids se renumeran en silencio.</p>
+	 * <p>The exact order in which the pieces cross the wire, summarized as a hash. {@link #NETWORK_SHAPE}
+	 * counts how many there are, and that's why it doesn't see the failure invariant 1 names first:
+	 * <b>reordering</b> two already-registered entries doesn't change the count. Deleting lowers the
+	 * number, inserting in the middle raises it, but swapping two leaves {@link #NETWORK_SHAPE} unchanged
+	 * — and the ids get silently renumbered.</p>
 	 *
-	 * <p>Tampoco lo usa el juego: {@code JsonContentSelfTest.checkNetworkShape} rehace el hash desde la
-	 * fuente y tumba el build cuando no cuadra. Si mueves algo a propósito, sube {@link #PROTOCOL_VERSION}
-	 * y pega aquí el número que te diga el fallo.</p>
+	 * <p>The game doesn't use this one either: {@code JsonContentSelfTest.checkNetworkShape} rebuilds the
+	 * hash from the source and fails the build when it doesn't match. If you move something on purpose,
+	 * bump {@link #PROTOCOL_VERSION} and paste in the number the failure gives you.</p>
 	 */
-	public static final int NETWORK_ORDER = 2092874090;
+	public static final int NETWORK_ORDER = -1875038349;
 
 	/**
-	 * <p>Que se escribe y se lee en el cable, resumido en un hash: la secuencia de llamadas
-	 * {@code writeX}/{@code readX} de cada clase de {@code network/}.</p>
+	 * <p>What gets written and read on the wire, summarized as a hash: the sequence of
+	 * {@code writeX}/{@code readX} calls of every class in {@code network/}.</p>
 	 *
-	 * <p>Es el tercer angulo del mismo problema, y el que faltaba. {@link #NETWORK_SHAPE} cuenta CUANTAS
-	 * piezas cruzan; {@link #NETWORK_ORDER} vigila EN QUE ORDEN; ninguno de los dos ve que un campo cambie
-	 * de TIPO. Pasar {@code BrowseListMessage.labels} de {@code writeUtf} a {@code writeComponent} dejo los
-	 * dos numeros intactos y aun asi rompio la compatibilidad: un cliente viejo leería un texto donde el
-	 * servidor nuevo escribe un Component, y se desincroniza a mitad del paquete.</p>
+	 * <p>It's the third angle on the same problem, and the one that was missing. {@link #NETWORK_SHAPE}
+	 * counts HOW MANY pieces cross; {@link #NETWORK_ORDER} watches IN WHAT ORDER; neither of them sees a
+	 * field change TYPE. Changing {@code BrowseListMessage.labels} from {@code writeUtf} to
+	 * {@code writeComponent} left both numbers untouched and still broke compatibility: an old client
+	 * would read a text where the new server writes a Component, and it desyncs partway through the packet.</p>
 	 */
 	public static final int NETWORK_WIRE = 197534065;
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
@@ -188,10 +198,11 @@ public class DndsheetsMod {
 		messageID++;
 	}
 
-	//Registro centralizado de las 60+ clases de network/: antes cada una se autorregistraba con su propio
-	//@Mod.EventBusSubscriber + método registerMessage(FMLCommonSetupEvent) — ~5 líneas de boilerplate
-	//idéntico repetidas por clase. SimpleChannel exige que cada clase siga teniendo su propio buffer/
-	//constructor/handler (no se puede genericar eso), pero el PUNTO donde se registran sí es uno solo.
+	//Centralized registration for the 60+ classes in network/: each one used to self-register with its
+	//own @Mod.EventBusSubscriber + registerMessage(FMLCommonSetupEvent) method — ~5 lines of identical
+	//boilerplate repeated per class. SimpleChannel requires that each class still have its own
+	//buffer/constructor/handler (that can't be made generic), but the POINT where they're registered is
+	//now a single one.
 	private static void registerNetworkMessages(FMLCommonSetupEvent event) {
 		addNetworkMessage(AddCustomAttackMessage.class, AddCustomAttackMessage::buffer, AddCustomAttackMessage::new, AddCustomAttackMessage::handler);
 		addNetworkMessage(AdvancedRollEditorOpenMessage.class, AdvancedRollEditorOpenMessage::buffer, AdvancedRollEditorOpenMessage::new, AdvancedRollEditorOpenMessage::handler);
@@ -234,11 +245,11 @@ public class DndsheetsMod {
 		addNetworkMessage(TutorialOpenMessage.class, TutorialOpenMessage::buffer, TutorialOpenMessage::new, TutorialOpenMessage::handler);
 		addNetworkMessage(WeaponGiveMessage.class, WeaponGiveMessage::buffer, WeaponGiveMessage::new, WeaponGiveMessage::handler);
 
-		//A PARTIR DE AQUÍ, POR ORDEN DE INCORPORACIÓN, NO ALFABÉTICO. El id de red de cada mensaje es su
-		//orden de registro, así que meter uno nuevo en su hueco alfabético (Roster... iría entre Rest... y
-		//Sheet...) renumeraría en silencio todos los de después. Añade siempre al final de esta lista.
-		//(Los ids ya se renumeraron UNA vez, a propósito y con PROTOCOL_VERSION subida, cuando las 8
-		//parejas List/ListRequest se fundieron en BrowseAction/BrowseList y sus 16 clases se borraron.)
+		//FROM HERE ON, BY ORDER OF INTRODUCTION, NOT ALPHABETICAL. Each message's network id is its
+		//registration order, so slotting a new one into its alphabetical spot (Roster... would go between
+		//Rest... and Sheet...) would silently renumber everything after it. Always add to the end of this list.
+		//(The ids already got renumbered ONCE, deliberately and with PROTOCOL_VERSION bumped, when the 8
+		//List/ListRequest pairs were merged into BrowseAction/BrowseList and their 16 classes were deleted.)
 		addNetworkMessage(BrowseActionMessage.class, BrowseActionMessage::buffer, BrowseActionMessage::new, BrowseActionMessage::handler);
 		addNetworkMessage(BrowseListMessage.class, BrowseListMessage::buffer, BrowseListMessage::new, BrowseListMessage::handler);
 		addNetworkMessage(MonsterBindMessage.class, MonsterBindMessage::buffer, MonsterBindMessage::new, MonsterBindMessage::handler);
@@ -248,27 +259,28 @@ public class DndsheetsMod {
 	}
 
 	/**
-	 * <p>Único punto donde el mod pregunta "¿puede esta fuente actuar como DM?" — operador de verdad, O modo
-	 * solo encendido ({@link Config#soloMode()}). Reemplaza cada {@code hasPermission(2)}/
-	 * {@code hasPermissions(2)} suelto del mod: en modo solo no hay jerarquía nueva que inventar (ni "líder
-	 * de grupo", ni permisos por acción) — todos los jugadores conectados quedan igual de confiables entre
-	 * sí, el mismo nivel de confianza que ya hace falta para compartir el mismo mundo. La única excepción
-	 * real es {@code SheetServerMessage} (checks/saves/skills de la propia hoja), que no es un gate de "sos
-	 * DM" sino de integridad de datos ya calculados solos, y no pasa por aquí.</p>
+	 * <p>Single point where the mod asks "can this source act as DM?" — a real operator, OR solo mode
+	 * turned on ({@link Config#soloMode()}). Replaces every loose {@code hasPermission(2)}/
+	 * {@code hasPermissions(2)} in the mod: in solo mode there's no new hierarchy to invent (no "party
+	 * leader," no per-action permissions) — every connected player ends up equally trusted with each
+	 * other, the same level of trust already required to share the same world. The one real exception is
+	 * {@code SheetServerMessage} (checks/saves/skills on one's own sheet), which isn't an "are you DM"
+	 * gate but a data-integrity one for values that are already computed on their own, and it doesn't go
+	 * through here.</p>
 	 */
 	public static boolean canActAsDm(CommandSourceStack source) {
 		return source.hasPermission(2) || Config.soloMode();
 	}
 
-	/** Misma pregunta que {@link #canActAsDm(CommandSourceStack)}, para los call sites que solo tienen la entidad a mano. */
+	/** Same question as {@link #canActAsDm(CommandSourceStack)}, for call sites that only have the entity at hand. */
 	public static boolean canActAsDm(Entity entity) {
 		return entity.hasPermissions(2) || Config.soloMode();
 	}
 
-	//Patrón repetido en los mensajes cliente(DM)->servidor que actúan sobre OTRO jugador (SheetAdjustMessage,
-	//TraitGrantMessage, PresetApplyToMessage): comprobar que quien envía el mensaje es un operador (o que el
-	//modo solo está encendido, ver canActAsDm) y que el jugador objetivo sigue conectado, antes de delegar.
-	//Llamar dentro de context.enqueueWork(...).
+	//Pattern repeated across client(DM)->server messages that act on ANOTHER player (SheetAdjustMessage,
+	//TraitGrantMessage, PresetApplyToMessage): check that whoever sent the message is an operator (or
+	//that solo mode is on, see canActAsDm) and that the target player is still connected, before
+	//delegating. Call this inside context.enqueueWork(...).
 	public static void withDmTarget(NetworkEvent.Context context, String targetUuid, Consumer<ServerPlayer> action) {
 		ServerPlayer dm = context.getSender();
 		if (dm == null || !canActAsDm(dm)) return;
@@ -276,23 +288,23 @@ public class DndsheetsMod {
 		try {
 			uuid = UUID.fromString(targetUuid);
 		} catch (IllegalArgumentException e) {
-			//Un operador con un cliente roto/modificado puede mandar un UUID malformado; se descarta el
-			//mensaje en vez de tumbar el hilo del servidor con una excepción sin capturar.
+			//An operator with a broken/modified client can send a malformed UUID; the message is
+			//discarded instead of crashing the server thread with an uncaught exception.
 			return;
 		}
 		ServerPlayer target = dm.getServer().getPlayerList().getPlayer(uuid);
 		if (target != null) action.accept(target);
 	}
 
-	//Envía un parche de unos pocos campos de la hoja (ver network.SheetFieldUpdateMessage) en vez de la
-	//hoja JSON completa — para cambios acotados como consumir ventaja/inspiración o gastar un espacio de
-	//conjuro, que antes reenviaban toda la hoja en cada golpe/hechizo.
+	//Sends a patch of a few sheet fields (see network.SheetFieldUpdateMessage) instead of the full JSON
+	//sheet — for narrow changes like consuming advantage/inspiration or spending a spell slot, which used
+	//to resend the whole sheet on every hit/spell.
 	public static void sendSheetFieldUpdate(ServerPlayer player, JsonObject patch) {
 		PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetFieldUpdateMessage(patch.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 	}
 
-	//Mutable a propósito (ticksLeft se decrementa in place cada tick): un record forzaría reconstruir/
-	//reemplazar la entrada en la cola en cada tick solo para restar 1.
+	//Mutable on purpose (ticksLeft is decremented in place every tick): a record would force
+	//rebuilding/replacing the queue entry every tick just to subtract 1.
 	private static final class PendingWork {
 		final Runnable action;
 		int ticksLeft;

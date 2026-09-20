@@ -1,8 +1,8 @@
 [
   {
-    "_note": "unarmedDiceByLevel: sustituye el golpe a mano desnuda por un ataque real de 5e (tirada vs. CA, daño con este dado + unarmedAbility), escalando por nivel de personaje — se usa el tier más alto cuyo \"level\" sea <= nivel actual. Sin este rasgo, un puñetazo sigue contando como acción del turno pero se resuelve como el golpe flojo de Minecraft de siempre.",
-    "id": "monje:artes_marciales",
-    "name": "Artes Marciales",
+    "_note": "unarmedDiceByLevel: replaces the bare-handed strike with a real 5e attack (roll vs. AC, damage with this die + unarmedAbility), scaling by character level — the highest tier whose \"level\" is <= the current level is used. Without this trait, a punch still counts as a turn action but resolves as Minecraft's usual weak hit.",
+    "id": "monk:martial_arts",
+    "name": "Martial Arts",
     "unarmedAbility": "dex",
     "unarmedDiceByLevel": [
       { "level": 1, "dice": "1d4" },
@@ -12,9 +12,9 @@
     ]
   },
   {
-    "_note": "sneakAttackDiceByLevel: dado extra que se SUMA a la tirada de daño de un ataque con ARMA (no a mano desnuda) hecho con ventaja real — mismo escalado por nivel que unarmedDiceByLevel.",
-    "id": "picaro:ataque_furtivo",
-    "name": "Ataque Furtivo",
+    "_note": "sneakAttackDiceByLevel: an extra die ADDED to the damage roll of a WEAPON attack (not bare-handed) made with real advantage — the same level scaling as unarmedDiceByLevel.",
+    "id": "rogue:sneak_attack",
+    "name": "Sneak Attack",
     "sneakAttackDiceByLevel": [
       { "level": 1, "dice": "1d6" },
       { "level": 3, "dice": "2d6" },

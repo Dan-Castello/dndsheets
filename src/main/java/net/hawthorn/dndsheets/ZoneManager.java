@@ -13,35 +13,35 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * <p>Zonas persistentes: un área que se <em>coloca</em> y sigue ahí durante asaltos, dañando a quien
- * empiece su turno dentro. Cubre tanto los muros (Muro de Fuego, Barrera de Hojas) como los efectos de
- * área que duran (Rayo de Luna, Nube Mortal, Guardianes Espirituales).</p>
+ * <p>Persistent zones: an area that gets <em>placed</em> and stays there across rounds, damaging whoever
+ * starts their turn inside it. Covers both walls (Wall of Fire, Wall of Thorns) and lingering area
+ * effects (Moonbeam, Cloudkill, Spirit Guardians).</p>
  *
- * <p>Es una capacidad distinta de las formas de área de {@link SpellCastManager}, aunque compartan la
- * geometría: una línea o un cono se emiten desde el lanzador y se resuelven <em>una vez</em>. Lo que
- * distingue a una zona es la <b>persistencia</b>, no la forma — por eso la forma es un campo más y no
- * una clase aparte, y por eso {@code inShape} se reutiliza tal cual.</p>
+ * <p>This is a distinct capability from the area shapes in {@link SpellCastManager}, even though they
+ * share the geometry: a line or a cone is emitted from the caster and resolved <em>once</em>. What sets
+ * a zone apart is <b>persistence</b>, not shape — that's why shape is just another field instead of a
+ * separate class, and why {@code inShape} is reused as-is.</p>
  *
- * <p>El muro no coloca bloques reales: cambiar el mundo obligaría a limpiarlo después y a decidir qué
- * pasa si alguien lo pica o si el chunk se descarga. Se guarda como una región y se comprueba al empezar
- * cada turno, que es exactamente cuando 5e dice que hay que tirar la salvación. La geometría es la misma
- * {@code inShape("wall", ...)} que ya se comprueba en el self-test.</p>
+ * <p>The wall doesn't place actual blocks: changing the world would require cleaning it up afterward and
+ * deciding what happens if someone mines it or the chunk unloads. It's stored as a region and checked at
+ * the start of each turn, which is exactly when 5e says the saving throw should happen. The geometry is
+ * the same {@code inShape("wall", ...)} already checked by the self-test.</p>
  *
- * <p>Estado en memoria y por encuentro, igual que el orden de turnos: un muro no debería sobrevivir a un
- * reinicio del servidor, porque tampoco sobrevive el combate en el que se lanzó.</p>
+ * <p>In-memory, per-encounter state, same as turn order: a wall shouldn't survive a server restart,
+ * because the combat it was cast in doesn't survive one either.</p>
  */
 public class ZoneManager {
 
 	/**
-	 * @param origin      base del muro, a la altura de los pies del lanzador (la altura se cuenta hacia
-	 *                    arriba desde ahí, ver {@code SpellCastManager.WALL_HEIGHT}).
-	 * @param casterId    de quién es: hace falta para retirarlo si pierde la concentración.
+	 * @param origin      base of the wall, at the caster's foot height (height is measured upward from
+	 *                    there, see {@code SpellCastManager.WALL_HEIGHT}).
+	 * @param casterId    whose it is: needed to remove it if they lose concentration.
 	 */
 	/**
-	 * @param shape          geometría, la misma que entiende {@code SpellCastManager.inShape}:
+	 * @param shape          geometry, the same kind {@code SpellCastManager.inShape} understands:
 	 *                       {@code wall}, {@code sphere}, {@code cone}, {@code line}.
-	 * @param followsCaster  la zona se recentra sobre el lanzador cada asalto (Guardianes Espirituales).
-	 *                       Sin esto habría que elegir entre no tener ese hechizo o mentir sobre él.
+	 * @param followsCaster  the zone re-centers on the caster every round (Spirit Guardians).
+	 *                       Without this we'd have to choose between not having that spell or lying about it.
 	 */
 	public record Zone(UUID casterId, String spellName, Vec3 origin, Vec3 direction, double size,
 	                   String shape, boolean followsCaster,
@@ -61,13 +61,13 @@ public class ZoneManager {
 
 	private static final List<Zone> active = new ArrayList<>();
 
-	//Duración por defecto: 1 minuto de 5e = 10 asaltos, que es lo que dura la mayoría de los muros.
+	//Default duration: 5e's 1 minute = 10 rounds, which is how long most walls last.
 	public static final int DEFAULT_ROUNDS = 10;
 
 	/**
-	 * @param aimPoint dónde apunta el lanzador (choque del rayo con el terreno), o {@code null} para
-	 *                 colocarla justo delante. Una zona que sigue al lanzador (Guardianes Espirituales) lo
-	 *                 ignora: nace centrada en él y se recentra al cerrar cada asalto.
+	 * @param aimPoint where the caster is aiming (ray hit against the terrain), or {@code null} to
+	 *                 place it right in front. A zone that follows the caster (Spirit Guardians) ignores
+	 *                 this: it's born centered on them and re-centers at the end of each round.
 	 */
 	public static void place(ServerPlayer caster, SpellRegistry.Spell spell, int saveDc, Vec3 aimPoint) {
 		Zone zone = zoneAt(caster, spell, saveDc, aimPoint);
@@ -80,34 +80,34 @@ public class ZoneManager {
 	}
 
 	/**
-	 * <p>Agachado + clic con un báculo de zona: dibuja dónde caería <b>sin colocarla</b> — no gasta espacio
-	 * de conjuro, ni acción, ni entra en {@code active}.</p>
+	 * <p>Sneak + click with a zone staff: draws where it would land <b>without placing it</b> — costs no
+	 * spell slot, no action, and doesn't enter {@code active}.</p>
 	 *
-	 * <p>Sale de {@link #zoneAt} y se pinta con el mismo {@link #draw} que la de verdad, y eso no es un
-	 * ahorro de líneas: una previsualización calculada aparte es una que puede mentir. Un muro que se
-	 * enseña dos bloques a la izquierda de donde va a caer es peor que no enseñar nada, porque encima te
-	 * hace confiar.</p>
+	 * <p>It comes from {@link #zoneAt} and is drawn with the same {@link #draw} used for the real thing,
+	 * and that's not just a line-count saving: a preview computed separately is one that can lie. A wall
+	 * shown two blocks to the left of where it will actually land is worse than showing nothing, because
+	 * on top of that it makes you trust it.</p>
 	 */
 	public static void preview(ServerPlayer caster, SpellRegistry.Spell spell, Vec3 aimPoint) {
 		if (caster.level() instanceof ServerLevel level) draw(level, zoneAt(caster, spell, 0, aimPoint));
 	}
 
-	//La zona que saldría de este lanzamiento, sin colocarla: lo que place() registra y lo que preview()
-	//enseña salen de aquí, para que no puedan discrepar.
+	//The zone that would result from this cast, without placing it: what place() registers and what
+	//preview() shows both come from here, so they can never disagree.
 	private static Zone zoneAt(ServerPlayer caster, SpellRegistry.Spell spell, int saveDc, Vec3 aimPoint) {
-		//El eje de una zona es HORIZONTAL, siempre: la zona se levanta DEL SUELO. Con el vector de vista a
-		//secas, apuntar al suelo —que es justamente como se coloca una— inclinaba el eje hacia abajo, así
-		//que el muro se hundía en el terreno y su "along" (ver SpellCastManager.inShape) dejaba de cuadrar
-		//con nadie: la zona se colocaba, se anunciaba en el chat y no golpeaba a nadie nunca.
+		//A zone's axis is HORIZONTAL, always: the zone rises FROM THE GROUND. With the raw view vector,
+		//aiming at the ground — which is exactly how one gets placed — tilted the axis downward, so the
+		//wall sank into the terrain and its "along" (see SpellCastManager.inShape) stopped lining up with
+		//anyone: the zone got placed, got announced in chat, and never hit anybody.
 		Vec3 flat = new Vec3(caster.getViewVector(1.0f).x, 0, caster.getViewVector(1.0f).z);
-		//Mirando en vertical exacta no queda dirección horizontal que normalizar: se cae al giro del cuerpo.
+		//Looking straight up or down leaves no horizontal direction to normalize: fall back to body yaw.
 		Vec3 direction = flat.lengthSqr() < 1.0e-6 ? Vec3.directionFromRotation(0, caster.getYRot()) : flat.normalize();
 
-		//Donde se apunta, no un par de bloques por delante. Colocarla siempre a dos pasos convertía el muro
-		//en algo que solo se podía poner encima de uno mismo: no había forma de tapar un pasillo a diez
-		//bloques ni de cortar el paso por delante de un enemigo, que es para lo que existe el conjuro.
-		//La base queda a la altura de los pies y no de los ojos —el punto apuntado ES el choque del rayo con
-		//el suelo—, que es lo que un muro necesita para no nacer con su mitad inferior enterrada.
+		//Where they're aiming, not a couple of blocks ahead. Always placing it two steps out turned the
+		//wall into something that could only be put on top of yourself: there was no way to block a
+		//corridor ten blocks away or to cut off an enemy's path, which is exactly what the spell is for.
+		//The base sits at foot height rather than eye height — the aimed point IS the ray's hit against
+		//the ground — which is what a wall needs so it isn't born with its lower half buried.
 		Vec3 ahead = caster.position().add(direction.scale(2.0));
 		Vec3 origin = spell.followsCaster() ? caster.position() : aimPoint != null ? aimPoint : ahead;
 		return new Zone(caster.getUUID(), spell.name(), origin, direction, spell.aoeRadius(),
@@ -116,9 +116,9 @@ public class ZoneManager {
 	}
 
 	/**
-	 * <p>Llamado al empezar el turno de un combatiente: si está dentro de un muro, tira su salvación y
-	 * recibe el daño. Es el momento exacto en el que 5e lo pide, y por eso engancha en
-	 * {@code TurnManager.beginTurn} junto a los efectos de estado en vez de en un tick propio.</p>
+	 * <p>Called when a combatant's turn starts: if they're inside a wall, they roll their save and take
+	 * damage. This is the exact moment 5e calls for it, which is why it hooks into
+	 * {@code TurnManager.beginTurn} alongside status effects instead of running on its own tick.</p>
 	 */
 	public static void onTurnStart(ServerLevel level, Entity entity) {
 		if (active.isEmpty()) return;
@@ -137,7 +137,7 @@ public class ZoneManager {
 			Combatant.SaveRoll save = combatant.rollSave(wall.saveAbility());
 			boolean saved = save.succeeds(wall.saveDc());
 			int amount = saved ? (wall.halfOnSave() ? damageRoll.result().getValue() / 2 : 0) : damageRoll.result().getValue();
-			//Un conjuro siempre cuenta como mágico, igual que en SpellCastManager y MonsterActionManager.
+			//A spell always counts as magical, same as in SpellCastManager and MonsterActionManager.
 			amount = DamageTypes.applyMultiplier(amount, combatant.effectiveDamageMultiplier(wall.damageType(), true));
 
 			CombatFx.spellImpact(entity, saved, wall.damageType());
@@ -147,15 +147,15 @@ public class ZoneManager {
 		}
 	}
 
-	/** Llamado al cerrarse un asalto completo: descuenta duración y retira lo que expira. */
+	/** Called when a full round ends: decrements duration and removes anything that expires. */
 	public static void endRound(ServerLevel level) {
 		Iterator<Zone> it = active.iterator();
 		List<Zone> renewed = new ArrayList<>();
 		while (it.hasNext()) {
 			Zone wall = it.next().tick();
-			//Guardianes Espirituales y similares: la zona va con su lanzador, así que se recentra en él al
-			//cerrar el asalto. Si el lanzador ya no está en el mundo, se queda donde estaba en vez de
-			//desaparecer sin avisar.
+			//Spirit Guardians and similar: the zone travels with its caster, so it re-centers on them at the
+			//end of the round. If the caster is no longer in the world, it stays where it was instead of
+			//vanishing without warning.
 			if (wall.followsCaster()) {
 				ServerPlayer owner = level.getServer().getPlayerList().getPlayer(wall.casterId());
 				if (owner != null) wall = wall.movedTo(owner.position());
@@ -163,7 +163,7 @@ public class ZoneManager {
 			it.remove();
 			if (wall.roundsRemaining() > 0) {
 				renewed.add(wall);
-				draw(level, wall); //Se redibuja cada asalto: sin esto el muro es invisible salvo el instante en que se lanzó.
+				draw(level, wall); //Redrawn every round: without this the wall is invisible except at the instant it was cast.
 			} else {
 				broadcast(level, Component.translatable("chat.dndsheets.spell.zone_faded", wall.spellName()).withStyle(ChatFormatting.GRAY));
 			}
@@ -172,21 +172,21 @@ public class ZoneManager {
 	}
 
 	/**
-	 * <p>Retira los muros de ese lanzador. Los muros son de concentración, así que perderla los apaga —
-	 * sin esto, fallar la salvación de Constitución dejaba el muro ardiendo igualmente, que es justo el
-	 * fallo que ya se corrigió una vez para los efectos de estado.</p>
+	 * <p>Removes that caster's walls. Walls require concentration, so losing it snuffs them out —
+	 * without this, failing the Constitution save left the wall burning anyway, which is exactly the bug
+	 * that was already fixed once for status effects.</p>
 	 */
 	public static void removeFor(UUID casterId) {
 		active.removeIf(wall -> wall.casterId().equals(casterId));
 	}
 
-	/** El combate terminó: sin orden de turnos no hay asaltos que contar, así que no hay muro que mantener. */
+	/** Combat has ended: with no turn order there are no rounds to count, so there's no wall to maintain. */
 	public static void clear() {
 		active.clear();
 	}
 
-	//Partículas a lo largo del muro y en toda su altura, para que se vea dónde está: sin representación
-	//visual, un muro persistente es una trampa invisible en vez de una decisión táctica.
+	//Particles along the wall and across its full height, so its location is visible: without visual
+	//representation, a persistent wall is an invisible trap instead of a tactical decision.
 	private static void draw(ServerLevel level, Zone wall) {
 		if ("wall".equals(wall.shape())) {
 			int samplesAlong = Math.max(4, (int) (wall.size() * 2));
@@ -199,8 +199,8 @@ public class ZoneManager {
 			}
 			return;
 		}
-		//Cualquier otra forma se marca con el mismo anillo que ya usa un área instantánea: el jugador ya
-		//sabe leerlo, y reinventar un dibujo por forma no aporta nada.
+		//Any other shape is marked with the same ring already used for an instant area effect: the player
+		//already knows how to read it, and reinventing a drawing per shape adds nothing.
 		CombatFx.aoeRing(level, wall.origin(), wall.size());
 	}
 

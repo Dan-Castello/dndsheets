@@ -16,63 +16,64 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 /**
- * <p>Los dos subcomandos que todo comando de contenido tiene igual: {@code load <archivo>} y
- * {@code list}. Estaban copiados palabra por palabra en {@code dndtraits}, {@code dndpresets},
- * {@code dndspells}, {@code dndmonsters} y {@code dndencounters} — la misma resolución de ruta, el
- * mismo autocompletado, los mismos dos mensajes de error y el mismo {@code catch}.</p>
+ * <p>The two subcommands every content command has in common: {@code load <file>} and
+ * {@code list}. They were copied word for word into {@code dndtraits}, {@code dndpresets},
+ * {@code dndspells}, {@code dndmonsters} and {@code dndencounters} — the same path resolution, the
+ * same autocomplete, the same two error messages and the same {@code catch}.</p>
  *
- * <p>No absorbe a {@code dndoptions}: su {@code load} resuelve antes una categoría (race/background/
- * class), y su {@code list} no lista ids sino los valores de esa categoría. Meterlo aquí a la fuerza
- * pedía dos parámetros que solo usaría él.</p>
+ * <p>It doesn't absorb {@code dndoptions}: its {@code load} resolves a category first (race/background/
+ * class), and its {@code list} doesn't list ids but the values of that category. Forcing it in here
+ * would require two parameters that only it would use.</p>
  */
 final class ContentCommands {
 	private ContentCommands() {}
 
-	/** Lo que hace {@code XRegistry::loadFile}. Propia y no {@code Function} porque lanza {@link IOException}. */
+	/** What {@code XRegistry::loadFile} does. Its own interface and not {@code Function} because it throws {@link IOException}. */
 	@FunctionalInterface
 	interface FileLoader {
 		int load(Path file) throws IOException;
 	}
 
 	/**
-	 * @param plural en minúscula y masculino, como lo lee el jugador: "rasgos", "hechizos", "monstruos".
-	 *               Va detrás de "Cargados N", así que un femenino ("opciones") no concuerda — ver arriba
-	 *               por qué {@code dndoptions} se queda fuera.
+	 * @param plural lowercase, as the player reads it: "traits", "spells", "monsters". Follows
+	 *               "Loaded N", so make sure it reads naturally in that message — see above for why
+	 *               {@code dndoptions} is left out.
 	 */
 	static LiteralArgumentBuilder<CommandSourceStack> loadBranch(Path dir, FileLoader loader, String plural) {
 		return Commands.literal("load")
-			.then(Commands.argument("archivo", StringArgumentType.word())
+			.then(Commands.argument("file", StringArgumentType.word())
 				.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(DndPaths.jsonFileNames(dir), builder))
 				.executes(ctx -> load(ctx, dir, loader, plural)));
 	}
 
-	/** @param pluralCapitalizado abre la frase: "Rasgos cargados (3): ...". */
-	static LiteralArgumentBuilder<CommandSourceStack> listBranch(Supplier<Set<String>> ids, String pluralCapitalizado) {
+	/** @param pluralCapitalized opens the sentence: "Traits loaded (3): ...". */
+	static LiteralArgumentBuilder<CommandSourceStack> listBranch(Supplier<Set<String>> ids, String pluralCapitalized) {
 		return Commands.literal("list").executes(ctx -> {
 			Set<String> loaded = ids.get();
-			ctx.getSource().sendSuccess(() -> Component.literal(
-				pluralCapitalizado + " cargados (" + loaded.size() + "): " + String.join(", ", loaded)), false);
+			ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.content.list_loaded",
+				pluralCapitalized, loaded.size(), String.join(", ", loaded)), false);
 			return loaded.size();
 		});
 	}
 
 	private static int load(CommandContext<CommandSourceStack> ctx, Path dir, FileLoader loader, String plural) {
-		String fileName = StringArgumentType.getString(ctx, "archivo");
+		String fileName = StringArgumentType.getString(ctx, "file");
 		Path file = dir.resolve(fileName + ".json");
 
 		if (!Files.exists(file)) {
-			ctx.getSource().sendFailure(Component.literal("No encontré " + file.toAbsolutePath()));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.content.file_not_found", file.toAbsolutePath().toString()));
 			return 0;
 		}
 
 		try {
 			int count = loader.load(file);
-			ctx.getSource().sendSuccess(() -> Component.literal("Cargados " + count + " " + plural + " desde " + fileName + ".json"), true);
+			ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.content.loaded_from_file", count, plural, fileName), true);
 			return count;
 		} catch (IOException | RuntimeException e) {
-			//RuntimeException además de IOException: un JSON malformado revienta al parsear, no al leer, y
-			//sin esto se lo tragaba el dispatcher de Brigadier y el DM no veía nada.
-			ctx.getSource().sendFailure(Component.literal("No pude leer " + fileName + ".json: " + e.getMessage()));
+			//RuntimeException in addition to IOException: a malformed JSON blows up while parsing, not
+			//while reading, and without this Brigadier's dispatcher would swallow it and the DM would see
+			//nothing.
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.content.read_failed", fileName, e.getMessage()));
 			return 0;
 		}
 	}

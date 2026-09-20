@@ -1,6 +1,6 @@
-# Ids de objeto/bloque y de entidad que existen en Minecraft 1.20.1.
-# Sacado del en_us.json del cliente 1.20.1; se regenera con tools/extract_vanilla_ids.py.
-# Sirve para que el self-test cace un id de otra version (paso con minecraft:mace, que es de 1.21).
+# Item/block and entity ids that exist in Minecraft 1.20.1.
+# Taken from the 1.20.1 client en_us.json; regenerated with tools/extract_vanilla_ids.py.
+# It lets the self-test catch an id from another version (it happened with minecraft:mace, which is from 1.21).
 entity/allay
 entity/area_effect_cloud
 entity/armor_stand

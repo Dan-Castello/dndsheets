@@ -9,34 +9,35 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * <p>Todo lo que la Forma Salvaje necesita que cruce el cable, en una sola clase con un enum en vez de
- * tres mensajes casi iguales (invariante 3): abrir el selector de bestia, elegir una, y contarle al resto
- * de clientes en qué se ha convertido alguien para que puedan dibujarlo.</p>
+ * <p>Everything Wild Shape needs to cross the wire, in a single class with an enum instead of
+ * three near-identical messages (invariant 3): opening the beast picker, choosing one, and telling
+ * the rest of the clients what someone has turned into so they can render it.</p>
  *
  * <ul>
- *   <li>{@code OPEN_PICKER} — servidor → cliente. Abre la lista de bestias, con el bestiario ({@code id}
- *       + nombre + PG + CA) puesto por el servidor: el registro en memoria solo vive ahí, así que un
- *       cliente que sea un proceso aparte (cualquiera que no sea quien abrió el mundo) lo ve siempre
- *       vacío si el cliente intenta leerlo directo.</li>
- *   <li>{@code CHOOSE} — cliente → servidor. "Conviérteme en esta". Es el único que llega del cliente, y
- *       por eso es el único que valida: el servidor comprueba que exista y sea una bestia.</li>
- *   <li>{@code SHAPE} — servidor → <b>todos</b> los clientes. "Este jugador se dibuja ahora como esta
- *       entidad", o con {@code monsterId} vacío, "ha vuelto a la suya". Va a todos y no solo al interesado
- *       porque lo que cambia es cómo lo VEN los demás. Lleva la {@code baseEntityId} YA resuelta por el
- *       servidor (no el id del monstruo): el registro de monstruos solo vive ahí, y un cliente que sea un
- *       proceso aparte (un invitado por LAN) no podría resolverlo por su cuenta — ver
- *       {@code WildShapeWatcher.baseEntityIdOf}.</li>
+ *   <li>{@code OPEN_PICKER} — server → client. Opens the beast list, with the bestiary ({@code id}
+ *       + name + HP + AC) filled in by the server: the in-memory registry only lives there, so a
+ *       client that's a separate process (anyone other than whoever hosted the world) would always
+ *       see it empty if the client tried to read it directly.</li>
+ *   <li>{@code CHOOSE} — client → server. "Turn me into this one." It's the only one that arrives
+ *       from the client, and that's why it's the only one that validates: the server checks that it
+ *       exists and is a beast.</li>
+ *   <li>{@code SHAPE} — server → <b>all</b> clients. "This player is now rendered as this entity",
+ *       or with an empty {@code monsterId}, "they've reverted to their own." It goes to everyone, not
+ *       just the player involved, because what changes is how OTHERS see them. It carries the
+ *       {@code baseEntityId} ALREADY resolved by the server (not the monster's id): the monster
+ *       registry only lives there, and a client that's a separate process (a LAN guest) couldn't
+ *       resolve it on its own — see {@code WildShapeWatcher.baseEntityIdOf}.</li>
  * </ul>
  */
 public class WildShapeMessage {
 
-	//Al final, nunca en medio: writeEnum viaja por ordinal (ver la invariante 2 de PROJECT_CONTEXT.md).
+	//At the end, never in the middle: writeEnum travels by ordinal (see invariant 2 of PROJECT_CONTEXT.md).
 	public enum Kind { OPEN_PICKER, CHOOSE, SHAPE }
 
 	final Kind kind;
 	final UUID target;
 	final String monsterId;
-	//Solo van con datos en OPEN_PICKER; CHOOSE y SHAPE viajan con las cuatro vacías.
+	//Only carry data in OPEN_PICKER; CHOOSE and SHAPE travel with all four empty.
 	final List<String> beastIds;
 	final List<String> beastNames;
 	final List<Integer> beastHps;
@@ -46,7 +47,7 @@ public class WildShapeMessage {
 		this(kind, target, monsterId, List.of(), List.of(), List.of(), List.of());
 	}
 
-	/** OPEN_PICKER con el bestiario ya resuelto en el servidor — ver {@code WildShapeWatcher.openPicker}. */
+	/** OPEN_PICKER with the bestiary already resolved on the server — see {@code WildShapeWatcher.openPicker}. */
 	public WildShapeMessage(UUID target, List<String> beastIds, List<String> beastNames, List<Integer> beastHps, List<Integer> beastAcs) {
 		this(Kind.OPEN_PICKER, target, "", beastIds, beastNames, beastHps, beastAcs);
 	}
@@ -89,8 +90,8 @@ public class WildShapeMessage {
 				net.hawthorn.dndsheets.client.gui.WildShapeListScreen.open(message.beastIds, message.beastNames, message.beastHps, message.beastAcs));
 			case SHAPE -> NetworkUtil.handleOnClient(context, () ->
 				net.hawthorn.dndsheets.client.WildShapeRenderer.setShape(message.target, message.monsterId));
-			//No pasa por handleOnServerAsDm: transformarse es cosa del propio jugador, no del DM. Lo que sí
-			//se valida es la bestia, dentro de activate — el cliente puede mandar cualquier id.
+			//Doesn't go through handleOnServerAsDm: transforming is up to the player themself, not the DM.
+			//What IS validated is the beast, inside activate — the client can send any id.
 			case CHOOSE -> NetworkUtil.handleOnServer(context, () -> {
 				if (context.getSender() != null) {
 					DruidWildShapeManager.activate(context.getSender(), message.monsterId);

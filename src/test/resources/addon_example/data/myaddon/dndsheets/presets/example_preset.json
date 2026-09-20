@@ -1,0 +1,7 @@
+{
+  "id": "myaddon:example_preset",
+  "name": "Example Preset",
+  "hitDiceType": "1d8",
+  "abilities": { "str": 12, "dex": 14, "con": 13, "int": 10, "wis": 12, "cha": 8 },
+  "startingWeapon": "myaddon:example_axe"
+}

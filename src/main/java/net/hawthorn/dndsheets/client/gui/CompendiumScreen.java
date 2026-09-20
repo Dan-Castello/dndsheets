@@ -6,12 +6,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 /**
- * <p>Punto de entrada del compendio: elige categoría. Con 779 entradas importadas del SRD, hasta ahora
- * la única forma de mirar un hechizo o un bloque de estadísticas era recordar su id y escribir un
- * comando, que es tanto como no tenerlas.</p>
+ * <p>Entry point of the compendium: pick a category. With 779 entries imported from the SRD, until now
+ * the only way to look up a spell or a stat block was to remember its id and type a command, which is
+ * about as good as not having them.</p>
  *
- * <p>No confundir con el Grimorio, que muestra los hechizos que un personaje <em>conoce</em>. Esto es
- * material de referencia: todo lo cargado, lo sepa quien lo mire o no.</p>
+ * <p>Not to be confused with the Grimoire, which shows the spells a character <em>knows</em>. This is
+ * reference material: everything that's loaded, whether the viewer knows it or not.</p>
  */
 public class CompendiumScreen extends ListPickerScreen {
 
@@ -29,8 +29,8 @@ public class CompendiumScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.compendium.monsters"), b -> request("monsters"));
 		addRow(Component.translatable("gui.dndsheets.compendium.items"), b -> request("items"));
 		addRow(Component.translatable("gui.dndsheets.compendium.weapons"), b -> request("weapons"));
-		//Los rasgos entran los ultimos porque son la categoria mas corta, pero es la unica que el jugador
-		//no podia consultar de ninguna otra forma: marca ademas cuales lleva puestos (ver CompendiumQuery).
+		//Traits go last because it's the shortest category, but it's the only one the player couldn't
+		//check any other way: it also marks which ones they currently have (see CompendiumQuery).
 		addRow(Component.translatable("gui.dndsheets.compendium.traits"), b -> request("traits"));
 	}
 

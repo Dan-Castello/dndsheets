@@ -19,16 +19,16 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * <p>Carga las listas de Raza/Trasfondo/Clase que ofrece el selector de la hoja (ver
- * {@link CharacterOptionsRegistry}) desde JSON en {@code <carpeta del mundo>/dndsheets/races/},
- * {@code /backgrounds/} o {@code /classes/}. Formato: un array plano de strings, nada de objetos con
- * "id" — el valor es literalmente lo que se escribe en la hoja.</p>
+ * <p>Loads the Race/Background/Class lists that the sheet selector offers (see
+ * {@link CharacterOptionsRegistry}) from JSON in {@code <world folder>/dndsheets/races/},
+ * {@code /backgrounds/} or {@code /classes/}. Format: a flat array of strings, no objects with
+ * an "id" — the value is literally what gets written on the sheet.</p>
  *
- * <pre>["Bárbaro", "Bardo", "Clérigo"]</pre>
+ * <pre>["Barbarian", "Bard", "Cleric"]</pre>
  */
 @Mod.EventBusSubscriber
 public class CharacterOptionsCommand {
-	//RACE y BACKGROUND ya no viven acá (ver /dndspecies load / loadbackground en dndsheets_species).
+	//RACE and BACKGROUND no longer live here (see /dndspecies load / loadbackground in dndsheets_species).
 	private static final String[] CATEGORIES = {CharacterOptionsRegistry.CLASS};
 
 	@SubscribeEvent
@@ -36,13 +36,13 @@ public class CharacterOptionsCommand {
 		event.getDispatcher().register(Commands.literal("dndoptions")
 			.requires(source -> DndsheetsMod.canActAsDm(source))
 			.then(Commands.literal("load")
-				.then(Commands.argument("categoria", StringArgumentType.word())
+				.then(Commands.argument("category", StringArgumentType.word())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(CATEGORIES, builder))
-					.then(Commands.argument("archivo", StringArgumentType.word())
-						.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(DndPaths.jsonFileNames(dirFor(StringArgumentType.getString(ctx, "categoria"))), builder))
+					.then(Commands.argument("file", StringArgumentType.word())
+						.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(DndPaths.jsonFileNames(dirFor(StringArgumentType.getString(ctx, "category"))), builder))
 						.executes(CharacterOptionsCommand::load))))
 			.then(Commands.literal("list")
-				.then(Commands.argument("categoria", StringArgumentType.word())
+				.then(Commands.argument("category", StringArgumentType.word())
 					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(CATEGORIES, builder))
 					.executes(CharacterOptionsCommand::list))));
 	}
@@ -55,38 +55,38 @@ public class CharacterOptionsCommand {
 	}
 
 	private static int load(CommandContext<CommandSourceStack> ctx) {
-		String category = StringArgumentType.getString(ctx, "categoria");
+		String category = StringArgumentType.getString(ctx, "category");
 		Path dir = dirFor(category);
 		if (dir == null) {
-			ctx.getSource().sendFailure(Component.literal("Categoría \"" + category + "\" no reconocida. Usa: race, background o class."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.options.category_unknown", category));
 			return 0;
 		}
 
-		String fileName = StringArgumentType.getString(ctx, "archivo");
+		String fileName = StringArgumentType.getString(ctx, "file");
 		Path file = dir.resolve(fileName + ".json");
 		if (!Files.exists(file)) {
-			ctx.getSource().sendFailure(Component.literal("No encontré " + file.toAbsolutePath()));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.content.file_not_found", file.toAbsolutePath().toString()));
 			return 0;
 		}
 
 		try {
 			int count = CharacterOptionsRegistry.loadFile(category, file);
-			ctx.getSource().sendSuccess(() -> Component.literal("Cargadas " + count + " opciones de " + category + " desde " + fileName + ".json"), true);
+			ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.options.loaded", count, category, fileName), true);
 			return count;
 		} catch (IOException | RuntimeException e) {
-			ctx.getSource().sendFailure(Component.literal("No pude leer " + fileName + ".json: " + e.getMessage()));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.content.read_failed", fileName, e.getMessage()));
 			return 0;
 		}
 	}
 
 	private static int list(CommandContext<CommandSourceStack> ctx) {
-		String category = StringArgumentType.getString(ctx, "categoria");
+		String category = StringArgumentType.getString(ctx, "category");
 		if (!CharacterOptionsRegistry.isValidCategory(category)) {
-			ctx.getSource().sendFailure(Component.literal("Categoría \"" + category + "\" no reconocida. Usa: race, background o class."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.options.category_unknown", category));
 			return 0;
 		}
 		List<String> values = CharacterOptionsRegistry.get(category);
-		ctx.getSource().sendSuccess(() -> Component.literal("Opciones de " + category + " (" + values.size() + "): " + String.join(", ", values)), false);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.options.list", category, values.size(), String.join(", ", values)), false);
 		return values.size();
 	}
 }

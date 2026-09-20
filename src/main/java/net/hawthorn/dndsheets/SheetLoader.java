@@ -40,58 +40,59 @@ import net.minecraft.world.entity.player.Player;
 
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
-//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
-//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
-//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
-//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
+//No stability contract: this mod doesn't publish a versioned API (the DndSheetsApi facade was
+//deleted — 233 lines not used by a single caller, not even the addons, which come in through here).
+//An external mod calling these methods is exposed to their signature changing without warning. The
+//only thing designed for external consumption is the api/event events, which do have real consumers.
 public class SheetLoader {
 
 	public static final Path GAME_DIR = FMLPaths.GAMEDIR.get();
 	public static final Path SHEETS_DIR = GAME_DIR.resolve("charactersheets");
 
-	//Sin esto no había forma programática de saber si una hoja en disco es de una versión anterior del
-	//mod. Subir este número solo tiene sentido el día que un campo
-	//existente cambie de forma de verdad (no cuando se añade uno nuevo: eso ya lo cubre validateSheet
-	//solo, sin necesidad de versión).
+	//Without this there was no programmatic way to know if an on-disk sheet is from an earlier
+	//version of the mod. Bumping this number only makes sense the day an existing field truly
+	//changes shape (not when a new one is added: validateSheet already covers that on its own,
+	//no version needed).
 	public static final int CURRENT_SCHEMA_VERSION = 1;
 	/**
-	 * <p>Todas las hojas cargadas, <b>indexadas por id de personaje</b>, no por UUID de jugador. Hasta Fase 1
-	 * eran lo mismo: una hoja por jugador, para siempre, así que no existía el concepto de "personaje" —
-	 * y sin él no se podía tener un segundo PJ, ni una hoja de PNJ, ni cambiar de personaje, ni archivar
-	 * una campaña. Ahora un id de personaje es cualquier cadena apta para nombre de archivo; el UUID del
-	 * jugador sigue siendo un id válido, que es exactamente lo que hace que todo lo guardado antes de este
-	 * cambio siga funcionando sin migración: su archivo ya se llamaba así.</p>
+	 * <p>All loaded sheets, <b>indexed by character id</b>, not by player UUID. Up through Phase 1 those
+	 * were the same thing: one sheet per player, forever, so the concept of "character" didn't exist —
+	 * and without it you couldn't have a second PC, an NPC sheet, switch characters, or archive a
+	 * campaign. Now a character id is any string valid as a filename; a player's UUID is still a valid
+	 * id, which is exactly what makes everything saved before this change keep working without migration:
+	 * its file was already named that way.</p>
 	 */
-	private static HashMap<String, JsonObject> sheets = new HashMap<String, JsonObject>(); //Privado: sin consumo externo confirmado, solo se lee/escribe a través de getServerSheet/saveServer, que ya validan/loguean.
+	private static HashMap<String, JsonObject> sheets = new HashMap<String, JsonObject>(); //Private: no confirmed external consumer, only read/written through getServerSheet/saveServer, which already validate/log.
 
 	/**
-	 * <p>UUID de jugador → id del personaje que lleva ahora mismo. Es una caché derivada de las propias
-	 * hojas (el campo {@code active} de cada una), no una fuente de verdad aparte: se reconstruye entera en
-	 * {@link #load()} y se actualiza al cambiar de personaje. Existe solo porque {@code getServerSheet} se
-	 * llama en cada golpe de cada combate y recorrer todas las hojas ahí sería absurdo.</p>
+	 * <p>Player UUID → id of the character they're currently playing. It's a cache derived from the sheets
+	 * themselves (each one's {@code active} field), not a separate source of truth: it's rebuilt entirely
+	 * in {@link #load()} and updated when switching characters. It exists only because
+	 * {@code getServerSheet} is called on every hit of every combat, and iterating all sheets there would
+	 * be absurd.</p>
 	 */
 	private static final Map<String, String> activeCharacter = new HashMap<>();
 	private static JsonObject current = null; //Currently active character sheet. Important for populating GUIs when they're opened and knowing which to save to.
 
 	/**
-	 * <p>Ids de personaje con cambios pendientes de escribir a disco. {@link #saveServer} apunta aquí y el
-	 * final del tick escribe ({@link #flushDirty}).</p>
+	 * <p>Character ids with changes pending a disk write. {@link #saveServer} adds to this and the end
+	 * of the tick writes them out ({@link #flushDirty}).</p>
 	 *
-	 * <p><b>Por qué no se escribe en el acto.</b> {@code saveServer} serializa la hoja ENTERA con sangría y
-	 * la vuelca con un {@code Files.writeString} síncrono, en el hilo del servidor. Tiene 25 llamadores, y
-	 * dos están en el camino caliente del combate: {@code Combatant.setConditionSources} (toda alta o baja
-	 * de condición, de cualquier combatiente) y {@code setTemporaryHp}. Una ronda de seis combatientes eran
-	 * decenas de serializaciones y decenas de escrituras a disco, varias de ellas sobre la MISMA hoja
-	 * dentro de la resolución de un solo ataque.</p>
+	 * <p><b>Why it isn't written immediately.</b> {@code saveServer} serializes the ENTIRE sheet with
+	 * indentation and dumps it with a synchronous {@code Files.writeString}, on the server thread. It has
+	 * 25 callers, and two are on combat's hot path: {@code Combatant.setConditionSources} (every condition
+	 * gain or loss, for any combatant) and {@code setTemporaryHp}. One round with six combatants meant
+	 * dozens of serializations and dozens of disk writes, several of them on the SAME sheet within the
+	 * resolution of a single attack.</p>
 	 *
-	 * <p><b>Por qué es seguro.</b> Lo que había que evitar era confiar en el autoguardado de 5 minutos, que
-	 * ya costó perder cambios del DM (bug #5). Esto no es eso: la ventana pasa de "inmediato" a "el final de
-	 * este tick", 50 ms, y todas las escrituras de una misma resolución se funden en una. Las LECTURAS no
-	 * cambian en absoluto — {@code sheets} se actualiza síncrono, igual que antes, así que
-	 * {@code getServerSheet} nunca ve nada viejo.</p>
+	 * <p><b>Why it's safe.</b> What had to be avoided was relying on the 5-minute autosave, which already
+	 * cost lost DM changes (bug #5). This isn't that: the window goes from "immediate" to "the end of
+	 * this tick", 50 ms, and all writes from a single resolution collapse into one. READS don't change at
+	 * all — {@code sheets} is updated synchronously, same as before, so {@code getServerSheet} never sees
+	 * anything stale.</p>
 	 *
-	 * <p>{@code LinkedHashSet}: no repite id (que es el punto) y conserva el orden de marcado, para que el
-	 * log de un fallo de escritura salga en el orden en que pasaron las cosas.</p>
+	 * <p>{@code LinkedHashSet}: doesn't repeat an id (which is the point) and preserves marking order, so
+	 * a write-failure log comes out in the order things happened.</p>
 	 */
 	private static final Set<String> dirty = new LinkedHashSet<>();
 
@@ -113,27 +114,27 @@ public class SheetLoader {
 		//This needs to do two things:
 		//1. When a player joins, it should check for their sheet and then give them a packet with it.
 		//2. If the player doesn't have one on the server, it'll make one with their UUID first and THEN give the packet.
-		//En singleplayer/LAN este evento también dispara del lado del ClientLevel del propio cliente (el
-		//jugador ahí es un LocalPlayer, no un ServerPlayer) — sin este filtro, castear más abajo lanzaba
-		//ClassCastException cada vez que alguien se unía a un mundo integrado.
+		//In singleplayer/LAN this event also fires on the client's own ClientLevel side (the
+		//player there is a LocalPlayer, not a ServerPlayer) — without this filter, casting below threw
+		//ClassCastException every time someone joined an integrated world.
 		if (event.getLevel().isClientSide()) return;
 		if (!(event.getEntity() instanceof ServerPlayer entity)) return;
 
 		UUID uuid = entity.getUUID();
 		String uuidString = uuid.toString();
-		//Antes se llamaba load() aquí sin condición, y este evento no es solo "el jugador entró al servidor
-		//por primera vez": EntityJoinLevelEvent también dispara en cada respawn y cada cambio de dimensión
-		//(portal Nether/End) de CUALQUIER jugador. Eso reparseaba TODAS las hojas del servidor desde disco
-		//cada vez — I/O síncrona bloqueante en el hilo del servidor, repetida sin necesidad. sheets solo
-		//está vacío antes de la primera carga real (útil para mundo integrado/LAN, donde
-		//FMLDedicatedServerSetupEvent.serverLoad nunca dispara); en cualquier evento posterior las hojas ya
-		//están en memoria (makeNew/saveServer las mantiene actualizadas ahí) y no hace falta releerlas.
+		//load() used to be called here unconditionally, and this event isn't only "the player joined the
+		//server for the first time": EntityJoinLevelEvent also fires on every respawn and every dimension
+		//change (Nether/End portal) for ANY player. That reparsed ALL of the server's sheets from disk
+		//every time — synchronous blocking I/O on the server thread, repeated needlessly. sheets is only
+		//empty before the first real load (useful for integrated/LAN worlds, where
+		//FMLDedicatedServerSetupEvent.serverLoad never fires); on any later event the sheets are already
+		//in memory (makeNew/saveServer keeps them updated there) and don't need re-reading.
 		if (sheets.isEmpty()) load();
-		//Verdadero solo la primerísima vez que esta UUID recibe una hoja — nunca vuelve a serlo (queda en
-		//memoria/disco desde acá en adelante), y sigue siendo falso para un jugador ya existente incluso tras
-		//reiniciar el servidor (load() ya repobló "sheets" desde disco antes de esta línea). Es, sin
-		//necesidad de ningún campo nuevo en la hoja, exactamente la señal de "está entrando al mundo por
-		//primera vez" que necesita el tutorial de abajo.
+		//True only the very first time this UUID receives a sheet — it never becomes true again (it stays
+		//in memory/disk from then on), and it's still false for an existing player even after a server
+		//restart (load() already repopulated "sheets" from disk before this line). It's, with no need for
+		//any new field on the sheet, exactly the "entering the world for the first time" signal the
+		//tutorial below needs.
 		boolean brandNew = SheetLoader.getServerSheet(uuidString) == null;
 		if (brandNew) {
 			makeNew("New Sheet", uuidString);
@@ -145,19 +146,19 @@ public class SheetLoader {
 			byte[] data = SheetLoader.getServerSheet(uuidString).toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> entity), new SheetClientMessage(data));
 			DeathSaveManager.resendState(entity, SheetLoader.getServerSheet(uuidString));
-			//Reconectarse durante un combate le da al jugador un entityId nuevo; sin esto quedaba bloqueado
-			//sin poder actuar por el resto del encuentro (ver TurnManager.reconcilePlayerEntity).
+			//Reconnecting during combat gives the player a new entityId; without this they'd stay locked
+			//out of acting for the rest of the encounter (see TurnManager.reconcilePlayerEntity).
 			TurnManager.reconcilePlayerEntity(entity);
 		}
 		catch(Exception e) {
-			DndsheetsMod.LOGGER.error("Fallo al enviar la hoja al jugador que se conectó.", e);
+			DndsheetsMod.LOGGER.error("Failed to send the sheet to the connecting player.", e);
 		}
 
-		//Primer ingreso al mundo: un toast de esquina con la tecla de la ficha (ver TutorialOpenMessage —
-		//antes abría la Guía entera sola, que se cerraba por reflejo sin leerse). El retraso sigue: no
-		//pelear con la pantalla de carga del mundo. Reengancha al jugador por UUID al disparar en vez de
-		//capturar "entity" directo — mismo patrón que BarbarianRageManager.activate — por si se
-		//desconecta durante los ~3 segundos de espera.
+		//First time entering the world: a corner toast with the sheet key (see TutorialOpenMessage —
+		//it used to open the entire Guide by itself, which got closed reflexively without being read).
+		//The delay stays: don't fight the world's loading screen. Re-fetches the player by UUID when it
+		//fires instead of capturing "entity" directly — same pattern as BarbarianRageManager.activate —
+		//in case they disconnect during the ~3 second wait.
 		if (brandNew) {
 			UUID playerId = uuid;
 			MinecraftServer server = entity.getServer();
@@ -172,19 +173,19 @@ public class SheetLoader {
 	}
 
 	/**
-	 * <p>Punto UNICO de limpieza al desconectar. Todos estos estados viven indexados por jugador en RAM (no
-	 * son datos de hoja), asi que sin quitarlos el UUID se queda dentro para siempre: un servidor de
-	 * comunidad acumula una entrada por jugador que paso por ahi y no vuelve.</p>
+	 * <p>The SINGLE cleanup point on disconnect. All these states live indexed by player in RAM (they
+	 * aren't sheet data), so without removing them the UUID stays in there forever: a community server
+	 * accumulates one entry per player who ever passed through and never came back.</p>
 	 *
-	 * <p>Existe porque estaba a medias. De diez colecciones por jugador solo tres se limpiaban
-	 * ({@code BardInspirationManager}, {@code SpellCastManager}, {@code RestManager}), cada una con su
-	 * propio {@code @SubscribeEvent}; y {@code BardInspirationManager} hasta documentaba el problema en un
-	 * comentario nombrando a los cuatro que lo seguian teniendo. Aqui se centraliza igual que ya estaba
-	 * centralizada la limpieza por cambio de personaje (ver switchCharacter), en vez de repartir siete
-	 * handlers identicos.</p>
+	 * <p>Exists because it used to be done halfway. Of ten per-player collections only three were being
+	 * cleaned ({@code BardInspirationManager}, {@code SpellCastManager}, {@code RestManager}), each with
+	 * its own {@code @SubscribeEvent}; and {@code BardInspirationManager} even documented the problem in a
+	 * comment naming the four that still had it. It's centralized here the same way cleanup on character
+	 * switch was already centralized (see switchCharacter), instead of spreading seven identical
+	 * handlers.</p>
 	 *
-	 * <p>Se llama a {@code clearFor} y NO a {@code ConcentrationManager.stopConcentrating}: al desconectar
-	 * solo hay que soltar la memoria, no revertir zonas ni invocaciones del mundo.</p>
+	 * <p>{@code clearFor} is called and NOT {@code ConcentrationManager.stopConcentrating}: on disconnect
+	 * only the memory needs releasing, not reverting zones or world summons.</p>
 	 */
 	@SubscribeEvent
 	public void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -195,20 +196,20 @@ public class SheetLoader {
 		DruidWildShapeManager.clearFor(player);
 		RangerHunterMarkManager.clearFor(player);
 		DeathSaveManager.clearFor(player);
-		//DungeonToolManager.clearFor(player) vivía aquí — se mudó al addon de mazmorras, que ahora
-		//escucha este mismo PlayerLoggedOutEvent por su cuenta (ver Modularity Map).
+		//DungeonToolManager.clearFor(player) used to live here — it moved to the dungeon addon, which now
+		//listens to this same PlayerLoggedOutEvent on its own (see Modularity Map).
 		MonsterActionManager.clearFor(player);
 	}
 
-	//Sin esto no había ninguna forma de enterarse de la tecla H (u P para operadores) salvo que alguien te
-	//lo dijera aparte — se manda una sola vez por login real (no en cada respawn/cambio de dimensión, que
-	//también dispara EntityJoinLevelEvent, por eso esto vive en PlayerLoggedInEvent y no ahí).
+	//Without this there was no way to learn about the H key (or P for operators) unless someone told you
+	//separately — sent exactly once per real login (not on every respawn/dimension change, which also
+	//fires EntityJoinLevelEvent, which is why this lives in PlayerLoggedInEvent instead of there).
 	//
-	//Con un ratito de retraso (20 ticks) y no en el mismo tick del login: a un jugador que se une por LAN
-	//(no el host, cuyo mundo integrado ya estaba cargado) el mensaje le llegaba ANTES de que su cliente
-	//terminara de abrir la pantalla de chat — el host lo veía porque su partida ya estaba en marcha, quien
-	//se conectaba de verdad se lo perdía en silencio. El mismo hueco que resuelve
-	//DndsheetsMod.queueServerWork para los efectos en cadena de hechizos.
+	//With a short delay (20 ticks) rather than on the same tick as login: for a player joining via LAN
+	//(not the host, whose integrated world was already loaded) the message would arrive BEFORE their
+	//client finished opening the chat screen — the host saw it because their game was already running,
+	//whoever actually connected missed it silently. The same gap that
+	//DndsheetsMod.queueServerWork resolves for spell chain effects.
 	@SubscribeEvent
 	public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
@@ -223,19 +224,19 @@ public class SheetLoader {
 	private static final UUID CLASS_HP_MODIFIER_ID = UUID.fromString("6f2f8f0a-3b1a-4c8e-9d2a-1a2b3c4d5e6f");
 
 	/**
-	 * <p>PG máximos de una hoja por clase, nivel y Constitución (regla de media del SRD: dado completo a
-	 * nivel 1, media+1 por nivel siguiente). Extraído de {@link #applyClassHitPoints}, que solo sabía
-	 * aplicárselos a un {@code Player} real: una ficha de PNJ necesita el <em>número</em>, porque no tiene
-	 * atributo de salud de Minecraft donde reflejarlo.</p>
+	 * <p>Max HP for a sheet by class, level and Constitution (SRD average rule: full die at level 1,
+	 * average+1 per subsequent level). Extracted from {@link #applyClassHitPoints}, which only knew how
+	 * to apply it to a real {@code Player}: an NPC sheet needs the <em>number</em>, because it has no
+	 * Minecraft health attribute to reflect it in.</p>
 	 */
 	public static int maxHitPointsFor(JsonObject sheet, int level) {
 		return CharacterRules.maxHitPointsFor(sheet, level);
 	}
 
 	/**
-	 * <p>Nivel de personaje de una hoja sin jugador detrás. La sobrecarga con {@code Player} cae al XP real
-	 * de Minecraft cuando el DM no fijó un nivel; una ficha de PNJ no tiene XP del que caer, así que empieza
-	 * en 1 — en 5e ningún personaje es de nivel 0.</p>
+	 * <p>Character level for a sheet with no player behind it. The {@code Player} overload falls back to
+	 * real Minecraft XP when the DM hasn't set a level; an NPC sheet has no XP to fall back to, so it
+	 * starts at 1 — in 5e no character is level 0.</p>
 	 */
 	public static int characterLevelOf(JsonObject sheet) {
 		return CharacterRules.levelOf(sheet);
@@ -246,9 +247,9 @@ public class SheetLoader {
 		try {
 			return Integer.parseInt(sheet.get(key).getAsString());
 		} catch (RuntimeException e) {
-			//RuntimeException, no solo NumberFormatException: sheet.get(key) puede ser un JsonObject/JsonArray
-			//si una hoja vieja quedó corrupta antes de que SheetServerMessage empezara a validar tipos, y
-			//.getAsString() sobre eso lanza UnsupportedOperationException, no NumberFormatException.
+			//RuntimeException, not just NumberFormatException: sheet.get(key) can be a JsonObject/JsonArray
+			//if an old sheet got corrupted before SheetServerMessage started validating types, and
+			//.getAsString() on that throws UnsupportedOperationException, not NumberFormatException.
 			return fallback;
 		}
 	}
@@ -262,20 +263,21 @@ public class SheetLoader {
 		AttributeInstance maxHealthAttr = entity.getAttribute(Attributes.MAX_HEALTH);
 		if (maxHealthAttr == null) return;
 
-		//characterLevelOf, no sheetInt(sheet, "level", ...): "level" es el XP real de Minecraft reflejado en
-		//la hoja, pero en cuanto el DM fija un nivel de personaje con /dndsheet setlevel (characterLevel),
-		//el PG máximo debe escalar con ESE nivel — si no, "desacoplar el nivel del XP" no desacoplaba nada
-		//para el PG máximo, justo la razón más obvia de tener un nivel de personaje en 5e.
+		//characterLevelOf, not sheetInt(sheet, "level", ...): "level" is the real Minecraft XP reflected on
+		//the sheet, but as soon as the DM sets a character level with /dndsheet setlevel (characterLevel),
+		//max HP must scale with THAT level — otherwise "decoupling level from XP" wouldn't decouple
+		//anything for max HP, exactly the most obvious reason to have a character level in 5e.
 		int level = Math.max(1, characterLevelOf(sheet, entity));
 		int maxHp = maxHitPointsFor(sheet, level);
 
-		//El bono de competencia sale del mismo nivel, y aquí porque este es el único sitio que ya lo
-		//resuelve. Se guarda como texto porque así lo lee la hoja y así lo escribe su campo.
+		//The proficiency bonus comes from the same level, and it's here because this is the only place
+		//that already resolves it. It's stored as text because that's how the sheet reads it and how its
+		//field writes it.
 		sheet.addProperty("proficiencyBonus", String.valueOf(CharacterRules.proficiencyBonusFor(level)));
 
-		//Y los espacios de conjuro, por el mismo motivo. Es idempotente: si la clase y el nivel no han
-		//cambiado no toca lo que quede gastado, y en una hoja que viene de la bolsa única rellena la tabla
-		//nueva la primera vez.
+		//And spell slots, for the same reason. It's idempotent: if class and level haven't changed it
+		//doesn't touch whatever's left spent, and on a sheet coming from the single legacy pool it
+		//populates the new table the first time.
 		String characterClass = sheet.has("characterClass") ? sheet.get("characterClass").getAsString() : "";
 		SpellSlots.applyProgression(sheet, characterClass, level);
 
@@ -292,27 +294,27 @@ public class SheetLoader {
 		load();
 	}
 
-	//Guardado periódico + al apagar el servidor: saveServer (el ÚNICO punto de todo el mod que escribe una
-	//hoja a disco) antes solo se llamaba al crear una hoja nueva o cuando el propio jugador reabría su
-	//pantalla de hoja de personaje (ver network.SheetServerMessage) — cualquier otro cambio (gastar un
-	//espacio de conjuro, un descanso, /dndsheet setslots, aplicar un preset, recursos de clase...) solo
-	//tocaba la copia en memoria y se perdía en silencio en cuanto el servidor se reiniciaba, no solo los
-	//espacios de conjuro. Guardar TODAS las hojas periódicamente y al apagar cierra el hueco de raíz, sin
-	//tener que acordarse de llamar a saveServer en cada uno de los ~10 sitios que cambian una hoja.
-	private static final int AUTOSAVE_INTERVAL_TICKS = 20 * 60 * 5; //5 minutos.
+	//Periodic save + on server shutdown: saveServer (the ONLY place in the whole mod that writes a
+	//sheet to disk) used to only be called on creating a new sheet or when the player themselves
+	//reopened their character sheet screen (see network.SheetServerMessage) — any other change (spending
+	//a spell slot, a rest, /dndsheet setslots, applying a preset, class resources...) only touched the
+	//in-memory copy and was silently lost as soon as the server restarted, not just spell slots. Saving
+	//ALL sheets periodically and on shutdown closes the gap at its root, without having to remember to
+	//call saveServer at each of the ~10 places that change a sheet.
+	private static final int AUTOSAVE_INTERVAL_TICKS = 20 * 60 * 5; //5 minutes.
 
-	//Instancia, no static: ServerStartingEvent/ServerStoppingEvent son eventos del bus FORGE, no del bus
-	//MOD al que apunta la anotación @Mod.EventBusSubscriber de esta clase (de ahí que serverLoad/init/
-	//clientLoad de arriba sí puedan ser static — son eventos de ciclo de vida del MOD). Se enganchan igual
-	//que clientJoinedServer, vía el mismo MinecraftForge.EVENT_BUS.register(new SheetLoader()) que init()
-	//ya hace más abajo — sin esto, Forge rechaza el método entero al cargar el mod (IllegalArgumentException,
-	//"takes an argument that is not a subtype of ... IModBusEvent").
+	//Instance, not static: ServerStartingEvent/ServerStoppingEvent are FORGE bus events, not the MOD
+	//bus that this class's @Mod.EventBusSubscriber annotation points to (which is why serverLoad/init/
+	//clientLoad above CAN be static — they're MOD lifecycle events). They hook in the same way as
+	//clientJoinedServer, via the same MinecraftForge.EVENT_BUS.register(new SheetLoader()) that init()
+	//already does below — without this, Forge rejects the whole method when loading the mod
+	//(IllegalArgumentException, "takes an argument that is not a subtype of ... IModBusEvent").
 	@SubscribeEvent
 	public void onServerStarting(ServerStartingEvent event) {
 		scheduleAutosave();
 	}
 
-	//Instancia y no static, por el mismo motivo que los dos de al lado: ServerTickEvent es del bus FORGE.
+	//Instance and not static, for the same reason as the two next to it: ServerTickEvent is on the FORGE bus.
 	@SubscribeEvent
 	public void onServerTick(TickEvent.ServerTickEvent event) {
 		if (event.phase != TickEvent.Phase.END) return;
@@ -326,31 +328,33 @@ public class SheetLoader {
 		});
 	}
 
-	//Último respaldo: si el reinicio es limpio (/stop, reinicio de la instancia), esto se dispara ANTES de
-	//que el proceso muera, así que ningún cambio hecho en los últimos minutos (menos que el intervalo de
-	//arriba) se pierde por mala suerte de temporización.
+	//Last-resort backup: if shutdown is clean (/stop, instance restart), this fires BEFORE the process
+	//dies, so no change made in the last few minutes (less than the interval above) is lost to bad
+	//timing luck.
 	@SubscribeEvent
 	public void onServerStopping(ServerStoppingEvent event) {
 		saveAll();
 	}
 
-	//Escribe TODAS, no solo las marcadas en "dirty", y eso es a propósito: la red de seguridad de este
-	//autoguardado es justamente para los sitios que cambian una hoja en memoria SIN pasar por saveServer
-	//—que es el agujero por el que existe (ver el comentario de arriba)—, y esos no marcan nada. Volcar
-	//solo lo marcado lo convertiría en un no-op y devolvería el fallo que vino a tapar.
+	//Writes ALL of them, not just the ones marked "dirty", and that's on purpose: this autosave's safety
+	//net exists precisely for the places that change a sheet in memory WITHOUT going through
+	//saveServer — which is the very gap it exists to cover (see the comment above) — and those don't
+	//mark anything. Dumping only what's marked would turn it into a no-op and bring back the exact
+	//failure it came to patch.
 	private static void saveAll() {
-		//saveCharacter y NO saveServer: las claves de "sheets" ya son ids de personaje, y saveServer las
-		//volvería a pasar por activeCharacterOf. Para un jugador con un segundo personaje puesto, eso
-		//escribiría el contenido de su hoja vieja encima del archivo del personaje activo.
+		//saveCharacter and NOT saveServer: "sheets"'s keys are already character ids, and saveServer
+		//would run them through activeCharacterOf again. For a player with a second character equipped,
+		//that would write their old sheet's contents over the active character's file.
 		for (Map.Entry<String, JsonObject> entry : sheets.entrySet()) {
 			saveCharacter(entry.getKey(), entry.getValue());
 		}
 	}
 
-	//Una sola queja por hueco, no una por fotograma. Lo llama ResourceHudOverlay.render, que corre SIEMPRE
-	//(el HUD no necesita ningun menu abierto): con current==null, a 120 fps eran 120 lineas de log por
-	//segundo, ordenes de magnitud mas caras que el propio render. La ventana existe de verdad —entre entrar
-	//al mundo y que llegue SheetClientMessage— asi que el aviso no sobra, sobra repetirlo.
+	//A single complaint per gap, not one per frame. Called by ResourceHudOverlay.render, which ALWAYS
+	//runs (the HUD needs no menu open): with current==null, at 120 fps that was 120 log lines per
+	//second, orders of magnitude more expensive than the render itself. The window genuinely exists —
+	//between entering the world and SheetClientMessage arriving — so the warning isn't unwarranted, only
+	//repeating it is.
 	private static boolean warnedNullClientSheet = false;
 
 	public static JsonObject getClientSheet() {
@@ -360,18 +364,19 @@ public class SheetLoader {
 			DndsheetsMod.LOGGER.warn("Client sheet returned null. Are you sure you're not calling this from the server side?");
 			}
 		} else {
-			warnedNullClientSheet = false; //Rearmado: si vuelve a faltar mas tarde, es un hueco NUEVO y merece su aviso.
+			warnedNullClientSheet = false; //Rearmed: if it goes missing again later, it's a NEW gap and deserves its own warning.
 		}
 		return current;
 	}
 
 	/**
-	 * <p>Hoja del personaje que ese jugador lleva ahora mismo. La firma no cambió al separar personaje de
-	 * jugador (Fase 1) a propósito: los ~68 sitios que la llaman quieren "la hoja de quien está jugando",
-	 * y esa pregunta sigue teniendo la misma respuesta — solo que ahora pasa por una indirección.</p>
+	 * <p>Sheet of the character that player is currently playing. The signature didn't change when
+	 * character was separated from player (Phase 1) on purpose: the ~68 call sites want "the sheet of
+	 * whoever's playing", and that question still has the same answer — it just goes through one more
+	 * indirection now.</p>
 	 *
-	 * <p>También acepta un id de personaje directo (un PNJ, o un PJ que su dueño no lleva puesto): un id
-	 * sin binding se resuelve a sí mismo, así que no hace falta un método aparte para ese caso.</p>
+	 * <p>Also accepts a direct character id (an NPC, or a PC its owner isn't currently wearing): an id
+	 * with no binding resolves to itself, so no separate method is needed for that case.</p>
 	 */
 	public static JsonObject getServerSheet(String uuid) {
 		String characterId = activeCharacterOf(uuid);
@@ -379,30 +384,30 @@ public class SheetLoader {
 			return sheets.get(characterId);
 		}
 		else {
-			//debug y no warn: esto es alcanzable desde Combatant.of, que corre a 20 Hz por el camino de
-			//MovementAnchorTracker. Un jugador en combate sin hoja generaba 20 lineas por segundo.
+			//debug, not warn: this is reachable from Combatant.of, which runs at 20 Hz via
+			//MovementAnchorTracker. A player in combat with no sheet generated 20 lines per second.
 			DndsheetsMod.LOGGER.debug("Server character sheet retrieval failed. Make sure the UUID is correct and that you're not calling this from the client.");
 			return null;
 		}
 	}
 
 	/**
-	 * <p>Id del personaje activo de ese jugador, o el propio argumento si no hay ninguno registrado. Ese
-	 * fallback es lo que hace que una hoja anterior a Fase 1 (archivo llamado {@code <uuid>.json}, sin
-	 * campo {@code active}) siga resolviéndose sola, y también lo que permite pasar un id de personaje
-	 * directo a {@link #getServerSheet}.</p>
+	 * <p>Active character id for that player, or the argument itself if none is registered. That
+	 * fallback is what makes a pre-Phase-1 sheet (a file named {@code <uuid>.json}, no {@code active}
+	 * field) keep resolving on its own, and also what allows passing a direct character id to
+	 * {@link #getServerSheet}.</p>
 	 */
 	public static String activeCharacterOf(String playerUuid) {
 		String characterId = activeCharacter.get(playerUuid);
 		return characterId != null ? characterId : playerUuid;
 	}
 
-	/** Hoja de un personaje por su id exacto, sin pasar por el binding de jugador activo. */
+	/** A character's sheet by its exact id, without going through the active-player binding. */
 	public static JsonObject getCharacterSheet(String characterId) {
 		return sheets.get(characterId);
 	}
 
-	/** Ids de las fichas sin dueño (PNJ), en orden estable. Para autocompletado y menús de DM. */
+	/** Ids of ownerless sheets (NPCs), in stable order. For autocomplete and DM menus. */
 	public static List<String> npcIds() {
 		List<String> npcs = new ArrayList<>();
 		for (Map.Entry<String, JsonObject> entry : sheets.entrySet()) {
@@ -413,45 +418,47 @@ public class SheetLoader {
 	}
 
 	/**
-	 * <p>Ids de todos los personajes de ese jugador, el activo incluido, en orden estable por id. Recorre
-	 * todas las hojas en vez de mantener un índice: se llama al abrir un menú o escribir un comando, nunca
-	 * en un bucle de combate, y un índice más que mantener es justo el tipo de estado que se desincroniza.</p>
+	 * <p>Ids of all of that player's characters, the active one included, in stable id order. Iterates
+	 * all sheets instead of keeping an index: it's called when opening a menu or typing a command, never
+	 * in a combat loop, and one more index to maintain is exactly the kind of state that drifts out of
+	 * sync.</p>
 	 */
 	public static List<String> charactersOf(String playerUuid) {
 		return CharacterRules.ownedBy(sheets, playerUuid);
 	}
 
 	/**
-	 * <p>Resuelve un NOMBRE (o un id) al id del personaje, entre los que se le pasen. Ver
-	 * {@link CharacterRules#resolveCharacter} — la regla vive ahí para poder comprobarse fuera del juego.</p>
+	 * <p>Resolves a NAME (or an id) to the character id, among the ones passed in. See
+	 * {@link CharacterRules#resolveCharacter} — the rule lives there so it can be checked outside the
+	 * game.</p>
 	 */
 	public static String resolveCharacter(List<String> candidateIds, String query) {
 		return CharacterRules.resolveCharacter(sheets, candidateIds, query);
 	}
 
 	/**
-	 * <p>Cómo ofrecer ese personaje en una lista: el nombre, o {@code Nombre [id]} si otro de la lista se
-	 * llama igual. Ver {@link CharacterRules#suggestionLabelFor}.</p>
+	 * <p>How to offer that character in a list: the name, or {@code Name [id]} if another entry in the
+	 * list shares the name. See {@link CharacterRules#suggestionLabelFor}.</p>
 	 */
 	public static String suggestionLabelFor(List<String> candidateIds, String characterId) {
 		return CharacterRules.suggestionLabelFor(sheets, candidateIds, characterId);
 	}
 
-	/** Nombre de un personaje por su id, o el propio id si no tiene nombre: sirve para menús y mensajes. */
+	/** A character's name by its id, or the id itself if it has no name: used for menus and messages. */
 	public static String nameOfCharacter(String characterId) {
 		String name = CharacterRules.nameOf(sheets.get(characterId));
 		return name != null && !name.isBlank() ? name : characterId;
 	}
 
-	/** Ver {@link CharacterRules#ownerOf} — la regla vive ahí para poder comprobarse fuera del juego. */
+	/** See {@link CharacterRules#ownerOf} — the rule lives there so it can be checked outside the game. */
 	public static String ownerOf(String characterId, JsonObject sheet) {
 		return CharacterRules.ownerOf(characterId, sheet);
 	}
 
-	//Nombres por defecto que deja el propio mod cuando el jugador nunca escribió el suyo (ver
-	//validateSheet/makeNew y el placeholder del campo en la hoja) - no sirven para identificar a nadie
-	//en el chat, así que en ese caso se usa el nombre real de Minecraft en su lugar.
-	private static final Set<String> DEFAULT_CHARACTER_NAMES = Set.of("New Sheet", "John Doe", "Fulano de Tal");
+	//Default names the mod itself leaves when the player never wrote their own (see
+	//validateSheet/makeNew and the field's placeholder on the sheet) — they don't work to identify
+	//anyone in chat, so the real Minecraft name is used instead in that case.
+	private static final Set<String> DEFAULT_CHARACTER_NAMES = Set.of("New Sheet", "John Doe", "Fulano de Tal"); //"Fulano de Tal" is the old Spanish default, kept so old sheets are still recognized.
 
 	public static String characterNameOf(JsonObject sheet, Entity fallbackEntity) {
 		if (sheet != null && sheet.has("characterName")) {
@@ -464,30 +471,30 @@ public class SheetLoader {
 	}
 
 	/**
-	 * <p>Nivel de personaje, desacoplado del XP real de Minecraft en cuanto el DM lo fija a mano con
-	 * {@code /dndsheet setlevel} (guarda "characterLevel" en la hoja). Hasta entonces, sigue reflejando el
-	 * XP real de Minecraft, exactamente como antes — así que esto no cambia nada para una hoja que nunca
-	 * usó el comando. Usado tanto por el servidor (rasgos/recursos que escalan por nivel) como por
-	 * {@code CharacterSheetScreen} en el cliente (para no seguir mostrando el XP si ya se fijó un nivel).</p>
+	 * <p>Character level, decoupled from real Minecraft XP as soon as the DM sets it by hand with
+	 * {@code /dndsheet setlevel} (stores "characterLevel" on the sheet). Until then, it keeps reflecting
+	 * real Minecraft XP, exactly as before — so this changes nothing for a sheet that never used the
+	 * command. Used both by the server (traits/resources that scale by level) and by
+	 * {@code CharacterSheetScreen} on the client (so it stops showing XP once a level's been set).</p>
 	 */
 	public static int characterLevelOf(JsonObject sheet, Player fallbackEntity) {
 		if (sheet != null && sheet.has("characterLevel")) {
 			return sheet.get("characterLevel").getAsInt();
 		}
-		return Math.max(1, fallbackEntity.experienceLevel); //Los PJ de D&D nunca son nivel 0, pero el XP de Minecraft empieza en 0.
+		return Math.max(1, fallbackEntity.experienceLevel); //D&D PCs are never level 0, but Minecraft XP starts at 0.
 	}
 
 	/**
-	 * <p>Persiste la hoja Y se la manda al cliente, en ese orden. Es el par que la <b>invariante 4</b> pide:
-	 * quien muta una hoja tiene que llegar a {@link #saveServer}, y quien la muta desde el servidor casi
-	 * siempre necesita además que el jugador lo vea.</p>
+	 * <p>Persists the sheet AND sends it to the client, in that order. It's the pair <b>invariant 4</b>
+	 * requires: whoever mutates a sheet must reach {@link #saveServer}, and whoever mutates it from the
+	 * server almost always also needs the player to see it.</p>
 	 *
-	 * <p>Existe porque el par se estaba escribiendo a medias. Cuatro managers de flag armado
+	 * <p>Exists because the pair was being written halfway. Four armed-flag managers
 	 * ({@code CounterspellManager}, {@code PaladinSmiteManager}, {@code ShieldManager},
-	 * {@code SorcererMetamagicManager}) mutaban la hoja y <b>solo</b> avisaban al cliente, y tres de ellos
-	 * tenían su propio {@code sendSheetUpdate} privado idéntico. El estado quedaba colgando del autosave de
-	 * 5 minutos, que es la red de seguridad y no la ruta de escritura — apagar el servidor antes de que
-	 * saltara devolvía el escudo, el castigo o el espacio de conjuro ya gastados.</p>
+	 * {@code SorcererMetamagicManager}) mutated the sheet and <b>only</b> notified the client, and three
+	 * of them had their own identical private {@code sendSheetUpdate}. The state was left hanging on the
+	 * 5-minute autosave, which is the safety net and not the write path — shutting down the server before
+	 * it fired reverted the shield, smite, or spell slot already spent.</p>
 	 */
 	public static void saveAndSync(ServerPlayer player, JsonObject sheet) {
 		saveServer(sheet, player.getStringUUID());
@@ -495,27 +502,27 @@ public class SheetLoader {
 	}
 
 	//Save the given sheet into a JSON file, making a new one if it doesn't exist, and updates the "sheets" HashMap.
-	//El id se resuelve por activeCharacterOf igual que en la lectura: los 3 llamadores pasan un UUID de
-	//jugador, y sin esto guardarían siempre sobre la hoja legacy en vez de sobre el personaje que lleva
-	//puesto. Un id de personaje que no sea de nadie (un PNJ) se resuelve a sí mismo y se guarda tal cual.
+	//The id is resolved via activeCharacterOf just like on read: the 3 callers pass a player UUID,
+	//and without this they'd always save over the legacy sheet instead of the character currently
+	//equipped. A character id belonging to no one (an NPC) resolves to itself and is saved as-is.
 	public static void saveServer(JsonObject sheet, String uuid) {
 		String characterId = activeCharacterOf(uuid);
 		sheets.put(characterId, sheet);
-		//A disco al final del tick, no aquí: ver el comentario de "dirty". El id se resuelve AHORA y no en
-		//el volcado, para que un cambio de personaje entremedias no redirija la escritura a otra hoja.
+		//To disk at the end of the tick, not here: see the "dirty" comment. The id is resolved NOW and
+		//not at flush time, so a character switch in between doesn't redirect the write to another sheet.
 		dirty.add(characterId);
 	}
 
 	/**
-	 * <p>Escribe las hojas marcadas y vacía la lista. Corre al final de cada tick del servidor y no hace
-	 * nada —ni siquiera mira el disco— si no hay ninguna marcada, que es la inmensa mayoría de los ticks.</p>
+	 * <p>Writes the marked sheets and empties the list. Runs at the end of every server tick and does
+	 * nothing — doesn't even touch the disk — if nothing's marked, which is the vast majority of ticks.</p>
 	 */
 	private static void flushDirty() {
 		for (String characterId : dirty) {
 			JsonObject sheet = sheets.get(characterId);
-			//Se borró entre la marca y el volcado. Sin esto, escribir aquí recrearía el archivo que
-			//deleteCharacter acaba de apartar y el personaje "resucitaría" — el mismo fallo que ya
-			//documenta ensureHasCharacter, por otro camino.
+			//Deleted between marking and flushing. Without this, writing here would recreate the file
+			//deleteCharacter just moved aside and the character would "resurrect" — the same failure
+			//ensureHasCharacter already documents, via a different path.
 			if (sheet == null) continue;
 			writeCharacterFile(characterId, sheet);
 		}
@@ -539,13 +546,13 @@ public class SheetLoader {
 			    });
 			} 
 		} catch (IOException e) {
-			DndsheetsMod.LOGGER.error("No se pudo listar el directorio de hojas de personaje.", e);
+			DndsheetsMod.LOGGER.error("Could not list the character sheet directory.", e);
 		}
 
-		//Por archivo, no por el lote entero: una hoja corrupta en disco (JSON inválido, o válido pero no un
-		//objeto, p.ej. un crash a mitad de escritura) no debe tumbar la carga de TODAS las demás hojas —
-		//antes, una excepción de parseo (JsonSyntaxException/IllegalStateException, ninguna de las dos es
-		//IOException) se propagaba sin capturar y rompía el join de cualquier jugador desde ese momento.
+		//Per file, not for the whole batch: a sheet corrupted on disk (invalid JSON, or valid but not an
+		//object, e.g. a crash mid-write) shouldn't take down the loading of ALL the other sheets —
+		//previously, a parse exception (JsonSyntaxException/IllegalStateException, neither of which is
+		//IOException) propagated uncaught and broke every player's join from that point on.
 		for (Path path : files) {
 			try {
 				InputStream in = Files.newInputStream(path, StandardOpenOption.READ);
@@ -563,42 +570,42 @@ public class SheetLoader {
 	}
 
 	/**
-	 * <p>Reconstruye el binding jugador → personaje activo mirando el campo {@code active} de cada hoja.
-	 * Derivado, en vez de un índice guardado aparte: un índice puede desincronizarse de las hojas y dejar
-	 * a alguien sin poder jugar; el campo dentro de la propia hoja no puede contradecirse a sí mismo.</p>
+	 * <p>Rebuilds the player → active character binding by looking at each sheet's {@code active} field.
+	 * Derived, instead of a separately stored index: an index can drift out of sync with the sheets and
+	 * leave someone unable to play; the field inside the sheet itself can't contradict itself.</p>
 	 *
-	 * <p>Si un jugador acabara con dos hojas marcadas activas (por edición manual del JSON), gana la de id
-	 * menor y se avisa por log, en vez de elegir en silencio una distinta en cada arranque.</p>
+	 * <p>If a player ended up with two sheets marked active (from manually editing the JSON), the one with
+	 * the lower id wins and a warning is logged, instead of silently picking a different one on every startup.</p>
 	 */
 	private static void rebuildActiveCharacters() {
 		activeCharacter.clear();
 		List<String> ids = new ArrayList<>(sheets.keySet());
-		Collections.sort(ids); //Orden estable: sin esto, dos hojas activas darían un ganador distinto en cada arranque.
+		Collections.sort(ids); //Stable order: without this, two active sheets would give a different winner on every startup.
 		for (String characterId : ids) {
 			JsonObject sheet = sheets.get(characterId);
 			if (sheet == null || !sheet.has("active") || !sheet.get("active").getAsBoolean()) continue;
 			String owner = ownerOf(characterId, sheet);
-			if (owner == null) continue; //PNJ: no lo lleva puesto ningún jugador.
+			if (owner == null) continue; //NPC: no player has it equipped.
 			String previous = activeCharacter.putIfAbsent(owner, characterId);
 			if (previous != null) {
-				DndsheetsMod.LOGGER.warn("El jugador {} tiene varias hojas marcadas como activas ({} y {}); se usa {}.", owner, previous, characterId, previous);
+				DndsheetsMod.LOGGER.warn("Player {} has several sheets marked as active ({} and {}); using {}.", owner, previous, characterId, previous);
 			}
 		}
 	}
 
-	//--- Personajes múltiples (Fase 1) ------------------------------------------------------------------
+	//--- Multiple characters (Phase 1) ------------------------------------------------------------------
 
-	//Id derivado del UUID del dueño: único entre jugadores sin necesitar un contador global, y sigue siendo
-	//un nombre de archivo válido en cualquier sistema.
+	//Id derived from the owner's UUID: unique across players without needing a global counter, and it's
+	//still a valid filename on any system.
 	private static String nextCharacterId(String playerUuid) {
 		return CharacterRules.nextCharacterId(sheets.keySet(), playerUuid);
 	}
 
 	/**
-	 * <p>Crea un personaje más para ese jugador, creado pero <b>no</b> activo: ponérselo es una acción
-	 * aparte y deliberada ({@link #switchCharacter}), no un efecto secundario de crearlo.</p>
+	 * <p>Creates one more character for that player, created but <b>not</b> active: equipping it is a
+	 * separate, deliberate action ({@link #switchCharacter}), not a side effect of creating it.</p>
 	 *
-	 * @return el id del personaje nuevo.
+	 * @return the new character's id.
 	 */
 	public static String createCharacter(String playerUuid, String characterName) {
 		String characterId = nextCharacterId(playerUuid);
@@ -606,10 +613,10 @@ public class SheetLoader {
 		sheet.addProperty("characterName", characterName);
 		sheet.addProperty("ownerUuid", playerUuid);
 		sheet.addProperty("active", false);
-		//Nivel 1 EXPLÍCITO. Sin él, characterLevelOf cae al nivel de XP de Minecraft de quien lo crea, que
-		//es del JUGADOR y no del personaje: un personaje recién hecho nacía de nivel 12 por haber picado
-		//piedra, con los PG, la competencia y los espacios de conjuro de un nivel 12, y todos los personajes
-		//de la misma persona salían iguales entre sí. Reportado tal cual jugando.
+		//EXPLICIT level 1. Without it, characterLevelOf falls back to the Minecraft XP level of whoever
+		//creates it, which belongs to the PLAYER and not the character: a freshly made character was born
+		//at level 12 from mining stone, with the HP, proficiency, and spell slots of a level 12, and every
+		//character of the same person came out identical to each other. Reported exactly like this while playing.
 		sheet.addProperty("characterLevel", 1);
 		validateSheet(sheet);
 		sheets.put(characterId, sheet);
@@ -617,38 +624,37 @@ public class SheetLoader {
 		return characterId;
 	}
 
-	/** Sufijo de la copia que queda al borrar un personaje. No termina en .json: no se vuelve a cargar. */
+	/** Suffix of the copy left behind when a character is deleted. Doesn't end in .json: it won't be reloaded. */
 	public static final String DELETED_SUFFIX = ".json.deleted";
 
 	/**
-	 * <p>Borra un personaje. Devuelve {@code null} si salió bien, o el motivo por el que no se pudo.</p>
+	 * <p>Deletes a character. Returns {@code null} on success, or the reason it couldn't be done.</p>
 	 *
-	 * <p><b>No borra el archivo: lo renombra</b> a {@code <id>.json.deleted}. Borrar un personaje es la única
-	 * acción del mod que destruye horas de partida y no tiene deshacer, y una copia que el DM puede volver a
-	 * poner en su sitio a mano cuesta una línea. Deja de terminar en {@code .json}, así que no se vuelve a
-	 * cargar al arrancar.</p>
+	 * <p><b>Doesn't delete the file: renames it</b> to {@code <id>.json.deleted}. Deleting a character is
+	 * the mod's only action that destroys hours of play with no undo, and a copy the DM can put back in
+	 * place by hand costs one line. It stops ending in {@code .json}, so it won't be reloaded on startup.</p>
 	 *
-	 * <p><b>Nunca deja a nadie sin personaje.</b> Si el borrado era el que llevaba puesto, se le pone otro
-	 * suyo; y si no le quedaba ninguno, se le crea una hoja en blanco en el acto. Esa rama es justo la que
-	 * convierte "borrar" en "reiniciar" para quien solo tiene un personaje, sin necesitar dos conceptos: sin
-	 * ella, quedarse a cero deja al jugador con {@code getServerSheet} devolviendo null hasta que se
-	 * reconecte, y media docena de rutas de combate se saltan al que no tiene hoja en silencio.</p>
+	 * <p><b>Never leaves anyone without a character.</b> If the deleted one was the equipped one, another
+	 * of theirs gets equipped; and if none were left, a blank sheet is created on the spot. That branch is
+	 * exactly what turns "delete" into "reset" for someone with only one character, without needing two
+	 * concepts: without it, hitting zero leaves the player with {@code getServerSheet} returning null until
+	 * they reconnect, and half a dozen combat paths silently skip whoever has no sheet.</p>
 	 *
-	 * @param isDm si quien lo pide puede borrar fichas que no son suyas (PNJ del DM).
+	 * @param isDm whether the requester can delete sheets that aren't theirs (a DM's NPC).
 	 */
 	public static String deleteCharacter(ServerPlayer requester, String characterId, boolean isDm) {
 		JsonObject sheet = sheets.get(characterId);
-		if (sheet == null) return "no_existe";
+		if (sheet == null) return "not_found";
 
 		String owner = ownerOf(characterId, sheet);
 		String requesterUuid = requester.getStringUUID();
 		boolean own = requesterUuid.equals(owner);
-		//Un PNJ (sin dueño) es del DM; el personaje de OTRO jugador no lo borra nadie, ni el DM: eso sería
-		//tirar la hoja de alguien que no está delante para decir que no.
-		if (!own && !(owner == null && isDm)) return "no_es_tuyo";
+		//An NPC (no owner) belongs to the DM; nobody deletes ANOTHER player's character, not even the DM:
+		//that would mean throwing away someone's sheet behind their back to say no.
+		if (!own && !(owner == null && isDm)) return "not_yours";
 
 		sheets.remove(characterId);
-		//Junto al remove, no solo en el guard de flushDirty: lo que no existe en memoria no se escribe.
+		//Alongside the remove, not just in flushDirty's guard: what doesn't exist in memory doesn't get written.
 		dirty.remove(characterId);
 		activeCharacter.remove(requesterUuid, characterId);
 		Path file = SHEETS_DIR.resolve(characterId + ".json").toAbsolutePath();
@@ -656,32 +662,33 @@ public class SheetLoader {
 			Files.move(file, SHEETS_DIR.resolve(characterId + DELETED_SUFFIX).toAbsolutePath(),
 				java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
-			//La hoja ya está fuera de memoria, así que el borrado vale igual; solo se pierde la copia.
-			DndsheetsMod.LOGGER.warn("No pude apartar la copia del personaje borrado {}: {}", characterId, e.getMessage());
+			//The sheet is already out of memory, so the deletion still counts; only the backup copy is lost.
+			DndsheetsMod.LOGGER.warn("Could not set aside the backup copy of deleted character {}: {}", characterId, e.getMessage());
 		}
 
-		//Siempre, no solo si borró el que llevaba puesto: al cliente hay que dejarle una hoja que exista,
-		//y comprobar "¿era el activo?" aquí sería una tercera copia de esa pregunta.
+		//Always, not just if the equipped one was deleted: the client needs to be left with a sheet that
+		//exists, and checking "was it the active one?" here would be a third copy of that same question.
 		if (own) ensureHasCharacter(requester);
 		return null;
 	}
 
 	/**
-	 * <p>Deja al jugador con un personaje puesto sí o sí: otro suyo si le queda alguno, o una hoja en blanco
-	 * si se quedó a cero. Mismo camino que la primera conexión, que ya crea una hoja para quien no tenía.</p>
+	 * <p>Leaves the player with a character equipped no matter what: another of theirs if any are left, or
+	 * a blank sheet if they hit zero. Same path as the first connection, which already creates a sheet for
+	 * whoever had none.</p>
 	 */
 	private static void ensureHasCharacter(ServerPlayer player) {
 		String playerUuid = player.getStringUUID();
-		//Se pregunta por el binding EXPLÍCITO, no por getServerSheet: esa función cae al propio UUID del
-		//jugador cuando no hay ninguno puesto (compatibilidad con las hojas anteriores a los personajes), así
-		//que contestaba "sí tiene personaje" en cuanto existiera un archivo con ese id. El resultado era que
-		//borrar el personaje que llevabas puesto no avisaba al cliente, la hoja abierta con H seguía siendo
-		//la del borrado, y al guardar se escribía otra vez en disco — el personaje "resucitaba".
+		//The EXPLICIT binding is asked, not getServerSheet: that function falls back to the player's own
+		//UUID when none is set (compatibility with pre-character sheets), so it would answer "yes, has a
+		//character" as soon as a file with that id existed. The result was that deleting the equipped
+		//character didn't notify the client, the sheet opened with H was still the deleted one, and saving
+		//wrote it back to disk — the character "resurrected".
 		String wear = CharacterRules.characterToWearAfter(sheets.keySet(), activeCharacter.get(playerUuid), charactersOf(playerUuid));
 		if (wear != null) {
-			//switchCharacter aunque ya fuera el que llevaba: deja el flag "active" coherente en disco y, sobre
-			//todo, le manda la hoja al cliente. Un cliente que se queda con una hoja borrada la reescribe en
-			//cuanto toque cualquier cosa de la pantalla.
+			//switchCharacter even if it was already the equipped one: it leaves the "active" flag consistent
+			//on disk and, above all, sends the sheet to the client. A client left holding a deleted sheet
+			//rewrites it as soon as it touches anything on the screen.
 			switchCharacter(player, wear);
 			return;
 		}
@@ -692,18 +699,18 @@ public class SheetLoader {
 	}
 
 	/**
-	 * <p>Hoja de PNJ: un personaje sin dueño, que nadie lleva puesto. Es lo que permite que el DM tenga
-	 * fichas de aliados y secundarios con las mismas reglas que un PJ, en vez de tener que convertirlos en
-	 * monstruos con bloque de estadísticas.</p>
+	 * <p>NPC sheet: a character with no owner, that no one has equipped. It's what lets the DM have sheets
+	 * for allies and minor characters under the same rules as a PC, instead of having to turn them into
+	 * monsters with a stat block.</p>
 	 */
 	public static String createNpc(String characterName) {
 		String characterId = CharacterRules.npcIdFor(sheets.keySet(), characterName);
 
 		JsonObject sheet = new JsonObject();
 		sheet.addProperty("characterName", characterName);
-		sheet.addProperty("ownerUuid", ""); //Vacío, no ausente: "de nadie" tiene que distinguirse de "hoja legacy".
+		sheet.addProperty("ownerUuid", ""); //Empty, not absent: "belongs to no one" must be distinguishable from "legacy sheet".
 		sheet.addProperty("active", false);
-		sheet.addProperty("characterLevel", 1); //Igual que un PJ: nace de nivel 1, no del XP de nadie.
+		sheet.addProperty("characterLevel", 1); //Same as a PC: born at level 1, not from anyone's XP.
 		validateSheet(sheet);
 		sheets.put(characterId, sheet);
 		saveCharacter(characterId, sheet);
@@ -711,17 +718,18 @@ public class SheetLoader {
 	}
 
 	/**
-	 * <p>Pone a ese jugador a llevar otro de sus personajes. Devuelve false si el personaje no existe o no
-	 * es suyo — nadie puede ponerse la hoja de otro.</p>
+	 * <p>Switches that player over to another of their characters. Returns false if the character doesn't
+	 * exist or isn't theirs — nobody can equip someone else's sheet.</p>
 	 */
 	public static boolean switchCharacter(ServerPlayer player, String characterId) {
 		String playerUuid = player.getStringUUID();
 		JsonObject target = sheets.get(characterId);
 		if (target == null || !playerUuid.equals(ownerOf(characterId, target))) return false;
 
-		//La vida ACTUAL es del personaje, no del cuerpo que lo lleva. Vivía solo en la salud de la entidad
-		//—que es del jugador— así que cambiar de personaje te dejaba con las heridas del anterior, y volver
-		//al anterior te encontrabas las del nuevo. Se guarda la del que se quita ANTES de tocar nada.
+		//CURRENT health belongs to the character, not the body wearing it. It used to live solely in the
+		//entity's health — which belongs to the player — so switching characters left you with the
+		//previous one's wounds, and switching back you'd find the new one's. The outgoing character's
+		//health is saved BEFORE touching anything.
 		String previousId = activeCharacter.get(playerUuid);
 		JsonObject previous = previousId == null ? null : sheets.get(previousId);
 		if (previous != null && previous != target) {
@@ -729,15 +737,16 @@ public class SheetLoader {
 			saveCharacter(previousId, previous);
 		}
 
-		//Y el inventario, que también es del personaje: el bastón del mago no viaja al guerrero. Va aquí,
-		//antes de mover el binding, para que la hoja del que se quita se guarde con su equipo dentro.
+		//And the inventory, which also belongs to the character: the wizard's staff doesn't travel to the
+		//fighter. This goes here, before moving the binding, so the outgoing character's sheet gets saved
+		//with its gear inside.
 		CharacterInventory.swap(player, previousId, previous, target);
 
-		//Lo que el personaje anterior estaba HACIENDO se acaba con él. Todos estos viven indexados por
-		//jugador (son estados vivos, no datos de hoja), así que sin cortarlos el personaje nuevo heredaba la
-		//concentración, la furia, la forma salvaje y la marca del anterior: seguía enfurecido sin haber
-		//entrado en furia. La concentración va primero porque además arrastra zonas, mejoras de arma e
-		//invocaciones (ver ConcentrationManager.stopConcentrating).
+		//Whatever the previous character was DOING ends with them. All of these live indexed by player
+		//(they're live state, not sheet data), so without clearing them the new character inherited the
+		//previous one's concentration, rage, wild shape, and mark: it stayed enraged without having entered
+		//a rage. Concentration goes first because it also drags along zones, weapon buffs, and summons (see
+		//ConcentrationManager.stopConcentrating).
 		if (previous != null && previous != target) {
 			ConcentrationManager.stopConcentrating(player);
 			CastingManager.clearFor(player);
@@ -746,37 +755,37 @@ public class SheetLoader {
 			RangerHunterMarkManager.clearFor(player);
 		}
 
-		//Se desmarca el anterior y se marca el nuevo, para que rebuildActiveCharacters() reconstruya
-		//exactamente este mismo estado tras un reinicio.
+		//The previous one is unmarked and the new one marked, so rebuildActiveCharacters() reconstructs
+		//exactly this same state after a restart.
 		for (String owned : charactersOf(playerUuid)) {
 			JsonObject sheet = sheets.get(owned);
 			boolean shouldBeActive = owned.equals(characterId);
 			if (sheet.has("active") && sheet.get("active").getAsBoolean() == shouldBeActive) continue;
 			sheet.addProperty("active", shouldBeActive);
-			//La hoja legacy no tenía ownerUuid; al tocarla hay que estampárselo, o dejaría de reconocerse como
-			//suya en cuanto el jugador lleve puesto un personaje con otro id.
+			//The legacy sheet had no ownerUuid; touching it means stamping it on, or it would stop being
+			//recognized as theirs as soon as the player has a character with a different id equipped.
 			if (!sheet.has("ownerUuid")) sheet.addProperty("ownerUuid", playerUuid);
 			saveCharacter(owned, sheet);
 		}
 		activeCharacter.put(playerUuid, characterId);
 
-		//Migración de una hoja anterior a los personajes: se le estampa el nivel que TENÍA en este momento
-		//(el del XP, si nunca se le fijó uno) para que a partir de ahora sea suyo y no del jugador. Sin esto,
-		//dos personajes de la misma persona compartían nivel para siempre, porque los dos lo sacaban del
-		//mismo sitio. Se congela en su valor actual en vez de ponerlo a 1: bajarle el nivel a alguien que
-		//lleva jugando con él sería destruir su personaje para arreglar una inconsistencia.
+		//Migrating a pre-characters sheet: it gets stamped with the level it HAD at this moment (the XP
+		//one, if none was ever set) so that from now on it belongs to the character and not the player.
+		//Without this, two characters of the same person would share a level forever, because both pulled
+		//it from the same place. It's frozen at its current value instead of set to 1: lowering the level
+		//of someone who's been playing with it would be destroying their character to fix an inconsistency.
 		if (!target.has("characterLevel")) {
 			target.addProperty("characterLevel", Math.max(1, characterLevelOf(target, player)));
 			saveCharacter(characterId, target);
 		}
 
-		//El personaje nuevo tiene sus propios PG máximos (clase, nivel, Constitución) y su propia hoja en el
-		//cliente: sin estas dos líneas, cambiar de personaje dejaba al jugador con el cuerpo del anterior.
+		//The new character has its own max HP (class, level, Constitution) and its own sheet on the
+		//client: without these two lines, switching characters left the player with the previous one's body.
 		applyClassHitPoints(player, target);
 		restoreHitPoints(player, target);
-		//"Caído" es del personaje (vive en su hoja), así que la pantalla de salvaciones de muerte tiene que
-		//seguir al que te pones: dejar a un moribundo para llevarte a otro la cierra, y volver con él la
-		//reabre. Sin esto, el estado era correcto en los datos e invisible en pantalla.
+		//"Downed" belongs to the character (it lives in their sheet), so the death saves screen has to
+		//follow whoever you're wearing: leaving a dying character to switch to another closes it, and
+		//switching back reopens it. Without this, the state was correct in the data and invisible on screen.
 		DeathSaveManager.resendState(player, target);
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(target.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 		MinecraftForge.EVENT_BUS.post(new CharacterSwitchedEvent(player, characterId, target));
@@ -784,13 +793,14 @@ public class SheetLoader {
 	}
 
 	/**
-	 * <p>Le da cuerpo a una ficha de PNJ: invoca una entidad en el mundo ligada a ese personaje. Sin esto,
-	 * {@link #createNpc} producía una hoja perfectamente válida que nadie podía usar para nada.</p>
+	 * <p>Gives a body to an NPC sheet: spawns a world entity bound to that character. Without this,
+	 * {@link #createNpc} produced a perfectly valid sheet nobody could actually use for anything.</p>
 	 *
-	 * <p>El mob va sin IA, igual que un monstruo invocado: lo lleva el DM, no se mueve solo. La entidad es
-	 * el cuerpo; el personaje —PG, condiciones, características— vive en la hoja y le sobrevive.</p>
+	 * <p>The mob spawns with no AI, same as a summoned monster: the DM drives it, it doesn't move on its
+	 * own. The entity is the body; the character — HP, conditions, ability scores — lives in the sheet and
+	 * outlives it.</p>
 	 *
-	 * @return la entidad invocada, o {@code null} si el personaje o el tipo de entidad no existen.
+	 * @return the spawned entity, or {@code null} if the character or the entity type don't exist.
 	 */
 	public static net.minecraft.world.entity.Entity spawnNpc(net.minecraft.server.level.ServerLevel level,
 			double x, double y, double z, String characterId, String baseEntityId) {
@@ -798,11 +808,11 @@ public class SheetLoader {
 	}
 
 	/**
-	 * @param keepsOwnAi deja viva la IA de la entidad base en vez de invocarla congelada. Es lo mismo que
-	 *                   {@code "ai": true} en un bloque de monstruo (ver {@code MonsterRegistry}): sirve
-	 *                   para las entidades de mods de NPC, que traen sus propios objetivos —patrullar,
-	 *                   seguir al grupo— y son inútiles congeladas. En combate manda el mod igual:
-	 *                   {@code TurnManager.freeze} apaga esa IA mientras dura el encuentro.
+	 * @param keepsOwnAi keeps the base entity's AI alive instead of spawning it frozen. It's the same as
+	 *                   {@code "ai": true} in a monster stat block (see {@code MonsterRegistry}): useful
+	 *                   for NPC-mod entities, which bring their own goals — patrolling, following the
+	 *                   group — and are useless frozen. In combat the mod still takes over regardless:
+	 *                   {@code TurnManager.freeze} shuts that AI off for the duration of the encounter.
 	 */
 	public static net.minecraft.world.entity.Entity spawnNpc(net.minecraft.server.level.ServerLevel level,
 			double x, double y, double z, String characterId, String baseEntityId, boolean keepsOwnAi) {
@@ -826,18 +836,18 @@ public class SheetLoader {
 
 		level.addFreshEntity(entity);
 
-		//Si se le da cuerpo a mitad de un combate ya en marcha, entra al orden de turnos ya mismo: si no,
-		//quedaría plantado sin poder actuar durante todo el encuentro.
+		//If given a body mid-combat while one's already underway, it joins the turn order right away:
+		//otherwise it would stand there unable to act for the whole encounter.
 		TurnManager.addLateMonster(level, entity, name);
 		return entity;
 	}
 
 	/**
-	 * <p>Le devuelve al personaje que entra la vida que tenía cuando se lo quitaron. Sin hoja previa (recién
-	 * creado) entra a tope, que es lo que se espera de un personaje nuevo.</p>
+	 * <p>Gives the incoming character back the health they had when they were last unequipped. With no
+	 * prior sheet (freshly created) they come in at full, which is what's expected of a new character.</p>
 	 *
-	 * <p>Va DESPUÉS de {@code applyClassHitPoints}: ese fija el máximo según clase y nivel, y restaurar antes
-	 * dejaría la vida acotada contra el máximo del personaje ANTERIOR.</p>
+	 * <p>Runs AFTER {@code applyClassHitPoints}: that sets the max based on class and level, and restoring
+	 * before it would clamp the health against the PREVIOUS character's max.</p>
 	 */
 	private static void restoreHitPoints(ServerPlayer player, JsonObject sheet) {
 		float max = player.getMaxHealth();
@@ -846,50 +856,50 @@ public class SheetLoader {
 			try {
 				restored = Float.parseFloat(sheet.get("hitPoints").getAsString());
 			} catch (RuntimeException e) {
-				restored = max; //Hoja vieja con cualquier cosa en el campo: entra a tope en vez de morirse.
+				restored = max; //Old sheet with garbage in the field: comes in at full instead of dying.
 			}
 		}
-		//Nunca por debajo de 1: un personaje caído se queda congelado en 1 PG (ver DeathSaveManager), así que
-		//un 0 guardado solo puede venir de una hoja rara, y devolverlo mataría al jugador al cambiar.
+		//Never below 1: a downed character stays frozen at 1 HP (see DeathSaveManager), so a stored 0 can
+		//only come from a weird sheet, and restoring it would kill the player on switch.
 		player.setHealth(Math.max(1f, Math.min(max, restored)));
 	}
 
 	/**
-	 * <p>Guarda la hoja de un personaje CONCRETO, sin pasar por el binding de jugador activo. Lo necesita
-	 * {@link CharacterInventory} para persistir la del personaje que se quita antes de vaciarle el
-	 * inventario al cuerpo: en ese instante el activo ya es el otro, y {@code saveServer} escribiría encima
-	 * de la hoja equivocada.</p>
+	 * <p>Saves a SPECIFIC character's sheet, without going through the active-player binding.
+	 * {@link CharacterInventory} needs it to persist the outgoing character before clearing the body's
+	 * inventory: at that instant the active one is already the other one, and {@code saveServer} would
+	 * write over the wrong sheet.</p>
 	 */
 	static void saveCharacterSheet(String characterId, JsonObject sheet) {
 		saveCharacter(characterId, sheet);
 	}
 
-	//Como saveServer pero sin resolver el id NI diferir: aquí ya se sabe sobre qué personaje se escribe
-	//(pasarlo por activeCharacterOf lo redirigiría al personaje activo de su dueño), y sus llamadores
-	//—crear, borrar, cambiar de personaje, apagar el servidor— son momentos puntuales en los que el
-	//archivo tiene que estar en disco antes de seguir, no cambios de combate que convenga agrupar.
+	//Like saveServer but without resolving the id OR deferring: here it's already known which character is
+	//being written (routing it through activeCharacterOf would redirect it to its owner's active
+	//character), and its callers — create, delete, switch character, server shutdown — are one-off moments
+	//where the file needs to be on disk before proceeding, not combat changes worth batching.
 	private static void saveCharacter(String characterId, JsonObject sheet) {
 		sheets.put(characterId, sheet);
-		//Ya queda escrito, así que una marca pendiente sobre este mismo id no tiene nada que aportar.
+		//Already written, so a pending mark for this same id has nothing left to contribute.
 		dirty.remove(characterId);
 		writeCharacterFile(characterId, sheet);
 	}
 
-	/** El único sitio de todo el mod que toca el disco para una hoja. */
+	/** The single place in the whole mod that touches disk for a sheet. */
 	private static void writeCharacterFile(String characterId, JsonObject sheet) {
 		Path file = SHEETS_DIR.resolve(characterId + ".json").toAbsolutePath();
 		try {
 			Files.createDirectories(SHEETS_DIR);
-			//writeString y no deleteIfExists + newOutputStream(CREATE): CREATE a secas NO trunca (solo
-			//implica TRUNCATE_EXISTING cuando no pasas ninguna opcion), asi que sin el borrado previo una
-			//hoja que ENCOGE —quitar una condicion, gastar un espacio que borra la clave— dejaba pegada la
-			//cola del contenido anterior y el JSON quedaba corrupto. writeString trunca de por si, en una
-			//llamada en vez de tres, y sin la copia extra que hacia getBytes().
+			//writeString rather than deleteIfExists + newOutputStream(CREATE): bare CREATE does NOT
+			//truncate (it only implies TRUNCATE_EXISTING when no options are passed), so without deleting
+			//first, a sheet that SHRINKS — removing a condition, spending a slot that deletes the key —
+			//left the tail of the previous content stuck on and the JSON ended up corrupted. writeString
+			//truncates on its own, in one call instead of three, and without the extra copy getBytes() made.
 			Files.writeString(file, DndsheetsMod.PRETTY_GSON.toJson(sheet));
 		} catch (IOException e) {
-			//El mapa en memoria ya está actualizado, así que sin este log el jugador ve su hoja "guardada"
-			//mientras el archivo real en disco puede no reflejarlo, sin ningún aviso.
-			DndsheetsMod.LOGGER.error("No se pudo guardar el personaje " + characterId + " en disco.", e);
+			//The in-memory map is already updated, so without this log the player sees their sheet
+			//"saved" while the actual file on disk may not reflect it, with no warning at all.
+			DndsheetsMod.LOGGER.error("Could not save character " + characterId + " to disk.", e);
 		}
 	}
 
@@ -972,10 +982,9 @@ public class SheetLoader {
 		MinecraftForge.EVENT_BUS.post(new SheetValidateEvent(sheet));
 	}
 
-	//ponytail: sin migraciones reales que aplicar todavía (ningún campo ha cambiado de forma entre
-	//versiones) — este método solo estampa la versión actual en hojas antiguas que no la tenían. Cuando
-	//haga falta una migración de verdad, añadir un caso más aquí por versión, antes de subir
-	//CURRENT_SCHEMA_VERSION.
+	//ponytail: no real migrations to apply yet (no field has changed shape between versions) — this method
+	//only stamps the current version onto old sheets that didn't have one. Once an actual migration is
+	//needed, add one more case here per version, before bumping CURRENT_SCHEMA_VERSION.
 	private static void migrateIfNeeded(JsonObject sheet) {
 		int version = sheet.has("schemaVersion") ? sheet.get("schemaVersion").getAsInt() : 0;
 		if (version < CURRENT_SCHEMA_VERSION) {
@@ -984,8 +993,8 @@ public class SheetLoader {
 	}
 
 	//Makes a new sheet, adds it to the "sheets" HashMap, and then calls Save() to make a file from it.
-	//Delega en validateSheet para los valores por defecto en vez de reconstruirlos a mano: antes cualquier
-	//cambio a una expresión de tirada por defecto había que hacerlo en los dos sitios a la vez.
+	//Delegates to validateSheet for the default values instead of rebuilding them by hand: previously any
+	//change to a default roll expression had to be made in both places at once.
 	public static void makeNew(String characterName, String uuid) {
 		JsonObject newSheet = new JsonObject();
 		newSheet.addProperty("characterName", characterName);
@@ -1001,14 +1010,14 @@ public class SheetLoader {
 	}
 
 	/**
-	 * <p>Sube en cada cambio de la hoja del cliente, por reemplazo entero o por parche. Sirve para que el
-	 * lado cliente sepa "esto ya no vale" sin tener que comparar la hoja, que es un arbol JSON: recalcular
-	 * su hashCode cuesta lo mismo que rehacer el trabajo que se querria evitar.</p>
+	 * <p>Increments on every change to the client sheet, whether by full replacement or by patch. It lets
+	 * the client side know "this is stale now" without having to compare the sheet, which is a JSON tree:
+	 * recomputing its hashCode costs as much as redoing the work you'd want to avoid.</p>
 	 *
-	 * <p>Lo usa {@code ResourceHudOverlay}, que es lo que mas veces por segundo corre del mod: es un HUD
-	 * siempre visible, o sea por fotograma (60-240 Hz) y sin que haga falta abrir ningun menu. Construia
-	 * cuatro cadenas cada vez —recorriendo el array de condiciones y troceandolo— cuando esas cadenas solo
-	 * cambian cuando cambia la hoja.</p>
+	 * <p>Used by {@code ResourceHudOverlay}, which is the most-frequently-run thing in the mod: it's an
+	 * always-visible HUD, so per frame (60-240 Hz) with no menu needing to be open. It used to build four
+	 * strings every time — walking the conditions array and slicing it up — when those strings only change
+	 * when the sheet changes.</p>
 	 */
 	public static int clientSheetVersion() {
 		return clientSheetVersion;
@@ -1016,9 +1025,9 @@ public class SheetLoader {
 
 	private static int clientSheetVersion = 0;
 
-	//Aplica un parche parcial (ver network.SheetFieldUpdateMessage) sobre la hoja cacheada del cliente, en
-	//vez de reemplazarla entera como setClient — JsonNull en un valor significa "borrar esta clave", igual
-	//que el servidor la borró con JsonObject.remove(...).
+	//Applies a partial patch (see network.SheetFieldUpdateMessage) onto the client's cached sheet, instead
+	//of replacing it whole like setClient — JsonNull as a value means "delete this key", the same way the
+	//server deleted it with JsonObject.remove(...).
 	public static void applyClientDelta(JsonObject patch) {
 		if (current == null) return;
 		for (String key : patch.keySet()) {

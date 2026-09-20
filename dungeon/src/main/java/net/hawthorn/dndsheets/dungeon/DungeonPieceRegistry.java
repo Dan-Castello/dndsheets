@@ -26,20 +26,20 @@ import java.util.List;
 import java.util.Scanner;
 
 /**
- * <p>Piezas de mazmorra (habitaciones escaneadas por el DM con el bloque de estructura, ver
- * {@link DungeonManager}) registradas en memoria + un único JSON en disco. A diferencia de
- * {@link DndPaths} (compartido entre partidas, bajo {@link SheetLoader#GAME_DIR}), esta lista vive
- * POR MUNDO — bajo la carpeta de guardado de la partida actual, {@code server.getWorldPath(LevelResource.ROOT)}
- * — porque las piezas solo tienen sentido junto al datapack de esa misma partida donde
- * {@link DungeonManager#publish} copia sus .nbt.</p>
+ * <p>Dungeon pieces (rooms scanned by the DM with the structure block, see
+ * {@link DungeonManager}) registered in memory + a single JSON file on disk. Unlike
+ * {@link DndPaths} (shared across games, under {@link SheetLoader#GAME_DIR}), this list lives
+ * PER WORLD — under the current game's save folder, {@code server.getWorldPath(LevelResource.ROOT)}
+ * — because pieces only make sense alongside that same game's datapack, where
+ * {@link DungeonManager#publish} copies their .nbt.</p>
  */
 @Mod.EventBusSubscriber
 public class DungeonPieceRegistry {
 	public record DungeonPiece(String id, String structureId, String pool, int weight, String tags) {
 	}
 
-	//Antes lo llamaba DndPaths.onServerStarting (core) directo. El core ya no puede conocer este
-	//addon, así que esta clase escucha el mismo evento de Forge por su cuenta.
+	//Used to be called directly by DndPaths.onServerStarting (core). The core can no longer know
+	//about this addon, so this class listens for the same Forge event on its own.
 	@SubscribeEvent
 	public static void onServerStarting(ServerStartingEvent event) {
 		load(event.getServer());
@@ -84,9 +84,9 @@ public class DungeonPieceRegistry {
 				PIECES.put(piece.id(), piece);
 			}
 		} catch (Exception e) {
-			//Igual que SheetLoader.load: un archivo corrupto no debe impedir que el servidor arranque, solo
-			//deja la lista vacía y lo avisa por log.
-			DndsheetsMod.LOGGER.warn("dndsheets: no pude leer las piezas de mazmorra guardadas: {}", e.getMessage());
+			//Same as SheetLoader.load: a corrupted file shouldn't prevent the server from starting, it
+			//just leaves the list empty and logs a warning.
+			DndsheetsMod.LOGGER.warn("dndsheets: could not read the saved dungeon pieces: {}", e.getMessage());
 		}
 	}
 
@@ -111,7 +111,7 @@ public class DungeonPieceRegistry {
 				out.write(DndsheetsMod.PRETTY_GSON.toJson(array).getBytes());
 			}
 		} catch (IOException e) {
-			DndsheetsMod.LOGGER.error("dndsheets: no pude guardar las piezas de mazmorra.", e);
+			DndsheetsMod.LOGGER.error("dndsheets: could not save the dungeon pieces.", e);
 		}
 	}
 }

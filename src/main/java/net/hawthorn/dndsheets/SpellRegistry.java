@@ -12,19 +12,19 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * <p>Hechizos cargados en caliente por {@code /dndspells load}, en memoria (igual que
- * {@link MonsterRegistry}: se pierden al reiniciar a menos que se recargue el mismo archivo).</p>
+ * <p>Spells hot-loaded by {@code /dndspells load}, in memory (same as
+ * {@link MonsterRegistry}: lost on restart unless the same file is reloaded).</p>
  *
- * <p>Un hechizo se resuelve con la MISMA mecánica que ya existe en el mod, solo cambia el origen de las
- * estadísticas: {@code mode:"attack"} = tirada de ataque (1d20 + car. de lanzamiento + competencia del
- * lanzador) contra la CA real del objetivo, igual que un arma o un ataque de monstruo; {@code
- * mode:"save"} = el objetivo tira su propia salvación contra la CD del lanzador (8 + competencia +
- * car. de lanzamiento), igual que un hechizo de monstruo.</p>
+ * <p>A spell is resolved with the SAME mechanic that already exists in the mod, only the source of the
+ * stats changes: {@code mode:"attack"} = attack roll (1d20 + casting ability + caster's proficiency)
+ * against the target's real AC, same as a weapon or a monster attack; {@code
+ * mode:"save"} = the target rolls their own save against the caster's DC (8 + proficiency +
+ * casting ability), same as a monster spell.</p>
  */
-//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
-//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
-//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
-//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
+//No stability contract: this mod doesn't publish a versioned API (the DndSheetsApi facade was
+//deleted — 233 lines that not a single caller used, addons included, which come in through here).
+//An external mod calling these methods risks their signature changing without notice. The only
+//thing meant for external consumption is the api/event events, which do have real consumers.
 public class SpellRegistry {
 	public record Spell(
 		String id, String name, int level, String mode,
@@ -35,51 +35,52 @@ public class SpellRegistry {
 		int declaredCastTicks
 	) {
 		/**
-		 * <p>Forma del área: {@code sphere} (por defecto), {@code line} o {@code cone}. La diferencia no es
-		 * cosmética — una esfera nace en el punto de impacto, mientras que una línea y un cono nacen en el
-		 * LANZADOR y salen hacia donde mira. Tratar un cono como radio golpearía a todo lo que tiene detrás,
-		 * que es exactamente por qué Rayo y Cono de Frío no se pudieron importar hasta ahora.</p>
+		 * <p>Area shape: {@code sphere} (default), {@code line}, or {@code cone}. The difference isn't
+		 * cosmetic — a sphere originates at the impact point, while a line and a cone originate at the
+		 * CASTER and extend toward where they're looking. Treating a cone as a radius would hit everything
+		 * behind the caster, which is exactly why Lightning Bolt and Cone of Cold couldn't be imported
+		 * until now.</p>
 		 */
 		public boolean originatesAtCaster() { return "line".equals(aoeShape) || "cone".equals(aoeShape) || isZone(); }
 
 		/**
-		 * <p>Zona persistente: no se resuelve al lanzarla, se coloca y daña a quien empiece su turno dentro
-		 * durante varios asaltos (ver {@link ZoneManager}). Lo que la define es la PERSISTENCIA, no la
-		 * forma: un Muro de Fuego y un Rayo de Luna son la misma capacidad con geometría distinta.</p>
+		 * <p>Persistent zone: not resolved on cast, it gets placed and damages whoever starts their turn
+		 * inside it for several rounds (see {@link ZoneManager}). What defines it is PERSISTENCE, not
+		 * shape: a Wall of Fire and a Moonbeam are the same capability with different geometry.</p>
 		 *
-		 * <p>{@code aoeShape:"wall"} sigue implicando zona por compatibilidad: los muros existían antes de
-		 * que la persistencia fuera un campo propio, y un pack que ya los tuviera escritos debe seguir
-		 * funcionando sin tocarlo.</p>
+		 * <p>{@code aoeShape:"wall"} still implies a zone for compatibility: walls existed before
+		 * persistence was its own field, and a pack that already had them written must keep working
+		 * untouched.</p>
 		 */
 		public boolean isZone() { return "zone".equals(mode) || "wall".equals(aoeShape); }
 
-		/** La zona se recentra en el lanzador cada asalto (Guardianes Espirituales). */
+		/** The zone re-centers on the caster every round (Spirit Guardians). */
 		public boolean followsCaster() { return followsCasterFlag; }
 
 		/**
-		 * <p>Modos que actúan sobre el propio lanzador y no necesitan a nadie delante: {@code buff} (dados
-		 * extra a cada golpe con arma mientras dure, ver {@link WeaponBuffManager}) y {@code temphp} (puntos
-		 * de golpe temporales, ver {@link Combatant#grantTemporaryHp}).</p>
+		 * <p>Modes that act on the caster themself and need no target in front: {@code buff} (extra dice on
+		 * every weapon hit for the duration, see {@link WeaponBuffManager}) and {@code temphp} (temporary
+		 * hit points, see {@link Combatant#grantTemporaryHp}).</p>
 		 */
 		public boolean isSelfTargeted() { return "buff".equals(mode) || "temphp".equals(mode); }
 
-		/** Invocación que entra en la iniciativa y ataca sola en sus turnos — ver {@link SummonManager}. */
+		/** A summon that joins initiative and attacks on its own on its turns — see {@link SummonManager}. */
 		public boolean isSummon() { return "summon".equals(mode); }
-		//Mismo patrón que MonsterRegistry.MonsterAttack/MonsterSpell: un hechizo de concentración
-		//(Guardianes Espirituales, Rayo de Luna...) puede dejar un efecto de estado corriendo mientras dura
-		//la concentración (ver ConcentrationManager/TurnManager.applyEffect), que se revierte solo si se
-		//pierde la concentración — antes eso no existía, "perder concentración" solo tiraba el dado.
+		//Same pattern as MonsterRegistry.MonsterAttack/MonsterSpell: a concentration spell
+		//(Spirit Guardians, Moonbeam...) can leave a status effect running for the duration of
+		//concentration (see ConcentrationManager/TurnManager.applyEffect), which reverts only if
+		//concentration is lost — this didn't exist before, "losing concentration" just rolled the die.
 		public boolean appliesEffect() { return effectName != null; }
 
 		/**
-		 * <p>¿Le hace algo este conjuro a una criatura de este tipo? Inmovilizar Persona solo afecta a
-		 * humanoides; Marchitar no le hace nada a no-muertos ni autómatas. Hasta ahora los dos afectaban a
-		 * cualquier cosa, que es la diferencia entre un conjuro y su nombre.</p>
+		 * <p>Does this spell do anything to a creature of this type? Hold Person only affects humanoids;
+		 * Blight does nothing to undead or constructs. Until now both affected anything, which is the
+		 * difference between a spell and its name.</p>
 		 *
-		 * <p><b>Un tipo desconocido nunca se filtra.</b> La restricción solo se aplica cuando de verdad se
-		 * sabe qué hay delante: un mob de otro mod sin bloque de estadísticas se sigue comportando como
-		 * siempre, en vez de volverse inmune a media lista de conjuros por no estar clasificado. Es la misma
-		 * regla que en {@link CreatureType}: nada se dispara —ni se bloquea— por adivinar.</p>
+		 * <p><b>An unknown type is never filtered out.</b> The restriction only applies when what's in
+		 * front is actually known: a mob from another mod with no stat block keeps behaving as always,
+		 * instead of becoming immune to half the spell list for being unclassified. Same rule as in
+		 * {@link CreatureType}: nothing triggers — or gets blocked — from a guess.</p>
 		 */
 		public boolean affects(CreatureType type) {
 			if (type == CreatureType.UNKNOWN) return true;
@@ -87,33 +88,33 @@ public class SpellRegistry {
 			return !immuneTypes.contains(type);
 		}
 
-		/** ¿Gana algo por lanzarlo con un espacio superior? Ver {@link #upcastTo}. */
+		/** Does casting this with a higher slot gain anything? See {@link #upcastTo}. */
 		public boolean scalesWithSlot() { return upcastDice != null && !upcastDice.isEmpty(); }
 
 		/**
-		 * <p><b>Lanzar a nivel superior.</b> Devuelve el mismo conjuro resuelto con un espacio de nivel
-		 * {@code slotLevel}: {@code upcastDice} extra por cada nivel por encima del suyo (Bola de Fuego,
-		 * 8d6 de base y +1d6 por nivel, sale a 10d6 con un espacio de 5º).</p>
+		 * <p><b>Upcasting.</b> Returns the same spell resolved with a slot of level
+		 * {@code slotLevel}: extra {@code upcastDice} for each level above its own (Fireball,
+		 * 8d6 base and +1d6 per level, comes out to 10d6 with a 5th-level slot).</p>
 		 *
-		 * <p>Devuelve una COPIA en vez de un dado suelto a propósito: {@code dice} se lee desde ocho sitios
-		 * distintos (ataque, salvación, curación, PG temporales, mejora de arma, zona, invocación y el
-		 * gemelado), y pasarles a todos un parámetro nuevo habría sido ocho firmas cambiadas para la misma
-		 * idea. Así la subida de nivel vale para todos los modos de golpe, incluidos los que aún no existen.</p>
+		 * <p>Returns a COPY instead of a bare die string on purpose: {@code dice} is read from eight
+		 * different places (attack, save, healing, temp HP, weapon buff, zone, summon, and twinning), and
+		 * passing all of them a new parameter would have meant eight changed signatures for the same idea.
+		 * This way upcasting works for every hit mode, including ones that don't exist yet.</p>
 		 *
-		 * <p>El nombre lleva el nivel usado porque va derecho al chat: sin eso, dos Bolas de Fuego con daños
-		 * distintos se leen como un fallo del mod y no como la decisión que fue.</p>
+		 * <p>The name carries the level used because it goes straight to chat: without that, two Fireballs
+		 * with different damage read as a mod bug rather than the decision it was.</p>
 		 */
 		/**
-		 * <p><b>Trucos que crecen con quien los lanza.</b> Un truco de daño suma un dado a los niveles de
-		 * personaje 5, 11 y 17: el Rayo de Fuego de un mago de nivel 10 hace 2d10, no 1d10.</p>
+		 * <p><b>Cantrips that grow with the caster.</b> A damage cantrip gains a die at character levels
+		 * 5, 11, and 17: a level-10 wizard's Fire Bolt does 2d10, not 1d10.</p>
 		 *
-		 * <p>Es la contraparte de {@link #upcastTo} para lo único que no puede subirse de nivel gastando un
-		 * espacio. Sin ella, el ataque a voluntad de un lanzador se quedaba clavado en el daño de nivel 1
-		 * mientras todo lo demás escalaba — el mismo defecto que tenía el bono de competencia, en el ataque
-		 * que un lanzador usa más veces por partida.</p>
+		 * <p>This is the counterpart to {@link #upcastTo} for the one thing that can't be upcast by
+		 * spending a slot. Without it, a caster's at-will attack stayed stuck at level-1 damage while
+		 * everything else scaled — the same flaw the proficiency bonus used to have, on the attack a
+		 * caster uses more times per session than any other.</p>
 		 *
-		 * <p>No hace falta declarar nada en el JSON: la progresión es la misma para todos los trucos de daño
-		 * del SRD, así que se deduce del nivel en vez de repetirse once veces a mano.</p>
+		 * <p>Nothing needs to be declared in the JSON: the progression is the same for every SRD damage
+		 * cantrip, so it's derived from the level instead of being repeated eleven times by hand.</p>
 		 */
 		public Spell atCasterLevel(int characterLevel) {
 			if (level != 0 || dice == null || "0".equals(dice.trim())) return this;
@@ -127,15 +128,16 @@ public class SpellRegistry {
 		}
 
 		/**
-		 * <p><b>Cuánto tarda este conjuro en salir</b>, en ticks, resuelto contra la configuración de la mesa.
-		 * Un {@code castTicks} escrito en el JSON manda siempre; si no lo hay, sale del nivel del conjuro.</p>
+		 * <p><b>How long this spell takes to go off</b>, in ticks, resolved against the table's
+		 * configuration. A {@code castTicks} written in the JSON always wins; if absent, it's derived from
+		 * the spell's level.</p>
 		 *
-		 * <p>Un truco es instantáneo por definición: es el ataque a voluntad de un lanzador y no puede costar
-		 * más que un golpe con arma. Y {@code perLevel} a 0 devuelve el lanzamiento instantáneo de siempre
-		 * para todo el mundo, que es lo que hace que esta función sea opcional de verdad (invariante 9).</p>
+		 * <p>A cantrip is instantaneous by definition: it's a caster's at-will attack and can't cost more
+		 * than a weapon hit. And {@code perLevel} at 0 returns the same old instantaneous cast for
+		 * everyone, which is what makes this function truly optional (invariant 9).</p>
 		 *
-		 * <p>Es aritmética pura y vive aquí, en el record, por la misma razón que {@link #upcastTo} y
-		 * {@link #atCasterLevel}: el self-test la alcanza sin un Forge corriendo.</p>
+		 * <p>It's pure arithmetic and lives here, in the record, for the same reason as {@link #upcastTo}
+		 * and {@link #atCasterLevel}: the self-test can reach it without a Forge instance running.</p>
 		 */
 		public int castTicksAt(int perLevel, int max) {
 			if (declaredCastTicks >= 0) return declaredCastTicks;
@@ -148,8 +150,8 @@ public class SpellRegistry {
 			if (extraLevels <= 0 || !scalesWithSlot()) return this;
 
 			String added = repeatDice(upcastDice, extraLevels);
-			//"0" es el dado por defecto de un conjuro que no hace daño ninguno; sumarle nada delante deja
-			//un "0 + 2d6" que se tira igual pero se lee en el chat como un error de escritura.
+			//"0" is the default die for a spell that deals no damage at all; adding to it in front leaves a
+			//"0 + 2d6" that still rolls fine but reads in chat like a typo.
 			String scaled = "0".equals(dice.trim()) ? added : dice + " + " + added;
 			return new Spell(id, name + " (nv. " + slotLevel + ")", level, mode, castingAbility, saveAbility,
 				scaled, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId,
@@ -157,9 +159,9 @@ public class SpellRegistry {
 		}
 	}
 
-	//Un "1d6" repetido 3 veces se junta en "3d6" en vez de encadenarse: se tira igual, pero el chat enseña
-	//una tirada y no tres sumandos del mismo dado. Lo que no encaje en NdM (Proyectil Mágico sube "1d4 + 1"
-	//por nivel, dardo a dardo) se repite tal cual, que sigue siendo correcto aunque se lea más largo.
+	//A "1d6" repeated 3 times gets merged into "3d6" instead of chained: it rolls the same, but chat shows
+	//one roll instead of three addends of the same die. Whatever doesn't fit the NdM shape (Magic Missile
+	//adds "1d4 + 1" per level, dart by dart) is repeated as-is, which is still correct even if it reads longer.
 	private static final java.util.regex.Pattern SIMPLE_DICE = java.util.regex.Pattern.compile("(\\d*)d(\\d+)");
 
 	static String repeatDice(String dice, int times) {
@@ -173,7 +175,7 @@ public class SpellRegistry {
 		return sb.toString();
 	}
 
-	private static final NamedRegistry<Spell> REGISTRY = new NamedRegistry<>("hechizo", Spell::id);
+	private static final NamedRegistry<Spell> REGISTRY = new NamedRegistry<>("spell", Spell::id);
 
 	public static void register(Spell spell) {
 		REGISTRY.register(spell);
@@ -191,11 +193,11 @@ public class SpellRegistry {
 		return REGISTRY.remove(id);
 	}
 
-	//Público: usado por SpellCommand (/dndspells load) y por DndPaths para precargar solo todos los .json
-	//de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de comandos.
-	private static final JsonRegistryLoader<Spell> LOADER = new JsonRegistryLoader<>("hechizo", SpellRegistry::parse, SpellRegistry::register);
+	//Public: used by SpellCommand (/dndspells load) and by DndPaths to preload all the folder's .json
+	//files on server startup, without DndPaths having to depend on the command layer.
+	private static final JsonRegistryLoader<Spell> LOADER = new JsonRegistryLoader<>("spell", SpellRegistry::parse, SpellRegistry::register);
 
-	/** Carga desde un JSON ya leído (datapack o jar de otro mod) — ver ContentDatapackLoader. */
+	/** Loads from an already-parsed JSON (datapack or another mod's jar) — see ContentDatapackLoader. */
 	public static int loadJson(com.google.gson.JsonElement root, String source, java.util.function.Consumer<String> onId) {
 		return LOADER.loadJson(root, source, onId);
 	}
@@ -204,10 +206,11 @@ public class SpellRegistry {
 		return LOADER.loadFile(file);
 	}
 
-	//Añade un hechizo a la lista de conocidos de la hoja si no lo tenía ya — mismo formato {id,name,level}
-	//que ya guarda /dndspells learn (el Grimorio los lee de ahí, no de este registro en memoria del
-	//servidor). Reutilizado por SpellCommand.learn y por PresetRegistry.applyToSheet (rasgo icónico de un
-	//preset caster). Devuelve false si el hechizo no existe en el registro o si ya lo conocía.
+	//Adds a spell to the sheet's list of known spells if it didn't already have it — the same
+	//{id,name,level} format /dndspells learn already stores (the Spellbook reads from there, not from
+	//this server-side in-memory registry). Reused by SpellCommand.learn and by PresetRegistry.applyToSheet
+	//(a caster preset's signature feature). Returns false if the spell doesn't exist in the registry or
+	//was already known.
 	public static boolean learn(JsonObject sheet, String spellId) {
 		Spell spell = get(spellId);
 		if (spell == null) return false;
@@ -220,23 +223,23 @@ public class SpellRegistry {
 		entry.addProperty("id", spellId);
 		entry.addProperty("name", spell.name());
 		entry.addProperty("level", spell.level());
-		//La escuela viaja a la hoja además del nivel porque el Grimorio la PINTA y la hace buscable, y el
-		//cliente no tiene el registro (solo vive en memoria del servidor, ver el javadoc de la clase). Una
-		//hoja anterior a este campo simplemente no la enseña: no se pierde nada que ya se viera.
+		//The school travels to the sheet alongside the level because the Spellbook DRAWS it and makes it
+		//searchable, and the client doesn't have the registry (it only lives in server memory, see the
+		//class javadoc). A sheet predating this field simply doesn't show it: nothing that was already
+		//visible gets lost.
 		if (spell.school() != MagicSchool.UNKNOWN) entry.addProperty("school", spell.school().label());
 		known.add(entry);
 		return true;
 	}
 
-	// --- Hechizos preparados (ver CharacterRules.preparedLimitFor y GrimoireScreen) ---
+	// --- Prepared spells (see CharacterRules.preparedLimitFor and GrimoireScreen) ---
 
 	/**
-	 * <p>¿Está preparado? <b>Un hechizo sin el campo cuenta como preparado</b>, y eso no es un detalle: es
-	 * lo que hace que ninguna hoja escrita antes de que existiera la preparación se quede con un lanzador
-	 * mudo de golpe (invariante 8). La lista se vuelve restrictiva solo cuando alguien empieza a
-	 * desmarcar cosas.</p>
+	 * <p>Is it prepared? <b>A spell with no field counts as prepared</b>, and that's not a detail: it's
+	 * what keeps any sheet written before preparation existed from suddenly having a mute caster
+	 * (invariant 8). The list only becomes restrictive once someone starts unchecking things.</p>
 	 *
-	 * <p>Los trucos siempre lo están: son a voluntad y en 5e no se preparan.</p>
+	 * <p>Cantrips are always prepared: they're at-will and in 5e they aren't prepared.</p>
 	 */
 	public static boolean isPrepared(JsonObject sheet, String spellId) {
 		JsonObject entry = entryFor(sheet, spellId);
@@ -246,21 +249,21 @@ public class SpellRegistry {
 	}
 
 	/**
-	 * <p>¿Deja la lista de preparados lanzar esto? <b>Un hechizo que la hoja no conoce no lo gestiona esta
-	 * lista</b>, así que pasa: es el caso del báculo, que por diseño lanza un conjuro sin que su portador
-	 * lo haya aprendido (ver {@code SpellCommand.staff} — "usando siempre las estadísticas y espacios de
-	 * conjuro reales del portador"). Solo bloquea lo que la hoja conoce Y alguien ha desmarcado a mano.</p>
+	 * <p>Does the prepared list allow casting this? <b>A spell the sheet doesn't know isn't managed by
+	 * this list</b>, so it passes: that's the staff's case, which by design casts a spell without its
+	 * wielder having learned it (see {@code SpellCommand.staff} — "always using the wielder's real ability
+	 * scores and spell slots"). It only blocks what the sheet knows AND someone has manually unchecked.</p>
 	 *
-	 * <p>Es una pregunta distinta de {@link #isPrepared}, que responde "¿está marcado?" para pintarlo en el
-	 * Grimorio. Confundirlas dejó el báculo inservible para todo conjuro de nivel: desconocido devolvía
-	 * false y el lanzado se rechazaba sin haberlo desmarcado nadie.</p>
+	 * <p>This is a different question from {@link #isPrepared}, which answers "is it checked?" for
+	 * rendering in the Spellbook. Confusing the two left the staff useless for every leveled spell:
+	 * unknown returned false and the cast was rejected without anyone having unchecked anything.</p>
 	 */
 	public static boolean preparationAllows(JsonObject sheet, String spellId) {
 		JsonObject entry = entryFor(sheet, spellId);
 		return entry == null || isPrepared(sheet, spellId);
 	}
 
-	/** @return false si la hoja no conoce ese hechizo, o si es un truco (que no se prepara). */
+	/** @return false if the sheet doesn't know that spell, or if it's a cantrip (which isn't prepared). */
 	public static boolean setPrepared(JsonObject sheet, String spellId, boolean prepared) {
 		JsonObject entry = entryFor(sheet, spellId);
 		if (entry == null || levelOfEntry(entry) <= 0) return false;
@@ -268,7 +271,7 @@ public class SpellRegistry {
 		return true;
 	}
 
-	/** Cuántos lleva preparados, sin contar trucos — es el número que se compara con el límite. */
+	/** How many are prepared, not counting cantrips — the number compared against the limit. */
 	public static int preparedCount(JsonObject sheet) {
 		if (sheet == null || !sheet.has("spells")) return 0;
 		int count = 0;
@@ -281,10 +284,11 @@ public class SpellRegistry {
 	}
 
 	/**
-	 * <p>Cuántos puede llevar preparados, o 0 si no es una clase lanzadora. La fórmula vive en
-	 * {@code CharacterRules} —que es donde vive el resto de aritmética de personaje— y se reexpone aquí
-	 * porque esa clase es package-private a propósito y quienes preguntan (el Grimorio y la capa de red)
-	 * están fuera del paquete. Así toda la API de preparados se pide en un solo sitio.</p>
+	 * <p>How many they can have prepared, or 0 if it isn't a caster class. The formula lives in
+	 * {@code CharacterRules} — which is where the rest of the character arithmetic lives — and it's
+	 * re-exposed here because that class is package-private on purpose and the callers (the Spellbook and
+	 * the network layer) are outside the package. This way the whole prepared-spells API is requested from
+	 * a single place.</p>
 	 */
 	public static int preparedLimitFor(JsonObject sheet) {
 		return CharacterRules.preparedLimitFor(sheet);
@@ -299,8 +303,8 @@ public class SpellRegistry {
 		return null;
 	}
 
-	//El nivel se lee de la HOJA y no del registro a propósito: el registro solo vive en memoria del
-	//servidor, y esto lo llama también el cliente (ver GrimoireScreen), donde no existe.
+	//The level is read from the SHEET and not the registry on purpose: the registry only lives in server
+	//memory, and this is also called by the client (see GrimoireScreen), where it doesn't exist.
 	private static int levelOfEntry(JsonObject entry) {
 		return entry.has("level") ? entry.get("level").getAsInt() : 0;
 	}
@@ -312,61 +316,61 @@ public class SpellRegistry {
 		String mode = json.has("mode") ? json.get("mode").getAsString().toLowerCase(Locale.ROOT) : "attack";
 		String castingAbility = json.has("castingAbility") ? json.get("castingAbility").getAsString().toLowerCase(Locale.ROOT) : "int";
 		String saveAbility = json.has("saveAbility") ? json.get("saveAbility").getAsString().toLowerCase(Locale.ROOT) : "dex";
-		//Opcional desde que existen las condiciones: un hechizo puede no hacer daño ninguno y aun así tener
-		//todo su efecto (Inmovilizar Persona, Dormir, Sugestión). Antes era obligatorio, así que esos
-		//hechizos ni siquiera se podían escribir — el parser los descartaba con un aviso.
+		//Optional since conditions exist: a spell can deal no damage at all and still have its whole
+		//effect (Hold Person, Sleep, Suggestion). It used to be mandatory, so those spells couldn't even
+		//be written — the parser discarded them with a warning.
 		String dice = json.has("dice") ? json.get("dice").getAsString() : "0";
 		boolean halfOnSave = !json.has("halfOnSave") || json.get("halfOnSave").getAsBoolean();
-		String damageType = json.has("damageType") ? DamageTypes.normalize(json.get("damageType").getAsString()) : "fisico";
+		String damageType = json.has("damageType") ? DamageTypes.normalize(json.get("damageType").getAsString()) : "physical";
 		boolean concentration = json.has("concentration") && json.get("concentration").getAsBoolean();
-		//Techo defensivo: sin esto, un radio absurdo en el JSON (a propósito o por error de tipeo) hace que
-		//SpellCastManager.findAoeTargets escanee todas las entidades cargadas del servidor en cada lanzado,
-		//sin límite superior — un vector de lag real, no solo un valor raro.
+		//Defensive ceiling: without this, an absurd radius in the JSON (deliberate or a typo) makes
+		//SpellCastManager.findAoeTargets scan every loaded entity on the server on every cast, with no
+		//upper bound — a real lag vector, not just a weird value.
 		int aoeRadius = json.has("aoeRadius") ? Math.max(0, Math.min(json.get("aoeRadius").getAsInt(), 40)) : 0;
-		//Esfera por defecto: cualquier hechizo escrito antes de que existieran las formas se comporta igual
-		//que siempre. Un valor desconocido cae también a esfera en vez de descartar el hechizo entero.
+		//Sphere by default: any spell written before shapes existed behaves exactly as it always did. An
+		//unrecognized value also falls back to sphere instead of discarding the whole spell.
 		String aoeShape = json.has("aoeShape") ? json.get("aoeShape").getAsString().toLowerCase(Locale.ROOT) : "sphere";
 		if (!aoeShape.equals("line") && !aoeShape.equals("cone") && !aoeShape.equals("wall")) aoeShape = "sphere";
-		//Cuerpo vanilla de una invocación. Vex por defecto: flota, es pequeño y no se parece a ningún mob
-		//hostil concreto, que es lo más cerca de "un arma espiritual" que hay sin modelo propio.
+		//A summon's vanilla body. Vex by default: it floats, is small, and doesn't resemble any specific
+		//hostile mob, which is the closest thing to "a spiritual weapon" there is without its own model.
 		String summonEntityId = json.has("summonEntity") ? json.get("summonEntity").getAsString() : "minecraft:vex";
 		boolean followsCaster = json.has("followsCaster") && json.get("followsCaster").getAsBoolean();
 
-		//Mismo formato anidado que MonsterRegistry.parse/parseAttack usan para sus propios monstruos:
+		//Same nested format MonsterRegistry.parse/parseAttack use for their own monsters:
 		//"appliesEffect": {"name": "...", "dice": "...", "turns": N}.
 		JsonObject effect = json.has("appliesEffect") ? json.getAsJsonObject("appliesEffect") : null;
 		String effectName = effect != null ? effect.get("name").getAsString() : null;
 		String effectDice = effect != null ? effect.get("dice").getAsString() : null;
 		int effectTurns = effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0;
 
-		//Lo que se suma por cada nivel de espacio por encima del suyo (ver Spell.upcastTo). Ausente = el
-		//conjuro no mejora al subirlo de nivel, que en el SRD es la mitad de ellos: Palabra de Poder o
-		//Enjambre de Meteoros no ganan nada por gastar un espacio más alto, y fingir que sí los rompería.
+		//What gets added per slot level above its own (see Spell.upcastTo). Absent = the spell doesn't
+		//improve when upcast, which in the SRD is half of them: Power Word Kill or Meteor Swarm gain
+		//nothing from spending a higher slot, and pretending otherwise would break them.
 		String upcastDice = json.has("upcastDice") ? json.get("upcastDice").getAsString() : null;
 
-		//A quién puede afectar. Vacíos = a todo el mundo, que es como se comportaban todos los conjuros
-		//hasta ahora. Son dos campos y no uno porque las dos formas existen en el SRD y cada una escrita
-		//con la otra queda ilegible: Inmovilizar Persona es "solo humanoides" (uno), e Inmovilizar Monstruo
-		//es "todo menos no-muertos" (uno también, pero al revés — como lista blanca serían trece).
+		//Who it can affect. Empty = everyone, which is how every spell used to behave. There are two
+		//fields and not one because both forms exist in the SRD and each written as the other becomes
+		//unreadable: Hold Person is "humanoids only" (one), and Hold Monster is "everything except undead"
+		//(also one, but inverted — as an allowlist it would be thirteen entries).
 		java.util.Set<CreatureType> affectsTypes = CreatureType.parseAll(json.has("affectsTypes") ? json.getAsJsonArray("affectsTypes") : null);
 		java.util.Set<CreatureType> immuneTypes = CreatureType.parseAll(json.has("immuneTypes") ? json.getAsJsonArray("immuneTypes") : null);
 
-		//Escuela de magia (ver MagicSchool). Ausente = UNKNOWN, que es como estaban los 87 conjuros del pack
-		//hasta que existió el campo: se lanzan con el efecto genérico de siempre y nada más cambia. No gatea
-		//ninguna regla, solo decide con qué se ve y se oye el LANZAMIENTO (CombatFx.spellCast).
+		//School of magic (see MagicSchool). Absent = UNKNOWN, which is how the pack's 87 spells were until
+		//the field existed: they cast with the same old generic effect and nothing else changes. It gates
+		//no rule, it only decides what the CAST looks and sounds like (CombatFx.spellCast).
 		MagicSchool school = MagicSchool.parse(json.has("school") ? json.get("school").getAsString() : null);
 
-		//Cuánto tarda en salir, en ticks. -1 (ausente) NO es cero: es "no lo he decidido", y entonces lo decide
-		//la configuración a partir del nivel (ver castTicksAt). Un 0 explícito en el JSON sí significa
-		//instantáneo pase lo que pase, que es como se escribe un conjuro que no debe poder interrumpirse
-		//—Escudo, Contrahechizo— sin tocar la configuración de la mesa.
+		//How long it takes to go off, in ticks. -1 (absent) is NOT zero: it means "not decided", in which
+		//case the table configuration decides based on level (see castTicksAt). An explicit 0 in the JSON
+		//does mean instantaneous no matter what, which is how you write a spell that must not be
+		//interruptible — Shield, Counterspell — without touching the table's configuration.
 		int declaredCastTicks = json.has("castTicks") ? Math.max(0, Math.min(json.get("castTicks").getAsInt(), 200)) : -1;
 
 		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId, followsCaster,
 			effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes, school, declaredCastTicks);
 	}
 
-	//--- Báculo de lanzado rápido: cualquier ítem etiquetado {dndsheets:{quickSpell:"id"}} (mismo patrón que las armas personalizadas) ---
+	//--- Quick-cast staff: any item tagged {dndsheets:{quickSpell:"id"}} (same pattern as custom weapons) ---
 
 	public static String quickSpellIdOf(ItemStack stack) {
 		CompoundTag tag = stack.getTag();
@@ -375,15 +379,15 @@ public class SpellRegistry {
 		return dndTag.contains("quickSpell") ? dndTag.getString("quickSpell") : null;
 	}
 
-	//Con cientos de hechizos no es viable un báculo distinto por cada uno: el que entrega /dndspells staff
-	//lleva {dndsheets:{staffConfigurable:true}} además de quickSpell, así que el Grimorio (ver
-	//GrimoireScreen, StaffBindMessage) puede reescribirle el hechizo en vez de crear un ítem nuevo.
+	//With hundreds of spells, a separate staff per spell isn't viable: the one /dndspells staff grants
+	//carries {dndsheets:{staffConfigurable:true}} alongside quickSpell, so the Spellbook (see
+	//GrimoireScreen, StaffBindMessage) can rewrite its spell instead of creating a new item.
 	public static boolean isConfigurableStaff(ItemStack stack) {
 		CompoundTag tag = stack.getTag();
 		return tag != null && tag.contains("dndsheets") && tag.getCompound("dndsheets").getBoolean("staffConfigurable");
 	}
 
-	/** @return false si el ítem no es un báculo reconfigurable (nada que reescribir). */
+	/** @return false if the item isn't a reconfigurable staff (nothing to rewrite). */
 	public static boolean bindStaff(ItemStack stack, String spellId) {
 		if (!isConfigurableStaff(stack)) return false;
 		stack.getTag().getCompound("dndsheets").putString("quickSpell", spellId);

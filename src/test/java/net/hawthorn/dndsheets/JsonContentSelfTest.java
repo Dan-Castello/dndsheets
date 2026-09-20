@@ -13,21 +13,21 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * <p>Comprobación mínima (sin JUnit, sin fixtures) de que los JSON de ejemplo en {@code test/dndsheets/}
- * siguen siendo compatibles con los parsers reales del mod ({@code WeaponRegistry}... en realidad
+ * <p>Minimal check (no JUnit, no fixtures) that the sample JSON files in {@code test/dndsheets/}
+ * are still compatible with the mod's real parsers ({@code WeaponRegistry}... actually
  * {@code Config.registerWeapon}, {@code SpellRegistry.parse}, {@code MonsterRegistry.parse},
- * {@code PresetRegistry.parse}). Si alguien cambia un nombre de campo en un registro (p.ej.
- * {@code MonsterRegistry.MonsterAttack}) sin actualizar estos ejemplos, esto revienta con un mensaje
- * claro en vez de descubrirse in-game.</p>
+ * {@code PresetRegistry.parse}). If someone changes a field name in a registry (e.g.
+ * {@code MonsterRegistry.MonsterAttack}) without updating these samples, this blows up with a clear
+ * message instead of being discovered in-game.</p>
  *
- * <p>Llama a los registros directamente en vez de a {@code command.WeaponCommand.loadFile} (etc.):
- * esas clases de comando tienen un campo estático que fuerza a inicializar {@link DndPaths}, que a su
- * vez necesita {@code FMLPaths.GAMEDIR} — solo disponible dentro de una instancia real de Forge
- * arrancada. Los registros en sí (esta clase, {@link SpellRegistry}, {@link MonsterRegistry},
- * {@link PresetRegistry}, {@link Config#registerWeapon}) no dependen de eso, así que se pueden probar
- * de pie, fuera del juego.</p>
+ * <p>It calls the registries directly instead of {@code command.WeaponCommand.loadFile} (etc.):
+ * those command classes have a static field that forces {@link DndPaths} to initialize, which in
+ * turn needs {@code FMLPaths.GAMEDIR} - only available inside a real, running Forge instance.
+ * The registries themselves (this class, {@link SpellRegistry}, {@link MonsterRegistry},
+ * {@link PresetRegistry}, {@link Config#registerWeapon}) do not depend on that, so they can be tested
+ * standalone, outside the game.</p>
  *
- * <p>Se ejecuta a mano desde la raíz del repo (las rutas son relativas a {@code test/dndsheets/...}):
+ * <p>Run it by hand from the repo root (paths are relative to {@code test/dndsheets/...}):
  * {@code java -cp <classpath> net.hawthorn.dndsheets.JsonContentSelfTest}</p>
  */
 public class JsonContentSelfTest {
@@ -36,6 +36,7 @@ public class JsonContentSelfTest {
 		checkSpells();
 		checkMonsters();
 		checkMonsterAppearance();
+		checkCreatureSize();
 		checkMonsterSkins();
 		checkItemLooks();
 		checkPatchouliBook();
@@ -45,11 +46,11 @@ public class JsonContentSelfTest {
 		checkOwnClock();
 		checkVanillaIds();
 		checkMagicItems();
-		checkTraits(); //Antes de checkPresets(): el preset de monje concede este rasgo por id.
+		checkTraits(); //Before checkPresets(): the monk preset grants this trait by id.
 		checkPresets();
 		checkFeats();
 		checkSubclasses();
-		checkMulticlass(); //También después de checkPresets(): los nombres de las clases salen de ahí.
+		checkMulticlass(); //Also after checkPresets(): the class names come from there.
 		checkDice();
 		checkRollLog();
 		checkAttackAndDamageRolls();
@@ -94,47 +95,47 @@ public class JsonContentSelfTest {
 		checkImportedContent();
 		checkContentNamesAreTranslated();
 
-		System.out.println("JsonContentSelfTest: OK, los 7 JSON de ejemplo (uno por tipo de contenido) parsean con los registros reales.");
+		System.out.println("JsonContentSelfTest: OK, the 7 sample JSON files (one per content type) parse with the real registries.");
 	}
 
 	/**
-	 * <p>Las pestañas de la hoja son {@code ImageButton}, y esos NO tienen dos estados sino tres apilados
-	 * en vertical: normal en v=0, hover en v=yDiffTex y <b>deshabilitado</b> en v=yDiffTex*2
-	 * ({@code AbstractWidget.renderTexture}). Aquí importa más de lo normal porque
-	 * {@code CharacterSheetScreen.updateTabs} marca la pestaña SELECCIONADA con {@code active = false}
-	 * para que no se pueda pulsar la que ya estás viendo: la pestaña abierta se dibuja siempre con esa
-	 * tercera fila.</p>
+	 * <p>The sheet tabs are {@code ImageButton}s, and those do NOT have two states but three stacked
+	 * vertically: normal at v=0, hover at v=yDiffTex and <b>disabled</b> at v=yDiffTex*2
+	 * ({@code AbstractWidget.renderTexture}). It matters more than usual here because
+	 * {@code CharacterSheetScreen.updateTabs} marks the SELECTED tab with {@code active = false}
+	 * so the tab you are already viewing cannot be clicked: the open tab is always drawn with that
+	 * third row.</p>
 	 *
-	 * <p>Los PNG que venían de MCreator solo traían dos filas, así que la seleccionada muestreaba fuera de
-	 * la imagen y salía plana. No falla, no avisa y no se nota mirando el PNG — de ahí esta comprobación.
-	 * Los PNG los genera {@code tools/make_tab_textures.py}.</p>
+	 * <p>The PNGs that came from MCreator only had two rows, so the selected tab sampled outside
+	 * the image and came out flat. It does not fail, does not warn and is not noticeable by looking at the PNG - hence this check.
+	 * The PNGs are generated by {@code tools/make_tab_textures.py}.</p>
 	 */
 	/**
-	 * <p>Un clic derecho llega como DOS eventos, uno por mano: el cliente recorre
-	 * {@code InteractionHand.values()} y reintenta con la otra mano si la primera no consume nada
-	 * ({@code Minecraft.startUseItem}). Un manejador de {@code PlayerInteractEvent} que pregunte por
-	 * {@code getMainHandItem()} o {@code getOffhandItem()} responde que sí en LAS DOS pasadas, así que
-	 * hace su trabajo dos veces por clic. Se ve como mensajes de chat duplicados; lo que de verdad pasa
-	 * es que se ejecuta el manejador entero dos veces.</p>
+	 * <p>A right click arrives as TWO events, one per hand: the client walks
+	 * {@code InteractionHand.values()} and retries with the other hand if the first consumes nothing
+	 * ({@code Minecraft.startUseItem}). A {@code PlayerInteractEvent} handler that asks about
+	 * {@code getMainHandItem()} or {@code getOffhandItem()} answers yes on BOTH passes, so it
+	 * does its work twice per click. It shows up as duplicated chat messages; what really happens
+	 * is that the whole handler runs twice.</p>
 	 *
-	 * <p>Lo correcto es {@code event.getItemStack()}, que es el objeto de la mano de ESE evento — sigue
-	 * valiendo llevar la herramienta en la secundaria. Esto ya se arregló una vez en
-	 * {@code DungeonToolManager} y volvió a aparecer en otros cuatro manejadores, de ahí la comprobación.</p>
+	 * <p>The right way is {@code event.getItemStack()}, which is the object in the hand of THAT event - carrying
+	 * the tool in the off hand keeps working. This was already fixed once in
+	 * {@code DungeonToolManager} and came back in four other handlers, hence the check.</p>
 	 */
 	/**
-	 * <p>La sombra de Minecraft es una copia del texto un píxel abajo y a la derecha, en el color
-	 * oscurecido a la cuarta parte. Con texto claro sobre fondo oscuro eso es relieve y ayuda a leer. Con
-	 * <b>tinta oscura sobre pergamino</b> —las etiquetas de la hoja y el rótulo de la pestaña abierta— la
-	 * copia queda tan oscura como el original: la palabra se lee escrita dos veces.</p>
+	 * <p>Minecraft's shadow is a copy of the text one pixel down and to the right, in the color
+	 * darkened to a quarter. With light text on a dark background that is relief and helps reading. With
+	 * <b>dark ink on parchment</b> - the sheet labels and the open tab's caption - the
+	 * copy ends up as dark as the original: the word reads as written twice.</p>
 	 *
-	 * <p>El problema es que las dos formas cómodas de centrar texto encienden la sombra sin dejar
-	 * apagarla: {@code GuiGraphics.drawCenteredString} llama a {@code drawString} con {@code shadow=true}
-	 * fijo, y {@code AbstractWidget.renderString} acaba en esa misma llamada. Sobre pergamino hay que
-	 * centrar a mano y usar {@code drawString(..., false)}.</p>
+	 * <p>The problem is that the two convenient ways to center text turn the shadow on without letting
+	 * you turn it off: {@code GuiGraphics.drawCenteredString} calls {@code drawString} with a fixed {@code shadow=true},
+	 * and {@code AbstractWidget.renderString} ends up in that same call. On parchment you have to
+	 * center by hand and use {@code drawString(..., false)}.</p>
 	 */
 	private static void checkParchmentTextHasNoShadow() throws Exception {
-		//Solo estas dos: son las que pintan sobre el pergamino. El resto del mod dibuja sobre cuero oscuro,
-		//donde la sombra es correcta y se usa a propósito.
+		//Only these two: they are the ones that paint on the parchment. The rest of the mod draws on dark leather,
+		//where the shadow is correct and is used on purpose.
 		assertNoShadowedCentering("client/gui/CharacterSheetScreen.java", "drawCenteredString");
 		assertNoShadowedCentering("client/gui/components/AdjustableImageButton.java", "renderString(");
 	}
@@ -142,10 +143,10 @@ public class JsonContentSelfTest {
 	private static void assertNoShadowedCentering(String relativePath, String forbidden) throws Exception {
 		Path file = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets").resolve(relativePath);
 		for (String line : Files.readAllLines(file)) {
-			//Los comentarios sí lo nombran: explican por qué no se usa.
+			//Comments do mention it: they explain why it is not used.
 			if (line.trim().startsWith("//") || line.trim().startsWith("*")) continue;
-			assertTrue(!line.contains(forbidden), relativePath + ": usa " + forbidden
-				+ ", que fuerza la sombra del texto. Sobre pergamino eso se lee como la palabra escrita dos veces.");
+			assertTrue(!line.contains(forbidden), relativePath + ": uses " + forbidden
+				+ ", which forces the text shadow. On parchment that reads as the word written twice.");
 		}
 	}
 
@@ -155,65 +156,65 @@ public class JsonContentSelfTest {
 		try (java.util.stream.Stream<Path> files = Files.list(dir)) {
 			for (Path file : files.filter(f -> f.toString().endsWith(".java")).toList()) {
 				String source = Files.readString(file);
-				//Cada ítem de capacidad se construye con AbilityItem.build(item, "flag", ...): el segundo
-				//argumento es la etiqueta NBT por la que el despachador lo reconoce.
+				//Every ability item is built with AbilityItem.build(item, "flag", ...): the second
+				//argument is the NBT tag the dispatcher uses to recognize it.
 				java.util.regex.Matcher built = java.util.regex.Pattern
 					.compile("AbilityItem\\.build\\([^,]+,\\s*\"(\\w+)\"").matcher(source);
 				while (built.find()) abilityFlags.add(built.group(1));
 
 				if (!source.contains("PlayerInteractEvent")) continue;
 				assertTrue(!source.contains("getMainHandItem()") && !source.contains("getOffhandItem()"),
-					file.getFileName() + ": un manejador de PlayerInteractEvent mira las dos manos en vez de "
-						+ "event.getItemStack(). Eso lo hace correr dos veces por clic (una por mano).");
+					file.getFileName() + ": a PlayerInteractEvent handler looks at both hands instead of "
+						+ "event.getItemStack(). That makes it run twice per click (once per hand).");
 			}
 		}
 
-		//Un ítem de capacidad que nadie despacha no falla en ningún sitio: se entrega, se ve en el inventario
-		//con su nombre y su descripción, y al pulsarlo no pasa nada. Ya ocurrió — cuatro de ellos solo
-		//estaban en la cadena de "clic al aire" y no hacían nada mirando a un monstruo, que es cuando se usan.
+		//An ability item nobody dispatches fails nowhere: it is handed out, shows in the inventory
+		//with its name and description, and pressing it does nothing. It already happened - four of them were only
+		//in the "click on air" chain and did nothing when looking at a monster, which is when they are used.
 		String dispatcher = Files.readString(dir.resolve("AbilityItemDispatcher.java"));
-		assertTrue(abilityFlags.size() >= 10, "esperaba encontrar los ítems de capacidad y encontré " + abilityFlags.size());
+		assertTrue(abilityFlags.size() >= 10, "expected to find the ability items and found " + abilityFlags.size());
 		for (String flag : abilityFlags) {
 			assertTrue(dispatcher.contains("getBoolean(\"" + flag + "\")"),
-				"el ítem de capacidad \"" + flag + "\" no lo despacha nadie: al pulsarlo no pasaría nada");
+				"the ability item \"" + flag + "\" is dispatched by nobody: pressing it would do nothing");
 		}
 
-		//Y la cadena común tiene que estar UNA vez, no copiada por evento: eran tres copias y se separaron.
-		//Contar por un ítem que vale en los tres eventos es la forma barata de fijar que siguen unificados.
+		//And the common chain must exist ONCE, not copied per event: there were three copies and they drifted apart.
+		//Counting by an item that is valid in all three events is the cheap way to pin that they stay unified.
 		int copias = dispatcher.split("getBoolean\\(\"rage\"\\)", -1).length - 1;
-		assertTrue(copias == 1, "la cadena de reparto está duplicada " + copias + " veces; con copias se separan y unos ítems dejan de funcionar según a qué mires");
+		assertTrue(copias == 1, "the dispatch chain is duplicated " + copias + " times; with copies they drift apart and some items stop working depending on what you look at");
 
-		//Un armor stand NUNCA llega por EntityInteract, así que el manejador de la Vara de DM necesita
-		//además el de EntityInteractSpecific o borrarlo con ella no funciona — y no funcionó nunca, sin que
-		//nada fallara: ArmorStand.interactAt devuelve CONSUME en el cliente antes de mirar nada, y
-		//Minecraft.startUseItem solo manda el segundo paquete si el primero NO consumió. Es la clase de
-		//causa que no se encuentra leyendo el mod, solo leyendo vanilla, así que queda anotada aquí.
+		//An armor stand NEVER arrives through EntityInteract, so the DM Wand handler also needs
+		//the EntityInteractSpecific one or deleting with it does not work - and it never worked, without
+		//anything failing: ArmorStand.interactAt returns CONSUME on the client before looking at anything, and
+		//Minecraft.startUseItem only sends the second packet if the first did NOT consume. It is the kind of
+		//cause you do not find by reading the mod, only by reading vanilla, so it is noted here.
 		String wand = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"MonsterActionManager.java"));
 		assertTrue(wand.contains("PlayerInteractEvent.EntityInteractSpecific"),
-			"MonsterActionManager perdió el manejador de EntityInteractSpecific: la Vara de DM deja de"
-				+ " funcionar sobre armor stands, y el evento normal no llega nunca para ellos");
+			"MonsterActionManager lost the EntityInteractSpecific handler: the DM Wand stops working on"
+				+ " armor stands, and the normal event never arrives for them");
 		assertTrue(wand.contains("event.getTarget() instanceof ArmorStand"),
-			"ese manejador tiene que filtrar por armor stand: cualquier otra entidad manda los dos paquetes"
-				+ " y el manejador correría dos veces por clic");
+			"that handler must filter by armor stand: any other entity sends both packets"
+				+ " and the handler would run twice per click");
 
-		System.out.println("checkInteractHandlers: OK, los " + abilityFlags.size() + " ítems de capacidad se despachan y la cadena está sin duplicar.");
+		System.out.println("checkInteractHandlers: OK, the " + abilityFlags.size() + " ability items are dispatched and the chain is not duplicated.");
 	}
 
 	/**
-	 * <p><b>Todo audio enviado va atribuido, registrado y en mono.</b> Tres cosas que fallan en silencio y
-	 * que nadie mira dos veces:</p>
+	 * <p><b>All shipped audio is attributed, registered and mono.</b> Three things that fail silently and
+	 * that nobody looks at twice:</p>
 	 *
 	 * <ol>
-	 * <li><b>Licencia.</b> Un {@code .ogg} sin línea en "Atribución &gt; Audio" de PROJECT_CONTEXT.md no es
-	 *     un descuido de documentación: es material redistribuyéndose en cada jar sin constancia de bajo qué
-	 *     condiciones. El SRD ya se comprueba así; el audio entraba sin ningún control.</li>
-	 * <li><b>Registro.</b> Un sonido declarado en {@code sounds.json} cuyo fichero no existe suena a
-	 *     silencio con un aviso en el log que nadie lee; un fichero sin declarar es peso muerto en el jar.</li>
-	 * <li><b>Mono.</b> Minecraft reproduce un {@code .ogg} estéreo <b>sin dirección</b>. Es la trampa
-	 *     clásica del audio en mods y no se nota jugando salvo que la busques: el conjuro suena igual al
-	 *     lado que a treinta bloques. Se lee de la cabecera de identificación Vorbis, así que no depende de
-	 *     que quien añada el fichero se acuerde de exportarlo bien.</li>
+	 * <li><b>License.</b> An {@code .ogg} without a line in "Attribution &gt; Audio" of PROJECT_CONTEXT.md is not
+	 *     a documentation oversight: it is material being redistributed in every jar with no record of under what
+	 *     conditions. The SRD is already checked this way; audio came in with no control at all.</li>
+	 * <li><b>Registration.</b> A sound declared in {@code sounds.json} whose file does not exist plays as
+	 *     silence with a log warning nobody reads; an undeclared file is dead weight in the jar.</li>
+	 * <li><b>Mono.</b> Minecraft plays a stereo {@code .ogg} <b>without direction</b>. It is the
+	 *     classic audio trap in mods and is not noticeable while playing unless you look for it: the spell sounds the same
+	 *     next to you as thirty blocks away. It is read from the Vorbis identification header, so it does not depend on
+	 *     whoever adds the file remembering to export it properly.</li>
 	 * </ol>
 	 */
 	private static void checkAudioAssets() throws Exception {
@@ -222,13 +223,13 @@ public class JsonContentSelfTest {
 		try (Stream<Path> walk = Files.walk(sounds)) {
 			files = walk.filter(f -> f.toString().endsWith(".ogg")).sorted().toList();
 		}
-		assertTrue(!files.isEmpty(), "no hay ningún .ogg en " + sounds + ": ¿se movió la carpeta?");
+		assertTrue(!files.isEmpty(), "there is no .ogg in " + sounds + ": was the folder moved?");
 
 		String doc = Files.readString(Path.of("PROJECT_CONTEXT.md"));
 		JsonObject declared = JsonParser.parseString(Files.readString(
 			Path.of("src", "main", "resources", "assets", "dndsheets", "sounds.json"))).getAsJsonObject();
 
-		//Los nombres que sounds.json dice que existen ("dndsheets:dice" -> dice.ogg).
+		//The names that sounds.json says exist ("dndsheets:dice" -> dice.ogg).
 		Set<String> registered = new java.util.TreeSet<>();
 		for (String key : declared.keySet()) {
 			for (JsonElement entry : declared.getAsJsonObject(key).getAsJsonArray("sounds")) {
@@ -242,44 +243,44 @@ public class JsonContentSelfTest {
 			String name = file.getFileName().toString();
 			present.add(name.substring(0, name.length() - ".ogg".length()));
 
-			//1) Licencia. La línea la define el propio bloque: - `fichero.ogg` — LICENCIA, procedencia.
+			//1) License. The line is defined by the block itself: - `file.ogg` — LICENSE, origin.
 			int line = doc.indexOf("- `" + name + "`");
-			assertTrue(line >= 0, name + " se envía en el jar pero no está en la sección Atribución > Audio de"
-				+ " PROJECT_CONTEXT.md. Es la condición para poder redistribuirlo, igual que con el SRD:"
-				+ " añade su línea con la licencia y de dónde salió.");
+			assertTrue(line >= 0, name + " ships in the jar but is not in the Attribution > Audio section of"
+				+ " PROJECT_CONTEXT.md. That is the condition for being able to redistribute it, same as with the SRD:"
+				+ " add its line with the license and where it came from.");
 			String attribution = doc.substring(line, doc.indexOf(10, line));
-			assertTrue(attribution.contains("CC0"), name + " no declara CC0: " + (char) 34 + attribution + (char) 34
-				+ ". Solo entra audio CC0 (ver el bloque): CC-BY obligaría a mantener créditos por fichero,"
-				+ " y CC-BY-NC o Sampling+ son incompatibles con redistribuir el modpack.");
+			assertTrue(attribution.contains("CC0"), name + " does not declare CC0: " + (char) 34 + attribution + (char) 34
+				+ ". Only CC0 audio is accepted (see the block): CC-BY would force keeping credits per file,"
+				+ " and CC-BY-NC or Sampling+ are incompatible with redistributing the modpack.");
 
-			//3) Mono, salvo excepción anotada EN la misma línea (que es lo que la hace visible).
+			//3) Mono, unless an exception is noted ON the same line (which is what makes it visible).
 			int channels = vorbisChannels(Files.readAllBytes(file));
-			assertTrue(channels == 1 || attribution.contains("(estéreo)"),
-				name + " tiene " + channels + " canales. Minecraft reproduce un .ogg estéreo SIN dirección:"
-				+ " sonaría igual al lado que a treinta bloques. Expórtalo en mono, o anota (estéreo) en su"
-				+ " línea de atribución si de verdad tiene que ser ambiental.");
+			assertTrue(channels == 1 || attribution.contains("(stereo)"),
+				name + " has " + channels + " channels. Minecraft plays a stereo .ogg WITHOUT direction:"
+				+ " it would sound the same next to you as thirty blocks away. Export it as mono, or note (stereo) on its"
+				+ " attribution line if it really has to be ambient.");
 		}
 
-		//2) Registro en los dos sentidos.
+		//2) Registration in both directions.
 		Set<String> sinFichero = new java.util.TreeSet<>(registered);
 		sinFichero.removeAll(present);
-		assertTrue(sinFichero.isEmpty(), "sounds.json declara sonidos sin fichero: " + sinFichero
-			+ ". Suenan a silencio con un aviso en el log que no lee nadie.");
+		assertTrue(sinFichero.isEmpty(), "sounds.json declares sounds without a file: " + sinFichero
+			+ ". They play as silence with a log warning nobody reads.");
 
-		Set<String> sinRegistrar = new java.util.TreeSet<>(present);
-		sinRegistrar.removeAll(registered);
-		assertTrue(sinRegistrar.isEmpty(), "estos .ogg viajan en el jar sin estar en sounds.json: " + sinRegistrar
-			+ ". O se registran, o se borran: hoy son peso muerto que nadie puede reproducir.");
+		Set<String> unregistered = new java.util.TreeSet<>(present);
+		unregistered.removeAll(registered);
+		assertTrue(unregistered.isEmpty(), "these .ogg files ship in the jar without being in sounds.json: " + unregistered
+			+ ". Either register them or delete them: today they are dead weight nobody can play.");
 
-		System.out.println("checkAudioAssets: OK, " + files.size() + " pista(s) de audio, todas CC0, registradas y con sus canales comprobados.");
+		System.out.println("checkAudioAssets: OK, " + files.size() + " audio track(s), all CC0, registered and with their channels checked.");
 	}
 
 	/**
-	 * <p>Canales de un OGG Vorbis, leídos de su cabecera de identificación: el paquete empieza por el byte
-	 * {@code 0x01} seguido de {@code "vorbis"}, luego 4 bytes de versión y entonces el número de canales.</p>
+	 * <p>Channels of an OGG Vorbis, read from its identification header: the packet starts with the byte
+	 * {@code 0x01} followed by {@code "vorbis"}, then 4 bytes of version and then the channel count.</p>
 	 *
-	 * <p>Se parsea a mano —son doce bytes— en vez de traerse una librería de audio al classpath del build
-	 * para responder una pregunta de sí o no.</p>
+	 * <p>It is parsed by hand - it is twelve bytes - instead of pulling an audio library onto the build
+	 * classpath to answer a yes/no question.</p>
 	 */
 	private static int vorbisChannels(byte[] data) {
 		byte[] marker = {1, 'v', 'o', 'r', 'b', 'i', 's'};
@@ -288,11 +289,11 @@ public class JsonContentSelfTest {
 			for (int k = 0; k < marker.length && found; k++) found = data[i + k] == marker[k];
 			if (found) return data[i + marker.length + 4] & 0xFF;
 		}
-		return -1; //Ni siquiera es un Vorbis reconocible: el assert de arriba lo cantará igual.
+		return -1; //Not even a recognizable Vorbis: the assert above will flag it anyway.
 	}
 
 	private static void checkTabTextures() throws Exception {
-		//Alto de fila declarado en CharacterSheetScreen (yDiffTex) para cada textura.
+		//Row height declared in CharacterSheetScreen (yDiffTex) for each texture.
 		assertTabRows("imagebutton_tabbutton.png", 15);
 		assertTabRows("imagebutton_tabbutton_active.png", 20);
 		checkIconButtons();
@@ -300,12 +301,12 @@ public class JsonContentSelfTest {
 	}
 
 	/**
-	 * <p>Los seis iconos de característica ({@code tools/make_ability_icons.py}) son lo único que
-	 * identifica cada fila del panel lateral de la hoja, y lo que los hace legibles de un vistazo es el
-	 * <b>color</b>, no la silueta: seis siluetas del mismo tono son seis manchas parecidas.</p>
+	 * <p>The six ability icons ({@code tools/make_ability_icons.py}) are the only thing that
+	 * identifies each row of the sheet's side panel, and what makes them readable at a glance is the
+	 * <b>color</b>, not the silhouette: six silhouettes of the same tone are six similar blobs.</p>
 	 *
-	 * <p>Por eso lo que se comprueba aquí es que cada uno tenga un pigmento propio. Repetir un color al
-	 * regenerarlos no rompe nada, no avisa, y deja dos características indistinguibles en la columna.</p>
+	 * <p>So what is checked here is that each one has its own pigment. Repeating a color when
+	 * regenerating them breaks nothing, warns nothing, and leaves two abilities indistinguishable in the column.</p>
 	 */
 	private static void checkAbilityIcons() throws Exception {
 		Path dir = Path.of("src", "main", "resources", "assets", "dndsheets", "textures", "screens");
@@ -313,9 +314,9 @@ public class JsonContentSelfTest {
 		for (String name : new String[] {"str", "dex", "cons", "int", "wis", "cha"}) {
 			java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(dir.resolve(name + ".png").toFile());
 			assertTrue(image != null && image.getWidth() == 16 && image.getHeight() == 16,
-				name + ".png: debe medir 16x16");
+				name + ".png: must be 16x16");
 
-			//El pigmento es el color opaco más repetido que NO sea la tinta del contorno.
+			//The pigment is the most repeated opaque color that is NOT the outline ink.
 			java.util.Map<Integer, Integer> cuenta = new java.util.HashMap<>();
 			for (int x = 0; x < 16; x++) {
 				for (int y = 0; y < 16; y++) {
@@ -324,26 +325,26 @@ public class JsonContentSelfTest {
 					cuenta.merge(pixel, 1, Integer::sum);
 				}
 			}
-			assertTrue(!cuenta.isEmpty(), name + ".png: no tiene relleno, solo contorno o nada");
+			assertTrue(!cuenta.isEmpty(), name + ".png: has no fill, only outline or nothing");
 			int pigmento = cuenta.entrySet().stream()
 				.max(java.util.Map.Entry.comparingByValue()).orElseThrow().getKey();
 
 			String previo = pigmentos.put(pigmento, name);
-			assertTrue(previo == null, name + ".png usa el mismo pigmento que " + previo
-				+ ".png: en la columna de características esas dos filas quedan indistinguibles.");
+			assertTrue(previo == null, name + ".png uses the same pigment as " + previo
+				+ ".png: in the abilities column those two rows become indistinguishable.");
 		}
 	}
 
 	/**
-	 * <p>Los iconos de la hoja ({@code tools/make_icon_buttons.py}) llevan dos filas de estado: normal
-	 * arriba, ratón encima abajo. Aquí basta con dos —y no tres como las pestañas— porque
-	 * {@code setActiveVisible} y {@code RollScrollWidget.setInactive} apagan siempre {@code active} y
-	 * {@code visible} a la vez, así que un icono deshabilitado no llega a dibujarse.</p>
+	 * <p>The sheet icons ({@code tools/make_icon_buttons.py}) carry two state rows: normal
+	 * on top, mouse hover below. Two are enough here - unlike the tabs' three - because
+	 * {@code setActiveVisible} and {@code RollScrollWidget.setInactive} always switch {@code active} and
+	 * {@code visible} off together, so a disabled icon never gets drawn.</p>
 	 *
-	 * <p>Lo que sí se comprueba es que las dos filas sean <b>distintas</b>. La primera versión de las
-	 * variantes "_edit" usaba pergamino en los dos estados: el botón se veía idéntico apuntado y sin
-	 * apuntar, o sea que no respondía a nada. Eso no rompe nada, no avisa, y solo se nota pasando el ratón
-	 * por encima en el juego.</p>
+	 * <p>What is checked is that the two rows are <b>different</b>. The first version of the "_edit"
+	 * variants used parchment in both states: the button looked identical pointed at and not pointed at,
+	 * i.e. it responded to nothing. That breaks nothing, warns nothing, and is only noticed by hovering
+	 * over it in the game.</p>
 	 */
 	private static void checkIconButtons() throws Exception {
 		Path dir = Path.of("src", "main", "resources", "assets", "dndsheets", "textures", "screens", "atlas");
@@ -354,7 +355,7 @@ public class JsonContentSelfTest {
 				java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(file.toFile());
 				int size = image.getWidth();
 				assertTrue(image.getHeight() == size * 2,
-					name + ": " + size + "x" + image.getHeight() + ", se esperaban dos filas de " + size);
+					name + ": " + size + "x" + image.getHeight() + ", expected two rows of " + size);
 
 				boolean differs = false;
 				boolean anyOpaque = false;
@@ -366,9 +367,9 @@ public class JsonContentSelfTest {
 						if (normal != hovered) { differs = true; break; }
 					}
 				}
-				assertTrue(anyOpaque, name + ": la fila normal está entera transparente");
-				assertTrue(differs, name + ": las filas de reposo y de ratón encima son idénticas, "
-					+ "así que el botón no responde visualmente al apuntarlo");
+				assertTrue(anyOpaque, name + ": the normal row is entirely transparent");
+				assertTrue(differs, name + ": the idle and mouse-hover rows are identical, "
+					+ "so the button does not respond visually to being pointed at");
 			}
 		}
 	}
@@ -376,28 +377,28 @@ public class JsonContentSelfTest {
 	private static void assertTabRows(String name, int rowHeight) throws Exception {
 		Path path = Path.of("src", "main", "resources", "assets", "dndsheets", "textures", "screens", "atlas", name);
 		java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(path.toFile());
-		if (image == null) throw new AssertionError(name + ": no se pudo leer el PNG");
+		if (image == null) throw new AssertionError(name + ": could not read the PNG");
 		assertTrue(image.getHeight() == rowHeight * 3,
-			name + ": alto " + image.getHeight() + ", se esperaban 3 filas de " + rowHeight + " = " + (rowHeight * 3)
-				+ ". Con menos filas, la pestaña seleccionada muestrea fuera de la imagen.");
-		//La tercera fila es la de la pestaña abierta: si es transparente, la seleccionada se ve como un hueco.
+			name + ": height " + image.getHeight() + ", expected 3 rows of " + rowHeight + " = " + (rowHeight * 3)
+				+ ". With fewer rows, the selected tab samples outside the image.");
+		//The third row is the open tab's: if it is transparent, the selected one looks like a hole.
 		assertTrue((image.getRGB(image.getWidth() / 2, rowHeight * 2 + rowHeight / 2) >>> 24) == 0xFF,
-			name + ": la fila de pestaña seleccionada (la tercera) está transparente");
+			name + ": the selected tab row (the third) is transparent");
 	}
 
-	/** Fixture pequeño y escrito a mano: el ejemplo mínimo de cada esquema, en {@code test/dndsheets/}. */
+	/** Small hand-written fixture: the minimal example of each schema, in {@code test/dndsheets/}. */
 	private static JsonArray readArray(String... pathParts) throws Exception {
 		String json = Files.readString(Path.of("test", "dndsheets", pathParts[0], pathParts[1]));
 		return JsonParser.parseString(json).getAsJsonArray();
 	}
 
 	/**
-	 * <p>El pack grande <b>que se envía de verdad</b> ({@code src/main/resources/dndsheets/defaults/}), que
-	 * es el que {@code DndPaths} siembra en cada mundo nuevo.</p>
+	 * <p>The big pack <b>that really ships</b> ({@code src/main/resources/dndsheets/defaults/}), which
+	 * is the one {@code DndPaths} seeds into every new world.</p>
 	 *
-	 * <p>Antes esto leía una segunda copia bajo {@code test/dndsheets/}, y las dos ya se habían separado sin
-	 * que nadie se enterara: el self-test daba el visto bueno a un archivo que ningún jugador llega a cargar.
-	 * Se descubrió justo así — añadir un campo al pack enviado no cambió nada en la comprobación.</p>
+	 * <p>This used to read a second copy under {@code test/dndsheets/}, and the two had already drifted apart without
+	 * anyone noticing: the self-test approved a file no player ever loads.
+	 * It was discovered exactly that way - adding a field to the shipped pack changed nothing in the check.</p>
 	 */
 	private static JsonArray readShippedPack(String fileName) throws Exception {
 		String json = Files.readString(Path.of("src", "main", "resources", "dndsheets", "defaults", fileName));
@@ -405,285 +406,351 @@ public class JsonContentSelfTest {
 	}
 
 	private static void checkWeapons() throws Exception {
-		JsonArray weapons = readArray("weapons", "ejemplo.json");
+		JsonArray weapons = readArray("weapons", "example.json");
 		int count = 0;
 		for (JsonElement el : weapons) {
 			JsonObject w = el.getAsJsonObject();
 			require(w, "id", "dice", "ability", "name", "item");
 			Config.registerWeapon(w.get("id").getAsString(), w.get("dice").getAsString(), w.get("ability").getAsString(),
-				w.has("damageType") ? w.get("damageType").getAsString() : "fisico",
+				w.has("damageType") ? w.get("damageType").getAsString() : "physical",
 				w.has("hands") ? w.get("hands").getAsString() : "one",
 				w.has("versatileDice") ? w.get("versatileDice").getAsString() : null,
 				List.of(), w.get("name").getAsString(), w.get("item").getAsString(), null);
 			count++;
 		}
-		expect("armas", count, 4);
+		expect("weapons", count, 4);
 		Config.WeaponDefault dagger = Config.weaponDefaultFor("dndsheets:dagger");
-		assertTrue(dagger != null && "cortante".equals(dagger.damageType()), "dndsheets:dagger debería tener damageType=cortante");
+		assertTrue(dagger != null && "slashing".equals(dagger.damageType()), "dndsheets:dagger should have damageType=cortante");
 		Config.WeaponDefault greataxe = Config.weaponDefaultFor("dndsheets:greataxe");
-		assertTrue(greataxe != null && "two".equals(greataxe.hands()), "dndsheets:greataxe debería ser a dos manos");
+		assertTrue(greataxe != null && "two".equals(greataxe.hands()), "dndsheets:greataxe should be two-handed");
 		Config.WeaponDefault warhammer = Config.weaponDefaultFor("dndsheets:warhammer");
-		assertTrue(warhammer != null && warhammer.isVersatile() && "1d10".equals(warhammer.versatileDice()), "dndsheets:warhammer debería ser versátil con 1d10 a dos manos");
+		assertTrue(warhammer != null && warhammer.isVersatile() && "1d10".equals(warhammer.versatileDice()), "dndsheets:warhammer should be versatile with 1d10 two-handed");
 	}
 
 	private static void checkSpells() throws Exception {
-		JsonArray spells = readArray("spells", "ejemplo.json");
+		JsonArray spells = readArray("spells", "example.json");
 		int count = 0;
 		for (JsonElement el : spells) {
 			SpellRegistry.register(SpellRegistry.parse(el.getAsJsonObject()));
 			count++;
 		}
-		expect("hechizos", count, 6);
+		expect("spells", count, 6);
 		SpellRegistry.Spell fireball = SpellRegistry.get("dndsheets:fireball");
-		assertTrue(fireball != null && fireball.aoeRadius() == 6, "fireball debería tener aoeRadius=6");
+		assertTrue(fireball != null && fireball.aoeRadius() == 6, "fireball should have aoeRadius=6");
 		SpellRegistry.Spell guardians = SpellRegistry.get("dndsheets:spirit_guardians");
-		assertTrue(guardians != null && guardians.concentration(), "spirit_guardians debería tener concentration=true");
+		assertTrue(guardians != null && guardians.concentration(), "spirit_guardians should have concentration=true");
 		SpellRegistry.Spell cureWounds = SpellRegistry.get("dndsheets:cure_wounds");
-		assertTrue(cureWounds != null && "heal".equals(cureWounds.mode()) && cureWounds.dice().contains("$wis"), "cure_wounds debería ser mode=heal con $wis en el dado");
+		assertTrue(cureWounds != null && "heal".equals(cureWounds.mode()) && cureWounds.dice().contains("$wis"), "cure_wounds should be mode=heal with $wis in the die");
 
-		//El pack masivo, no solo el de ejemplo: es el que trae el contenido importado del SRD, y el que de
-		//verdad hay que validar contra el parser real cada vez que crece un lote.
+		//The bulk pack, not just the sample one: it carries the content imported from the SRD, and it is the one
+		//that really must be validated against the real parser every time a batch grows.
 		JsonArray bulk = readShippedPack("spells.json");
 		java.util.Set<String> ids = new java.util.HashSet<>();
 		for (JsonElement el : bulk) {
 			JsonObject json = el.getAsJsonObject();
 			String id = json.get("id").getAsString();
-			assertTrue(ids.add(id), "id de hechizo duplicado en spells.json: " + id);
-			//parse() SIEMPRE (es lo que valida el esquema), pero register() solo si el id es nuevo:
-			//NamedRegistry.register avisa por el logger de DndsheetsMod al detectar un duplicado, y eso
-			//inicializa el canal de red de Forge, que fuera del juego no existe. Ejemplo.json y spells.json
-			//comparten ids a propósito, asi que aqui siempre habria duplicados.
+			assertTrue(ids.add(id), "duplicate spell id in spells.json: " + id);
+			//parse() ALWAYS (it is what validates the schema), but register() only if the id is new:
+			//NamedRegistry.register warns through DndsheetsMod's logger when it detects a duplicate, and that
+			//initializes Forge's network channel, which does not exist outside the game. Ejemplo.json and spells.json
+			//share ids on purpose, so there would always be duplicates here.
 			SpellRegistry.Spell parsed = SpellRegistry.parse(json);
 			if (SpellRegistry.get(id) == null) SpellRegistry.register(parsed);
 		}
-		assertTrue(bulk.size() >= 87, "spells.json debería traer al menos los 87 hechizos importados del SRD, trae " + bulk.size());
+		assertTrue(bulk.size() >= 87, "spells.json should carry at least the 87 spells imported from the SRD, it has " + bulk.size());
 
-		//Invocación: deja algo en el mundo que entra en la iniciativa y ataca solo. Si alguien la degradara
-		//a un hechizo de ataque normal, se resolvería una vez y no volvería a actuar nunca.
+		//Summon: it leaves something in the world that enters the initiative and attacks on its own. If someone degraded it
+		//to a normal attack spell, it would resolve once and never act again.
 		SpellRegistry.Spell summon = SpellRegistry.get("dndsheets:spiritual_weapon");
-		assertTrue(summon != null && summon.isSummon(), "spiritual_weapon debería ser una invocación");
+		assertTrue(summon != null && summon.isSummon(), "spiritual_weapon should be a summon");
 		assertTrue(summon.summonEntityId() != null && !summon.summonEntityId().isEmpty(),
-			"una invocación necesita un cuerpo vanilla que la represente");
+			"a summon needs a vanilla body to represent it");
 		assertTrue(summon.isSelfTargeted() || summon.isSummon(),
-			"una invocación no necesita objetivo delante para lanzarse");
+			"a summon does not need a target in front of it to be cast");
 
-		//Un muro no se resuelve al lanzarlo: se coloca y daña por asaltos (ver WallManager). Si alguien lo
-		//degradara a esfera, explotaría una vez en la cara del lanzador en vez de quedarse ahí.
+		//A wall is not resolved on casting: it is placed and deals damage per round (see WallManager). If someone
+		//degraded it to a sphere, it would explode once in the caster's face instead of staying there.
 		SpellRegistry.Spell wall = SpellRegistry.get("dndsheets:wall_of_fire");
-		assertTrue(wall != null && wall.isZone(), "wall_of_fire debería ser una zona persistente");
-		//Lo que define una zona es la PERSISTENCIA, no la forma: un muro y un Rayo de Luna son la misma
-		//capacidad con geometría distinta. Si alguien atara isZone() a la forma otra vez, el Rayo de Luna
-		//volvería a resolverse una sola vez y a no volver a actuar.
+		assertTrue(wall != null && wall.isZone(), "wall_of_fire should be a persistent zone");
+		//What defines a zone is PERSISTENCE, not shape: a wall and a Moonbeam are the same
+		//capability with different geometry. If someone tied isZone() to the shape again, Moonbeam would
+		//go back to resolving only once and never acting again.
 		SpellRegistry.Spell beam = SpellRegistry.get("dndsheets:moonbeam");
-		assertTrue(beam != null && beam.isZone(), "moonbeam debería ser una zona persistente");
-		assertTrue("sphere".equals(beam.aoeShape()), "y su forma es esférica, no de muro");
-		assertTrue(!beam.followsCaster(), "el Rayo de Luna se queda donde se puso");
+		assertTrue(beam != null && beam.isZone(), "moonbeam should be a persistent zone");
+		assertTrue("sphere".equals(beam.aoeShape()), "and its shape is spherical, not a wall");
+		assertTrue(!beam.followsCaster(), "Moonbeam stays where it was placed");
 		SpellRegistry.Spell guardians2 = SpellRegistry.get("dndsheets:spirit_guardians");
 		assertTrue(guardians2 != null && guardians2.followsCaster(),
-			"los Guardianes Espirituales sí se recentran en el lanzador cada asalto");
-		assertTrue(wall.concentration(), "un muro es de concentración: perderla tiene que apagarlo");
-		assertTrue(wall.aoeRadius() > 0, "un muro necesita longitud");
+			"Spirit Guardians do re-center on the caster every round");
+		assertTrue(wall.concentration(), "a wall requires concentration: losing it must turn it off");
+		assertTrue(wall.aoeRadius() > 0, "a wall needs length");
 
-		//Formas de área: Relámpago es una línea y Cono de Frío un cono, y las dos nacen en el lanzador.
-		//Si alguien las degradara a esfera "para simplificar", golpearían al grupo propio sin fallar nada.
+		//Area shapes: Lightning Bolt is a line and Cone of Cold a cone, and both originate at the caster.
+		//If someone degraded them to a sphere "to simplify", they would hit the party with nothing failing.
 		SpellRegistry.Spell bolt = SpellRegistry.get("dndsheets:lightning_bolt");
-		assertTrue(bolt != null && "line".equals(bolt.aoeShape()), "lightning_bolt debería ser una línea");
-		assertTrue(bolt.originatesAtCaster(), "una línea tiene que nacer en el lanzador");
+		assertTrue(bolt != null && "line".equals(bolt.aoeShape()), "lightning_bolt should be a line");
+		assertTrue(bolt.originatesAtCaster(), "a line must originate at the caster");
 		SpellRegistry.Spell cone = SpellRegistry.get("dndsheets:cone_of_cold");
-		assertTrue(cone != null && "cone".equals(cone.aoeShape()), "cone_of_cold debería ser un cono");
-		//Bola de Fuego sigue siendo esférica y NO nace en el lanzador: es el caso que no debía cambiar.
+		assertTrue(cone != null && "cone".equals(cone.aoeShape()), "cone_of_cold should be a cone");
+		//Fireball is still spherical and does NOT originate at the caster: it is the case that must not change.
 		assertTrue(!SpellRegistry.get("dndsheets:fireball").originatesAtCaster(),
-			"la Bola de Fuego explota donde impacta, no en la cara del lanzador");
+			"Fireball explodes where it hits, not in the caster's face");
 
-		//Hechizo de solo condición: sin daño ninguno. Antes ni se podía escribir — "dice" era obligatorio y
-		//el efecto solo se aplicaba si había daño, así que Inmovilizar Persona no habría hecho nada.
+		//Condition-only spell: no damage at all. It used to be impossible to even write - "dice" was mandatory and
+		//the effect was only applied if there was damage, so Hold Person would have done nothing.
 		SpellRegistry.Spell hold = SpellRegistry.get("dndsheets:hold_person");
-		assertTrue(hold != null && "save".equals(hold.mode()), "hold_person debería ser un hechizo de salvación");
-		assertTrue(hold.appliesEffect() && "paralizado".equals(hold.effectName()), "hold_person debería aplicar paralizado");
-		assertTrue("0".equals(hold.dice()), "hold_person no hace daño: su dado debería ser 0");
-		assertTrue(Condition.fromLabel(hold.effectName()) == Condition.PARALIZADO,
-			"el nombre del efecto tiene que coincidir EXACTO con una condición o el motor lo trata como daño con nombre libre");
+		assertTrue(hold != null && "save".equals(hold.mode()), "hold_person should be a saving-throw spell");
+		assertTrue(hold.appliesEffect() && "paralyzed".equals(hold.effectName()), "hold_person should apply paralyzed");
+		assertTrue("0".equals(hold.dice()), "hold_person deals no damage: its die should be 0");
+		assertTrue(Condition.fromLabel(hold.effectName()) == Condition.PARALYZED,
+			"the effect name must EXACTLY match a condition or the engine treats it as damage with a free-form name");
 
-		//Un nombre de efecto libre ("rayo de luna", "fuego") sigue siendo válido: es un temporizador de daño,
-		//y el mod lo soporta a propósito. Lo que NO puede pasar es un efecto sin daño Y sin condición real:
-		//eso no hace absolutamente nada (TurnManager.tickEffects se salta los ticks de 0), y la causa típica
-		//sería una errata en el nombre de una condición — "paralizados", "paralized" — que degrada el hechizo
-		//en silencio en vez de fallar.
+		//A free-form effect name ("rayo de luna", "fire") is still valid: it is a damage timer,
+		//and the mod supports it on purpose. What must NOT happen is an effect with no damage AND no real condition:
+		//that does absolutely nothing (TurnManager.tickEffects skips ticks of 0), and the typical cause
+		//would be a typo in a condition name - "paralyzeds", "paralized" - which silently degrades the spell
+		//instead of failing.
 		for (JsonElement el : bulk) {
 			JsonObject json = el.getAsJsonObject();
 			if (!json.has("appliesEffect")) continue;
 			JsonObject effect = json.getAsJsonObject("appliesEffect");
 			String effectName = effect.get("name").getAsString();
 			boolean noDamage = "0".equals(effect.get("dice").getAsString());
-			if (!noDamage) continue; //Efecto de daño con nombre libre: correcto, no hay nada que comprobar.
+			if (!noDamage) continue; //Damage effect with a free-form name: correct, nothing to check.
 			assertTrue(Condition.fromLabel(effectName) != null,
-				"el efecto \"" + effectName + "\" de " + json.get("id").getAsString() + " no hace daño y no es una condición real: no haría nada");
+				"the effect \"" + effectName + "\" of " + json.get("id").getAsString() + " deals no damage and is not a real condition: it would do nothing");
 		}
 	}
 
 	private static void checkMonsters() throws Exception {
-		JsonArray monsters = readArray("monsters", "ejemplo.json");
+		JsonArray monsters = readArray("monsters", "example.json");
 		int count = 0;
 		for (JsonElement el : monsters) {
 			MonsterRegistry.register(MonsterRegistry.parse(el.getAsJsonObject()));
 			count++;
 		}
-		expect("monstruos", count, 4);
+		expect("monsters", count, 4);
 		MonsterRegistry.MonsterStatBlock spider = MonsterRegistry.get("dndsheets:giant_spider");
-		assertTrue(spider != null, "giant_spider debería haberse registrado");
+		assertTrue(spider != null, "giant_spider should have been registered");
 		MonsterRegistry.MonsterAttack bite = spider.attacks().get(0);
-		assertTrue(bite.appliesEffect() && "veneno".equals(bite.effectName()), "el mordisco de la araña debería aplicar veneno");
+		assertTrue(bite.appliesEffect() && "poison".equals(bite.effectName()), "the spider's bite should apply veneno");
 
-		//Resistencias del monstruo: campo opcional, así que hay que comprobar las dos ramas — que se lea
-		//cuando está y que no estorbe cuando no.
+		//Monster resistances: optional field, so both branches must be checked - that it is read
+		//when present and that it does not get in the way when absent.
 		MonsterRegistry.MonsterStatBlock fireMage = MonsterRegistry.get("dndsheets:fire_mage");
-		assertTrue(fireMage != null && "resistant".equals(fireMage.damageAffinities().get("fuego")), "el mago de fuego debería resistir el fuego");
-		assertTrue("vulnerable".equals(fireMage.damageAffinities().get("frio")), "el mago de fuego debería ser vulnerable al frío");
-		assertTrue(spider.damageAffinities().isEmpty(), "un monstruo sin damageAffinities debería quedar con el mapa vacío, no null");
+		assertTrue(fireMage != null && "resistant".equals(fireMage.damageAffinities().get("fire")), "the fire mage should resist fire");
+		assertTrue("vulnerable".equals(fireMage.damageAffinities().get("cold")), "the fire mage should be vulnerable to cold");
+		assertTrue(spider.damageAffinities().isEmpty(), "a monster without damageAffinities should end up with an empty map, not null");
 
-		//El bestiario masivo importado del SRD, con el parser real. Es donde de verdad entra el contenido.
+		//The bulk bestiary imported from the SRD, with the real parser. It is where content really comes in.
 		JsonArray bestiary = readShippedPack("monsters.json");
 		java.util.Set<String> monsterIds = new java.util.HashSet<>();
-		java.util.Set<String> damageTypes = java.util.Set.of("fisico", "cortante", "perforante", "contundente",
-			"fuego", "frio", "rayo", "acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno");
+		java.util.Set<String> damageTypes = java.util.Set.of("physical", "slashing", "piercing", "bludgeoning",
+			"fire", "cold", "lightning", "acid", "poison", "psychic", "radiant", "necrotic", "force", "thunder");
 		for (JsonElement el : bestiary) {
 			JsonObject json = el.getAsJsonObject();
 			String id = json.get("id").getAsString();
-			assertTrue(monsterIds.add(id), "id de monstruo duplicado en monsters.json: " + id);
-			MonsterRegistry.MonsterStatBlock block = MonsterRegistry.parse(json); //Ver checkSpells: parse siempre, register solo si es nuevo.
+			assertTrue(monsterIds.add(id), "duplicate monster id in monsters.json: " + id);
+			MonsterRegistry.MonsterStatBlock block = MonsterRegistry.parse(json); //See checkSpells: always parse, register only if new.
 			if (MonsterRegistry.get(id) == null) MonsterRegistry.register(block);
 
-			//Un monstruo sin ataques se puede invocar pero no puede hacer nada: no es contenido, es un adorno.
-			assertTrue(!block.attacks().isEmpty(), id + " no tiene ningún ataque");
-			assertTrue(block.maxHp() > 0 && block.ac() > 0, id + " debería tener PG y CA positivos");
+			//A monster without attacks can be summoned but cannot do anything: it is not content, it is decoration.
+			assertTrue(!block.attacks().isEmpty(), id + " has no attack");
+			assertTrue(block.maxHp() > 0 && block.ac() > 0, id + " should have positive HP and AC");
 
-			//Un tipo de criatura mal escrito tampoco falla en ningún sitio: cae a UNKNOWN en silencio y el
-			//monstruo se queda fuera de toda regla que pregunte por el tipo (el Castigo Divino no le suma su
-			//dado, y mañana Inmovilizar Persona le afectará sin ser humanoide). Se exige que TODOS lo tengan
-			//porque el fallo natural aquí es olvidar uno al ampliar el bestiario, no escribirlo mal.
-			assertTrue(block.type() != CreatureType.UNKNOWN, id + " no tiene tipo de criatura, o está mal escrito");
+			//A misspelled creature type does not fail anywhere either: it silently falls to UNKNOWN and the
+			//monster stays out of every rule that asks about the type (Divine Smite does not add its die,
+			//and tomorrow Hold Person will affect it without being humanoid). ALL are required to have one
+			//because the natural failure here is forgetting one when expanding the bestiary, not misspelling it.
+			assertTrue(block.type() != CreatureType.UNKNOWN, id + " has no creature type, or it is misspelled");
 
-			//Un tipo de daño mal escrito no falla en ningún sitio: simplemente deja de coincidir con las
-			//resistencias, y el monstruo recibe daño completo de algo a lo que debería ser inmune.
+			//A misspelled damage type does not fail anywhere: it simply stops matching the
+			//resistances, and the monster takes full damage from something it should be immune to.
 			for (MonsterRegistry.MonsterAttack attack : block.attacks()) {
 				assertTrue(damageTypes.contains(attack.damageType()),
-					"tipo de daño desconocido \"" + attack.damageType() + "\" en el ataque " + attack.name() + " de " + id);
+					"unknown damage type \"" + attack.damageType() + "\" in attack " + attack.name() + " of " + id);
 			}
 			for (Map<String, String> affinities : java.util.List.of(block.damageAffinities(), block.nonmagicalAffinities())) {
 				for (Map.Entry<String, String> affinity : affinities.entrySet()) {
 					assertTrue(damageTypes.contains(affinity.getKey()),
-						"afinidad sobre un tipo de daño desconocido \"" + affinity.getKey() + "\" en " + id);
+						"affinity on an unknown damage type \"" + affinity.getKey() + "\" in " + id);
 					assertTrue(java.util.List.of("resistant", "vulnerable", "immune").contains(affinity.getValue()),
-						"afinidad desconocida \"" + affinity.getValue() + "\" en " + id);
+						"unknown affinity \"" + affinity.getValue() + "\" in " + id);
 				}
 			}
 		}
-		assertTrue(bestiary.size() >= 330, "monsters.json debería traer al menos los 330 de los lotes 3 y 4 del SRD, trae " + bestiary.size());
+		assertTrue(bestiary.size() >= 330, "monsters.json should carry at least the 330 from SRD batches 3 and 4, it has " + bestiary.size());
 
-		//Muestras de tipo elegidas por lo que se equivocaría un humano clasificando a ojo, no por lo obvio.
+		//Type samples chosen for what a human would get wrong classifying by eye, not for the obvious.
 		assertTypeOf("dndsheets:skeleton", CreatureType.UNDEAD);
-		assertTypeOf("dndsheets:will_o_wisp", CreatureType.UNDEAD);         //Parece un elemental de luz.
-		assertTypeOf("dndsheets:ogre_zombie", CreatureType.UNDEAD);         //Y no gigante, pese al ogro.
+		assertTypeOf("dndsheets:will_o_wisp", CreatureType.UNDEAD);         //Looks like a light elemental.
+		assertTypeOf("dndsheets:ogre_zombie", CreatureType.UNDEAD);         //And not a giant, despite the ogre.
 		assertTypeOf("dndsheets:night_hag", CreatureType.FIEND);
-		assertTypeOf("dndsheets:green_hag", CreatureType.FEY);              //La otra bruja NO es inmunda.
-		assertTypeOf("dndsheets:blink_dog", CreatureType.FEY);              //Parece una bestia.
-		assertTypeOf("dndsheets:unicorn", CreatureType.CELESTIAL);          //También parece una bestia.
+		assertTypeOf("dndsheets:green_hag", CreatureType.FEY);              //The other hag is NOT a fiend.
+		assertTypeOf("dndsheets:blink_dog", CreatureType.FEY);              //Looks like a beast.
+		assertTypeOf("dndsheets:unicorn", CreatureType.CELESTIAL);          //Also looks like a beast.
 		assertTypeOf("dndsheets:pegasus", CreatureType.CELESTIAL);
-		assertTypeOf("dndsheets:centaur", CreatureType.MONSTROSITY);        //No humanoide.
-		assertTypeOf("dndsheets:otyugh", CreatureType.ABERRATION);          //No monstruosidad.
-		assertTypeOf("dndsheets:azer", CreatureType.ELEMENTAL);             //Parece un enano.
-		assertTypeOf("dndsheets:gargoyle", CreatureType.ELEMENTAL);         //Parece un autómata de piedra.
-		assertTypeOf("dndsheets:flesh_golem", CreatureType.CONSTRUCT);      //Y este parece un no-muerto.
+		assertTypeOf("dndsheets:centaur", CreatureType.MONSTROSITY);        //Not a humanoid.
+		assertTypeOf("dndsheets:otyugh", CreatureType.ABERRATION);          //Not a monstrosity.
+		assertTypeOf("dndsheets:azer", CreatureType.ELEMENTAL);             //Looks like a dwarf.
+		assertTypeOf("dndsheets:gargoyle", CreatureType.ELEMENTAL);         //Looks like a stone automaton.
+		assertTypeOf("dndsheets:flesh_golem", CreatureType.CONSTRUCT);      //And this one looks like an undead.
 		assertTypeOf("dndsheets:wyvern", CreatureType.DRAGON);
-		assertTypeOf("dndsheets:half_red_dragon_veteran", CreatureType.HUMANOID);  //"dragón" en el nombre.
-		//Un licántropo es humanoide en 5e SIEMPRE, también en su forma animal — es el caso donde clasificar
-		//por la forma en vez de por la criatura da la respuesta contraria.
+		assertTypeOf("dndsheets:half_red_dragon_veteran", CreatureType.HUMANOID);  //"dragon" in the name.
+		//A lycanthrope is ALWAYS a humanoid in 5e, also in its animal form - it is the case where classifying
+		//by form instead of by creature gives the opposite answer.
 		assertTypeOf("dndsheets:werewolf_wolf", CreatureType.HUMANOID);
 
-		//Resistencia Legendaria: la tienen los adultos y los ancianos de cada dragón, y una docena de jefes
-		//sueltos. Los JÓVENES y las crías NO — es el error fácil de cometer al anotar 43 dragones, y el que
-		//convierte un encuentro de nivel medio en una pared.
+		//Legendary Resistance: adults and ancients of each dragon have it, and a dozen loose bosses.
+		//YOUNG dragons and wyrmlings do NOT - it is the easy mistake when annotating 43 dragons, and the one that
+		//turns a mid-level encounter into a wall.
 		assertTrue(MonsterRegistry.get("dndsheets:adult_red_dragon").legendaryResistances() == 3,
-			"un dragón rojo adulto tiene 3 Resistencias Legendarias");
+			"an adult red dragon has 3 Legendary Resistances");
 		assertTrue(MonsterRegistry.get("dndsheets:ancient_white_dragon").legendaryResistances() == 3,
-			"y un anciano también");
+			"and so does an ancient one");
 		assertTrue(MonsterRegistry.get("dndsheets:young_red_dragon").legendaryResistances() == 0,
-			"pero un dragón JOVEN no tiene ninguna");
+			"but a YOUNG dragon has none");
 		assertTrue(MonsterRegistry.get("dndsheets:red_dragon_wyrmling").legendaryResistances() == 0,
-			"ni una cría");
-		assertTrue(MonsterRegistry.get("dndsheets:lich").legendaryResistances() == 3, "el lich sí");
+			"nor does a wyrmling");
+		assertTrue(MonsterRegistry.get("dndsheets:lich").legendaryResistances() == 3, "the lich does");
 		assertTrue(MonsterRegistry.get("dndsheets:goblin").legendaryResistances() == 0,
-			"y un goblin desde luego que no");
+			"and a goblin certainly does not");
 
-		//Acciones legendarias: la lista NO es la misma que la de Resistencia Legendaria, y tratarlas como si
-		//lo fueran fue exactamente el error de la primera pasada. Se comprueban las dos direcciones del
-		//desajuste, que es lo único que distingue una lista copiada de una escrita.
+		//Legendary actions: the list is NOT the same as the Legendary Resistance one, and treating them as if
+		//they were was exactly the mistake of the first pass. Both directions of the mismatch are checked,
+		//which is the only thing that tells a copied list from a written one.
 		assertTrue(MonsterRegistry.get("dndsheets:adult_red_dragon").legendaryActions() == 3,
-			"un dragón adulto tiene 3 acciones legendarias");
+			"an adult dragon has 3 legendary actions");
 		assertTrue(MonsterRegistry.get("dndsheets:vampire_vampire").legendaryActions() == 3
 				&& MonsterRegistry.get("dndsheets:vampire_vampire").legendaryResistances() == 0,
-			"el vampiro tiene acciones legendarias pero NO Resistencia Legendaria");
+			"the vampire has legendary actions but NO Legendary Resistance");
 		assertTrue(MonsterRegistry.get("dndsheets:balor").legendaryResistances() == 0
 				&& MonsterRegistry.get("dndsheets:balor").legendaryActions() == 0,
-			"el balor no tiene ninguna de las dos: lo que tiene es Resistencia a la Magia, que es otra cosa");
+			"the balor has neither: what it has is Magic Resistance, which is a different thing");
 		assertTrue(MonsterRegistry.get("dndsheets:young_red_dragon").legendaryActions() == 0,
-			"y un dragón joven tampoco tiene acciones legendarias");
+			"and a young dragon has no legendary actions either");
 
-		//Multiataque: cuántos ataques hace en su turno. Un dragón adulto hacía UNO, o sea un tercio de su
-		//amenaza. Es un eje distinto de los dos legendarios —un dragón joven multiataca y no es legendario—
-		//y por eso se comprueba con un caso que los separa.
+		//Multiattack: how many attacks it makes on its turn. An adult dragon used to make ONE, i.e. a third of its
+		//threat. It is an axis distinct from the two legendary ones - a young dragon multiattacks and is not legendary -
+		//and that is why it is checked with a case that separates them.
 		assertTrue(MonsterRegistry.get("dndsheets:adult_red_dragon").attacksPerTurn() == 3,
-			"un dragón adulto hace tres ataques por turno: mordisco y dos garras");
+			"an adult dragon makes three attacks per turn: bite and two claws");
 		assertTrue(MonsterRegistry.get("dndsheets:young_red_dragon").attacksPerTurn() == 2
 				&& MonsterRegistry.get("dndsheets:young_red_dragon").legendaryActions() == 0,
-			"un dragón joven multiataca sin ser legendario: son dos ejes distintos");
+			"a young dragon multiattacks without being legendary: they are two different axes");
 		assertTrue(MonsterRegistry.get("dndsheets:goblin").attacksPerTurn() == 1,
-			"y lo que no lo declara hace uno, que es como se comportaba el bestiario entero");
-		//El tope existe para que un número absurdo en un JSON no convierta un turno en una ráfaga ilegible.
+			"and whatever does not declare it makes one, which is how the whole bestiary used to behave");
+		//The cap exists so an absurd number in a JSON does not turn a turn into an unreadable burst.
 		for (JsonElement el : readShippedPack("monsters.json")) {
 			MonsterRegistry.MonsterStatBlock parsed = MonsterRegistry.parse(el.getAsJsonObject());
 			assertTrue(parsed.attacksPerTurn() >= 1 && parsed.attacksPerTurn() <= 6,
-				parsed.id() + " declara " + parsed.attacksPerTurn() + " ataques por turno, fuera de rango");
+				parsed.id() + " declares " + parsed.attacksPerTurn() + " attacks per turn, out of range");
 		}
 
-		//El parser tiene que aguantar lo que escribe una persona: acentos, mayúsculas, guiones o inglés.
-		assertTrue(CreatureType.parse("no-muerto") == CreatureType.UNDEAD
+		//The parser must withstand what a person writes: accents, capitals, hyphens or English.
+		assertTrue(CreatureType.parse("undead") == CreatureType.UNDEAD
 			&& CreatureType.parse("No Muerto") == CreatureType.UNDEAD
-			&& CreatureType.parse("undead") == CreatureType.UNDEAD, "\"no-muerto\" se escribe de varias formas");
-		assertTrue(CreatureType.parse("aberración") == CreatureType.ABERRATION
-			&& CreatureType.parse("aberracion") == CreatureType.ABERRATION, "con acento y sin él es lo mismo");
-		//Y lo que no reconoce cae a UNKNOWN en vez de tumbar la carga del pack por una palabra.
+			&& CreatureType.parse("undead") == CreatureType.UNDEAD, "\"no-muerto\" is written in several ways");
+		assertTrue(CreatureType.parse("aberration") == CreatureType.ABERRATION
+			&& CreatureType.parse("aberracion") == CreatureType.ABERRATION, "with and without the accent it is the same");
+		//And what it does not recognize falls to UNKNOWN instead of bringing down the pack load over one word.
 		assertTrue(CreatureType.parse("gelatina") == CreatureType.UNKNOWN
 			&& CreatureType.parse(null) == CreatureType.UNKNOWN
-			&& CreatureType.parse("") == CreatureType.UNKNOWN, "un tipo que no existe deja al monstruo sin tipo, sin más");
-		//Ida y vuelta: lo que escribe toJson lo tiene que volver a leer parse, o guardar una plantilla desde
-		//el juego perdería el tipo del monstruo capturado.
+			&& CreatureType.parse("") == CreatureType.UNKNOWN, "a type that does not exist leaves the monster typeless, nothing more");
+		//Round trip: what toJson writes must be readable again by parse, or saving a template from
+		//the game would lose the captured monster's type.
 		for (CreatureType type : CreatureType.values()) {
-			assertTrue(CreatureType.parse(type.label()) == type, "el tipo " + type + " no sobrevive a guardar y volver a leer");
+			assertTrue(CreatureType.parse(type.label()) == type, "the type " + type + " does not survive being saved and read back");
 		}
 
-		//Resistencia condicional: el hombre rata es inmune al daño físico NO mágico, y normal frente al
-		//mágico. Es la mitad del bestiario de VD medio, así que conviene fijar que las dos ramas difieren
-		//de verdad y no que una tapa a la otra.
+		//Conditional resistance: the wererat is immune to NON-magical physical damage, and normal against
+		//magical. It is half of the mid-CR bestiary, so it is worth pinning that the two branches really differ
+		//and that one does not cover the other.
 		MonsterRegistry.MonsterStatBlock wererat = MonsterRegistry.get("dndsheets:wererat_human");
-		assertTrue(wererat != null, "wererat_human debería haberse registrado");
-		assertTrue(wererat.damageAffinities().isEmpty(), "el hombre rata no tiene resistencias incondicionales");
-		assertTrue("immune".equals(wererat.nonmagicalAffinities().get("cortante")),
-			"el hombre rata debería ser inmune al daño cortante no mágico");
+		assertTrue(wererat != null, "wererat_human should have been registered");
+		assertTrue(wererat.damageAffinities().isEmpty(), "the wererat has no unconditional resistances");
+		assertTrue("immune".equals(wererat.nonmagicalAffinities().get("slashing")),
+			"the wererat should be immune to non-magical slashing damage");
 	}
 
 	/**
-	 * <p>Objetos mágicos. La comprobación clave no es que parseen, sino la distinción entre los que el
-	 * motor aplica y los que narra el DM: un objeto con mecánicas escritas mal no falla en ningún sitio,
-	 * simplemente deja de dar el bonificador que su descripción promete.</p>
+	 * <p>Magic items. The key check is not that they parse, but the distinction between those the
+	 * engine applies and those the DM narrates: an item with badly written mechanics fails nowhere,
+	 * it simply stops giving the bonus its description promises.</p>
 	 */
+	private static void checkCreatureSize() throws Exception {
+		//The scale comes from the space 5e gives each size, divided by the Medium one. Pinning it here is what
+		//stops someone from "eyeballing" a Huge and misaligning the whole bestiary.
+		assertTrue(CreatureSize.TINY.spaceScale() == 0.5f, "Tiny occupies 2.5 ft: half a square");
+		assertTrue(CreatureSize.LARGE.spaceScale() == 2.0f, "Large occupies 10 ft: double");
+		assertTrue(CreatureSize.HUGE.spaceScale() == 3.0f, "Huge occupies 15 ft: triple");
+		assertTrue(CreatureSize.GARGANTUAN.spaceScale() == 4.0f, "Gargantuan occupies 20 ft: quadruple");
+
+		//The three that do NOT scale, and the reason for each. Small is the delicate one: in 5e it occupies the same
+		//square as a Medium, and shrinking it here would multiply with the "baby" that goblins already use.
+		assertTrue(CreatureSize.MEDIUM.spaceScale() == 1.0f, "Medium is the unit: if it scales, everything scales");
+		assertTrue(CreatureSize.SMALL.spaceScale() == 1.0f,
+			"Small occupies the same square as Medium; shrinking it here would add up with the appearance's \"baby\"");
+		assertTrue(CreatureSize.UNKNOWN.spaceScale() == 1.0f,
+			"a pack without a declared size must look EXACTLY as it did before this field existed");
+
+		//Tolerant parse, same treatment as CreatureType: the DM copies from the SRD in English, or writes with accents.
+		assertTrue(CreatureSize.parse("Grande") == CreatureSize.LARGE, "capitals");
+		assertTrue(CreatureSize.parse("large") == CreatureSize.LARGE, "the SRD is in English");
+		assertTrue(CreatureSize.parse("Gargantuesco") == CreatureSize.GARGANTUAN, "accents and capitals");
+		assertTrue(CreatureSize.parse("mediocre") == CreatureSize.UNKNOWN, "what is not a size does not guess one");
+		assertTrue(CreatureSize.parse(null) == CreatureSize.UNKNOWN, "absent is not an error");
+
+		//Round trip through the mod's real parser, not just the enum.
+		JsonObject huge = JsonParser.parseString("{\"id\":\"test:x\",\"hp\":10,\"size\":\"enorme\"}").getAsJsonObject();
+		assertTrue(MonsterRegistry.parse(huge).size() == CreatureSize.HUGE, "the parser must read \"size\"");
+		assertTrue("Huge".equals(MonsterRegistry.toJson(MonsterRegistry.parse(huge)).get("size").getAsString()),
+			"toJson loses \"size\": a monster captured by the DM would come back the size of a villager");
+		JsonObject plain = JsonParser.parseString("{\"id\":\"test:x\",\"hp\":10}").getAsJsonObject();
+		assertTrue(MonsterRegistry.parse(plain).size() == CreatureSize.UNKNOWN, "without the field, no size");
+		assertTrue(!MonsterRegistry.toJson(MonsterRegistry.parse(plain)).has("size"),
+			"toJson writes a \"size\" nobody asked for, and that is noise in the DM's JSON");
+
+		//The shipped pack: 329 of 330 carry an SRD size. A typo in any of those 329 would leave it as
+		//UNKNOWN without warning - the creature would come out the wrong size and nobody would know until the table.
+		JsonArray bestiary = readShippedPack("monsters.json");
+		for (JsonElement element : bestiary) {
+			JsonObject monster = element.getAsJsonObject();
+			if (!monster.has("size")) continue;
+			String raw = monster.get("size").getAsString();
+			assertTrue(CreatureSize.parse(raw) != CreatureSize.UNKNOWN,
+				"\"" + raw + "\" in " + monster.get("id").getAsString() + " is not a size the mod recognizes");
+
+			//No creature can ask at once for "make me small" (baby) and a scale other than 1: the two
+			//effects multiply and a miniature comes out. Today it happens in none of the 330; this keeps it that way.
+			boolean baby = monster.has("appearance") && monster.getAsJsonObject("appearance").has("baby")
+				&& monster.getAsJsonObject("appearance").get("baby").getAsBoolean();
+			assertTrue(!baby || CreatureSize.parse(raw).spaceScale() == 1.0f,
+				monster.get("id").getAsString() + " combines \"baby\" with a size that scales: they multiply");
+		}
+
+		//The size is applied BEFORE the appearance's early return. With the order reversed, any
+		//monster without equipment or glow - most of the bestiary - would silently be left unscaled.
+		//Both searches start at applyLooks and not at the file: that same early return also appears
+		//in parseAppearance, and searching from the start finds the one there, which says nothing about
+		//this order. (It was the first attempt, and this test fell over by itself because of it.)
+		String registry = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "MonsterRegistry.java"));
+		int applyLooks = registry.indexOf("private static void applyLooks(");
+		assertTrue(applyLooks > 0, "applyLooks has disappeared: size and appearance are back to being in two places");
+		int applied = registry.indexOf("PehkuiCompat.applySize(entity, block.size());", applyLooks);
+		int earlyReturn = registry.indexOf("if (look == null || look.isDefault()) return;", applyLooks);
+		assertTrue(applied > applyLooks, "applyLooks no longer scales: Large creatures are back to being the size of a villager");
+		assertTrue(earlyReturn > applied,
+			"scaling must go BEFORE the early return: most of the bestiary has no appearance of its own");
+	}
+
 	private static void checkMonsterAppearance() throws Exception {
-		//Las que lee MonsterRegistry.parseAppearance. Escribir "mainhand" o "head" no rompe nada: el
-		//monstruo sale sin arma y nadie se entera hasta verlo en la mesa.
+		//The ones MonsterRegistry.parseAppearance reads. Writing "mainhand" or "head" breaks nothing: the
+		//monster comes out without a weapon and nobody finds out until seeing it at the table.
 		java.util.Set<String> keys = java.util.Set.of("mainHand", "offHand", "helmet", "chestplate",
 			"leggings", "boots", "baby", "glowing");
-		//Modelos que NO dibujan equipo. Vestir uno es tirar el trabajo: un aldeano con espada se ve igual
-		//que uno sin ella. Fue el primer intento con el Guardia, y por eso está aquí.
+		//Models that do NOT draw equipment. Dressing one is wasted work: a villager with a sword looks the same
+		//as one without it. It was the first attempt with the Guard, and that is why it is here.
 		java.util.Set<String> noEquipment = java.util.Set.of("minecraft:villager", "minecraft:wandering_trader",
 			"minecraft:iron_golem", "minecraft:ravager", "minecraft:vex", "minecraft:allay", "minecraft:slime",
 			"minecraft:phantom", "minecraft:shulker", "minecraft:guardian", "minecraft:blaze", "minecraft:bat");
@@ -701,151 +768,151 @@ public class JsonContentSelfTest {
 			JsonObject look = json.getAsJsonObject("appearance");
 			boolean hasEquipment = false;
 			for (String key : look.keySet()) {
-				assertTrue(keys.contains(key), "\"" + key + "\" no es una clave de appearance (en " + id + ")");
+				assertTrue(keys.contains(key), "\"" + key + "\" is not an appearance key (in " + id + ")");
 				if (key.equals("baby") || key.equals("glowing")) continue;
 				hasEquipment = true;
 				assertTrue(look.get(key).getAsString().contains(":"),
-					"el objeto de " + key + " en " + id + " necesita espacio de nombres (minecraft:...)");
+					"the item for " + key + " in " + id + " needs a namespace (minecraft:...)");
 			}
 			assertTrue(!hasEquipment || !noEquipment.contains(json.get("baseEntity").getAsString()),
-				id + " lleva equipo sobre un modelo que no lo dibuja (" + json.get("baseEntity").getAsString() + ")");
+				id + " wears equipment on a model that does not draw it (" + json.get("baseEntity").getAsString() + ")");
 
-			//Ida y vuelta. Guardar una plantilla desde el juego pasa por toJson; si no escribe el aspecto, la
-			//plantilla vuelve desnuda y el DM pierde justo lo que acaba de configurar.
+			//Round trip. Saving a template from the game goes through toJson; if it does not write the appearance, the
+			//template comes back naked and the DM loses exactly what they just configured.
 			MonsterRegistry.MonsterStatBlock parsed = MonsterRegistry.parse(json);
 			JsonObject again = MonsterRegistry.toJson(parsed);
 			assertTrue(again.has("appearance") && again.getAsJsonObject("appearance").equals(look),
-				"el aspecto de " + id + " no sobrevive a guardar y volver a leer");
+				"the appearance of " + id + " does not survive being saved and read back");
 		}
 
-		//Las crías de dragón son Medianas y el resto Grandes o más. Es el único eje que separa a los 43
-		//dragones, que comparten modelo porque vanilla solo tiene uno con esa forma.
+		//Dragon wyrmlings are Medium and the rest Large or bigger. It is the only axis that separates the 43
+		//dragons, which share a model because vanilla only has one with that shape.
 		assertTrue(MonsterRegistry.parse(monsterJson(bestiary, "dndsheets:red_dragon_wyrmling")).appearance().baby(),
-			"una cría de dragón debería salir como cría");
+			"a dragon wyrmling should come out as a baby");
 		assertTrue(!MonsterRegistry.parse(monsterJson(bestiary, "dndsheets:adult_red_dragon")).appearance().baby(),
-			"y un adulto desde luego que no");
+			"and an adult certainly should not");
 
-		//Tripwire de variedad: los números de partida eran 41 modelos y 0 vestidos.
-		assertTrue(models.size() >= 55, "el bestiario debería usar al menos 55 modelos distintos, usa " + models.size());
-		assertTrue(dressed >= 50, "al menos 50 monstruos deberían tener aspecto propio, lo tienen " + dressed);
-		System.out.println("checkMonsterAppearance: OK, " + models.size() + " modelos y " + dressed + " monstruos con aspecto propio.");
+		//Variety tripwire: the starting numbers were 41 models and 0 dressed.
+		assertTrue(models.size() >= 55, "the bestiary should use at least 55 different models, it uses " + models.size());
+		assertTrue(dressed >= 50, "at least 50 monsters should have their own appearance, they have " + dressed);
+		System.out.println("checkMonsterAppearance: OK, " + models.size() + " models and " + dressed + " monsters with their own appearance.");
 	}
 
 	/**
-	 * <p>Packs de aspecto ({@link MonsterSkins}): la traducción entre un id del SRD y la entidad de un mod
-	 * de criaturas instalado. Aquí solo se puede comprobar la mitad de cada línea —la de la izquierda—,
-	 * porque la de la derecha vive en un mod que no está en el classpath del self-test. Es justo la mitad
-	 * que se rompe sola: el id de la entidad lo protege {@code MonsterRegistry.reskin} en tiempo de
-	 * ejecución (si no existe, no cambia nada), pero un monstruo mal escrito a la izquierda no lo protege
-	 * nadie: no hay nada a lo que aplicar y el pack se queda corto en silencio.</p>
+	 * <p>Appearance packs ({@link MonsterSkins}): the translation between an SRD id and the entity of an installed creature
+	 * mod. Only half of each line can be checked here - the left one -
+	 * because the right one lives in a mod that is not on the self-test classpath. It is exactly the half
+	 * that breaks on its own: the entity id is protected at runtime by {@code MonsterRegistry.reskin}
+	 * (if it does not exist, nothing changes), but nobody protects a misspelled monster on the left:
+	 * there is nothing to apply it to and the pack silently falls short.</p>
 	 *
-	 * <p>La otra comprobación es la lista {@code SHIPPED}: un pack añadido a los recursos y olvidado en la
-	 * lista no se carga <b>nunca</b>, y no hay ningún síntoma que lo delate.</p>
+	 * <p>The other check is the {@code SHIPPED} list: a pack added to the resources and forgotten in the
+	 * list is <b>never</b> loaded, and there is no symptom that gives it away.</p>
 	 */
 	/**
-	 * <p>Los iconos propios de los ítems del mod ({@link ItemLook}). Tres piezas tienen que coincidir y
-	 * ninguna avisa cuando dejan de hacerlo: la constante del enum, el PNG y el modelo JSON. Si falta la
-	 * textura, Minecraft pinta el cuadrado negro y morado; si falta el override en {@code token.json}, el
-	 * ítem sale con el icono por defecto y parece que el aspecto "no se aplicó".</p>
+	 * <p>The mod's own item icons ({@link ItemLook}). Three pieces must match and
+	 * none warns when they stop doing so: the enum constant, the PNG and the JSON model. If the
+	 * texture is missing, Minecraft paints the black-and-purple square; if the override in {@code token.json} is missing, the
+	 * item comes out with the default icon and it looks like the appearance "was not applied".</p>
 	 *
-	 * <p>Y lo que de verdad hace daño: el {@code CustomModelData} es la <b>posición</b> en el enum y queda
-	 * escrito dentro de cada ItemStack ya repartido. Insertar una constante en medio le cambiaría el icono
-	 * a todo lo que haya en el mundo de alguien, en silencio. Aquí se fija el orden.</p>
+	 * <p>And what really hurts: the {@code CustomModelData} is the <b>position</b> in the enum and is
+	 * written inside every ItemStack already handed out. Inserting a constant in the middle would change the icon
+	 * of everything in someone's world, silently. The order is pinned here.</p>
 	 */
 	/**
-	 * <p>El libro de Patchouli. La Guía se lee de dos formas —libro escrito sin Patchouli, manual con
-	 * índice con él— pero el texto es <b>uno</b>: las entradas apuntan a las mismas claves de idioma que
-	 * las páginas del libro escrito.</p>
+	 * <p>The Patchouli book. The Guide is read in two ways - a written book without Patchouli, a manual with an
+	 * index with it - but the text is <b>one</b>: the entries point to the same lang keys as
+	 * the pages of the written book.</p>
 	 *
-	 * <p>Lo que se comprueba es justo lo que nadie notaría: una página nueva que se añade al libro escrito
-	 * y no al manual (o al revés) no falla en ningún sitio — simplemente falta en una de las dos versiones,
-	 * y quien la lea por ahí no sabrá que existe. Se exige que cada página esté en exactamente una entrada,
-	 * en las dos direcciones.</p>
+	 * <p>What is checked is exactly what nobody would notice: a new page added to the written book
+	 * and not to the manual (or vice versa) fails nowhere - it is simply missing from one of the two versions,
+	 * and whoever reads it there will not know it exists. Every page is required to be in exactly one entry,
+	 * in both directions.</p>
 	 */
 	/**
-	 * <p>Que todo id de vanilla que nombra el contenido exista <b>en 1.20.1</b>.</p>
+	 * <p>That every vanilla id the content names exists <b>in 1.20.1</b>.</p>
 	 *
-	 * <p>Reportado desde una partida real: el Mangual declaraba {@code minecraft:mace}, que es un ítem de
-	 * <b>1.21</b>. Aquí no resuelve, así que el arma caía a un palo y chocaba en la pestaña creativa con
-	 * otra entrada. Nada falla: {@code buildWeaponStack} tiene un ítem por defecto justo para no caerse, y
-	 * el único síntoma fue una línea de aviso en el log del cliente. Un id de otra versión, o mal escrito,
-	 * se comporta exactamente igual — se traga el fallo y entrega otra cosa.</p>
+	 * <p>Reported from a real game: the Flail declared {@code minecraft:mace}, which is an item from
+	 * <b>1.21</b>. Here it does not resolve, so the weapon fell back to a stick and clashed in the creative tab with
+	 * another entry. Nothing fails: {@code buildWeaponStack} has a default item precisely so it does not crash, and
+	 * the only symptom was a warning line in the client log. An id from another version, or a misspelled one,
+	 * behaves exactly the same - it swallows the failure and hands out something else.</p>
 	 *
-	 * <p>La lista sale del {@code en_us.json} del cliente 1.20.1 (ver {@code tools/extract_vanilla_ids.py}),
-	 * que es la única fuente que no hay que creerse: la trae el propio juego.</p>
+	 * <p>The list comes from the 1.20.1 client's {@code en_us.json} (see {@code tools/extract_vanilla_ids.py}),
+	 * which is the only source you do not have to take on faith: the game itself provides it.</p>
 	 */
 	private static void checkVanillaIds() throws Exception {
 		java.util.Set<String> vanilla = new java.util.HashSet<>();
 		for (String line : Files.readAllLines(Path.of("src", "test", "resources", "vanilla_ids_1_20_1.txt"))) {
 			if (!line.startsWith("#") && !line.isBlank()) vanilla.add(line.trim());
 		}
-		assertTrue(vanilla.size() > 1000, "la lista de ids de vanilla parece incompleta: " + vanilla.size());
+		assertTrue(vanilla.size() > 1000, "the vanilla id list looks incomplete: " + vanilla.size());
 
 		int checked = 0;
 		for (JsonElement el : readShippedPack("weapons.json")) {
 			JsonObject weapon = el.getAsJsonObject();
 			checked += assertVanilla(vanilla, "item", weapon.has("item") ? weapon.get("item").getAsString() : null,
-				"el arma " + weapon.get("id").getAsString());
+				"the weapon " + weapon.get("id").getAsString());
 		}
 		for (JsonElement el : readShippedPack("items.json")) {
 			JsonObject item = el.getAsJsonObject();
 			checked += assertVanilla(vanilla, "item", item.has("item") ? item.get("item").getAsString() : null,
-				"el objeto mágico " + item.get("id").getAsString());
+				"the magic item " + item.get("id").getAsString());
 		}
 		for (JsonElement el : readShippedPack("presets.json")) {
 			JsonObject preset = el.getAsJsonObject();
 			String presetId = preset.get("id").getAsString();
 			checked += assertVanilla(vanilla, "item",
 				preset.has("startingWeapon") ? preset.get("startingWeapon").getAsString() : null,
-				"el arma inicial de " + presetId);
+				"the starting weapon of " + presetId);
 			if (preset.has("startingGear")) {
 				for (JsonElement gear : preset.getAsJsonArray("startingGear")) {
-					checked += assertVanilla(vanilla, "item", gear.getAsString(), "el equipo inicial de " + presetId);
+					checked += assertVanilla(vanilla, "item", gear.getAsString(), "the starting gear of " + presetId);
 				}
 			}
 		}
 		for (JsonElement el : readShippedPack("monsters.json")) {
 			JsonObject monster = el.getAsJsonObject();
 			String id = monster.get("id").getAsString();
-			checked += assertVanilla(vanilla, "entity", monster.get("baseEntity").getAsString(), "el monstruo " + id);
+			checked += assertVanilla(vanilla, "entity", monster.get("baseEntity").getAsString(), "the monster " + id);
 			if (!monster.has("appearance")) continue;
 			JsonObject look = monster.getAsJsonObject("appearance");
 			for (String slot : look.keySet()) {
 				if (slot.equals("baby") || slot.equals("glowing")) continue;
-				checked += assertVanilla(vanilla, "item", look.get(slot).getAsString(), "el " + slot + " de " + id);
+				checked += assertVanilla(vanilla, "item", look.get(slot).getAsString(), "the " + slot + " of " + id);
 			}
 		}
-		System.out.println("checkVanillaIds: OK, " + checked + " ids de vanilla existen de verdad en 1.20.1.");
+		System.out.println("checkVanillaIds: OK, " + checked + " vanilla ids really exist in 1.20.1.");
 	}
 
-	/** @return 1 si se comprobó, 0 si el id no era de vanilla (un mod, o ausente) y no toca comprobarlo. */
+	/** @return 1 if it was checked, 0 if the id was not vanilla (a mod, or absent) and there is nothing to check. */
 	private static int assertVanilla(java.util.Set<String> vanilla, String kind, String id, String who) {
-		//Un id de otro mod no se puede comprobar aquí y no es un fallo: es justo lo que permite que un
-		//addon apunte a la entidad de su mod. Lo que se exige es que lo que DICE ser de Minecraft lo sea.
+		//An id from another mod cannot be checked here and is not a failure: it is exactly what lets an
+		//addon point at its mod's entity. What is required is that whatever CLAIMS to be Minecraft's really is.
 		if (id == null || !id.startsWith("minecraft:")) return 0;
 		assertTrue(vanilla.contains(kind + "/" + id.substring("minecraft:".length())),
-			who + " usa \"" + id + "\", que no existe en Minecraft 1.20.1");
+			who + " uses \"" + id + "\", which does not exist in Minecraft 1.20.1");
 		return 1;
 	}
 
 	private static void checkPatchouliBook() throws Exception {
 		Path book = Path.of("src", "main", "resources", "data", "dndsheets", "patchouli_books", "guide", "book.json");
 		JsonObject meta = JsonParser.parseString(Files.readString(book)).getAsJsonObject();
-		assertTrue(meta.get("i18n").getAsBoolean(), "el libro tiene que ir con i18n para reusar las claves de la Guía");
-		assertTrue(meta.get("use_resource_pack").getAsBoolean(), "Patchouli quiere el contenido en assets/ desde 1.19");
+		assertTrue(meta.get("i18n").getAsBoolean(), "the book must use i18n to reuse the Guide's keys");
+		assertTrue(meta.get("use_resource_pack").getAsBoolean(), "Patchouli wants the content in assets/ since 1.19");
 
 		Path root = Path.of("src", "main", "resources", "assets", "dndsheets", "patchouli_books", "guide", "en_us");
 		java.util.Set<String> categories = new java.util.HashSet<>();
 		try (java.util.stream.Stream<Path> files = Files.list(root.resolve("categories"))) {
 			for (Path file : files.toList()) categories.add(file.getFileName().toString().replace(".json", ""));
 		}
-		assertTrue(!categories.isEmpty(), "el libro no tiene ninguna categoría");
+		assertTrue(!categories.isEmpty(), "the book has no category");
 
-		//Las páginas que el libro escrito enumera, que es la lista de verdad: GuideBook.java. Y no solo
-		//CUÁLES, también cómo están agrupadas y en qué orden: desde que el libro escrito se parte en los
-		//mismos capítulos y entradas que el de Patchouli, que las dos listas contengan las mismas páginas
-		//ya no basta — pueden repartirlas distinto y enseñarle dos libros diferentes al mismo lector,
-		//según tenga Patchouli instalado o no.
+		//The pages the written book lists, which is the real list: GuideBook.java. And not just
+		//WHICH ones, also how they are grouped and in what order: since the written book is split into the
+		//same chapters and entries as the Patchouli one, both lists containing the same pages
+		//is no longer enough - they may distribute them differently and show two different books to the same reader,
+		//depending on whether they have Patchouli installed or not.
 		String guide = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"client", "gui", "GuideBook.java"));
 		java.util.Map<String, String> entryChapter = new java.util.LinkedHashMap<>();
@@ -860,18 +927,18 @@ public class JsonContentSelfTest {
 				case "cat" -> chapter = m.group(2);
 				case "entry" -> {
 					current = m.group(2);
-					assertTrue(chapter != null, "la entrada " + current + " de GuideBook no cuelga de ninguna categoría");
+					assertTrue(chapter != null, "the entry " + current + " of GuideBook does not hang from any category");
 					entryChapter.put(current, chapter);
 					entryPages.put(current, new java.util.ArrayList<>());
 				}
 				default -> {
-					assertTrue(current != null, "la página " + m.group(2) + " de GuideBook no está en ninguna entrada");
+					assertTrue(current != null, "the page " + m.group(2) + " of GuideBook is not in any entry");
 					entryPages.get(current).add("gui.dndsheets.guide.page." + m.group(2));
 					written.add("gui.dndsheets.guide.page." + m.group(2));
 				}
 			}
 		}
-		assertTrue(written.size() >= 26, "GuideBook debería enumerar las páginas de la Guía, encontré " + written.size());
+		assertTrue(written.size() >= 26, "GuideBook should list the Guide's pages, I found " + written.size());
 
 		java.util.Map<String, String> placed = new java.util.HashMap<>();
 		java.util.Set<String> filed = new java.util.HashSet<>();
@@ -882,98 +949,98 @@ public class JsonContentSelfTest {
 				entries++;
 				String category = entry.get("category").getAsString();
 				assertTrue(category.startsWith("dndsheets:") && categories.contains(category.substring(10)),
-					file.getFileName() + " apunta a la categoría \"" + category + "\", que no existe");
+					file.getFileName() + " points to the category \"" + category + "\", which does not exist");
 
-				//El nombre del archivo ES el de la entrada en GuideBook: entries/dm/varas.json va con
-				//"gui.dndsheets.guide.entry.varas". Sin esa convención no hay forma de emparejarlas.
+				//The file name IS the entry's name in GuideBook: entries/dm/varas.json goes with
+				//"gui.dndsheets.guide.entry.wands". Without that convention there is no way to pair them.
 				String name = file.getFileName().toString().replace(".json", "");
 				filed.add(name);
-				assertTrue(entryPages.containsKey(name), "la entrada " + name + " de Patchouli no está en GuideBook");
-				assertTrue(category.equals("dndsheets:" + entryChapter.get(name)), name + " está en la categoría "
-					+ category + " en Patchouli y en " + entryChapter.get(name) + " en GuideBook");
+				assertTrue(entryPages.containsKey(name), "the Patchouli entry " + name + " is not in GuideBook");
+				assertTrue(category.equals("dndsheets:" + entryChapter.get(name)), name + " is in category "
+					+ category + " in Patchouli and in " + entryChapter.get(name) + " in GuideBook");
 
 				List<String> here = new java.util.ArrayList<>();
 				for (JsonElement page : entry.getAsJsonArray("pages")) {
 					String key = page.getAsJsonObject().get("text").getAsString();
 					here.add(key);
-					assertTrue(written.contains(key), key + " (en " + file.getFileName() + ") no es una página de la Guía");
+					assertTrue(written.contains(key), key + " (in " + file.getFileName() + ") is not a page of the Guide");
 					String before = placed.put(key, file.getFileName().toString());
-					assertTrue(before == null, key + " está en dos entradas: " + before + " y " + file.getFileName());
+					assertTrue(before == null, key + " is in two entries: " + before + " and " + file.getFileName());
 				}
-				assertTrue(here.equals(entryPages.get(name)), name + " lleva otras páginas, o en otro orden, en"
-					+ " GuideBook " + entryPages.get(name) + " que en Patchouli " + here);
+				assertTrue(here.equals(entryPages.get(name)), name + " has other pages, or in another order, in"
+					+ " GuideBook " + entryPages.get(name) + " than in Patchouli " + here);
 			}
 		}
 		for (String key : written) {
-			assertTrue(placed.containsKey(key), key + " está en el libro escrito pero en ninguna entrada de Patchouli");
+			assertTrue(placed.containsKey(key), key + " is in the written book but in no Patchouli entry");
 		}
 		for (String name : entryPages.keySet()) {
-			assertTrue(filed.contains(name), "la entrada " + name + " de GuideBook no tiene archivo en Patchouli");
+			assertTrue(filed.contains(name), "the entry " + name + " of GuideBook has no file in Patchouli");
 		}
 
-		//Y que las claves nuevas (títulos de categoría y entrada) estén traducidas: checkLanguageFiles
-		//compara los dos idiomas entre sí, pero no sabe que estos archivos las necesitan.
+		//And that the new keys (category and entry titles) are translated: checkLanguageFiles
+		//compares the two languages against each other, but does not know these files need them.
 		JsonObject lang = JsonParser.parseString(Files.readString(
 			Path.of("src", "main", "resources", "assets", "dndsheets", "lang", "es_es.json"))).getAsJsonObject();
-		assertTrue(lang.has(meta.get("landing_text").getAsString()), "falta el texto de portada del libro");
+		assertTrue(lang.has(meta.get("landing_text").getAsString()), "the book's landing text is missing");
 		for (String category : categories) {
-			assertTrue(lang.has("gui.dndsheets.guide.cat." + category), "falta el nombre de la categoría " + category);
+			assertTrue(lang.has("gui.dndsheets.guide.cat." + category), "the name of category " + category + " is missing");
 		}
-		//Los títulos de entrada los pide GuideBook por variable (entry.titleKey()), así que
-		//checkTranslationKeysExist —que solo ve Component.translatable("literal")— no los alcanza.
+		//Entry titles are requested by GuideBook through a variable (entry.titleKey()), so
+		//checkTranslationKeysExist - which only sees Component.translatable("literal") - does not reach them.
 		for (String name : entryPages.keySet()) {
-			assertTrue(lang.has("gui.dndsheets.guide.entry." + name), "falta el nombre de la entrada " + name);
+			assertTrue(lang.has("gui.dndsheets.guide.entry." + name), "the name of entry " + name + " is missing");
 		}
 		assertTrue(lang.has("gui.dndsheets.guide.index") && lang.has("gui.dndsheets.guide.back"),
-			"faltan el título del índice o el enlace de vuelta del libro escrito");
+			"the index title or the written book's back link is missing");
 
-		//Y que cada página quepa donde se lee. Una página de Patchouli que se pasa NO se recorta con
-		//puntos suspensivos ni se parte en dos: lo que sobra desaparece, nada avisa, y solo se descubre
-		//comparando el texto del archivo con el de la pantalla. Ya había pasado — "subir de nivel" medía
-		//704 caracteres y enseñaba poco más de la mitad. El libro escrito sí parte solo lo que se pase
-		//(GuideBook.wrap), así que este tope existe por Patchouli, que es el que no puede.
-		//ponytail: 320 sale de medir el ancho de página de Patchouli, no de su código. Si alguna vez se
-		//ve una página cortada por debajo de ese número, se baja el tope; no hay forma de calcularlo
-		//desde aquí sin arrancar el juego.
+		//And that every page fits where it is read. A Patchouli page that overflows is NOT trimmed with an ellipsis
+		//nor split in two: what is left over disappears, nothing warns, and it is only discovered
+		//by comparing the file's text with the screen's. It had already happened - "level up" was
+		//704 characters long and showed little more than half. The written book does split whatever overflows
+		//(GuideBook.wrap), so this cap exists because of Patchouli, which cannot.
+		//ponytail: 320 comes from measuring Patchouli's page width, not from its code. If a page is ever
+		//seen cut off below that number, lower the cap; there is no way to compute it
+		//from here without launching the game.
 		for (String file : new String[] { "es_es", "en_us" }) {
 			JsonObject texts = JsonParser.parseString(Files.readString(
 				Path.of("src", "main", "resources", "assets", "dndsheets", "lang", file + ".json"))).getAsJsonObject();
 			for (String key : written) {
-				assertTrue(texts.has(key), file + " no traduce la página " + key);
+				assertTrue(texts.has(key), file + " does not translate the page " + key);
 				int length = texts.get(key).getAsString().length();
-				assertTrue(length <= 320, key + " mide " + length + " caracteres en " + file
-					+ ": no cabe en una página de Patchouli, pártela en dos claves");
+				assertTrue(length <= 320, key + " is " + length + " characters long in " + file
+					+ ": it does not fit on a Patchouli page, split it into two keys");
 			}
 		}
 
-		System.out.println("checkPatchouliBook: OK, " + entries + " entradas en " + categories.size()
-			+ " categorías cubren las " + written.size() + " páginas de la Guía.");
+		System.out.println("checkPatchouliBook: OK, " + entries + " entries in " + categories.size()
+			+ " categories cover the Guide's " + written.size() + " pages.");
 	}
 
 	/**
-	 * <p>El reparto en páginas del libro escrito de la Guía. Importa más de lo que parece: de cuántas
-	 * páginas ocupe el índice depende el número al que salta CADA una de sus filas, así que una línea de
-	 * más manda todos los enlaces a la página equivocada — y no falla nada, simplemente se abre otra.</p>
+	 * <p>The pagination of the Guide's written book. It matters more than it seems: the number each one of the
+	 * index rows jumps to depends on how many pages the index takes, so one extra line
+	 * sends every link to the wrong page - and nothing fails, another one just opens.</p>
 	 */
 	private static void checkGuideLayout() {
 		List<String> lines = new java.util.ArrayList<>();
 		for (int i = 0; i < 25; i++) lines.add("linea" + i);
 
-		//Primera página más corta (ahí va el título de la entrada), el resto enteras: 10 + 12 + 3.
+		//First page shorter (that is where the entry title goes), the rest full: 10 + 12 + 3.
 		List<String> chunks = net.hawthorn.dndsheets.client.gui.GuideLayout.wrap(lines, 10, 12);
-		assertTrue(chunks.size() == 3, "25 líneas en páginas de 10 y 12 son 3 páginas, no " + chunks.size());
+		assertTrue(chunks.size() == 3, "25 lines in pages of 10 and 12 are 3 pages, not " + chunks.size());
 		assertTrue(chunks.get(0).split(" ").length == 10 && chunks.get(1).split(" ").length == 12,
-			"las páginas llenas no llegan a su límite: " + chunks.get(0).split(" ").length + " y "
+			"the full pages do not reach their limit: " + chunks.get(0).split(" ").length + " and "
 				+ chunks.get(1).split(" ").length);
-		//Lo que más duele si se rompe: texto perdido por el camino, que es justo lo que esto vino a
-		//arreglar. Se compara el texto entero, no el número de trozos.
-		assertTrue(String.join(" ", chunks).equals(String.join(" ", lines)), "wrap perdió o repitió texto");
+		//What hurts most if it breaks: text lost along the way, which is exactly what this came to
+		//fix. The whole text is compared, not the number of chunks.
+		assertTrue(String.join(" ", chunks).equals(String.join(" ", lines)), "wrap lost or repeated text");
 
-		//Un texto que acaba justo en el límite no deja una página en blanco detrás.
+		//A text that ends exactly at the limit does not leave a blank page behind it.
 		assertTrue(net.hawthorn.dndsheets.client.gui.GuideLayout.wrap(lines.subList(0, 10), 10, 12).size() == 1,
-			"un texto que cabe justo debería ocupar una sola página");
+			"a text that fits exactly should take a single page");
 
-		//El índice: filas de altura 1 salvo un título que ocupa dos, en páginas de 14 líneas.
+		//The index: rows of height 1 except one title that takes two, in pages of 14 lines.
 		List<Integer> heights = new java.util.ArrayList<>();
 		for (int i = 0; i < 20; i++) heights.add(i == 5 ? 2 : 1);
 		List<Integer> pages = net.hawthorn.dndsheets.client.gui.GuideLayout.paginate(heights, 14);
@@ -982,165 +1049,165 @@ public class JsonContentSelfTest {
 		for (int size : pages) {
 			int tall = 0;
 			for (int i = at; i < at + size; i++) tall += heights.get(i);
-			assertTrue(tall <= 14, "una página del índice se pasa de 14 líneas: " + tall);
+			assertTrue(tall <= 14, "an index page exceeds 14 lines: " + tall);
 			at += size;
 			rows += size;
 		}
-		assertTrue(rows == heights.size(), "el índice perdió filas al paginarse: " + rows + " de " + heights.size());
-		assertTrue(pages.size() == 2, "21 líneas de índice caben en 2 páginas, no en " + pages.size());
+		assertTrue(rows == heights.size(), "the index lost rows when paginating: " + rows + " of " + heights.size());
+		assertTrue(pages.size() == 2, "21 index lines fit in 2 pages, not in " + pages.size());
 
-		System.out.println("checkGuideLayout: OK, el libro escrito parte las páginas largas y el índice"
-			+ " enlaza a la página que es.");
+		System.out.println("checkGuideLayout: OK, the written book splits long pages and the index"
+			+ " links to the right page.");
 	}
 
 	/**
-	 * <p>{@code "ai": true} deja viva la IA de la entidad base al invocarla, para que las entidades de un
-	 * mod de NPC sirvan de algo (patrullar, seguir al grupo) en vez de aparecer congeladas. Tres cosas
-	 * tienen que seguir siendo verdad a la vez, y cada una se rompe sola:</p>
+	 * <p>{@code "ai": true} keeps the base entity's AI alive when summoning it, so the entities of an NPC
+	 * mod are of some use (patrolling, following the party) instead of appearing frozen. Three things
+	 * must stay true at the same time, and each one breaks on its own:</p>
 	 *
 	 * <ul>
-	 *   <li>que el campo se lea y se escriba, y que <b>por defecto sea false</b> — un pack ya escrito no
-	 *       puede cambiar de comportamiento por añadir un campo (invariante 8);</li>
-	 *   <li>que {@code spawnAt} pregunte por él en vez del {@code setNoAi(true)} fijo de siempre;</li>
-	 *   <li>que {@code TurnManager.freeze} congele por "¿tiene la IA encendida?" y no por "¿le falta
-	 *       bloque de estadísticas?". Si eso se revierte, un PNJ con IA se pasea por el combate durante
-	 *       los turnos de los demás — y no falla nada, solo se juega mal.</li>
+	 *   <li>that the field is read and written, and that it <b>defaults to false</b> - an already written pack
+	 *       cannot change behavior because a field was added (invariant 8);</li>
+	 *   <li>that {@code spawnAt} asks about it instead of the fixed {@code setNoAi(true)} it always had;</li>
+	 *   <li>that {@code TurnManager.freeze} freezes by "is its AI on?" and not by "does it lack a
+	 *       stat block?". If that is reverted, an NPC with AI wanders around the combat during
+	 *       other people's turns - and nothing fails, it just plays badly.</li>
 	 * </ul>
 	 */
 	private static void checkKeepsOwnAi() throws Exception {
 		JsonObject plain = JsonParser.parseString("{\"id\":\"test:guardia\",\"hp\":10}").getAsJsonObject();
 		assertTrue(!MonsterRegistry.parse(plain).keepsOwnAi(),
-			"sin campo \"ai\" el monstruo tiene que salir congelado, como siempre");
+			"without an \"ai\" field the monster must come out frozen, as always");
 
 		JsonObject withAi = JsonParser.parseString("{\"id\":\"test:guardia\",\"hp\":10,\"ai\":true}").getAsJsonObject();
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.parse(withAi);
-		assertTrue(block.keepsOwnAi(), "\"ai\": true tiene que conservar la IA de la entidad base");
+		assertTrue(block.keepsOwnAi(), "\"ai\": true must keep the base entity's AI");
 
-		//Ida y vuelta: el DM que capture ese monstruo desde el juego no puede perder el campo por el camino.
+		//Round trip: a DM capturing that monster from the game cannot lose the field along the way.
 		JsonObject written = MonsterRegistry.toJson(block);
-		assertTrue(written.has("ai") && written.get("ai").getAsBoolean(), "toJson pierde el campo \"ai\"");
-		assertTrue(MonsterRegistry.parse(written).keepsOwnAi(), "el campo \"ai\" no sobrevive ida y vuelta");
+		assertTrue(written.has("ai") && written.get("ai").getAsBoolean(), "toJson loses the \"ai\" field");
+		assertTrue(MonsterRegistry.parse(written).keepsOwnAi(), "the \"ai\" field does not survive a round trip");
 		assertTrue(!MonsterRegistry.toJson(MonsterRegistry.parse(plain)).has("ai"),
-			"toJson escribe \"ai\": false en packs que no lo piden, y eso es ruido en el JSON del DM");
+			"toJson writes \"ai\": false in packs that do not ask for it, and that is noise in the DM's JSON");
 
 		String spawner = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"MonsterRegistry.java"));
 		assertTrue(spawner.contains("mob.setNoAi(!block.keepsOwnAi() && !block.ownClock())"),
-			"spawnAt ha vuelto a congelar todo sin preguntar: \"ai\": true (o un jefe con reloj propio, que"
-				+ " la necesita por definición) dejaría de hacer nada");
+			"spawnAt is back to freezing everything without asking: \"ai\": true (or a boss with its own clock, which"
+				+ " needs it by definition) would stop doing anything");
 
 		String turns = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"TurnManager.java"));
 		assertTrue(turns.contains("entity instanceof Mob mob && !mob.isNoAi()"),
-			"freeze ha vuelto a mirar el bloque de estadísticas en vez de la IA: un PNJ con IA se movería"
-				+ " durante los turnos de los demás");
+			"freeze is back to looking at the stat block instead of the AI: an NPC with AI would move"
+				+ " during other people's turns");
 
-		System.out.println("checkKeepsOwnAi: OK, la IA propia se declara, sobrevive ida y vuelta, y el modo"
-			+ " turnos la sigue apagando mientras dura el combate.");
+		System.out.println("checkKeepsOwnAi: OK, own AI is declared, survives a round trip, and turn mode"
+			+ " still turns it off for the duration of the combat.");
 	}
 
 	/**
-	 * <p>La Forma Salvaje <b>escribe encima</b> de la hoja del druida (características físicas y CA) y
-	 * guarda debajo lo que había para devolverlo. Ese es el trato entero, y si la vuelta se rompe no falla
-	 * nada: queda un druida con la Fuerza de un oso y una CA que no es la suya, en una ficha que se
-	 * persiste. Se comprueban las dos direcciones y, sobre todo, <b>que volver deje la hoja como estaba</b>
-	 * — comparando el JSON completo, no campo a campo, para que también se note un residuo que nadie
-	 * pensó en mirar.</p>
+	 * <p>Wild Shape <b>writes over</b> the druid's sheet (physical abilities and AC) and
+	 * keeps what was there underneath to give it back. That is the whole deal, and if the way back breaks nothing
+	 * fails: you get a druid with a bear's Strength and an AC that is not theirs, on a sheet that is
+	 * persisted. Both directions are checked and, above all, <b>that returning leaves the sheet as it was</b>
+	 * - comparing the full JSON, not field by field, so that a residue nobody thought of looking at is noticed too.</p>
+	 * </p>
 	 */
 	private static void checkWildShape() {
 		MonsterRegistry.MonsterStatBlock oso = new MonsterRegistry.MonsterStatBlock(
 			"test:oso", "Oso pardo", "minecraft:polar_bear", 11, 34,
 			Map.of("str", 19, "dex", 10, "con", 16, "int", 2, "wis", 13, "cha", 7), 2,
 			List.of(), List.of(), Map.of(), Map.of(),
-			CreatureType.BEAST, 0, 0, 1, null, false, false, false);
+			CreatureType.BEAST, 0, 0, 1, CreatureSize.UNKNOWN, null, false, false, false);
 
-		//Caso 1: un druida normal, sin CA fijada a mano por el DM.
+		//Case 1: a normal druid, with no AC set by hand by the DM.
 		JsonObject sheet = JsonParser.parseString(
 			"{\"strength\":\"10\",\"dexterity\":\"14\",\"constitution\":\"12\",\"intelligence\":\"13\"}").getAsJsonObject();
 		String antes = sheet.toString();
 
 		DruidWildShapeManager.writeShape(sheet, oso, 7);
-		assertTrue(DruidWildShapeManager.shapeOf(sheet) != null, "tras transformarse la hoja tiene que decir en qué está");
-		assertTrue(sheet.get("strength").getAsString().equals("19"), "la Fuerza tiene que ser la de la bestia");
-		assertTrue(sheet.get("armorClassOverride").getAsInt() == 11, "la CA tiene que ser la de la bestia");
+		assertTrue(DruidWildShapeManager.shapeOf(sheet) != null, "after transforming, the sheet must say what it is in");
+		assertTrue(sheet.get("strength").getAsString().equals("19"), "Strength must be the beast's");
+		assertTrue(sheet.get("armorClassOverride").getAsInt() == 11, "AC must be the beast's");
 		assertTrue(sheet.get("intelligence").getAsString().equals("13"),
-			"la Inteligencia NO cambia: en 5e la bestia no te vuelve tonto");
+			"Intelligence does NOT change: in 5e the beast does not make you dumb");
 
 		int back = DruidWildShapeManager.clearShape(sheet, 99);
-		assertTrue(back == 7, "tiene que volver con los PG que tenía al transformarse, no con " + back);
+		assertTrue(back == 7, "it must come back with the HP it had when transforming, not with " + back);
 		assertTrue(sheet.toString().equals(antes),
-			"volver no dejó la hoja como estaba.\n  antes: " + antes + "\n  después: " + sheet);
+			"returning did not leave the sheet as it was.\n  before: " + antes + "\n  after: " + sheet);
 
-		//Caso 2, el que de verdad corrompe: un druida al que el DM ya le había fijado la CA a mano. Si la
-		//forma no distingue "no había override" de "había uno", vuelve con la CA de la bestia clavada.
+		//Case 2, the one that really corrupts: a druid whose AC the DM had already set by hand. If the
+		//shape does not tell "there was no override" from "there was one", it comes back with the beast's AC nailed on.
 		JsonObject conOverride = JsonParser.parseString(
 			"{\"strength\":\"10\",\"dexterity\":\"14\",\"constitution\":\"12\",\"armorClassOverride\":18}").getAsJsonObject();
 		String antesOverride = conOverride.toString();
 		DruidWildShapeManager.writeShape(conOverride, oso, 5);
-		assertTrue(conOverride.get("armorClassOverride").getAsInt() == 11, "mientras dura la forma manda la CA de la bestia");
+		assertTrue(conOverride.get("armorClassOverride").getAsInt() == 11, "while the shape lasts, the beast's AC rules");
 		DruidWildShapeManager.clearShape(conOverride, 99);
 		assertTrue(conOverride.toString().equals(antesOverride),
-			"la CA que el DM había fijado no volvió: " + conOverride);
+			"the AC the DM had set did not come back: " + conOverride);
 
-		//Y sin PG guardados (hoja de una versión anterior) cae al valor de respaldo en vez de a cero.
+		//And without saved HP (a sheet from a previous version) it falls to the fallback value instead of zero.
 		assertTrue(DruidWildShapeManager.clearShape(new JsonObject(), 42) == 42,
-			"sin PG anotados tiene que volver con el respaldo, no con 0");
+			"without recorded HP it must come back with the fallback, not with 0");
 
-		System.out.println("checkWildShape: OK, la forma escribe los números de la bestia y volver deja la"
-			+ " hoja exactamente como estaba.");
+		System.out.println("checkWildShape: OK, the shape writes the beast's numbers and returning leaves the"
+			+ " sheet exactly as it was.");
 	}
 
 	/**
-	 * <p>Un jefe con {@code "ownClock"} sale del ORDEN de turnos sin salir del combate. Todo lo que sostiene
-	 * esa frase se rompe en silencio, así que se fija aquí:</p>
+	 * <p>A boss with {@code "ownClock"} leaves the turn ORDER without leaving the combat. Everything that holds
+	 * up that sentence breaks silently, so it is pinned here:</p>
 	 *
 	 * <ul>
-	 *   <li>que el campo se lea, se escriba y por defecto sea falso;</li>
-	 *   <li>que el salto en {@code advance} pase por {@code step}, que es quien descuenta el asalto — si
-	 *       alguien lo cambia por un {@code currentIndex++} suelto, una ronda con el jefe al final deja de
-	 *       contar y todo lo que dure asaltos (muros, buffs, invocaciones) se congela;</li>
-	 *   <li>que NO pase por {@code tryAct}, que programa el auto-avance: desde fuera del orden, le pasaría
-	 *       el turno a otro cada seis segundos;</li>
-	 *   <li>que siga contando para el fin del combate, o el encuentro terminaría con el dragón vivo;</li>
-	 *   <li>y que las acciones legendarias queden a cero, para no darle dos economías de acción.</li>
+	 *   <li>that the field is read, written and defaults to false;</li>
+	 *   <li>that the skip in {@code advance} goes through {@code step}, which is what discounts the round - if
+	 *       someone changes it to a loose {@code currentIndex++}, a round with the boss at the end stops
+	 *       counting and everything that lasts rounds (walls, buffs, summons) freezes;</li>
+	 *   <li>that it does NOT go through {@code tryAct}, which schedules the auto-advance: from outside the order, it would pass
+	 *       the turn to someone else every six seconds;</li>
+	 *   <li>that it keeps counting toward the end of combat, or the encounter would end with the dragon alive;</li>
+	 *   <li>and that legendary actions stay at zero, so it is not given two action economies.</li>
 	 * </ul>
 	 */
 	private static void checkOwnClock() throws Exception {
 		JsonObject plain = JsonParser.parseString("{\"id\":\"test:x\",\"hp\":10}").getAsJsonObject();
-		assertTrue(!MonsterRegistry.parse(plain).ownClock(), "sin el campo, un monstruo espera su turno como todos");
+		assertTrue(!MonsterRegistry.parse(plain).ownClock(), "without the field, a monster waits for its turn like everyone");
 		JsonObject boss = JsonParser.parseString("{\"id\":\"test:x\",\"hp\":10,\"ownClock\":true}").getAsJsonObject();
-		assertTrue(MonsterRegistry.parse(boss).ownClock(), "\"ownClock\": true tiene que sacarlo del orden");
+		assertTrue(MonsterRegistry.parse(boss).ownClock(), "\"ownClock\": true must take it out of the order");
 		assertTrue(MonsterRegistry.toJson(MonsterRegistry.parse(boss)).get("ownClock").getAsBoolean(),
-			"toJson pierde \"ownClock\": un jefe capturado por el DM volvería a hacer cola");
+			"toJson loses \"ownClock\": a boss captured by the DM would go back to queueing");
 		assertTrue(!MonsterRegistry.toJson(MonsterRegistry.parse(plain)).has("ownClock"),
-			"toJson escribe \"ownClock\": false donde nadie lo pidió, y eso es ruido en el JSON del DM");
+			"toJson writes \"ownClock\": false where nobody asked for it, and that is noise in the DM's JSON");
 
 		String turns = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "TurnManager.java"));
 		assertTrue(turns.contains("isOffClock(level, current()); skipped++) step(level)"),
-			"el salto del jefe tiene que pasar por step(): es quien cierra el asalto");
+			"the boss's skip must go through step(): it is what closes the round");
 		assertTrue(turns.contains("if (MonsterRegistry.isOffClock(entity)) return;"),
-			"freeze ha vuelto a anclar al jefe con reloj propio: dejaría de moverse por su cuenta");
+			"freeze is back to anchoring the boss with its own clock: it would stop moving on its own");
 
 		String actions = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "MonsterActionManager.java"));
 		assertTrue(actions.contains("TurnManager.canActIgnoringTurn(monsterEntity)"),
-			"autoAct tiene que preguntar por las condiciones, no por el turno, cuando el bloque lleva reloj propio");
+			"autoAct must ask about conditions, not about the turn, when the block carries its own clock");
 
 		String legendary = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "LegendaryActionManager.java"));
 		assertTrue(legendary.contains("if (block.ownClock()) return 0;"),
-			"un jefe con reloj propio no puede tener ADEMAS acciones legendarias");
+			"a boss with its own clock cannot ALSO have legendary actions");
 
-		//Y que el bestiario traiga jefes marcados de verdad: sin esto la funcion entera es config muerta.
+		//And that the bestiary really carries marked bosses: without this the whole feature is dead config.
 		int apex = 0;
 		for (JsonElement el : readShippedPack("monsters.json")) {
 			JsonObject monster = el.getAsJsonObject();
 			if (!monster.has("ownClock") || !monster.get("ownClock").getAsBoolean()) continue;
 			apex++;
 			assertTrue(monster.has("legendaryActions"),
-				monster.get("id").getAsString() + " lleva reloj propio sin ser legendario: esto es para jefes");
+				monster.get("id").getAsString() + " carries its own clock without being legendary: this is for bosses");
 		}
-		assertTrue(apex >= 10, "el bestiario deberia traer jefes con reloj propio ya marcados, encontre " + apex);
+		assertTrue(apex >= 10, "the bestiary should carry bosses with their own clock already marked, I found " + apex);
 
-		System.out.println("checkOwnClock: OK, " + apex + " jefes fuera del orden de turnos, dentro del combate.");
+		System.out.println("checkOwnClock: OK, " + apex + " bosses outside the turn order, inside the combat.");
 	}
 
 	private static void checkItemLooks() throws Exception {
@@ -1150,23 +1217,23 @@ public class JsonContentSelfTest {
 
 		for (ItemLook look : ItemLook.values()) {
 			String name = look.textureName();
-			assertTrue(Files.exists(textures.resolve(name + ".png")), "falta la textura de " + look + " (" + name + ".png)");
-			assertTrue(Files.exists(models.resolve(name + ".json")), "falta el modelo de " + look);
+			assertTrue(Files.exists(textures.resolve(name + ".png")), "missing texture for " + look + " (" + name + ".png)");
+			assertTrue(Files.exists(models.resolve(name + ".json")), "missing model for " + look);
 			assertTrue(token.contains("\"custom_model_data\": " + look.customModelData() + " }, \"model\": \"dndsheets:item/" + name + "\""),
-				"token.json no manda el custom_model_data " + look.customModelData() + " al modelo de " + look);
+				"token.json does not send custom_model_data " + look.customModelData() + " to the model of " + look);
 		}
-		//La textura por defecto: la que se ve si un ItemStack viejo no trae CustomModelData.
-		assertTrue(Files.exists(textures.resolve("token.png")), "falta el icono base de la ficha");
+		//The default texture: the one seen if an old ItemStack carries no CustomModelData.
+		assertTrue(Files.exists(textures.resolve("token.png")), "missing the sheet's base icon");
 
-		//El orden, clavado. Cambiarlo es cambiarle el icono a lo ya repartido.
+		//The order, pinned. Changing it means changing the icon of what was already handed out.
 		assertTrue(ItemLook.DM_WAND.customModelData() == 1 && ItemLook.RAGE.customModelData() == 7
 				&& ItemLook.SUMMON_CARD.customModelData() == 19,
-			"el orden de ItemLook ha cambiado: los ítems que ya estén en el mundo de alguien cambiarían de icono");
+			"the order of ItemLook has changed: items already in someone's world would change icon");
 
-		//Ningún ítem del mod debería seguir siendo un ítem de vanilla renombrado: era justo el problema.
+		//No mod item should still be a renamed vanilla item: that was exactly the problem.
 		String abilityItem = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "AbilityItem.java"));
-		assertTrue(abilityItem.contains("look.applyTo"), "AbilityItem debería construir sobre la ficha del mod, con su aspecto");
-		System.out.println("checkItemLooks: OK, " + ItemLook.values().length + " ítems con textura y modelo propios.");
+		assertTrue(abilityItem.contains("look.applyTo"), "AbilityItem should build on the mod's sheet item, with its look");
+		System.out.println("checkItemLooks: OK, " + ItemLook.values().length + " items with their own texture and model.");
 	}
 
 	private static void checkMonsterSkins() throws Exception {
@@ -1178,148 +1245,148 @@ public class JsonContentSelfTest {
 		try (java.util.stream.Stream<Path> files = Files.list(dir)) {
 			packs = files.filter(p -> p.toString().endsWith(".json")).sorted().toList();
 		}
-		assertTrue(!packs.isEmpty(), "no hay ningún pack de aspecto en " + dir);
+		assertTrue(!packs.isEmpty(), "there is no appearance pack in " + dir);
 
-		//La lista está escrita a mano en MonsterSkins; se compara con lo que hay en la carpeta.
+		//The list is hand-written in MonsterSkins; it is compared with what is in the folder.
 		String source = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "MonsterSkins.java"));
 		int entries = 0;
 		for (Path pack : packs) {
 			String fileName = pack.getFileName().toString();
 			String modId = fileName.replace(".json", "");
-			assertTrue(source.contains("\"" + modId + "\""), fileName + " no está en la lista SHIPPED de MonsterSkins: no se cargaría nunca");
+			assertTrue(source.contains("\"" + modId + "\""), fileName + " is not in MonsterSkins' SHIPPED list: it would never be loaded");
 
 			JsonObject json = JsonParser.parseString(Files.readString(pack)).getAsJsonObject();
 			assertTrue(modId.equals(json.get("mod").getAsString()),
-				"el campo \"mod\" de " + fileName + " no coincide con el nombre del archivo");
-			assertTrue(json.has("name") && json.has("url"), fileName + " debería decir de qué mod es y dónde está");
+				"the \"mod\" field of " + fileName + " does not match the file name");
+			assertTrue(json.has("name") && json.has("url"), fileName + " should say which mod it is for and where it is");
 
 			for (Map.Entry<String, JsonElement> skin : json.getAsJsonObject("skins").entrySet()) {
 				assertTrue(bestiary.contains(skin.getKey()),
-					"\"" + skin.getKey() + "\" (en " + fileName + ") no es un monstruo del bestiario");
+					"\"" + skin.getKey() + "\" (in " + fileName + ") is not a bestiary monster");
 				String entity = skin.getValue().getAsString();
 				assertTrue(entity.startsWith(modId + ":"),
-					"\"" + entity + "\" no es una entidad de " + modId + " (en " + fileName + ")");
+					"\"" + entity + "\" is not an entity of " + modId + " (in " + fileName + ")");
 				entries++;
 			}
 		}
-		System.out.println("checkMonsterSkins: OK, " + packs.size() + " packs de aspecto y " + entries + " monstruos cubiertos.");
+		System.out.println("checkMonsterSkins: OK, " + packs.size() + " appearance packs and " + entries + " monsters covered.");
 	}
 
 	private static JsonObject monsterJson(JsonArray bestiary, String id) {
 		for (JsonElement el : bestiary) {
 			if (id.equals(el.getAsJsonObject().get("id").getAsString())) return el.getAsJsonObject();
 		}
-		throw new AssertionError("no está en el bestiario: " + id);
+		throw new AssertionError("not in the bestiary: " + id);
 	}
 
 	private static void checkMagicItems() throws Exception {
 		JsonArray items = readShippedPack("items.json");
 		java.util.Set<String> ids = new java.util.HashSet<>();
-		java.util.Set<String> damageTypes = java.util.Set.of("fisico", "cortante", "perforante", "contundente",
-			"fuego", "frio", "rayo", "acido", "veneno", "psiquico", "radiante", "necrotico", "fuerza", "trueno");
+		java.util.Set<String> damageTypes = java.util.Set.of("physical", "slashing", "piercing", "bludgeoning",
+			"fire", "cold", "lightning", "acid", "poison", "psychic", "radiant", "necrotic", "force", "thunder");
 		int mechanical = 0;
 
 		for (JsonElement el : items) {
 			JsonObject json = el.getAsJsonObject();
 			String id = json.get("id").getAsString();
-			assertTrue(ids.add(id), "id de objeto mágico duplicado: " + id);
+			assertTrue(ids.add(id), "duplicate magic item id: " + id);
 			MagicItemRegistry.MagicItem item = MagicItemRegistry.parse(json);
 			if (MagicItemRegistry.get(id) == null) MagicItemRegistry.register(item);
 
-			assertTrue(!item.name().isBlank(), id + " debería tener nombre");
-			//Todo objeto tiene un ítem vanilla que le presta la apariencia: sin él, /dnditems give no puede
-			//entregar nada y el objeto solo existe como texto.
-			assertTrue(item.itemId().startsWith("minecraft:"), id + " debería declarar un ítem base vanilla");
+			assertTrue(!item.name().isBlank(), id + " should have a name");
+			//Every item has a vanilla item lending it its look: without it, /dnditems give cannot
+			//hand out anything and the item only exists as text.
+			assertTrue(item.itemId().startsWith("minecraft:"), id + " should declare a vanilla base item");
 			for (Map.Entry<String, String> affinity : item.affinities().entrySet()) {
 				assertTrue(damageTypes.contains(affinity.getKey()),
-					"tipo de daño desconocido \"" + affinity.getKey() + "\" en " + id);
+					"unknown damage type \"" + affinity.getKey() + "\" in " + id);
 			}
 			if (item.hasMechanics()) mechanical++;
 		}
 
-		assertTrue(items.size() >= 362, "items.json debería traer los 362 del SRD, trae " + items.size());
-		//Que HAYA objetos narrativos es correcto y esperado: el SRD publica los objetos mágicos como prosa,
-		//así que la mayoría no tiene mecánicas derivables. Lo que se fija aquí es que las escritas a mano no
-		//se hayan perdido por el camino.
-		assertTrue(mechanical >= 78, "deberían quedar al menos 78 objetos con mecánicas reales, hay " + mechanical);
+		assertTrue(items.size() >= 362, "items.json should carry the SRD's 362, it has " + items.size());
+		//That narrative items EXIST is correct and expected: the SRD publishes magic items as prose,
+		//so most have no derivable mechanics. What is pinned here is that the hand-written ones
+		//were not lost along the way.
+		assertTrue(mechanical >= 78, "at least 78 items with real mechanics should remain, there are " + mechanical);
 
-		//Consumibles: sus efectos NO son pasivos. Una poción de resistencia modelada como afinidad
-		//permanente protegería a quien lleva la botella sin beberla — es el falso positivo que motivó
-		//que existiera esta distinción, así que conviene fijarla.
+		//Consumables: their effects are NOT passive. A resistance potion modeled as a permanent
+		//affinity would protect whoever carries the bottle without drinking it - it is the false positive that
+		//motivated this distinction, so it is worth pinning.
 		MagicItemRegistry.MagicItem potion = MagicItemRegistry.get("dndsheets:potion_of_resistance_fire");
-		assertTrue(potion != null && potion.isConsumable(), "la poción de resistencia debería ser consumible");
-		assertTrue(potion.affinities().isEmpty(), "y NO tener afinidad pasiva: solo la da al beberla");
-		assertTrue("resistant".equals(potion.temporaryAffinities().get("fuego")), "su resistencia es temporal");
-		assertTrue(potion.durationRounds() > 0, "y con duración en asaltos");
+		assertTrue(potion != null && potion.isConsumable(), "the resistance potion should be consumable");
+		assertTrue(potion.affinities().isEmpty(), "and have NO passive affinity: it only grants it when drunk");
+		assertTrue("resistant".equals(potion.temporaryAffinities().get("fire")), "its resistance is temporary");
+		assertTrue(potion.durationRounds() > 0, "and lasts a number of rounds");
 
 		MagicItemRegistry.MagicItem heal = MagicItemRegistry.get("dndsheets:potion_of_healing_greater");
-		assertTrue(heal != null && heal.isConsumable() && heal.healDice() != null, "la poción de curación cura al beberla");
+		assertTrue(heal != null && heal.isConsumable() && heal.healDice() != null, "the healing potion heals when drunk");
 
-		//Una condición concedida por un consumible tiene que ser una condición REAL: si no, TurnManager la
-		//trata como efecto de daño de nombre libre y con dados "0" no hace absolutamente nada.
+		//A condition granted by a consumable must be a REAL condition: otherwise TurnManager treats it as a
+		//free-named damage effect and with dice "0" it does absolutely nothing.
 		for (JsonElement el : items) {
 			JsonObject json = el.getAsJsonObject();
 			if (!json.has("grantsCondition")) continue;
 			String condition = json.get("grantsCondition").getAsString();
 			assertTrue(Condition.fromLabel(condition) != null,
-				json.get("id").getAsString() + " concede \"" + condition + "\", que no es una condición real");
+				json.get("id").getAsString() + " grants \"" + condition + "\", which is not a real condition");
 		}
 
 
-		//Un objeto que concede un conjuro solo funciona si ese conjuro EXISTE: si no, se etiqueta como
-		//báculo rápido apuntando a la nada y el clic derecho no hace absolutamente nada.
+		//An item that grants a spell only works if that spell EXISTS: otherwise it is tagged as a
+		//quick staff pointing at nothing and the right click does absolutely nothing.
 		for (JsonElement el : items) {
 			JsonObject json = el.getAsJsonObject();
 			if (!json.has("grantsSpell")) continue;
 			String spellId = json.get("grantsSpell").getAsString();
 			assertTrue(SpellRegistry.get(spellId) != null,
-				json.get("id").getAsString() + " concede el conjuro \"" + spellId + "\", que no está importado");
+				json.get("id").getAsString() + " grants the spell \"" + spellId + "\", which is not imported");
 		}
 
 		MagicItemRegistry.MagicItem ring = MagicItemRegistry.get("dndsheets:ring_of_protection");
 		assertTrue(ring != null && ring.acBonus() == 1 && ring.saveBonus() == 1,
-			"el Anillo de Protección debería dar +1 a CA y a salvaciones");
-		assertTrue(ring.attunement(), "y requerir sintonización, que es lo que limita a tres objetos");
-		assertTrue(ring.hasMechanics(), "un objeto con bonificadores no es narrativo");
-		//Y NO es consumible: pulsarlo lo gastaría, y además cancelaría el clic que hace falta para ponerlo
-		//en una ranura de Curios.
-		assertTrue(!ring.isConsumable(), "el Anillo de Protección es pasivo, no se bebe");
+			"the Ring of Protection should give +1 to AC and saving throws");
+		assertTrue(ring.attunement(), "and require attunement, which is what limits you to three items");
+		assertTrue(ring.hasMechanics(), "an item with bonuses is not narrative");
+		//And it is NOT consumable: pressing it would use it up, and it would also cancel the click needed to put it
+		//in a Curios slot.
+		assertTrue(!ring.isConsumable(), "the Ring of Protection is passive, it is not drunk");
 
-		//Sintonización: el límite de 3 es lo que impide acumular objetos sin freno, así que conviene fijarlo.
+		//Attunement: the limit of 3 is what stops unbridled item accumulation, so it is worth pinning.
 		JsonObject sheet = new JsonObject();
-		assertTrue(MagicItemRegistry.attunedIds(sheet).isEmpty(), "una hoja nueva no tiene nada sintonizado");
-		assertTrue(MagicItemRegistry.attune(sheet, "a"), "el primero debería entrar");
-		assertTrue(!MagicItemRegistry.attune(sheet, "a"), "el mismo dos veces, no");
-		assertTrue(MagicItemRegistry.attune(sheet, "b") && MagicItemRegistry.attune(sheet, "c"), "hasta tres");
-		assertTrue(!MagicItemRegistry.attune(sheet, "d"), "el cuarto debería rechazarse");
-		assertTrue(MagicItemRegistry.unattune(sheet, "b"), "desintonizar uno que sí estaba");
-		assertTrue(!MagicItemRegistry.unattune(sheet, "b"), "y no dos veces");
-		assertTrue(MagicItemRegistry.attune(sheet, "d"), "liberado un hueco, el cuarto ya entra");
+		assertTrue(MagicItemRegistry.attunedIds(sheet).isEmpty(), "a new sheet has nothing attuned");
+		assertTrue(MagicItemRegistry.attune(sheet, "a"), "the first one should get in");
+		assertTrue(!MagicItemRegistry.attune(sheet, "a"), "the same one twice, no");
+		assertTrue(MagicItemRegistry.attune(sheet, "b") && MagicItemRegistry.attune(sheet, "c"), "up to three");
+		assertTrue(!MagicItemRegistry.attune(sheet, "d"), "the fourth should be rejected");
+		assertTrue(MagicItemRegistry.unattune(sheet, "b"), "unattune one that was attuned");
+		assertTrue(!MagicItemRegistry.unattune(sheet, "b"), "and not twice");
+		assertTrue(MagicItemRegistry.attune(sheet, "d"), "with a slot freed, the fourth gets in");
 		assertTrue(MagicItemRegistry.attunedIds(sheet).size() == MagicItemRegistry.MAX_ATTUNED,
-			"deberían quedar exactamente " + MagicItemRegistry.MAX_ATTUNED);
+			"exactly " + MagicItemRegistry.MAX_ATTUNED + " should remain");
 
-		System.out.println("checkMagicItems: OK, " + items.size() + " objetos (" + mechanical
-			+ " con mecánicas, el resto narrativos) y la sintonización respeta su límite.");
+		System.out.println("checkMagicItems: OK, " + items.size() + " items (" + mechanical
+			+ " with mechanics, the rest narrative) and attunement respects its limit.");
 	}
 
 	private static void checkTraits() throws Exception {
-		JsonArray traits = readArray("traits", "ejemplo.json");
+		JsonArray traits = readArray("traits", "example.json");
 		int count = 0;
 		for (JsonElement el : traits) {
 			TraitRegistry.register(TraitRegistry.parse(el.getAsJsonObject()));
 			count++;
 		}
-		expect("rasgos", count, 2);
+		expect("traits", count, 2);
 
-		TraitRegistry.UnarmedProfile lvl1 = TraitRegistry.unarmedProfileFor(sheetWithTrait("monje:artes_marciales"), 1);
-		assertTrue(lvl1 != null && "1d4".equals(lvl1.dice()) && "dex".equals(lvl1.ability()), "Artes Marciales a nivel 1 debería dar 1d4 por Destreza");
-		TraitRegistry.UnarmedProfile lvl5 = TraitRegistry.unarmedProfileFor(sheetWithTrait("monje:artes_marciales"), 5);
-		assertTrue(lvl5 != null && "1d6".equals(lvl5.dice()), "Artes Marciales a nivel 5 debería escalar a 1d6");
+		TraitRegistry.UnarmedProfile lvl1 = TraitRegistry.unarmedProfileFor(sheetWithTrait("monk:martial_arts"), 1);
+		assertTrue(lvl1 != null && "1d4".equals(lvl1.dice()) && "dex".equals(lvl1.ability()), "Martial Arts at level 1 should give 1d4 with Dexterity");
+		TraitRegistry.UnarmedProfile lvl5 = TraitRegistry.unarmedProfileFor(sheetWithTrait("monk:martial_arts"), 5);
+		assertTrue(lvl5 != null && "1d6".equals(lvl5.dice()), "Martial Arts at level 5 should scale to 1d6");
 
-		JsonObject rogueSheet = sheetWithTrait("picaro:ataque_furtivo");
-		assertTrue("1d6".equals(TraitRegistry.sneakAttackDiceFor(rogueSheet, 1)), "Ataque Furtivo a nivel 1 debería dar 1d6");
-		assertTrue("2d6".equals(TraitRegistry.sneakAttackDiceFor(rogueSheet, 3)), "Ataque Furtivo a nivel 3 debería escalar a 2d6");
-		assertTrue(TraitRegistry.sneakAttackDiceFor(sheetWithTrait("monje:artes_marciales"), 20) == null, "Artes Marciales no debería dar Ataque Furtivo");
+		JsonObject rogueSheet = sheetWithTrait("rogue:sneak_attack");
+		assertTrue("1d6".equals(TraitRegistry.sneakAttackDiceFor(rogueSheet, 1)), "Sneak Attack at level 1 should give 1d6");
+		assertTrue("2d6".equals(TraitRegistry.sneakAttackDiceFor(rogueSheet, 3)), "Sneak Attack at level 3 should scale to 2d6");
+		assertTrue(TraitRegistry.sneakAttackDiceFor(sheetWithTrait("monk:martial_arts"), 20) == null, "Martial Arts should not give Sneak Attack");
 	}
 
 	private static JsonObject sheetWithTrait(String traitId) {
@@ -1331,7 +1398,7 @@ public class JsonContentSelfTest {
 	}
 
 	private static void checkPresets() throws Exception {
-		JsonArray presets = readArray("presets", "ejemplo.json");
+		JsonArray presets = readArray("presets", "example.json");
 		int count = 0;
 		for (JsonElement el : presets) {
 			PresetRegistry.register(PresetRegistry.parse(el.getAsJsonObject()));
@@ -1339,321 +1406,320 @@ public class JsonContentSelfTest {
 		}
 		expect("presets", count, 5);
 		PresetRegistry.ClassPreset wizard = PresetRegistry.get("wizard");
-		assertTrue(wizard != null && wizard.spellSlotsMax() == 2, "wizard debería tener spellSlotsMax=2");
+		assertTrue(wizard != null && wizard.spellSlotsMax() == 2, "wizard should have spellSlotsMax=2");
 
-		//Integración: aplicar el preset de monje/pícaro debe conceder el rasgo, y ese rasgo debe dar dado real.
+		//Integration: applying the monk/rogue preset must grant the trait, and that trait must give a real die.
 		JsonObject monkSheet = new JsonObject();
 		PresetRegistry.applyToSheet(monkSheet, PresetRegistry.get("monk"));
-		assertTrue(TraitRegistry.unarmedProfileFor(monkSheet, 1) != null, "aplicar el preset de monje debería conceder Artes Marciales");
+		assertTrue(TraitRegistry.unarmedProfileFor(monkSheet, 1) != null, "applying the monk preset should grant Martial Arts");
 
 		JsonObject rogueSheet = new JsonObject();
 		PresetRegistry.applyToSheet(rogueSheet, PresetRegistry.get("rogue"));
-		assertTrue(TraitRegistry.sneakAttackDiceFor(rogueSheet, 1) != null, "aplicar el preset de pícaro debería conceder Ataque Furtivo");
+		assertTrue(TraitRegistry.sneakAttackDiceFor(rogueSheet, 1) != null, "applying the rogue preset should grant Sneak Attack");
 	}
 
-	//No cubierto hasta ahora pese a no depender del runtime de Forge (mismo perfil que los *Registry de
-	//arriba) — cierra el hallazgo F26. "1d1" tira siempre 1: da un total determinista sin depender
-	//de aleatoriedad para poder comprobar la sustitución de $str/$prof/$hprof con un assert exacto.
+	//Not covered until now despite not depending on the Forge runtime (same profile as the *Registry ones
+	//above) - closes finding F26. "1d1" always rolls 1: it gives a deterministic total without depending
+	//on randomness, so the $str/$prof/$hprof substitution can be checked with an exact assert.
 	/**
-	 * <p>Cierra F26, lo ultimo que quedaba abierto del ledger: {@code checkDice()} cubria {@code roll()} a
-	 * fondo pero no {@code rollAttack}/{@code rollDamage}, que son las dos que de verdad deciden un combate.</p>
+	 * <p>Closes F26, the last thing left open in the ledger: {@code checkDice()} covered {@code roll()} in
+	 * depth but not {@code rollAttack}/{@code rollDamage}, which are the two that really decide a combat.</p>
 	 *
-	 * <p>Determinista con {@code 1d1}, el mismo truco que ya usa checkDice: un d1 siempre saca 1, asi que el
-	 * total es fijo y ademas es un 1 natural, que es la pifia. El critico no se puede forzar con dados (haria
-	 * falta un 20 natural), pero la regla que lo gobierna, {@code criticalFrom}, si se comprueba directa —el
-	 * self-test vive en el mismo paquete.</p>
+	 * <p>Deterministic with {@code 1d1}, the same trick checkDice already uses: a d1 always rolls 1, so the
+	 * total is fixed and it is also a natural 1, which is the fumble. The critical cannot be forced with dice (it would
+	 * take a natural 20), but the rule that governs it, {@code criticalFrom}, is checked directly - the
+	 * self-test lives in the same package.</p>
 	 */
 	private static void checkAttackAndDamageRolls() {
 		JsonObject sheet = new JsonObject();
-		sheet.addProperty("strength", "16"); //modificador +3
+		sheet.addProperty("strength", "16"); //modifier +3
 
-		//Un 1 natural es pifia pase lo que pase, y nunca es critico a la vez.
+		//A natural 1 is a fumble no matter what, and never a critical at the same time.
 		DiceManager.AttackRoll pifia = DiceManager.rollAttack(sheet, "1d1 + $str", DiceManager.Advantage.NORMAL);
 		assertTrue(pifia.outcome().result() != null && pifia.outcome().result().getValue() == 4,
-			"1d1 + $str (Fue 16) como ataque deberia dar total 4");
-		assertTrue(pifia.criticalMiss(), "un 1 natural deberia ser pifia");
-		assertTrue(!pifia.criticalHit(), "un 1 natural NO deberia ser critico");
+			"1d1 + $str (Str 16) as an attack should give total 4");
+		assertTrue(pifia.criticalMiss(), "a natural 1 should be a fumble");
+		assertTrue(!pifia.criticalHit(), "a natural 1 should NOT be a critical");
 
-		//Ventaja/desventaja tiran dos veces y anotan cual se descarta; con 1d1 las dos valen igual, asi que lo
-		//comprobable es que el total no cambia y que la narracion dice cual fue.
+		//Advantage/disadvantage roll twice and note which one is discarded; with 1d1 both are equal, so what can be
+		//checked is that the total does not change and that the narration says which one it was.
 		DiceManager.AttackRoll conVentaja = DiceManager.rollAttack(sheet, "1d1 + 5", DiceManager.Advantage.ADVANTAGE);
-		assertTrue(conVentaja.outcome().result().getValue() == 6, "con ventaja sobre 1d1 + 5 el total sigue siendo 6");
-		assertTrue(conVentaja.outcome().formatted().contains("ventaja")
-			&& conVentaja.outcome().formatted().contains("se descarta"),
-			"la tirada con ventaja deberia decir que descarta la otra: " + conVentaja.outcome().formatted());
+		assertTrue(conVentaja.outcome().result().getValue() == 6, "with advantage on 1d1 + 5 the total is still 6");
+		assertTrue(conVentaja.outcome().formatted().contains("advantage")
+			&& conVentaja.outcome().formatted().contains("discarding"),
+			"the roll with advantage should say it discards the other: " + conVentaja.outcome().formatted());
 
-		DiceManager.AttackRoll conDesventaja = DiceManager.rollAttack(sheet, "1d1 + 5", DiceManager.Advantage.DISADVANTAGE);
-		assertTrue(conDesventaja.outcome().formatted().contains("desventaja"),
-			"la tirada con desventaja deberia decirlo: " + conDesventaja.outcome().formatted());
+		DiceManager.AttackRoll withDisadvantage = DiceManager.rollAttack(sheet, "1d1 + 5", DiceManager.Advantage.DISADVANTAGE);
+		assertTrue(withDisadvantage.outcome().formatted().contains("disadvantage"),
+			"the roll with disadvantage should say so: " + withDisadvantage.outcome().formatted());
 
-		//Expresion invalida: ni critico ni pifia, y sin resultado. Si esto devolviera true en cualquiera de los
-		//dos, un ataque con un dado mal escrito acertaria o fallaria solo.
+		//Invalid expression: neither critical nor fumble, and no result. If this returned true on either
+		//one, an attack with a badly written die would hit or miss on its own.
 		DiceManager.AttackRoll rota = DiceManager.rollAttack(sheet, "999999d20", DiceManager.Advantage.NORMAL);
 		assertTrue(rota.outcome().result() == null && !rota.criticalHit() && !rota.criticalMiss(),
-			"una tirada que el guard de dados absurdos rechaza no deberia ser ni critico ni pifia");
+			"a roll that the absurd-dice guard rejects should be neither a critical nor a fumble");
 
-		//LA regla del critico en 5e: se doblan los DADOS, no el modificador. 2d1 + 3 normal = 5; critico = 7
-		//(los dos dados otra vez), no 10. Doblar el total entero es el error clasico y aqui queda pinchado.
+		//THE 5e critical rule: the DICE are doubled, not the modifier. 2d1 + 3 normal = 5; critical = 7
+		//(the two dice again), not 10. Doubling the whole total is the classic mistake and here it gets pinned.
 		DiceManager.DamageResult normal = DiceManager.rollDamage(sheet, "2d1 + 3", false);
-		assertTrue(normal.amount() == 5, "2d1 + 3 sin critico deberia ser 5, fue " + normal.amount());
+		assertTrue(normal.amount() == 5, "2d1 + 3 without a critical should be 5, was " + normal.amount());
 
 		DiceManager.DamageResult critico = DiceManager.rollDamage(sheet, "2d1 + 3", true);
 		assertTrue(critico.amount() == 7,
-			"2d1 + 3 critico deberia ser 7 (dados doblados, modificador una vez), fue " + critico.amount());
-		assertTrue(critico.formatted() != null && critico.formatted().contains("TICO!"),
-			"el daño critico deberia anunciarse: " + critico.formatted());
+			"2d1 + 3 critical should be 7 (dice doubled, modifier once), was " + critico.amount());
+		assertTrue(critico.formatted() != null && critico.formatted().contains("CRITICAL!"),
+			"critical damage should be announced: " + critico.formatted());
 
 		DiceManager.DamageResult danoRoto = DiceManager.rollDamage(sheet, "999999d20", false);
 		assertTrue(danoRoto.amount() == 0 && danoRoto.formatted() == null,
-			"una expresion de daño invalida deberia dar 0 y sin texto, no un daño inventado");
+			"an invalid damage expression should give 0 and no text, not an invented damage");
 
-		//criticalFrom: 20 salvo que la ficha lo baje, y con cortafuegos. Un 2 escrito en un JSON convertiria
-		//CADA ataque en critico, y eso se descubriria en mitad de un combate.
-		assertTrue(DiceManager.criticalFrom(null) == 20, "sin ficha se critica en 20");
-		assertTrue(DiceManager.criticalFrom(new JsonObject()) == 20, "sin el campo se critica en 20");
+		//criticalFrom: 20 unless the sheet lowers it, and with a firewall. A 2 written in a JSON would turn
+		//EVERY attack into a critical, and that would be discovered in the middle of a combat.
+		assertTrue(DiceManager.criticalFrom(null) == 20, "without a sheet, criticals are on 20");
+		assertTrue(DiceManager.criticalFrom(new JsonObject()) == 20, "without the field, criticals are on 20");
 		JsonObject campeon = new JsonObject();
 		campeon.addProperty("criticalFrom", "19");
-		assertTrue(DiceManager.criticalFrom(campeon) == 19, "el Campeon del guerrero critica en 19");
+		assertTrue(DiceManager.criticalFrom(campeon) == 19, "the fighter's Champion crits on 19");
 		JsonObject absurdo = new JsonObject();
 		absurdo.addProperty("criticalFrom", "2");
-		assertTrue(DiceManager.criticalFrom(absurdo) == 15, "un 2 deberia toparse en 15, no dejar criticar siempre");
+		assertTrue(DiceManager.criticalFrom(absurdo) == 15, "a 2 should be capped at 15, not let it crit always");
 		JsonObject basura = new JsonObject();
 		basura.addProperty("criticalFrom", "no es un numero");
-		assertTrue(DiceManager.criticalFrom(basura) == 20, "un valor no numerico deberia caer al 20 de siempre");
+		assertTrue(DiceManager.criticalFrom(basura) == 20, "a non-numeric value should fall back to the usual 20");
 
-		//Un dado mal escrito en un pack de contenido no debe poder dar critico. La libreria no rechaza una
-		//expresion que no entiende: le saca un numero igual, y ese numero entraba como si fuera el d20.
+		//A badly written die in a content pack must not be able to give a critical. The library does not reject an
+		//expression it does not understand: it gets a number out of it anyway, and that number used to enter as if it were the d20.
 		//
-		//Hay DOS filtros y cubren cosas distintas. El de rango (1..20) atrapa lo que se ve aqui: "20" sale
-		//como "20 = 20", sin corchetes, asi que firstDieValue devuelve -1 y no hay ni critico ni pifia. El
-		//de notacion (rollAttack exige que la expresion TENGA un dado) es el que cubre el caso peligroso de
-		//verdad, "no soy un dado", que la libreria convierte en "99 = 99[99]" con un valor ALEATORIO — ese
-		//no se puede fijar en una prueba, porque acertaria unas veces si y otras no, y una prueba
-		//intermitente se acaba ignorando. Aqui se pincha lo determinista; el aleatorio lo cierra el filtro.
+		//There are TWO filters and they cover different things. The range one (1..20) catches what is seen here: "20" comes out
+		//as "20 = 20", with no brackets, so firstDieValue returns -1 and there is neither critical nor fumble. The
+		//notation one (rollAttack requires the expression to HAVE a die) is the one that covers the really dangerous case,
+		//"no soy un dado", which the library turns into "99 = 99[99]" with a RANDOM value - that one
+		//cannot be pinned in a test, because it would pass sometimes and fail others, and an
+		//intermittent test ends up ignored. Here the deterministic part is pinned; the random one is closed by the filter.
 		DiceManager.AttackRoll sinDado = DiceManager.rollAttack(sheet, "20", DiceManager.Advantage.NORMAL);
-		assertTrue(!sinDado.criticalHit(), "una expresion sin dados que vale 20 NO es un 20 natural");
-		assertTrue(!sinDado.criticalMiss(), "y tampoco puede ser pifia");
+		assertTrue(!sinDado.criticalHit(), "an expression with no dice that equals 20 is NOT a natural 20");
+		assertTrue(!sinDado.criticalMiss(), "and it cannot be a fumble either");
 
 		DiceManager.AttackRoll unoPlano = DiceManager.rollAttack(sheet, "1", DiceManager.Advantage.NORMAL);
-		assertTrue(!unoPlano.criticalMiss(), "una expresion sin dados que vale 1 tampoco es una pifia");
+		assertTrue(!unoPlano.criticalMiss(), "an expression with no dice that equals 1 is not a fumble either");
 
-		//Y con dado de verdad la deteccion sigue viva: 1d1 saca 1, que es pifia.
+		//And with a real die detection stays alive: 1d1 rolls 1, which is a fumble.
 		assertTrue(DiceManager.rollAttack(sheet, "1d1", DiceManager.Advantage.NORMAL).criticalMiss(),
-			"con un dado real, el 1 natural tiene que seguir siendo pifia");
+			"with a real die, a natural 1 must still be a fumble");
 
-		System.out.println("checkAttackAndDamageRolls: OK, pifia, ventaja/desventaja, dados doblados sin doblar el modificador y umbral de critico.");
+		System.out.println("checkAttackAndDamageRolls: OK, fumble, advantage/disadvantage, doubled dice without doubling the modifier and crit threshold.");
 	}
 
 	private static void checkDice() {
 		JsonObject sheet = new JsonObject();
-		sheet.addProperty("strength", "16"); //modificador +3
+		sheet.addProperty("strength", "16"); //modifier +3
 		sheet.addProperty("proficiencyBonus", "4");
 
 		DiceManager.RollOutcome flat = DiceManager.roll(sheet, "1d1 + 5");
-		assertTrue(flat.result() != null && flat.result().getValue() == 6, "1d1 + 5 debería dar total 6");
+		assertTrue(flat.result() != null && flat.result().getValue() == 6, "1d1 + 5 should give a total of 6");
 
 		DiceManager.RollOutcome withStr = DiceManager.roll(sheet, "1d1 + $str");
-		assertTrue(withStr.result() != null && withStr.result().getValue() == 4, "1d1 + $str (Fue 16) debería dar total 4");
+		assertTrue(withStr.result() != null && withStr.result().getValue() == 4, "1d1 + $str (Str 16) should give a total of 4");
 
 		DiceManager.RollOutcome withProf = DiceManager.roll(sheet, "1d1 + $prof");
-		assertTrue(withProf.result() != null && withProf.result().getValue() == 5, "1d1 + $prof (comp. 4) debería dar total 5");
+		assertTrue(withProf.result() != null && withProf.result().getValue() == 5, "1d1 + $prof (prof. 4) should give a total of 5");
 
 		DiceManager.RollOutcome withHalfProf = DiceManager.roll(sheet, "1d1 + $hprof");
-		assertTrue(withHalfProf.result() != null && withHalfProf.result().getValue() == 3, "1d1 + $hprof (comp. 4 / 2) debería dar total 3");
+		assertTrue(withHalfProf.result() != null && withHalfProf.result().getValue() == 3, "1d1 + $hprof (prof. 4 / 2) should give a total of 3");
 
-		//Bug de precedencia de la librería de dados de terceros (ver DiceManager.wrapDiceTermsInParens y el
-		//README, "Known Bugs"): un segundo grupo de dados con conteo explícito después de un "+" fallaba al
-		//parsear entero. "1d1 + 1d1 + 3" ejercita justo ese caso con total determinista (1+1+3=5).
+		//Precedence bug in the third-party dice library (see DiceManager.wrapDiceTermsInParens and the
+		//README, "Known Bugs"): a second dice group with an explicit count after a "+" failed to
+		//parse entirely. "1d1 + 1d1 + 3" exercises exactly that case with a deterministic total (1+1+3=5).
 		DiceManager.RollOutcome multiGroup = DiceManager.roll(sheet, "1d1 + 1d1 + 3");
-		assertTrue(multiGroup.result() != null && multiGroup.result().getValue() == 5, "1d1 + 1d1 + 3 debería dar total 5 (antes fallaba al parsear el segundo grupo)");
+		assertTrue(multiGroup.result() != null && multiGroup.result().getValue() == 5, "1d1 + 1d1 + 3 should give a total of 5 (it used to fail parsing the second group)");
 
-		//Techo defensivo de hasAbsurdDiceCount: un conteo de dados absurdo se rechaza (result null) en vez
-		//de intentar tirarlo y agotar memoria.
+		//Defensive ceiling of hasAbsurdDiceCount: an absurd dice count is rejected (result null) instead
+		//of trying to roll it and running out of memory.
 		DiceManager.RollOutcome absurd = DiceManager.roll(sheet, "999999d6");
-		assertTrue(absurd.result() == null, "999999d6 debería rechazarse por conteo de dados absurdo");
+		assertTrue(absurd.result() == null, "999999d6 should be rejected for an absurd dice count");
 
-		//Sintaxis inválida: no debe propagar una excepción (catch (Throwable) en DiceManager.roll), solo
-		//devolver un resultado vacío.
-		DiceManager.RollOutcome invalid = DiceManager.roll(sheet, "esto no es una expresión de dados $$$");
-		assertTrue(invalid.result() == null, "una expresión inválida debería devolver result() == null, no lanzar");
+		//Invalid syntax: must not propagate an exception (catch (Throwable) in DiceManager.roll), only
+		//return an empty result.
+		DiceManager.RollOutcome invalid = DiceManager.roll(sheet, "this is not an expression of dice $$$");
+		assertTrue(invalid.result() == null, "an invalid expression should return result() == null, not throw");
 	}
 
 	/**
-	 * <p>El log de tiradas ({@link RollLog}), enganchado en {@link DiceManager#roll} — se comprueba
-	 * grabando tiradas reales y no con datos de mentira, porque el propio hook vive dentro de
-	 * {@code DiceManager.roll} y no en un método aparte que se pudiera llamar a mano.</p>
+	 * <p>The roll log ({@link RollLog}), hooked into {@link DiceManager#roll} — this is checked by
+	 * recording real rolls rather than fake data, because the hook itself lives inside
+	 * {@code DiceManager.roll} and not in a separate method that could be called by hand.</p>
 	 */
 	private static void checkRollLog() {
 		JsonObject withName = new JsonObject();
 		withName.addProperty("characterName", "Elara la Gris");
-		DiceManager.roll(withName, "1d1 + 2"); //Entra al log: characterName presente, tirada válida.
+		DiceManager.roll(withName, "1d1 + 2"); //Goes into the log: characterName present, valid roll.
 
-		JsonObject anonymous = new JsonObject(); //Sin characterName — el caso de un monstruo (bloque vacío).
+		JsonObject anonymous = new JsonObject(); //No characterName — the case of a monster (empty block).
 		DiceManager.roll(anonymous, "1d1 + 3");
 
-		DiceManager.roll(withName, "999999d6"); //Rechazada por conteo absurdo: no debería anotarse.
+		DiceManager.roll(withName, "999999d6"); //Rejected for an absurd count: it should not be logged.
 
 		List<RollLog.Entry> recent = RollLog.recent();
-		assertTrue(recent.size() >= 2, "las dos tiradas válidas de arriba deberían estar en el log");
-		//Más reciente primero: la última cosa que se tiró (anónima) tiene que salir antes que "Elara".
-		assertTrue(recent.get(0).actor().equals("?"), "sin characterName en la hoja, el autor debería quedar como \"?\", no vacío ni null");
-		assertTrue(recent.get(1).actor().equals("Elara la Gris"), "con characterName en la hoja, el autor debería ser ese nombre");
+		assertTrue(recent.size() >= 2, "the two valid rolls above should be in the log");
+		//Most recent first: the last thing rolled (anonymous) must come before "Elara".
+		assertTrue(recent.get(0).actor().equals("?"), "without characterName on the sheet, the actor should be \"?\", not empty or null");
+		assertTrue(recent.get(1).actor().equals("Elara la Gris"), "with characterName on the sheet, the actor should be that name");
 		assertTrue(recent.get(0).formatted() != null && !recent.get(0).formatted().isEmpty(),
-			"cada entrada debería traer el desglose ya formateado, el mismo que ya se ve en el chat");
+			"each entry should carry the already formatted breakdown, the same one already seen in chat");
 
-		System.out.println("checkRollLog: OK, cada tirada válida queda anotada con quién tira (o \"?\" si no se sabe) y su desglose.");
+		System.out.println("checkRollLog: OK, each valid roll is logged with who rolled it (or \"?\" if unknown) and its breakdown.");
 	}
 
 	/**
-	 * <p>La tabla de condiciones de 5e ({@link Condition}) y la regla de que ventaja y desventaja se anulan
-	 * ({@link DiceManager#combineAdvantage}). Ninguna de las dos toca clases de Minecraft, así que se
-	 * comprueban de pie aquí mismo; el resto de {@link Combatant} sí necesita una entidad real y se queda
-	 * fuera. Se prueban los casos que de verdad se pueden escribir mal: los que combinan varias reglas.</p>
+	 * <p>The 5e condition table ({@link Condition}) and the rule that advantage and disadvantage cancel
+	 * each other out ({@link DiceManager#combineAdvantage}). Neither touches Minecraft classes, so they
+	 * are checked standalone right here; the rest of {@link Combatant} does need a real entity and is
+	 * left out. The cases that can really be written wrong are tested: the ones that combine several rules.</p>
 	 */
 	private static void checkConditions() {
-		//Paralizado: la condición más cargada del manual (incapacita, velocidad 0, ventaja a los atacantes,
-		//crítico automático en cuerpo a cuerpo, falla salvaciones de FUE/DES). Si algún switch se queda
-		//corto, se nota aquí.
-		assertTrue(Condition.PARALIZADO.preventsActions(), "paralizado debería impedir actuar");
-		assertTrue(Condition.PARALIZADO.preventsMovement(), "paralizado debería impedir moverse");
-		assertTrue(Condition.PARALIZADO.attackersAdvantage(), "atacar a un paralizado debería dar ventaja");
-		assertTrue(Condition.PARALIZADO.autoCritInMelee(), "un golpe cuerpo a cuerpo a un paralizado debería ser crítico");
-		assertTrue(Condition.PARALIZADO.autoFailsStrDexSaves(), "paralizado debería fallar salvaciones de FUE/DES");
+		//Paralyzed: the most loaded condition in the rulebook (incapacitates, speed 0, advantage to attackers,
+		//automatic crit in melee, fails STR/DEX saves). If any switch falls short, it shows up here.
+		assertTrue(Condition.PARALYZED.preventsActions(), "paralyzed should prevent acting");
+		assertTrue(Condition.PARALYZED.preventsMovement(), "paralyzed should prevent moving");
+		assertTrue(Condition.PARALYZED.attackersAdvantage(), "attacking a paralyzed creature should grant advantage");
+		assertTrue(Condition.PARALYZED.autoCritInMelee(), "a melee hit against a paralyzed creature should be a critical");
+		assertTrue(Condition.PARALYZED.autoFailsStrDexSaves(), "paralyzed should fail STR/DEX saves");
 
-		//Invisible es la única que da ventaja propia y desventaja a quien le ataca: el caso invertido, fácil
-		//de escribir al revés por copiar el switch de al lado.
-		assertTrue(Condition.INVISIBLE.selfAttackAdvantage(), "invisible debería atacar con ventaja");
-		assertTrue(Condition.INVISIBLE.attackersDisadvantage(), "atacar a un invisible debería dar desventaja");
-		assertTrue(!Condition.INVISIBLE.attackersAdvantage(), "atacar a un invisible NO debería dar ventaja");
+		//Invisible is the only one that gives advantage to itself and disadvantage to whoever attacks it: the inverted case, easy
+		//to write backwards by copying the neighboring switch.
+		assertTrue(Condition.INVISIBLE.selfAttackAdvantage(), "invisible should attack with advantage");
+		assertTrue(Condition.INVISIBLE.attackersDisadvantage(), "attacking an invisible creature should give disadvantage");
+		assertTrue(!Condition.INVISIBLE.attackersAdvantage(), "attacking an invisible creature should NOT give advantage");
 
-		//Derribado queda fuera de attackersAdvantage() a propósito: depende de la distancia y lo resuelve
-		//Combatant.advantageAgainst. Si alguien lo mete en el switch "para completar la tabla", rompe el
-		//caso a distancia sin que nada más lo note.
-		assertTrue(!Condition.DERRIBADO.attackersAdvantage(), "derribado no debe resolverse sin saber la distancia");
-		assertTrue(Condition.DERRIBADO.selfAttackDisadvantage(), "derribado debería atacar con desventaja");
+		//Prone is left out of attackersAdvantage() on purpose: it depends on distance and is resolved by
+		//Combatant.advantageAgainst. If someone adds it to the switch "to complete the table", it breaks the
+		//ranged case without anything else noticing.
+		assertTrue(!Condition.PRONE.attackersAdvantage(), "prone must not be resolved without knowing the distance");
+		assertTrue(Condition.PRONE.selfAttackDisadvantage(), "prone should attack with disadvantage");
 
-		//Solo petrificado da resistencia a todo el daño en 5e.
-		assertTrue(Condition.PETRIFICADO.resistsAllDamage(), "petrificado debería resistir todo el daño");
+		//Only petrified gives resistance to all damage in 5e.
+		assertTrue(Condition.PETRIFIED.resistsAllDamage(), "petrified should resist all damage");
 		long resisting = java.util.Arrays.stream(Condition.values()).filter(Condition::resistsAllDamage).count();
-		assertTrue(resisting == 1, "solo petrificado debería resistir todo el daño, resisten " + resisting);
+		assertTrue(resisting == 1, "only petrified should resist all damage, these resist: " + resisting);
 
-		//Ida y vuelta por etiqueta: es el formato que usan el JSON de la hoja, el NBT del monstruo y los
-		//comandos, así que si se rompe, las condiciones dejan de sobrevivir a un reinicio en silencio.
+		//Round trip by label: it is the format used by the sheet JSON, the monster NBT and the
+		//commands, so if it breaks, conditions silently stop surviving a restart.
 		for (Condition condition : Condition.values()) {
-			assertTrue(Condition.fromLabel(condition.label()) == condition, "ida y vuelta por etiqueta rota en " + condition);
+			assertTrue(Condition.fromLabel(condition.label()) == condition, "label round trip broken at " + condition);
 		}
-		assertTrue(Condition.fromLabel("fuego") == null, "un efecto libre como \"fuego\" no debería ser una condición");
-		assertTrue(Condition.fromLabel(null) == null, "fromLabel(null) debería devolver null, no reventar");
+		assertTrue(Condition.fromLabel("fire") == null, "a free-form effect like \"fuego\" should not be a condition");
+		assertTrue(Condition.fromLabel(null) == null, "fromLabel(null) should return null, not blow up");
 
-		//La regla que más fácil se implementa mal: ventaja + desventaja no es ventaja, es una tirada normal,
-		//por muchas fuentes de cada lado que haya.
+		//The rule that is easiest to implement wrong: advantage + disadvantage is not advantage, it is a normal roll,
+		//no matter how many sources there are on each side.
 		DiceManager.Advantage adv = DiceManager.Advantage.ADVANTAGE;
 		DiceManager.Advantage dis = DiceManager.Advantage.DISADVANTAGE;
 		DiceManager.Advantage normal = DiceManager.Advantage.NORMAL;
-		assertTrue(DiceManager.combineAdvantage(adv, dis) == normal, "ventaja + desventaja debería anularse");
-		assertTrue(DiceManager.combineAdvantage(adv, adv, adv, dis) == normal, "las ventajas no se acumulan para vencer a una desventaja");
-		assertTrue(DiceManager.combineAdvantage(adv, normal, normal) == adv, "una sola ventaja debería mantenerse");
-		assertTrue(DiceManager.combineAdvantage(dis, normal) == dis, "una sola desventaja debería mantenerse");
-		assertTrue(DiceManager.combineAdvantage() == normal, "sin fuentes debería quedar una tirada normal");
+		assertTrue(DiceManager.combineAdvantage(adv, dis) == normal, "advantage + disadvantage should cancel out");
+		assertTrue(DiceManager.combineAdvantage(adv, adv, adv, dis) == normal, "advantages do not stack to beat a disadvantage");
+		assertTrue(DiceManager.combineAdvantage(adv, normal, normal) == adv, "a single advantage should be kept");
+		assertTrue(DiceManager.combineAdvantage(dis, normal) == dis, "a single disadvantage should be kept");
+		assertTrue(DiceManager.combineAdvantage() == normal, "with no sources it should be a normal roll");
 
-		System.out.println("checkConditions: OK, las 14 condiciones de 5e y la combinación de ventaja se comportan.");
+		System.out.println("checkConditions: OK, the 14 5e conditions and the advantage combination behave.");
 	}
 
 	/**
-	 * <p>Geometría de las formas de área ({@link SpellCastManager#inShape}). Es pura —sin mundo ni
-	 * entidades— y es justo la clase de lógica que no falla en ningún sitio cuando está mal: un cono que
-	 * se abre hacia atrás simplemente alcanza al grupo propio en vez de al enemigo, y eso solo se descubre
-	 * en mitad de una sesión.</p>
+	 * <p>Geometry of area shapes ({@link SpellCastManager#inShape}). It is pure —no world or
+	 * entities— and is exactly the kind of logic that fails nowhere when wrong: a cone that
+	 * opens backwards simply hits your own group instead of the enemy, and that is only discovered
+	 * in the middle of a session.</p>
 	 */
 	private static void checkAoeShapes() throws Exception {
 		net.minecraft.world.phys.Vec3 origin = new net.minecraft.world.phys.Vec3(0, 0, 0);
-		net.minecraft.world.phys.Vec3 forward = new net.minecraft.world.phys.Vec3(1, 0, 0); //Mirando a +X.
+		net.minecraft.world.phys.Vec3 forward = new net.minecraft.world.phys.Vec3(1, 0, 0); //Facing +X.
 
-		//--- Línea: 1 bloque de ancho (5 pies), y solo hacia delante ---
+		//--- Line: 1 block wide (5 feet), and only forward ---
 		assertTrue(SpellCastManager.inShape("line", origin, forward, 10, new net.minecraft.world.phys.Vec3(5, 0, 0)),
-			"un objetivo justo sobre el eje de la línea debería entrar");
+			"a target right on the line's axis should be included");
 		assertTrue(SpellCastManager.inShape("line", origin, forward, 10, new net.minecraft.world.phys.Vec3(5, 0, 0.4)),
-			"medio bloque de desviación sigue dentro de una línea de 5 pies");
+			"half a block of deviation is still inside a 5-foot line");
 		assertTrue(!SpellCastManager.inShape("line", origin, forward, 10, new net.minecraft.world.phys.Vec3(5, 0, 2)),
-			"dos bloques de desviación quedan fuera de la línea");
+			"two blocks of deviation fall outside the line");
 		assertTrue(!SpellCastManager.inShape("line", origin, forward, 10, new net.minecraft.world.phys.Vec3(15, 0, 0)),
-			"más allá del alcance no entra, aunque esté sobre la recta");
-		//EL caso que motivó todo esto: nada detrás del lanzador debe recibir el efecto.
+			"beyond range it is not included, even if it is on the straight line");
+		//THE case that motivated all this: nothing behind the caster should receive the effect.
 		assertTrue(!SpellCastManager.inShape("line", origin, forward, 10, new net.minecraft.world.phys.Vec3(-5, 0, 0)),
-			"un aliado DETRÁS del lanzador nunca debe entrar en la línea");
+			"an ally BEHIND the caster must never be inside the line");
 
-		//--- Cono: tan ancho como largo en cada punto, y tampoco hacia atrás ---
+		//--- Cone: as wide as it is long at every point, and not backwards either ---
 		assertTrue(SpellCastManager.inShape("cone", origin, forward, 10, new net.minecraft.world.phys.Vec3(5, 0, 0)),
-			"el centro del cono debería entrar");
-		//A 6 bloques de distancia el cono mide ~6 de ancho, o sea ~3 a cada lado del eje.
+			"the center of the cone should be included");
+		//At 6 blocks of distance the cone is ~6 wide, i.e. ~3 on each side of the axis.
 		assertTrue(SpellCastManager.inShape("cone", origin, forward, 10, new net.minecraft.world.phys.Vec3(6, 0, 2)),
-			"2 bloques de desviación a 6 de distancia siguen dentro del cono");
+			"2 blocks of deviation at 6 distance are still inside the cone");
 		assertTrue(!SpellCastManager.inShape("cone", origin, forward, 10, new net.minecraft.world.phys.Vec3(6, 0, 5)),
-			"5 bloques de desviación a 6 de distancia quedan fuera");
+			"5 blocks of deviation at 6 distance fall outside");
 		assertTrue(!SpellCastManager.inShape("cone", origin, forward, 10, new net.minecraft.world.phys.Vec3(-5, 0, 0)),
-			"un aliado DETRÁS del lanzador nunca debe entrar en el cono");
+			"an ally BEHIND the caster must never be inside the cone");
 		assertTrue(!SpellCastManager.inShape("cone", origin, forward, 10, new net.minecraft.world.phys.Vec3(20, 0, 0)),
-			"más allá del alcance no entra en el cono");
+			"beyond range it is not inside the cone");
 
-		//--- Esfera: sin cambios, y SÍ alcanza hacia atrás, que es lo correcto para una explosión ---
+		//--- Sphere: unchanged, and it DOES reach backwards, which is right for an explosion ---
 		assertTrue(SpellCastManager.inShape("sphere", origin, forward, 10, new net.minecraft.world.phys.Vec3(-5, 0, 0)),
-			"una esfera sí debería alcanzar en todas direcciones");
+			"a sphere should reach in all directions");
 		assertTrue(!SpellCastManager.inShape("sphere", origin, forward, 10, new net.minecraft.world.phys.Vec3(0, 0, 15)),
-			"fuera del radio no entra");
-		//Una forma desconocida cae a esfera, igual que hace el parser: nunca deja un hechizo sin efecto.
+			"outside the radius it is not included");
+		//An unknown shape falls back to sphere, like the parser does: it never leaves a spell without effect.
 		assertTrue(SpellCastManager.inShape("loquesea", origin, forward, 10, new net.minecraft.world.phys.Vec3(3, 0, 0)),
-			"una forma desconocida debería comportarse como esfera, no dejar el hechizo inerte");
+			"an unknown shape should behave like a sphere, not leave the spell inert");
 
-		//--- Muro: una SUPERFICIE, no un cilindro ---
-		//La diferencia importa: si la distancia al eje se midiera en 3D como en la línea, saldría un tubo y
-		//alguien de pie encima o debajo del muro se llevaría el daño sin haberlo tocado nunca.
+		//--- Wall: a SURFACE, not a cylinder ---
+		//The difference matters: if the distance to the axis were measured in 3D as in the line, it would be a tube and
+		//someone standing above or below the wall would take damage without ever having touched it.
 		assertTrue(SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(6, 0, 0)),
-			"pegado al muro a media longitud debería contar");
+			"right against the wall at mid length should count");
 		assertTrue(SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(6, 3, 0)),
-			"3 bloques de altura siguen dentro de un muro de 20 pies");
+			"3 blocks of height are still inside a 20-foot wall");
 		assertTrue(!SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(6, 8, 0)),
-			"volar por encima del muro debería librarte");
+			"flying over the wall should spare you");
 		assertTrue(!SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(6, -3, 0)),
-			"estar por debajo del muro también debería librarte");
+			"being below the wall should also spare you");
 		assertTrue(!SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(6, 0, 3)),
-			"3 bloques a un lado del muro es estar fuera de él");
+			"3 blocks to the side of the wall is being outside it");
 		assertTrue(!SpellCastManager.inShape("wall", origin, forward, 12, new net.minecraft.world.phys.Vec3(-6, 0, 0)),
-			"el muro no se extiende hacia atrás del lanzador");
+			"the wall does not extend behind the caster");
 
-		//El eje de una zona tiene que ser HORIZONTAL, y esta es la razón de que ZoneManager.place aplane el
-		//vector de vista. Una zona se coloca mirando al suelo —no hay otra forma de apuntarla—, y con el eje
-		//inclinado "along" deja de medir distancia horizontal: el muro se estira por el suelo mucho más allá
-		//de la longitud que declara (a 45° de picado, la mitad otra vez), y además se dibuja hundiéndose en
-		//el terreno. No falla ni avisa: simplemente el muro no mide lo que dice.
+		//The axis of a zone must be HORIZONTAL, and that is why ZoneManager.place flattens the
+		//view vector. A zone is placed looking at the ground —there is no other way to aim it— and with the
+		//axis tilted "along" stops measuring horizontal distance: the wall stretches along the ground far beyond
+		//the length it declares (at a 45° downward pitch, half again as much), and it is also drawn sinking into
+		//the terrain. It neither fails nor warns: the wall just is not the size it says.
 		net.minecraft.world.phys.Vec3 mirandoAlSuelo = new net.minecraft.world.phys.Vec3(0.7, -0.7, 0).normalize();
 		net.minecraft.world.phys.Vec3 masAllaDelFinal = new net.minecraft.world.phys.Vec3(16, 0, 0);
 		assertTrue(SpellCastManager.inShape("wall", origin, mirandoAlSuelo, 12, masAllaDelFinal),
-			"con el eje picado, un muro de 12 alcanza a 16 bloques: por eso ZoneManager.place lo aplana");
+			"with a tilted axis, a 12-long wall reaches 16 blocks: that is why ZoneManager.place flattens it");
 		assertTrue(!SpellCastManager.inShape("wall", origin, forward, 12, masAllaDelFinal),
-			"con el eje horizontal el muro mide lo que dice medir");
+			"with a horizontal axis the wall is as long as it says it is");
 
-		//La otra mitad: la zona nace DONDE SE APUNTA. Colocarla siempre dos bloques por delante del lanzador
-		//dejaba fuera de alcance cualquier pasillo o puerta que se quisiera tapar.
+		//The other half: the zone is born WHERE YOU AIM. Always placing it two blocks in front of the caster
+		//left any corridor or door you wanted to block out of reach.
 		String zoneManager = Files.readString(
 			Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "ZoneManager.java"));
 		assertTrue(zoneManager.contains("Vec3 aimPoint") && zoneManager.contains("aimPoint != null ? aimPoint"),
-			"una zona se coloca en el punto apuntado, no siempre delante del lanzador");
+			"a zone is placed at the aimed point, not always in front of the caster");
 
-		//Y lo que enseña el clic agachado sale del MISMO sitio que lo que coloca el clic normal. Una
-		//previsualización calculada por su cuenta puede desviarse de la colocación real sin que falle nada:
-		//el muro se enseña donde no va a caer, y encima te hace confiar.
+		//And what the crouched click shows comes from the SAME place as what the normal click places. A
+		//preview calculated on its own can drift from the real placement without anything failing:
+		//the wall is shown where it will not land, and on top of that it makes you trust it.
 		assertTrue(zoneManager.contains("private static Zone zoneAt(")
 				&& zoneManager.contains("draw(level, zoneAt(") && zoneManager.contains("zoneAt(caster, spell, saveDc, aimPoint)"),
-			"la previsualización y la colocación de una zona salen las dos de zoneAt: si no, la primera puede mentir");
+			"the preview and the placement of a zone both come from zoneAt: otherwise the former can lie");
 
-		System.out.println("checkAoeShapes: OK, línea y cono salen del lanzador, el muro es superficie y no cilindro, y una zona se apunta al suelo con eje horizontal.");
+		System.out.println("checkAoeShapes: OK, line and cone start at the caster, the wall is a surface and not a cylinder, and a zone is aimed at the ground with a horizontal axis.");
 	}
 
 	/**
-	 * <p>Combatiente falso, en memoria, para probar los métodos por defecto de {@link Combatant} sin un
-	 * mundo de Minecraft: guardar/leer condiciones, la salvación con fallo automático y la ventaja según
-	 * el estado del objetivo. Los métodos que sí necesitan una entidad real ({@code seesSourceOf} con
-	 * fuente conocida, {@code cannotAttack}, {@code takeDamage}) se quedan fuera — se prueban en el juego.</p>
+	 * <p>In-memory fake combatant, to test the default methods of {@link Combatant} without a
+	 * Minecraft world: saving/reading conditions, the auto-fail save and advantage depending on
+	 * the target's state. The methods that do need a real entity ({@code seesSourceOf} with a
+	 * known source, {@code cannotAttack}, {@code takeDamage}) are left out — they are tested in game.</p>
 	 */
 	private static final class FakeCombatant implements Combatant {
 		private final Map<Condition, Integer> conditions = new java.util.EnumMap<>(Condition.class);
@@ -1682,131 +1748,131 @@ public class JsonContentSelfTest {
 	}
 
 	/**
-	 * <p>Las reglas de {@link Combatant} que no necesitan mundo. Las tres cosas que de verdad se pueden
-	 * romper en silencio: el formato con el que las condiciones llegan al disco, cuándo una salvación falla
-	 * sola, y que derribado cambie de signo según la distancia.</p>
+	 * <p>The {@link Combatant} rules that need no world. The three things that can truly break
+	 * silently: the format in which conditions reach disk, when a save fails on its own, and that prone
+	 * flips sign depending on distance.</p>
 	 */
 	private static void checkCombatantRules() {
-		//Formato en disco: "etiqueta" o "etiqueta@idFuente". Si esto se rompe, las condiciones dejan de
-		//sobrevivir a un reinicio sin que falle nada visible.
+		//Disk format: "label" or "label@sourceId". If this breaks, conditions stop surviving
+		//a restart with nothing visibly failing.
 		Map<Condition, Integer> parsed = new java.util.EnumMap<>(Condition.class);
-		Combatant.parseEntry("derribado", parsed);
+		Combatant.parseEntry("prone", parsed);
 		Combatant.parseEntry("hechizado@42", parsed);
-		Combatant.parseEntry("noexisto", parsed);       //Efecto de nombre libre: se ignora, no revienta.
-		Combatant.parseEntry("apresado@basura", parsed); //Id manipulado a mano: entra sin fuente.
-		assertTrue(parsed.size() == 3, "deberían haber entrado 3 condiciones, entraron " + parsed.size());
-		assertTrue(parsed.get(Condition.DERRIBADO) == Combatant.NO_SOURCE, "derribado sin sufijo debería quedar sin fuente");
-		assertTrue(parsed.get(Condition.HECHIZADO) == 42, "hechizado@42 debería recordar la fuente 42");
-		assertTrue(parsed.get(Condition.APRESADO) == Combatant.NO_SOURCE, "un id no numérico debería degradar a sin fuente, no romper la carga");
+		Combatant.parseEntry("noexisto", parsed);       //Free-name effect: ignored, does not blow up.
+		Combatant.parseEntry("apresado@basura", parsed); //Id tampered with by hand: enters without a source.
+		assertTrue(parsed.size() == 3, "3 conditions should have been added, got " + parsed.size());
+		assertTrue(parsed.get(Condition.PRONE) == Combatant.NO_SOURCE, "prone without a suffix should have no source");
+		assertTrue(parsed.get(Condition.CHARMED) == 42, "charmed@42 should remember source 42");
+		assertTrue(parsed.get(Condition.RESTRAINED) == Combatant.NO_SOURCE, "a non-numeric id should degrade to no source, not break loading");
 
-		assertTrue("derribado".equals(Combatant.formatEntry(Map.entry(Condition.DERRIBADO, Combatant.NO_SOURCE))),
-			"sin fuente no debería escribirse ningún sufijo");
-		assertTrue("hechizado@42".equals(Combatant.formatEntry(Map.entry(Condition.HECHIZADO, 42))),
-			"con fuente debería escribirse etiqueta@id");
+		assertTrue("prone".equals(Combatant.formatEntry(Map.entry(Condition.PRONE, Combatant.NO_SOURCE))),
+			"with no source no suffix should be written");
+		assertTrue("charmed@42".equals(Combatant.formatEntry(Map.entry(Condition.CHARMED, 42))),
+			"with a source, label@id should be written");
 
-		//Alta y baja de condiciones a través de los métodos por defecto.
+		//Adding and removing conditions through the default methods.
 		FakeCombatant combatant = new FakeCombatant(3);
-		assertTrue(combatant.conditions().isEmpty(), "un combatiente nuevo no debería tener condiciones");
-		combatant.addCondition(Condition.PARALIZADO);
-		assertTrue(combatant.hasCondition(Condition.PARALIZADO), "paralizado debería quedar puesto");
-		assertTrue(combatant.cannotAct(), "un paralizado no debería poder actuar");
-		assertTrue(combatant.cannotMove(), "un paralizado no debería poder moverse");
+		assertTrue(combatant.conditions().isEmpty(), "a new combatant should have no conditions");
+		combatant.addCondition(Condition.PARALYZED);
+		assertTrue(combatant.hasCondition(Condition.PARALYZED), "paralyzed should be set");
+		assertTrue(combatant.cannotAct(), "a paralyzed creature should not be able to act");
+		assertTrue(combatant.cannotMove(), "a paralyzed creature should not be able to move");
 
-		//Salvación con fallo automático: paralizado falla FUE y DES, pero NO el resto.
+		//Auto-fail save: paralyzed fails STR and DEX, but NOT the rest.
 		Combatant.SaveRoll dexSave = combatant.rollSave("dex");
-		assertTrue(dexSave.blockedBy() == Condition.PARALIZADO, "un paralizado debería fallar sola la salvación de DES");
-		assertTrue(!dexSave.succeeds(1), "una salvación auto-fallada no debería superar ni una CD de 1");
-		assertTrue(combatant.rollSave("dexterity").blockedBy() == Condition.PARALIZADO, "el nombre largo debería valer igual que el corto");
+		assertTrue(dexSave.blockedBy() == Condition.PARALYZED, "a paralyzed creature should fail the DEX save on its own");
+		assertTrue(!dexSave.succeeds(1), "an auto-failed save should not beat even a DC of 1");
+		assertTrue(combatant.rollSave("dexterity").blockedBy() == Condition.PARALYZED, "the long name should work the same as the short one");
 		Combatant.SaveRoll conSave = combatant.rollSave("con");
-		assertTrue(conSave.blockedBy() == null, "paralizado NO debería hacer fallar sola la salvación de CON");
-		assertTrue(conSave.formatted() != null, "una salvación que sí se tira debería traer texto para el chat");
+		assertTrue(conSave.blockedBy() == null, "paralyzed should NOT auto-fail the CON save");
+		assertTrue(conSave.formatted() != null, "a save that is actually rolled should come with chat text");
 
-		//Derribado: la única condición que cambia de signo según la distancia.
+		//Prone: the only condition that flips sign depending on distance.
 		FakeCombatant prone = new FakeCombatant(0);
-		prone.addCondition(Condition.DERRIBADO);
-		assertTrue(prone.advantageAgainst(true) == DiceManager.Advantage.ADVANTAGE, "atacar en cuerpo a cuerpo a un derribado debería dar ventaja");
-		assertTrue(prone.advantageAgainst(false) == DiceManager.Advantage.DISADVANTAGE, "dispararle a un derribado debería dar desventaja");
-		assertTrue(prone.ownAttackAdvantage() == DiceManager.Advantage.DISADVANTAGE, "un derribado debería atacar con desventaja");
+		prone.addCondition(Condition.PRONE);
+		assertTrue(prone.advantageAgainst(true) == DiceManager.Advantage.ADVANTAGE, "melee attacking a prone creature should give advantage");
+		assertTrue(prone.advantageAgainst(false) == DiceManager.Advantage.DISADVANTAGE, "shooting a prone creature should give disadvantage");
+		assertTrue(prone.ownAttackAdvantage() == DiceManager.Advantage.DISADVANTAGE, "a prone creature should attack with disadvantage");
 
-		//Invisible y derribado a la vez en cuerpo a cuerpo: ventaja y desventaja de fuentes distintas, se anulan.
+		//Invisible and prone at once in melee: advantage and disadvantage from different sources cancel out.
 		prone.addCondition(Condition.INVISIBLE);
 		assertTrue(prone.advantageAgainst(true) == DiceManager.Advantage.NORMAL,
-			"derribado (ventaja) e invisible (desventaja) deberían anularse para quien ataca");
+			"prone (advantage) and invisible (disadvantage) should cancel out for the attacker");
 
-		prone.removeCondition(Condition.DERRIBADO);
-		assertTrue(!prone.hasCondition(Condition.DERRIBADO), "quitar una condición debería quitarla de verdad");
-		assertTrue(prone.hasCondition(Condition.INVISIBLE), "quitar una condición no debería llevarse las demás por delante");
+		prone.removeCondition(Condition.PRONE);
+		assertTrue(!prone.hasCondition(Condition.PRONE), "removing a condition should really remove it");
+		assertTrue(prone.hasCondition(Condition.INVISIBLE), "removing a condition should not take the others with it");
 
-		//Petrificado da resistencia a todo el daño encima de las afinidades declaradas.
+		//Petrified gives resistance to all damage on top of the declared affinities.
 		FakeCombatant petrified = new FakeCombatant(0);
-		assertTrue(petrified.effectiveDamageMultiplier("fuego", false) == 1.0, "sin condiciones ni afinidades, el daño va entero");
-		petrified.addCondition(Condition.PETRIFICADO);
-		assertTrue(petrified.effectiveDamageMultiplier("fuego", false) == 0.5, "petrificado debería resistir todo el daño");
+		assertTrue(petrified.effectiveDamageMultiplier("fire", false) == 1.0, "with no conditions or affinities, damage goes in full");
+		petrified.addCondition(Condition.PETRIFIED);
+		assertTrue(petrified.effectiveDamageMultiplier("fire", false) == 0.5, "petrified should resist all damage");
 
-		//Resistencia condicional a lo no mágico, sobre el Combatant real de un monstruo. Se puede construir
-		//con entidad null porque damageMultiplier solo mira el bloque de estadísticas — y esa es justo la
-		//razón por la que la lógica vive ahí y no repartida por las rutas de combate.
+		//Conditional resistance to non-magical damage, on a monster's real Combatant. It can be built
+		//with a null entity because damageMultiplier only looks at the stat block — and that is exactly
+		//the reason the logic lives there and not spread across the combat paths.
 		MonsterRegistry.MonsterStatBlock conditional = new MonsterRegistry.MonsterStatBlock(
 			"test:licantropo", "Licantropo", "minecraft:zombie", 12, 30,
 			Map.of("str", 10, "dex", 10, "con", 10, "int", 10, "wis", 10, "cha", 10), 2,
 			List.of(), List.of(),
-			Map.of("fuego", "vulnerable"),          //Incondicional.
-			Map.of("cortante", "immune"),           //Solo frente a armas no mágicas.
-			CreatureType.HUMANOID, 0, 0, 1, null, false, false, false);  //Un licántropo es humanoide en 5e, también en forma de bestia.
+			Map.of("fire", "vulnerable"),          //Unconditional.
+			Map.of("slashing", "immune"),           //Only against non-magical weapons.
+			CreatureType.HUMANOID, 0, 0, 1, CreatureSize.UNKNOWN, null, false, false, false);  //A lycanthrope is humanoid in 5e, also in beast form.
 		Combatant beast = new Combatant.MonsterCombatant(null, conditional);
-		assertTrue(beast.damageMultiplier("cortante", false) == 0.0, "cortante no mágico debería rebotar en el licántropo");
-		assertTrue(beast.damageMultiplier("cortante", true) == 1.0, "cortante mágico debería atravesarlo entero");
-		assertTrue(beast.damageMultiplier("fuego", true) == 2.0, "una afinidad incondicional aplica sea mágico o no");
-		assertTrue(beast.damageMultiplier("fuego", false) == 2.0, "y tambien cuando no lo es");
-		assertTrue(beast.damageMultiplier("veneno", false) == 1.0, "un tipo sin afinidad declarada pasa entero");
+		assertTrue(beast.damageMultiplier("slashing", false) == 0.0, "non-magical slashing should bounce off the lycanthrope");
+		assertTrue(beast.damageMultiplier("slashing", true) == 1.0, "magical slashing should go through it in full");
+		assertTrue(beast.damageMultiplier("fire", true) == 2.0, "an unconditional affinity applies whether magical or not");
+		assertTrue(beast.damageMultiplier("fire", false) == 2.0, "and also when it is not");
+		assertTrue(beast.damageMultiplier("poison", false) == 1.0, "a type with no declared affinity goes through in full");
 
-		//--- Puntos de golpe temporales ---
-		//La absorción vive en el método por defecto de la interfaz, así que basta un combatiente falso para
-		//fijarla: es la misma regla para jugador, PNJ y monstruo, y esa es justo la razón de que esté ahí.
+		//--- Temporary hit points ---
+		//Absorption lives in the interface's default method, so a fake combatant is enough to
+		//pin it down: it is the same rule for player, NPC and monster, and that is exactly why it is there.
 		FakeCombatant guarded = new FakeCombatant(0);
-		assertTrue(guarded.temporaryHp() == 0, "sin conceder nada no debería haber PG temporales");
+		assertTrue(guarded.temporaryHp() == 0, "without granting anything there should be no temp HP");
 		guarded.grantTemporaryHp(10);
-		assertTrue(guarded.temporaryHp() == 10, "conceder 10 debería dejar 10");
+		assertTrue(guarded.temporaryHp() == 10, "granting 10 should leave 10");
 
-		//No se apilan: un montón nuevo menor no baja el que ya había, y uno mayor lo reemplaza.
+		//They do not stack: a new smaller pile does not lower the existing one, and a larger one replaces it.
 		guarded.grantTemporaryHp(4);
-		assertTrue(guarded.temporaryHp() == 10, "un montón menor no debería reducir el que ya había");
+		assertTrue(guarded.temporaryHp() == 10, "a smaller pile should not reduce the existing one");
 		guarded.grantTemporaryHp(15);
-		assertTrue(guarded.temporaryHp() == 15, "un montón mayor sí debería reemplazarlo");
+		assertTrue(guarded.temporaryHp() == 15, "a larger pile should replace it");
 
-		//Absorción parcial: 15 temporales contra 20 de daño dejan 5 para los PG reales, y la reserva a 0.
-		assertTrue(guarded.absorbWithTemporaryHp(20) == 5, "deberían pasar 5 a los PG reales");
-		assertTrue(guarded.temporaryHp() == 0, "la reserva debería quedar agotada");
+		//Partial absorption: 15 temporary against 20 damage leaves 5 for real HP, and the pool at 0.
+		assertTrue(guarded.absorbWithTemporaryHp(20) == 5, "5 should pass through to real HP");
+		assertTrue(guarded.temporaryHp() == 0, "the pool should be exhausted");
 
-		//Absorción total: el golpe entero se lo come la reserva y los PG reales ni se tocan.
+		//Total absorption: the whole hit is eaten by the pool and real HP is not even touched.
 		guarded.grantTemporaryHp(12);
-		assertTrue(guarded.absorbWithTemporaryHp(5) == 0, "un golpe menor que la reserva no debería llegar a los PG");
-		assertTrue(guarded.temporaryHp() == 7, "la reserva debería bajar exactamente lo absorbido");
-		assertTrue(guarded.absorbWithTemporaryHp(0) == 0, "un daño de 0 no debería gastar reserva");
-		assertTrue(guarded.temporaryHp() == 7, "y la reserva sigue intacta");
+		assertTrue(guarded.absorbWithTemporaryHp(5) == 0, "a hit smaller than the pool should not reach HP");
+		assertTrue(guarded.temporaryHp() == 7, "the pool should drop exactly what was absorbed");
+		assertTrue(guarded.absorbWithTemporaryHp(0) == 0, "0 damage should not spend the pool");
+		assertTrue(guarded.temporaryHp() == 7, "and the pool stays intact");
 
-		//--- Buff de arma con duración ---
-		//A diferencia de Castigo Divino NO se consume por golpe: dura asaltos. Si alguien lo hiciera
-		//consumible, Favor Divino pasaría de "1 minuto" a "un golpe" sin que fallara nada.
+		//--- Weapon buff with duration ---
+		//Unlike Divine Smite it is NOT consumed per hit: it lasts rounds. If someone made it
+		//consumable, Divine Favor would go from "1 minute" to "one hit" without anything failing.
 		JsonObject buffed = new JsonObject();
-		assertTrue(WeaponBuffManager.active(buffed) == null, "una hoja sin buff no debería tener ninguno activo");
-		WeaponBuffManager.grant(buffed, "Favor Divino", "1d4", "radiante", 2);
-		assertTrue(WeaponBuffManager.active(buffed) != null, "el buff recién concedido debería estar activo");
-		assertTrue("1d4".equals(WeaponBuffManager.active(buffed).dice()), "debería recordar sus dados");
-		assertTrue(WeaponBuffManager.active(buffed) != null, "consultarlo dos veces no debería consumirlo");
-		assertTrue(!WeaponBuffManager.tickRound(buffed), "tras el primer asalto todavía no expira");
-		assertTrue(WeaponBuffManager.active(buffed) != null, "y sigue activo");
-		assertTrue(WeaponBuffManager.tickRound(buffed), "al agotarse los asaltos debería expirar");
-		assertTrue(WeaponBuffManager.active(buffed) == null, "y dejar de estar activo");
+		assertTrue(WeaponBuffManager.active(buffed) == null, "a sheet without a buff should have none active");
+		WeaponBuffManager.grant(buffed, "Favor Divino", "1d4", "radiant", 2);
+		assertTrue(WeaponBuffManager.active(buffed) != null, "the freshly granted buff should be active");
+		assertTrue("1d4".equals(WeaponBuffManager.active(buffed).dice()), "it should remember its dice");
+		assertTrue(WeaponBuffManager.active(buffed) != null, "querying it twice should not consume it");
+		assertTrue(!WeaponBuffManager.tickRound(buffed), "after the first round it does not expire yet");
+		assertTrue(WeaponBuffManager.active(buffed) != null, "and it stays active");
+		assertTrue(WeaponBuffManager.tickRound(buffed), "when the rounds run out it should expire");
+		assertTrue(WeaponBuffManager.active(buffed) == null, "and stop being active");
 
-		//Vocabulario de afinidades, compartido ahora entre la hoja del jugador y el bloque de monstruo.
-		assertTrue(DamageTypes.multiplierForLabel("resistant") == 0.5, "resistant debería ser 0.5");
-		assertTrue(DamageTypes.multiplierForLabel("vulnerable") == 2.0, "vulnerable debería ser 2.0");
-		assertTrue(DamageTypes.multiplierForLabel("immune") == 0.0, "immune debería ser 0.0");
-		assertTrue(DamageTypes.multiplierForLabel(null) == 1.0, "sin afinidad declarada, el daño va entero");
-		assertTrue(DamageTypes.multiplierForLabel("cualquier_cosa") == 1.0, "una afinidad desconocida no debería cambiar el daño");
+		//Affinity vocabulary, now shared between the player sheet and the monster block.
+		assertTrue(DamageTypes.multiplierForLabel("resistant") == 0.5, "resistant should be 0.5");
+		assertTrue(DamageTypes.multiplierForLabel("vulnerable") == 2.0, "vulnerable should be 2.0");
+		assertTrue(DamageTypes.multiplierForLabel("immune") == 0.0, "immune should be 0.0");
+		assertTrue(DamageTypes.multiplierForLabel(null) == 1.0, "with no declared affinity, damage goes in full");
+		assertTrue(DamageTypes.multiplierForLabel("cualquier_cosa") == 1.0, "an unknown affinity should not change the damage");
 
-		System.out.println("checkCombatantRules: OK, persistencia de condiciones, salvaciones y ventaja por estado se comportan.");
+		System.out.println("checkCombatantRules: OK, condition persistence, saves and state-based advantage behave.");
 	}
 
 	private static JsonObject characterSheet(String ownerUuid, boolean active) {
@@ -1817,110 +1883,110 @@ public class JsonContentSelfTest {
 	}
 
 	/**
-	 * <p>Las reglas de "de quién es este personaje y cuál lleva puesto" ({@link CharacterRules}). Lo que
-	 * hay que fijar aquí es sobre todo la <b>retrocompatibilidad</b>: una hoja guardada antes de que
-	 * existieran los personajes no tiene {@code ownerUuid} ni {@code active}, y si dejara de reconocerse
-	 * como suya, un jugador perdería su personaje de siempre sin que fallara nada visible.</p>
+	 * <p>The rules of "whose character is this and which one is being worn" ({@link CharacterRules}). What
+	 * needs pinning here is mostly <b>backward compatibility</b>: a sheet saved before characters
+	 * existed has no {@code ownerUuid} or {@code active}, and if it stopped being recognized
+	 * as theirs, a player would lose their longtime character with nothing visibly failing.</p>
 	 */
 	/**
-	 * <p>Tablas de espacios de conjuro de 5e. Un escalón mal puesto no rompe nada y no avisa: simplemente
-	 * un personaje lanza de más o de menos durante toda la campaña.</p>
+	 * <p>5e spell slot tables. A misplaced step breaks nothing and warns nobody: a character simply
+	 * casts too much or too little for the whole campaign.</p>
 	 */
 	private static void checkSpellSlots() {
-		//Lanzador completo, filas de referencia del SRD.
+		//Full caster, SRD reference rows.
 		assertSlots(SpellSlots.Caster.FULL, 1, new int[] {2});
 		assertSlots(SpellSlots.Caster.FULL, 5, new int[] {4, 3, 2});
 		assertSlots(SpellSlots.Caster.FULL, 11, new int[] {4, 3, 3, 3, 2, 1});
 		assertSlots(SpellSlots.Caster.FULL, 20, new int[] {4, 3, 3, 3, 3, 2, 2, 1, 1});
 
-		//Semilanzador: no lanza a nivel 1, y a partir de ahí es el completo a la mitad redondeando ARRIBA.
-		//Con el redondeo al revés toda la progresión se desplaza un nivel sin que nada falle.
+		//Half caster: does not cast at level 1, and from there it is the full caster at half, rounding UP.
+		//With the rounding the other way, the whole progression shifts a level without anything failing.
 		assertSlots(SpellSlots.Caster.HALF, 1, new int[] {});
 		assertSlots(SpellSlots.Caster.HALF, 2, new int[] {2});
 		assertSlots(SpellSlots.Caster.HALF, 5, new int[] {4, 2});
 		assertSlots(SpellSlots.Caster.HALF, 20, new int[] {4, 3, 3, 3, 2});
 
-		//Total por nivel del lanzador completo, los veinte. Las cuatro filas de arriba comprueban el
-		//REPARTO; esto comprueba que no falte ni sobre ningún espacio en las dieciséis que no se detallan.
-		//Hace falta: al probar estas comprobaciones, romper un escalón de una fila no comprobada no saltaba.
+		//Total per full caster level, all twenty. The four rows above check the
+		//DISTRIBUTION; this checks that no slot is missing or extra in the sixteen that are not detailed.
+		//It is needed: when testing these checks, breaking a step in an unchecked row did not trip anything.
 		int[] totalPorNivel = {0, 2, 3, 6, 7, 9, 10, 11, 12, 14, 15, 16, 16, 17, 17, 18, 18, 19, 20, 21, 22};
 		for (int level = 1; level <= 20; level++) {
 			int total = SpellSlots.total(SpellSlots.maxSlots(SpellSlots.Caster.FULL, level));
-			assertTrue(total == totalPorNivel[level], "lanzador completo de nivel " + level + ": "
-				+ total + " espacios en total, se esperaban " + totalPorNivel[level]);
+			assertTrue(total == totalPorNivel[level], "full caster of level " + level + ": "
+				+ total + " slots in total, expected " + totalPorNivel[level]);
 		}
 
-		//Magia de Pacto: pocos espacios y TODOS del mismo nivel — no es "menos espacios", es otro recurso.
-		//Los veinte niveles, porque la tabla es corta y sus escalones (2, 3, 5, 7, 9, 11 y 17) son justo
-		//donde un dígito movido pasa inadvertido.
+		//Pact Magic: few slots and ALL of the same level — it is not "fewer slots", it is a different resource.
+		//All twenty levels, because the table is short and its steps (2, 3, 5, 7, 9, 11 and 17) are exactly
+		//where a moved digit goes unnoticed.
 		int[] pactCount = {0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4};
 		int[] pactLevel = {0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5};
 		for (int level = 1; level <= 20; level++) {
 			int[] slots = SpellSlots.maxSlots(SpellSlots.Caster.PACT, level);
-			assertTrue(SpellSlots.total(slots) == pactCount[level], "brujo de nivel " + level + ": "
-				+ SpellSlots.total(slots) + " espacios, se esperaban " + pactCount[level]);
-			assertTrue(slots[pactLevel[level]] == pactCount[level], "brujo de nivel " + level
-				+ ": sus espacios deberían ser todos de nivel de conjuro " + pactLevel[level]);
+			assertTrue(SpellSlots.total(slots) == pactCount[level], "warlock of level " + level + ": "
+				+ SpellSlots.total(slots) + " slots, expected " + pactCount[level]);
+			assertTrue(slots[pactLevel[level]] == pactCount[level], "warlock of level " + level
+				+ ": its slots should all be of spell level " + pactLevel[level]);
 		}
 
 		assertSlots(SpellSlots.Caster.NONE, 20, new int[] {});
 
-		//Las clases se reconocen por su nombre mostrado, que es lo que guarda la hoja ("Mago", no "wizard").
-		assertTrue(SpellSlots.casterFor("Mago") == SpellSlots.Caster.FULL, "Mago debería ser lanzador completo");
-		assertTrue(SpellSlots.casterFor("Explorador") == SpellSlots.Caster.HALF, "Explorador debería ser semilanzador");
-		assertTrue(SpellSlots.casterFor("Brujo") == SpellSlots.Caster.PACT, "Brujo debería usar Magia de Pacto");
-		assertTrue(SpellSlots.casterFor("Guerrero") == SpellSlots.Caster.NONE, "Guerrero no lanza conjuros");
-		assertTrue(SpellSlots.casterFor("wizard") == SpellSlots.Caster.FULL, "el id inglés también debería valer");
-		assertTrue(SpellSlots.casterFor(null) == SpellSlots.Caster.NONE, "una clase sin fijar no debería reventar");
+		//Classes are recognized by their displayed name, which is what the sheet stores ("Mago", not "wizard").
+		assertTrue(SpellSlots.casterFor("Mago") == SpellSlots.Caster.FULL, "Mago should be a full caster");
+		assertTrue(SpellSlots.casterFor("Explorador") == SpellSlots.Caster.HALF, "Explorador should be a half caster");
+		assertTrue(SpellSlots.casterFor("Brujo") == SpellSlots.Caster.PACT, "Brujo should use Pact Magic");
+		assertTrue(SpellSlots.casterFor("Guerrero") == SpellSlots.Caster.NONE, "Guerrero does not cast spells");
+		assertTrue(SpellSlots.casterFor("wizard") == SpellSlots.Caster.FULL, "the English id should also work");
+		assertTrue(SpellSlots.casterFor(null) == SpellSlots.Caster.NONE, "an unset class should not blow up");
 
-		//Gastar coge el espacio MÁS BAJO que sirva: quemar uno alto pudiendo usar uno bajo tira el recurso caro.
+		//Spending takes the LOWEST slot that works: burning a high one when a low one could be used wastes the expensive resource.
 		JsonObject sheet = new JsonObject();
 		SpellSlots.applyProgression(sheet, "Mago", 5);      //4/3/2
-		assertTrue(SpellSlots.spend(sheet, 1) == 1, "un mago de nivel 5 debería gastar el espacio de nivel 1");
+		assertTrue(SpellSlots.spend(sheet, 1) == 1, "a level 5 wizard should spend the level 1 slot");
 		assertTrue(SpellSlots.currentSlots(sheet)[1] == 3 && SpellSlots.currentSlots(sheet)[3] == 2,
-			"debería haber gastado del nivel 1, no de otro");
+			"it should have spent from level 1, not another");
 
-		//Sin espacios de nivel 1, un conjuro de nivel 1 sube al siguiente que quede.
+		//With no level 1 slots, a level 1 spell goes up to the next one left.
 		SpellSlots.spend(sheet, 1); SpellSlots.spend(sheet, 1); SpellSlots.spend(sheet, 1);
-		assertTrue(SpellSlots.currentSlots(sheet)[1] == 0, "los cuatro de nivel 1 deberían estar gastados");
-		assertTrue(SpellSlots.spend(sheet, 1) == 2, "debería lanzarlo con un espacio superior y decir cuál");
-		assertTrue(SpellSlots.currentSlots(sheet)[2] == 2, "debería haber subido al nivel 2");
+		assertTrue(SpellSlots.currentSlots(sheet)[1] == 0, "all four level 1 slots should be spent");
+		assertTrue(SpellSlots.spend(sheet, 1) == 2, "it should cast with a higher slot and say which");
+		assertTrue(SpellSlots.currentSlots(sheet)[2] == 2, "it should have moved up to level 2");
 
-		//Un truco nunca gasta nada, ni siquiera sin espacios.
+		//A cantrip never spends anything, not even with no slots.
 		JsonObject sinEspacios = new JsonObject();
 		SpellSlots.applyProgression(sinEspacios, "Guerrero", 20);
 		assertTrue(SpellSlots.hasSlotFor(sinEspacios, 0) && SpellSlots.spend(sinEspacios, 0) == 0,
-			"un truco debería lanzarse siempre, también sin espacios, y no gastar nivel ninguno");
-		assertTrue(!SpellSlots.hasSlotFor(sinEspacios, 1), "un guerrero no debería tener espacios de nivel 1");
+			"a cantrip should always be castable, even with no slots, and not spend any level");
+		assertTrue(!SpellSlots.hasSlotFor(sinEspacios, 1), "a fighter should have no level 1 slots");
 
-		//Los totales antiguos siguen siendo la suma: el HUD y el Grimorio los leen sin cambiar.
+		//The old totals are still the sum: the HUD and the Grimoire read them unchanged.
 		JsonObject mago = new JsonObject();
 		SpellSlots.applyProgression(mago, "Mago", 20);
 		assertTrue(mago.get("spellSlotsMax").getAsInt() == 22,
-			"un mago de nivel 20 tiene 22 espacios en total, no " + mago.get("spellSlotsMax").getAsInt());
+			"a level 20 wizard has 22 slots in total, not " + mago.get("spellSlotsMax").getAsInt());
 
-		//Subir de nivel entrega LLENOS los espacios nuevos y respeta los ya gastados.
+		//Leveling up hands over the new slots FULL and respects the ones already spent.
 		JsonObject sube = new JsonObject();
-		SpellSlots.applyProgression(sube, "Mago", 1);       //2 de nivel 1
+		SpellSlots.applyProgression(sube, "Mago", 1);       //2 of level 1
 		SpellSlots.spend(sube, 1);
-		SpellSlots.applyProgression(sube, "Mago", 3);       //pasa a 4/2
+		SpellSlots.applyProgression(sube, "Mago", 3);       //becomes 4/2
 		assertTrue(SpellSlots.currentSlots(sube)[1] == 3,
-			"debería conservar el gastado y sumar los dos nuevos, no rellenar del todo");
-		assertTrue(SpellSlots.currentSlots(sube)[2] == 2, "el nivel 2 nuevo debería entrar lleno");
+			"it should keep what was spent and add the two new ones, not refill completely");
+		assertTrue(SpellSlots.currentSlots(sube)[2] == 2, "the new level 2 should come in full");
 
-		//Recuperación Arcana: presupuesto de NIVELES SUMADOS, no de espacios. Un mago de nivel 10 tiene un
-		//presupuesto de 5, así que gastándolo todo debería recuperar un espacio de nivel 5 (el más caro que
-		//cabe) y no cinco de nivel 1 — con el mismo presupuesto, lo alto vale más.
+		//Arcane Recovery: a budget of COMBINED LEVELS, not of slots. A level 10 wizard has a
+		//budget of 5, so spending it all should recover one level 5 slot (the most expensive that
+		//fits) and not five level 1 — with the same budget, the high one is worth more.
 		JsonObject arcano = new JsonObject();
 		SpellSlots.applyProgression(arcano, "Mago", 10);           //4/3/3/3/2
 		for (int level = 1; level <= 5; level++) {
 			while (SpellSlots.currentSlots(arcano)[level] > 0) SpellSlots.spend(arcano, level);
 		}
-		assertTrue(SpellSlots.total(SpellSlots.currentSlots(arcano)) == 0, "debería haber gastado todo");
-		assertTrue(SpellSlots.restoreBudget(arcano, 5, 5) == 1, "con presupuesto 5 debería devolver UN espacio");
-		assertTrue(SpellSlots.currentSlots(arcano)[5] == 1, "y debería ser el de nivel 5, no varios bajos");
+		assertTrue(SpellSlots.total(SpellSlots.currentSlots(arcano)) == 0, "everything should have been spent");
+		assertTrue(SpellSlots.restoreBudget(arcano, 5, 5) == 1, "with budget 5 it should return ONE slot");
+		assertTrue(SpellSlots.currentSlots(arcano)[5] == 1, "and it should be the level 5 one, not several low ones");
 
-		//El tope de nivel se respeta: con presupuesto de sobra pero tope 2, nada por encima del 2.
+		//The level cap is respected: with budget to spare but cap 2, nothing above 2.
 		JsonObject topado = new JsonObject();
 		SpellSlots.applyProgression(topado, "Mago", 10);
 		for (int level = 1; level <= 5; level++) {
@@ -1928,578 +1994,578 @@ public class JsonContentSelfTest {
 		}
 		SpellSlots.restoreBudget(topado, 9, 2);
 		assertTrue(SpellSlots.currentSlots(topado)[3] == 0 && SpellSlots.currentSlots(topado)[4] == 0,
-			"no debería devolver espacios por encima del tope");
+			"it should not return slots above the cap");
 		assertTrue(SpellSlots.currentSlots(topado)[2] == 3 && SpellSlots.currentSlots(topado)[1] == 3,
-			"con presupuesto 9 y tope 2: tres de nivel 2 (6) y tres de nivel 1 (3)");
+			"with budget 9 and cap 2: three level 2 (6) and three level 1 (3)");
 
-		//Lanzar a nivel superior a propósito: el nivel pedido manda sobre "el más bajo que sirva".
+		//Casting at a higher level on purpose: the requested level takes precedence over "the lowest that works".
 		JsonObject sube3 = new JsonObject();
 		SpellSlots.applyProgression(sube3, "Mago", 9);              //4/3/3/3/1
-		assertTrue(SpellSlots.spend(sube3, 1, 3) == 3, "pedir un espacio de 3º para un conjuro de 1º debería gastar el de 3º");
-		assertTrue(SpellSlots.currentSlots(sube3)[1] == 4, "y no debería haber tocado los de nivel 1");
+		assertTrue(SpellSlots.spend(sube3, 1, 3) == 3, "asking for a 3rd-level slot for a 1st-level spell should spend the 3rd-level one");
+		assertTrue(SpellSlots.currentSlots(sube3)[1] == 4, "and it should not have touched the level 1 ones");
 
-		//Pedir un nivel agotado sube al siguiente en vez de negar el lanzado por un tecnicismo.
+		//Asking for an exhausted level goes up to the next one instead of denying the cast over a technicality.
 		while (SpellSlots.currentSlots(sube3)[3] > 0) SpellSlots.spend(sube3, 3);
-		assertTrue(SpellSlots.spend(sube3, 1, 3) == 4, "con el 3º agotado debería subir al 4º, no fallar");
+		assertTrue(SpellSlots.spend(sube3, 1, 3) == 4, "with the 3rd exhausted it should go up to the 4th, not fail");
 
-		//El parche que va al cliente tiene que llevar la TABLA, no solo el total. Mandando solo el total, el
-		//Grimorio se quedaba con columnas viejas y ofrecía niveles ya gastados: se veía como que subir el
-		//nivel "no se reflejaba en ningún sitio".
+		//The patch that goes to the client has to carry the TABLE, not just the total. Sending only the total, the
+		//Grimoire kept old columns and offered already spent levels: it looked like leveling up
+		//"was not reflected anywhere".
 		JsonObject patch = SpellSlots.clientPatch(sube3);
 		assertTrue(patch.has("spellSlotsByLevel") && patch.has("spellSlotsCurrent"),
-			"el parche de espacios debería llevar la tabla por nivel y el total, no solo el total");
+			"the slots patch should carry the per-level table and the total, not just the total");
 		assertTrue(patch.get("spellSlotsByLevel").toString().equals(sube3.get("spellSlotsByLevel").toString()),
-			"y la tabla del parche debería ser la de la hoja tras gastar");
-		//Un campo ausente se omite: en un parche, un nulo significa "borra esta clave" en la hoja del cliente.
+			"and the patch table should be the sheet's after spending");
+		//An absent field is omitted: in a patch, a null means "delete this key" in the client's sheet.
 		assertTrue(SpellSlots.clientPatch(new JsonObject()).size() == 0,
-			"sin espacios en la hoja, el parche debería ir vacío y no borrar nada en el cliente");
+			"with no slots on the sheet, the patch should go empty and delete nothing on the client");
 
-		//Y el MÁXIMO también. Es un valor derivado (clase y nivel) que el servidor recalcula al guardar la
-		//hoja, sin que el cliente se entere: mandando solo el actual, el cliente se quedaba con un máximo
-		//viejo para siempre y el HUD acababa enseñando más espacios de los que caben — reportado jugando
-		//como "Conjuros: 4/2".
+		//And the MAXIMUM too. It is a derived value (class and level) that the server recomputes when saving the
+		//sheet, without the client finding out: sending only the current one, the client kept a stale maximum
+		//forever and the HUD ended up showing more slots than fit — reported while playing
+		//as "Spells: 4/2".
 		assertTrue(patch.has("spellSlotsMax") && patch.has("spellSlotsMaxByLevel"),
-			"el parche debería llevar también el máximo, que cambia solo y el cliente no puede recalcular");
+			"the patch should also carry the maximum, which changes on its own and the client cannot recompute");
 		for (String field : List.of("spellSlotsByLevel", "spellSlotsMaxByLevel", "spellSlotsCurrent", "spellSlotsMax")) {
 			assertTrue(patch.get(field).toString().equals(sube3.get(field).toString()),
-				"el parche debería mandar " + field + " tal y como quedó en la hoja");
+				"the patch should send " + field + " exactly as it ended up on the sheet");
 		}
-		//La comprobación que de verdad cierra el fallo: lo que el cliente reconstruye con el parche no puede
-		//quedar en un estado imposible.
+		//The check that really closes the bug: what the client rebuilds from the patch cannot
+		//end up in an impossible state.
 		assertTrue(patch.get("spellSlotsCurrent").getAsInt() <= patch.get("spellSlotsMax").getAsInt(),
-			"el cliente nunca debería poder enseñar más espacios disponibles que el máximo");
+			"the client should never be able to show more available slots than the maximum");
 
-		//Un nivel pedido POR DEBAJO del conjuro no lo abarata: sigue costando el suyo.
+		//A level requested BELOW the spell does not make it cheaper: it still costs its own.
 		JsonObject barato = new JsonObject();
 		SpellSlots.applyProgression(barato, "Mago", 5);            //4/3/2
-		assertTrue(SpellSlots.spend(barato, 3, 1) == 3, "un conjuro de 3º no se puede lanzar con un espacio de 1º");
+		assertTrue(SpellSlots.spend(barato, 3, 1) == 3, "a 3rd-level spell cannot be cast with a 1st-level slot");
 
-		System.out.println("checkSpellSlots: OK, tablas de 5e, gasto por nivel, subida de nivel, progresión y recuperación se comportan.");
+		System.out.println("checkSpellSlots: OK, 5e tables, per-level spending, leveling up, progression and recovery behave.");
 	}
 
 	/**
-	 * <p>Lanzar a nivel superior: los dados extra que suma un espacio más alto. Va aparte de
-	 * {@link #checkSpells()} porque no comprueba el contenido del pack, sino la aritmética de
-	 * {@code Spell.upcastTo} — que es la que decide cuánto daño hace de verdad una Bola de Fuego de 5º.</p>
+	 * <p>Casting at a higher level: the extra dice a higher slot adds. Kept apart from
+	 * {@link #checkSpells()} because it does not check the pack contents, but the arithmetic of
+	 * {@code Spell.upcastTo} — which is what decides how much damage a 5th-level Fireball really does.</p>
 	 */
 	/**
-	 * <p>Escuelas de magia (ver {@link MagicSchool}). No gatean ninguna regla —solo deciden con qué se ve y
-	 * se oye el lanzamiento— pero tienen dos formas de romperse en silencio, y las dos son caras: una
-	 * escuela mal escrita en un pack de un DM que se lleve por delante el conjuro entero, y un componente
-	 * nuevo del record que las copias de {@code Spell} se dejen por el camino.</p>
+	 * <p>Schools of magic (see {@link MagicSchool}). They gate no rule —they only decide what the cast looks
+	 * and sounds like— but they have two ways of breaking silently, and both are costly: a
+	 * misspelled school in a DM's pack taking the whole spell down with it, and a new record
+	 * component that the copies of {@code Spell} drop along the way.</p>
 	 */
 	private static void checkMagicSchools() throws Exception {
-		//Tolerante a como lo escriba quien escriba el pack: acentos, mayúsculas, guiones y el nombre inglés
-		//del SRD son la misma escuela. Rechazarlos no protegería de nada — dejaría el conjuro sin escuela.
-		assertTrue(MagicSchool.parse("evocación") == MagicSchool.EVOCATION, "con acento");
-		assertTrue(MagicSchool.parse("EVOCACION") == MagicSchool.EVOCATION, "en mayúsculas");
-		assertTrue(MagicSchool.parse("evocation") == MagicSchool.EVOCATION, "en inglés, como lo publica el SRD");
-		assertTrue(MagicSchool.parse("  no-muerto ") == MagicSchool.UNKNOWN, "una palabra que no es escuela no adivina");
+		//Tolerant of however whoever writes the pack spells it: accents, capitals, hyphens and the English name
+		//from the SRD are the same school. Rejecting them would protect nothing — it would leave the spell without a school.
+		assertTrue(MagicSchool.parse("evocación") == MagicSchool.EVOCATION, "with accent");
+		assertTrue(MagicSchool.parse("EVOCACION") == MagicSchool.EVOCATION, "in capitals");
+		assertTrue(MagicSchool.parse("evocation") == MagicSchool.EVOCATION, "in English, as the SRD publishes it");
+		assertTrue(MagicSchool.parse("  no-muerto ") == MagicSchool.UNKNOWN, "a word that is not a school does not guess");
 		assertTrue(MagicSchool.parse(null) == MagicSchool.UNKNOWN && MagicSchool.parse("") == MagicSchool.UNKNOWN,
-			"ausente y vacío son lo mismo: sin escuela");
-		//La cadena vacía va primera en el ciclador del editor: "sin escuela" es el valor por defecto de un
-		//conjuro, y tiene que ser lo primero que ofrezca el botón y no algo a lo que haya que dar la vuelta.
+			"absent and empty are the same: no school");
+		//The empty string comes first in the editor's cycler: "no school" is a spell's default value,
+		//and it has to be the first thing the button offers and not something you have to cycle around to.
 		assertTrue(MagicSchool.KEYS.length == MagicSchool.values().length && MagicSchool.KEYS[0].isEmpty(),
-			"KEYS debería cubrir el enum entero y empezar por la opción vacía");
+			"KEYS should cover the whole enum and start with the empty option");
 
-		//Un pack anterior a este campo se comporta EXACTAMENTE como antes (invariante 8): sin escuela, y
-		//CombatFx.spellCast cae al remolino morado de siempre.
+		//A pack from before this field behaves EXACTLY as before (invariant 8): no school, and
+		//CombatFx.spellCast falls back to the usual purple swirl.
 		SpellRegistry.Spell viejo = SpellRegistry.parse(com.google.gson.JsonParser.parseString(
 			"{\"id\":\"x\",\"level\":1,\"dice\":\"1d6\"}").getAsJsonObject());
-		assertTrue(viejo.school() == MagicSchool.UNKNOWN, "un hechizo sin \"school\" no debería inventarse una");
+		assertTrue(viejo.school() == MagicSchool.UNKNOWN, "a spell without \"school\" should not invent one");
 
-		//El defecto silencioso al ampliar un record: las dos copias que devuelve Spell reconstruyen los 21
-		//componentes a mano, así que un componente nuevo que no se propague se pierde SIN fallar nada — el
-		//conjuro simplemente arranca con el efecto genérico en cuanto lo subes de nivel.
+		//The silent defect when extending a record: the two copies that Spell returns rebuild the 21
+		//components by hand, so a new component that is not propagated is lost WITHOUT anything failing — the
+		//spell simply starts with the generic effect as soon as you raise its level.
 		SpellRegistry.Spell fireball = spellFromPack("dndsheets:fireball");
-		assertTrue(fireball.school() == MagicSchool.EVOCATION, "Bola de Fuego es de evocación en el SRD");
-		assertTrue(fireball.upcastTo(5).school() == MagicSchool.EVOCATION, "upcastTo no debería perder la escuela");
+		assertTrue(fireball.school() == MagicSchool.EVOCATION, "Fireball is evocation in the SRD");
+		assertTrue(fireball.upcastTo(5).school() == MagicSchool.EVOCATION, "upcastTo should not lose the school");
 		SpellRegistry.Spell fireBolt = spellFromPack("dndsheets:fire_bolt");
-		assertTrue(fireBolt.atCasterLevel(17).school() == MagicSchool.EVOCATION, "atCasterLevel tampoco");
+		assertTrue(fireBolt.atCasterLevel(17).school() == MagicSchool.EVOCATION, "atCasterLevel neither");
 
-		//Y el pack enviado las trae todas: una escuela mal escrita cae a UNKNOWN en silencio, así que sin
-		//esta comprobación un dedazo en spells.json solo se notaría jugando, mirando partículas.
+		//And the shipped pack has them all: a misspelled school falls to UNKNOWN silently, so without
+		//this check a typo in spells.json would only be noticed by playing, looking at particles.
 		JsonArray bulk = readShippedPack("spells.json");
 		for (JsonElement el : bulk) {
 			JsonObject json = el.getAsJsonObject();
 			String id = json.get("id").getAsString();
-			assertTrue(json.has("school"), "hechizo sin escuela en spells.json: " + id);
+			assertTrue(json.has("school"), "spell without a school in spells.json: " + id);
 			assertTrue(MagicSchool.parse(json.get("school").getAsString()) != MagicSchool.UNKNOWN,
-				"escuela no reconocida en spells.json: " + id + " -> " + json.get("school").getAsString());
+				"unrecognized school in spells.json: " + id + " -> " + json.get("school").getAsString());
 		}
-		//Tiempo de lanzamiento (ver CastingManager). Vive en el record y no en una clase aparte por la misma
-		//razón que upcastTo/atCasterLevel: es aritmética pura y el self-test la alcanza sin un Forge vivo.
-		//Lo que hay que fijar aquí es que la puerta de salida siga existiendo: castTicksPerLevel a 0 tiene
-		//que devolver el lanzamiento instantáneo de siempre para TODA la mesa (invariante 9), y un truco no
-		//puede tardar nunca — es el ataque a voluntad de un lanzador.
-		assertTrue(fireball.castTicksAt(3, 20) == 9, "un conjuro de 3er nivel a 3 ticks/nivel debería tardar 9");
-		assertTrue(fireball.castTicksAt(3, 5) == 5, "y el techo manda sobre la fórmula");
-		assertTrue(fireball.castTicksAt(0, 20) == 0, "castTicksPerLevel a 0 devuelve el lanzamiento instantáneo de siempre");
-		assertTrue(fireBolt.castTicksAt(3, 20) == 0, "un truco es instantáneo pase lo que pase");
-		//Un castTicks explícito en el JSON manda sobre la configuración, incluido un 0: así se escribe un
-		//conjuro que NO puede interrumpirse (Escudo, Contrahechizo) sin tocar la config de la mesa.
+		//Casting time (see CastingManager). It lives in the record and not in a separate class for the same
+		//reason as upcastTo/atCasterLevel: it is pure arithmetic and the self-test reaches it without a live Forge.
+		//What needs pinning here is that the escape hatch keeps existing: castTicksPerLevel at 0 must
+		//return the usual instant cast for the WHOLE table (invariant 9), and a cantrip
+		//can never take time — it is a caster's at-will attack.
+		assertTrue(fireball.castTicksAt(3, 20) == 9, "a 3rd-level spell at 3 ticks/level should take 9");
+		assertTrue(fireball.castTicksAt(3, 5) == 5, "and the ceiling takes precedence over the formula");
+		assertTrue(fireball.castTicksAt(0, 20) == 0, "castTicksPerLevel at 0 returns the usual instant cast");
+		assertTrue(fireBolt.castTicksAt(3, 20) == 0, "a cantrip is instant no matter what");
+		//An explicit castTicks in the JSON takes precedence over the config, including a 0: that is how you write a
+		//spell that can NOT be interrupted (Shield, Counterspell) without touching the table's config.
 		SpellRegistry.Spell fijo = SpellRegistry.parse(com.google.gson.JsonParser.parseString(
 			"{\"id\":\"y\",\"level\":5,\"castTicks\":0}").getAsJsonObject());
-		assertTrue(fijo.castTicksAt(3, 20) == 0, "un 0 escrito a mano no debe ser \"no declarado\"");
+		assertTrue(fijo.castTicksAt(3, 20) == 0, "a hand-written 0 must not be \"undeclared\"");
 		SpellRegistry.Spell lento = SpellRegistry.parse(com.google.gson.JsonParser.parseString(
 			"{\"id\":\"z\",\"level\":1,\"castTicks\":40}").getAsJsonObject());
-		assertTrue(lento.castTicksAt(3, 20) == 40, "lo escrito a mano se salta también el techo de la config");
-		assertTrue(lento.upcastTo(3).castTicksAt(3, 20) == 40, "y sobrevive a subir el conjuro de nivel");
+		assertTrue(lento.castTicksAt(3, 20) == 40, "what is hand-written also skips the config ceiling");
+		assertTrue(lento.upcastTo(3).castTicksAt(3, 20) == 40, "and it survives raising the spell's level");
 
-		System.out.println("checkMagicSchools: OK, las 8 escuelas parsean tolerantes, sobreviven a las copias de Spell y las traen los " + bulk.size() + " hechizos enviados.");
+		System.out.println("checkMagicSchools: OK, the 8 schools parse tolerantly, survive the Spell copies and all " + bulk.size() + " shipped spells carry them.");
 	}
 
 	/**
-	 * <p>Preparación de hechizos. Lo que hay que fijar aquí no es la fórmula —esa se lee de un vistazo— sino
-	 * la <b>compatibilidad hacia atrás</b>: hasta ahora cualquier hechizo conocido era lanzable, y hay
-	 * personajes escritos así en disco. Si "sin campo {@code prepared}" pasara a significar "sin preparar",
-	 * cada lanzador existente se quedaría mudo de golpe al actualizar, sin que fallara nada (invariante 8).</p>
+	 * <p>Spell preparation. What needs pinning here is not the formula —that reads at a glance— but
+	 * <b>backward compatibility</b>: until now any known spell was castable, and there are
+	 * characters written that way on disk. If "no {@code prepared} field" came to mean "unprepared",
+	 * every existing caster would fall silent at once on updating, with nothing failing (invariant 8).</p>
 	 */
 	private static void checkPreparedSpells() {
-		//Modificador de la característica de la clase + nivel, mínimo 1. Un mago de nivel 5 con INT 16 (+3)
-		//prepara 8. La clase se reconoce por el nombre MOSTRADO, que es lo que guarda la hoja.
+		//Modifier of the class's ability + level, minimum 1. A level 5 wizard with INT 16 (+3)
+		//prepares 8. The class is recognized by the DISPLAYED name, which is what the sheet stores.
 		JsonObject mago = new JsonObject();
 		mago.addProperty("characterClass", "Mago");
 		mago.addProperty("characterLevel", 5);
 		mago.addProperty("intelligence", "16");
-		assertTrue(SpellRegistry.preparedLimitFor(mago) == 8, "un mago nv.5 con INT 16 prepara 8, no " + SpellRegistry.preparedLimitFor(mago));
+		assertTrue(SpellRegistry.preparedLimitFor(mago) == 8, "a level 5 wizard with INT 16 prepares 8, not " + SpellRegistry.preparedLimitFor(mago));
 
-		//Nunca cero para un lanzador: un mago de nivel 1 con INT 8 (-1) sigue preparando uno.
+		//Never zero for a caster: a level 1 wizard with INT 8 (-1) still prepares one.
 		JsonObject pobre = new JsonObject();
 		pobre.addProperty("characterClass", "Mago");
 		pobre.addProperty("characterLevel", 1);
 		pobre.addProperty("intelligence", "8");
-		assertTrue(SpellRegistry.preparedLimitFor(pobre) == 1, "el mínimo es 1, no un lanzador sin nada que preparar");
+		assertTrue(SpellRegistry.preparedLimitFor(pobre) == 1, "the minimum is 1, not a caster with nothing to prepare");
 
-		//Quien no lanza no tiene lista: límite 0 APAGA la regla entera, no la pone en "no puedes preparar
-		//nada". Es lo mismo que hace CreatureType con un tipo desconocido: nada se dispara por adivinar.
+		//Someone who does not cast has no list: limit 0 TURNS OFF the whole rule, it does not set it to "you cannot prepare
+		//anything". It is the same thing CreatureType does with an unknown type: nothing fires from guessing.
 		JsonObject barbaro = new JsonObject();
 		barbaro.addProperty("characterClass", "Bárbaro");
 		barbaro.addProperty("characterLevel", 5);
-		assertTrue(SpellRegistry.preparedLimitFor(barbaro) == 0, "un bárbaro no tiene lista de preparados");
-		assertTrue(SpellRegistry.preparedLimitFor(new JsonObject()) == 0, "ni una hoja sin clase");
+		assertTrue(SpellRegistry.preparedLimitFor(barbaro) == 0, "a barbarian has no prepared list");
+		assertTrue(SpellRegistry.preparedLimitFor(new JsonObject()) == 0, "nor does a sheet with no class");
 
-		//La característica sale de la CLASE, no del conjuro: un clérigo prepara con Sabiduría aunque el
-		//conjuro concreto que mire se tire con otra cosa.
-		assertTrue("wis".equals(SpellSlots.castingAbilityFor("Clérigo")), "el clérigo lanza con Sabiduría");
-		assertTrue("cha".equals(SpellSlots.castingAbilityFor("warlock")), "y el brujo con Carisma, también por el id inglés");
-		assertTrue(SpellSlots.castingAbilityFor("Guerrero") == null, "una clase que no lanza no tiene característica de lanzamiento");
+		//The ability comes from the CLASS, not the spell: a cleric prepares with Wisdom even if the
+		//particular spell in question is rolled with something else.
+		assertTrue("wis".equals(SpellSlots.castingAbilityFor("Clérigo")), "the cleric casts with Wisdom");
+		assertTrue("cha".equals(SpellSlots.castingAbilityFor("warlock")), "and the warlock with Charisma, also by the English id");
+		assertTrue(SpellSlots.castingAbilityFor("Guerrero") == null, "a class that does not cast has no casting ability");
 
-		//El corazón de la compatibilidad: una hoja anterior a este campo.
-		JsonObject hoja = new JsonObject();
-		hoja.add("spells", new JsonArray());
+		//The heart of the compatibility: a sheet from before this field.
+		JsonObject sheetJson = new JsonObject();
+		sheetJson.add("spells", new JsonArray());
 		SpellRegistry.register(SpellRegistry.parse(com.google.gson.JsonParser.parseString(
 			"{\"id\":\"t:cantrip\",\"level\":0,\"dice\":\"1d8\"}").getAsJsonObject()));
 		SpellRegistry.register(SpellRegistry.parse(com.google.gson.JsonParser.parseString(
 			"{\"id\":\"t:spell\",\"level\":2,\"dice\":\"1d8\"}").getAsJsonObject()));
-		SpellRegistry.learn(hoja, "t:cantrip");
-		SpellRegistry.learn(hoja, "t:spell");
+		SpellRegistry.learn(sheetJson, "t:cantrip");
+		SpellRegistry.learn(sheetJson, "t:spell");
 
-		assertTrue(SpellRegistry.isPrepared(hoja, "t:spell"), "sin el campo, un hechizo cuenta como PREPARADO");
-		assertTrue(SpellRegistry.preparedCount(hoja) == 1, "y cuenta para el límite, sin contar el truco");
-		assertTrue(SpellRegistry.isPrepared(hoja, "t:cantrip"), "un truco está siempre preparado: es a voluntad");
-		assertTrue(!SpellRegistry.setPrepared(hoja, "t:cantrip", false),
-			"y no se puede desmarcar, o el lanzador se quedaría sin su ataque a voluntad");
-		assertTrue(SpellRegistry.isPrepared(hoja, "t:cantrip"), "el intento no debería haber cambiado nada");
+		assertTrue(SpellRegistry.isPrepared(sheetJson, "t:spell"), "without the field, a spell counts as PREPARED");
+		assertTrue(SpellRegistry.preparedCount(sheetJson) == 1, "and it counts toward the limit, not counting the cantrip");
+		assertTrue(SpellRegistry.isPrepared(sheetJson, "t:cantrip"), "a cantrip is always prepared: it is at will");
+		assertTrue(!SpellRegistry.setPrepared(sheetJson, "t:cantrip", false),
+			"and it cannot be unmarked, or the caster would be left without their at-will attack");
+		assertTrue(SpellRegistry.isPrepared(sheetJson, "t:cantrip"), "the attempt should not have changed anything");
 
-		assertTrue(SpellRegistry.setPrepared(hoja, "t:spell", false), "un hechizo de nivel sí se desmarca");
-		assertTrue(!SpellRegistry.isPrepared(hoja, "t:spell") && SpellRegistry.preparedCount(hoja) == 0,
-			"y entonces deja de contar y deja de poder lanzarse");
-		assertTrue(!SpellRegistry.isPrepared(hoja, "t:desconocido"), "lo que no se conoce no está preparado");
+		assertTrue(SpellRegistry.setPrepared(sheetJson, "t:spell", false), "a leveled spell can be unmarked");
+		assertTrue(!SpellRegistry.isPrepared(sheetJson, "t:spell") && SpellRegistry.preparedCount(sheetJson) == 0,
+			"and then it stops counting and stops being castable");
+		assertTrue(!SpellRegistry.isPrepared(sheetJson, "t:desconocido"), "what is not known is not prepared");
 
-		//Y la otra mitad, que es la que se rompió al escribir esto la primera vez: "no está preparado" y "no
-		//se puede lanzar" NO son la misma pregunta. El báculo (/dndspells staff) lanza por diseño un conjuro
-		//que su portador nunca aprendió — usa los espacios y las características del portador, pero el
-		//conjuro no está en su hoja. Colgar el guardia de isPrepared dejó el báculo inservible para todo
-		//conjuro de nivel: desconocido devolvía false y el lanzado se rechazaba sin que nadie hubiera
-		//desmarcado nada. La lista de preparados solo manda sobre lo que la hoja SÍ conoce.
-		assertTrue(SpellRegistry.preparationAllows(hoja, "t:desconocido"),
-			"un conjuro que la hoja no conoce no lo gestiona la lista de preparados: es el báculo");
-		assertTrue(!SpellRegistry.preparationAllows(hoja, "t:spell"),
-			"pero uno conocido y desmarcado a mano sí queda bloqueado");
-		assertTrue(SpellRegistry.preparationAllows(hoja, "t:cantrip"), "y un truco pasa siempre");
+		//And the other half, which is what broke when this was first written: "is not prepared" and "cannot
+		//be cast" are NOT the same question. The staff (/dndspells staff) casts by design a spell
+		//its bearer never learned — it uses the bearer's slots and abilities, but the
+		//spell is not on their sheet. Hanging the guard on isPrepared left the staff useless for every
+		//leveled spell: unknown returned false and the cast was rejected without anyone
+		//having unmarked anything. The prepared list only governs what the sheet DOES know.
+		assertTrue(SpellRegistry.preparationAllows(sheetJson, "t:desconocido"),
+			"a spell the sheet does not know is not handled by the prepared list: it is the staff");
+		assertTrue(!SpellRegistry.preparationAllows(sheetJson, "t:spell"),
+			"but one that is known and hand-unmarked is blocked");
+		assertTrue(SpellRegistry.preparationAllows(sheetJson, "t:cantrip"), "and a cantrip always passes");
 
-		System.out.println("checkPreparedSpells: OK, el limite es mod+nivel, los trucos no se preparan y una hoja sin el campo sigue pudiendo lanzarlo todo.");
+		System.out.println("checkPreparedSpells: OK, the limit is mod+level, cantrips are not prepared and a sheet without the field can still cast everything.");
 	}
 
 	private static void checkUpcasting() throws Exception {
 		SpellRegistry.Spell fireball = spellFromPack("dndsheets:fireball");
-		assertTrue("8d6".equals(fireball.upcastTo(3).dice()), "a su propio nivel no debería cambiar nada");
-		assertTrue("8d6".equals(fireball.upcastTo(2).dice()), "un nivel por debajo tampoco: no existe lanzarlo rebajado");
+		assertTrue("8d6".equals(fireball.upcastTo(3).dice()), "at its own level nothing should change");
+		assertTrue("8d6".equals(fireball.upcastTo(2).dice()), "one level below neither: casting it downcast does not exist");
 		assertTrue("8d6 + 2d6".equals(fireball.upcastTo(5).dice()),
-			"Bola de Fuego con un espacio de 5º debería sumar 2d6, no " + fireball.upcastTo(5).dice());
+			"Fireball with a 5th-level slot should add 2d6, not " + fireball.upcastTo(5).dice());
 		assertTrue(fireball.upcastTo(5).name().contains("nv. 5"),
-			"el chat tiene que decir con qué nivel salió, o dos daños distintos se leen como un fallo");
+			"the chat has to say what level it came out at, or two different damages read as a bug");
 
-		//Los dados iguales se juntan en uno: "1d6" tres veces es "3d6" y no tres sumandos.
-		assertTrue("6d6".equals(SpellRegistry.repeatDice("2d6", 3)), "2d6 x3 debería ser 6d6");
-		assertTrue("1d6".equals(SpellRegistry.repeatDice("1d6", 1)), "sin repetir debería quedarse igual");
-		//Lo que no es un dado suelto se repite tal cual: Misil Mágico sube un dardo entero por nivel.
+		//Equal dice are merged into one: "1d6" three times is "3d6" and not three summands.
+		assertTrue("6d6".equals(SpellRegistry.repeatDice("2d6", 3)), "2d6 x3 should be 6d6");
+		assertTrue("1d6".equals(SpellRegistry.repeatDice("1d6", 1)), "without repeating it should stay the same");
+		//What is not a single die is repeated as is: Magic Missile adds a whole dart per level.
 		assertTrue("1d4 + 1 + 1d4 + 1".equals(SpellRegistry.repeatDice("1d4 + 1", 2)),
-			"un dardo con bonificador se repite entero, no se multiplica");
+			"a dart with a modifier repeats whole, it is not multiplied");
 
-		//Un conjuro que no escala no cambia por gastar un espacio caro (y hay muchos así en el SRD).
+		//A spell that does not scale does not change by spending an expensive slot (and there are many like that in the SRD).
 		SpellRegistry.Spell meteor = spellFromPack("dndsheets:meteor_swarm");
 		assertTrue(!meteor.scalesWithSlot() && meteor.upcastTo(9).dice().equals(meteor.dice()),
-			"Enjambre de Meteoros no gana nada por subirlo de nivel");
+			"Meteor Swarm gains nothing from being raised in level");
 
-		//Un conjuro sin daño que SÍ escalase no debe quedar con un "0 +" delante en el chat.
+		//A spell with no damage that DOES scale must not end up with a "0 +" in front in the chat.
 		SpellRegistry.Spell sinDano = SpellRegistry.parse(com.google.gson.JsonParser.parseString(
 			"{\"id\":\"x\",\"level\":1,\"dice\":\"0\",\"upcastDice\":\"1d8\"}").getAsJsonObject());
-		assertTrue("2d8".equals(sinDano.upcastTo(3).dice()), "sin daño base debería quedar solo lo añadido, no \"0 + 2d8\"");
+		assertTrue("2d8".equals(sinDano.upcastTo(3).dice()), "with no base damage only what is added should remain, not \"0 + 2d8\"");
 
-		//Trucos: suben con el nivel de PERSONAJE, no con el espacio (no gastan ninguno). Los cuatro escalones
-		//se comprueban enteros porque el defecto natural aquí es un límite mal puesto, no una fórmula rara.
+		//Cantrips: they rise with CHARACTER level, not the slot (they spend none). All four steps
+		//are checked in full because the natural defect here is a misplaced limit, not an odd formula.
 		SpellRegistry.Spell fireBolt = spellFromPack("dndsheets:fire_bolt");
-		assertTrue("1d10".equals(fireBolt.atCasterLevel(4).dice()), "hasta el nivel 4 un truco no crece");
-		assertTrue("2d10".equals(fireBolt.atCasterLevel(5).dice()), "a nivel 5 debería sumar un dado");
-		assertTrue("2d10".equals(fireBolt.atCasterLevel(10).dice()), "y quedarse ahí hasta el 11");
-		assertTrue("3d10".equals(fireBolt.atCasterLevel(11).dice()), "a nivel 11 el tercero");
-		assertTrue("4d10".equals(fireBolt.atCasterLevel(17).dice()), "a nivel 17 el cuarto");
-		assertTrue("4d10".equals(fireBolt.atCasterLevel(20).dice()), "y 20 no añade un quinto");
+		assertTrue("1d10".equals(fireBolt.atCasterLevel(4).dice()), "up to level 4 a cantrip does not grow");
+		assertTrue("2d10".equals(fireBolt.atCasterLevel(5).dice()), "at level 5 it should add a die");
+		assertTrue("2d10".equals(fireBolt.atCasterLevel(10).dice()), "and stay there until 11");
+		assertTrue("3d10".equals(fireBolt.atCasterLevel(11).dice()), "at level 11 the third");
+		assertTrue("4d10".equals(fireBolt.atCasterLevel(17).dice()), "at level 17 the fourth");
+		assertTrue("4d10".equals(fireBolt.atCasterLevel(20).dice()), "and 20 does not add a fifth");
 
-		//Un conjuro con espacio NO escala por nivel de personaje: si lo hiciera, una Bola de Fuego de un
-		//mago de nivel 17 haría 32d6 sin que nadie lo hubiera pedido.
-		assertTrue("8d6".equals(fireball.atCasterLevel(20).dice()), "solo escalan los trucos, no todo conjuro");
-		//Un truco sin daño (los hay) no gana dados de la nada.
+		//A spell with a slot does NOT scale by character level: if it did, a Fireball from a
+		//level 17 wizard would do 32d6 without anyone asking for it.
+		assertTrue("8d6".equals(fireball.atCasterLevel(20).dice()), "only cantrips scale, not every spell");
+		//A cantrip with no damage (there are some) does not gain dice out of nowhere.
 		SpellRegistry.Spell sinDados = SpellRegistry.parse(com.google.gson.JsonParser.parseString(
 			"{\"id\":\"y\",\"level\":0,\"dice\":\"0\"}").getAsJsonObject());
-		assertTrue("0".equals(sinDados.atCasterLevel(20).dice()), "un truco sin daño se queda sin daño");
+		assertTrue("0".equals(sinDados.atCasterLevel(20).dice()), "a cantrip with no damage stays without damage");
 
-		System.out.println("checkUpcasting: OK, los dados extra por nivel de espacio y los trucos por nivel de personaje salen donde deben.");
+		System.out.println("checkUpcasting: OK, extra dice by slot level and cantrips by character level come out where they should.");
 	}
 
 	/**
-	 * <p>A quién puede afectar un conjuro. Inmovilizar Persona sobre un esqueleto y Marchitar sobre un
-	 * no-muerto funcionaban igual que sobre cualquier otra cosa: el conjuro tenía el nombre de la regla
-	 * pero no la regla.</p>
+	 * <p>Who a spell can affect. Hold Person on a skeleton and Blight on an
+	 * undead worked the same as on anything else: the spell had the name of the rule
+	 * but not the rule.</p>
 	 */
 	private static void checkSpellTargeting() throws Exception {
 		SpellRegistry.Spell holdPerson = spellFromPack("dndsheets:hold_person");
-		assertTrue(holdPerson.affects(CreatureType.HUMANOID), "Inmovilizar Persona sí afecta a un humanoide");
-		assertTrue(!holdPerson.affects(CreatureType.UNDEAD), "pero no a un esqueleto");
-		assertTrue(!holdPerson.affects(CreatureType.BEAST), "ni a un lobo");
+		assertTrue(holdPerson.affects(CreatureType.HUMANOID), "Hold Person does affect a humanoid");
+		assertTrue(!holdPerson.affects(CreatureType.UNDEAD), "but not a skeleton");
+		assertTrue(!holdPerson.affects(CreatureType.BEAST), "nor a wolf");
 
-		//La lista negra es la otra mitad, y no se puede escribir con la blanca sin listar trece tipos.
+		//The blacklist is the other half, and it cannot be written with the whitelist without listing thirteen types.
 		SpellRegistry.Spell blight = spellFromPack("dndsheets:blight");
 		assertTrue(blight.affects(CreatureType.HUMANOID) && blight.affects(CreatureType.DRAGON),
-			"Marchitar afecta a casi todo");
+			"Blight affects almost everything");
 		assertTrue(!blight.affects(CreatureType.UNDEAD) && !blight.affects(CreatureType.CONSTRUCT),
-			"salvo a no-muertos y autómatas, que es lo que dice el SRD");
+			"except undead and constructs, which is what the SRD says");
 
-		//Un conjuro sin restricción afecta a todo, que es como se comportaban TODOS hasta ahora.
+		//A spell with no restriction affects everything, which is how ALL of them behaved until now.
 		SpellRegistry.Spell fireball = spellFromPack("dndsheets:fireball");
 		for (CreatureType type : CreatureType.values()) {
-			assertTrue(fireball.affects(type), "Bola de Fuego no debería excluir a nadie, y excluye a " + type);
+			assertTrue(fireball.affects(type), "Fireball should not exclude anyone, and it excludes " + type);
 		}
 
-		//Un tipo desconocido NUNCA se filtra: un mob de otro mod sin bloque de estadísticas se comporta
-		//como siempre en vez de volverse inmune a media lista de conjuros por no estar clasificado.
+		//An unknown type is NEVER filtered: a mob from another mod with no stat block behaves
+		//as always instead of becoming immune to half the spell list for not being classified.
 		assertTrue(holdPerson.affects(CreatureType.UNKNOWN) && blight.affects(CreatureType.UNKNOWN),
-			"sin saber qué hay delante, la restricción no se aplica");
+			"without knowing what is in front, the restriction does not apply");
 
-		//Apuntar es libre: a quién se puede apuntar no lo decide el bando. El gate viejo (solo jugadores y
-		//enemigos, y rechazo si no había nadie en la mira) dejaba fuera a las vacas, a los aldeanos y al
-		//terreno, así que un hechizo no se podía disparar al aire ni a un área vacía. Es de las cosas que
-		//solo se notan jugando, y solo si se te ocurre intentarlo — de ahí que se fije aquí.
+		//Aiming is free: whom you can aim at is not decided by faction. The old gate (only players and
+		//enemies, and rejection if nobody was in the crosshair) left out cows, villagers and
+		//terrain, so a spell could not be fired at the air or at an empty area. It is one of those things that
+		//are only noticed by playing, and only if it occurs to you to try — hence pinned here.
 		String castManager = Files.readString(
 			Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "SpellCastManager.java"));
 		assertTrue(castManager.contains("entity instanceof LivingEntity"),
-			"objetivo de hechizo = cualquier criatura viva, no solo jugadores y enemigos");
+			"spell target = any living creature, not just players and enemies");
 		assertTrue(!castManager.contains("spell.no_target") && !castManager.contains("spell.no_aoe_targets"),
-			"lanzar al terreno, al aire o a un área vacía se resuelve, no se rechaza");
+			"casting at terrain, at the air or at an empty area is resolved, not rejected");
 
-		System.out.println("checkSpellTargeting: OK, los conjuros con objetivo restringido distinguen a quién afectan.");
+		System.out.println("checkSpellTargeting: OK, spells with a restricted target distinguish who they affect.");
 	}
 
 	/**
-	 * <p>El contenido del mod tiene que llegar a un mundo que YA EXISTE. Antes se sembraba una sola vez y
-	 * solo en una carpeta vacía, así que la copia del mundo se quedaba congelada en la versión del día que
-	 * se creó la partida: hechizos nuevos, resistencias añadidas a un monstruo o el escalado por nivel de
-	 * espacio no llegaban nunca. Fue justo el síntoma reportado — subir el nivel del conjuro no hacía nada
-	 * en una partida en curso porque el servidor cargaba un pack anterior a la regla.</p>
+	 * <p>The mod's content has to reach a world that ALREADY EXISTS. It used to be seeded only once and
+	 * only in an empty folder, so the world's copy stayed frozen at the version from the day the
+	 * game was created: new spells, resistances added to a monster or scaling by slot level
+	 * never arrived. That was exactly the reported symptom — raising the spell's level did nothing
+	 * in a running game because the server loaded a pack from before the rule.</p>
 	 */
 	private static void checkDefaultsRefresh() throws Exception {
 		Path dir = Files.createTempDirectory("dndsheets-defaults");
 		try {
-			//Un mundo de la versión anterior: el pack sembrado con el nombre viejo, sin escalado por nivel.
+			//A world from the previous version: the pack seeded under the old name, without scaling by level.
 			Path legacy = dir.resolve("spells.json");
 			Files.writeString(legacy, "[ { \"id\": \"dndsheets:fireball\", \"level\": 3, \"dice\": \"8d6\" } ]");
 
 			Path retired = ContentDefaults.refresh(dir, "spells.json");
 
-			assertTrue(retired != null && Files.exists(retired), "el pack antiguo debería quedar apartado, no borrado");
-			assertTrue(!Files.exists(legacy), "y no debería seguir autocargándose con su nombre original");
+			assertTrue(retired != null && Files.exists(retired), "the old pack should be set aside, not deleted");
+			assertTrue(!Files.exists(legacy), "and it should not keep being autoloaded under its original name");
 			assertTrue(!retired.getFileName().toString().endsWith(".json"),
-				"apartado tiene que dejar de terminar en .json o autoLoadAll lo seguiría cargando");
+				"set aside has to stop ending in .json or autoLoadAll would keep loading it");
 			String fresh = Files.readString(dir.resolve(ContentDefaults.FILE));
-			assertTrue(fresh.contains("upcastDice"), "el pack al día debería traer el escalado por nivel de espacio");
+			assertTrue(fresh.contains("upcastDice"), "the up-to-date pack should carry scaling by slot level");
 
-			//Segunda pasada. El pack del mod se deja como lo habría dejado una versión anterior: si no se
-			//reescribe, se queda ahí para siempre, que es exactamente el defecto que esto viene a cerrar.
+			//Second pass. The mod's pack is left as an earlier version would have left it: if it is not
+			//rewritten, it stays there forever, which is exactly the defect this is here to close.
 			Files.writeString(dir.resolve(ContentDefaults.FILE), "[ ]");
-			//Y un archivo del DM con el nombre que usaba la siembra vieja: pasada la migración ya no se toca.
+			//And a DM file with the name the old seeding used: after the migration it is no longer touched.
 			Files.writeString(legacy, "[ ]");
 
 			assertTrue(ContentDefaults.refresh(dir, "spells.json") == null,
-				"tras la migración, un archivo con ese nombre es del DM y no se aparta");
-			assertTrue(Files.exists(legacy), "y tiene que seguir donde estaba");
+				"after the migration, a file with that name is the DM's and is not set aside");
+			assertTrue(Files.exists(legacy), "and it has to stay where it was");
 			assertTrue(Files.readString(dir.resolve(ContentDefaults.FILE)).contains("upcastDice"),
-				"el pack del mod debería reescribirse en cada arranque, no sembrarse una sola vez");
+				"the mod's pack should be rewritten on every startup, not seeded just once");
 		} finally {
 			try (Stream<Path> files = Files.walk(dir)) {
 				files.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
 			}
 		}
 
-		System.out.println("checkDefaultsRefresh: OK, un mundo ya existente recibe el contenido nuevo sin pisar lo del DM.");
+		System.out.println("checkDefaultsRefresh: OK, an already existing world receives the new content without overwriting the DM's.");
 	}
 
 	/**
-	 * <p>El que ataca abre el orden de turnos. Sin ello, el golpe que arranca el combate se perdía: se
-	 * creaba el encuentro, se tiraba iniciativa, y si el atacante no ganaba su propia tirada su ataque se
-	 * rechazaba por "no es tu turno" — el mismo clic funcionaba o desaparecía según un d20 que nadie había
-	 * pedido tirar.</p>
+	 * <p>The attacker opens the turn order. Without it, the blow that starts combat was lost: the
+	 * encounter was created, initiative was rolled, and if the attacker did not win their own roll their attack was
+	 * rejected for "it is not your turn" — the same click worked or vanished depending on a d20 that nobody
+	 * had asked to roll.</p>
 	 */
 	private static void checkInitiatorGoesFirst() {
 		List<Integer> orden = new java.util.ArrayList<>(List.of(50, 40, 30, 20, 10));
 
 		TurnManager.moveToFront(orden, id -> id, 30);
 		assertTrue(orden.equals(List.of(30, 50, 40, 20, 10)),
-			"el iniciador debería ir primero y el resto conservar su orden, y quedó " + orden);
+			"the initiator should go first and the rest keep their order, and it ended as " + orden);
 
-		//La mitad importante: intercambiar con el primero —la implementación que sale sola— mandaría al 50
-		//al puesto del 30 y desordenaría la iniciativa de los demás, que sí es sagrada.
+		//The important half: swapping with the first —the implementation that comes naturally— would send the 50
+		//to the 30's spot and scramble everyone else's initiative, which is sacred.
 		TurnManager.moveToFront(orden, id -> id, 10);
-		assertTrue(orden.equals(List.of(10, 30, 50, 40, 20)), "y otra vez, sin barajar a los demás: " + orden);
+		assertTrue(orden.equals(List.of(10, 30, 50, 40, 20)), "and again, without shuffling the others: " + orden);
 
-		//Ya primero: no debería moverse nada.
+		//Already first: nothing should move.
 		TurnManager.moveToFront(orden, id -> id, 10);
-		assertTrue(orden.equals(List.of(10, 30, 50, 40, 20)), "mover al que ya era primero no debería cambiar nada");
+		assertTrue(orden.equals(List.of(10, 30, 50, 40, 20)), "moving the one that was already first should not change anything");
 
-		//Un iniciador que no está en la lista (fuera del radio del encuentro) deja el orden intacto en vez
-		//de reventar el arranque del combate.
+		//An initiator that is not in the list (outside the encounter radius) leaves the order intact instead
+		//of blowing up the start of combat.
 		TurnManager.moveToFront(orden, id -> id, 999);
-		assertTrue(orden.equals(List.of(10, 30, 50, 40, 20)), "un iniciador que no está en el orden no debería tocarlo");
+		assertTrue(orden.equals(List.of(10, 30, 50, 40, 20)), "an initiator not in the order should not touch it");
 
-		System.out.println("checkInitiatorGoesFirst: OK, quien ataca abre el orden y no desordena al resto.");
+		System.out.println("checkInitiatorGoesFirst: OK, whoever attacks opens the order and does not scramble the rest.");
 	}
 
 	/**
-	 * <p>La tabla de cobertura. Es la mitad de la regla que se puede equivocar en silencio: un umbral
-	 * corrido convierte un parapeto en una pared, o deja a alguien tapado hasta el cuello sin más CA que
-	 * si estuviera en campo abierto.</p>
+	 * <p>The cover table. It is the half of the rule that can go wrong silently: a shifted threshold
+	 * turns a parapet into a wall, or leaves someone covered up to the neck with no more AC than
+	 * if they stood in the open.</p>
 	 */
 	private static void checkCover() {
-		assertTrue(Cover.fromBlocked(0, 5) == Cover.NONE, "sin nada tapado no hay cobertura");
-		assertTrue(Cover.fromBlocked(1, 5) == Cover.HALF, "un poco tapado es media cobertura");
-		assertTrue(Cover.fromBlocked(2, 5) == Cover.HALF, "hasta la mitad, sigue siendo media");
-		assertTrue(Cover.fromBlocked(3, 5) == Cover.THREE_QUARTERS, "pasada la mitad, tres cuartos");
-		assertTrue(Cover.fromBlocked(4, 5) == Cover.THREE_QUARTERS, "casi todo tapado, tres cuartos");
-		assertTrue(Cover.fromBlocked(5, 5) == Cover.TOTAL, "tapado del todo es cobertura total");
+		assertTrue(Cover.fromBlocked(0, 5) == Cover.NONE, "with nothing covered there is no cover");
+		assertTrue(Cover.fromBlocked(1, 5) == Cover.HALF, "a little covered is half cover");
+		assertTrue(Cover.fromBlocked(2, 5) == Cover.HALF, "up to half, it is still half");
+		assertTrue(Cover.fromBlocked(3, 5) == Cover.THREE_QUARTERS, "past half, three-quarters");
+		assertTrue(Cover.fromBlocked(4, 5) == Cover.THREE_QUARTERS, "almost all covered, three-quarters");
+		assertTrue(Cover.fromBlocked(5, 5) == Cover.TOTAL, "fully covered is total cover");
 
-		//Los bonificadores son los del SRD, y son la mitad que de verdad se nota en la mesa.
+		//The bonuses are the SRD's, and they are the half that is really noticed at the table.
 		assertTrue(Cover.NONE.bonus() == 0 && Cover.HALF.bonus() == 2 && Cover.THREE_QUARTERS.bonus() == 5,
-			"media cobertura da +2 y tres cuartos +5");
-		//La total no vale infinito: hay una ruta donde llega igual (una flecha que YA impactó), y sumar un
-		//infinito a la CA haría imposible un golpe que el mundo acaba de permitir.
+			"half cover gives +2 and three-quarters +5");
+		//Total does not equal infinity: there is a route where it arrives anyway (an arrow that ALREADY hit), and adding
+		//an infinity to AC would make impossible a hit the world has just allowed.
 		assertTrue(Cover.TOTAL.bonus() == 5 && Cover.TOTAL.blocksTargeting(),
-			"la cobertura total impide apuntar, pero su bono tiene que ser un número usable");
+			"total cover prevents targeting, but its bonus has to be a usable number");
 
-		//La regla se compara en fracciones, no en un número fijo de rayos: cambiar el muestreo no debería
-		//reescribirla. Con 4 muestras el umbral sigue cayendo en la mitad.
+		//The rule is compared in fractions, not in a fixed number of rays: changing the sampling should not
+		//rewrite it. With 4 samples the threshold still falls at half.
 		assertTrue(Cover.fromBlocked(2, 4) == Cover.HALF && Cover.fromBlocked(3, 4) == Cover.THREE_QUARTERS,
-			"la tabla debería depender de la fracción tapada, no del número de rayos");
+			"the table should depend on the covered fraction, not on the number of rays");
 
-		System.out.println("checkCover: OK, la tabla de cobertura y sus bonificadores son los del SRD.");
+		System.out.println("checkCover: OK, the cover table and its bonuses are the SRD's.");
 	}
 
 	/**
-	 * <p>Que las DOS rutas de ataque —un jugador ataca, un monstruo ataca— resuelvan por el mismo sitio.</p>
+	 * <p>That BOTH attack routes —a player attacks, a monster attacks— resolve through the same place.</p>
 	 *
-	 * <p>Esta comprobación existe porque la divergencia ya pasó tres veces seguidas, siempre en la misma
-	 * dirección: la regla nueva se escribía donde ataca el jugador y la del monstruo se quedaba atrás. Un
-	 * monstruo tiraba plano contra un objetivo derribado (media definición de cinco condiciones), la
-	 * cobertura solo valía cuando atacaba un jugador, y Esquivar iba a repetir la historia. Fijar cada
-	 * llamada por separado, que es lo que hacía la primera versión de esto, es fijar los síntomas: lo que
-	 * hay que sostener es que no haya dos copias de la regla.</p>
+	 * <p>This check exists because the divergence already happened three times in a row, always in the same
+	 * direction: the new rule was written where the player attacks and the monster's was left behind. A
+	 * monster rolled flat against a prone target (half the definition of five conditions), cover
+	 * only applied when a player attacked, and Dodge was going to repeat the story. Pinning each
+	 * call separately, which is what the first version of this did, is pinning the symptoms: what
+	 * has to be upheld is that there are not two copies of the rule.</p>
 	 */
 	private static void checkAttackPathsShareRules() throws Exception {
 		Path dir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets");
 
-		for (String archivo : List.of("CombatManager.java", "MonsterActionManager.java")) {
-			String cuerpo = methodBody(Files.readString(dir.resolve(archivo)), "resolveAttack(");
-			assertTrue(cuerpo.contains("AttackRules.against("),
-				archivo + ": resolveAttack debería resolver cobertura, CA, acierto y crítico por AttackRules");
-			assertTrue(cuerpo.contains("AttackRules.advantageAgainst("),
-				archivo + ": resolveAttack debería sacar la ventaja del objetivo de AttackRules");
+		for (String sourceFile : List.of("CombatManager.java", "MonsterActionManager.java")) {
+			String body = methodBody(Files.readString(dir.resolve(sourceFile)), "resolveAttack(");
+			assertTrue(body.contains("AttackRules.against("),
+				sourceFile + ": resolveAttack should resolve cover, AC, hit and crit through AttackRules");
+			assertTrue(body.contains("AttackRules.advantageAgainst("),
+				sourceFile + ": resolveAttack should take the target's advantage from AttackRules");
 		}
 
-		//Y que AttackRules siga teniendo las tres reglas dentro, no solo que la llamen.
+		//And that AttackRules keeps the three rules inside, not just that they call it.
 		String reglas = Files.readString(dir.resolve("AttackRules.java"));
 		for (String regla : List.of("advantageAgainst(", "Cover.between(", "isDodging(", "reactiveArmorClass(", "autoCritInMelee(")) {
-			assertTrue(reglas.contains(regla), "AttackRules debería aplicar " + regla + " y no lo hace");
+			assertTrue(reglas.contains(regla), "AttackRules should apply " + regla + " and does not");
 		}
 
-		//Las salvaciones son la otra mitad, y tenían la misma duplicación: quien lanza es distinto, la regla
-		//no. Se comprueba igual, contra SaveRules.
+		//Saves are the other half, and had the same duplication: who casts is different, the rule
+		//is not. It is checked the same way, against SaveRules.
 		String castSaveSpell = methodBody(readSource("SpellCastManager.java"), "castSaveSpell(");
 		String resolveSpell = methodBody(readSource("MonsterActionManager.java"), "resolveSpell(");
-		for (String cuerpo : List.of(castSaveSpell, resolveSpell)) {
-			assertTrue(cuerpo.contains("SaveRules.resolve("),
-				"la salvación debería resolverse por SaveRules: cobertura, CD real, éxito y daño final");
+		for (String body : List.of(castSaveSpell, resolveSpell)) {
+			assertTrue(body.contains("SaveRules.resolve("),
+				"the save should be resolved through SaveRules: cover, real DC, success and final damage");
 		}
 		String reglasSalvacion = readSource("SaveRules.java");
 		for (String regla : List.of("Cover.between(", "rollSave(", "halfOnSave")) {
-			assertTrue(reglasSalvacion.contains(regla), "SaveRules debería aplicar " + regla + " y no lo hace");
+			assertTrue(reglasSalvacion.contains(regla), "SaveRules should apply " + regla + " and does not");
 		}
-		//Se comprueba que USE el nombre del personaje, en vez de que no aparezca el otro: la primera versión
-		//buscaba la ausencia de "target.getName()" y saltaba por el comentario que explica justo eso.
+		//It is checked that it USES the character's name, instead of that the other one does not appear: the first version
+		//looked for the absence of "target.getName()" and tripped on the comment that explains exactly that.
 		assertTrue(resolveSpell.contains("targetCombatant.name()"),
-			"debería anunciar el nombre del personaje, no el de la cuenta de Minecraft");
+			"it should announce the character's name, not the Minecraft account's");
 
 		checkAdvantageSourcesArePooled();
-		System.out.println("checkAttackPathsShareRules: OK, jugador y monstruo resuelven ataques y salvaciones con las mismas reglas y el mismo código.");
+		System.out.println("checkAttackPathsShareRules: OK, player and monster resolve attacks and saves with the same rules and the same code.");
 	}
 
 	/**
-	 * <p>Daño de entorno (lava, caída) ligado a resistencias de 5e — sin esto, empujar a alguien resistente
-	 * al fuego a la lava le hacía el mismo daño que a cualquiera. No hay forma de disparar un
-	 * {@code LivingHurtEvent} real sin un servidor completo detrás (este self-test no arranca uno, a
-	 * diferencia de {@code checkAttackPathsShareRules}, que sí puede probar con un {@code FakeCombatant}
-	 * las reglas puras); se verifica por código fuente, mismo patrón que {@code checkDmGuardIsShared}.
+	 * <p>Environmental damage (lava, fall) tied to 5e resistances — without this, pushing someone resistant
+	 * to fire into lava did the same damage as to anyone. There is no way to fire a real
+	 * {@code LivingHurtEvent} without a full server behind it (this self-test does not start one, unlike
+	 * {@code checkAttackPathsShareRules}, which can test the pure rules with a {@code FakeCombatant});
+	 * it is verified by source code, same pattern as {@code checkDmGuardIsShared}.
 	 */
 	private static void checkEnvironmentalDamage() throws Exception {
 		String combatManager = readSource("CombatManager.java");
 		String handler = methodBody(combatManager, "onEnvironmentalDamage(");
 		assertTrue(handler.contains("effectiveDamageMultiplier("),
-			"onEnvironmentalDamage debería escalar por Combatant.effectiveDamageMultiplier, no aplicar el daño de Minecraft tal cual");
+			"onEnvironmentalDamage should scale by Combatant.effectiveDamageMultiplier, not apply Minecraft's damage as is");
 		assertTrue(handler.contains("source.getEntity() != null"),
-			"debería descartar el daño con atacante (ya se resuelve por otro camino) para no escalarlo dos veces");
+			"it should discard damage with an attacker (already resolved by another path) so as not to scale it twice");
 
 		String mapping = methodBody(combatManager, "environmentalDamageType(");
-		for (String tipo : List.of("LAVA", "FALL")) {
-			assertTrue(mapping.contains("DamageTypes." + tipo),
-				"environmentalDamageType debería reconocer " + tipo);
+		for (String kind : List.of("LAVA", "FALL")) {
+			assertTrue(mapping.contains("DamageTypes." + kind),
+				"environmentalDamageType should recognize " + kind);
 		}
-		System.out.println("checkEnvironmentalDamage: OK, lava/fuego y caída/contundente escalan por resistencia real.");
+		System.out.println("checkEnvironmentalDamage: OK, lava/fire and fall/blunt scale by real resistance.");
 	}
 
 	/**
-	 * <p>Que TODAS las fuentes de ventaja se junten de una vez y no por partes.</p>
+	 * <p>That ALL advantage sources are pooled at once and not piecemeal.</p>
 	 *
-	 * <p>Casi se cuela al unificar las dos rutas: {@code combineAdvantage} colapsa a "normal" cuando hay
-	 * ventaja y desventaja a la vez, que es la regla correcta de 5e, pero por eso mismo <b>no se puede
-	 * anidar</b> — un "normal" que salió de dos fuentes anulándose es indistinguible de "ninguna fuente", y
-	 * la siguiente combinación deja ganar sola a la ventaja del atacante.</p>
+	 * <p>It almost slipped in when unifying the two routes: {@code combineAdvantage} collapses to "normal" when there is
+	 * advantage and disadvantage at once, which is the correct 5e rule, but for that same reason it <b>cannot be
+	 * nested</b> — a "normal" that came out of two sources cancelling is indistinguishable from "no source", and
+	 * the next combination lets the attacker's advantage win on its own.</p>
 	 */
 	private static void checkAdvantageSourcesArePooled() throws Exception {
-		//Objetivo derribado: ventaja de cerca, desventaja de lejos (Combatant.advantageAgainst). Se reusa el
-		//FakeCombatant de checkCombatantRules, que existe justo para probar esto sin un mundo detrás.
-		Combatant derribado = new FakeCombatant(0);
-		derribado.addCondition(Condition.DERRIBADO);
+		//Prone target: advantage up close, disadvantage from afar (Combatant.advantageAgainst). The
+		//FakeCombatant from checkCombatantRules is reused, which exists exactly to test this without a world behind it.
+		Combatant proneTarget = new FakeCombatant(0);
+		proneTarget.addCondition(Condition.PRONE);
 
-		//A distancia, un derribado da DESVENTAJA. Con un atacante que trae VENTAJA, las dos fuentes se
-		//anulan: la respuesta de 5e es normal, "sin importar cuántas haya de cada".
-		//Atacante null a propósito: FakeCombatant.entity() también es null, así que no hay altura real que
-		//comparar entre los dos y heightAdvantage se queda en NORMAL — estas tres afirmaciones prueban las
-		//demás fuentes, no la de altura. heightAdvantage en sí (getY() real de dos entidades) no se puede
-		//probar aquí: este harness corre sin runtime de Forge y una Entity real no se puede construir sin él.
-		assertTrue(AttackRules.advantageAgainst(null, derribado, false, DiceManager.Advantage.ADVANTAGE) == DiceManager.Advantage.NORMAL,
-			"ventaja del atacante contra la desventaja de disparar a alguien derribado debería anularse");
-		//Y de cerca, las dos son ventaja: no hay nada que anular.
-		assertTrue(AttackRules.advantageAgainst(null, derribado, true, DiceManager.Advantage.ADVANTAGE) == DiceManager.Advantage.ADVANTAGE,
-			"de cerca, un derribado da ventaja y se suma a la del atacante");
-		//Sin nada del atacante, manda el estado del objetivo tal cual.
-		assertTrue(AttackRules.advantageAgainst(null, derribado, true) == DiceManager.Advantage.ADVANTAGE,
-			"sin fuentes del atacante debería quedar lo que dé el objetivo");
+		//At range, a prone creature gives DISADVANTAGE. With an attacker that brings ADVANTAGE, the two sources
+		//cancel out: the 5e answer is normal, "no matter how many there are of each".
+		//Attacker null on purpose: FakeCombatant.entity() is also null, so there is no real height to
+		//compare between the two and heightAdvantage stays NORMAL — these three assertions test the
+		//other sources, not the height one. heightAdvantage itself (real getY() of two entities) cannot be
+		//tested here: this harness runs without a Forge runtime and a real Entity cannot be built without it.
+		assertTrue(AttackRules.advantageAgainst(null, proneTarget, false, DiceManager.Advantage.ADVANTAGE) == DiceManager.Advantage.NORMAL,
+			"attacker's advantage against the disadvantage of shooting someone prone should cancel out");
+		//And up close, both are advantage: there is nothing to cancel.
+		assertTrue(AttackRules.advantageAgainst(null, proneTarget, true, DiceManager.Advantage.ADVANTAGE) == DiceManager.Advantage.ADVANTAGE,
+			"up close, a prone creature gives advantage and it adds to the attacker's");
+		//With nothing from the attacker, the target's state rules as is.
+		assertTrue(AttackRules.advantageAgainst(null, proneTarget, true) == DiceManager.Advantage.ADVANTAGE,
+			"without attacker sources what the target gives should remain");
 
-		//Y la propiedad que las tres afirmaciones de arriba NO pueden ver: que las fuentes entren en UNA
-		//sola combinación. El caso que se rompe al anidar es que la ventaja y la desventaja que se anulan
-		//caigan las dos del mismo lado (objetivo derribado que además Esquiva, atacado con ventaja), y ese
-		//depende de estado de turno que no existe fuera del juego. Se sostiene por estructura: probé a
-		//anidar la combinación y ninguna de las tres afirmaciones se enteró.
-		String cuerpo = methodBody(readSource("AttackRules.java"), "advantageAgainst(");
-		int combinaciones = cuerpo.split("combineAdvantage\\(", -1).length - 1;
-		assertTrue(combinaciones == 1,
-			"advantageAgainst debería combinar TODAS las fuentes de una vez y hace " + combinaciones
-				+ " combinaciones: anidarlas convierte una ventaja y una desventaja que se anulaban en un "
-				+ "\"normal\" indistinguible de \"ninguna fuente\"");
+		//And the property that the three assertions above CANNOT see: that the sources enter ONE
+		//single combination. The case that breaks when nesting is the advantage and disadvantage that cancel
+		//falling both on the same side (a prone target that also Dodges, attacked with advantage), and that
+		//depends on turn state that does not exist outside the game. It is upheld by structure: I tried
+		//nesting the combination and none of the three assertions noticed.
+		String body = methodBody(readSource("AttackRules.java"), "advantageAgainst(");
+		int combinations = body.split("combineAdvantage\\(", -1).length - 1;
+		assertTrue(combinations == 1,
+			"advantageAgainst should combine ALL sources at once and does " + combinations
+				+ " combinations: nesting them turns an advantage and a disadvantage that cancelled into a "
+				+ "\"normal\" indistinguishable from \"no source\"");
 	}
 
 	/**
-	 * <p>La lista de pasos para dejar una ficha jugable (raza, clase por preset, trasfondo y competencias).
-	 * Es una pantalla, así que casi todo lo suyo solo se ve jugando; lo que sí se puede sujetar son las dos
-	 * formas en que dejaría de funcionar sin que nada se queje.</p>
+	 * <p>The list of steps to leave a sheet playable (race, class by preset, background and proficiencies).
+	 * It is a screen, so almost all of it is only seen by playing; what can be pinned are the two
+	 * ways in which it would stop working without anything complaining.</p>
 	 *
-	 * <p>La primera es que el selector de opciones vuelva <b>a la hoja</b> en vez de a quien lo pidió: la
-	 * lista de pasos pide razas y trasfondos, y si el servidor la devuelve a la hoja, el jugador sale
-	 * expulsado de la configuración a media faena y no hay error en ningún sitio. La segunda es que la
-	 * pantalla exista y no la abra nadie.</p>
+	 * <p>The first is that the option picker returns <b>to the sheet</b> instead of to whoever asked for it: the
+	 * step list asks for races and backgrounds, and if the server returns it to the sheet, the player gets
+	 * thrown out of setup midway and there is no error anywhere. The second is that the screen exists
+	 * and nobody opens it.</p>
 	 */
 	private static void checkCharacterSetup() throws Exception {
-		//El selector de opciones vive ahora en el case CHARACTER_OPTION de BrowseListMessage (la antigua
-		//CharacterOptionsListMessage se fundió ahí en la migración de las parejas List/ListRequest).
+		//The option picker now lives in the CHARACTER_OPTION case of BrowseListMessage (the old
+		//CharacterOptionsListMessage was merged there in the migration of the List/ListRequest pairs).
 		String handler = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"network", "BrowseListMessage.java"));
 		assertTrue(!handler.contains("instanceof CharacterSheetScreen"),
-			"la lista de opciones tiene que volver a la pantalla que la pidió, sea cual sea: si vuelve solo "
-				+ "a la hoja, elegir una raza desde la lista de pasos echa al jugador de la configuración.");
+			"the option list has to return to the screen that asked for it, whichever it is: if it returns only "
+				+ "to the sheet, choosing a race from the step list throws the player out of setup.");
 
 		String list = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"client", "gui", "CharacterListScreen.java"));
 		assertTrue(list.contains("CharacterSetupScreen.open"),
-			"nadie abre la lista de pasos: una pantalla que no se puede abrir es lo mismo que no tenerla.");
+			"nobody opens the step list: a screen that cannot be opened is the same as not having it.");
 
-		System.out.println("checkCharacterSetup: OK, los pasos se abren desde algún sitio y los selectores vuelven a ellos.");
+		System.out.println("checkCharacterSetup: OK, the steps are opened from somewhere and the pickers return to them.");
 	}
 
 	/**
-	 * <p>Multiclase. Es lo último del roadmap por una razón: rehace tres tablas que ya estaban fijadas nivel
-	 * por nivel, y las tres fallan callando. Lo que se comprueba aquí es justo eso — el reparto de dados de
-	 * golpe, el nivel de lanzador y que una hoja SIN reparto siga comportándose exactamente como antes.</p>
+	 * <p>Multiclass. It is the last item on the roadmap for a reason: it redoes three tables that were already pinned level
+	 * by level, and all three fail silently. What is checked here is exactly that — the split of hit
+	 * dice, the caster level, and that a sheet WITHOUT a split keeps behaving exactly as before.</p>
 	 *
-	 * <p>El caso que más importa es el redondeo del semilanzador, porque hay dos reglas distintas con el
-	 * mismo aspecto: de una sola clase, la mitad hacia <b>arriba</b> (un paladín de nivel 2 ya lanza); en
-	 * multiclase, la mitad hacia <b>abajo</b> (un paladín 2 aporta 1). Escribir las dos igual da una tabla
-	 * que acierta en la mitad de los casos, que es peor que una que falle siempre.</p>
+	 * <p>The case that matters most is the half caster's rounding, because there are two different rules with the
+	 * same look: for a single class, half rounded <b>up</b> (a level 2 paladin already casts); in
+	 * multiclass, half rounded <b>down</b> (a level 2 paladin contributes 1). Writing both the same gives a table
+	 * that is right in half the cases, which is worse than one that always fails.</p>
 	 */
 	private static void checkMulticlass() throws Exception {
-		assertTrue(ClassLevels.total(mix("fighter", 3, "wizard", 2)) == 5, "los niveles se suman");
+		assertTrue(ClassLevels.total(mix("fighter", 3, "wizard", 2)) == 5, "levels add up");
 
 		assertTrue(ClassLevels.casterLevel(mix("fighter", 3, "wizard", 2)) == 2,
-			"solo los niveles de lanzador cuentan para la tabla");
-		//La trampa: dos semilanzadores de nivel 5 aportan 2 + 2, no 3 + 3.
+			"only caster levels count toward the table");
+		//The trap: two level 5 half casters contribute 2 + 2, not 3 + 3.
 		assertTrue(ClassLevels.casterLevel(mix("paladin", 5, "ranger", 5)) == 4,
-			"en multiclase el semilanzador redondea hacia ABAJO");
+			"in multiclass the half caster rounds DOWN");
 		assertTrue(ClassLevels.casterLevel(mix("paladin", 1, "wizard", 1)) == 1,
-			"un semilanzador de nivel 1 no aporta nada todavía");
-		//El brujo va por libre: sus espacios son otra reserva, así que no suman a esta tabla.
+			"a level 1 half caster does not contribute anything yet");
+		//The warlock is on its own: its slots are a different pool, so they do not add to this table.
 		assertTrue(ClassLevels.casterLevel(mix("warlock", 5, "wizard", 3)) == 3,
-			"los niveles de brujo no entran en el nivel de lanzador");
+			"warlock levels do not enter the caster level");
 		assertTrue(ClassLevels.casterLevel(mix("fighter", 5, "rogue", 5)) == 0,
-			"dos clases que no lanzan no lanzan");
+			"two classes that do not cast do not cast");
 
-		//PG: el dado entero es el de la PRIMERA clase, y por eso el orden cambia el resultado.
+		//HP: the full die is the FIRST class's, and that is why the order changes the result.
 		assertTrue(ClassLevels.maxHitPoints(mix("fighter", 1, "wizard", 1), 14) == 18,
-			"guerrero primero: 10+2 del d10 entero, y 4+2 del d6 medio");
+			"fighter first: 10+2 from the full d10, and 4+2 from the average d6");
 		assertTrue(ClassLevels.maxHitPoints(mix("wizard", 1, "fighter", 1), 14) == 16,
-			"mago primero: 6+2 y luego 6+2 del d10 medio — el orden importa y es el de la hoja");
-		//Constitución penosa: cada nivel da al menos 1 PG, igual que en la ruta de una sola clase.
+			"wizard first: 6+2 and then 6+2 from the average d10 — the order matters and it is the sheet's");
+		//Pitiful Constitution: each level gives at least 1 HP, same as on the single-class route.
 		assertTrue(ClassLevels.maxHitPoints(mix("wizard", 3), 3) == 4,
-			"con Constitución 3 cada nivel después del primero da 1 PG, nunca menos");
+			"with Constitution 3 each level after the first gives 1 HP, never less");
 
-		//Sembrar el reparto: multiclasar a un guerrero de nivel 5 tiene que dejarlo en 5 + 1, no en 0 + 1.
+		//Seeding the split: multiclassing a level 5 fighter has to leave it at 5 + 1, not 0 + 1.
 		JsonObject sheet = new JsonObject();
 		sheet.addProperty("appliedPresetId", "fighter");
 		sheet.addProperty("characterLevel", "5");
 		java.util.Map<String, Integer> levels = ClassLevels.addLevel(sheet, "wizard", "fighter", 5);
-		assertTrue(levels.get("fighter") == 5 && levels.get("wizard") == 1, "el nivel que ya tenía no se pierde");
-		assertTrue(sheet.get("characterLevel").getAsString().equals("6"), "y el total se reescribe");
-		assertTrue(sheet.get("characterClass").getAsString().equals("Guerrero 5 / Mago 1"),
-			"la clase se lee como el reparto que es, con los nombres de los presets");
+		assertTrue(levels.get("fighter") == 5 && levels.get("wizard") == 1, "the level it already had is not lost");
+		assertTrue(sheet.get("characterLevel").getAsString().equals("6"), "and the total is rewritten");
+		assertTrue(sheet.get("characterClass").getAsString().equals("Fighter 5 / Wizard 1"),
+			"the class reads as the split it is, with the preset names");
 
-		//La cadena entera: reparto -> nivel de lanzador -> tabla de lanzador COMPLETO -> hoja.
+		//The whole chain: split -> caster level -> FULL caster table -> sheet.
 		JsonObject caster = new JsonObject();
 		JsonObject classLevels = new JsonObject();
 		classLevels.addProperty("fighter", 3);
@@ -2508,19 +2574,19 @@ public class JsonContentSelfTest {
 		SpellSlots.applyProgression(caster, "Guerrero 3 / Mago 3", 6);
 		JsonObject max = caster.getAsJsonObject("spellSlotsMaxByLevel");
 		assertTrue(max.get("1").getAsInt() == 4 && max.get("2").getAsInt() == 2,
-			"un guerrero 3 / mago 3 lanza como un lanzador completo de nivel 3, no de nivel 6");
-		assertTrue(!max.has("3") || max.get("3").getAsInt() == 0, "y no llega a los de nivel 3");
+			"a fighter 3 / wizard 3 casts as a full caster of level 3, not level 6");
+		assertTrue(!max.has("3") || max.get("3").getAsInt() == 0, "and does not reach level 3 ones");
 
-		//Y lo que NO puede cambiar: una hoja sin reparto es exactamente la de siempre.
+		//And what CANNOT change: a sheet without a split is exactly the usual one.
 		JsonObject single = new JsonObject();
-		single.addProperty("characterClass", "Mago");
+		single.addProperty("characterClass", "Wizard");
 		single.addProperty("constitution", "14");
-		assertTrue(!ClassLevels.isMulticlass(single), "sin campo no hay multiclase");
+		assertTrue(!ClassLevels.isMulticlass(single), "without the field there is no multiclass");
 		assertTrue(CharacterRules.maxHitPointsFor(single, 3) == ClassLevels.maxHitPoints(mix("wizard", 3), 14),
-			"y la ruta de siempre da lo mismo que el reparto de una sola clase: si no, multiclasar y "
-				+ "volver atrás cambiaría los PG de un personaje sin tocarle el nivel");
+			"and the usual route gives the same as a single-class split: otherwise, multiclassing and "
+				+ "going back would change a character's HP without touching their level");
 
-		System.out.println("checkMulticlass: OK, dados por clase, nivel de lanzador y la hoja sin reparto intacta.");
+		System.out.println("checkMulticlass: OK, dice per class, caster level and the sheet without a split intact.");
 	}
 
 	private static java.util.Map<String, Integer> mix(Object... pairs) {
@@ -2530,51 +2596,51 @@ public class JsonContentSelfTest {
 	}
 
 	/**
-	 * <p>Dotes. El SRD trae <b>una</b> (Luchador) y no es un descuido de la importación: las demás están en
-	 * el Manual del Jugador. Así que lo que hay que comprobar no es el catálogo sino el mecanismo, que es lo
-	 * que una mesa o un addon van a usar para meter las suyas.</p>
+	 * <p>Feats. The SRD has <b>one</b> (Grappler) and it is not an oversight of the import: the others are in
+	 * the Player's Handbook. So what has to be checked is not the catalog but the mechanism, which is what
+	 * a table or an addon will use to add their own.</p>
 	 *
-	 * <p>Lo único con mecánica real de una dote es que sube características, y ahí hay dos formas de
-	 * romperla en silencio: pasarse del tope de 20 —lo que la haría mejor que la mejora que sustituye— y
-	 * dejar que se coja dos veces.</p>
+	 * <p>The only thing with real mechanics in a feat is that it raises ability scores, and there are two ways to
+	 * break it silently: exceeding the cap of 20 —which would make it better than the improvement it replaces— and
+	 * letting it be taken twice.</p>
 	 */
 	private static void checkFeats() throws Exception {
 		int loaded = 0;
 		for (JsonElement el : readShippedPack("feats.json")) {
 			FeatRegistry.Feat feat = FeatRegistry.parse(el.getAsJsonObject());
 			FeatRegistry.register(feat);
-			assertTrue(!feat.name().isBlank(), "la dote " + feat.id() + " no tiene nombre");
+			assertTrue(!feat.name().isBlank(), "the feat " + feat.id() + " has no name");
 			assertTrue(!feat.description().isBlank(),
-				"la dote " + feat.id() + " no explica lo que hace: casi ninguna tiene mecánica en este motor, "
-					+ "así que el texto es LO que la dote es.");
+				"the feat " + feat.id() + " does not explain what it does: almost none has mechanics in this engine, "
+					+ "so the text is WHAT the feat is.");
 			loaded++;
 		}
-		assertTrue(loaded > 0, "el pack de dotes que se envía está vacío");
-		assertTrue(FeatRegistry.get("dndsheets:grappler") != null, "falta Luchador");
+		assertTrue(loaded > 0, "the shipped feat pack is empty");
+		assertTrue(FeatRegistry.get("dndsheets:grappler") != null, "Grappler is missing");
 
-		//Nivel mínimo. Lo trajo el SRD 5.2 y no es decoración: un Don Épico es de nivel 19, y sin puerta
-		//aparece en la mejora del nivel 4 como una opción más.
+		//Minimum level. It came with SRD 5.2 and is not decoration: an Epic Boon is level 19, and without a gate
+		//it shows up at the level 4 improvement as just another option.
 		FeatRegistry.Feat boon = FeatRegistry.get("dndsheets:boon_of_truesight");
 		assertTrue(boon != null && boon.minLevel() == 19,
-			"los Dones Épicos del SRD 5.2 tienen que llegar con su nivel 19 puesto");
+			"the SRD 5.2 Epic Boons have to arrive with their level 19 set");
 		assertTrue(FeatRegistry.get("dndsheets:archery").minLevel() == 1,
-			"y un estilo de combate es de nivel 1: si TODO lo importado quedara con el nivel del último tipo "
-				+ "leído, la lista de un nivel 4 se vaciaría o se llenaría entera");
+			"and a fighting style is level 1: if EVERYTHING imported ended up with the level of the last type "
+				+ "read, the list at level 4 would empty out or fill entirely");
 
 		JsonObject young = new JsonObject();
 		assertTrue(!FeatRegistry.grant(young, "dndsheets:boon_of_truesight", 20, 4),
-			"un nivel 4 no puede coger un Don Épico");
+			"a level 4 cannot take an Epic Boon");
 		assertTrue(FeatRegistry.grant(young, "dndsheets:boon_of_truesight", 20, 19),
-			"y a nivel 19 sí");
+			"and at level 19 it can");
 		assertTrue(!FeatRegistry.availableAt(boon, 18) && FeatRegistry.availableAt(boon, 19),
-			"la puerta es >= y no >, o el nivel 19 exacto se quedaría fuera");
+			"the gate is >= and not >, or exactly level 19 would be left out");
 
-		//La Mejora de Característica es una dote en el SRD 5.2, pero aquí ES el recurso que las dotes gastan.
-		//Importarla la habría dejado como alternativa a sí misma: coges la mejora para coger la mejora.
+		//Ability Score Improvement is a feat in SRD 5.2, but here it IS the resource that feats spend.
+		//Importing it would have left it as an alternative to itself: you take the improvement to take the improvement.
 		assertTrue(FeatRegistry.get("dndsheets:ability_score_improvement") == null,
-			"la Mejora de Característica no puede entrar como dote: es lo que las dotes gastan");
+			"Ability Score Improvement cannot enter as a feat: it is what feats spend");
 
-		//Una dote de prueba que sí sube características: es la mitad con mecánica y la que se puede romper.
+		//A test feat that does raise abilities: it is the half with mechanics and the one that can break.
 		JsonObject json = new JsonObject();
 		json.addProperty("id", "test:forzudo");
 		json.addProperty("name", "Forzudo");
@@ -2586,45 +2652,45 @@ public class JsonContentSelfTest {
 
 		JsonObject sheet = new JsonObject();
 		sheet.addProperty("strength", "16");
-		assertTrue(FeatRegistry.grant(sheet, "test:forzudo", 20, 4), "una dote nueva se puede coger");
-		assertTrue(sheet.get("strength").getAsString().equals("18"), "y sube la característica que dice");
-		assertTrue(FeatRegistry.takenBy(sheet).contains("test:forzudo"), "y queda anotada en la hoja");
-		assertTrue(!FeatRegistry.grant(sheet, "test:forzudo", 20, 4), "la misma dote no se coge dos veces");
-		assertTrue(!FeatRegistry.grant(sheet, "test:no_existe", 20, 4), "y una que no existe tampoco");
+		assertTrue(FeatRegistry.grant(sheet, "test:forzudo", 20, 4), "a new feat can be taken");
+		assertTrue(sheet.get("strength").getAsString().equals("18"), "and it raises the ability it says");
+		assertTrue(FeatRegistry.takenBy(sheet).contains("test:forzudo"), "and it is noted on the sheet");
+		assertTrue(!FeatRegistry.grant(sheet, "test:forzudo", 20, 4), "the same feat is not taken twice");
+		assertTrue(!FeatRegistry.grant(sheet, "test:no_existe", 20, 4), "nor is one that does not exist");
 
-		//El tope es el mismo que el de la mejora: una dote que lo saltara sería estrictamente mejor que ella.
+		//The cap is the same as the improvement's: a feat that skipped it would be strictly better than it.
 		JsonObject strong = new JsonObject();
 		strong.addProperty("strength", "19");
 		FeatRegistry.grant(strong, "test:forzudo", 20, 4);
-		assertTrue(strong.get("strength").getAsString().equals("20"), "el bono se recorta en 20");
+		assertTrue(strong.get("strength").getAsString().equals("20"), "the bonus is clipped at 20");
 
 		assertTrue("strength".equals(CharacterRules.abilityFieldFor("str"))
 			&& "strength".equals(CharacterRules.abilityFieldFor("Strength")),
-			"el contenido escribe \"str\" y la hoja \"strength\": las dos formas tienen que llegar al mismo campo");
-		assertTrue(CharacterRules.abilityFieldFor("fuerza") == null,
-			"y lo que no se reconoce no puede escribir en un campo inventado");
+			"content writes \"str\" and the sheet \"strength\": both forms have to reach the same field");
+		assertTrue(CharacterRules.abilityFieldFor("force") == null,
+			"and what is not recognized cannot write to an invented field");
 
-		//Gastar la mejora pendiente necesita un jugador, así que lo que se sujeta es que siga escrito: sin la
-		//comprobación, un nivel 1 coge dotes; sin el descuento, una mejora pendiente da dotes infinitas.
+		//Spending the pending improvement needs a player, so what is pinned is that it stays written: without the
+		//check, a level 1 takes feats; without the deduction, a pending improvement gives infinite feats.
 		String manager = readSource("LevelUpManager.java");
 		String applyFeat = manager.substring(manager.indexOf("public static boolean applyFeat("));
 		applyFeat = applyFeat.substring(0, applyFeat.indexOf("\n\t}"));
 		assertTrue(applyFeat.contains("pendingOf(sheet) <= 0"),
-			"applyFeat tiene que exigir una mejora pendiente: si no, cualquiera coge dotes a nivel 1");
+			"applyFeat has to require a pending improvement: otherwise anyone takes feats at level 1");
 		assertTrue(applyFeat.contains("PENDING, pendingOf(sheet) - 1"),
-			"y tiene que gastarla: si no, una sola mejora da todas las dotes del pack");
+			"and it has to spend it: otherwise a single improvement gives all the feats in the pack");
 
-		System.out.println("checkFeats: OK, " + loaded + " dote(s) del SRD, el tope de característica y la mejora que gastan.");
+		System.out.println("checkFeats: OK, " + loaded + " SRD feat(s), the ability cap and the improvement they spend.");
 	}
 
 	/**
-	 * <p>Subclases: la segunda mitad de lo que es un personaje en 5e. Se comprueban tres cosas distintas —
-	 * los datos que se envían, la puerta del nivel y el único gancho de motor que tienen.</p>
+	 * <p>Subclasses: the second half of what a character is in 5e. Three distinct things are checked —
+	 * the shipped data, the level gate and the only engine hook they have.</p>
 	 *
-	 * <p>La puerta del nivel es la que importa: {@code applySubclass} tiene que negarse a aplicar una
-	 * subclase que el personaje todavía no puede elegir. Filtrar solo la lista que se pinta no es filtrar —
-	 * un cliente modificado manda el id que quiera, y sin esta comprobación un guerrero de nivel 1 se lleva
-	 * el rango de crítico del Campeón.</p>
+	 * <p>The level gate is the one that matters: {@code applySubclass} has to refuse to apply a
+	 * subclass the character cannot yet choose. Filtering only the list that gets drawn is not filtering —
+	 * a modified client sends whatever id it wants, and without this check a level 1 fighter gets
+	 * the Champion's crit range.</p>
 	 */
 	private static void checkSubclasses() throws Exception {
 		java.util.Set<String> spells = new java.util.HashSet<>();
@@ -2638,116 +2704,116 @@ public class JsonContentSelfTest {
 			JsonObject preset = el.getAsJsonObject();
 			String presetId = preset.get("id").getAsString();
 			assertTrue(preset.has("subclasses"),
-				"el preset " + presetId + " no ofrece ninguna subclase: en 5e toda clase tiene arquetipo");
+				"preset " + presetId + " offers no subclass: in 5e every class has an archetype");
 			for (JsonElement sub : preset.getAsJsonArray("subclasses")) {
 				JsonObject subclass = sub.getAsJsonObject();
 				String id = subclass.get("id").getAsString();
-				assertTrue(seen.add(id), "la subclase " + id + " está repetida: el id es lo que se elige");
+				assertTrue(seen.add(id), "subclass " + id + " is repeated: the id is what gets chosen");
 
 				int level = subclass.has("level") ? subclass.get("level").getAsInt() : 3;
-				assertTrue(level >= 1 && level <= 20, id + " se elige al nivel " + level + ", que no existe");
-				//El rango de crítico del motor está acotado: un dato fuera de ese rango se aplicaría
-				//recortado, o sea que el JSON diría una cosa y la mesa jugaría otra.
+				assertTrue(level >= 1 && level <= 20, id + " is chosen at level " + level + ", which does not exist");
+				//The engine's crit range is bounded: data outside that range would be applied
+				//clipped, meaning the JSON would say one thing and the table would play another.
 				if (subclass.has("criticalFrom")) {
 					int from = subclass.get("criticalFrom").getAsInt();
-					assertTrue(from >= 15 && from <= 20, id + " critica desde " + from + ", fuera de lo que el motor acepta");
+					assertTrue(from >= 15 && from <= 20, id + " crits from " + from + ", outside what the engine accepts");
 				}
 				if (subclass.has("spells")) {
 					for (JsonElement spell : subclass.getAsJsonArray("spells")) {
 						assertTrue(spells.contains(spell.getAsString()),
-							id + " concede \"" + spell.getAsString() + "\", que no está en el pack de hechizos");
+							id + " grants \"" + spell.getAsString() + "\", which is not in the spell pack");
 					}
 				}
 				if (subclass.has("traits")) {
 					for (JsonElement trait : subclass.getAsJsonArray("traits")) {
 						assertTrue(traits.contains(trait.getAsString()),
-							id + " concede el rasgo \"" + trait.getAsString() + "\", que no existe");
+							id + " grants the trait \"" + trait.getAsString() + "\", which does not exist");
 					}
 				}
 				checked++;
 			}
 		}
 
-		//La puerta del nivel, sobre el preset de guerrero que checkPresets() acaba de registrar.
+		//The level gate, on the fighter preset that checkPresets() has just registered.
 		JsonObject sheet = new JsonObject();
 		sheet.addProperty("appliedPresetId", "fighter");
 		sheet.addProperty("characterLevel", "2");
 		assertTrue(PresetRegistry.availableSubclasses(sheet).isEmpty(),
-			"a nivel 2 un guerrero todavía no elige arquetipo");
+			"at level 2 a fighter does not choose an archetype yet");
 		assertTrue(!PresetRegistry.applySubclass(sheet, "fighter:champion"),
-			"y pedirlo igualmente tiene que rebotar en el servidor, no solo faltar en la lista");
-		assertTrue(!sheet.has("criticalFrom"), "y no dejar nada escrito en la hoja al rebotar");
+			"and asking for it anyway has to bounce on the server, not just be missing from the list");
+		assertTrue(!sheet.has("criticalFrom"), "and leave nothing written on the sheet when bouncing");
 
 		sheet.addProperty("characterLevel", "3");
-		assertTrue(PresetRegistry.availableSubclasses(sheet).size() == 1, "a nivel 3 ya hay una que elegir");
-		assertTrue(PresetRegistry.applySubclass(sheet, "fighter:champion"), "y se puede elegir");
-		assertTrue(sheet.get("characterSubclass").getAsString().equals("Campeón")
+		assertTrue(PresetRegistry.availableSubclasses(sheet).size() == 1, "at level 3 there is now one to choose");
+		assertTrue(PresetRegistry.applySubclass(sheet, "fighter:champion"), "and it can be chosen");
+		assertTrue(sheet.get("characterSubclass").getAsString().equals("Champion")
 			&& sheet.get("appliedSubclassId").getAsString().equals("fighter:champion"),
-			"la hoja guarda el id para las reglas y el nombre para la pantalla, como ya hace con el preset");
-		//Una subclase de otra clase no se cuela ni con el nivel correcto.
+			"the sheet stores the id for the rules and the name for the screen, as it already does with the preset");
+		//A subclass of another class does not sneak in even with the right level.
 		assertTrue(!PresetRegistry.applySubclass(sheet, "wizard:evocation"),
-			"un guerrero no puede elegir la escuela de un mago");
+			"a fighter cannot choose a wizard's school");
 
-		//El gancho de motor, que es lo único que la subclase cambia en una tirada.
-		assertTrue(DiceManager.criticalFrom(new JsonObject()) == 20, "sin nada escrito se critica con 20");
-		assertTrue(DiceManager.criticalFrom(sheet) == 19, "el Campeón critica con 19");
+		//The engine hook, which is the only thing the subclass changes in a roll.
+		assertTrue(DiceManager.criticalFrom(new JsonObject()) == 20, "with nothing written you crit on 20");
+		assertTrue(DiceManager.criticalFrom(sheet) == 19, "the Champion crits on 19");
 		JsonObject absurd = new JsonObject();
 		absurd.addProperty("criticalFrom", "2");
 		assertTrue(DiceManager.criticalFrom(absurd) == 15,
-			"un número absurdo en un JSON se recorta: si no, cada ataque sería crítico y se descubriría jugando");
+			"an absurd number in a JSON is clipped: otherwise every attack would be a crit and it would be discovered by playing");
 		JsonObject garbage = new JsonObject();
 		garbage.addProperty("criticalFrom", "diecinueve");
-		assertTrue(DiceManager.criticalFrom(garbage) == 20, "y lo que no es un número se ignora");
+		assertTrue(DiceManager.criticalFrom(garbage) == 20, "and what is not a number is ignored");
 
-		System.out.println("checkSubclasses: OK, " + checked + " subclases, la puerta del nivel y el rango de crítico.");
+		System.out.println("checkSubclasses: OK, " + checked + " subclasses, the level gate and the crit range.");
 	}
 
 	/**
-	 * <p>Competencias de habilidad. La regla es de texto —añadir o quitar {@code + $prof} en la expresión de
-	 * la tirada— y por eso se puede fijar aquí entera: lo que no se puede probar sin servidor es quién tiene
-	 * permiso para escribirla, y de eso se ocupa el mensaje.</p>
+	 * <p>Skill proficiencies. The rule is textual —adding or removing {@code + $prof} in the roll
+	 * expression— and so it can be pinned here in full: what cannot be tested without a server is who has
+	 * permission to write it, and the message takes care of that.</p>
 	 *
-	 * <p>Lo que de verdad protege esta comprobación es el <b>orden</b>. El índice es lo único que liga una
-	 * fila de la pantalla con una casilla del array {@code skills}, así que si la lista de etiquetas de la
-	 * hoja y la de {@link RollIndex} se desordenan entre sí, nada falla: simplemente marcas Atletismo y te
-	 * llevas competencia en Sigilo.</p>
+	 * <p>What this check really protects is the <b>order</b>. The index is the only thing tying a
+	 * row of the screen to a slot in the {@code skills} array, so if the sheet's label list
+	 * and {@link RollIndex}'s get out of order with each other, nothing fails: you simply tick Athletics and
+	 * end up with Stealth proficiency.</p>
 	 */
 	private static void checkSkillProficiency() throws Exception {
 		assertTrue(RollIndex.withProficiency("1d20 + $dex", true).equals("1d20 + $dex + $prof"),
-			"marcar competencia añade el término");
+			"marking proficiency adds the term");
 		assertTrue(RollIndex.withProficiency("1d20 + $dex + $prof", true).equals("1d20 + $dex + $prof"),
-			"marcarla dos veces no lo duplica");
+			"marking it twice does not duplicate it");
 		assertTrue(RollIndex.withProficiency("1d20 + $dex + $prof", false).equals("1d20 + $dex"),
-			"desmarcarla lo quita entero, sin dejar el + suelto");
-		//Reescribir la expresión desde la característica sería más corto y borraría el +2 de un objeto
-		//mágico que alguien puso a mano. El editor de tiradas existe justo para poder ponerlo.
+			"unmarking it removes it whole, without leaving a stray +");
+		//Rewriting the expression from the ability would be shorter and would erase the +2 of a magic item
+		//someone put in by hand. The roll editor exists exactly so it can be put there.
 		assertTrue(RollIndex.withProficiency("1d20 + $dex + 2", true).equals("1d20 + $dex + 2 + $prof"),
-			"lo que ya había en la expresión sigue ahí");
+			"what was already in the expression is still there");
 		assertTrue(RollIndex.withProficiency("1d20 + $dex + 2 + $prof", false).equals("1d20 + $dex + 2"),
-			"y sigue ahí al desmarcarla");
-		//$hprof es MEDIA competencia (bardo, pícaro experto): quitar competencia no puede comérselo.
+			"and is still there when unmarking it");
+		//$hprof is HALF proficiency (bard, expert rogue): removing proficiency cannot eat it.
 		assertTrue(RollIndex.withProficiency("1d20 + $hprof", false).equals("1d20 + $hprof"),
-			"media competencia no es competencia y no se toca");
-		assertTrue(!RollIndex.isProficient("1d20 + $hprof"), "y tampoco cuenta como marcada");
-		assertTrue(RollIndex.isProficient("1d20 + $dex + $prof"), "una expresión con el término está marcada");
-		//Escrito al principio no lo produce la pantalla, pero un DM puede haberlo escrito así a mano: si se
-		//detecta como marcada, tiene que poder desmarcarse, o la casilla dice una cosa y la tirada otra.
+			"half proficiency is not proficiency and is not touched");
+		assertTrue(!RollIndex.isProficient("1d20 + $hprof"), "and does not count as marked either");
+		assertTrue(RollIndex.isProficient("1d20 + $dex + $prof"), "an expression with the term is marked");
+		//Written at the start the screen does not produce it, but a DM may have written it that way by hand: if it is
+		//detected as marked, it has to be unmarkable, or the box says one thing and the roll another.
 		assertTrue(RollIndex.withProficiency("$prof + 1d20", false).equals("1d20"),
-			"también se quita si estaba escrito delante");
+			"it is also removed if it was written in front");
 
-		assertTrue(RollIndex.skillAbility(0).equals("str"), "Atletismo es de Fuerza");
+		assertTrue(RollIndex.skillAbility(0).equals("str"), "Athletics is Strength");
 		assertTrue(RollIndex.skillAbility(3).equals("dex") && RollIndex.skillAbility(1).equals("dex"),
-			"Acrobacias y Sigilo son de Destreza");
+			"Acrobatics and Stealth are Dexterity");
 		assertTrue(RollIndex.skillAbility(4).equals("int") && RollIndex.skillAbility(8).equals("int"),
-			"las cinco de conocimiento son de Inteligencia");
+			"the five knowledge skills are Intelligence");
 		assertTrue(RollIndex.skillAbility(9).equals("wis") && RollIndex.skillAbility(13).equals("wis"),
-			"las cinco de percepción son de Sabiduría");
+			"the five perception skills are Wisdom");
 		assertTrue(RollIndex.skillAbility(14).equals("cha") && RollIndex.skillAbility(17).equals("cha"),
-			"las cuatro sociales son de Carisma");
+			"the four social ones are Charisma");
 		assertTrue(RollIndex.basicNames(RollIndex.Category.SKILLS).size() == RollIndex.SKILL_COUNT,
-			"las dos listas de habilidades de RollIndex tienen que medir lo mismo");
+			"RollIndex's two skill lists have to be the same length");
 
-		//El orden de las etiquetas de la hoja contra el de RollIndex, que es el del array "skills".
+		//The order of the sheet's labels against RollIndex's, which is that of the "skills" array.
 		String sheetScreen = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"client", "gui", "CharacterSheetScreen.java"));
 		java.util.regex.Matcher labels = java.util.regex.Pattern
@@ -2757,49 +2823,49 @@ public class JsonContentSelfTest {
 			if (!inScreen.contains(labels.group(1))) inScreen.add(labels.group(1));
 		}
 		assertTrue(inScreen.size() == RollIndex.SKILL_COUNT,
-			"la hoja debería nombrar las " + RollIndex.SKILL_COUNT + " habilidades, encontré " + inScreen.size());
+			"the sheet should name the " + RollIndex.SKILL_COUNT + " skills, I found " + inScreen.size());
 		for (int index = 0; index < RollIndex.SKILL_COUNT; index++) {
 			assertTrue(RollIndex.skillLangKey(index).endsWith("_" + inScreen.get(index)),
-				"la habilidad " + index + " es \"" + inScreen.get(index) + "\" en la hoja y \""
-					+ RollIndex.skillLangKey(index) + "\" en RollIndex: con las dos listas desordenadas entre "
-					+ "sí, marcar una habilidad da competencia en otra y nada falla.");
+				"skill " + index + " is \"" + inScreen.get(index) + "\" on the sheet and \""
+					+ RollIndex.skillLangKey(index) + "\" in RollIndex: with the two lists out of order with each "
+					+ "other, ticking one skill gives proficiency in another and nothing fails.");
 		}
 
-		System.out.println("checkSkillProficiency: OK, el término de competencia y las 18 habilidades en el mismo orden.");
+		System.out.println("checkSkillProficiency: OK, the proficiency term and the 18 skills in the same order.");
 	}
 
 	/**
-	 * <p>Traer una construcción de fuera: el nombre del archivo tiene que acabar siendo una ruta válida de
-	 * {@code ResourceLocation}, y los archivos que uno se descarga se llaman "Casa Grande (v2).nbt".</p>
+	 * <p>Bringing in a build from outside: the file name has to end up as a valid {@code ResourceLocation}
+	 * path, and the files one downloads are called "Casa Grande (v2).nbt".</p>
 	 *
-	 * <p>Es el mismo fallo que dio {@code npc-capit-n} en su día, y por eso se comprueba igual: los acentos
-	 * se quitan ANTES de filtrar caracteres, porque descomponer después convierte la letra en separador. En
-	 * un mod en español eso no es un caso raro, es la mitad de los nombres.</p>
+	 * <p>It is the same failure that {@code npc-capit-n} once gave, and that is why it is checked the same way: accents
+	 * are stripped BEFORE filtering characters, because decomposing afterwards turns the letter into a separator. In
+	 * a Spanish-language mod that is not a rare case, it is half the names.</p>
 	 */
 	/**
-	 * <p>Encuentros: un grupo de monstruos guardado antes de la sesión y soltado de una vez. Lo que se fija
-	 * aquí es la sintaxis de la composición —la misma en el JSON y en el formulario del creador in-game— y
-	 * que los monstruos del pack que se envía existan de verdad.</p>
+	 * <p>Encounters: a group of monsters saved before the session and dropped all at once. What is pinned
+	 * here is the syntax of the composition —the same in the JSON and in the in-game creator's form— and
+	 * that the monsters of the shipped pack really exist.</p>
 	 *
-	 * <p>Esto último es el que importa: un id mal escrito en un encuentro no revienta nada, simplemente
-	 * invoca menos monstruos de los que el DM preparó, y eso se descubre en mitad del combate.</p>
+	 * <p>The latter is the one that matters: a misspelled id in an encounter does not blow anything up, it simply
+	 * summons fewer monsters than the DM prepared, and that is discovered in the middle of combat.</p>
 	 */
 	private static void checkEncounters() throws Exception {
-		assertTrue(EncounterRegistry.parseMember("dndsheets:goblin x4").count() == 4, "x4 son cuatro");
+		assertTrue(EncounterRegistry.parseMember("dndsheets:goblin x4").count() == 4, "x4 is four");
 		assertTrue(EncounterRegistry.parseMember("dndsheets:goblin x4").monsterId().equals("dndsheets:goblin"),
-			"y el id se queda sin la cola");
-		assertTrue(EncounterRegistry.parseMember("dndsheets:goblin").count() == 1, "sin cola, uno");
+			"and the id is left without the tail");
+		assertTrue(EncounterRegistry.parseMember("dndsheets:goblin").count() == 1, "without a tail, one");
 		assertTrue(EncounterRegistry.parseMember("  dndsheets:goblin x2  ").monsterId().equals("dndsheets:goblin"),
-			"los espacios de alrededor no forman parte del id");
-		//Una "x" dentro del nombre no es una cuenta: solo cuenta la última, y solo si detrás hay un número.
+			"the surrounding spaces are not part of the id");
+		//An "x" inside the name is not a count: only the last one counts, and only if a number follows.
 		assertTrue(EncounterRegistry.parseMember("mod:xorn").monsterId().equals("mod:xorn"),
-			"un id que empieza por x sigue siendo un id");
+			"an id that starts with x is still an id");
 		assertTrue(EncounterRegistry.parseMember("mod:dragon x viejo").count() == 1,
-			"lo que no es un número no es una cuenta");
-		//Cero no es "ninguno", es una errata: un encuentro con una línea que no invoca nada se lee como roto.
-		assertTrue(EncounterRegistry.parseMember("mod:goblin x0").count() == 1, "cero se trata como uno");
+			"what is not a number is not a count");
+		//Zero is not "none", it is a typo: an encounter with a line that summons nothing reads as broken.
+		assertTrue(EncounterRegistry.parseMember("mod:goblin x0").count() == 1, "zero is treated as one");
 		assertTrue(EncounterRegistry.parseMember("") == null && EncounterRegistry.parseMember(null) == null,
-			"una línea vacía se salta en vez de tumbar el encuentro");
+			"an empty line is skipped instead of taking down the encounter");
 
 		java.util.Set<String> bestiary = new java.util.HashSet<>();
 		for (JsonElement el : readShippedPack("monsters.json")) bestiary.add(el.getAsJsonObject().get("id").getAsString());
@@ -2807,240 +2873,240 @@ public class JsonContentSelfTest {
 		int checked = 0;
 		for (JsonElement el : readShippedPack("encounters.json")) {
 			EncounterRegistry.Encounter encounter = EncounterRegistry.parse(el.getAsJsonObject());
-			assertTrue(!encounter.members().isEmpty(), "el encuentro " + encounter.id() + " no invoca nada");
+			assertTrue(!encounter.members().isEmpty(), "encounter " + encounter.id() + " summons nothing");
 			for (EncounterRegistry.Member member : encounter.members()) {
 				assertTrue(bestiary.contains(member.monsterId()),
-					"el encuentro " + encounter.id() + " pide [" + member.monsterId() + "], que no está en el bestiario");
+					"encounter " + encounter.id() + " asks for [" + member.monsterId() + "], which is not in the bestiary");
 				checked++;
 			}
 		}
-		assertTrue(checked > 0, "el pack de encuentros que se envía está vacío");
+		assertTrue(checked > 0, "the shipped encounter pack is empty");
 
-		//Un id sin namespace ("emboscada_de_prueba", lo que escribe cualquiera en el creador de contenido)
-		//llega a los comandos como "minecraft:emboscada_de_prueba": ResourceLocationArgument le pone el
-		//namespace por defecto a toda palabra sin ":". El registro guarda el id TAL CUAL viene del JSON, así
-		//que sin la red de NamedRegistry.get nada de lo creado in-game se puede invocar —ni tecleando el
-		//comando ni desde el Panel de DM, que manda ese mismo comando. Ya había pasado una vez con los
-		//presets y volvió a pasar con los encuentros, de ahí que se compruebe.
+		//An id without namespace ("emboscada_de_prueba", what anyone writes in the content creator)
+		//reaches the commands as "minecraft:emboscada_de_prueba": ResourceLocationArgument puts the
+		//default namespace on every word without ":". The registry stores the id AS IT COMES from the JSON, so
+		//without the safety net of NamedRegistry.get nothing created in-game can be summoned —neither by typing the
+		//command nor from the DM Panel, which sends that same command. It had already happened once with
+		//presets and happened again with encounters, hence it is checked.
 		EncounterRegistry.register(new EncounterRegistry.Encounter(
 			"emboscada_de_prueba", "emboscada de prueba", java.util.List.of()));
 		assertTrue(EncounterRegistry.get("minecraft:emboscada_de_prueba") != null,
-			"un id sin namespace debería encontrarse aunque el comando le haya puesto \"minecraft:\" delante");
+			"an id without namespace should be found even if the command has put \"minecraft:\" in front");
 		assertTrue(EncounterRegistry.get("minecraft:no_existe") == null,
-			"y lo que no está sigue sin estar: la red no puede inventarse entradas");
+			"and what is not there is still not there: the net cannot invent entries");
 		EncounterRegistry.remove("emboscada_de_prueba");
 
 		checkEncounterBudget();
 		checkFormPrefillIsNotTruncated();
 		checkContentManagerSeesPacks();
 
-		System.out.println("checkEncounters: OK, la sintaxis de composición y " + checked
-			+ " monstruos de los encuentros que se envían existen.");
+		System.out.println("checkEncounters: OK, the composition syntax and " + checked
+			+ " monsters in the shipped encounters exist.");
 	}
 
 	/**
-	 * <p>El menú de contenido enseña TAMBIÉN lo que trae el pack, no solo lo que creó el DM. Mientras miraba
-	 * un único archivo, abrir "Encuentros" sin haber creado ninguno daba una pantalla vacía con cinco
-	 * encuentros cargados y jugables detrás — que es como se descubrió: "no hay manera de gestionar nada".</p>
+	 * <p>The content menu ALSO shows what the pack brings, not just what the DM created. While it looked at
+	 * a single file, opening "Encounters" without having created any gave an empty screen with five
+	 * encounters loaded and playable behind it — which is how it was discovered: "there is no way to manage anything".</p>
 	 */
 	private static void checkContentManagerSeesPacks() throws Exception {
 		Path dir = Files.createTempDirectory("dndsheets-content");
 		Path mine = dir.resolve("dm_created.json");
 		Files.writeString(mine, "[{\"id\": \"mio\"}]");
 		Files.writeString(dir.resolve(ContentDefaults.FILE), "[{\"id\": \"del_pack\"}]");
-		//Un .json.old (los hay en runClient) no es un pack: se queda fuera, como en la carga de verdad.
+		//A .json.old (there are some in runClient) is not a pack: it stays out, as in the real load.
 		Files.writeString(dir.resolve("viejo.json.old"), "[{\"id\": \"jubilado\"}]");
 
 		String packs = ContentPackFile.readOtherArraysText(dir, mine);
-		assertTrue(packs.contains("del_pack"), "el menú de contenido debería ver el pack del mod: " + packs);
-		assertTrue(!packs.contains("mio"), "lo que creó el DM va en su sección, no repetido en la del pack");
-		assertTrue(!packs.contains("jubilado"), "un .json.old no se carga en el juego y tampoco se lista");
-		assertTrue(ContentPackFile.readArrayText(mine).contains("mio"), "y su archivo se sigue leyendo aparte");
+		assertTrue(packs.contains("del_pack"), "the content menu should see the mod's pack: " + packs);
+		assertTrue(!packs.contains("mio"), "what the DM created goes in their section, not repeated in the pack's");
+		assertTrue(!packs.contains("jubilado"), "a .json.old is not loaded in the game and is not listed either");
+		assertTrue(ContentPackFile.readArrayText(mine).contains("mio"), "and their file is still read separately");
 
-		System.out.println("checkContentManagerSeesPacks: OK, el gestor de contenido ve las dos fuentes.");
+		System.out.println("checkContentManagerSeesPacks: OK, the content manager sees both sources.");
 	}
 
 	/**
-	 * <p>Lo que un formulario RELLENA no se puede recortar. {@code EditBox.setMaxLength} corta el valor que
-	 * ya tiene la casilla ({@code value.substring(0, max)}), sin avisar y sin que se vea —el texto largo ya
-	 * no cabía a la vista igual—, así que una composición de encuentro traída del diseñador se guardaba con
-	 * el último id partido a la mitad y solo se descubría al invocarla, como "un monstruo que no existe",
-	 * a kilómetros de donde estaba el fallo. Se comprueba sobre la fuente porque estas dos son clases de
-	 * pantalla y no se pueden instanciar sin un cliente arrancado.</p>
+	 * <p>What a form FILLS IN cannot be truncated. {@code EditBox.setMaxLength} cuts the value the
+	 * box already holds ({@code value.substring(0, max)}), without warning and invisibly —the long text
+	 * did not fit in view anyway—, so an encounter composition brought from the designer got saved with
+	 * the last id cut in half and was only discovered on summoning it, as "a monster that does not exist",
+	 * miles from where the fault was. It is checked on the source because these two are screen classes
+	 * and cannot be instantiated without a running client.</p>
 	 */
 	private static void checkFormPrefillIsNotTruncated() throws Exception {
 		String form = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"client", "gui", "FormPanelScreen.java"));
 		assertTrue(form.contains("setMaxLength(Math.max(maxLength, defaultValue.length()))"),
-			"FormPanelScreen no debe dejar que el tope recorte lo que la propia pantalla acaba de rellenar");
-		//Y el ORDEN, que es donde estaba el fallo de verdad: setValue recorta a lo que valga maxLength en ese
-		//momento, y un EditBox nace con el 32 de vanilla. Rellenar antes de subir el tope cortaba TODOS los
-		//formularios prellenados a 32 caracteres, no solo el de encuentros. Poner el tope después parece
-		//equivalente leyéndolo y no lo es.
+			"FormPanelScreen must not let the cap truncate what the screen itself has just filled in");
+		//And the ORDER, which is where the real fault was: setValue truncates to whatever maxLength is at that
+		//moment, and an EditBox is born with vanilla's 32. Filling in before raising the cap cut ALL the
+		//prefilled forms to 32 characters, not just the encounter one. Setting the cap afterwards seems
+		//equivalent when reading it and it is not.
 		int max = form.indexOf("box.setMaxLength(");
 		int value = form.indexOf("box.setValue(defaultValue)");
 		assertTrue(max > 0 && value > 0 && max < value,
-			"en registerBox el tope va ANTES del valor: al revés, setValue corta a los 32 de vanilla");
+			"in registerBox the cap goes BEFORE the value: the other way round, setValue cuts at vanilla's 32");
 
 		String forms = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"client", "gui", "ContentTypeForms.java"));
 		assertTrue(forms.contains("LIST_LENGTH = 256"),
-			"las casillas de lista necesitan un tope propio: 64 no da ni para tres ids con namespace");
-		//Línea a línea: "traits" y "spells" salen en dos formularios (presets y dotes) y las dos cuentan.
+			"list boxes need their own cap: 64 does not even fit three ids with a namespace");
+		//Line by line: "traits" and "spells" appear in two forms (presets and feats) and both count.
 		int lists = 0;
 		for (String line : forms.split("\n")) {
 			for (String field : new String[] {"monsters", "traits", "spells", "startingGear", "classes"}) {
 				if (!line.contains("FieldSpec.text(\"" + field + "\"")) continue;
 				assertTrue(line.contains("LIST_LENGTH"),
-					"la casilla \"" + field + "\" lleva una lista separada por comas y necesita LIST_LENGTH: " + line.trim());
+					"the \"" + field + "\" box carries a comma-separated list and needs LIST_LENGTH: " + line.trim());
 				lists++;
 			}
 		}
-		assertTrue(lists >= 7, "deberían seguir existiendo las casillas de lista, encontré " + lists);
+		assertTrue(lists >= 7, "the list boxes should still exist, I found " + lists);
 
-		System.out.println("checkFormPrefillIsNotTruncated: OK, los formularios de contenido no cortan listas.");
+		System.out.println("checkFormPrefillIsNotTruncated: OK, the content forms do not cut lists.");
 	}
 
 	/**
-	 * <p>El presupuesto de PX que usa el diseñador de encuentros ({@link EncounterBudget}). Lo que se fija
-	 * acá es la CADENA entera —bloque del bestiario → VD estimada → PX → veredicto— porque cada eslabón es
-	 * una tabla del DMG copiada a mano y un dedazo en una casilla no rompe nada visible: el mod sigue
-	 * funcionando y solo miente sobre la dificultad, que es exactamente lo que nadie revisa.</p>
+	 * <p>The XP budget used by the encounter designer ({@link EncounterBudget}). What is pinned
+	 * here is the whole CHAIN —bestiary block → estimated CR → XP → verdict— because each link is
+	 * a DMG table copied by hand and a typo in a cell breaks nothing visible: the mod keeps
+	 * working and only lies about difficulty, which is exactly what nobody checks.</p>
 	 */
 	private static void checkEncounterBudget() throws Exception {
-		assertTrue(EncounterBudget.averageDice("2d6+3") == 10, "2d6+3 promedia 10");
-		assertTrue(EncounterBudget.averageDice("1d8-1") == 3.5, "1d8-1 promedia 3,5");
+		assertTrue(EncounterBudget.averageDice("2d6+3") == 10, "2d6+3 averages 10");
+		assertTrue(EncounterBudget.averageDice("1d8-1") == 3.5, "1d8-1 averages 3.5");
 		assertTrue(EncounterBudget.averageDice("") == 0 && EncounterBudget.averageDice(null) == 0,
-			"sin dados no hay daño, no una excepción");
+			"without dice there is no damage, not an exception");
 
-		//El goblin del SRD es VD 1/4 = 50 PX. Se estima desde su propio bloque (7 PG, CA 15, cimitarra
-		//1d6+2), así que esto revienta si se descuadra cualquiera de las tres tablas de la estimación.
+		//The SRD goblin is CR 1/4 = 50 XP. It is estimated from its own block (7 HP, AC 15, scimitar
+		//1d6+2), so this blows up if any of the three estimation tables is thrown off.
 		MonsterRegistry.MonsterStatBlock goblin = null;
 		for (JsonElement el : readShippedPack("monsters.json")) {
 			if ("dndsheets:goblin".equals(el.getAsJsonObject().get("id").getAsString())) {
 				goblin = MonsterRegistry.parse(el.getAsJsonObject());
 			}
 		}
-		assertTrue(goblin != null, "el goblin debería seguir en el bestiario que se envía");
-		assertTrue(EncounterBudget.xp(goblin) == 50, "el goblin debería estimarse en VD 1/4 (50 PX) y da "
-			+ EncounterBudget.xp(goblin) + " PX");
+		assertTrue(goblin != null, "the goblin should still be in the shipped bestiary");
+		assertTrue(EncounterBudget.xp(goblin) == 50, "the goblin should be estimated at CR 1/4 (50 XP) and gives "
+			+ EncounterBudget.xp(goblin) + " XP");
 
-		//Cuatro personajes de nivel 1: 100/200/300/400 (DMG). Cuatro goblins son 200 PX, que con el x2 de
-		//"tres a seis monstruos" quedan en 400 ajustados: la emboscada clásica es MORTAL a nivel 1, y esa
-		//es justo la respuesta que el diseñador existe para dar.
+		//Four level 1 characters: 100/200/300/400 (DMG). Four goblins are 200 XP, which with the x2 for
+		//"three to six monsters" come to 400 adjusted: the classic ambush is DEADLY at level 1, and that
+		//is exactly the answer the designer exists to give.
 		int[] thresholds = EncounterBudget.thresholds(java.util.List.of(1, 1, 1, 1));
 		assertTrue(java.util.Arrays.equals(thresholds, new int[] {100, 200, 300, 400}),
-			"los umbrales de cuatro personajes de nivel 1 deberían ser 100/200/300/400 y son "
+			"the thresholds of four level 1 characters should be 100/200/300/400 and are "
 				+ java.util.Arrays.toString(thresholds));
-		assertTrue(EncounterBudget.multiplier(4, 4) == 2, "de tres a seis monstruos, x2");
-		assertTrue(EncounterBudget.multiplier(4, 2) == 2.5, "con menos de tres personajes, una fila más arriba");
+		assertTrue(EncounterBudget.multiplier(4, 4) == 2, "three to six monsters, x2");
+		assertTrue(EncounterBudget.multiplier(4, 2) == 2.5, "with fewer than three characters, one row higher");
 		assertTrue(EncounterBudget.rate(200, 4, 4, thresholds) == 4,
-			"cuatro goblins contra cuatro personajes de nivel 1 son un encuentro mortal");
-		assertTrue(EncounterBudget.rate(50, 1, 4, thresholds) == 0, "un goblin suelto es trivial para cuatro");
-		//Sin nadie conectado no hay grupo contra el que medir: -1 y la pantalla calla, en vez de decir
-		//"mortal" porque todos los umbrales valen cero.
-		assertTrue(EncounterBudget.rate(200, 4, 0, new int[4]) == -1, "sin grupo no hay veredicto");
+			"four goblins against four level 1 characters are a deadly encounter");
+		assertTrue(EncounterBudget.rate(50, 1, 4, thresholds) == 0, "a lone goblin is trivial for four");
+		//With nobody connected there is no party to measure against: -1 and the screen stays silent, instead of saying
+		//"deadly" because every threshold is zero.
+		assertTrue(EncounterBudget.rate(200, 4, 0, new int[4]) == -1, "no party means no verdict");
 	}
 
 	/**
-	 * <p>La luz, que es la otra mitad del entorno después de la cobertura: en oscuridad se está "muy
-	 * oscurecido" y eso en 5e es estar ciego. Aquí se fija lo que es puro —dónde caen los cortes entre luz,
-	 * penumbra y oscuridad, qué cambia la visión en la oscuridad, y qué razas la tienen— porque lo demás
-	 * necesita un mundo con bloques.</p>
+	 * <p>Light, which is the other half of the environment after cover: in darkness you are "heavily
+	 * obscured" and in 5e that means being blinded. What gets pinned down here is the pure part: where the
+	 * cutoffs between light, dim light and darkness fall, what darkvision changes, and which races have
+	 * it, because the rest needs a world with blocks.</p>
 	 *
-	 * <p>Los umbrales se comprueban <b>en su frontera exacta</b>: el error natural aquí es el de siempre,
-	 * un {@code >=} escrito como {@code >}, y desplaza la regla entera un nivel de luz sin que nada más
-	 * cambie.</p>
+	 * <p>The thresholds are checked <b>at their exact boundary</b>: the natural mistake here is the usual
+	 * one, a {@code >=} written as {@code >}, which shifts the whole rule by one light level without
+	 * anything else changing.</p>
 	 */
 	private static void checkVision() throws Exception {
 		assertTrue(Light.fromLightLevel(0) == Light.DARK && Light.fromLightLevel(3) == Light.DARK,
-			"por debajo de 4 es oscuridad");
+			"below 4 is darkness");
 		assertTrue(Light.fromLightLevel(4) == Light.DIM && Light.fromLightLevel(7) == Light.DIM,
-			"de 4 a 7 es penumbra: es donde cae la noche a cielo abierto, que en el SRD es luz de luna");
+			"4 to 7 is dim light: that is where open-sky night falls, which in the SRD is moonlight");
 		assertTrue(Light.fromLightLevel(8) == Light.BRIGHT && Light.fromLightLevel(15) == Light.BRIGHT,
-			"de 8 en adelante es luz brillante");
+			"8 and above is bright light");
 		assertTrue(Light.DARK.blinds() && !Light.DIM.blinds() && !Light.BRIGHT.blinds(),
-			"solo la oscuridad ciega: la penumbra estorba, no impide ver");
+			"only darkness blinds: dim light hinders but does not prevent seeing");
 
-		//La visión en la oscuridad convierte oscuridad en penumbra y no en luz brillante — quien la tiene
-		//deja de estar ciego, no deja de estar a oscuras.
-		assertTrue(Light.DARK.withDarkvision(true) == Light.DIM, "con visión en la oscuridad, la oscuridad es penumbra");
-		assertTrue(!Light.DARK.withDarkvision(true).blinds(), "y por tanto ya no ciega");
-		assertTrue(Light.DARK.withDarkvision(false).blinds(), "sin ella, la oscuridad sigue cegando");
+		//Darkvision turns darkness into dim light and not into bright light — whoever has it
+		//stops being blind but does not stop being in the dark.
+		assertTrue(Light.DARK.withDarkvision(true) == Light.DIM, "with darkvision, darkness is dim light");
+		assertTrue(!Light.DARK.withDarkvision(true).blinds(), "and therefore no longer blinds");
+		assertTrue(Light.DARK.withDarkvision(false).blinds(), "without it, darkness still blinds");
 		assertTrue(Light.DIM.withDarkvision(true) == Light.DIM && Light.BRIGHT.withDarkvision(true) == Light.BRIGHT,
-			"el rasgo no mejora lo que ya se ve");
+			"the trait does not improve what is already visible");
 
 		for (String race : List.of("Enano", "Elfo", "Semielfo", "Gnomo", "Semiorco", "Tiefling", "Dwarf", "elfo del bosque")) {
-			assertTrue(CharacterRules.darkvisionFeetFor(race) == 60, race + " ve en la oscuridad en el SRD");
+			assertTrue(CharacterRules.darkvisionFeetFor(race) == 60, race + " sees in the dark in the SRD");
 		}
 		for (String race : List.of("Humano", "Mediano", "Dracónido", "")) {
-			assertTrue(CharacterRules.darkvisionFeetFor(race) == 0, "la raza [" + race + "] no ve en la oscuridad");
+			assertTrue(CharacterRules.darkvisionFeetFor(race) == 0, "the race [" + race + "] does not see in the dark");
 		}
-		//Una raza de la casa no concede el rasgo por su cuenta: las razas son texto libre que un pack puede
-		//reemplazar entero, así que "no la reconozco" no puede leerse como "sí la tiene".
-		assertTrue(CharacterRules.darkvisionFeetFor("Aarakocra") == 0, "una raza desconocida no concede el rasgo");
-		assertTrue(CharacterRules.darkvisionFeetFor((String) null) == 0, "una hoja sin raza tampoco");
+		//A homebrew race does not grant the trait on its own: races are free text that a pack can
+		//replace entirely, so "I do not recognise it" cannot be read as "it has it".
+		assertTrue(CharacterRules.darkvisionFeetFor("Aarakocra") == 0, "an unknown race does not grant the trait");
+		assertTrue(CharacterRules.darkvisionFeetFor((String) null) == 0, "a sheet with no race does not either");
 
 		JsonObject dwarf = new JsonObject();
 		dwarf.addProperty("characterRace", "Enano");
-		assertTrue(CharacterRules.darkvisionFeetFor(dwarf) == 60, "la raza de la hoja decide si no hay campo explícito");
-		//El campo explícito tiene que poder QUITARLO, no solo darlo: por eso el centinela es -1 y no 0. Con 0
-		//como "sin valor", un enano cegado por una maldición no se podría escribir en la ficha.
+		assertTrue(CharacterRules.darkvisionFeetFor(dwarf) == 60, "the sheet race decides when there is no explicit field");
+		//The explicit field must be able to REMOVE it, not just grant it: that is why the sentinel is -1 and not 0. With 0
+		//as "no value", a dwarf blinded by a curse could not be written on the sheet.
 		dwarf.addProperty("darkvision", "0");
-		assertTrue(CharacterRules.darkvisionFeetFor(dwarf) == 0, "el campo de la ficha manda sobre la raza, también para quitarlo");
+		assertTrue(CharacterRules.darkvisionFeetFor(dwarf) == 0, "the sheet field overrides the race, also to remove it");
 		JsonObject custom = new JsonObject();
 		custom.addProperty("characterRace", "Aarakocra");
 		custom.addProperty("darkvision", "120");
-		assertTrue(CharacterRules.darkvisionFeetFor(custom) == 120, "y es la salida para una raza de la casa");
+		assertTrue(CharacterRules.darkvisionFeetFor(custom) == 120, "and it is the way out for a homebrew race");
 
-		//Quitar la ceguera sin mirar quién la puso borraría también la de un conjuro o la de un DM en cuanto
-		//el jugador saliera a la luz. Eso no se puede probar sin mundo, así que se sujeta por estructura.
+		//Removing blindness without checking who applied it would also erase that of a spell or a DM as soon as
+		//the player stepped into the light. That cannot be tested without a world, so it is pinned by structure.
 		String manager = readSource("VisionManager.java");
 		String lift = manager.substring(manager.indexOf("private static void lift("));
 		lift = lift.substring(0, lift.indexOf("\n\t}"));
-		assertTrue(lift.contains("sourceOf(Condition.CEGADO) != DARKNESS_SOURCE"),
-			"lift() tiene que comprobar la fuente antes de quitar la ceguera: si no, salir a la luz cura "
-				+ "también la ceguera que acaba de echarte un conjuro o un DM.");
+		assertTrue(lift.contains("sourceOf(Condition.BLINDED) != DARKNESS_SOURCE"),
+			"lift() must check the source before removing blindness: otherwise stepping into the light cures "
+				+ "also the blindness a spell or a DM has just put on you.");
 
-		//La otra mitad de la penumbra, la que Light.java documentaba como "no hace nada mecánico" hasta
-		//ahora: desventaja de Percepción de verdad. DiceManager.rollWithAdvantage es pura (no necesita
-		//mundo), así que esto SÍ se puede probar de extremo a extremo, a diferencia de inDimLight (que lee
-		//el nivel de luz real del bloque y sí lo necesita).
-		JsonObject flatSheet = new JsonObject(); //"1d1" (sin modificador) hace la tirada determinista.
+		//The other half of dim light, the one Light.java used to document as "does nothing mechanical" until
+		//now: real disadvantage on Perception. DiceManager.rollWithAdvantage is pure (needs no
+		//world), so this CAN be tested end to end, unlike inDimLight (which reads
+		//the real light level of the block and does need one).
+		JsonObject flatSheet = new JsonObject(); //"1d1" (no modifier) makes the roll deterministic.
 		DiceManager.RollOutcome disadvantaged = DiceManager.rollWithAdvantage(flatSheet, "1d20", DiceManager.Advantage.DISADVANTAGE);
-		assertTrue(disadvantaged.formatted() != null && disadvantaged.formatted().contains("desventaja"),
-			"rollWithAdvantage en desventaja debería anunciarlo, igual que ya hace rollAttack");
+		assertTrue(disadvantaged.formatted() != null && disadvantaged.formatted().contains("disadvantage"),
+			"rollWithAdvantage with disadvantage should announce it, just as rollAttack already does");
 
-		//Y que la única llamadora la use SOLO para Percepción — ni para las otras 17 habilidades, ni para
-		//pruebas/salvaciones/ataques, que ya tienen su propia fuente de ventaja.
+		//And that the only caller uses it ONLY for Perception — not for the other 17 skills, nor for
+		//checks/saves/attacks, which already have their own source of advantage.
 		String announcer = readSource("procedures/RollAnnouncerProcedure.java");
-		assertTrue(announcer.contains("VisionManager.inDimLight("), "la penumbra debería consultarse antes de tirar Percepción");
+		assertTrue(announcer.contains("VisionManager.inDimLight("), "dim light should be consulted before rolling Perception");
 		assertTrue(announcer.contains("RollIndex.PERCEPTION_SKILL_INDEX"),
-			"debería mirar el índice de Percepción, no un número suelto que se desincronice de SKILL_KEYS");
+			"it should look at the Perception index, not a loose number that drifts out of sync with SKILL_KEYS");
 
-		System.out.println("checkVision: OK, los cortes de luz, la visión en la oscuridad, de quién es cada ceguera, y la desventaja de Percepción por penumbra.");
+		System.out.println("checkVision: OK, the light cutoffs, darkvision, whose blindness is whose, and the Perception disadvantage in dim light.");
 	}
 
 	/**
-	 * <p>El mod apunta a 1.20.1 y la puerta a una versión futura se deja abierta a propósito. Lo que decide
-	 * si esa puerta sigue abierta no es una promesa en el README: es el <b>acoplamiento</b> con vanilla, y
-	 * ese crece en silencio — nada falla hoy por meter un mixin o por leer el NBT de un objeto en un sitio
-	 * nuevo. Se paga entero el día que alguien porte.</p>
+	 * <p>The mod targets 1.20.1 and the door to a future version is deliberately left open. What decides
+	 * whether that door stays open is not a promise in the README: it is the <b>coupling</b> with vanilla, and
+	 * that grows silently — nothing fails today for adding a mixin or for reading an item's NBT in a new
+	 * place. It is paid in full the day someone ports.</p>
 	 *
-	 * <p><b>Mixins y access transformers</b> parchean Minecraft por dentro, así que hay que reescribirlos en
-	 * cada versión. Hoy no hay ninguno: el mod entero funciona con eventos y API pública de Forge, que es la
-	 * razón principal de que portarlo sea siquiera discutible.</p>
+	 * <p><b>Mixins and access transformers</b> patch Minecraft from the inside, so they have to be rewritten in
+	 * every version. Today there are none: the whole mod works with Forge events and public API, which is the
+	 * main reason porting it is even up for discussion.</p>
 	 *
-	 * <p><b>El NBT de los objetos</b> desaparece en 1.20.5 y pasa a componentes. Todo lo que este mod escribe
-	 * en un objeto vive en un único compuesto {@code "dndsheets"}, así que la migración es <i>un</i> componente
-	 * y no una por tipo de objeto — pero eso solo es verdad mientras el acceso siga concentrado en los ficheros
-	 * anotados aquí. La lista no prohíbe tocar NBT: obliga a que dispersarlo sea una decisión.</p>
+	 * <p><b>Item NBT</b> disappears in 1.20.5 and becomes components. Everything this mod writes
+	 * on an item lives in a single {@code "dndsheets"} compound, so the migration is <i>one</i> component
+	 * and not one per item type — but that is only true while access stays concentrated in the files
+	 * listed here. The list does not forbid touching NBT: it forces scattering it to be a decision.</p>
 	 *
-	 * <p>Ver "Portability to future Minecraft versions" en {@code PROJECT_CONTEXT.md}.</p>
+	 * <p>See "Portability to future Minecraft versions" en {@code PROJECT_CONTEXT.md}.</p>
 	 */
 	private static void checkPortabilityCoupling() throws Exception {
-		//Los ficheros que hoy tocan el NBT de un ItemStack. Si añades uno, añádelo aquí y comprueba que lo
-		//que escribes va dentro del compuesto "dndsheets", como todo lo demás.
+		//The files that today touch the NBT of an ItemStack. If you add one, add it here and check that what
+		//you write goes inside the "dndsheets" compound, like everything else.
 		Set<String> allowed = Set.of(
 			"AbilityItem.java", "AbilityItemDispatcher.java", "Config.java", "ItemLook.java",
 			"JournalManager.java", "MagicItemRegistry.java", "MonsterCommand.java", "MonsterRegistry.java",
@@ -3055,63 +3121,78 @@ public class JsonContentSelfTest {
 		for (Path file : files) {
 			String name = file.getFileName().toString();
 			assertTrue(!name.endsWith("mixins.json") && !name.equals("accesstransformer.cfg"),
-				"apareció " + file + ": un mixin o un access transformer parchea Minecraft por dentro y hay que "
-					+ "reescribirlo en cada versión. Hoy no hay ninguno, y eso es la mitad de lo que mantiene "
-					+ "barato un port futuro (PROJECT_CONTEXT.md, \"Portability to future Minecraft versions\").");
+				"found " + file + ": a mixin or an access transformer patches Minecraft from the inside and has to be "
+					+ "rewritten in every version. Today there are none, and that is half of what keeps "
+					+ "a future port cheap (PROJECT_CONTEXT.md, \"Portability to future Minecraft versions\").");
 			if (!name.endsWith(".java")) continue;
 
 			String source = Files.readString(file);
 			assertTrue(!source.contains("setAccessible(") && !source.contains("getDeclaredField("),
-				name + " usa reflexión sobre las tripas de vanilla: se rompe en cuanto cambian los mapeos y no "
-					+ "avisa al compilar. Si hace falta llegar a algo interno, un evento de Forge o un PR a Forge.");
+				name + " uses reflection on vanilla internals: it breaks as soon as the mappings change and gives no "
+					+ "compile-time warning. If something internal must be reached, use a Forge event or a PR to Forge.");
 			if (source.contains("getOrCreateTag()") || source.contains(".getTag()") || source.contains("addTagElement"))
 				stray.add(name);
 		}
 
 		stray.removeAll(allowed);
 		assertTrue(stray.isEmpty(),
-			"tocan el NBT de un objeto fuera de la lista anotada: " + stray + ". El NBT de objetos deja de existir "
-				+ "en 1.20.5 (pasa a componentes); hoy esa migración es UN componente porque todo lo que el mod "
-				+ "escribe vive en el compuesto \"dndsheets\" y solo se toca desde " + allowed.size() + " ficheros. "
-				+ "Si el acceso se dispersa, el coste del port crece sin que nada se queje. Si es deliberado, "
-				+ "añade el fichero a la lista de checkPortabilityCoupling.");
+			"these touch an item's NBT outside the annotated list: " + stray + ". Item NBT ceases to exist "
+				+ "in 1.20.5 (it becomes components); today that migration is ONE component because everything the mod "
+				+ "writes lives in the \"dndsheets\" compound and is only touched from " + allowed.size() + " files. "
+				+ "If access scatters, the cost of the port grows without anything complaining. If deliberate, "
+				+ "add the file to the checkPortabilityCoupling list.");
 
-		System.out.println("checkPortabilityCoupling: OK, sin mixins ni access transformers y el NBT de objetos "
-			+ "sigue concentrado en " + allowed.size() + " ficheros.");
+		System.out.println("checkPortabilityCoupling: OK, no mixins or access transformers and item NBT "
+			+ "is still concentrated in " + allowed.size() + " files.");
 	}
 
 	/**
-	 * <p>Contenido traído de fuera: lo que el SRD 5.2 añadió y, sobre todo, <b>lo que hace falta para que un
-	 * pack escrito en otro idioma no mienta</b>.</p>
+	 * <p>Content brought in from outside: what SRD 5.2 added and, above all, <b>what is needed so that a
+	 * pack written in another language does not lie</b>.</p>
 	 *
-	 * <p>Un tipo de daño no es una etiqueta que se imprime: es la CLAVE con la que se busca la resistencia
-	 * del objetivo. Mientras se comparó tal cual venía escrito, un pack de la comunidad en inglés
-	 * ({@code "damageType": "fire"}) atravesaba la resistencia al fuego de un personaje
-	 * ({@code "fuego": "resistant"}) sin que saltara nada: el daño salía, y salía mal. Eso no es un fallo
-	 * que una mesa pueda ver — por eso se comprueba de punta a punta y no solo la función.</p>
+	 * <p>A damage type is not a label that gets printed: it is the KEY used to look up the target's
+	 * resistance. While it was compared exactly as written, an English community pack
+	 * ({@code "damageType": "fire"}) went straight through a character's fire resistance
+	 * ({@code "fire": "resistant"}) without anything tripping: the damage came out, and came out wrong. That is
+	 * not a failure a table can see — hence it is checked end to end and not just the function.</p>
 	 *
-	 * <p>La segunda mitad es de licencia, no de mecánica: el SRD 5.2 es CC-BY-4.0 y <b>obliga</b> a citarlo.
-	 * Enviar el contenido sin la atribución sería redistribuirlo mal, así que la atribución se comprueba
-	 * como cualquier otra cosa que se puede olvidar.</p>
+	 * <p>The second half is about licensing, not mechanics: SRD 5.2 is CC-BY-4.0 and <b>requires</b> citing it.
+	 * Shipping the content without attribution would be redistributing it wrongly, so the attribution is checked
+	 * like anything else that can be forgotten.</p>
 	 */
 	private static void checkImportedContent() throws Exception {
-		assertTrue(DamageTypes.normalize("fire").equals("fuego")
-			&& DamageTypes.normalize("Fire").equals("fuego")
-			&& DamageTypes.normalize(" FUEGO ").equals("fuego")
-			&& DamageTypes.normalize("fuego").equals("fuego"),
-			"\"fire\", \"Fire\" y \"fuego\" son el mismo tipo de daño");
-		assertTrue(DamageTypes.normalize("necrótico").equals("necrotico"),
-			"y el acento tampoco puede hacer dos tipos de uno");
-		//Un tipo que no está en la tabla no se descarta: se normaliza. Una mesa que se invente "sangrado"
-		//tiene que poder resistirlo, y para eso basta con que las dos puntas lo escriban igual.
-		assertTrue(DamageTypes.normalize("Sangrado").equals(DamageTypes.normalize("sangrado")),
-			"un tipo casero se normaliza igual en las dos puntas de la comparación");
-		assertTrue(DamageTypes.normalize(null).equals("fisico") && DamageTypes.normalize("  ").equals("fisico"),
-			"sin tipo declarado el golpe es físico, como siempre");
+		assertTrue(DamageTypes.normalize("fire").equals("fire")
+			&& DamageTypes.normalize("Fire").equals("fire")
+			&& DamageTypes.normalize(" FUEGO ").equals("fire")
+			&& DamageTypes.normalize("fuego").equals("fire"),
+			"\"fire\", \"Fire\" and the legacy Spanish \"fuego\" are the same damage type");
+		assertTrue(DamageTypes.normalize("necrótico").equals("necrotic"),
+			"and the accent cannot make two types out of one either");
+		//A type that is not in the table is not discarded: it is normalised. A table that invents "bleeding"
+		//has to be able to resist it, and for that it is enough that both ends write it the same way.
+		assertTrue(DamageTypes.normalize("Bleeding").equals(DamageTypes.normalize("bleeding")),
+			"a homebrew type is normalised the same on both ends of the comparison");
+		assertTrue(DamageTypes.normalize(null).equals("physical") && DamageTypes.normalize("  ").equals("physical"),
+			"with no declared type the hit is physical, as always");
 
-		//De punta a punta: un hechizo importado en inglés contra una hoja con la resistencia escrita en
-		//español. Es la comprobación que importa — las dos anteriores pueden pasar y esta fallar igual si
-		//el registro se salta la normalización al parsear.
+		//Saves and packs written when the vocabulary was Spanish must keep loading: the canonical values
+		//are English now, but every old spelling still resolves to the same thing.
+		assertTrue(Condition.fromLabel("paralizado") == Condition.PARALYZED && Condition.fromLabel("Paralyzed") == Condition.PARALYZED,
+			"a legacy Spanish condition label still resolves");
+		assertTrue(DiceManager.advantageFromLabel("ventaja") == DiceManager.Advantage.ADVANTAGE
+			&& DiceManager.advantageFromLabel("desventaja") == DiceManager.Advantage.DISADVANTAGE
+			&& DiceManager.advantageFromLabel("advantage") == DiceManager.Advantage.ADVANTAGE,
+			"legacy and English advantage labels both resolve");
+		assertTrue(CreatureType.parse("no-muerto") == CreatureType.UNDEAD && CreatureType.parse("Undead") == CreatureType.UNDEAD
+			&& CreatureSize.parse("Gargantuesco") == CreatureSize.GARGANTUAN && CreatureSize.parse("gargantuan") == CreatureSize.GARGANTUAN
+			&& MagicSchool.parse("Evocación") == MagicSchool.EVOCATION && MagicSchool.parse("evocation") == MagicSchool.EVOCATION,
+			"legacy Spanish and English creature types, sizes and schools both resolve");
+		assertTrue(TraitRegistry.get("monje:artes_marciales") != null && TraitRegistry.get("monk:martial_arts") != null,
+			"a trait id saved on an old sheet still resolves");
+
+		//End to end: a spell imported in English against a sheet with the resistance written in
+		//Spanish. This is the check that matters — the two above can pass and this one fail all the same if
+		//the registry skips normalisation when parsing.
 		JsonObject imported = new JsonObject();
 		imported.addProperty("id", "test:llamarada");
 		imported.addProperty("name", "Llamarada");
@@ -3121,18 +3202,18 @@ public class JsonContentSelfTest {
 		imported.addProperty("dice", "2d6");
 		imported.addProperty("damageType", "Fire");
 		SpellRegistry.Spell spell = SpellRegistry.parse(imported);
-		assertTrue(spell.damageType().equals("fuego"),
-			"el registro tiene que normalizar al parsear: si no, cada sitio que compare lo hará a su manera");
+		assertTrue(spell.damageType().equals("fire"),
+			"the registry must normalise when parsing: otherwise every place that compares will do it its own way");
 
 		JsonObject sheet = new JsonObject();
 		JsonObject affinities = new JsonObject();
-		affinities.addProperty("fuego", "resistant");
+		affinities.addProperty("fire", "resistant");
 		sheet.add("damageAffinities", affinities);
 		assertTrue(DamageTypes.multiplierFor(null, sheet, spell.damageType()) == 0.5,
-			"una resistencia escrita en español tiene que frenar un conjuro importado en inglés");
+			"a resistance written in Spanish must stop a spell imported in English");
 
-		//Y el bloque de monstruo por el otro lado: la resistencia declarada en inglés frente al golpe que
-		//llega en español. Las claves del pack se normalizan al cargarlo por esta misma razón.
+		//And the monster block from the other side: the resistance declared in English against the hit that
+		//arrives in Spanish. The pack keys are normalised on load for this very reason.
 		JsonObject beast = new JsonObject();
 		beast.addProperty("id", "test:elemental");
 		beast.addProperty("name", "Elemental");
@@ -3146,142 +3227,142 @@ public class JsonContentSelfTest {
 		resist.addProperty("Fire", "immune");
 		beast.add("damageAffinities", resist);
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.parse(beast);
-		assertTrue(block.damageAffinities().containsKey("fuego"),
-			"la resistencia de un bestiario importado en inglés tiene que quedar guardada con la clave que "
-				+ "luego se le va a preguntar");
+		assertTrue(block.damageAffinities().containsKey("fire"),
+			"the resistance of a bestiary imported in English must be stored under the key that "
+				+ "will be asked for later");
 
-		//El importador y su licencia. El SRD 5.2 es CC-BY-4.0: citarlo no es cortesía, es la condición.
+		//The importer and its licence. SRD 5.2 is CC-BY-4.0: citing it is not a courtesy, it is the condition.
 		assertTrue(java.nio.file.Files.exists(Path.of("tools", "import_srd.py")),
-			"falta tools/import_srd.py: sin él, ampliar el contenido vuelve a ser trabajo a mano sin rastro");
-		//Sin saltos de linea ni ">" de cita: la frase que exige la licencia ocupa dos lineas del Markdown, y
-		//buscarla tal cual ataba la comprobacion a donde cae el corte de linea.
+			"tools/import_srd.py is missing: without it, expanding the content goes back to being untraceable manual work");
+		//No line breaks or ">" quote markers: the phrase the licence demands spans two lines of the Markdown, and
+		//searching for it verbatim tied the check to where the line break falls.
 		String attribution = Files.readString(Path.of("PROJECT_CONTEXT.md"))
 			.replaceAll("(?m)^>", " ").replaceAll("\\s+", " ");
-		//Lo que se exige es la frase EXACTA que pide la licencia del 5.2. Buscar "SRD 5.2" a secas daba por
-		//buena una atribución borrada (la sigla sale en los párrafos que la explican), y buscar "Creative
-		//Commons Attribution 4.0" también, porque el bloque del SRD 5.1 ya la lleva. Una comprobación que
-		//aprueba el archivo sin la cita no comprueba la cita.
+		//What is required is the EXACT phrase the 5.2 licence asks for. Searching for plain "SRD 5.2" accepted
+		//a deleted attribution (the acronym appears in the paragraphs that explain it), and so did searching for "Creative
+		//Commons Attribution 4.0", because the SRD 5.1 block already carries it. A check that
+		//passes the file without the citation does not check the citation.
 		assertTrue(attribution.contains("SRD 5.2 is licensed under the Creative Commons Attribution 4.0"),
-			"falta la cita literal que exige la licencia del SRD 5.2 en PROJECT_CONTEXT.md: sin ella, enviar "
-				+ "feats.json es redistribuir material CC-BY sin atribuir");
+			"the literal citation required by the SRD 5.2 licence is missing from PROJECT_CONTEXT.md: without it, shipping "
+				+ "feats.json is redistributing CC-BY material without attribution");
 		assertTrue(attribution.contains("feats.json"),
-			"y a decir qué archivos son: una atribución que no señala el archivo no señala nada");
+			"and it must say which files they are: an attribution that does not point at the file points at nothing");
 
-		System.out.println("checkImportedContent: OK, un pack en inglés compara igual que uno en español y el "
-			+ "SRD 5.2 va citado.");
+		System.out.println("checkImportedContent: OK, an English pack compares the same as a Spanish one and "
+			+ "SRD 5.2 is cited.");
 	}
 
 	private static String readSource(String fileName) throws Exception {
-		//Acepta "Algo.java" y "command/Algo.java": los dos sitios que deciden un nivel viven en paquetes
-		//distintos, y partir la ruta aquí evita un segundo helper que haga lo mismo.
+		//Accepts "Something.java" and "command/Something.java": the two places that decide a level live in
+		//different packages, and splitting the path here avoids a second helper that does the same.
 		Path path = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets");
 		for (String part : fileName.split("/")) path = path.resolve(part);
 		return Files.readString(path);
 	}
 
 	/**
-	 * <p>Cuerpo de un método, buscando su DECLARACIÓN y no la primera vez que aparece su nombre: en
-	 * {@code CombatManager} hay una llamada a {@code resolveAttack(...)} antes de declararlo, y cortar
-	 * desde ahí devolvía el método equivocado — la comprobación fallaba dando a entender que faltaba una
-	 * llamada que sí estaba.</p>
+	 * <p>Body of a method, looking for its DECLARATION and not the first time its name appears: in
+	 * {@code CombatManager} there is a call to {@code resolveAttack(...)} before it is declared, and cutting
+	 * from there returned the wrong method — the check failed, implying a call was missing when
+	 * it was actually there.</p>
 	 */
 	private static String methodBody(String source, String signature) {
-		//Una declaración empieza en una línea con UN tabulador; una llamada al mismo método siempre está más
-		//adentro. Es lo que distingue las dos sin escribir un parser de Java.
+		//A declaration starts on a line with ONE tab; a call to the same method is always deeper
+		//in. That is what tells the two apart without writing a Java parser.
 		java.util.regex.Matcher declaracion = java.util.regex.Pattern
 			.compile("(?m)^\\t[\\w .<>\\[\\],]*\\b" + java.util.regex.Pattern.quote(signature))
 			.matcher(source);
-		assertTrue(declaracion.find(), "no encontré la declaración de " + signature);
-		//El final del método: la primera llave de cierre a ese mismo nivel de sangría.
+		assertTrue(declaracion.find(), "could not find the declaration of " + signature);
+		//The end of the method: the first closing brace at that same indentation level.
 		return source.substring(declaracion.start(), source.indexOf("\n\t}", declaracion.start()));
 	}
 
 	/**
-	 * <p>La Mejora de Puntuación de Característica: los niveles que la conceden y cuántas toca al saltar
-	 * varios de golpe. Es lo único que un nivel NO puede derivar, porque es una decisión, y por eso también
-	 * lo único que se puede perder sin que nada falle.</p>
+	 * <p>The Ability Score Improvement: the levels that grant it and how many are due when jumping
+	 * several at once. It is the only thing a level can NOT derive, because it is a decision, and so also
+	 * the only thing that can be lost without anything failing.</p>
 	 */
 	private static void checkAbilityImprovements() throws Exception {
-		//Los cinco niveles del SRD, y los bordes de cada uno: el fallo natural aquí es una lista mal copiada.
+		//The five SRD levels, and the edges of each: the natural failure here is a badly copied list.
 		for (int level = 1; level <= 20; level++) {
 			boolean esperado = level == 4 || level == 8 || level == 12 || level == 16 || level == 19;
 			assertTrue(LevelUpManager.isImprovementLevel(level) == esperado,
-				"nivel " + level + ": mejora esperada=" + esperado + " y dice " + LevelUpManager.isImprovementLevel(level));
+				"level " + level + ": expected improvement=" + esperado + " and it says " + LevelUpManager.isImprovementLevel(level));
 		}
-		//El 20 NO da mejora en 5e, y es el error más fácil de cometer ("el último nivel dará algo").
-		assertTrue(!LevelUpManager.isImprovementLevel(20), "el nivel 20 no concede mejora en 5e");
+		//Level 20 does NOT grant an improvement in 5e, and it is the easiest mistake to make ("the last level will give something").
+		assertTrue(!LevelUpManager.isImprovementLevel(20), "level 20 grants no improvement in 5e");
 
-		//Subir de uno en uno y de golpe tienen que dar lo mismo: un DM que pone /dndsheet setlevel 8 sobre un
-		//personaje de nivel 1 no debería costarle al jugador la mejora del 4.
-		assertTrue(LevelUpManager.improvementsBetween(1, 8) == 2, "del 1 al 8 son dos mejoras: la del 4 y la del 8");
-		assertTrue(LevelUpManager.improvementsBetween(1, 20) == 5, "del 1 al 20 son las cinco");
+		//Going up one at a time and all at once must give the same: a DM who runs /dndsheet setlevel 8 on a
+		//level 1 character should not cost the player the improvement at 4.
+		assertTrue(LevelUpManager.improvementsBetween(1, 8) == 2, "1 to 8 is two improvements: the one at 4 and the one at 8");
+		assertTrue(LevelUpManager.improvementsBetween(1, 20) == 5, "1 to 20 is all five");
 		int unaAUna = 0;
 		for (int level = 1; level < 20; level++) unaAUna += LevelUpManager.improvementsBetween(level, level + 1);
 		assertTrue(unaAUna == LevelUpManager.improvementsBetween(1, 20),
-			"subir de uno en uno debería dar lo mismo que subir de golpe, y da " + unaAUna);
+			"going up one at a time should give the same as all at once, and it gives " + unaAUna);
 
-		//Ni el nivel de llegada ni el de salida se cuentan dos veces.
-		assertTrue(LevelUpManager.improvementsBetween(4, 8) == 1, "del 4 al 8 solo cuenta la del 8: la del 4 ya se dio");
-		assertTrue(LevelUpManager.improvementsBetween(8, 8) == 0, "quedarse igual no concede nada");
-		//Bajar de nivel no las quita ni las da: quitarlas obligaría a deshacer puntos ya gastados.
-		assertTrue(LevelUpManager.improvementsBetween(12, 3) == 0, "bajar de nivel no debería conceder ni quitar");
+		//Neither the arrival level nor the departure level is counted twice.
+		assertTrue(LevelUpManager.improvementsBetween(4, 8) == 1, "4 to 8 only counts the one at 8: the one at 4 was already given");
+		assertTrue(LevelUpManager.improvementsBetween(8, 8) == 0, "staying the same grants nothing");
+		//Going down a level neither removes nor grants them: removing them would force undoing points already spent.
+		assertTrue(LevelUpManager.improvementsBetween(12, 3) == 0, "going down a level should neither grant nor remove");
 
-		//Se anotan en la hoja y se acumulan, para que sobrevivan a cerrar la pantalla o desconectarse.
-		JsonObject hoja = new JsonObject();
-		LevelUpManager.grantImprovementsFor(hoja, 1, 4);
-		LevelUpManager.grantImprovementsFor(hoja, 4, 8);
-		assertTrue(LevelUpManager.pendingOf(hoja) == 2, "dos saltos deberían dejar dos mejoras pendientes");
+		//They are recorded on the sheet and accumulate, so they survive closing the screen or disconnecting.
+		JsonObject sheetJson = new JsonObject();
+		LevelUpManager.grantImprovementsFor(sheetJson, 1, 4);
+		LevelUpManager.grantImprovementsFor(sheetJson, 4, 8);
+		assertTrue(LevelUpManager.pendingOf(sheetJson) == 2, "two jumps should leave two pending improvements");
 
-		//El nivel del que se parte tiene que ser el EXPLÍCITO. La sobrecarga con jugador cae al nivel de XP
-		//de Minecraft mientras el DM no fije uno —bien para mostrar un número, veneno para decidir el
-		//siguiente— y contar desde ahí le regala o le quita Mejoras a alguien por lo que haya minado.
+		//The level you start from must be the EXPLICIT one. The overload with a player falls back to the Minecraft XP level
+		//while the DM has not set one — fine for displaying a number, poison for deciding the
+		//next one — and counting from there gives or takes away Improvements from someone for whatever they mined.
 		JsonObject sinNivel = new JsonObject();
-		assertTrue(CharacterRules.levelOf(sinNivel) == 1, "un personaje al que nadie ha subido de nivel es de nivel 1");
+		assertTrue(CharacterRules.levelOf(sinNivel) == 1, "a character nobody has levelled up is level 1");
 		assertTrue(LevelUpManager.improvementsBetween(CharacterRules.levelOf(sinNivel), 8) == 2,
-			"subirlo del 1 al 8 son dos Mejoras; contando desde un nivel de XP alto se perderían");
+			"going from 1 to 8 is two Improvements; counting from a high XP level they would be lost");
 
-		//Y que los dos sitios que DECIDEN un nivel no llamen a la sobrecarga con jugador. Esto se sostiene por
-		//estructura porque el caso que se rompe necesita un ServerPlayer con XP, que fuera del juego no
-		//existe: la afirmación de arriba pasa igual con la versión mala.
-		for (String archivo : List.of("LevelUpManager.java", "command/SheetCommand.java")) {
-			String cuerpo = readSource(archivo);
-			int desde = cuerpo.indexOf(archivo.endsWith("SheetCommand.java") ? "public static void applyLevel(" : "public static void levelUp(");
-			assertTrue(desde > 0, "no encontré el método que decide el nivel en " + archivo);
-			String metodo = cuerpo.substring(desde, cuerpo.indexOf("\n\t}", desde));
-			assertTrue(!metodo.contains("characterLevelOf(sheet, "),
-				archivo + ": decidir un nivel con la sobrecarga que cae al XP de Minecraft le regala o le "
-					+ "quita niveles y Mejoras al jugador según lo que haya minado");
+		//And that the two places that DECIDE a level do not call the overload with a player. This is held by
+		//structure because the case that breaks needs a ServerPlayer with XP, which does not exist
+		//outside the game: the assertion above passes just the same with the bad version.
+		for (String sourceFile : List.of("LevelUpManager.java", "command/SheetCommand.java")) {
+			String body = readSource(sourceFile);
+			int fromIndex = body.indexOf(sourceFile.endsWith("SheetCommand.java") ? "public static void applyLevel(" : "public static void levelUp(");
+			assertTrue(fromIndex > 0, "could not find the method that decides the level in " + sourceFile);
+			String method = body.substring(fromIndex, body.indexOf("\n\t}", fromIndex));
+			assertTrue(!method.contains("characterLevelOf(sheet, "),
+				sourceFile + ": deciding a level with the overload that falls back to Minecraft XP gives or takes "
+					+ "away levels and Improvements from the player depending on what they have mined");
 		}
 
-		System.out.println("checkAbilityImprovements: OK, las mejoras se conceden en los niveles del SRD, se cuentan desde el nivel explícito y no se pierden al saltar varios.");
+		System.out.println("checkAbilityImprovements: OK, improvements are granted at the SRD levels, counted from the explicit level and not lost when jumping several.");
 	}
 
 	/**
-	 * <p>Que los archivos de idioma parseen y digan las dos lo mismo.</p>
+	 * <p>That the language files parse and both say the same thing.</p>
 	 *
-	 * <p>Esta comprobación existe porque acabo de romper {@code es_es.json} metiendo comillas sin escapar
-	 * dentro de un texto ({@code "Personaje "%1$s" borrado"}) y <b>el build siguió en verde</b>: nada lee
-	 * estos archivos hasta que el juego arranca, y entonces lo que se ve no es un error sino la clave cruda
-	 * en pantalla. Una clave que existe en un idioma y no en el otro falla igual de silenciosamente, solo
-	 * que para la mitad de la gente.</p>
+	 * <p>This check exists because I just broke {@code es_es.json} by putting unescaped quotes
+	 * inside a text ({@code "Personaje "%1$s" borrado"}) and <b>the build stayed green</b>: nothing reads
+	 * these files until the game starts, and then what you see is not an error but the raw key
+	 * on screen. A key that exists in one language and not in the other fails just as silently, only
+	 * for half the people.</p>
 	 */
 	/**
-	 * <p>Toda clave que el codigo pide con {@code Component.translatable} tiene que existir en los ficheros
-	 * de idioma. Si no, Minecraft no falla: pinta la clave cruda —"gui.dndsheets.dm_panel.title"— en el
-	 * boton, y eso solo se descubre abriendo esa pantalla concreta en el idioma concreto.</p>
+	 * <p>Every key the code requests with {@code Component.translatable} must exist in the language
+	 * files. Otherwise Minecraft does not fail: it draws the raw key —"gui.dndsheets.dm_panel.title"— on the
+	 * button, and that is only discovered by opening that specific screen in that specific language.</p>
 	 *
-	 * <p>{@code checkLanguageFiles} ya comprueba que los dos idiomas tengan las MISMAS claves, pero no que
-	 * las que se usan esten en ninguno de los dos: con una errata en el codigo, ambos ficheros siguen
-	 * cuadrando entre si y el fallo pasa igual. Esta comprobacion mira el otro lado, el del uso.</p>
+	 * <p>{@code checkLanguageFiles} already checks that both languages have the SAME keys, but not that
+	 * the ones in use are in either: with a typo in the code, both files still
+	 * match each other and the failure slips through. This check looks at the other side, the usage side.</p>
 	 */
 	/**
-	 * <p>Un mensaje traducido lleva huecos ({@code %s}) que se rellenan con los argumentos que le pasa el
-	 * codigo. Si dos idiomas no declaran los MISMOS huecos, el que tenga de mas ensena un "%s" pelado al
-	 * jugador y el que tenga de menos se come el dato — un "Invocado Goblin (CA , PG)."</p>
+	 * <p>A translated message carries placeholders ({@code %s}) that are filled with the arguments the
+	 * code passes. If two languages do not declare the SAME placeholders, the one with extra shows a bare "%s" to the
+	 * player and the one with fewer swallows the data — a "Invocado Goblin (CA , PG)."</p>
 	 *
-	 * <p>{@code checkLanguageFiles} compara que existan las mismas claves, no que digan la misma forma, asi
-	 * que este agujero le pasaba por debajo. Aparecio de verdad al traducir los 63 mensajes de chat: uno de
-	 * los avisos de mazmorra tiene cuatro huecos y es facil escribir la version inglesa con tres.</p>
+	 * <p>{@code checkLanguageFiles} compares that the same keys exist, not that they have the same shape, so
+	 * this hole slipped under it. It appeared for real when translating the 63 chat messages: one of
+	 * the dungeon notices has four placeholders and it is easy to write the English version with three.</p>
 	 */
 	private static void checkPlaceholderParity() throws Exception {
 		Path dir = Path.of("src", "main", "resources", "assets", "dndsheets", "lang");
@@ -3291,7 +3372,7 @@ public class JsonContentSelfTest {
 		Set<String> desalineadas = new java.util.TreeSet<>();
 		int conHuecos = 0;
 		for (String clave : es.keySet()) {
-			if (!en.has(clave)) continue; //Eso ya lo caza checkLanguageFiles.
+			if (!en.has(clave)) continue; //checkLanguageFiles already catches that.
 			int huecosEs = contarHuecos(es.get(clave).getAsString());
 			int huecosEn = contarHuecos(en.get(clave).getAsString());
 			if (huecosEs > 0) conHuecos++;
@@ -3299,11 +3380,11 @@ public class JsonContentSelfTest {
 		}
 
 		assertTrue(desalineadas.isEmpty(),
-			"estas claves no declaran los mismos huecos en los dos idiomas: " + desalineadas
-				+ ".\n  Los %s se rellenan por posicion con lo que pasa el codigo: sobrarle uno a un idioma pinta"
-				+ " un %s crudo en pantalla, y faltarle uno se traga el dato sin avisar.");
+			"these keys do not declare the same placeholders in both languages: " + desalineadas
+				+ ".\n  The %s are filled by position with what the code passes: one extra in a language draws"
+				+ " a raw %s on screen, and one missing swallows the data silently.");
 
-		System.out.println("checkPlaceholderParity: OK, " + conHuecos + " mensajes con huecos y los mismos en ambos idiomas.");
+		System.out.println("checkPlaceholderParity: OK, " + conHuecos + " messages with placeholders and the same ones in both languages.");
 	}
 
 	private static int contarHuecos(String texto) {
@@ -3314,19 +3395,19 @@ public class JsonContentSelfTest {
 	}
 
 	/**
-	 * <p>Nada de {@code sendSystemMessage(Component.literal("texto"))}: eso es un mensaje que solo existe en
-	 * un idioma. Se permite {@code Component.literal(variable)}, donde el texto ya viene resuelto de otro
-	 * sitio, porque ahi no hay nada que traducir aqui.</p>
+	 * <p>No {@code sendSystemMessage(Component.literal("text"))}: that is a message that exists in only
+	 * one language. {@code Component.literal(variable)} is allowed, where the text already comes resolved from another
+	 * place, because there is nothing to translate here.</p>
 	 */
 	/**
-	 * <p>Los nombres de los packs de serie viajan como CLAVE de idioma ({@code "name":
-	 * "content.dndsheets.weapon.dagger"}) para que cada cliente los lea en el suyo. Eso solo funciona si
-	 * TODOS los sitios que los pintan los resuelven: si uno se olvida, ahi sale la clave cruda —
-	 * "content.dndsheets.attack.cimitarra" en mitad del chat de combate. Es un fallo que no rompe nada,
-	 * no avisa, y solo se ve jugando esa escena concreta.</p>
+	 * <p>The names of the built-in packs travel as a language KEY ({@code "name":
+	 * "content.dndsheets.weapon.dagger"}) so that each client reads them in its own. That only works if
+	 * ALL the places that draw them resolve them: if one is forgotten, the raw key shows up there —
+	 * "content.dndsheets.attack.scimitar" in the middle of the combat chat. It is a failure that breaks nothing,
+	 * gives no warning, and is only seen by playing that specific scene.</p>
 	 *
-	 * <p>Dos mitades: que las claves que usan los packs existan en los dos idiomas, y que ningun sitio
-	 * meta un nombre de contenido en un {@code Component} sin pasar por {@link ContentNames}.</p>
+	 * <p>Two halves: that the keys the packs use exist in both languages, and that no place
+	 * puts a content name into a {@code Component} without going through {@link ContentNames}.</p>
 	 */
 	private static void checkContentNamesAreTranslated() throws Exception {
 		Path langDir = Path.of("src", "main", "resources", "assets", "dndsheets", "lang");
@@ -3345,25 +3426,25 @@ public class JsonContentSelfTest {
 				}
 			}
 		}
-		assertTrue(sinClave.isEmpty(), "estos packs usan claves que no estan en los dos idiomas: " + sinClave
-			+ ".\n  Reejecuta tools/content_lang_keys.py y luego tools/sync_lang_variants.py.");
+		assertTrue(sinClave.isEmpty(), "these packs use keys that are not in both languages: " + sinClave
+			+ ".\n  Re-run tools/content_lang_keys.py and then tools/sync_lang_variants.py.");
 
-		//Segunda mitad: nadie mete un nombre de contenido en un Component sin resolverlo. Se mira solo la
-		//linea donde se construye el Component (o se bautiza un ItemStack/entidad, o se anade una fila de
-		//lista), que es donde el nombre se convierte en texto en pantalla.
+		//Second half: nobody puts a content name into a Component without resolving it. Only the
+		//line where the Component is built (or an ItemStack/entity is named, or a list row is added) is looked at,
+		//since that is where the name turns into on-screen text.
 		List<Path> fuentes;
 		try (Stream<Path> walk = Files.walk(Path.of("src", "main", "java"))) {
 			fuentes = walk.filter(f -> f.toString().endsWith(".java")).sorted().toList();
 		}
-		//Los accesores de contenido, no cualquier name(): enum.name() y Screen.getName() no son esto.
+		//The content accessors, not just any name(): enum.name() and Screen.getName() are not this.
 		java.util.regex.Pattern crudo = java.util.regex.Pattern.compile(
 			"(?<!ContentNames\\.of\\()(?<!ContentNames\\.plain\\()"
 			+ "\\b(spell|block|item|magicItem|weapon|trait|feat|encounter|attack|subclass|selected)"
 			+ "\\.(name|label|displayName)\\(\\)");
-		//Donde un nombre se convierte en algo que se ve. Los tres primeros construyen un Component; el
-		//cuarto es la concatenacion en String —pegar el nombre dentro de una formula de tirada o del
-		//rotulo del tracker de turnos—, que es por donde se colaron CombatManager y TurnManager: en esas
-		//lineas no hay ningun Component a la vista y el patron de arriba no las miraba.
+		//Where a name turns into something visible. The first three build a Component; the
+		//fourth is String concatenation —pasting the name into a roll formula or into the
+		//turn tracker label—, which is how CombatManager and TurnManager slipped through: on those
+		//lines there is no Component in sight and the pattern above did not look at them.
 		java.util.regex.Pattern pinta = java.util.regex.Pattern.compile(
 			"Component\\.(literal|translatable)\\(|setHoverName\\(|setCustomName\\(|addRow\\(|"
 			+ "\\+ ?\\w+\\.(name|label|displayName)\\(\\)|\\.(name|label|displayName)\\(\\) ?\\+");
@@ -3373,9 +3454,9 @@ public class JsonContentSelfTest {
 			for (int i = 0; i < lineas.length; i++) {
 				String linea = lineas[i];
 				if (linea.trim().startsWith("//") || linea.trim().startsWith("*")) continue;
-				//Salida explicita para el caso en que el nombre YA venia resuelto de antes (el Grimorio arma
-				//su etiqueta concatenando, asi que resuelve al construirla y no al pintarla). Se marca en la
-				//linea para que se vea en el diff quien se salta la regla y por que.
+				//Explicit escape hatch for when the name ALREADY came resolved from earlier (the Spellbook builds
+				//its label by concatenating, so it resolves when building it and not when drawing it). It is marked on the
+				//line so the diff shows who skips the rule and why.
 				if (linea.contains("i18n-ok")) continue;
 				if (!pinta.matcher(linea).find()) continue;
 				if (crudo.matcher(linea).find()) {
@@ -3383,11 +3464,11 @@ public class JsonContentSelfTest {
 				}
 			}
 		}
-		assertTrue(crudos.isEmpty(), "estos sitios pintan un nombre de pack sin resolver la clave de idioma: "
-			+ crudos + ".\n  Envuelvelo en ContentNames.of(...) (o .plain(...) si el destino es un String).");
+		assertTrue(crudos.isEmpty(), "these places draw a pack name without resolving the language key: "
+			+ crudos + ".\n  Wrap it in ContentNames.of(...) (or .plain(...) if the destination is a String).");
 
 		System.out.println("checkContentNamesAreTranslated: OK, " + usadas
-			+ " nombres de contenido son claves con sus dos idiomas y ningun sitio los pinta crudos.");
+			+ " content names are keys with both languages and no place draws them raw.");
 	}
 
 	private static void checkChatMessagesAreTranslatable() throws Exception {
@@ -3405,15 +3486,15 @@ public class JsonContentSelfTest {
 		}
 
 		assertTrue(culpables.isEmpty(),
-			"estos archivos mandan al chat un texto fijo sin pasar por los ficheros de idioma: " + culpables
-				+ ".\n  Usa Component.translatable(\"chat.dndsheets....\", args...) y anade la clave a en_us.json"
-				+ " Y a es_es.json. Component.literal(variable) si vale: ahi el texto ya viene hecho.");
+			"these files send fixed text to chat without going through the language files: " + culpables
+				+ ".\n  Use Component.translatable(\"chat.dndsheets....\", args...) and add the key to en_us.json"
+				+ " AND to es_es.json. Component.literal(variable) is fine: there the text already comes made.");
 
-		//sendSystemMessage no era la unica puerta. Los nombres y descripciones de los items de clase
-		//(Totem de Furia, Ayudar, Vara de DM...) se construian con Component.literal, asi que un jugador
-		//en ingles leia el mod en espanol y no habia forma de saberlo mirando los ficheros de idioma: la
-		//cadena no estaba en ellos. Aqui se busca cualquier literal con prosa dentro (una minuscula
-		//seguida de un espacio) — un separador " - " o un formato "%s / %s" no la tienen y no molestan.
+		//sendSystemMessage was not the only door. The names and descriptions of class items
+		//(Rage Totem, Help, DM Rod...) were built with Component.literal, so a player
+		//in English read the mod in Spanish and there was no way to know by looking at the language files: the
+		//string was not in them. Here any literal with prose in it is searched for (a lowercase letter
+		//followed by a space) — a " - " separator or a "%s / %s" format do not have it and do not get in the way.
 		java.util.regex.Pattern prosa = java.util.regex.Pattern.compile("Component\\.literal\\(\"[^\"]*[a-z] [^\"]*\"");
 		java.util.Set<String> conProsa = new java.util.TreeSet<>();
 		int enComandos = 0;
@@ -3422,30 +3503,30 @@ public class JsonContentSelfTest {
 			int veces = 0;
 			while (m.find()) veces++;
 			if (veces == 0) continue;
-			//La respuesta de un comando la lee QUIEN LO ESCRIBE, en su propio chat, y casi siempre lleva
-			//variables interpoladas ("Pieza \"X\" capturada en el pool \"Y\"") — pasarlas a claves con
-			//huecos es otra tanda, y una que checkPlaceholderParity tendra que vigilar entera.
-			//ponytail: 86 respuestas de comando siguen en espanol fijo. El tope de abajo impide que
-			//crezcan; bajarlo a 0 es la tanda que falta.
+			//A command's reply is read by WHOEVER TYPES IT, in their own chat, and almost always carries
+			//interpolated variables ("Pieza \"X\" capturada en el pool \"Y\"") — turning them into keys with
+			//placeholders is another batch, and one that checkPlaceholderParity will have to watch in full.
+			//Phase 2 of the translation (2026-09-18) moved the fixed-Spanish command replies to
+			//Component.translatable. The cap below stops them from growing back.
 			if (fuente.toString().replace('\\', '/').contains("/command/")) enComandos += veces;
 			else conProsa.add(fuente.getFileName().toString());
 		}
 
 		assertTrue(conProsa.isEmpty(),
-			"estos archivos ensenan texto fijo al jugador (nombre o descripcion de item, etiqueta de"
-				+ " pantalla) sin pasar por los ficheros de idioma: " + conProsa
-				+ ".\n  Es el mismo fallo que arriba y no se ve en ninguna pantalla hasta que alguien juega"
-				+ " en el otro idioma. Component.translatable(\"chat.dndsheets....\", args...).");
-		assertTrue(enComandos <= 86, "las respuestas de comando con texto fijo han subido a " + enComandos
-			+ " (eran 86): no anadas mas, pasalas a Component.translatable con su clave");
+			"these files show fixed text to the player (item name or description, screen label)"
+				+ " without going through the language files: " + conProsa
+				+ ".\n  It is the same failure as above and is not visible on any screen until someone plays"
+				+ " in the other language. Component.translatable(\"chat.dndsheets....\", args...).");
+		assertTrue(enComandos <= 0, "command replies with fixed text have risen to " + enComandos
+			+ " (they were 0): do not add more, move them to Component.translatable with their key");
 
-		//El nombre de un item NO es una respuesta de comando, aunque se construya dentro de un fichero de
-		///command/: la respuesta la lee quien escribio el comando y se va con el scroll, pero el nombre se
-		//hornea en el NBT del ItemStack y lo lee todo el que lo vea, para siempre. Por esa exencion se
-		//colo "Baculo de " (SpellCommand) y por el patron de prosa se colo "Invocar: "
-		//(MonsterRegistry, que no tiene minuscula-espacio). Aqui no hay exencion ni patron de prosa: un
-		//setHoverName con literal de texto es siempre un fallo. Con variable sigue valiendo — ahi el
-		//nombre viene del pack de contenido, que es dato del DM y no algo que traducir en este repo.
+		//An item's name is NOT a command reply, even if it is built inside a file under
+		///command/: the reply is read by whoever typed the command and scrolls away, but the name is
+		//baked into the ItemStack NBT and read by everyone who sees it, forever. Through that exemption
+		//"Baculo de " (SpellCommand) slipped through, and through the prose pattern "Invocar: " slipped through
+		//(MonsterRegistry, which has no lowercase-space). Here there is no exemption or prose pattern: a
+		//setHoverName with a text literal is always a failure. With a variable it is still fine — there the
+		//name comes from the content pack, which is DM data and not something to translate in this repo.
 		java.util.regex.Pattern nombreFijo = java.util.regex.Pattern
 			.compile("setHoverName\\(\\s*Component\\.literal\\(\"");
 		java.util.Set<String> nombresFijos = new java.util.TreeSet<>();
@@ -3454,18 +3535,18 @@ public class JsonContentSelfTest {
 		}
 
 		assertTrue(nombresFijos.isEmpty(),
-			"estos archivos bautizan un item con texto fijo: " + nombresFijos
-				+ ".\n  El nombre viaja en el NBT y lo ve todo el mundo, asi que no vale ni dentro de"
-				+ " /command/. Component.translatable(\"chat.dndsheets....\", nombreDelPack).");
+			"these files name an item with fixed text: " + nombresFijos
+				+ ".\n  The name travels in the NBT and everyone sees it, so it is not acceptable even inside"
+				+ " /command/. Component.translatable(\"chat.dndsheets....\", packName).");
 
-		//Los dos HUD (TurnHudOverlay, ResourceHudOverlay) pintan con drawString(String) y por eso el patron
-		//de arriba (anclado a Component.literal) nunca los vio: se quedaron ENTEROS en espanol fijo siendo
-		//lo unico permanentemente visible del mod. Aqui se barre cualquier literal con prosa en los
-		//*Overlay.java del cliente, venga por el metodo que venga. Se saltan lineas de comentario porque
-		//este archivo escanea fuente, no bytecode, y los comentarios del proyecto son prosa en espanol.
-		//[^"\n] y no [^"]: una clase negada cruza saltos de linea, y con ellos el "interior" del match
-		//puede ir de la comilla de cierre de un literal a la de apertura del siguiente, tragandose codigo
-		//(y prosa de comentario) de por medio. Confinado a una linea, solo matchea literales de verdad.
+		//The two HUDs (TurnHudOverlay, ResourceHudOverlay) draw with drawString(String) and so the pattern
+		//above (anchored to Component.literal) never saw them: they stayed ENTIRELY in fixed Spanish while being
+		//the only permanently visible part of the mod. Here any literal with prose is swept in the client's
+		//*Overlay.java files, whatever method it comes through. Comment lines are skipped because
+		//this file scans source, not bytecode, and the project's comments are prose in Spanish.
+		//[^"\n] and not [^"]: a negated class crosses line breaks, and with them the "inside" of the match
+		//can run from the closing quote of one literal to the opening one of the next, swallowing code
+		//(and comment prose) in between. Confined to one line, it only matches real literals.
 		java.util.regex.Pattern prosaCruda = java.util.regex.Pattern
 			.compile("\"[^\"\n]*[a-záéíóúñ] [a-záéíóúñ][^\"\n]*\"|\"[^\"\n]*[áéíóúñÁÉÍÓÚÑ¿¡][^\"\n]*\"");
 		java.util.Set<String> overlaysConProsa = new java.util.TreeSet<>();
@@ -3481,19 +3562,19 @@ public class JsonContentSelfTest {
 			if (prosaCruda.matcher(sinComentarios).find()) overlaysConProsa.add(fuente.getFileName().toString());
 		}
 		assertTrue(overlaysConProsa.isEmpty(),
-			"estos overlays del HUD pintan texto fijo en un solo idioma: " + overlaysConProsa
-				+ ".\n  El HUD es lo unico SIEMPRE visible: usa Component.translatable(\"hud.dndsheets....\","
-				+ " args...) (o .getString() si la linea se cachea como String) y anade la clave a"
-				+ " en_us.json Y a es_es.json.");
+			"these HUD overlays draw fixed text in a single language: " + overlaysConProsa
+				+ ".\n  The HUD is the only thing ALWAYS visible: use Component.translatable(\"hud.dndsheets....\","
+				+ " args...) (or .getString() if the line is cached as a String) and add the key to"
+				+ " en_us.json AND es_es.json.");
 
-		System.out.println("checkChatMessagesAreTranslatable: OK, nada de lo que ve un jugador lleva texto"
-			+ " fijo; quedan " + enComandos + " respuestas de comando (solo las ve quien las escribe).");
+		System.out.println("checkChatMessagesAreTranslatable: OK, nothing a player sees carries fixed"
+			+ " text; " + enComandos + " command replies remain (only seen by whoever types them).");
 	}
 
 	private static void checkTranslationKeysExist() throws Exception {
 		String lang = Files.readString(Path.of("src", "main", "resources", "assets", "dndsheets", "lang", "en_us.json"));
 		java.util.Set<String> declaradas = new java.util.HashSet<>();
-		//Mayúsculas incluidas: las claves de vanilla no son todas minúsculas ("itemGroup.dndsheets.dnd_tab").
+		//Uppercase included: vanilla keys are not all lowercase ("itemGroup.dndsheets.dnd_tab").
 		java.util.regex.Matcher declara = java.util.regex.Pattern.compile("\"([A-Za-z0-9_.]+)\"\\s*:").matcher(lang);
 		while (declara.find()) declaradas.add(declara.group(1));
 
@@ -3511,33 +3592,33 @@ public class JsonContentSelfTest {
 			while (usa.find()) {
 				usadas++;
 				String clave = usa.group(1);
-				//Las de vanilla (item.minecraft.*, entity.*) no viven en nuestros ficheros.
+				//Vanilla ones (item.minecraft.*, entity.*) do not live in our files.
 				if (!clave.contains("dndsheets")) continue;
-				//Clave construida a trozos ("...button_" + type): el sufijo solo se sabe en ejecucion, asi
-				//que aqui no hay nada que comprobar. Se reconoce porque tras la comilla viene un "+".
+				//Key built in pieces ("...button_" + type): the suffix is only known at run time, so
+				//there is nothing to check here. It is recognised because a "+" follows the quote.
 				if (fuenteTexto.startsWith(" +", usa.end())) continue;
 				if (!declaradas.contains(clave)) faltan.add(clave + "  (" + fuente.getFileName() + ")");
 			}
 		}
 
 		assertTrue(faltan.isEmpty(),
-			"el codigo pide claves de traduccion que no existen en los ficheros de idioma: " + faltan
-				+ ".\n  Minecraft no falla por esto: pinta la clave cruda en pantalla, asi que solo se ve"
-				+ " abriendo esa pantalla. Anade la clave a en_us.json Y a es_es.json.");
+			"the code requests translation keys that do not exist in the language files: " + faltan
+				+ ".\n  Minecraft does not fail because of this: it draws the raw key on screen, so it is only seen"
+				+ " by opening that screen. Add the key to en_us.json AND es_es.json.");
 
-		System.out.println("checkTranslationKeysExist: OK, " + usadas + " usos de translatable y todos con clave declarada.");
+		System.out.println("checkTranslationKeysExist: OK, " + usadas + " translatable uses and all with a declared key.");
 	}
 
 	/**
-	 * <p>Las variantes regionales de espanol que hay que publicar ademas de {@code es_es}. Esta lista es la
-	 * UNICA: {@code tools/sync_lang_variants.py} la lee de aqui, para que no puedan separarse.</p>
+	 * <p>The regional Spanish variants that must be published in addition to {@code es_es}. This list is the
+	 * ONLY one: {@code tools/sync_lang_variants.py} reads it from here, so they cannot drift apart.</p>
 	 *
-	 * <p><b>La regla general, por si algun dia se traduce a otro idioma:</b> Minecraft carga {@code en_us} y
-	 * encima el codigo EXACTO elegido, sin ningun respaldo por region. Publicar solo una variante de un
-	 * idioma con varias deja al resto en INGLES, sin error en el log y sin nada raro en los ficheros de
-	 * idioma. La misma trampa espera a {@code pt_br}/{@code pt_pt} y a {@code zh_cn}/{@code zh_tw}: quien
-	 * anada uno de esos, que anada tambien sus hermanos aqui. Lo que no sea variante del mismo idioma
-	 * (asturiano {@code esan}, p.ej.) NO va: es otro idioma y su sitio es el respaldo a {@code en_us}.</p>
+	 * <p><b>The general rule, in case another language is ever translated:</b> Minecraft loads {@code en_us} and
+	 * on top of it the EXACT code chosen, with no regional fallback. Publishing only one variant of a
+	 * language with several leaves the rest in ENGLISH, with no error in the log and nothing odd in the
+	 * language files. The same trap awaits {@code pt_br}/{@code pt_pt} and {@code zh_cn}/{@code zh_tw}: whoever
+	 * adds one of those should also add its siblings here. Whatever is not a variant of the same language
+	 * (Asturian {@code esan}, e.g.) does NOT go: it is another language and its place is the fallback to {@code en_us}.</p>
 	 */
 	private static final String[] SPANISH_VARIANTS = { "es_ar", "es_cl", "es_ec", "es_mx", "es_uy", "es_ve" };
 
@@ -3552,46 +3633,46 @@ public class JsonContentSelfTest {
 				try {
 					json = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
 				} catch (RuntimeException e) {
-					throw new AssertionError(name + " no es JSON válido: " + e.getMessage());
+					throw new AssertionError(name + " is not valid JSON: " + e.getMessage());
 				}
 				keysByLang.put(name, json.keySet());
 			}
 		}
-		assertTrue(keysByLang.size() >= 2, "esperaba al menos dos idiomas y encontré " + keysByLang.size());
+		assertTrue(keysByLang.size() >= 2, "expected at least two languages and found " + keysByLang.size());
 
-		//Minecraft NO tiene respaldo por región: carga en_us y encima el idioma EXACTO elegido. 1.20.1
-		//ofrece SIETE españoles (es_es, es_ar, es_cl, es_ec, es_mx, es_uy, es_ve), así que un jugador con
-		//"Español (México)" recibía es_mx de vanilla y en_us del mod: el juego en español y el mod entero
-		//en inglés, sin ningún error en el log y sin nada que mirar en los ficheros de idioma, porque el
-		//que fallaba era el que no existía. No hay forma de declarar "es_* usa es_es" — la única salida es
-		//que el archivo esté con cada nombre, y que las copias no se separen del original.
+		//Minecraft has NO regional fallback: it loads en_us and on top of it the EXACT language chosen. 1.20.1
+		//offers SEVEN Spanish ones (es_es, es_ar, es_cl, es_ec, es_mx, es_uy, es_ve), so a player with
+		//"Español (México)" got es_mx from vanilla and en_us from the mod: the game in Spanish and the whole mod
+		//in English, with no error in the log and nothing to look at in the language files, because the
+		//one that failed was the one that did not exist. There is no way to declare "es_* uses es_es" — the only way out is
+		//for the file to exist under each name, and for the copies not to drift from the original.
 		String spanish = Files.readString(dir.resolve("es_es.json"));
 		for (String variant : SPANISH_VARIANTS) {
 			Path copy = dir.resolve(variant + ".json");
-			assertTrue(Files.exists(copy), "falta " + variant + ".json: corre tools/sync_lang_variants.py");
-			assertTrue(Files.readString(copy).equals(spanish), variant + ".json se ha separado de es_es.json"
-				+ " — quien juegue en ese español leería otra cosa. Corre tools/sync_lang_variants.py");
+			assertTrue(Files.exists(copy), "missing " + variant + ".json: run tools/sync_lang_variants.py");
+			assertTrue(Files.readString(copy).equals(spanish), variant + ".json has drifted from es_es.json"
+				+ " — whoever plays in that Spanish would read something else. Run tools/sync_lang_variants.py");
 		}
 
-		//Todas contra la primera: con dos idiomas es lo mismo que compararlas entre sí, y con cinco sigue
-		//dando un mensaje que dice qué falta y dónde.
+		//All against the first: with two languages it is the same as comparing them with each other, and with five it still
+		//gives a message saying what is missing and where.
 		String reference = keysByLang.keySet().iterator().next();
 		Set<String> referenceKeys = keysByLang.get(reference);
 		for (Map.Entry<String, Set<String>> entry : keysByLang.entrySet()) {
 			if (entry.getKey().equals(reference)) continue;
 			for (String key : referenceKeys) {
 				assertTrue(entry.getValue().contains(key),
-					entry.getKey() + " no tiene la clave \"" + key + "\", que sí está en " + reference
-						+ ": quien juegue en ese idioma verá la clave cruda en pantalla");
+					entry.getKey() + " does not have the key \"" + key + "\", which is in " + reference
+						+ ": whoever plays in that language will see the raw key on screen");
 			}
 			for (String key : entry.getValue()) {
-				assertTrue(referenceKeys.contains(key), reference + " no tiene la clave \"" + key + "\", que sí está en " + entry.getKey());
+				assertTrue(referenceKeys.contains(key), reference + " does not have the key \"" + key + "\", which is in " + entry.getKey());
 			}
 		}
 
-		//Las páginas de la guía se declaran en Java y se traducen aquí: una registrada sin traducir sale en
-		//pantalla como su propia clave. Es el mismo fallo callado que arriba, con un paso más — nada falla
-		//al compilar, y la guía es justo lo que lee quien no sabe todavía cómo funciona nada.
+		//The guide pages are declared in Java and translated here: one registered without a translation shows up on
+		//screen as its own key. It is the same silent failure as above, one step further — nothing fails
+		//at compile time, and the guide is exactly what is read by someone who does not yet know how anything works.
 		String guide = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"client", "gui", "GuideBook.java"));
 		java.util.regex.Matcher pages = java.util.regex.Pattern
@@ -3600,206 +3681,206 @@ public class JsonContentSelfTest {
 		while (pages.find()) {
 			pageCount++;
 			assertTrue(referenceKeys.contains(pages.group(1)),
-				"la guía registra la página \"" + pages.group(1) + "\" y no está traducida: saldría la clave cruda");
+				"the guide registers the page \"" + pages.group(1) + "\" and it is not translated: the raw key would show");
 		}
-		assertTrue(pageCount >= 20, "esperaba al menos 20 páginas de guía y encontré " + pageCount);
+		assertTrue(pageCount >= 20, "expected at least 20 guide pages and found " + pageCount);
 
-		System.out.println("checkLanguageFiles: OK, " + keysByLang.size() + " idiomas con las mismas "
-			+ referenceKeys.size() + " claves, " + pageCount + " páginas de guía traducidas y JSON válido.");
+		System.out.println("checkLanguageFiles: OK, " + keysByLang.size() + " languages with the same "
+			+ referenceKeys.size() + " keys, " + pageCount + " guide pages translated and valid JSON.");
 	}
 
 	/**
-	 * <p>Resolver un personaje por su NOMBRE. Los ids salen del UUID del jugador, así que pedir uno para
-	 * cambiar de personaje es pedir que se copie una cadena que no significa nada; el nombre es lo que la
-	 * persona sabe.</p>
+	 * <p>Resolving a character by its NAME. The ids come from the player's UUID, so asking for one in order to
+	 * switch character means asking someone to copy a string that means nothing; the name is what the
+	 * person knows.</p>
 	 */
 	private static void checkCharacterLookup() {
 		Map<String, JsonObject> sheets = new java.util.LinkedHashMap<>();
 		sheets.put("uuid-1", named("Elara la Gris"));
 		sheets.put("uuid-2", named("Elandra"));
 		sheets.put("uuid-3", named("Borin"));
-		sheets.put("uuid-4", named("uuid-2")); //Un personaje llamado igual que el id de otro.
+		sheets.put("uuid-4", named("uuid-2")); //A character named the same as another one's id.
 		List<String> ids = List.of("uuid-1", "uuid-2", "uuid-3", "uuid-4");
 
-		assertTrue("uuid-3".equals(CharacterRules.resolveCharacter(sheets, ids, "Borin")), "un nombre exacto debería bastar");
-		assertTrue("uuid-3".equals(CharacterRules.resolveCharacter(sheets, ids, "borin")), "y sin importar mayúsculas");
-		assertTrue("uuid-3".equals(CharacterRules.resolveCharacter(sheets, ids, "  Borin ")), "ni espacios de sobra");
-		assertTrue("uuid-1".equals(CharacterRules.resolveCharacter(sheets, ids, "Elara la Gris")), "un nombre con espacios también");
-		assertTrue("uuid-1".equals(CharacterRules.resolveCharacter(sheets, ids, "Elara")), "un prefijo único debería valer");
+		assertTrue("uuid-3".equals(CharacterRules.resolveCharacter(sheets, ids, "Borin")), "an exact name should be enough");
+		assertTrue("uuid-3".equals(CharacterRules.resolveCharacter(sheets, ids, "borin")), "and regardless of case");
+		assertTrue("uuid-3".equals(CharacterRules.resolveCharacter(sheets, ids, "  Borin ")), "nor extra spaces");
+		assertTrue("uuid-1".equals(CharacterRules.resolveCharacter(sheets, ids, "Elara la Gris")), "a name with spaces too");
+		assertTrue("uuid-1".equals(CharacterRules.resolveCharacter(sheets, ids, "Elara")), "a unique prefix should work");
 
-		//Prefijo ambiguo: "Ela" vale para Elara y Elandra. Ambiguo es tan "no" como no encontrarlo — elegir
-		//por el jugador sería elegir mal la mitad de las veces.
-		assertTrue(CharacterRules.resolveCharacter(sheets, ids, "Ela") == null, "un prefijo que vale para dos no debería elegir uno");
-		assertTrue(CharacterRules.resolveCharacter(sheets, ids, "Nadie") == null, "lo que no existe no resuelve");
-		assertTrue(CharacterRules.resolveCharacter(sheets, ids, "  ") == null, "ni una cadena vacía");
-		assertTrue(CharacterRules.resolveCharacter(sheets, ids, null) == null, "ni null");
+		//Ambiguous prefix: "Ela" matches Elara and Elandra. Ambiguous is as much a "no" as not finding it — choosing
+		//for the player would be choosing wrong half the time.
+		assertTrue(CharacterRules.resolveCharacter(sheets, ids, "Ela") == null, "a prefix that matches two should not pick one");
+		assertTrue(CharacterRules.resolveCharacter(sheets, ids, "Nadie") == null, "what does not exist does not resolve");
+		assertTrue(CharacterRules.resolveCharacter(sheets, ids, "  ") == null, "nor an empty string");
+		assertTrue(CharacterRules.resolveCharacter(sheets, ids, null) == null, "nor null");
 
-		//El id exacto manda sobre todo: si no, un personaje llamado como el id de otro se lo quedaría.
+		//The exact id rules over everything: otherwise a character named like another's id would take it.
 		assertTrue("uuid-2".equals(CharacterRules.resolveCharacter(sheets, ids, "uuid-2")),
-			"un id exacto debería ganar al personaje que se llama así");
+			"an exact id should beat the character that is named that");
 
-		//Y un nombre exacto gana a un prefijo: con "Ana" y "Anabel" delante, "Ana" es Ana.
+		//And an exact name beats a prefix: with "Ana" and "Anabel" present, "Ana" is Ana.
 		Map<String, JsonObject> dos = new java.util.LinkedHashMap<>();
 		dos.put("a", named("Ana"));
 		dos.put("b", named("Anabel"));
 		assertTrue("a".equals(CharacterRules.resolveCharacter(dos, List.of("a", "b"), "Ana")),
-			"un nombre exacto no debería perder contra el prefijo de otro");
+			"an exact name should not lose against another's prefix");
 
-		//Dos personajes con el MISMO nombre: no hay forma honesta de elegir, así que no se elige.
+		//Two characters with the SAME name: there is no honest way to choose, so none is chosen.
 		Map<String, JsonObject> repes = new java.util.LinkedHashMap<>();
 		repes.put("a", named("Bruno"));
 		repes.put("b", named("Bruno"));
 		assertTrue(CharacterRules.resolveCharacter(repes, List.of("a", "b"), "Bruno") == null,
-			"dos personajes con el mismo nombre no se pueden distinguir por nombre");
+			"two characters with the same name cannot be told apart by name");
 
-		//Reportado jugando: dos personajes llamados "Test" daban dos sugerencias IDÉNTICAS que el comando
-		//rechazaba después por ambiguas — el autocompletado ofrecía una opción que no funcionaba. El rótulo
-		//lleva el id solo cuando hace falta, y con él la elección vuelve a ser posible.
+		//Reported while playing: two characters called "Test" gave two IDENTICAL suggestions that the command
+		//then rejected as ambiguous — autocomplete offered an option that did not work. The label
+		//carries the id only when needed, and with it the choice becomes possible again.
 		assertTrue("Borin".equals(CharacterRules.suggestionLabelFor(sheets, ids, "uuid-3")),
-			"un nombre único se ofrece a secas, sin id que nadie necesita leer");
+			"a unique name is offered plain, with no id nobody needs to read");
 		assertTrue("Bruno [a]".equals(CharacterRules.suggestionLabelFor(repes, List.of("a", "b"), "a")),
-			"dos nombres iguales se distinguen con el id, y solo entonces");
+			"two equal names are told apart with the id, and only then");
 		assertTrue(!CharacterRules.suggestionLabelFor(repes, List.of("a", "b"), "a")
 				.equals(CharacterRules.suggestionLabelFor(repes, List.of("a", "b"), "b")),
-			"y las dos sugerencias tienen que ser distintas entre sí");
+			"and the two suggestions must differ from each other");
 
-		//Y lo que se sugiere tiene que poder resolverse: es el fallo entero en una línea.
+		//And what is suggested must be resolvable: it is the whole failure in one line.
 		for (String id : List.of("a", "b")) {
 			String label = CharacterRules.suggestionLabelFor(repes, List.of("a", "b"), id);
 			assertTrue(id.equals(CharacterRules.resolveCharacter(repes, List.of("a", "b"), label)),
-				"la sugerencia \"" + label + "\" debería resolver al personaje que la generó");
+				"the suggestion \"" + label + "\" should resolve to the character that generated it");
 		}
-		//Un nombre que de verdad lleva corchetes no se confunde con la forma "Nombre [id]".
+		//A name that really contains brackets is not confused with the "Name [id]" form.
 		Map<String, JsonObject> corchetes = new java.util.LinkedHashMap<>();
 		corchetes.put("x", named("Bruno [el Bravo]"));
 		assertTrue("x".equals(CharacterRules.resolveCharacter(corchetes, List.of("x"), "Bruno [el Bravo]")),
-			"un nombre con corchetes debería seguir encontrándose por su nombre");
+			"a name with brackets should still be found by its name");
 
-		System.out.println("checkCharacterLookup: OK, los personajes se encuentran por nombre, lo ambiguo se distingue con el id y lo que se sugiere se puede elegir.");
+		System.out.println("checkCharacterLookup: OK, characters are found by name, the ambiguous is told apart with the id and what is suggested can be chosen.");
 	}
 
 	/**
-	 * <p>Qué personaje queda puesto después de borrar uno. Reportado jugando: borrar el personaje que
-	 * llevabas puesto no limpiaba nada, así que la hoja abierta con H seguía siendo la del borrado y al
-	 * guardar volvía a escribirse en disco — el personaje resucitaba.</p>
+	 * <p>Which character is left worn after deleting one. Reported while playing: deleting the character you
+	 * had on cleaned nothing up, so the sheet opened with H was still the deleted one's and on
+	 * saving it was written to disk again — the character came back to life.</p>
 	 *
-	 * <p>La causa era la pregunta, no el borrado: {@code activeCharacterOf} cae al propio UUID del jugador
-	 * cuando no lleva ninguno puesto (es lo que hace que sigan funcionando las hojas anteriores a los
-	 * personajes), así que preguntarle "¿le queda personaje?" contestaba que sí en cuanto existiera un
-	 * archivo con ese id, aunque no estuviera puesto.</p>
+	 * <p>The cause was the question, not the deletion: {@code activeCharacterOf} falls back to the player's own UUID
+	 * when none is worn (which is what keeps sheets from before characters
+	 * working), so asking it "does it have a character left?" answered yes as soon as a
+	 * file with that id existed, even if it was not worn.</p>
 	 */
 	private static void checkCharacterAfterDelete() {
 		Set<String> existing = Set.of("uuid", "uuid-2", "uuid-3");
 
 		assertTrue("uuid-2".equals(CharacterRules.characterToWearAfter(existing, "uuid-2", List.of("uuid", "uuid-2"))),
-			"si el que llevaba puesto sigue existiendo, se queda con él");
+			"if the one being worn still exists, it stays with it");
 		assertTrue("uuid".equals(CharacterRules.characterToWearAfter(existing, "uuid-9", List.of("uuid", "uuid-2"))),
-			"si el que llevaba ya no existe, se le pone el primero que le quede");
+			"if the one being worn no longer exists, the first one remaining is put on");
 
-		//EL FALLO: sin binding, no hay personaje puesto. Contestar "uuid" porque exista un archivo con el id
-		//del jugador es justo lo que dejaba al cliente con la hoja borrada en la mano.
+		//THE FAILURE: without a binding, no character is worn. Answering "uuid" because a file with the
+		//player's id exists is exactly what left the client holding the deleted sheet.
 		assertTrue("uuid".equals(CharacterRules.characterToWearAfter(existing, null, List.of("uuid", "uuid-2"))),
-			"sin binding hay que ELEGIRLE uno de los suyos, no dar por hecho que ya lleva alguno");
+			"without a binding one of its own must be CHOSEN, not assumed that it already wears one");
 		assertTrue(CharacterRules.characterToWearAfter(existing, null, List.of()) == null,
-			"y si no le queda ninguno, hay que decirlo para crearle una hoja en blanco");
-		//Un id que ya no está en disco no vale como respuesta ni aunque siga en su lista.
+			"and if none is left, that must be said so a blank sheet gets created");
+		//An id that is no longer on disk is not valid as an answer even if it is still in its list.
 		assertTrue("uuid-3".equals(CharacterRules.characterToWearAfter(existing, null, List.of("borrado", "uuid-3"))),
-			"un personaje que ya no existe no puede ser el que se le ponga");
+			"a character that no longer exists cannot be the one put on");
 		assertTrue(CharacterRules.characterToWearAfter(Set.of(), null, List.of("borrado")) == null,
-			"si nada de lo suyo existe ya, se queda sin ninguno");
+			"if nothing of its own exists any more, it is left with none");
 
-		System.out.println("checkCharacterAfterDelete: OK, tras borrar se elige un personaje que existe de verdad, o ninguno.");
+		System.out.println("checkCharacterAfterDelete: OK, after deleting, a character that really exists is chosen, or none.");
 	}
 
 	/**
-	 * <p>Que el nivel sea del PERSONAJE y no del jugador. Reportado jugando: un personaje recién creado
-	 * nacía con el nivel de XP de Minecraft de quien lo creaba —PG, competencia y espacios de conjuro de
-	 * nivel 12 por haber picado piedra— y todos los personajes de la misma persona salían iguales, porque
-	 * los tres sacaban el número del mismo sitio.</p>
+	 * <p>That the level belongs to the CHARACTER and not to the player. Reported while playing: a newly created character
+	 * was born with the Minecraft XP level of whoever created it —HP, proficiency and spell slots of
+	 * level 12 for having mined stone— and all of one person's characters came out the same, because
+	 * all three took the number from the same place.</p>
 	 */
 	private static void checkCharacterLevelIsPerCharacter() throws Exception {
-		//Lo que se puede comprobar sin juego: la creación estampa un nivel explícito, y con él la regla pura
-		//devuelve 1 en vez de caer al XP de nadie.
+		//What can be checked without the game: creation stamps an explicit level, and with it the pure rule
+		//returns 1 instead of falling back to anyone's XP.
 		String loader = readSource("SheetLoader.java");
 		for (String creator : List.of("public static String createCharacter(", "public static String createNpc(")) {
 			int from = loader.indexOf(creator);
-			assertTrue(from > 0, "no encontré " + creator);
+			assertTrue(from > 0, "could not find " + creator);
 			String body = loader.substring(from, loader.indexOf("\n\t}", from));
 			assertTrue(body.contains("\"characterLevel\""),
-				creator + " debería dejar un nivel explícito: sin él, el personaje nace con el nivel de XP de quien lo crea");
+				creator + " should leave an explicit level: without it, the character is born with the XP level of whoever creates it");
 		}
 
 		JsonObject recienCreado = new JsonObject();
 		recienCreado.addProperty("characterLevel", 1);
-		assertTrue(CharacterRules.levelOf(recienCreado) == 1, "un personaje nuevo es de nivel 1");
+		assertTrue(CharacterRules.levelOf(recienCreado) == 1, "a new character is level 1");
 		assertTrue(LevelUpManager.improvementsBetween(CharacterRules.levelOf(recienCreado), 4) == 1,
-			"y sube desde el 1, así que la primera Mejora le toca al llegar al 4");
+			"and it goes up from 1, so the first Improvement comes on reaching 4");
 
-		//Y que ponerse una hoja vieja le congele SU nivel, para que dejen de compartirlo.
+		//And that putting on an old sheet freezes ITS level, so they stop sharing it.
 		int from = loader.indexOf("public static boolean switchCharacter(");
 		String switchBody = loader.substring(from, loader.indexOf("\n\t}", from));
 		assertTrue(switchBody.contains("characterLevel"),
-			"al ponerse un personaje sin nivel propio hay que estampárselo, o dos personajes lo comparten para siempre");
+			"when a character without its own level is put on, it must be stamped, or two characters share it forever");
 
-		//Y la VIDA ACTUAL, por lo mismo: vivía solo en la salud de la entidad, que es del jugador. Cambiar de
-		//personaje te dejaba con las heridas del anterior y volver te encontraba las del nuevo.
+		//And CURRENT HEALTH, for the same reason: it lived only in the entity's health, which belongs to the player. Switching
+		//character left you with the previous one's wounds and switching back found you with the new one's.
 		assertTrue(switchBody.contains("hitPoints"),
-			"cambiar de personaje debería guardar la vida del que se quita y devolverle la suya al que entra");
+			"switching character should save the health of the one being removed and give the incoming one its own back");
 		assertTrue(loader.contains("restoreHitPoints("),
-			"y restaurarla DESPUÉS de fijar el máximo, o quedaría acotada contra el máximo del personaje anterior");
+			"and restore it AFTER setting the maximum, or it would be capped against the previous character's maximum");
 
-		//Y los recursos de una vez por descanso. Vivían en un Set<UUID> por jugador, así que gastar el Segundo
-		//Aliento con un personaje se lo gastaba al otro, y un reinicio del servidor se los devolvía a todos
-		//sin haber descansado. Es la misma familia: un valor del JUGADOR haciendo de valor del PERSONAJE.
-		JsonObject hoja = new JsonObject();
-		assertTrue(!RestResource.isSpent(hoja, RestResource.SECOND_WIND), "una hoja nueva no tiene nada gastado");
-		hoja.addProperty(RestResource.SECOND_WIND, true);
-		assertTrue(RestResource.isSpent(hoja, RestResource.SECOND_WIND), "y una vez gastado, lo recuerda");
-		//Cada recurso es su propia clave: si compartieran una, descansar devolvería tres cosas de golpe.
-		assertTrue(!RestResource.isSpent(hoja, RestResource.CHANNEL_DIVINITY)
-				&& !RestResource.isSpent(hoja, RestResource.ARCANE_RECOVERY),
-			"gastar uno no debería gastar los otros dos");
+		//And the once-per-rest resources. They lived in a Set<UUID> per player, so spending Second
+		//Wind with one character spent it for the other, and a server restart gave them all back
+		//without resting. It is the same family: a PLAYER value acting as a CHARACTER value.
+		JsonObject sheetJson = new JsonObject();
+		assertTrue(!RestResource.isSpent(sheetJson, RestResource.SECOND_WIND), "a new sheet has nothing spent");
+		sheetJson.addProperty(RestResource.SECOND_WIND, true);
+		assertTrue(RestResource.isSpent(sheetJson, RestResource.SECOND_WIND), "and once spent, it remembers");
+		//Each resource is its own key: if they shared one, resting would give back three things at once.
+		assertTrue(!RestResource.isSpent(sheetJson, RestResource.CHANNEL_DIVINITY)
+				&& !RestResource.isSpent(sheetJson, RestResource.ARCANE_RECOVERY),
+			"spending one should not spend the other two");
 		for (String manager : List.of("FighterSecondWindManager.java", "ClericTurnUndeadManager.java",
 				"WizardArcaneRecoveryManager.java")) {
 			assertTrue(!readSource(manager).contains("Set<UUID>"),
-				manager + " guarda un recurso por descanso por JUGADOR: con dos personajes se comparte, y un reinicio lo devuelve gratis");
+				manager + " stores a per-rest resource per PLAYER: with two characters it is shared, and a restart gives it back for free");
 		}
 
-		//Y el inventario. Aquí lo que se fija es el ORDEN, no la existencia: guardar-y-persistir ANTES de
-		//vaciar es la diferencia entre "te has quedado con el equipo del otro personaje" (molesto, y
-		//reversible cambiando otra vez) y "se han borrado tus objetos" (irreversible). Invertir esas dos
-		//líneas compila igual de bien y no falla en ninguna otra comprobación.
+		//And the inventory. What is pinned down here is the ORDER, not the existence: save-and-persist BEFORE
+		//clearing is the difference between "you ended up with the other character's gear" (annoying, and
+		//reversible by switching again) and "your items were deleted" (irreversible). Swapping those two
+		//lines compiles just as well and fails no other check.
 		String inventory = readSource("CharacterInventory.java");
 		int saved = inventory.indexOf("saveCharacterSheet(");
 		int cleared = inventory.indexOf("clearContent()");
-		assertTrue(saved > 0 && cleared > 0, "no encontré el guardado y el vaciado del inventario");
+		assertTrue(saved > 0 && cleared > 0, "could not find the inventory save and clear");
 		assertTrue(saved < cleared,
-			"hay que PERSISTIR el inventario del personaje que sale antes de vaciarle las manos al cuerpo: "
-				+ "al revés, un fallo a mitad borra los objetos en vez de dejarlos donde estaban");
-		//Y vaciar antes de restaurar: load() escribe encima de las ranuras que trae, no vacía las demás, así
-		//que sin el clear el personaje nuevo heredaría las ranuras que él no usa.
+			"the outgoing character's inventory must be PERSISTED before emptying the body's hands: "
+				+ "the other way round, a mid-way failure deletes the items instead of leaving them where they were");
+		//And clear before restoring: load() writes over the slots it brings, it does not empty the others, so
+		//without the clear the new character would inherit the slots it does not use.
 		assertTrue(cleared < inventory.indexOf("restore(player,"),
-			"hay que vaciar antes de restaurar, o las ranuras que el personaje nuevo no use conservan las del viejo");
+			"clear before restoring, or the slots the new character does not use keep the old one's");
 
-		//Y lo que el personaje anterior estaba HACIENDO se acaba con él. Estos cuatro viven indexados por
-		//jugador porque son estados vivos y no datos de hoja, así que sin cortarlos el personaje nuevo
-		//heredaba la concentración, la furia, la forma salvaje y la marca: seguía enfurecido sin haber
-		//entrado en furia.
+		//And what the previous character was DOING ends with it. These four are indexed by
+		//player because they are live states and not sheet data, so without cutting them the new character
+		//inherited the concentration, the rage, the wild shape and the mark: it stayed enraged without having
+		//entered a rage.
 		for (String manager : List.of("ConcentrationManager", "BarbarianRageManager", "DruidWildShapeManager",
 				"RangerHunterMarkManager")) {
 			assertTrue(switchBody.contains(manager + "."),
-				"cambiar de personaje debería cortar lo que el anterior tenía en marcha en " + manager);
+				"switching character should cut what the previous one had running in " + manager);
 		}
 
-		//Reportado jugando: el inventario no se veía cambiado hasta abrirlo a mano. Sustituir las ranuras en
-		//el servidor no repinta la barra rápida por sí solo, y quien mira la pantalla no tiene forma de saber
-		//que sus datos ya cambiaron. Los demás estados vanilla que toca el mod —vida, atributo de vida
-		//máxima, posición, efectos— los sincroniza Minecraft solo; el inventario es el único que se
-		//sustituye ENTERO fuera de una interacción con el menú.
+		//Reported while playing: the inventory did not look changed until opened by hand. Replacing the slots on
+		//the server does not redraw the hotbar by itself, and whoever looks at the screen has no way of knowing
+		//their data has changed. The other vanilla states the mod touches —health, max health
+		//attribute, position, effects— are synced by Minecraft itself; the inventory is the only one that is
+		//replaced ENTIRELY outside a menu interaction.
 		assertTrue(inventory.contains("broadcastFullState()"),
-			"cambiar el inventario en el servidor hay que anunciarlo, o el jugador ve el viejo hasta que abre la mochila");
+			"changing the inventory on the server must be announced, or the player sees the old one until they open the backpack");
 
-		System.out.println("checkCharacterLevelIsPerCharacter: OK, nivel, vida, recursos, equipo y efectos vivos son del personaje, y el equipo se ve al cambiar.");
+		System.out.println("checkCharacterLevelIsPerCharacter: OK, level, health, resources, gear and live effects belong to the character, and the gear is visible on switching.");
 	}
 
 	private static JsonObject named(String characterName) {
@@ -3809,35 +3890,35 @@ public class JsonContentSelfTest {
 	}
 
 	/**
-	 * <p>Cable trampa para las dos invariantes que más caras salen en este proyecto: el id de un mensaje de
-	 * red es su orden de registro, y los enums que cruzan el cable viajan por ordinal. Las dos fallan en
-	 * <b>silencio</b> — todo compila, cliente y servidor se dan la mano igual, y se desalinean después.</p>
+	 * <p>Tripwire for the two invariants that cost the most in this project: a network message's id is
+	 * its registration order, and the enums that cross the wire travel by ordinal. Both fail
+	 * <b>silently</b> — everything compiles, client and server shake hands all the same, and drift out of alignment afterwards.</p>
 	 *
-	 * <p>Cuenta las piezas que cruzan el cable y las compara con el número anotado a mano junto a
-	 * {@code PROTOCOL_VERSION}. No impide el error: obliga a que subir (o no subir) la versión sea una
-	 * decisión y no un olvido. Existe porque ya pasó: {@code BrowseActionMessage.Action} ganó {@code DELETE}
-	 * y la versión de protocolo se quedó donde estaba, sin que nada se quejara.</p>
+	 * <p>It counts the pieces that cross the wire and compares them with the number noted by hand next to
+	 * {@code PROTOCOL_VERSION}. It does not prevent the mistake: it forces bumping (or not bumping) the version to be a
+	 * decision and not an oversight. It exists because it already happened: {@code BrowseActionMessage.Action} gained {@code DELETE}
+	 * and the protocol version stayed where it was, without anything complaining.</p>
 	 */
 	/**
-	 * <p>Invariante 4: lo que muta una hoja tiene que llegar a {@code SheetLoader.saveServer}. El autosave de
-	 * 5 minutos es la red de seguridad, no la ruta de escritura.</p>
+	 * <p>Invariant 4: whatever mutates a sheet must reach {@code SheetLoader.saveServer}. The 5-minute
+	 * autosave is the safety net, not the write path.</p>
 	 *
-	 * <p>Se rompia en nueve sitios a la vez, y todos con la misma forma: mutar el JsonObject y mandar solo el
-	 * parche al cliente. El jugador veia el cambio, el disco no se enteraba, y apagar el servidor antes del
-	 * autosave devolvia el espacio de conjuro gastado, el escudo, el castigo o —lo peor— levantaba a un
-	 * personaje que estaba tirando salvaciones de muerte.</p>
+	 * <p>It was broken in nine places at once, all with the same shape: mutating the JsonObject and sending only the
+	 * patch to the client. The player saw the change, the disk did not find out, and shutting the server down before the
+	 * autosave gave back the spent spell slot, the shield, the smite or —worst of all— stood up a
+	 * character who was rolling death saves.</p>
 	 *
-	 * <p><b>Granularidad: por ARCHIVO, no por sitio.</b> Un archivo que guarde en algun sitio pasa aunque
- * otra ruta suya mute sin guardar — le paso a {@code SpellCastManager}, que persistia el espacio de
- * conjuro en spendSlot pero no el gasto del Hechizo Gemelo. Comprobarlo por sitio pediria seguir el flujo
- * del metodo, que es mucho mas maquinaria de la que esto merece; sirve como red contra el descuido
- * completo, no como prueba de que cada linea persiste.</p>
+	 * <p><b>Granularity: per FILE, not per place.</b> A file that saves somewhere passes even if
+ * another path of its own mutates without saving — it happened to {@code SpellCastManager}, which persisted the spell
+ * slot in spendSlot but not the Twinned Spell expenditure. Checking it per place would require following the
+ * method flow, which is far more machinery than this deserves; it serves as a net against complete
+ * neglect, not as proof that every line persists.</p>
  *
- * <p><b>Sin lista de excepciones a mano.</b> El criterio se mantiene solo: un archivo que no menciona
-	 * {@code ServerPlayer} no PUEDE guardar (saveServer pide el uuid del jugador), asi que es un helper puro
-	 * sobre el JsonObject y persiste quien lo llama —{@code SpellSlots}, {@code WeaponBuffManager},
-	 * {@code ClassLevels}, {@code FeatRegistry}, {@code PresetRegistry}. En cuanto alguien le pase un
-	 * ServerPlayer a uno de esos, esta comprobacion empieza a exigirle el guardado sola.</p>
+ * <p><b>No hand-kept exception list.</b> The criterion maintains itself: a file that does not mention
+	 * {@code ServerPlayer} CANNOT save (saveServer asks for the player's uuid), so it is a pure helper
+	 * over the JsonObject and whoever calls it persists —{@code SpellSlots}, {@code WeaponBuffManager},
+	 * {@code ClassLevels}, {@code FeatRegistry}, {@code PresetRegistry}. As soon as someone passes a
+	 * ServerPlayer to one of those, this check starts demanding the save from it on its own.</p>
 	 */
 	private static void checkSheetWritesArePersisted() throws Exception {
 		Path root = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets");
@@ -3862,38 +3943,38 @@ public class JsonContentSelfTest {
 		}
 
 		assertTrue(offenders.isEmpty(),
-			"estos archivos mutan una hoja y tienen el ServerPlayer a mano, pero nunca la guardan: " + offenders
-				+ ".\n  Es la invariante 4: manda el cambio por SheetLoader.saveAndSync (guarda + sincroniza) o por"
-				+ " saveServer si ya mandas un parche por campo. Sin eso el cambio solo vive en RAM hasta el autosave"
-				+ " de 5 minutos, y un cierre antes de que salte lo deshace sin avisar a nadie.");
+			"these files mutate a sheet and have the ServerPlayer at hand, but never save it: " + offenders
+				+ ".\n  This is invariant 4: send the change through SheetLoader.saveAndSync (saves + syncs) or through"
+				+ " saveServer if you already send a per-field patch. Without that the change only lives in RAM until the autosave"
+				+ " of 5 minutes, and a shutdown before it fires undoes it without telling anyone.");
 
-		System.out.println("checkSheetWritesArePersisted: OK, toda mutacion de hoja con jugador delante persiste ("
-			+ pureHelpers + " helpers puros exentos, persiste quien los llama).");
+		System.out.println("checkSheetWritesArePersisted: OK, every sheet mutation with a player at hand persists ("
+			+ pureHelpers + " pure helpers exempt, whoever calls them persists).");
 	}
 
 	/**
-	 * <p>El TERCER angulo del cable, tras la cuenta ({@code NETWORK_SHAPE}) y el orden
-	 * ({@code NETWORK_ORDER}): que tipo tiene cada campo. Se hashea la secuencia de {@code writeX}/
-	 * {@code readX} de todas las clases de {@code network/}.</p>
+	 * <p>The THIRD angle of the wire, after the count ({@code NETWORK_SHAPE}) and the order
+	 * ({@code NETWORK_ORDER}): what type each field has. The sequence of {@code writeX}/
+	 * {@code readX} of all the classes in {@code network/} is hashed.</p>
 	 *
-	 * <p>Existe porque el hueco se demostro solo: cambiar las etiquetas de {@code BrowseListMessage} de
-	 * texto plano a {@code Component} —para que el compendio lo traduzca el cliente— no movio ni la cuenta
-	 * ni el orden, asi que las otras dos comprobaciones dieron OK mientras la compatibilidad ya estaba
-	 * rota. Un cliente viejo lee un String donde el servidor escribe un Component y se desincroniza a
-	 * mitad del paquete, en silencio.</p>
+	 * <p>It exists because the gap proved itself: changing the labels of {@code BrowseListMessage} from
+	 * plain text to {@code Component} —so the client translates the compendium— moved neither the count
+	 * nor the order, so the other two checks gave OK while compatibility was already
+	 * broken. An old client reads a String where the server writes a Component and desyncs
+	 * mid-packet, silently.</p>
 	 */
 	/**
-	 * <p>El candado de DM no se copia: se pide por {@code NetworkUtil.handleOnServerAsDm}.</p>
+	 * <p>The DM lock is not copied: it is requested through {@code NetworkUtil.handleOnServerAsDm}.</p>
 	 *
-	 * <p>Esto no es orden por gusto. El guard estaba escrito a mano, palabra por palabra, en <b>22</b>
-	 * mensajes, y es una comprobacion de PERMISOS. Un mensaje nuevo que se olvide de el no falla ni avisa:
-	 * el cliente puede mandar el paquete sin tener el menu abierto, asi que cualquier jugador podria borrar
-	 * piezas de mazmorra, invocar monstruos o editar el contenido. Con el helper no se puede olvidar — o
-	 * pides el jugador por esa puerta, o no lo tienes.</p>
+	 * <p>This is not tidiness for its own sake. The guard was written by hand, word for word, in <b>22</b>
+	 * messages, and it is a PERMISSIONS check. A new message that forgets it neither fails nor warns:
+	 * the client can send the packet without having the menu open, so any player could delete
+	 * dungeon pieces, summon monsters or edit the content. With the helper it cannot be forgotten — either
+	 * you get the player through that door, or you do not have it.</p>
 	 *
-	 * <p><b>Alcance honesto:</b> esto atrapa la copia LITERAL volviendo, que es lo que se acaba de quitar.
-	 * No entiende Java, asi que una redaccion distinta del mismo candado se le escapa. Es una red contra el
-	 * copiar-pegar, no una prueba de que todo mensaje de DM este protegido.</p>
+	 * <p><b>Honest scope:</b> this catches the LITERAL copy coming back, which is what was just removed.
+	 * It does not understand Java, so a different wording of the same lock escapes it. It is a net against
+	 * copy-paste, not proof that every DM message is protected.</p>
 	 */
 	private static void checkDmGuardIsShared() throws Exception {
 		Path networkDir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "network");
@@ -3904,7 +3985,7 @@ public class JsonContentSelfTest {
 
 		Set<String> copiado = new java.util.TreeSet<>();
 		for (Path mensaje : mensajes) {
-			//NetworkUtil ES el sitio donde vive el candado; ahi tiene que estar.
+			//NetworkUtil IS the place where the lock lives; it has to be there.
 			if (mensaje.getFileName().toString().equals("NetworkUtil.java")) continue;
 			if (Files.readString(mensaje).contains("!dm.hasPermissions(2)")) {
 				copiado.add(mensaje.getFileName().toString());
@@ -3912,12 +3993,12 @@ public class JsonContentSelfTest {
 		}
 
 		assertTrue(copiado.isEmpty(),
-			"estos mensajes vuelven a llevar el candado de DM copiado a mano: " + copiado
-				+ ".\n  Usa NetworkUtil.handleOnServerAsDm(context, dm -> { ... }): resuelve el emisor y"
-				+ " comprueba el permiso en un solo sitio. Copiarlo es como se olvida, y olvidarlo deja el"
-				+ " mensaje abierto a cualquier jugador.");
+			"these messages carry the DM lock copied by hand again: " + copiado
+				+ ".\n  Use NetworkUtil.handleOnServerAsDm(context, dm -> { ... }): it resolves the sender and"
+				+ " checks the permission in one place. Copying it is how it gets forgotten, and forgetting it leaves the"
+				+ " message open to any player.");
 
-		System.out.println("checkDmGuardIsShared: OK, el candado de DM vive solo en NetworkUtil.");
+		System.out.println("checkDmGuardIsShared: OK, the DM lock lives only in NetworkUtil.");
 	}
 
 	private static void checkNetworkWire() throws Exception {
@@ -3941,23 +4022,23 @@ public class JsonContentSelfTest {
 
 		int hash = cable.toString().hashCode();
 		assertTrue(hash == DndsheetsMod.NETWORK_WIRE,
-			"cambio LO QUE SE ESCRIBE en el cable (hash " + hash + ", anotado " + DndsheetsMod.NETWORK_WIRE
-				+ ") con la cuenta y el orden intactos: algun campo cambio de tipo, o se anadio/quito uno"
-				+ " dentro de un mensaje que ya existia."
-				+ "\n  Eso rompe la compatibilidad igual que anadir un mensaje: el cliente viejo lee un tipo"
-				+ " donde el servidor nuevo escribe otro y se desincroniza a mitad del paquete. Sube"
-				+ " PROTOCOL_VERSION y anota aqui el hash nuevo.");
+			"WHAT IS WRITTEN on the wire changed (hash " + hash + ", noted " + DndsheetsMod.NETWORK_WIRE
+				+ ") with the count and order intact: some field changed type, or one was added/removed"
+				+ " inside a message that already existed."
+				+ "\n  That breaks compatibility just like adding a message: the old client reads one type"
+				+ " where the new server writes another and desyncs mid-packet. Bump"
+				+ " PROTOCOL_VERSION and note the new hash here.");
 
-		System.out.println("checkNetworkWire: OK, " + llamadas + " lecturas/escrituras en el cable, hash " + hash + ".");
+		System.out.println("checkNetworkWire: OK, " + llamadas + " reads/writes on the wire, hash " + hash + ".");
 	}
 
 	private static void checkNetworkShape() throws Exception {
 		String mod = readSource("DndsheetsMod.java");
 		int messages = mod.split("addNetworkMessage" + java.util.regex.Pattern.quote("("), -1).length - 1;
 
-		//La cuenta de arriba no ve un intercambio: mover dos entradas ya registradas deja el total igual y
-		//renumera los ids en silencio, que es justo lo que la invariante 1 prohíbe. Así que además del cuánto
-		//se anota el ORDEN: los nombres, en la secuencia en que salen de la fuente, resumidos en un hash.
+		//The count above does not see a swap: moving two already-registered entries leaves the total the same and
+		//renumbers the ids silently, which is exactly what invariant 1 forbids. So besides the how-many
+		//the ORDER is noted: the names, in the sequence they appear in the source, summarised in a hash.
 		StringBuilder order = new StringBuilder();
 		java.util.regex.Matcher registered = java.util.regex.Pattern
 			.compile("addNetworkMessage\\(\\s*(\\w+)\\.class").matcher(mod);
@@ -3966,7 +4047,7 @@ public class JsonContentSelfTest {
 			order.append(registered.group(1)).append(',');
 			orderedMessages++;
 		}
-		assertTrue(orderedMessages > 0, "no encontré ninguna llamada a addNetworkMessage(X.class), ¿cambió su forma?");
+		assertTrue(orderedMessages > 0, "could not find any call to addNetworkMessage(X.class), did its shape change?");
 
 		int enumConstants = 0;
 		StringBuilder detail = new StringBuilder();
@@ -3978,8 +4059,8 @@ public class JsonContentSelfTest {
 				while (enums.find()) {
 					int count = enums.group(2).split(",").length;
 					enumConstants += count;
-					//Mismo motivo que con los mensajes: un enum que viaja por ordinal se desalinea al reordenarlo
-					//sin que la cuenta se entere. Se guardan los nombres tal y como aparecen.
+					//Same reason as with the messages: an enum that travels by ordinal drifts out of alignment when reordered
+					//without the count noticing. The names are stored exactly as they appear.
 					order.append(enums.group(1)).append(':');
 					for (String constant : enums.group(2).split(",")) order.append(constant.trim()).append(',');
 					detail.append("\n    ").append(file.getFileName()).append(' ').append(enums.group(1)).append(": ").append(count);
@@ -3987,11 +4068,11 @@ public class JsonContentSelfTest {
 			}
 		}
 
-		//ContentType vive fuera de network/ y cruza el cable igual (ContentEntry*Message lo escriben con
-		//writeEnum, o sea por ordinal). La primera versión de esta comprobación solo miraba la carpeta
-		//network/, así que añadirle una constante no movía el número: justo el agujero que esto existe para
-		//tapar. Se cuenta por su fuente porque el enum no se puede cargar aquí — sus constantes resuelven
-		//DndPaths, y eso pide una instancia de Forge arrancada.
+		//ContentType lives outside network/ and crosses the wire all the same (ContentEntry*Message write it with
+		//writeEnum, i.e. by ordinal). The first version of this check only looked at the
+		//network/ folder, so adding a constant to it did not move the number: exactly the hole this exists to
+		//plug. It is counted from its source because the enum cannot be loaded here — its constants resolve
+		//DndPaths, and that needs a running Forge instance.
 		java.util.regex.Matcher contentTypes = java.util.regex.Pattern
 			.compile("(?m)^\\t([A-Z_]+)\\(DndPaths\\.").matcher(readSource("ContentType.java"));
 		int wireEnumsOutsideNetwork = 0;
@@ -4000,254 +4081,254 @@ public class JsonContentSelfTest {
 			order.append(contentTypes.group(1)).append(',');
 			wireEnumsOutsideNetwork++;
 		}
-		assertTrue(wireEnumsOutsideNetwork > 0, "no encontré las constantes de ContentType, ¿cambió su forma?");
+		assertTrue(wireEnumsOutsideNetwork > 0, "could not find the ContentType constants, did its shape change?");
 		detail.append("\n    ContentType.java ContentType: ").append(wireEnumsOutsideNetwork);
 
 		int shape = messages + enumConstants + wireEnumsOutsideNetwork;
 		assertTrue(shape == DndsheetsMod.NETWORK_SHAPE,
-			"la forma de la red cambió (" + messages + " mensajes + " + enumConstants + " constantes en network/ + "
-				+ wireEnumsOutsideNetwork + " fuera = " + shape
-				+ ", anotado " + DndsheetsMod.NETWORK_SHAPE + ")." + detail
-				+ "\n  Si añadiste un mensaje o una constante de enum que cruza el cable: añádelo al FINAL,"
-				+ " sube PROTOCOL_VERSION y actualiza NETWORK_SHAPE. Si no subes la versión, un cliente nuevo"
-				+ " y un servidor viejo se dan la mano y se desalinean después, en silencio.");
+			"the network shape changed (" + messages + " messages + " + enumConstants + " constants in network/ + "
+				+ wireEnumsOutsideNetwork + " outside = " + shape
+				+ ", noted " + DndsheetsMod.NETWORK_SHAPE + ")." + detail
+				+ "\n  If you added a message or an enum constant that crosses the wire: add it at the END,"
+				+ " bump PROTOCOL_VERSION and update NETWORK_SHAPE. If you do not bump the version, a new client"
+				+ " and an old server shake hands and drift out of alignment afterwards, silently.");
 
 		int orderHash = order.toString().hashCode();
 		assertTrue(orderHash == DndsheetsMod.NETWORK_ORDER,
-			"el ORDEN de la red cambió (hash " + orderHash + ", anotado " + DndsheetsMod.NETWORK_ORDER + ") con la"
-				+ " cuenta intacta: se movió algo de sitio en vez de añadirse al final." + detail
-				+ "\n  El id de un mensaje es su orden de registro y los enums viajan por ordinal, así que"
-				+ " intercambiar dos entradas renumera a las dos sin romper nada al compilar. Si el movimiento es"
-				+ " a propósito, sube PROTOCOL_VERSION y anota este hash en NETWORK_ORDER; si no, devuélvelo a su"
-				+ " sitio y añade lo nuevo al FINAL.");
+			"the network ORDER changed (hash " + orderHash + ", noted " + DndsheetsMod.NETWORK_ORDER + ") with the"
+				+ " count intact: something was moved instead of being added at the end." + detail
+				+ "\n  A message's id is its registration order and enums travel by ordinal, so"
+				+ " swapping two entries renumbers both without breaking anything at compile time. If the move is"
+				+ " deliberate, bump PROTOCOL_VERSION and note this hash in NETWORK_ORDER; if not, put it back in its"
+				+ " place and add the new one at the END.");
 
-		System.out.println("checkNetworkShape: OK, " + shape + " piezas en el cable (" + messages + " mensajes, " + enumConstants
-			+ " constantes en network/ y " + wireEnumsOutsideNetwork + " fuera), orden " + orderHash + ".");
+		System.out.println("checkNetworkShape: OK, " + shape + " pieces on the wire (" + messages + " messages, " + enumConstants
+			+ " constants in network/ and " + wireEnumsOutsideNetwork + " outside), order " + orderHash + ".");
 	}
 
 	/**
-	 * <p>La hoja de personaje dibuja en DOS espacios de coordenadas: {@code renderLabels} corre ya trasladado
-	 * a la esquina de la hoja, y {@code render} corre en coordenadas de pantalla. Las constantes de la
-	 * retícula ({@code PANEL_X}, {@code ATTACK_TOP}...) son de la hoja, así que usarlas desde {@code render}
-	 * pinta el texto en la esquina de la pantalla, encima del panel lateral de características.</p>
+	 * <p>The character sheet draws in TWO coordinate spaces: {@code renderLabels} runs already translated
+	 * to the sheet's corner, and {@code render} runs in screen coordinates. The grid constants
+	 * ({@code PANEL_X}, {@code ATTACK_TOP}...) belong to the sheet, so using them from {@code render}
+	 * draws the text in the screen corner, on top of the ability side panel.</p>
 	 *
-	 * <p>Reportado jugando exactamente así: el aviso de "sin ataques" salía superpuesto a las
-	 * características, ilegible. No falla al compilar ni deja rastro en el log — solo se ve.</p>
+	 * <p>Reported while playing exactly like this: the "no attacks" notice showed up overlapping the
+	 * abilities, illegible. It does not fail at compile time nor leave a trace in the log — it is only seen.</p>
 	 */
 	private static void checkSheetCoordinateSpaces() throws Exception {
 		String source = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"client", "gui", "CharacterSheetScreen.java"));
 		int from = source.indexOf("public void render(GuiGraphics");
-		assertTrue(from > 0, "no encontré render(GuiGraphics...) en CharacterSheetScreen");
+		assertTrue(from > 0, "could not find render(GuiGraphics...) in CharacterSheetScreen");
 		String render = source.substring(from, source.indexOf("\n\t}", from));
 
-		//Dibujar texto de la retícula desde render() es el error; los widgets se colocan con leftPos/topPos
-		//al construirlos y se pintan solos, así que render() no debería nombrar la retícula en absoluto.
+		//Drawing grid text from render() is the mistake; widgets are placed with leftPos/topPos
+		//when built and draw themselves, so render() should not mention the grid at all.
 		for (String grid : List.of("PANEL_X", "PANEL_RIGHT", "ATTACK_TOP", "SEC1_Y", "section(guiGraphics")) {
 			assertTrue(!render.contains(grid),
-				"render() usa \"" + grid + "\", que es una coordenada de la HOJA: sin la traslación de "
-					+ "leftPos/topPos eso se dibuja en la esquina de la pantalla, encima del panel lateral. "
-					+ "Va en renderLabels, que ya corre trasladado.");
+				"render() uses \"" + grid + "\", which is a SHEET coordinate: without the leftPos/topPos "
+					+ "translation it is drawn in the screen corner, on top of the side panel. "
+					+ "It belongs in renderLabels, which already runs translated.");
 		}
 
-		System.out.println("checkSheetCoordinateSpaces: OK, la retícula de la hoja solo se usa donde está trasladada.");
+		System.out.println("checkSheetCoordinateSpaces: OK, the sheet grid is only used where it is translated.");
 	}
 
 	/**
-	 * <p>"Una criatura incapacitada no puede realizar acciones ni reacciones" (5e). Hay <b>tres</b> formas de
-	 * hacer algo en este mod —acción, reacción y acción legendaria— y la regla estaba escrita en una sola,
-	 * así que un monstruo paralizado seguía haciendo ataques de oportunidad y un dragón dormido seguía
-	 * repartiendo tres ataques por asalto.</p>
+	 * <p>"An incapacitated creature can't take actions or reactions" (5e). There are <b>three</b> ways to
+	 * do something in this mod —action, reaction and legendary action— and the rule was written in only one,
+	 * so a paralysed monster kept making opportunity attacks and a sleeping dragon kept
+	 * dealing out three attacks per round.</p>
 	 *
-	 * <p>Se sostiene por estructura porque las tres rutas necesitan entidades de un mundo. Lo que sí se puede
-	 * comprobar sin juego es la parte pura: qué condiciones cuentan como incapacitar.</p>
+	 * <p>It is held by structure because all three routes need entities from a world. What can be
+	 * checked without the game is the pure part: which conditions count as incapacitating.</p>
 	 */
 	private static void checkIncapacitatedCannotAct() throws Exception {
-		//La lista de 5e: paralizado, aturdido, petrificado e inconsciente incapacitan; envenenado o
-		//derribado, no. Confundirlas convierte una condición dura en una molestia o al revés.
-		for (Condition blocking : List.of(Condition.PARALIZADO, Condition.ATURDIDO, Condition.PETRIFICADO,
-				Condition.INCONSCIENTE, Condition.INCAPACITADO)) {
+		//The 5e list: paralysed, stunned, petrified and unconscious incapacitate; poisoned or
+		//prone do not. Mixing them up turns a hard condition into a nuisance or the other way round.
+		for (Condition blocking : List.of(Condition.PARALYZED, Condition.STUNNED, Condition.PETRIFIED,
+				Condition.UNCONSCIOUS, Condition.INCAPACITATED)) {
 			FakeCombatant victim = new FakeCombatant(0);
 			victim.addCondition(blocking);
-			assertTrue(victim.cannotAct(), blocking + " debería impedir actuar");
+			assertTrue(victim.cannotAct(), blocking + " should prevent acting");
 		}
-		for (Condition harmless : List.of(Condition.ENVENENADO, Condition.DERRIBADO, Condition.CEGADO)) {
+		for (Condition harmless : List.of(Condition.POISONED, Condition.PRONE, Condition.BLINDED)) {
 			FakeCombatant victim = new FakeCombatant(0);
 			victim.addCondition(harmless);
-			assertTrue(!victim.cannotAct(), harmless + " estorba, pero no impide actuar");
+			assertTrue(!victim.cannotAct(), harmless + " hinders, but does not prevent acting");
 		}
 
-		//Y que las tres puertas pregunten. tryAct ya lo hacía; tryReact y las acciones legendarias no.
+		//And that all three doors ask. tryAct already did; tryReact and the legendary actions did not.
 		String turnManager = readSource("TurnManager.java");
 		for (String method : List.of("public static boolean tryAct(", "public static boolean tryReact(")) {
 			int from = turnManager.indexOf(method);
-			assertTrue(from > 0, "no encontré " + method);
+			assertTrue(from > 0, "could not find " + method);
 			String body = turnManager.substring(from, turnManager.indexOf("\n\t}", from));
 			assertTrue(body.contains("isIncapacitated("),
-				method + " debería rechazar a quien está incapacitado: en 5e no puede ni actuar ni reaccionar");
+				method + " should reject whoever is incapacitated: in 5e they can neither act nor react");
 		}
 		assertTrue(readSource("LegendaryActionManager.java").contains("isIncapacitated("),
-			"un jefe incapacitado no puede tomar acciones legendarias, y la regla lo dice explícitamente");
+			"an incapacitated boss cannot take legendary actions, and the rule says so explicitly");
 
-		//Lo mismo para MOVERSE. Los jugadores y los mobs de compatibilidad pasan por MovementAnchorTracker,
-		//pero los monstruos propios se mueven con un teleport en MonsterActionManager, así que la regla no les
-		//llegaba: un monstruo dentro de un Enmarañar salía andando, que es lo que ese conjuro existe para
-		//impedir. Se comprueba qué condiciones paran (agarrado y apresado paran sin incapacitar, que es
-		//justo el par que distingue "no puedo moverme" de "no puedo actuar").
-		for (Condition stopping : List.of(Condition.AGARRADO, Condition.APRESADO, Condition.PARALIZADO,
-				Condition.PETRIFICADO, Condition.INCONSCIENTE)) {
+		//The same for MOVING. Players and compatibility mobs go through MovementAnchorTracker,
+		//but the mod's own monsters move with a teleport in MonsterActionManager, so the rule did not
+		//reach them: a monster inside an Entangle walked right out, which is what that spell exists to
+		//prevent. What is checked is which conditions stop movement (grappled and restrained stop without incapacitating, which is
+		//exactly the pair that tells "I can't move" from "I can't act").
+		for (Condition stopping : List.of(Condition.GRAPPLED, Condition.RESTRAINED, Condition.PARALYZED,
+				Condition.PETRIFIED, Condition.UNCONSCIOUS)) {
 			FakeCombatant stuck = new FakeCombatant(0);
 			stuck.addCondition(stopping);
-			assertTrue(stuck.cannotMove(), stopping + " debería dejar la velocidad a 0");
+			assertTrue(stuck.cannotMove(), stopping + " should set speed to 0");
 		}
 		FakeCombatant grappled = new FakeCombatant(0);
-		grappled.addCondition(Condition.AGARRADO);
+		grappled.addCondition(Condition.GRAPPLED);
 		assertTrue(grappled.cannotMove() && !grappled.cannotAct(),
-			"agarrado para el movimiento pero NO la acción: son dos reglas distintas y por eso hacen falta dos comprobaciones");
+			"grappled stops movement but NOT the action: they are two different rules and that is why two checks are needed");
 
 		assertTrue(readSource("MonsterActionManager.java").contains("cannotMove()"),
-			"el movimiento de un monstruo propio debería respetar la velocidad 0, no solo el de jugadores y mobs vanilla");
-		//Y que un monstruo ataque con SUS propias condiciones: invisible con ventaja, asustado con desventaja.
+			"the movement of the mod's own monster should respect speed 0, not just that of players and vanilla mobs");
+		//And that a monster attacks with ITS OWN conditions: invisible with advantage, frightened with disadvantage.
 		assertTrue(readSource("MonsterActionManager.java").contains("ownAttackAdvantage()"),
-			"un monstruo debería atacar con la ventaja que le den sus propias condiciones, no solo con la del objetivo");
+			"a monster should attack with the advantage its own conditions give it, not just the target's");
 
-		//Y que quien las sufre pueda VERLAS. Media docena de reglas del motor cuelgan de las condiciones, y
-		//estaban solo en el Panel de DM: un jugador paralizado veía sus clics no hacer nada, que se lee como
-		//un mod roto y no como la regla que es. El punto único de escritura tiene que avisar al cliente.
+		//And that whoever suffers them can SEE them. Half a dozen engine rules hang off conditions, and
+		//they were only in the DM Panel: a paralysed player saw their clicks do nothing, which reads as
+		//a broken mod and not as the rule it is. The single write point must notify the client.
 		String combatant = readSource("Combatant.java");
 		int from = combatant.indexOf("default void setConditionSources(");
-		assertTrue(from > 0, "no encontré el punto de escritura de condiciones");
+		assertTrue(from > 0, "could not find the condition write point");
 		String writePoint = combatant.substring(from, combatant.indexOf("\n\t\t}", from));
 		assertTrue(writePoint.contains("sendSheetFieldUpdate("),
-			"cambiar las condiciones de un jugador debería avisarle: si no, su copia se queda con las de antes");
+			"changing a player's conditions should notify them: otherwise their copy keeps the old ones");
 
-		//Y lo mismo para lo que el jugador LLEVA ENCIMA y decide su próxima tirada: concentración, dado de
-		//Inspiración y castigo armado vivían solo en el servidor. Un modificador que no se ve no se puede
-		//jugar, se descubre después en el resultado.
+		//And the same for what the player CARRIES and that decides their next roll: concentration, Inspiration die
+		//and armed smite lived only on the server. A modifier that cannot be seen cannot be
+		//played, it is discovered afterwards in the result.
 		for (String manager : List.of("ConcentrationManager.java", "BardInspirationManager.java", "PaladinSmiteManager.java")) {
 			assertTrue(readSource(manager).contains("sendSheetFieldUpdate("),
-				manager + " cambia algo que decide la próxima tirada del jugador y debería avisarle");
+				manager + " changes something that decides the player's next roll and should notify them");
 		}
-		//El HUD tiene que leerlos: sin esto, los parches llegarían y no se vería nada igualmente.
+		//The HUD has to read them: without this, the patches would arrive and nothing would show anyway.
 		String hud = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets",
 			"client", "ResourceHudOverlay.java"));
 		for (String field : List.of("concentratingOn", "bardicInspiration", "smitePending", "conditions")) {
-			assertTrue(hud.contains(field), "el HUD debería enseñar \"" + field + "\"");
+			assertTrue(hud.contains(field), "the HUD should show \"" + field + "\"");
 		}
 
-		System.out.println("checkIncapacitatedCannotAct: OK, las condiciones se respetan en las dos direcciones y el jugador ve lo que le pasa y lo que lleva encima.");
+		System.out.println("checkIncapacitatedCannotAct: OK, conditions are respected in both directions and the player sees what is happening to them and what they carry.");
 	}
 
 	/**
-	 * <p>Que un addon pueda añadir contenido <b>sin escribir Java</b>: un JSON en
-	 * {@code data/&lt;loquesea&gt;/dndsheets/&lt;tipo&gt;/} y ya. Es la diferencia entre tener ecosistema y no
-	 * tenerlo — los mods con cientos de addons lo son porque extenderlos es poner datos en una carpeta.</p>
+	 * <p>That an addon can add content <b>without writing Java</b>: a JSON in
+	 * {@code data/&lt;whatever&gt;/dndsheets/&lt;type&gt;/} and that is it. It is the difference between having an ecosystem and not
+	 * having one — mods with hundreds of addons are that way because extending them is putting data in a folder.</p>
 	 *
-	 * <p>Se comprueba contra el datapack de ejemplo del propio repo, parseándolo con los MISMOS parsers que
-	 * usa el juego. Lo que no puede comprobarse aquí es el enganche con el gestor de recursos de Minecraft
-	 * (necesita un servidor), así que eso se sostiene por estructura.</p>
+	 * <p>It is checked against the repo's own example datapack, parsing it with the SAME parsers the game
+	 * uses. What cannot be checked here is the hook into Minecraft's resource manager
+	 * (it needs a server), so that is held by structure.</p>
 	 */
 	private static void checkAddonContentLoads() throws Exception {
 		Path addon = Path.of("src", "test", "resources", "addon_example");
-		assertTrue(Files.isDirectory(addon), "falta el datapack de ejemplo: es la documentación ejecutable de cómo se escribe un addon");
-		assertTrue(Files.exists(addon.resolve("pack.mcmeta")), "un datapack sin pack.mcmeta no lo carga Minecraft");
+		assertTrue(Files.isDirectory(addon), "the example datapack is missing: it is the executable documentation of how to write an addon");
+		assertTrue(Files.exists(addon.resolve("pack.mcmeta")), "Minecraft does not load a datapack without pack.mcmeta");
 
-		//Una entrada suelta por archivo, que es la convención de datapack — y el caso que NO existía antes,
-		//porque los packs escritos a mano son arrays.
+		//One loose entry per file, which is the datapack convention — and the case that did NOT exist before,
+		//because hand-written packs are arrays.
 		JsonObject spell = JsonParser.parseString(Files.readString(
-			addon.resolve("data/miaddon/dndsheets/spells/rayo_de_ejemplo.json"))).getAsJsonObject();
-		assertTrue(!spell.isJsonArray() && spell.has("id"), "el ejemplo debería ser un objeto suelto, no un array");
-		//Por el CARGADOR, no por el parser a secas: lo que hay que demostrar es que un archivo con una entrada
-		//suelta —la convención de datapack— se carga, y ese caso no existía antes porque los packs escritos a
-		//mano son arrays. Parsear el objeto a pelo pasaría igual con el cargador roto.
+			addon.resolve("data/myaddon/dndsheets/spells/example_ray.json"))).getAsJsonObject();
+		assertTrue(!spell.isJsonArray() && spell.has("id"), "the example should be a loose object, not an array");
+		//Through the LOADER, not the bare parser: what has to be shown is that a file with a single
+		//loose entry —the datapack convention— loads, and that case did not exist before because hand-written packs
+		//are arrays. Parsing the bare object would pass just the same with the loader broken.
 		java.util.List<String> loadedIds = new java.util.ArrayList<>();
-		int count = SpellRegistry.loadJson(spell, "ejemplo", loadedIds::add);
-		assertTrue(count == 1 && loadedIds.contains("miaddon:rayo_de_ejemplo"),
-			"un archivo con UNA entrada suelta debería cargar una entrada, y avisar de su id");
-		SpellRegistry.Spell parsed = SpellRegistry.get("miaddon:rayo_de_ejemplo");
+		int count = SpellRegistry.loadJson(spell, "example", loadedIds::add);
+		assertTrue(count == 1 && loadedIds.contains("myaddon:example_ray"),
+			"a file with ONE loose entry should load one entry, and report its id");
+		SpellRegistry.Spell parsed = SpellRegistry.get("myaddon:example_ray");
 		assertTrue(parsed != null && parsed.scalesWithSlot(),
-			"y quedar registrado de verdad, con su subida de nivel");
+			"and be really registered, with its level scaling");
 
 		JsonObject monster = JsonParser.parseString(Files.readString(
-			addon.resolve("data/miaddon/dndsheets/monsters/centinela_de_ejemplo.json"))).getAsJsonObject();
+			addon.resolve("data/myaddon/dndsheets/monsters/example_sentinel.json"))).getAsJsonObject();
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.parse(monster);
 		assertTrue(block.type() == CreatureType.CONSTRUCT && block.attacksPerTurn() == 2 && !block.attacks().isEmpty(),
-			"el monstruo del addon debería traer tipo, multiataque y ataques");
+			"the addon monster should bring type, multiattack and attacks");
 
-		//Los 5 tipos restantes (de los 7 de ContentType): antes esta fixture solo probaba spells y monsters,
-		//exactamente el hueco que ya costó caro una vez (historial del proyecto, ítem 41 — "la primera
-		//versión del check parseaba el ejemplo directo y pasaba con el loader roto"). Mismo patrón: por el
-		//CARGADOR (loadJson), no por parse() a secas.
+		//The 5 remaining types (of the 7 in ContentType): this fixture used to only test spells and monsters,
+		//exactly the gap that already cost dearly once (project history, item 41 — "the first
+		//version of the check parsed the example directly and passed with the loader broken"). Same pattern: through the
+		//LOADER (loadJson), not bare parse().
 		JsonObject weapon = JsonParser.parseString(Files.readString(
-			addon.resolve("data/miaddon/dndsheets/weapons/hacha_de_ejemplo.json"))).getAsJsonObject();
+			addon.resolve("data/myaddon/dndsheets/weapons/example_axe.json"))).getAsJsonObject();
 		java.util.List<String> weaponIds = new java.util.ArrayList<>();
-		assertTrue(Config.loadJson(weapon, "ejemplo", weaponIds::add) == 1 && weaponIds.contains("miaddon:hacha_de_ejemplo"),
-			"el arma del addon debería cargar una entrada, y avisar de su id");
-		assertTrue(Config.loadedWeaponIds().contains("miaddon:hacha_de_ejemplo"), "y quedar registrada de verdad");
+		assertTrue(Config.loadJson(weapon, "example", weaponIds::add) == 1 && weaponIds.contains("myaddon:example_axe"),
+			"the addon weapon should load one entry, and report its id");
+		assertTrue(Config.loadedWeaponIds().contains("myaddon:example_axe"), "and be really registered");
 
 		JsonObject trait = JsonParser.parseString(Files.readString(
-			addon.resolve("data/miaddon/dndsheets/traits/rasgo_de_ejemplo.json"))).getAsJsonObject();
+			addon.resolve("data/myaddon/dndsheets/traits/example_trait.json"))).getAsJsonObject();
 		java.util.List<String> traitIds = new java.util.ArrayList<>();
-		assertTrue(TraitRegistry.loadJson(trait, "ejemplo", traitIds::add) == 1 && traitIds.contains("miaddon:rasgo_de_ejemplo"),
-			"el rasgo del addon debería cargar una entrada, y avisar de su id");
-		assertTrue(TraitRegistry.get("miaddon:rasgo_de_ejemplo") != null, "y quedar registrado de verdad");
+		assertTrue(TraitRegistry.loadJson(trait, "example", traitIds::add) == 1 && traitIds.contains("myaddon:example_trait"),
+			"the addon trait should load one entry, and report its id");
+		assertTrue(TraitRegistry.get("myaddon:example_trait") != null, "and be really registered");
 
 		JsonObject preset = JsonParser.parseString(Files.readString(
-			addon.resolve("data/miaddon/dndsheets/presets/preset_de_ejemplo.json"))).getAsJsonObject();
+			addon.resolve("data/myaddon/dndsheets/presets/example_preset.json"))).getAsJsonObject();
 		java.util.List<String> presetIds = new java.util.ArrayList<>();
-		assertTrue(PresetRegistry.loadJson(preset, "ejemplo", presetIds::add) == 1 && presetIds.contains("miaddon:preset_de_ejemplo"),
-			"el preset del addon debería cargar una entrada, y avisar de su id");
-		assertTrue(PresetRegistry.get("miaddon:preset_de_ejemplo") != null, "y quedar registrado de verdad");
+		assertTrue(PresetRegistry.loadJson(preset, "example", presetIds::add) == 1 && presetIds.contains("myaddon:example_preset"),
+			"the addon preset should load one entry, and report its id");
+		assertTrue(PresetRegistry.get("myaddon:example_preset") != null, "and be really registered");
 
 		JsonObject encounter = JsonParser.parseString(Files.readString(
-			addon.resolve("data/miaddon/dndsheets/encounters/encuentro_de_ejemplo.json"))).getAsJsonObject();
+			addon.resolve("data/myaddon/dndsheets/encounters/example_encounter.json"))).getAsJsonObject();
 		java.util.List<String> encounterIds = new java.util.ArrayList<>();
-		assertTrue(EncounterRegistry.loadJson(encounter, "ejemplo", encounterIds::add) == 1 && encounterIds.contains("miaddon:encuentro_de_ejemplo"),
-			"el encuentro del addon debería cargar una entrada, y avisar de su id");
-		assertTrue(EncounterRegistry.get("miaddon:encuentro_de_ejemplo") != null, "y quedar registrado de verdad");
+		assertTrue(EncounterRegistry.loadJson(encounter, "example", encounterIds::add) == 1 && encounterIds.contains("myaddon:example_encounter"),
+			"the addon encounter should load one entry, and report its id");
+		assertTrue(EncounterRegistry.get("myaddon:example_encounter") != null, "and be really registered");
 
 		JsonObject feat = JsonParser.parseString(Files.readString(
-			addon.resolve("data/miaddon/dndsheets/feats/dote_de_ejemplo.json"))).getAsJsonObject();
+			addon.resolve("data/myaddon/dndsheets/feats/example_feat.json"))).getAsJsonObject();
 		java.util.List<String> featIds = new java.util.ArrayList<>();
-		assertTrue(FeatRegistry.loadJson(feat, "ejemplo", featIds::add) == 1 && featIds.contains("miaddon:dote_de_ejemplo"),
-			"la dote del addon debería cargar una entrada, y avisar de su id");
-		assertTrue(FeatRegistry.get("miaddon:dote_de_ejemplo") != null, "y quedar registrada de verdad");
+		assertTrue(FeatRegistry.loadJson(feat, "example", featIds::add) == 1 && featIds.contains("myaddon:example_feat"),
+			"the addon feat should load one entry, and report its id");
+		assertTrue(FeatRegistry.get("myaddon:example_feat") != null, "and be really registered");
 
-		//Y que el cargador siga enganchado a la recarga de datapacks: sin esto, los archivos están bien
-		//escritos y no los lee nadie.
+		//And that the loader stays hooked into datapack reload: without this, the files are well
+		//written and nobody reads them.
 		String loader = readSource("ContentDatapackLoader.java");
 		assertTrue(loader.contains("AddReloadListenerEvent"),
-			"el contenido de datapacks tiene que engancharse a la recarga, o un addon no se carga nunca");
+			"datapack content has to hook into the reload, or an addon is never loaded");
 		for (String folder : List.of("weapons", "spells", "monsters", "presets", "traits", "items", "encounters", "feats")) {
 			assertTrue(loader.contains("\"" + folder + "\""),
-				"un addon debería poder traer " + folder + " igual que el resto");
+				"an addon should be able to bring " + folder + " just like the rest");
 		}
 
-		System.out.println("checkAddonContentLoads: OK, un addon añade contenido con solo poner JSON en su carpeta, en los 7 tipos.");
+		System.out.println("checkAddonContentLoads: OK, an addon adds content by just putting JSON in its folder, for all 7 types.");
 	}
 
 	private static void assertTypeOf(String monsterId, CreatureType expected) {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.get(monsterId);
-		assertTrue(block != null, "no está en el bestiario: " + monsterId);
-		assertTrue(block.type() == expected, monsterId + " debería ser " + expected + " y es " + block.type());
+		assertTrue(block != null, "not in the bestiary: " + monsterId);
+		assertTrue(block.type() == expected, monsterId + " should be " + expected + " and is " + block.type());
 	}
 
 	private static SpellRegistry.Spell spellFromPack(String id) throws Exception {
-		//Se lee del pack en vez de SpellRegistry.get() porque ejemplo.json y spells.json comparten ids, y el
-		//que queda registrado es el primero: la subida de nivel hay que comprobarla sobre el pack grande.
+		//It is read from the pack instead of SpellRegistry.get() because example.json and spells.json share ids, and the
+		//one that stays registered is the first: level scaling has to be checked against the big pack.
 		for (JsonElement element : readShippedPack("spells.json")) {
 			JsonObject json = element.getAsJsonObject();
 			if (id.equals(json.get("id").getAsString())) return SpellRegistry.parse(json);
 		}
-		throw new AssertionError("no está en el pack: " + id);
+		throw new AssertionError("not in the pack: " + id);
 	}
 
 	private static void assertSlots(SpellSlots.Caster caster, int level, int[] expected) {
 		int[] actual = SpellSlots.maxSlots(caster, level);
 		for (int spellLevel = 1; spellLevel <= SpellSlots.MAX_SPELL_LEVEL; spellLevel++) {
 			int want = spellLevel <= expected.length ? expected[spellLevel - 1] : 0;
-			assertTrue(actual[spellLevel] == want, caster + " nivel " + level + ", espacios de conjuro nivel "
-				+ spellLevel + ": " + actual[spellLevel] + ", se esperaban " + want);
+			assertTrue(actual[spellLevel] == want, caster + " level " + level + ", spell slots level "
+				+ spellLevel + ": " + actual[spellLevel] + ", expected " + want);
 		}
 	}
 
@@ -4255,157 +4336,157 @@ public class JsonContentSelfTest {
 		String alice = "11111111-1111-1111-1111-111111111111";
 		String bob = "22222222-2222-2222-2222-222222222222";
 
-		//Hoja legacy: sin ownerUuid, su dueño es su propio id (que era el UUID del jugador).
+		//Legacy sheet: with no ownerUuid, its owner is its own id (which was the player's UUID).
 		assertTrue(alice.equals(CharacterRules.ownerOf(alice, new JsonObject())),
-			"una hoja sin ownerUuid debería seguir siendo de quien da nombre a su archivo");
+			"a sheet without ownerUuid should still belong to whoever gives its file its name");
 		assertTrue(bob.equals(CharacterRules.ownerOf(alice + "-2", characterSheet(bob, false))),
-			"con ownerUuid, manda ownerUuid y no el id");
+			"with ownerUuid, ownerUuid rules and not the id");
 		assertTrue(CharacterRules.ownerOf("npc-guardia", characterSheet("", false)) == null,
-			"ownerUuid vacío significa PNJ, sin dueño");
+			"an empty ownerUuid means NPC, no owner");
 
 		Map<String, JsonObject> sheets = new java.util.HashMap<>();
-		sheets.put(alice, new JsonObject());                       //Legacy de Alice, sin campos nuevos.
-		sheets.put(alice + "-2", characterSheet(alice, true));      //Segundo personaje de Alice, puesto.
-		sheets.put(bob, new JsonObject());                          //Legacy de Bob.
-		sheets.put("npc-guardia", characterSheet("", false));       //PNJ del DM.
+		sheets.put(alice, new JsonObject());                       //Alice's legacy sheet, no new fields.
+		sheets.put(alice + "-2", characterSheet(alice, true));      //Alice's second character, worn.
+		sheets.put(bob, new JsonObject());                          //Bob's legacy sheet.
+		sheets.put("npc-guardia", characterSheet("", false));       //DM's NPC.
 
 		List<String> aliceChars = CharacterRules.ownedBy(sheets, alice);
-		assertTrue(aliceChars.size() == 2, "Alice debería tener 2 personajes, tiene " + aliceChars.size());
-		assertTrue(aliceChars.get(0).equals(alice) && aliceChars.get(1).equals(alice + "-2"), "los personajes deberían salir en orden estable");
-		assertTrue(CharacterRules.ownedBy(sheets, bob).size() == 1, "Bob debería tener solo su hoja de siempre");
+		assertTrue(aliceChars.size() == 2, "Alice should have 2 characters, has " + aliceChars.size());
+		assertTrue(aliceChars.get(0).equals(alice) && aliceChars.get(1).equals(alice + "-2"), "the characters should come out in a stable order");
+		assertTrue(CharacterRules.ownedBy(sheets, bob).size() == 1, "Bob should only have his usual sheet");
 
 		Map<String, String> active = CharacterRules.buildActive(sheets);
-		assertTrue((alice + "-2").equals(active.get(alice)), "Alice debería estar llevando su segundo personaje");
-		assertTrue(active.get(bob) == null, "Bob no marcó ninguna activa: debe caer al fallback, no aparecer aquí");
-		assertTrue(!active.containsValue("npc-guardia"), "un PNJ no lo lleva puesto nadie");
+		assertTrue((alice + "-2").equals(active.get(alice)), "Alice should be wearing her second character");
+		assertTrue(active.get(bob) == null, "Bob marked none as active: it must fall to the fallback, not appear here");
+		assertTrue(!active.containsValue("npc-guardia"), "nobody wears an NPC");
 
-		//Dos hojas activas por edición manual del JSON: el desempate tiene que ser determinista, o el
-		//jugador se encontraría un personaje distinto según el arranque.
+		//Two active sheets due to manual JSON editing: the tie-break must be deterministic, or the
+		//player would find a different character depending on startup.
 		Map<String, JsonObject> conflicted = new java.util.HashMap<>();
 		conflicted.put(alice + "-3", characterSheet(alice, true));
 		conflicted.put(alice + "-2", characterSheet(alice, true));
 		assertTrue((alice + "-2").equals(CharacterRules.buildActive(conflicted).get(alice)),
-			"con dos hojas activas debería ganar siempre la de id menor");
+			"with two active sheets the one with the lower id should always win");
 
-		//Ids nuevos: no deben chocar con los que ya existen.
+		//New ids: they must not clash with existing ones.
 		assertTrue((alice + "-3").equals(CharacterRules.nextCharacterId(sheets.keySet(), alice)),
-			"el siguiente id de Alice debería saltarse el -2 que ya existe");
+			"Alice's next id should skip the -2 that already exists");
 		assertTrue((bob + "-2").equals(CharacterRules.nextCharacterId(sheets.keySet(), bob)),
-			"el primer personaje extra de Bob debería ser -2");
+			"Bob's first extra character should be -2");
 
 		assertTrue("npc-capitan-de-la-guardia".equals(CharacterRules.npcIdFor(Set.of(), "Capitán de la Guardia")),
-			"el id de PNJ debería salir del nombre en minúsculas y con guiones, dio " + CharacterRules.npcIdFor(Set.of(), "Capitán de la Guardia"));
+			"the NPC id should come from the name in lowercase with hyphens, gave " + CharacterRules.npcIdFor(Set.of(), "Capitán de la Guardia"));
 		assertTrue("npc-guardia-2".equals(CharacterRules.npcIdFor(sheets.keySet(), "Guardia")),
-			"un PNJ con nombre repetido debería numerarse en vez de pisar al anterior");
+			"an NPC with a repeated name should be numbered instead of overwriting the previous one");
 		assertTrue("npc-pnj".equals(CharacterRules.npcIdFor(Set.of(), "白鬼")),
-			"un nombre sin caracteres latinos no debería dar un id vacío");
+			"a name without Latin characters should not give an empty id");
 
-		//--- PG máximos por clase/nivel/Constitución (regla de media del SRD) ---
-		//Vive en CharacterRules y no en SheetLoader precisamente para poder comprobarse aquí: SheetLoader
-		//resuelve FMLPaths al inicializarse y ni siquiera carga fuera de una instancia de Forge.
-		//El dado de golpe sale de Config.hitDiceByClass, que ahora está SEMBRADO con los valores por defecto
-		//en vez de vacío hasta que Forge parsea el .toml (ver Config). Antes de eso, aquí —y en el juego,
-		//durante todo el arranque anterior a la carga de la config— un guerrero era d8 como cualquier otra
-		//clase. Así que estas cifras son las de un d10 de verdad.
+		//--- Max HP by class/level/Constitution (SRD average rule) ---
+		//It lives in CharacterRules and not in SheetLoader precisely so it can be checked here: SheetLoader
+		//resolves FMLPaths on initialisation and does not even load outside a Forge instance.
+		//The hit die comes from Config.hitDiceByClass, which is now SEEDED with the default values
+		//instead of empty until Forge parses the .toml (see Config). Before that, here —and in the game,
+		//during the whole startup before the config loads— a fighter was d8 like any other
+		//class. So these figures are those of a real d10.
 		JsonObject hero = new JsonObject();
 		hero.addProperty("characterClass", "fighter");
 		hero.addProperty("constitution", "14"); //+2
 
-		//Nivel 1 = dado completo + mod → 10 + 2.
+		//Level 1 = full die + mod → 10 + 2.
 		assertTrue(CharacterRules.maxHitPointsFor(hero, 1) == 12,
-			"a d10 con CON 14 deberían salir 12 PG a nivel 1, dio " + CharacterRules.maxHitPointsFor(hero, 1));
-		//Cada nivel siguiente suma media+1 (6) + mod (2) = 8.
+			"a d10 with CON 14 should give 12 HP at level 1, gave " + CharacterRules.maxHitPointsFor(hero, 1));
+		//Each following level adds average+1 (6) + mod (2) = 8.
 		assertTrue(CharacterRules.maxHitPointsFor(hero, 2) == 20,
-			"debería subir a 20 PG a nivel 2, dio " + CharacterRules.maxHitPointsFor(hero, 2));
+			"should rise to 20 HP at level 2, gave " + CharacterRules.maxHitPointsFor(hero, 2));
 		assertTrue(CharacterRules.maxHitPointsFor(hero, 3) == 28,
-			"debería escalar de forma lineal por nivel, dio " + CharacterRules.maxHitPointsFor(hero, 3));
-		//Nivel 0 o negativo se trata como 1: en 5e ningún personaje es de nivel 0.
-		assertTrue(CharacterRules.maxHitPointsFor(hero, 0) == 12, "el nivel 0 debería tratarse como nivel 1");
-		//Y el d8 sigue siendo el valor por defecto de una clase que la tabla no conoce.
+			"should scale linearly per level, gave " + CharacterRules.maxHitPointsFor(hero, 3));
+		//Level 0 or negative is treated as 1: in 5e no character is level 0.
+		assertTrue(CharacterRules.maxHitPointsFor(hero, 0) == 12, "level 0 should be treated as level 1");
+		//And d8 is still the default for a class the table does not know.
 		JsonObject homebrew = new JsonObject();
 		homebrew.addProperty("characterClass", "Cazarrecompensas");
 		homebrew.addProperty("constitution", "14");
 		assertTrue(CharacterRules.maxHitPointsFor(homebrew, 1) == 10,
-			"una clase de la casa cae al d8 documentado, dio " + CharacterRules.maxHitPointsFor(homebrew, 1));
+			"a homebrew class falls to the documented d8, gave " + CharacterRules.maxHitPointsFor(homebrew, 1));
 
-		//Constitución penosa: nunca menos de 1 PG por nivel, aunque el modificador sea muy negativo.
+		//Wretched Constitution: never less than 1 HP per level, even if the modifier is very negative.
 		JsonObject frail = new JsonObject();
 		frail.addProperty("characterClass", "wizard");
-		frail.addProperty("constitution", "1"); //-5, peor que la media de cualquier dado
+		frail.addProperty("constitution", "1"); //-5, worse than the average of any die
 		assertTrue(CharacterRules.maxHitPointsFor(frail, 5) >= 5,
-			"cada nivel debería aportar al menos 1 PG, dio " + CharacterRules.maxHitPointsFor(frail, 5));
-		assertTrue(CharacterRules.maxHitPointsFor(frail, 1) >= 1, "los PG máximos nunca deberían quedar por debajo de 1");
+			"each level should contribute at least 1 HP, gave " + CharacterRules.maxHitPointsFor(frail, 5));
+		assertTrue(CharacterRules.maxHitPointsFor(frail, 1) >= 1, "max HP should never fall below 1");
 
-		//Hoja corrupta o vacía: valores por defecto, no excepción. Una hoja vieja puede tener cualquier cosa.
-		assertTrue(CharacterRules.maxHitPointsFor(new JsonObject(), 1) >= 1, "una hoja vacía no debería reventar el cálculo de PG");
-		assertTrue(CharacterRules.maxHitPointsFor(null, 3) >= 1, "una hoja null tampoco debería reventar");
+		//Corrupt or empty sheet: default values, not an exception. An old sheet can have anything in it.
+		assertTrue(CharacterRules.maxHitPointsFor(new JsonObject(), 1) >= 1, "an empty sheet should not blow up the HP calculation");
+		assertTrue(CharacterRules.maxHitPointsFor(null, 3) >= 1, "a null sheet should not blow up either");
 
-		//Nivel de una ficha sin jugador detrás: 1 por defecto, nunca 0.
-		assertTrue(CharacterRules.levelOf(new JsonObject()) == 1, "una ficha sin nivel fijado debería ser de nivel 1");
-		assertTrue(CharacterRules.levelOf(null) == 1, "una hoja null debería dar nivel 1, no reventar");
+		//Level of a sheet with no player behind it: 1 by default, never 0.
+		assertTrue(CharacterRules.levelOf(new JsonObject()) == 1, "a sheet with no level set should be level 1");
+		assertTrue(CharacterRules.levelOf(null) == 1, "a null sheet should give level 1, not blow up");
 		JsonObject leveled = new JsonObject();
 		leveled.addProperty("characterLevel", 7);
-		assertTrue(CharacterRules.levelOf(leveled) == 7, "debería respetar el nivel fijado por el DM");
+		assertTrue(CharacterRules.levelOf(leveled) == 7, "should respect the level set by the DM");
 
-		//Tabla de competencia de 5e: +2 (1-4), +3 (5-8), +4 (9-12), +5 (13-16), +6 (17-20). Entra en toda
-		//tirada de ataque y en toda CD de salvación, así que un escalón mal puesto desajusta el juego
-		//entero sin que falle nada. Antes esto no lo calculaba nadie: la hoja se quedaba en "2" para
-		//siempre pese a pintar el campo como automático.
+		//5e proficiency table: +2 (1-4), +3 (5-8), +4 (9-12), +5 (13-16), +6 (17-20). It enters into every
+		//attack roll and every save DC, so a badly placed step throws the whole game off
+		//without anything failing. Before, nobody calculated this: the sheet stayed at "2"
+		//forever despite drawing the field as automatic.
 		int[] esperado = {2, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6};
 		for (int level = 1; level <= 20; level++) {
 			assertTrue(CharacterRules.proficiencyBonusFor(level) == esperado[level],
-				"competencia de nivel " + level + ": " + CharacterRules.proficiencyBonusFor(level)
-					+ ", se esperaba " + esperado[level]);
+				"proficiency at level " + level + ": " + CharacterRules.proficiencyBonusFor(level)
+					+ ", expected " + esperado[level]);
 		}
-		//Fuera de rango no debe salirse de la tabla: una hoja corrupta con nivel 0 o 99 sigue jugando.
-		assertTrue(CharacterRules.proficiencyBonusFor(0) == 2, "nivel 0 debería caer en el escalón más bajo");
-		assertTrue(CharacterRules.proficiencyBonusFor(99) == 6, "un nivel disparatado debería topar en +6");
+		//Out of range must not fall off the table: a corrupt sheet with level 0 or 99 keeps playing.
+		assertTrue(CharacterRules.proficiencyBonusFor(0) == 2, "level 0 should fall on the lowest step");
+		assertTrue(CharacterRules.proficiencyBonusFor(99) == 6, "an absurd level should cap at +6");
 
-		//Los otros dos números que estaban congelados en su valor de nivel 1. Se comprueban los escalones y
-		//los bordes de cada uno, no una muestra: el fallo natural aquí es un límite corrido, no una fórmula
-		//rara — el bono de Furia sube a los 9 y 16, el dado de Inspiración a los 5, 10 y 15.
+		//The other two numbers that were frozen at their level 1 value. The steps and
+		//the edges of each are checked, not a sample: the natural failure here is a shifted limit, not an odd formula
+		//— the Rage bonus rises at 9 and 16, the Inspiration die at 5, 10 and 15.
 		assertTrue(CharacterRules.rageDamageBonusFor(1) == 2 && CharacterRules.rageDamageBonusFor(8) == 2,
-			"la Furia debería dar +2 hasta el nivel 8");
+			"Rage should give +2 up to level 8");
 		assertTrue(CharacterRules.rageDamageBonusFor(9) == 3 && CharacterRules.rageDamageBonusFor(15) == 3,
-			"+3 del 9 al 15");
+			"+3 from 9 to 15");
 		assertTrue(CharacterRules.rageDamageBonusFor(16) == 4 && CharacterRules.rageDamageBonusFor(20) == 4,
-			"+4 del 16 en adelante");
+			"+4 from 16 onwards");
 
-		assertTrue("1d6".equals(CharacterRules.bardicInspirationDieFor(4)), "Inspiración: d6 hasta el nivel 4");
-		assertTrue("1d8".equals(CharacterRules.bardicInspirationDieFor(5)), "d8 a partir del 5");
-		assertTrue("1d10".equals(CharacterRules.bardicInspirationDieFor(10)), "d10 a partir del 10");
-		assertTrue("1d12".equals(CharacterRules.bardicInspirationDieFor(15)), "d12 a partir del 15");
-		assertTrue("1d12".equals(CharacterRules.bardicInspirationDieFor(20)), "y no hay un d20 al llegar arriba");
+		assertTrue("1d6".equals(CharacterRules.bardicInspirationDieFor(4)), "Inspiration: d6 up to level 4");
+		assertTrue("1d8".equals(CharacterRules.bardicInspirationDieFor(5)), "d8 from 5");
+		assertTrue("1d10".equals(CharacterRules.bardicInspirationDieFor(10)), "d10 from 10");
+		assertTrue("1d12".equals(CharacterRules.bardicInspirationDieFor(15)), "d12 from 15");
+		assertTrue("1d12".equals(CharacterRules.bardicInspirationDieFor(20)), "and there is no d20 at the top");
 
-		//Castigo Divino: crece con el espacio que se gasta de verdad, con tope en 5d8.
+		//Divine Smite: grows with the slot actually spent, capped at 5d8.
 		CreatureType nadie = CreatureType.UNKNOWN;
-		assertTrue("2d8".equals(PaladinSmiteManager.diceForSlot(1, nadie)), "un espacio de nivel 1 son 2d8");
-		assertTrue("4d8".equals(PaladinSmiteManager.diceForSlot(3, nadie)), "uno de nivel 3, 4d8");
+		assertTrue("2d8".equals(PaladinSmiteManager.diceForSlot(1, nadie)), "a level 1 slot is 2d8");
+		assertTrue("4d8".equals(PaladinSmiteManager.diceForSlot(3, nadie)), "a level 3 one, 4d8");
 		assertTrue("5d8".equals(PaladinSmiteManager.diceForSlot(4, nadie)) && "5d8".equals(PaladinSmiteManager.diceForSlot(9, nadie)),
-			"y el tope del SRD son 5d8, por alto que sea el espacio");
+			"and the SRD cap is 5d8, however high the slot");
 
-		//Y un dado más contra no-muertos e inmundos, que va APARTE del tope: 5d8 topados + 1 son 6d8, no 5d8.
-		assertTrue("3d8".equals(PaladinSmiteManager.diceForSlot(1, CreatureType.UNDEAD)), "contra un no-muerto, 3d8 con un espacio de 1º");
-		assertTrue("3d8".equals(PaladinSmiteManager.diceForSlot(1, CreatureType.FIEND)), "y lo mismo contra un inmundo");
+		//And one more die against undead and fiends, which goes APART from the cap: capped 5d8 + 1 is 6d8, not 5d8.
+		assertTrue("3d8".equals(PaladinSmiteManager.diceForSlot(1, CreatureType.UNDEAD)), "against an undead, 3d8 with a 1st-level slot");
+		assertTrue("3d8".equals(PaladinSmiteManager.diceForSlot(1, CreatureType.FIEND)), "and the same against a fiend");
 		assertTrue("6d8".equals(PaladinSmiteManager.diceForSlot(9, CreatureType.UNDEAD)),
-			"el tope de 5d8 es el de la subida por espacio; el dado contra no-muertos se suma encima");
+			"the 5d8 cap is that of the per-slot scaling; the die against undead is added on top");
 		assertTrue("2d8".equals(PaladinSmiteManager.diceForSlot(1, CreatureType.BEAST)),
-			"un lobo no es un no-muerto por mucho que muerda");
-		//Un objetivo sin tipo (mob de otro mod, PNJ genérico) NO se lleva el extra: ninguna regla debería
-		//dispararse por adivinar.
-		assertTrue("2d8".equals(PaladinSmiteManager.diceForSlot(1, CreatureType.UNKNOWN)), "sin tipo, sin dado extra");
+			"a wolf is not undead however hard it bites");
+		//A target with no type (mob from another mod, generic NPC) does NOT get the extra: no rule should
+		//fire by guessing.
+		assertTrue("2d8".equals(PaladinSmiteManager.diceForSlot(1, CreatureType.UNKNOWN)), "no type, no extra die");
 
-		System.out.println("checkCharacterRules: OK, personajes múltiples, PNJ, hojas antiguas, PG, competencia, Furia, Inspiración y Castigo por nivel se comportan.");
+		System.out.println("checkCharacterRules: OK, multiple characters, NPCs, old sheets, HP, proficiency, Rage, Inspiration and Smite by level behave.");
 	}
 
 	private static void require(JsonObject obj, String... fields) {
 		for (String field : fields) {
-			if (!obj.has(field)) throw new AssertionError("Falta el campo \"" + field + "\" en " + obj);
+			if (!obj.has(field)) throw new AssertionError("Missing field \"" + field + "\" in " + obj);
 		}
 	}
 
 	private static void expect(String label, int actual, int expected) {
-		if (actual != expected) throw new AssertionError(label + ": se esperaban " + expected + " entradas, se cargaron " + actual);
+		if (actual != expected) throw new AssertionError(label + ": expected " + expected + " entries, loaded " + actual);
 	}
 
 	private static void assertTrue(boolean condition, String message) {

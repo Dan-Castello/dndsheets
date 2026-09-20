@@ -4,64 +4,62 @@ import java.text.Normalizer;
 import java.util.Locale;
 
 /**
- * <p>Los catorce tipos de criatura de 5e, más {@link #UNKNOWN} para lo que no declara ninguno.</p>
+ * <p>The fourteen 5e creature types, plus {@link #UNKNOWN} for anything that declares none.</p>
  *
- * <p>No es una etiqueta decorativa: hay reglas enteras que solo funcionan si se puede preguntar de qué es
- * algo. El Castigo Divino suma un dado contra no-muertos e inmundos ({@link PaladinSmiteManager}), y esa
- * regla estuvo sin escribir precisamente porque no había nada que consultar. Inmovilizar Persona, Hechizar
- * Persona o Dominar Bestia son la siguiente tanda: cada uno solo afecta a un tipo, y hasta ahora afectaban
- * a cualquier cosa.</p>
+ * <p>It's not a decorative label: whole rules only work if you can ask what something is. Divine Smite
+ * adds an extra die against undead and fiends ({@link PaladinSmiteManager}), and that rule went
+ * unwritten precisely because there was nothing to query. Hold Person, Charm Person or Dominate
+ * Beast are the next batch: each only affects one type, and until now they affected anything.</p>
  *
- * <p>Un enum y no una cadena suelta porque el conjunto está cerrado desde 2014 y no lo amplía nadie: con
- * una cadena, un {@code "no muerto"} sin guion en un pack de un DM sería un tipo nuevo silencioso que no
- * casa con ninguna regla. {@link #parse} normaliza acentos, mayúsculas, guiones y los nombres en inglés,
- * porque un DM que escribe {@code "Undead"} o {@code "No-Muerto"} está diciendo lo mismo.</p>
+ * <p>An enum and not a loose string because the set has been closed since 2014 and nobody extends it:
+ * with a string, a {@code "un dead"} spaced out in a DM's pack would be a silent new type that
+ * matches no rule. {@link #parse} normalizes accents, casing, hyphens and the English names,
+ * because a DM who writes {@code "Undead"} or {@code "No-Muerto"} (legacy) is saying the same thing.</p>
  *
- * <p>Un tipo desconocido <b>no</b> es un error: un mob de otro mod, un PNJ genérico o un pack anterior a
- * este campo siguen funcionando exactamente como antes. Lo único que pierden es acceso a las reglas que
- * preguntan por el tipo, y ese es el comportamiento correcto — ninguna regla debería dispararse por
- * adivinar.</p>
+ * <p>An unknown type is <b>not</b> an error: a mob from another mod, a generic NPC, or a pack from
+ * before this field existed all keep working exactly as before. The only thing they lose is access to
+ * the rules that ask for the type, and that's the correct behavior — no rule should fire on a guess.</p>
  */
 public enum CreatureType {
 	UNKNOWN(""),
-	ABERRATION("aberracion"),
-	BEAST("bestia"),
+	ABERRATION("aberration"),
+	BEAST("beast"),
 	CELESTIAL("celestial"),
-	CONSTRUCT("automata"),
+	CONSTRUCT("construct"),
 	DRAGON("dragon"),
 	ELEMENTAL("elemental"),
-	FEY("hada"),
-	FIEND("inmundo"),
-	GIANT("gigante"),
-	HUMANOID("humanoide"),
-	MONSTROSITY("monstruosidad"),
-	OOZE("cieno"),
-	PLANT("planta"),
-	UNDEAD("nomuerto");
+	FEY("fey"),
+	FIEND("fiend"),
+	GIANT("giant"),
+	HUMANOID("humanoid"),
+	MONSTROSITY("monstrosity"),
+	OOZE("ooze"),
+	PLANT("plant"),
+	UNDEAD("undead");
 
-	/** Cómo se escribe en el JSON de contenido, ya normalizado (sin acentos, sin guiones, en minúscula). */
+	/** How it's written in content JSON, already normalized (no accents, no hyphens, lowercase). */
 	private final String key;
 
-	//Los mismos tipos en inglés: el SRD original está en inglés y un DM puede copiar de ahí. Se aceptan
-	//porque rechazarlos no protege de nada — el resultado sería un monstruo sin tipo, en silencio.
-	private static final String[] ENGLISH = {
-		"", "aberration", "beast", "celestial", "construct", "dragon", "elemental", "fey", "fiend",
-		"giant", "humanoid", "monstrosity", "ooze", "plant", "undead",
+	//The legacy Spanish names, still accepted so packs written before the English switch keep loading (and
+	//because a DM may still write them). Rejecting them protects nothing — the result would be a monster with no type, silently.
+	private static final String[] LEGACY_SPANISH = {
+		"", "aberracion", "bestia", "celestial", "automata", "dragon", "elemental", "hada", "inmundo",
+		"gigante", "humanoide", "monstruosidad", "cieno", "planta", "nomuerto",
 	};
+
 
 	CreatureType(String key) {
 		this.key = key;
 	}
 
-	/** ¿Le suma su dado extra el Castigo Divino? En 5e: no-muertos e inmundos. */
+	/** Does Divine Smite add its extra die against it? In 5e: undead and fiends. */
 	public boolean isSmiteFavoredTarget() {
 		return this == UNDEAD || this == FIEND;
 	}
 
 	/**
-	 * <p>Lee una lista de tipos del JSON (p. ej. {@code ["no-muerto", "autómata"]}). Los que no se
-	 * reconozcan se descartan: una palabra mal escrita se lleva por delante su propia entrada, no la lista
-	 * entera ni el conjuro.</p>
+	 * <p>Reads a list of types from JSON (e.g. {@code ["undead", "construct"]}). Unrecognized ones are
+	 * discarded: a misspelled word only takes down its own entry, not the whole list or the spell.</p>
 	 */
 	public static java.util.Set<CreatureType> parseAll(com.google.gson.JsonArray raw) {
 		java.util.Set<CreatureType> types = java.util.EnumSet.noneOf(CreatureType.class);
@@ -74,9 +72,9 @@ public enum CreatureType {
 	}
 
 	/**
-	 * <p>Lee un tipo del JSON. Devuelve {@link #UNKNOWN} para null, vacío o cualquier cosa que no case:
-	 * un tipo mal escrito deja al monstruo sin tipo, que es como estaban todos hasta ahora, en vez de
-	 * tumbar la carga del pack entero por una palabra.</p>
+	 * <p>Reads a type from JSON. Returns {@link #UNKNOWN} for null, empty, or anything that doesn't match:
+	 * a misspelled type leaves the monster without a type, which is how they all were until now, instead
+	 * of bringing down the whole pack's load over one word.</p>
 	 */
 	public static CreatureType parse(String raw) {
 		if (raw == null) return UNKNOWN;
@@ -84,25 +82,34 @@ public enum CreatureType {
 		if (normalized.isEmpty()) return UNKNOWN;
 
 		for (CreatureType type : values()) {
-			if (type != UNKNOWN && (type.key.equals(normalized) || ENGLISH[type.ordinal()].equals(normalized))) return type;
+			if (type != UNKNOWN && (type.key.equals(normalized) || LEGACY_SPANISH[type.ordinal()].equals(normalized))) return type;
 		}
 		return UNKNOWN;
 	}
 
-	/** Cómo se escribe en el JSON, en español y con su acento. Vacío para {@link #UNKNOWN}. */
+	/** English name to display to the player/DM. Empty for {@link #UNKNOWN}. */
 	public String label() {
 		return switch (this) {
 			case UNKNOWN -> "";
-			case ABERRATION -> "aberración";
-			case CONSTRUCT -> "autómata";
-			case DRAGON -> "dragón";
-			case UNDEAD -> "no-muerto";
-			default -> key;
+			case ABERRATION -> "Aberration";
+			case BEAST -> "Beast";
+			case CELESTIAL -> "Celestial";
+			case CONSTRUCT -> "Construct";
+			case DRAGON -> "Dragon";
+			case ELEMENTAL -> "Elemental";
+			case FEY -> "Fey";
+			case FIEND -> "Fiend";
+			case GIANT -> "Giant";
+			case HUMANOID -> "Humanoid";
+			case MONSTROSITY -> "Monstrosity";
+			case OOZE -> "Ooze";
+			case PLANT -> "Plant";
+			case UNDEAD -> "Undead";
 		};
 	}
 
-	//Acentos fuera y guiones/espacios fuera: "no-muerto", "No Muerto" y "nomuerto" son la misma palabra
-	//escrita por tres personas distintas, y ninguna de las tres está equivocada.
+	//Accents stripped and hyphens/spaces stripped: "undead", "Un-dead" and "UNDEAD" are the same
+	//word written by three different people, and none of the three is wrong.
 	private static String normalize(String raw) {
 		String stripped = Normalizer.normalize(raw.trim().toLowerCase(Locale.ROOT), Normalizer.Form.NFD)
 			.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");

@@ -21,36 +21,36 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * <p>Trasfondos del SRD 5e: mismo molde que {@link RaceRegistry} (registro en memoria, cargado en
- * caliente desde JSON, sin motor genérico). A diferencia de la raza, el trasfondo SÍ tiene un mecanismo
- * ya existente y automatizable: las dos competencias de habilidad (ver {@link RollIndex#setSkillProficiency}).
- * El rasgo del trasfondo (Refugio del Fiel, Identidad Falsa...) es narrativo en el SRD — se concede como
- * {@link TraitRegistry} descriptivo, igual que los rasgos raciales.</p>
+ * <p>SRD 5e backgrounds: same mold as {@link RaceRegistry} (in-memory registry, hot-loaded from JSON,
+ * no generic engine). Unlike race, background DOES have an existing, automatable mechanic: the two
+ * skill proficiencies (see {@link RollIndex#setSkillProficiency}). The background's feature (Shelter of
+ * the Faithful, False Identity...) is narrative in the SRD — it's granted as a descriptive
+ * {@link TraitRegistry} entry, same as racial traits.</p>
  *
- * <p>Deliberadamente NO automatiza equipo/herramientas/idiomas iniciales del trasfondo: no hay ningún
- * consumidor de eso en el motor hoy (a diferencia de las competencias, que ya las lee todo el sistema de
- * tiradas), así que sería mecánica sin nadie que la use — mismo criterio de {@code TraitRegistry}.</p>
+ * <p>Deliberately does NOT automate the background's starting equipment/tools/languages: nothing in the
+ * engine consumes that today (unlike proficiencies, which the whole roll system already reads), so it
+ * would be mechanics with no one using them — same criterion as {@code TraitRegistry}.</p>
  */
 @Mod.EventBusSubscriber
 public class BackgroundRegistry {
 	public record Background(String id, String name, int skillA, int skillB, List<String> traits) {}
 
-	private static final NamedRegistry<Background> REGISTRY = new NamedRegistry<>("trasfondo", Background::id);
+	private static final NamedRegistry<Background> REGISTRY = new NamedRegistry<>("background", Background::id);
 
 	static {
-		register(new Background("acolyte", "Acólito", 10, 8, List.of("dndsheets_species:shelter_of_the_faithful")));
-		register(new Background("charlatan", "Charlatán", 14, 2, List.of("dndsheets_species:false_identity")));
+		register(new Background("acolyte", "Acolyte", 10, 8, List.of("dndsheets_species:shelter_of_the_faithful")));
+		register(new Background("charlatan", "Charlatan", 14, 2, List.of("dndsheets_species:false_identity")));
 		register(new Background("criminal", "Criminal", 14, 3, List.of("dndsheets_species:criminal_contact")));
-		register(new Background("entertainer", "Artista", 1, 16, List.of("dndsheets_species:by_popular_demand")));
-		register(new Background("folk_hero", "Héroe del pueblo", 9, 13, List.of("dndsheets_species:rustic_hospitality")));
-		register(new Background("guild_artisan", "Artesano gremial", 10, 17, List.of("dndsheets_species:guild_membership")));
-		register(new Background("hermit", "Ermitaño", 11, 8, List.of("dndsheets_species:discovery")));
+		register(new Background("entertainer", "Entertainer", 1, 16, List.of("dndsheets_species:by_popular_demand")));
+		register(new Background("folk_hero", "Folk Hero", 9, 13, List.of("dndsheets_species:rustic_hospitality")));
+		register(new Background("guild_artisan", "Guild Artisan", 10, 17, List.of("dndsheets_species:guild_membership")));
+		register(new Background("hermit", "Hermit", 11, 8, List.of("dndsheets_species:discovery")));
 		register(new Background("noble", "Noble", 5, 17, List.of("dndsheets_species:position_of_privilege")));
-		register(new Background("outlander", "Forastero", 0, 13, List.of("dndsheets_species:wanderer")));
-		register(new Background("sage", "Sabio", 4, 5, List.of("dndsheets_species:researcher")));
-		register(new Background("sailor", "Marinero", 0, 12, List.of("dndsheets_species:ships_passage")));
-		register(new Background("soldier", "Soldado", 0, 15, List.of("dndsheets_species:military_rank")));
-		register(new Background("urchin", "Golfillo", 2, 3, List.of("dndsheets_species:city_secrets")));
+		register(new Background("outlander", "Outlander", 0, 13, List.of("dndsheets_species:wanderer")));
+		register(new Background("sage", "Sage", 4, 5, List.of("dndsheets_species:researcher")));
+		register(new Background("sailor", "Sailor", 0, 12, List.of("dndsheets_species:ships_passage")));
+		register(new Background("soldier", "Soldier", 0, 15, List.of("dndsheets_species:military_rank")));
+		register(new Background("urchin", "Urchin", 2, 3, List.of("dndsheets_species:city_secrets")));
 	}
 
 	public static void register(Background background) {
@@ -65,7 +65,7 @@ public class BackgroundRegistry {
 		return REGISTRY.ids();
 	}
 
-	private static final JsonRegistryLoader<Background> LOADER = new JsonRegistryLoader<>("trasfondo", BackgroundRegistry::parse, BackgroundRegistry::register);
+	private static final JsonRegistryLoader<Background> LOADER = new JsonRegistryLoader<>("background", BackgroundRegistry::parse, BackgroundRegistry::register);
 
 	public static int loadFile(Path file) throws IOException {
 		return LOADER.loadFile(file);
@@ -81,7 +81,7 @@ public class BackgroundRegistry {
 		return new Background(id, name, skillA, skillB, traits);
 	}
 
-	//--- Sheet: aplicar/reemplazar el trasfondo elegido ---
+	//--- Sheet: apply/replace the chosen background ---
 
 	public enum ApplyOutcome {APPLIED, NO_CHANGE, UNKNOWN_BACKGROUND}
 
@@ -110,7 +110,7 @@ public class BackgroundRegistry {
 		return new ApplyResult(ApplyOutcome.APPLIED, background);
 	}
 
-	//Homebrew opcional: mismo patrón que RaceRegistry.onServerStarting sobre dndsheets/backgrounds/*.json.
+	//Optional homebrew: same pattern as RaceRegistry.onServerStarting, over dndsheets/backgrounds/*.json.
 	@SubscribeEvent
 	public static void onServerStarting(ServerStartingEvent event) {
 		if (!Files.isDirectory(DndPaths.BACKGROUNDS_DIR)) return;
@@ -119,11 +119,11 @@ public class BackgroundRegistry {
 				try {
 					loadFile(file);
 				} catch (IOException | RuntimeException e) {
-					net.hawthorn.dndsheets.DndsheetsMod.LOGGER.warn("dndsheets_species: no pude cargar {}: {}", file, e.toString());
+					net.hawthorn.dndsheets.DndsheetsMod.LOGGER.warn("dndsheets_species: could not load {}: {}", file, e.toString());
 				}
 			}
 		} catch (IOException e) {
-			net.hawthorn.dndsheets.DndsheetsMod.LOGGER.warn("dndsheets_species: no pude listar {}: {}", DndPaths.BACKGROUNDS_DIR, e.toString());
+			net.hawthorn.dndsheets.DndsheetsMod.LOGGER.warn("dndsheets_species: could not list {}: {}", DndPaths.BACKGROUNDS_DIR, e.toString());
 		}
 	}
 }

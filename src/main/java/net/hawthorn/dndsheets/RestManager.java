@@ -23,15 +23,15 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * <p>Descansar es una votación, no un botón unilateral: usar el Kit de Descanso
- * ({@code {dndsheets:{restKit:true}}}) le pide al usuario que elija corto/largo, y esa propuesta se
- * manda a todos los jugadores conectados. Solo si TODOS aceptan se aplica el descanso a todo el mundo;
- * si alguien rechaza, se cancela. Solo puede haber una votación pendiente a la vez.</p>
+ * <p>Resting is a vote, not a unilateral button: using the Rest Kit
+ * ({@code {dndsheets:{restKit:true}}}) asks the user to choose short/long, and that proposal is
+ * sent to every connected player. Only if EVERYONE accepts does the rest apply to everyone;
+ * if anyone rejects, it's cancelled. Only one vote can be pending at a time.</p>
  */
 @Mod.EventBusSubscriber
 public class RestManager {
 	public enum RestType {
-		SHORT("corto"), LONG("largo");
+		SHORT("short"), LONG("long");
 		public final String label;
 		RestType(String label) { this.label = label; }
 	}
@@ -40,27 +40,27 @@ public class RestManager {
 	private static String pendingProposerName = null;
 	private static final Set<java.util.UUID> pendingVoters = new HashSet<>();
 	private static final Set<java.util.UUID> accepted = new HashSet<>();
-	//Dónde se usó el Kit de Descanso: la votación (y el descanso en sí) se acota a quien esté cerca de
-	//verdad en ese momento — antes se le preguntaba, y se le aplicaba el descanso, a CUALQUIERA conectado
-	//al servidor, sin importar si estaba a un bloque o en otro continente del mapa.
+	//Where the Rest Kit was used: the vote (and the rest itself) is scoped to whoever is actually
+	//nearby at that moment — previously ANY connected player was asked, and had the rest applied to
+	//them, regardless of whether they were one block away or on another continent of the map.
 	private static Vec3 pendingOrigin = null;
 
-	//Sube en cada propuesta nueva; el timeout y el listener de desconexión lo capturan al programarse y
-	//solo actúan si sigue siendo la MISMA propuesta cuando les toca correr — sin esto, cancelar/resolver
-	//una propuesta y que otra arranque enseguida podía hacer que el timeout de la vieja cancelara la nueva.
+	//Incremented on every new proposal; the timeout and the disconnect listener capture it when scheduled
+	//and only act if it's still the SAME proposal by the time they run — without this, cancelling/resolving
+	//a proposal and having another one start right away could let the old timeout cancel the new one.
 	private static int proposalToken = 0;
-	private static final int VOTE_TIMEOUT_TICKS = 3600; //3 minutos reales, mismo patrón de queueServerWork que ya usa BarbarianRageManager.
+	private static final int VOTE_TIMEOUT_TICKS = 3600; //3 real minutes, same queueServerWork pattern already used by BarbarianRageManager.
 
-	//Se activa desde AbilityItemDispatcher (clic derecho con ítem/bloque/entidad, funciona igual en los
-	//tres casos porque un ítem de bloque como el reloj mirando a una pared dispara RightClickBlock, no
-	//RightClickItem) en vez de suscribirse a los 3 eventos de interacción por separado.
+	//Triggered from AbilityItemDispatcher (right-click with item/block/entity, works the same in all
+	//three cases because a block item like the clock, when looking at a wall, fires RightClickBlock
+	//instead of RightClickItem) rather than subscribing to the 3 interaction events separately.
 	static void tryOpenRestChoice(PlayerInteractEvent event) {
 		event.setCanceled(true);
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
-		//Un descanso corto/largo resetea PG/espacios de golpe — en mitad de un combate por turnos eso es un
-		//reset no deseado (curar gratis a mitad de pelea), no una decisión legítima de mesa. Se bloquea acá,
-		//antes de abrir siquiera el selector corto/largo, en vez de solo en propose() para no hacerle elegir
-		//un tipo de descanso que de todos modos se va a rechazar.
+		//A short/long rest resets HP/spell slots — in the middle of turn-based combat that's an
+		//unwanted reset (free healing mid-fight), not a legitimate table decision. It's blocked here,
+		//before even opening the short/long selector, instead of only in propose(), so the player
+		//isn't made to pick a rest type that's going to be rejected anyway.
 		if (TurnManager.isActive()) {
 			player.sendSystemMessage(Component.translatable("chat.dndsheets.rest.blocked_in_combat").withStyle(ChatFormatting.RED));
 			return;
@@ -68,8 +68,8 @@ public class RestManager {
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new ScreenActionMessage(ScreenActionMessage.Action.REST_CHOICE_OPEN));
 	}
 
-	//Reloj en vez de un ítem de bloque (como la fogata): un ítem de bloque dispara RightClickBlock en vez
-	//de RightClickItem en cuanto miras a algo colocable, lo que complicaba detectar el clic de forma fiable.
+	//A clock instead of a block item (like the campfire): a block item fires RightClickBlock instead
+	//of RightClickItem as soon as you're looking at something placeable, which made detecting the click reliably harder.
 	public static ItemStack buildRestKitStack() {
 		return AbilityItem.build(ItemLook.REST_KIT, "restKit", Component.translatable("chat.dndsheets.rest.item_name"),
 			Component.translatable("chat.dndsheets.rest.lore_use").withStyle(ChatFormatting.GRAY),
@@ -77,16 +77,16 @@ public class RestManager {
 	}
 
 	/**
-	 * <p>Llamado al recibir un {@code RestProposeMessage}: el usuario del kit eligió corto o largo.
-	 * Se manda la propuesta a todos los jugadores conectados y se cuenta al proponente como un sí.</p>
+	 * <p>Called on receiving a {@code RestProposeMessage}: the kit's user chose short or long.
+	 * The proposal is sent to every connected player and the proposer is counted as a yes.</p>
 	 */
 	public static void propose(ServerPlayer proposer, RestType type) {
 		MinecraftServer server = proposer.getServer();
 		if (server == null) return;
 
-		//Guardado de verdad, no solo cosmético: tryOpenRestChoice ya corta esto antes de que se pueda elegir
-		//corto/largo, pero un cliente que se saltara ese paso (o el modo turnos arrancando justo después de
-		//abrir el selector) no debería poder colar la propuesta igual.
+		//A real guard, not just cosmetic: tryOpenRestChoice already cuts this off before short/long can
+		//be chosen, but a client that skipped that step (or turn mode starting right after the selector
+		//opens) shouldn't be able to sneak the proposal through anyway.
 		if (TurnManager.isActive()) {
 			proposer.sendSystemMessage(Component.translatable("chat.dndsheets.rest.blocked_in_combat").withStyle(ChatFormatting.RED));
 			return;
@@ -113,21 +113,21 @@ public class RestManager {
 		for (ServerPlayer player : nearby) {
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), RestMessage.voteOpen(proposerName, type.label));
 		}
-		notifyVoters(server, Component.translatable("chat.dndsheets.rest.proposed", proposerName, type.label).withStyle(ChatFormatting.AQUA));
+		notifyVoters(server, Component.translatable("chat.dndsheets.rest.proposed", proposerName, Component.translatable("gui.dndsheets.rest_type." + type.label)).withStyle(ChatFormatting.AQUA));
 
-		//Sin esto, un jugador que nunca responde (sin desconectarse, solo ignora el prompt) bloqueaba
-		//los descansos de todo el servidor para siempre — no solo el caso de desconexión, ver onPlayerLogout.
+		//Without this, a player who never responds (without disconnecting, just ignoring the prompt) would
+		//block rests for the entire server forever — not only the disconnect case, see onPlayerLogout.
 		DndsheetsMod.queueServerWork(VOTE_TIMEOUT_TICKS, () -> {
 			if (pendingType == null || token != proposalToken) return;
 			notifyVoters(server, Component.translatable("chat.dndsheets.rest.timed_out").withStyle(ChatFormatting.RED));
 			clear(server);
 		});
 
-		registerVote(proposer, true); //El proponente ya vota que sí, por proponerlo.
+		registerVote(proposer, true); //The proposer already votes yes, by proposing it.
 	}
 
-	//Mismo radio que ya usa el modo turnos para "quién participa" (TurnManager.DEFAULT_RADIUS) —
-	//consistente con el resto del mod para decidir a quién le concierne una acción puntual como esta.
+	//Same radius that turn mode already uses for "who's participating" (TurnManager.DEFAULT_RADIUS) —
+	//consistent with the rest of the mod for deciding who's concerned by a one-off action like this.
 	private static List<ServerPlayer> nearbyPlayers(MinecraftServer server, Vec3 origin) {
 		double radiusSq = TurnManager.DEFAULT_RADIUS * TurnManager.DEFAULT_RADIUS;
 		return server.getPlayerList().getPlayers().stream()
@@ -135,9 +135,9 @@ public class RestManager {
 			.toList();
 	}
 
-	//Manda un mensaje solo a quien de verdad forma parte de ESTA votación (pendingVoters), no a todo el
-	//servidor — reusado por propose/registerVote/resolveRest para las 4 líneas de chat del ciclo de vida
-	//de una propuesta (propuesta, rechazo, expiración, descanso completo).
+	//Sends a message only to whoever is actually part of THIS vote (pendingVoters), not the whole
+	//server — reused by propose/registerVote/resolveRest for the 4 chat lines of a proposal's
+	//lifecycle (proposed, rejected, expired, rest completed).
 	private static void notifyVoters(MinecraftServer server, Component message) {
 		for (UUID uuid : pendingVoters) {
 			ServerPlayer player = server.getPlayerList().getPlayer(uuid);
@@ -145,25 +145,25 @@ public class RestManager {
 		}
 	}
 
-	//Sin esto, un jugador que se desconecta (crash, cierre) antes de votar dejaba pendingVoters con un
-	//UUID que jamás iba a aceptar: accepted nunca podía igualarlo, y pendingType != null bloqueaba
-	//cualquier propuesta nueva — nadie en el servidor podía volver a descansar hasta reiniciar.
+	//Without this, a player disconnecting (crash, closing the game) before voting would leave pendingVoters
+	//with a UUID that would never accept: accepted could never match it, and pendingType != null would
+	//block any new proposal — nobody on the server could rest again until a restart.
 	@SubscribeEvent
 	public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
 		if (pendingType == null || !(event.getEntity() instanceof ServerPlayer player)) return;
 		UUID uuid = player.getUUID();
-		if (!pendingVoters.remove(uuid)) return; //No formaba parte de esta votación.
+		if (!pendingVoters.remove(uuid)) return; //Wasn't part of this vote.
 
 		accepted.remove(uuid);
-		if (pendingVoters.isEmpty()) { clear(player.getServer()); return; } //Nadie queda a quien pedirle el descanso.
+		if (pendingVoters.isEmpty()) { clear(player.getServer()); return; } //No one left to ask for the rest.
 		if (accepted.containsAll(pendingVoters)) resolveRest(player.getServer());
 	}
 
-	//Simétrico a onPlayerLogout: sin esto, alguien que se conecta mientras hay una votación pendiente
-	//nunca era preguntado, pero resolveRest le aplicaba el descanso igual en cuanto el resto aceptaba —
-	//se le suma a la votación, como a cualquier otro, y se le manda el mismo prompt que ya recibieron los
-	//demás. Solo si está cerca de dónde se propuso: alguien que se conecta lejos de esa zona no debería
-	//verse arrastrado a una votación de un grupo con el que ni siquiera está jugando.
+	//Symmetric to onPlayerLogout: without this, someone connecting while a vote is pending was
+	//never asked, but resolveRest applied the rest to them anyway as soon as everyone else accepted —
+	//they're added to the vote, like anyone else, and sent the same prompt the others already got.
+	//Only if they're near where it was proposed: someone connecting far from that area shouldn't
+	//get dragged into a vote for a group they aren't even playing with.
 	@SubscribeEvent
 	public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
 		if (pendingType == null || !(event.getEntity() instanceof ServerPlayer player)) return;
@@ -173,7 +173,7 @@ public class RestManager {
 	}
 
 	/**
-	 * <p>Llamado al recibir un {@code RestVoteResponseMessage}.</p>
+	 * <p>Called on receiving a {@code RestVoteResponseMessage}.</p>
 	 */
 	public static void registerVote(ServerPlayer player, boolean accept) {
 		if (pendingType == null || !pendingVoters.contains(player.getUUID())) return;
@@ -198,14 +198,14 @@ public class RestManager {
 	private static void resolveRest(MinecraftServer server) {
 		if (server == null) return;
 		RestType type = pendingType;
-		//Solo a quien de verdad votó (pendingVoters), no a todo el servidor: antes esto le reseteaba PG/
-		//espacios de conjuro a CUALQUIERA conectado en cuanto el grupo que sí estaba descansando terminaba
-		//de aceptar, así estuviera a medio mapa de distancia sin haber sido ni siquiera preguntado.
+		//Only to whoever actually voted (pendingVoters), not the whole server: this used to reset HP/
+		//spell slots for ANY connected player as soon as the group that was actually resting finished
+		//accepting, even if they were half the map away and had never even been asked.
 		for (UUID uuid : pendingVoters) {
 			ServerPlayer player = server.getPlayerList().getPlayer(uuid);
 			if (player != null) applyRest(player, type);
 		}
-		notifyVoters(server, Component.translatable("chat.dndsheets.rest.completed", type.label).withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
+		notifyVoters(server, Component.translatable("chat.dndsheets.rest.completed", Component.translatable("gui.dndsheets.rest_type." + type.label)).withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));
 		clear(server);
 	}
 
@@ -225,16 +225,16 @@ public class RestManager {
 			WizardArcaneRecoveryManager.onShortRest(player, sheet);
 			WarlockPactMagicManager.onShortRest(player, sheet);
 		}
-		FighterSecondWindManager.resetOnRest(player); //5e lo recupera con cualquiera de los dos descansos, no solo el largo.
-		ClericTurnUndeadManager.resetOnRest(player);  //Canalizar Divinidad, igual: se recupera con el descanso corto.
+		FighterSecondWindManager.resetOnRest(player); //5e recovers it with either kind of rest, not just the long one.
+		ClericTurnUndeadManager.resetOnRest(player);  //Channel Divinity, same: recovers on a short rest.
 
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
 	}
 
-	//"server" puede ser null (p.ej. un jugador desconectándose a mitad de shutdown); en ese caso simplemente
-	//no hay a quién avisar. Antes de esto, RestVoteScreen.close() existía pero nadie lo llamaba nunca: quien
-	//no había votado todavía se quedaba con una pantalla de "Aceptar/Rechazar" muerta para una votación ya
-	//resuelta/expirada/cancelada, sin ningún indicio de que ya no servía de nada.
+	//"server" can be null (e.g. a player disconnecting mid-shutdown); in that case there's simply
+	//no one to notify. Before this, RestVoteScreen.close() existed but nothing ever called it: whoever
+	//hadn't voted yet was left with a dead "Accept/Reject" screen for a vote that was already
+	//resolved/expired/cancelled, with no indication it was no longer relevant.
 	private static void clear(MinecraftServer server) {
 		if (server != null) {
 			for (UUID uuid : pendingVoters) {

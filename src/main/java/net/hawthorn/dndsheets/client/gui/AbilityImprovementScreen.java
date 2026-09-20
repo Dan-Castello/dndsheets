@@ -11,15 +11,16 @@ import net.minecraft.network.chat.Component;
 import com.google.gson.JsonObject;
 
 /**
- * <p>Mejora de Puntuación de Característica: la elección que da un nivel 4, 8, 12, 16 o 19.</p>
+ * <p>Ability Score Improvement: the choice granted at level 4, 8, 12, 16, or 19.</p>
  *
- * <p>Un solo panel con las seis características y dos modos, en vez de un asistente por pasos: la elección
- * de 5e es "+2 a una <b>o</b> +1 a dos", y partirla en pantallas obligaría a volver atrás para cambiar de
- * idea sobre algo que cabe entero delante de los ojos.</p>
+ * <p>A single panel with the six abilities and two modes, instead of a step-by-step wizard: the 5e
+ * choice is "+2 to one <b>or</b> +1 to two", and splitting it across screens would force going back to
+ * change your mind about something that fits entirely in front of your eyes.</p>
  *
- * <p>Cada botón enseña la puntuación actual y a cuánto subiría, porque la decisión no se toma sobre el
- * nombre de la característica sino sobre si el modificador cruza un número par — subir Destreza de 15 a 16
- * da +1 al modificador y de 16 a 17 no da nada, y eso no se ve si la pantalla solo dice "Destreza".</p>
+ * <p>Each button shows the current score and what it would rise to, because the decision isn't made on
+ * the ability's name but on whether the modifier crosses an even number — raising Dexterity from 15 to
+ * 16 gives +1 to the modifier and 16 to 17 gives nothing, and that isn't visible if the screen only says
+ * "Dexterity".</p>
  */
 public class AbilityImprovementScreen extends ModalDialogScreen {
 	private static final int WIDTH = 280;
@@ -27,9 +28,9 @@ public class AbilityImprovementScreen extends ModalDialogScreen {
 	private static final int MAX_ABILITY = 20;
 
 	private static final String[] KEYS = {"strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"};
-	private static final String[] LABELS = {"Fuerza", "Destreza", "Constitución", "Inteligencia", "Sabiduría", "Carisma"};
+	private static final String[] SHORT = {"str", "dex", "con", "int", "wis", "cha"};
 
-	/** null = todavía no eligió la primera; con una elegida, la pantalla pide la segunda o confirma el +2. */
+	/** null = hasn't picked the first one yet; with one picked, the screen asks for the second or confirms the +2. */
 	private String firstPick;
 	private final Button[] abilityButtons = new Button[KEYS.length];
 
@@ -51,8 +52,8 @@ public class AbilityImprovementScreen extends ModalDialogScreen {
 				Component.literal(labelFor(index)), button -> pick(KEYS[index]));
 		}
 
-		//"+2 a la elegida" solo tiene sentido con una ya elegida; hasta entonces el botón está ahí pero
-		//apagado, en vez de aparecer de golpe y mover el resto de la pantalla bajo el ratón.
+		//"+2 to the chosen one" only makes sense once one is already chosen; until then the button is there
+		//but disabled, instead of popping up suddenly and shifting the rest of the screen under the cursor.
 		Button confirm = addModalButton(16, 116, 248, 20, Component.translatable("gui.dndsheets.ability_improvement.confirm"), button -> {
 			if (firstPick == null) return;
 			send(firstPick, "");
@@ -60,8 +61,9 @@ public class AbilityImprovementScreen extends ModalDialogScreen {
 		confirm.active = false;
 		this.confirmButton = confirm;
 
-		//La dote es la OTRA cara de esta misma elección en 5e ("+2 a una, +1 a dos, o una dote"), así que
-		//va en esta pantalla y no en otra: separarlas dejaría al jugador eligiendo sin ver la alternativa.
+		//The feat is the OTHER side of this same choice in 5e ("+2 to one, +1 to two, or a feat"), so it
+		//belongs on this screen and not another: separating them would leave the player choosing without
+		//seeing the alternative.
 		addModalButton(16, 140, 248, 20, Component.translatable("gui.dndsheets.ability_improvement.take_feat"), button -> {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(
 				new net.hawthorn.dndsheets.network.BrowseActionMessage(
@@ -80,8 +82,8 @@ public class AbilityImprovementScreen extends ModalDialogScreen {
 			return;
 		}
 		if (firstPick.equals(ability)) {
-			//Volver a pulsar la misma la deselecciona: es la salida obvia de "me equivoqué", y sin ella
-			//habría que cerrar la pantalla y esperar a que el servidor la reabra.
+			//Clicking the same one again deselects it: it's the obvious way out of "I made a mistake", and
+			//without it you'd have to close the screen and wait for the server to reopen it.
 			firstPick = null;
 			refresh();
 			return;
@@ -97,8 +99,8 @@ public class AbilityImprovementScreen extends ModalDialogScreen {
 	private void refresh() {
 		for (int i = 0; i < KEYS.length; i++) {
 			abilityButtons[i].setMessage(Component.literal(labelFor(i)));
-			//Una característica ya en 20 no puede subir: se deja visible y apagada para que se vea POR QUÉ
-			//no es una opción, en lugar de desaparecer y dejar un hueco sin explicación.
+			//An ability already at 20 can't be raised: it's left visible and disabled so it's clear WHY it
+			//isn't an option, instead of disappearing and leaving an unexplained gap.
 			abilityButtons[i].active = scoreOf(KEYS[i]) < MAX_ABILITY;
 		}
 		if (confirmButton != null) confirmButton.active = firstPick != null;
@@ -109,7 +111,7 @@ public class AbilityImprovementScreen extends ModalDialogScreen {
 		String marca = KEYS[index].equals(firstPick) ? "> " : "";
 		int subida = firstPick == null ? 2 : 1;
 		int nuevo = Math.min(MAX_ABILITY, score + subida);
-		return marca + LABELS[index] + " " + score + " → " + nuevo;
+		return marca + net.minecraft.client.resources.language.I18n.get("gui.dndsheets.character_sheet.ability_" + SHORT[index]) + " " + score + " → " + nuevo;
 	}
 
 	private static int scoreOf(String ability) {

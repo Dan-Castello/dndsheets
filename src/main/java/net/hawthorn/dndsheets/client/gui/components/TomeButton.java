@@ -9,22 +9,22 @@ import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.Mth;
 
 /**
- * <p>Fila de lista con la identidad del mod: una tira de pergamino sobre el cuero del panel, con filete
- * de latón a la izquierda y biselado de Minecraft. Reemplaza al botón gris de piedra de vanilla, que
- * sobre un panel de cuero se lee como un widget prestado de otra interfaz.</p>
+ * <p>List row with the mod's identity: a strip of parchment over the panel's leather, with a brass
+ * rule on the left and Minecraft-style beveling. Replaces vanilla's stone-gray button, which
+ * on a leather panel reads as a widget borrowed from another interface.</p>
  *
- * <p>Vive aquí y no en cada pantalla porque {@code ListPickerScreen.addRow} y {@code SmallFormScreen}
- * son los dos únicos sitios que crean filas: cambiarlo aquí repinta por dentro las más de cuarenta
- * pantallas que cuelgan de ellos, igual que {@code GuiStyle} hizo con sus marcos.</p>
+ * <p>Lives here instead of in each screen because {@code ListPickerScreen.addRow} and {@code SmallFormScreen}
+ * are the only two places that create rows: changing it here repaints, from the inside, the more than forty
+ * screens that hang off them, the same way {@code GuiStyle} did with its frames.</p>
  *
- * <p>El estado de foco/hover no se marca solo con un cambio de color de fondo: también se enciende el
- * filete de latón y se aclara el texto. Un cambio de un solo tono sobre un fondo oscuro es justo lo que
- * no se distingue con brillo de monitor bajo.</p>
+ * <p>Focus/hover state isn't marked with just a background color change: the brass rule also lights up
+ * and the text lightens. A single-tone change on a dark background is exactly what doesn't
+ * get distinguished at low monitor brightness.</p>
  */
 public class TomeButton extends Button {
 
-	//Pergamino apagado en reposo, encendido al pasar por encima. Más oscuro que la hoja de personaje: es
-	//una tira sobre cuero, no la hoja entera, y compite con menos superficie.
+	//Dim parchment at rest, lit up on hover. Darker than the character sheet: it's
+	//a strip over leather, not the whole sheet, and competes with less surface area.
 	private static final int FILL_IDLE = 0xF2241C13;
 	private static final int FILL_HOVER = 0xF2382B1B;
 	private static final int BEVEL_LIGHT = 0xFF5A4830;
@@ -36,7 +36,7 @@ public class TomeButton extends Button {
 	private static final int TEXT_DISABLED = 0xFF6E6455;
 
 	private static final int RAIL_WIDTH = 2;
-	/** Aire entre el texto y los bordes, para que lo recortado no quede pegado al bisel. */
+	/** Padding between the text and the edges, so clipped text doesn't sit flush against the bevel. */
 	private static final int TEXT_PADDING = 2;
 	private static final String ELLIPSIS = "...";
 
@@ -44,7 +44,7 @@ public class TomeButton extends Button {
 		super(x, y, width, height, message, onPress, DEFAULT_NARRATION);
 	}
 
-	/** Mismo punto de entrada que {@code Button.builder(...)}, para que el sitio que la crea no cambie de forma. */
+	/** Same entry point as {@code Button.builder(...)}, so the call site that creates it doesn't need to change shape. */
 	public static TomeButton of(Component message, OnPress onPress, int x, int y, int width, int height) {
 		return new TomeButton(x, y, width, height, message, onPress);
 	}
@@ -60,31 +60,31 @@ public class TomeButton extends Button {
 		int alpha = Mth.ceil(this.alpha * 255.0F) << 24;
 
 		guiGraphics.fill(left, top, right, bottom, (active ? FILL_HOVER : FILL_IDLE));
-		//Bisel de Minecraft, igual que GuiStyle: es lo que hace que la fila pertenezca al juego.
+		//Minecraft-style bevel, same as GuiStyle: it's what makes the row feel like it belongs to the game.
 		guiGraphics.fill(left, top, right - 1, top + 1, BEVEL_LIGHT);
 		guiGraphics.fill(left, top, left + 1, bottom - 1, BEVEL_LIGHT);
 		guiGraphics.fill(left + 1, bottom - 1, right, bottom, BEVEL_DARK);
 		guiGraphics.fill(right - 1, top + 1, right, bottom, BEVEL_DARK);
 
-		//Filete de latón a la izquierda: es la marca de "esto es una fila del tomo", y al encenderse da un
-		//segundo indicio de foco además del fondo.
+		//Brass rule on the left: it's the mark of "this is a tome row," and lighting up gives a
+		//second focus cue besides the background.
 		guiGraphics.fill(left + 1, top + 1, left + 1 + RAIL_WIDTH, bottom - 1, active ? RAIL_HOVER : RAIL_IDLE);
 
 		int color = !this.active ? TEXT_DISABLED : (active ? TEXT_HOVER : TEXT_IDLE);
 		Minecraft minecraft = Minecraft.getInstance();
-		//El texto se centra en el hueco QUE QUEDA tras el filete, no en el botón entero: centrarlo en el
-		//botón lo dejaría visiblemente descuadrado hacia la izquierda.
+		//The text is centered in the space LEFT after the rule, not the whole button: centering it on the
+		//button would leave it visibly off-center to the left.
 		int textLeft = left + 1 + RAIL_WIDTH + TEXT_PADDING;
 		int textRight = right - TEXT_PADDING;
 		int available = textRight - textLeft;
 		Component message = this.getMessage();
 
-		//drawCenteredString a secas no recorta NADA: una etiqueta más ancha que la fila —"Bandit Ambush ·
-		//Bandit x4, Bandit Captain · Deadly", y media lista del compendio— se salía por los dos lados y se
-		//leía cortada por los dos extremos, sin principio ni final.
+		//Plain drawCenteredString doesn't clip ANYTHING: a label wider than the row —"Bandit Ambush ·
+		//Bandit x4, Bandit Captain · Deadly", and half the compendium list— overflowed on both sides and
+		//read as cut off at both ends, with neither a start nor an end.
 		if (this.isHoveredOrFocused()) {
-			//Encima: la de vanilla, que la recorta a la fila y la pasea de lado a lado hasta el final. Solo
-			//en la fila señalada, porque cinco etiquetas deslizándose a la vez no se leen, se miran.
+			//On top: vanilla's version, which clips it to the row and scrolls it side to side to the end. Only
+			//on the hovered row, because five labels sliding at once aren't readable, they're just watched.
 			renderScrollingString(guiGraphics, minecraft.font, message, textLeft, top, textRight, bottom, color | alpha);
 			return;
 		}
@@ -93,8 +93,8 @@ public class TomeButton extends Button {
 			guiGraphics.drawCenteredString(minecraft.font, message, textLeft + available / 2, y, color | alpha);
 			return;
 		}
-		//Y en reposo, el principio con puntos suspensivos: el nombre está al principio, y unos puntos dicen
-		//"hay más" —que es justo lo que un corte a hueso no dice—.
+		//And at rest, the beginning with an ellipsis: the name is at the start, and dots signal
+		//"there's more" —which is exactly what a hard cutoff doesn't say—.
 		FormattedText trimmed = FormattedText.composite(
 			minecraft.font.substrByWidth(message, available - minecraft.font.width(ELLIPSIS)), FormattedText.of(ELLIPSIS));
 		guiGraphics.drawString(minecraft.font, Language.getInstance().getVisualOrder(trimmed),

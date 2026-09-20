@@ -26,31 +26,31 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * <p>Clic derecho con la Vara de DM ({@link MonsterRegistry#isDmTool}) sobre un bloque de estructura ya
- * nombrado abre "Añadir pieza" prellenado con ese id, en vez de obligar al DM a retipear a mano el mismo
- * id que ya escribió una vez al guardar la estructura (ver {@link net.hawthorn.dndsheets.dungeon.client.gui.DungeonPieceAddScreen}).
- * Lo mismo sobre un jigsaw block abre un formulario corto que le escribe Name/Target/Pool directo (ver
- * {@link net.hawthorn.dndsheets.dungeon.client.gui.DungeonJigsawConfigureScreen}), sin pasar por la GUI vanilla
- * del jigsaw ni tipear a mano los 3 strings exactos con nuestro namespace. Agachado + clic derecho copia
- * la configuración de un jigsaw a un portapapeles por DM, que prellena (no pega solo, sigue pidiendo
- * confirmar) el formulario de cualquier otro jigsaw que toque después — para dar varias salidas al mismo
- * pool sin repetir el nombre a mano en cada una.</p>
+ * <p>Right-clicking with the DM Wand ({@link MonsterRegistry#isDmTool}) on an already-named structure
+ * block opens "Add piece" prefilled with that id, instead of forcing the DM to retype by hand the same
+ * id they already wrote once when saving the structure (see {@link net.hawthorn.dndsheets.dungeon.client.gui.DungeonPieceAddScreen}).
+ * The same on a jigsaw block opens a short form that writes Name/Target/Pool directly (see
+ * {@link net.hawthorn.dndsheets.dungeon.client.gui.DungeonJigsawConfigureScreen}), bypassing the jigsaw's
+ * vanilla GUI and never hand-typing the 3 exact strings with our namespace. Sneak + right-click copies
+ * a jigsaw's configuration to a per-DM clipboard, which prefills (doesn't paste on its own, still asks
+ * for confirmation) the form of any other jigsaw touched afterward — to give several exits to the same
+ * pool without retyping the name by hand each time.</p>
  */
 @Mod.EventBusSubscriber
 public class DungeonToolManager {
 	private record JigsawClipboard(String pool, boolean isStart) {}
 
-	//Por DM, no global: dos DMs trabajando en la misma partida no deberían pisarse el portapapeles.
+	//Per-DM, not global: two DMs working on the same game shouldn't stomp on each other's clipboard.
 	private static final Map<UUID, JigsawClipboard> jigsawClipboard = new HashMap<>();
 
-	/** El portapapeles no se limpiaba NUNCA: ni put/get tenian remove, asi que cada DM que copiara un
-	 *  jigsaw dejaba su entrada para el resto de la vida del servidor. */
+	/** The clipboard was NEVER cleared: neither put nor get had a remove, so every DM who copied a
+	 *  jigsaw left their entry for the rest of the server's lifetime. */
 	static void clearFor(ServerPlayer player) {
 		jigsawClipboard.remove(player.getUUID());
 	}
 
-	//clearFor(player) lo llamaba SheetLoader (core) directo en PlayerLoggedOutEvent. El core ya no
-	//puede conocer este addon, así que escucha el mismo evento por su cuenta.
+	//clearFor(player) used to be called directly by SheetLoader (core) in PlayerLoggedOutEvent. The
+	//core can no longer know about this addon, so it listens for the same event on its own.
 	@SubscribeEvent
 	public static void onPlayerLogout(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
 		if (event.getEntity() instanceof ServerPlayer player) clearFor(player);
@@ -74,22 +74,24 @@ public class DungeonToolManager {
 			return;
 		}
 
-		//StructureBlockEntity#saveStructure devuelve false sin más detalle que "no" — el motivo más común
-		//con diferencia es que el bloque ya no está en modo SAVE (alguien lo cambió a LOAD/CORNER/DATA con
-		//su GUI vanilla en algún momento, p.ej. mirándolo por curiosidad), así que se distingue ANTES de
-		//intentar, para dar un mensaje que de verdad sirva en vez de "revisá que todo esté bien".
+		//StructureBlockEntity#saveStructure returns false with no more detail than "no" — by far the most
+		//common reason is that the block is no longer in SAVE mode (someone switched it to LOAD/CORNER/
+		//DATA with its vanilla GUI at some point, e.g. just poking at it out of curiosity), so this is
+		//distinguished BEFORE attempting, to give a message that's actually useful instead of "check that
+		//everything is fine".
 		if (structureBlock.getMode() != StructureMode.SAVE) {
 			serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.block_wrong_mode", structureBlock.getMode()).withStyle(ChatFormatting.GRAY));
 			return;
 		}
 
-		//Re-escanea y re-guarda el .nbt AHORA, con el bloque de estructura ya posicionado/dimensionado
-		//(structurePos/structureSize) de un Save anterior — sin esto, un jigsaw configurado con la Vara de
-		//DM DESPUÉS del último "Save" manual del bloque de estructura nunca llegaba al .nbt capturado (la
-		//generación busca el jigsaw Name=dungeon_start DENTRO del .nbt ya guardado, no en el mundo en vivo,
-		//ver JigsawPlacement.addPieces), así que la pieza de arranque nunca se generaba salvo que el DM se
-		//acordara de volver a apretar "Save" a mano tras marcar las conexiones. Capturar con la Vara ya es
-		//"la foto final", así que toma la foto en este mismo instante en vez de confiar en una vieja.
+		//Re-scans and re-saves the .nbt RIGHT NOW, using the structure block's position/size
+		//(structurePos/structureSize) already set from an earlier Save — without this, a jigsaw
+		//configured with the DM Wand AFTER the structure block's last manual "Save" never made it into
+		//the captured .nbt (generation looks for the jigsaw Name=dungeon_start INSIDE the already-saved
+		//.nbt, not in the live world, see JigsawPlacement.addPieces), so the starting piece would never
+		//generate unless the DM remembered to press "Save" by hand again after marking the connections.
+		//Capturing with the Wand is already meant to be "the final photo", so it takes the photo at this
+		//exact instant instead of trusting an old one.
 		if (!structureBlock.saveStructure()) {
 			serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.block_resave_failed").withStyle(ChatFormatting.GRAY));
 			return;
@@ -101,8 +103,8 @@ public class DungeonToolManager {
 		DndsheetsDungeonMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> serverDm), new DungeonPieceAddOpenMessage(structureId, suggestedId));
 	}
 
-	//"rooms/entrance" -> "entrance": solo el último segmento de la ruta, así "id" no arranca ya lleno de
-	//barras que igual habría que editar a mano.
+	//"rooms/entrance" -> "entrance": only the last path segment, so "id" doesn't start out already full
+	//of slashes that would need editing by hand anyway.
 	private static String suggestIdFrom(String path) {
 		int slash = path.lastIndexOf('/');
 		return slash < 0 ? path : path.substring(slash + 1);
@@ -120,27 +122,28 @@ public class DungeonToolManager {
 		if (!DndsheetsMod.canActAsDm(dm)) return;
 		if (!(dm instanceof ServerPlayer serverDm)) return;
 
-		//Solo cuenta como "configurado" si es DE NUESTRO namespace — un jigsaw recién colocado trae
-		//"minecraft:empty" en Name/Pool por defecto (ver JigsawBlockEntity), que no es un pool real elegido.
+		//Only counts as "configured" if it's from OUR namespace — a freshly placed jigsaw defaults to
+		//"minecraft:empty" for Name/Pool (see JigsawBlockEntity), which isn't a real chosen pool.
 		ResourceLocation currentPoolLocation = jigsaw.getPool().location();
 		boolean isConfigured = DungeonManager.POOL_NAMESPACE.equals(currentPoolLocation.getNamespace());
 		boolean currentIsStart = jigsaw.getName().equals(new ResourceLocation(DungeonManager.START_JIGSAW_NAME));
 
-		//Agachado: copia este jigsaw al portapapeles en vez de abrir el formulario — separado de un clic
-		//normal para que copiar sea una acción explícita, nunca un efecto secundario de configurar.
+		//Sneak: copies this jigsaw to the clipboard instead of opening the form — kept separate from a
+		//normal click so copying is always an explicit action, never a side effect of configuring.
 		if (dm.isShiftKeyDown()) {
 			if (!isConfigured) {
 				serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.jigsaw_unset").withStyle(ChatFormatting.GRAY));
 				return;
 			}
 			jigsawClipboard.put(dm.getUUID(), new JigsawClipboard(currentPoolLocation.getPath(), currentIsStart));
-			serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.jigsaw_copied", currentPoolLocation.getPath(), (currentIsStart ? " (inicio)." : ".")).withStyle(ChatFormatting.GRAY));
+			serverDm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.jigsaw_copied", currentPoolLocation.getPath(), (currentIsStart ? Component.translatable("chat.dndsheets.dungeon.start_suffix") : Component.literal("."))).withStyle(ChatFormatting.GRAY));
 			return;
 		}
 
-		//El portapapeles (si hay uno) prellena el formulario en vez de lo que ya tuviera ESTE jigsaw — dar
-		//varias salidas al mismo pool es copiar una vez y solo confirmar en las demás, sin retipear. Sigue
-		//pidiendo confirmar (nunca escribe solo): un clic normal no debe sobreescribir en silencio.
+		//The clipboard (if there is one) prefills the form instead of whatever THIS jigsaw already had —
+		//giving several exits to the same pool means copying once and only confirming on the rest,
+		//without retyping. Still asks for confirmation (never writes on its own): a normal click
+		//shouldn't silently overwrite anything.
 		JigsawClipboard copied = jigsawClipboard.get(dm.getUUID());
 		String prefillPool = copied != null ? copied.pool() : (isConfigured ? currentPoolLocation.getPath() : "");
 		boolean prefillIsStart = copied != null ? copied.isStart() : currentIsStart;
@@ -148,11 +151,11 @@ public class DungeonToolManager {
 		DndsheetsDungeonMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> serverDm), new DungeonJigsawConfigureOpenMessage(event.getPos(), prefillPool, prefillIsStart));
 	}
 
-	//Cancela en AMBOS lados (cliente Y servidor), no solo en el servidor: el cliente decide en su propia
-	//predicción local si reintentar la interacción con la otra mano cuando la mano usada "no consume"
-	//nada (comportamiento vanilla de mano principal -> secundaria). Sin cancelar también en el cliente
-	//con un resultado que SÍ consume, el cliente mandaba un segundo paquete con la otra mano y el servidor
-	//terminaba procesando la acción dos veces — se veía como un mensaje de chat duplicado.
+	//Cancels on BOTH sides (client AND server), not just the server: the client decides in its own
+	//local prediction whether to retry the interaction with the other hand when the hand used "doesn't
+	//consume" anything (vanilla main-hand -> off-hand behavior). Without also cancelling on the client
+	//with a result that DOES consume, the client would send a second packet with the other hand and the
+	//server would end up processing the action twice — it showed up as a duplicated chat message.
 	private static void cancelBothHandsRetry(PlayerInteractEvent.RightClickBlock event) {
 		InteractionEvents.consume(event);
 		event.setCancellationResult(InteractionResult.SUCCESS);

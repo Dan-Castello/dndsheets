@@ -10,15 +10,15 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>Las entradas de una categoría del compendio, con buscador. El buscador no es un adorno aquí: la
- * lista de monstruos tiene 330 filas, y sin filtrar no es consultable — es justo el caso para el que
- * {@link ListPickerScreen#searchable()} existe.</p>
+ * <p>The entries of a compendium category, with a search box. The search box isn't decoration here: the
+ * monster list has 330 rows, and without filtering it isn't browsable — this is exactly the case
+ * {@link ListPickerScreen#searchable()} exists for.</p>
  *
- * <p>Pulsar una fila pide su ficha completa al servidor en vez de traerla cargada con la lista: con 362
- * objetos, mandar todas las descripciones de golpe serían decenas de kilobytes en un solo paquete.</p>
+ * <p>Clicking a row requests its full sheet from the server instead of having it preloaded with the list:
+ * with 362 items, sending all the descriptions at once would be tens of kilobytes in a single packet.</p>
  *
- * <p>Los ids llegan como {@code categoria|id} y se devuelven tal cual, así que esta pantalla no necesita
- * saber de qué registro salió cada entrada — solo pintarla.</p>
+ * <p>Ids arrive as {@code category|id} and are returned as-is, so this screen doesn't need to know which
+ * registry each entry came from — it just has to render it.</p>
  */
 public class CompendiumListScreen extends ListPickerScreen {
 
@@ -45,7 +45,7 @@ public class CompendiumListScreen extends ListPickerScreen {
 
 	@Override
 	protected int buttonWidth() {
-		return 260; //Cada fila lleva nombre y dos o tres datos; a 200px se cortaban.
+		return 260; //Each row carries a name and two or three data points; at 200px they got cut off.
 	}
 
 	@Override

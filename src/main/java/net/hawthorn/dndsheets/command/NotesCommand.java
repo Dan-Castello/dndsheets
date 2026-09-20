@@ -20,11 +20,11 @@ import net.minecraftforge.fml.common.Mod;
 import java.util.Collection;
 
 /**
- * <p>{@code /dndnotes give <jugadores>}: entrega un Libro y Pluma vanilla renombrado a "Cuaderno del DM".
- * No hace falta ningún manager ni persistencia propia — un libro y pluma normal YA es privado (nadie más
- * lo lee salvo que se lo enseñes) y Minecraft ya guarda su contenido solo, como el resto del inventario.
- * Este comando solo lo hace fácil de conseguir y gatea el "dárselo" a operadores, igual que el resto de
- * herramientas de DM.</p>
+ * <p>{@code /dndnotes give <players>}: hands out a vanilla Book and Quill renamed to "DM Notebook".
+ * No manager or custom persistence needed — a regular book and quill is ALREADY private (nobody else
+ * reads it unless you show them) and Minecraft already saves its content on its own, like the rest of
+ * the inventory. This command just makes it easy to get and gates "giving it out" to operators, same as
+ * the rest of the DM tools.</p>
  */
 @Mod.EventBusSubscriber
 public class NotesCommand {
@@ -33,12 +33,12 @@ public class NotesCommand {
 		event.getDispatcher().register(Commands.literal("dndnotes")
 			.requires(source -> DndsheetsMod.canActAsDm(source))
 			.then(Commands.literal("give")
-				.then(Commands.argument("jugadores", EntityArgument.players())
+				.then(Commands.argument("players", EntityArgument.players())
 					.executes(NotesCommand::give))));
 	}
 
 	private static int give(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) {
 			target.getInventory().add(buildNotebookStack());
 		}
@@ -46,7 +46,7 @@ public class NotesCommand {
 		return targets.size();
 	}
 
-	//Público: también lo usa la pestaña creativa (DndsheetsModCreativeTab).
+	//Public: also used by the creative tab (DndsheetsModCreativeTab).
 	public static ItemStack buildNotebookStack() {
 		return AbilityItem.build(net.minecraft.world.item.Items.WRITABLE_BOOK, "dmNotebook",
 			Component.translatable("chat.dndsheets.notebook.item_name"),

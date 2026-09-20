@@ -1,4 +1,4 @@
-<title>Estado del Campamento</title>
+<title>Camp Status</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -303,117 +303,117 @@ footer {
 
 <div class="page">
 
-  <div class="eyebrow">dndsheets · lectura de campamento, segunda pasada</div>
-  <h1 class="title">La mesa ya sabe mostrarlo</h1>
-  <p class="subtitle">Dónde está parado el mod hoy frente a Foundry VTT, TaleSpire y la sensación de juego de Baldur's Gate 3 — con lo verificado en el código real, no en la lista de funciones que a uno le gustaría tener.</p>
+  <div class="eyebrow">dndsheets · camp reading, second pass</div>
+  <h1 class="title">The table now knows how to show it</h1>
+  <p class="subtitle">Where the mod stands today against Foundry VTT, TaleSpire and the game feel of Baldur's Gate 3 — with what was verified in the real code, not in the feature list one would like to have.</p>
   <div class="meta-row">
-    <span class="meta-chip">alcance: core + addon dungeon + addon species</span>
+    <span class="meta-chip">scope: core + dungeon addon + species addon</span>
     <span class="meta-chip">base: SRD 5.1</span>
-    <span class="meta-chip">comparado contra: Foundry VTT · TaleSpire · Baldur's Gate 3</span>
+    <span class="meta-chip">compared against: Foundry VTT · TaleSpire · Baldur's Gate 3</span>
   </div>
 
   <div class="callout">
-    <div class="callout-label">qué cambió desde la primera lectura</div>
-    <p>Los tres puntos de más impacto de la ronda anterior ya están en el mod: <b>HUD de combate visual</b> (tablero de iniciativa, condiciones, economía de acción — reemplazó al texto plano), <b>panel de efectos activos</b> persistente (condiciones, concentración, PG temporales, fuera de combate también), y las dos mecánicas de BG3 más citadas, <b>ventaja por altura</b> y <b>empujar</b>. Quedan los dos ítems más caros de la lista original: disparadores configurables y niebla de guerra — ninguno se tocó todavía.</p>
+    <div class="callout-label">what changed since the first reading</div>
+    <p>The three highest-impact points of the previous round are already in the mod: a <b>visual combat HUD</b> (initiative board, conditions, action economy — it replaced the plain text), a persistent <b>active effects panel</b> (conditions, concentration, temporary HP, outside combat too), and the two most-cited BG3 mechanics, <b>high-ground advantage</b> and <b>shoving</b>. The two most expensive items of the original list remain: configurable triggers and fog of war — neither has been touched yet.</p>
   </div>
 
   <section>
-    <div class="section-head"><span class="section-num">01</span><h2>El activo real: reglas que se resuelven solas</h2></div>
-    <p class="section-dek">Antes de comparar contra nadie, vale decir qué hay: no es una hoja de personaje bonita pegada a Minecraft. Es un motor de reglas de 5e que corre de verdad — tiradas, condiciones, espacios de conjuro, resistencias, todo automático — con Minecraft como tablero.</p>
+    <div class="section-head"><span class="section-num">01</span><h2>The real asset: rules that resolve themselves</h2></div>
+    <p class="section-dek">Before comparing against anyone, it is worth saying what is there: it is not a pretty character sheet glued onto Minecraft. It is a 5e rules engine that really runs — rolls, conditions, spell slots, resistances, all automatic — with Minecraft as the board.</p>
 
     <div class="verdict-grid">
       <div class="vcard strength">
-        <div class="vcard-label">✦ ya funciona solo</div>
+        <div class="vcard-label">✦ already works on its own</div>
         <ul>
-          <li>Ataque, daño, ventaja/desventaja, crítico, salvaciones y <b>14 condiciones del SRD con efecto mecánico real</b> (no solo un ícono que el DM tiene que recordar qué hace)</li>
-          <li>Concentración, muerte por salvaciones, espacios de conjuro con sobrelanzado por nivel</li>
-          <li>Iniciativa que <b>arranca sola</b> con el primer golpe — nadie escribe "tiremos iniciativa"</li>
-          <li>Acciones legendarias, multiataque, monstruos "de reloj propio" (actúan cada 6s sin esperar cola)</li>
-          <li>Resistencia/inmunidad a daño mágico y no mágico, cobertura, formas de área (cono/línea/esfera/muro) que salen del punto correcto</li>
-          <li><b>Nuevo</b> — tablero de iniciativa visible siempre (<code>TurnHudOverlay</code>), con condiciones por combatiente, quién ya actuó y economía de acción propia</li>
-          <li><b>Nuevo</b> — panel de efectos activos persistente (<code>ResourceHudOverlay</code>): condiciones, concentración, PG temporales, fuera de combate también</li>
-          <li><b>Nuevo</b> — ventaja por altura y Empujar, la combinación táctica de BG3 (tirar a alguien de una cornisa) ya es posible de verdad</li>
-          <li><b>Nuevo</b> — superficies (<code>SurfaceManager</code>): un impacto de fuego deja el suelo ardiendo unos asaltos, y el agua REAL del mundo lo apaga o conduce un chispazo de rayo a quien esté parado en ella</li>
+          <li>Attack, damage, advantage/disadvantage, critical hits, saves and <b>14 SRD conditions with a real mechanical effect</b> (not just an icon the DM has to remember what it does)</li>
+          <li>Concentration, death saves, spell slots with upcasting by level</li>
+          <li>Initiative that <b>starts on its own</b> with the first blow — nobody types "let's roll initiative"</li>
+          <li>Legendary actions, multiattack, "own-clock" monsters (they act every 6s without waiting in a queue)</li>
+          <li>Resistance/immunity to magical and non-magical damage, cover, area shapes (cone/line/sphere/wall) that come out of the right point</li>
+          <li><b>New</b> — an always-visible initiative board (<code>TurnHudOverlay</code>), with conditions per combatant, who has already acted and your own action economy</li>
+          <li><b>New</b> — a persistent active effects panel (<code>ResourceHudOverlay</code>): conditions, concentration, temporary HP, outside combat too</li>
+          <li><b>New</b> — high-ground advantage and Shove, the BG3 tactical combination (throwing someone off a ledge) is now really possible</li>
+          <li><b>New</b> — surfaces (<code>SurfaceManager</code>): a fire impact leaves the ground burning for a few rounds, and the world's REAL water puts it out or conducts a lightning spark to whoever is standing in it</li>
         </ul>
       </div>
       <div class="vcard gap">
-        <div class="vcard-label">✕ todavía no</div>
+        <div class="vcard-label">✕ not yet</div>
         <ul>
-          <li>Nada de <b>macros o scripting</b> para que un DM automatice algo sin recompilar Java</li>
-          <li>Visión por luz/oscuridad, no por línea de visión detrás de un muro</li>
-          <li>Sin buscador de contenido unificado — cada tipo (hechizo, monstruo, clase) tiene su propia pantalla suelta</li>
+          <li>No <b>macros or scripting</b> for a DM to automate something without recompiling Java</li>
+          <li>Vision by light/darkness, not by line of sight behind a wall</li>
+          <li>No unified content search — each type (spell, monster, class) has its own separate screen</li>
         </ul>
       </div>
     </div>
   </section>
 
   <section>
-    <div class="section-head"><span class="section-num">02</span><h2>Contra Foundry VTT: automatización de base, no de módulo</h2></div>
-    <p class="section-dek">El sistema 5e de Foundry, tal cual viene, es más una hoja de personaje digital que un árbitro — la automatización de ataques/condiciones/recursos que la comunidad da por sentada llega recién con módulos como Midi-QOL y DAE encima. Este mod trae eso <b>de fábrica</b>, sin instalar nada aparte.</p>
-    <p>Lo que Foundry sigue ganando es todo lo que se construyó alrededor en años de módulos: un editor de macros accesible sin programar, compendios buscables por texto libre, e iluminación/visión que calcula oclusión real contra paredes dibujadas en la escena. Su "active effects" ya tiene equivalente propio (ver arriba) — de los tres puntos originales, ese es el que se cerró. Los otros dos siguen siendo trabajo de UI/motor que no se hizo todavía, no una limitación de diseño.</p>
+    <div class="section-head"><span class="section-num">02</span><h2>Against Foundry VTT: built-in automation, not module automation</h2></div>
+    <p class="section-dek">Foundry's 5e system, as it comes, is more a digital character sheet than a referee — the attack/condition/resource automation the community takes for granted only arrives with modules like Midi-QOL and DAE on top. This mod brings that <b>out of the box</b>, with nothing else to install.</p>
+    <p>What Foundry still wins is everything built around it over years of modules: a macro editor accessible without programming, compendia searchable by free text, and lighting/vision that computes real occlusion against walls drawn on the scene. Its "active effects" now has an equivalent of its own (see above) — of the three original points, that is the one that closed. The other two are still UI/engine work that hasn't been done yet, not a design limitation.</p>
   </section>
 
   <section>
-    <div class="section-head"><span class="section-num">03</span><h2>Contra TaleSpire: el terreno ya es jugable, falta ocultarlo</h2></div>
-    <p class="section-dek">TaleSpire vende mesa en 3D con miniaturas — el mod tiene ya un análogo genuino en el addon de mazmorras (pools de piezas por jigsaw, captura de una construcción propia como pieza reutilizable, trazado en el mundo) y es <b>más flexible</b> en un sentido concreto: cualquier build de un jugador se puede volver contenido reutilizable, no hay que limitarse a una biblioteca de assets fija.</p>
-    <p>TaleSpire oculta la mesa fuera del alcance de cámara de cada miniatura — niebla de guerra de verdad. Minecraft no tiene ese concepto nativo, y pelea contra cómo el juego carga el mundo, no contra una pantalla que falta: era la brecha más cara de las tres comparaciones. <b>Decisión: suspendida.</b> El mod ya tiene un sistema de visión propio (<code>VisionManager</code> — cortes de luz, visión en la oscuridad, ceguera) que resuelve la misma pregunta de mesa ("¿qué puede ver mi personaje ahora mismo?") sin necesitar ocultar el mundo entero por detrás; construir niebla de guerra encima sería mantener dos sistemas para el mismo problema. Si en algún momento hace falta ocultar mapa explícitamente (no solo lo que un personaje ve), esto se retoma — hasta entonces, la visión existente es la respuesta.</p>
+    <div class="section-head"><span class="section-num">03</span><h2>Against TaleSpire: the terrain is already playable, hiding it is what is missing</h2></div>
+    <p class="section-dek">TaleSpire sells a 3D table with miniatures — the mod already has a genuine analogue in the dungeon addon (jigsaw piece pools, capturing your own build as a reusable piece, tracing in the world) and it is <b>more flexible</b> in one specific sense: any build by a player can become reusable content, you don't have to limit yourself to a fixed asset library.</p>
+    <p>TaleSpire hides the table beyond each miniature's camera range — real fog of war. Minecraft has no such native concept, and it fights against how the game loads the world, not against a missing screen: it was the most expensive gap of the three comparisons. <b>Decision: suspended.</b> The mod already has a vision system of its own (<code>VisionManager</code> — light cutoffs, darkvision, blindness) that answers the same table question ("what can my character see right now?") without needing to hide the whole world behind it; building fog of war on top would mean maintaining two systems for the same problem. If at some point the map has to be hidden explicitly (not just what a character sees), this is picked up again — until then, the existing vision is the answer.</p>
   </section>
 
   <section>
-    <div class="section-head"><span class="section-num">04</span><h2>Contra Baldur's Gate 3: la sensación de juego, no el guion</h2></div>
-    <p class="section-dek">BG3 es una campaña única con cámaras cinemáticas, voces y compañeros con relación propia — perseguir eso 1 a 1 es un objetivo equivocado para un mod pensado para que un DM humano lleve su propia mesa. Lo que sí es transferible es cómo BG3 <b>muestra</b> el combate.</p>
+    <div class="section-head"><span class="section-num">04</span><h2>Against Baldur's Gate 3: the game feel, not the script</h2></div>
+    <p class="section-dek">BG3 is a single campaign with cinematic cameras, voices and companions with relationships of their own — chasing that 1 to 1 is the wrong goal for a mod designed for a human DM to run their own table. What is transferable is how BG3 <b>shows</b> combat.</p>
 
     <div class="callout">
-      <div class="callout-label">resuelto desde la primera lectura</div>
-      <p>El HUD de turnos ya no son líneas de texto sueltas: <code>TurnHudOverlay</code> muestra el tablero de iniciativa entero (orden, condiciones, quién actuó) y la economía de acción propia como estado, no como número perdido en el chat, con el mismo tratamiento visual que el resto de las pantallas del mod. <code>AttackRules.advantageAgainst</code> ahora suma ventaja por altura, y <code>ShoveManager</code> resuelve Empujar como prueba enfrentada de verdad — la combinación "empujarlo desde arriba" que definía la mitad de este punto ya funciona.</p>
+      <div class="callout-label">resolved since the first reading</div>
+      <p>The turn HUD is no longer loose lines of text: <code>TurnHudOverlay</code> shows the whole initiative board (order, conditions, who acted) and your own action economy as a state, not as a number lost in the chat, with the same visual treatment as the rest of the mod's screens. <code>AttackRules.advantageAgainst</code> now adds high-ground advantage, and <code>ShoveManager</code> resolves Shove as a real contested check — the "shove them from above" combination that defined half of this point now works.</p>
     </div>
 
-    <p>Las cinco de la lista original ya están. La versión que se construyó de superficies usa el agua REAL del mundo en vez de trackear una segunda "superficie de agua" aparte — Minecraft ya sabe dónde hay agua, así que apagar fuego y conducir un rayo consultan el bloque de verdad. Queda pendiente el otro combo icónico de BG3, fuego+aceite, porque no hay contenido en el bestiario/hechizos que hoy deje un charco de aceite — es una decisión de contenido, no de motor, así que se puede sumar el día que haga falta sin tocar <code>SurfaceManager</code>.</p>
+    <p>All five of the original list are already in. The version of surfaces that was built uses the world's REAL water instead of tracking a separate second "water surface" — Minecraft already knows where water is, so putting out fire and conducting lightning query the real block. What remains pending is BG3's other iconic combo, fire+oil, because there is no content in the bestiary/spells that today leaves a pool of oil — it is a content decision, not an engine one, so it can be added the day it is needed without touching <code>SurfaceManager</code>.</p>
   </section>
 
   <section>
-    <div class="section-head"><span class="section-num">05</span><h2>Matriz rápida</h2></div>
+    <div class="section-head"><span class="section-num">05</span><h2>Quick matrix</h2></div>
     <div class="matrix-wrap">
       <table class="matrix">
         <thead>
-          <tr><th>Frente</th><th>dndsheets hoy</th><th>Foundry</th><th>TaleSpire</th><th>BG3</th></tr>
+          <tr><th>Front</th><th>dndsheets today</th><th>Foundry</th><th>TaleSpire</th><th>BG3</th></tr>
         </thead>
         <tbody>
-          <tr><th>Reglas 5e automáticas</th><td class="mk yes">de fábrica</td><td class="mk part">con módulos</td><td class="mk no">manual</td><td class="mk yes">de fábrica</td></tr>
-          <tr><th>Terreno propio/reutilizable</th><td class="mk yes">jigsaw + captura</td><td class="mk no">assets 2D</td><td class="mk part">biblioteca fija</td><td class="mk no">n/a</td></tr>
-          <tr><th>Niebla de guerra</th><td class="mk part">suspendida — usa visión</td><td class="mk yes">sí</td><td class="mk yes">sí</td><td class="mk yes">sí</td></tr>
-          <tr><th>HUD de combate glanceable</th><td class="mk yes">tablero + panel</td><td class="mk part">por módulo</td><td class="mk part">básico</td><td class="mk yes">íconos/barras</td></tr>
-          <tr><th>Efectos activos visibles</th><td class="mk yes">panel propio</td><td class="mk yes">"active effects"</td><td class="mk no">—</td><td class="mk yes">sí</td></tr>
-          <tr><th>Macros sin programar</th><td class="mk no">—</td><td class="mk yes">sí</td><td class="mk no">—</td><td class="mk no">n/a</td></tr>
-          <tr><th>Alto / empujar</th><td class="mk yes">sí</td><td class="mk no">—</td><td class="mk no">—</td><td class="mk yes">sí</td></tr>
-          <tr><th>Superficies interactivas</th><td class="mk part">fuego+agua, falta aceite</td><td class="mk no">—</td><td class="mk no">—</td><td class="mk yes">sí</td></tr>
+          <tr><th>Automatic 5e rules</th><td class="mk yes">built in</td><td class="mk part">with modules</td><td class="mk no">manual</td><td class="mk yes">built in</td></tr>
+          <tr><th>Own/reusable terrain</th><td class="mk yes">jigsaw + capture</td><td class="mk no">2D assets</td><td class="mk part">fixed library</td><td class="mk no">n/a</td></tr>
+          <tr><th>Fog of war</th><td class="mk part">suspended — uses vision</td><td class="mk yes">yes</td><td class="mk yes">yes</td><td class="mk yes">yes</td></tr>
+          <tr><th>Glanceable combat HUD</th><td class="mk yes">board + panel</td><td class="mk part">per module</td><td class="mk part">basic</td><td class="mk yes">icons/bars</td></tr>
+          <tr><th>Visible active effects</th><td class="mk yes">own panel</td><td class="mk yes">"active effects"</td><td class="mk no">—</td><td class="mk yes">yes</td></tr>
+          <tr><th>Macros without programming</th><td class="mk no">—</td><td class="mk yes">yes</td><td class="mk no">—</td><td class="mk no">n/a</td></tr>
+          <tr><th>High ground / shove</th><td class="mk yes">yes</td><td class="mk no">—</td><td class="mk no">—</td><td class="mk yes">yes</td></tr>
+          <tr><th>Interactive surfaces</th><td class="mk part">fire+water, oil missing</td><td class="mk no">—</td><td class="mk no">—</td><td class="mk yes">yes</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section>
-    <div class="section-head"><span class="section-num">06</span><h2>Por dónde seguir</h2></div>
-    <p class="section-dek">De los cinco puntos originales, tres ya están hechos (HUD visual, panel de efectos, superficies — ver arriba) y uno queda suspendido a propósito. Solo queda uno abierto de verdad.</p>
+    <div class="section-head"><span class="section-num">06</span><h2>Where to go next</h2></div>
+    <p class="section-dek">Of the five original points, three are already done (visual HUD, effects panel, surfaces — see above) and one is suspended on purpose. Only one is really left open.</p>
 
     <div class="priority-list">
       <div class="pitem">
         <div class="pnum"></div>
         <div>
-          <div class="ptitle">Disparadores configurables por JSON<span class="ptag high">único pendiente</span></div>
-          <div class="pbody">No un lenguaje de scripting completo — un formato acotado ("si pasa X, aplica Y") que le dé al DM algo del poder de un macro de Foundry sin pedirle que compile Java. Necesita una decisión de diseño antes de escribir código: qué tipo de disparador vale más (¿reacciones de monstruo tipo "al llegar a 0 PG hace X"? ¿algo más general para contenido homebrew?).</div>
+          <div class="ptitle">JSON-configurable triggers<span class="ptag high">only one pending</span></div>
+          <div class="pbody">Not a full scripting language — a bounded format ("if X happens, apply Y") that gives the DM some of the power of a Foundry macro without asking them to compile Java. It needs a design decision before writing code: which kind of trigger is worth more (monster reactions like "on reaching 0 HP, do X"? something more general for homebrew content?).</div>
         </div>
       </div>
     </div>
 
     <div class="callout" style="margin-top:28px;">
-      <div class="callout-label">suspendido hasta nuevo aviso</div>
-      <p><b>Niebla de guerra.</b> Era la más cara de las opciones originales, y con la visión ya existente (<code>VisionManager</code>) cubriendo la misma pregunta de mesa, mantener dos sistemas para lo mismo no vale la pena. Fuera de la lista de trabajo — no se retoma salvo que aparezca una necesidad concreta que la visión actual no resuelva.</p>
+      <div class="callout-label">suspended until further notice</div>
+      <p><b>Fog of war.</b> It was the most expensive of the original options, and with the existing vision (<code>VisionManager</code>) covering the same table question, maintaining two systems for the same thing is not worth it. Off the work list — it is not picked up again unless a concrete need appears that the current vision doesn't solve.</p>
     </div>
   </section>
 
   <footer>
-    Basado en lectura directa del código en esta sesión — CombatManager, TurnManager, TurnHudOverlay, ResourceHudOverlay, AttackRules, ShoveManager, SurfaceManager, VisionManager, y el addon de mazmorras. No incluye nada que no se haya verificado en el repositorio.
+    Based on a direct reading of the code in this session — CombatManager, TurnManager, TurnHudOverlay, ResourceHudOverlay, AttackRules, ShoveManager, SurfaceManager, VisionManager, and the dungeon addon. It includes nothing that was not verified in the repository.
   </footer>
 
 </div>

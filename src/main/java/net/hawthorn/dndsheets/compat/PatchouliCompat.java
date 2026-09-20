@@ -4,28 +4,28 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.ModList;
 
 /**
- * <p>Integración <b>opcional</b> con Patchouli, el mod estándar para manuales dentro del juego.</p>
+ * <p><b>Optional</b> integration with Patchouli, the standard mod for in-game manuals.</p>
  *
- * <p><b>Qué cambia.</b> La Guía existía como libro escrito de vanilla: 26 páginas seguidas, sin índice,
- * sin búsqueda y sin forma de volver a una en concreto. Sirve para leérsela una vez y no para consultarla
- * a mitad de una partida, que es cuando de verdad hace falta. Con Patchouli instalado, la misma Guía se
- * abre como un manual con categorías, índice, búsqueda y marcapáginas, y además queda como un ítem que el
- * jugador puede guardar en su inventario.</p>
+ * <p><b>What changes.</b> The Guide used to exist as a vanilla written book: 26 pages in a row, no
+ * index, no search, and no way to jump back to a specific one. Fine for reading through once, not for
+ * looking something up mid-session, which is when it's actually needed. With Patchouli installed, the
+ * same Guide opens as a manual with categories, an index, search, and bookmarks, and also becomes an
+ * item the player can keep in their inventory.</p>
  *
- * <p><b>El texto no se duplica.</b> Las entradas del libro de Patchouli apuntan a las <em>mismas</em>
- * claves de idioma que usa el libro escrito ({@code gui.dndsheets.guide.page.*}, con {@code i18n: true} en
- * {@code book.json}). Escribir la guía dos veces habría garantizado que las dos versiones se separaran a
- * la primera corrección; así, una página corregida lo está en las dos a la vez. El self-test comprueba que
- * cada página aparece en exactamente una entrada.</p>
+ * <p><b>The text isn't duplicated.</b> The Patchouli book's entries point to the <em>same</em> language
+ * keys the written book uses ({@code gui.dndsheets.guide.page.*}, with {@code i18n: true} in
+ * {@code book.json}). Writing the guide twice would have guaranteed the two versions would drift apart
+ * on the very first fix; this way, a corrected page is corrected in both at once. The self-test checks
+ * that each page appears in exactly one entry.</p>
  *
- * <p><b>Por qué son dos clases</b>, igual que en {@link CuriosCompat}: esta no importa ni un tipo de
- * Patchouli, para que cargarla en una instalación sin Patchouli no reviente con
- * {@code NoClassDefFoundError}. Todo lo que toca su API vive en {@link PatchouliBook}, que solo se carga
- * después de comprobar {@link #isLoaded()}.</p>
+ * <p><b>Why there are two classes</b>, same as in {@link CuriosCompat}: this one doesn't import a single
+ * Patchouli type, so loading it on an install without Patchouli doesn't blow up with
+ * {@code NoClassDefFoundError}. Everything that touches its API lives in {@link PatchouliBook}, which is
+ * only loaded after checking {@link #isLoaded()}.</p>
  */
 public final class PatchouliCompat {
 
-	/** El libro que define {@code data/dndsheets/patchouli_books/guide/book.json}. */
+	/** The book defined by {@code data/dndsheets/patchouli_books/guide/book.json}. */
 	public static final String BOOK_ID = "dndsheets:guide";
 
 	private PatchouliCompat() {}
@@ -37,15 +37,16 @@ public final class PatchouliCompat {
 	}
 
 	/**
-	 * <p>Abre la Guía en el cliente. Devuelve {@code false} si Patchouli no está, y entonces quien llama
-	 * abre el libro escrito de siempre — la Guía nunca deja de estar disponible por no tener un mod.</p>
+	 * <p>Opens the Guide on the client. Returns {@code false} if Patchouli isn't present, in which case
+	 * the caller opens the regular written book instead — the Guide is never unavailable just because a
+	 * mod is missing.</p>
 	 */
 	public static boolean openOnClient() {
 		if (!LOADED) return false;
 		return PatchouliBook.openOnClient();
 	}
 
-	/** El ítem del manual, o vacío sin Patchouli. Para que el jugador se lo pueda quedar. */
+	/** The manual item, or empty without Patchouli. So the player can keep it. */
 	public static ItemStack bookStack() {
 		if (!LOADED) return ItemStack.EMPTY;
 		return PatchouliBook.bookStack();

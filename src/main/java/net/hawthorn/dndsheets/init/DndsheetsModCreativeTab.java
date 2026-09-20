@@ -27,19 +27,19 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.RegistryObject;
 
 /**
- * <p>Pestaña de inventario creativo con todas las herramientas del mod: la Vara de DM, armas
- * personalizadas cargadas (ver {@link Config#customWeaponIds}), un báculo por cada hechizo cargado (ver
- * {@link SpellRegistry#ids}), y una carta de invocación por cada monstruo cargado (ver
- * {@link MonsterRegistry#ids}) que funciona como un huevo de spawn vanilla. Se recalcula cada vez que se
- * abre la pestaña, así que un {@code /dndweapons load} o {@code /dndmonsters load} nuevo aparece sin reiniciar.</p>
+ * <p>Creative-inventory tab with all of the mod's tools: the DM Wand, loaded custom weapons (see
+ * {@link Config#customWeaponIds}), one staff per loaded spell (see {@link SpellRegistry#ids}), and one
+ * summon card per loaded monster (see {@link MonsterRegistry#ids}) that works like a vanilla spawn egg.
+ * Recomputed every time the tab is opened, so a fresh {@code /dndweapons load} or {@code /dndmonsters
+ * load} shows up without restarting.</p>
  *
- * <p>Cada ítem se agrega con {@link #safeAccept}: Forge exige que toda entrada tenga count 1 y, sobre
- * todo, su deduplicación interna de la pestaña creativa (pensada para el caso de "el libro encantado
- * aparece dos veces") compara por componentes vanilla conocidos (como los modificadores de atributo de
- * espadas/hachas), NO por nuestra etiqueta NBT propia. Dos armas personalizadas distintas que reusen el
- * MISMO ítem base (p.ej. dos armas sobre "minecraft:iron_sword") pueden colisionar ahí y tirar el juego
- * entero al abrir el inventario creativo — un solo JSON de contenido mal armado no debería poder hacer
- * eso, así que cualquier fallo al agregar UNA entrada se registra y se salta, sin tumbar el resto.</p>
+ * <p>Every item is added through {@link #safeAccept}: Forge requires every entry to have count 1, and
+ * above all, its internal creative-tab deduplication (meant for the "the enchanted book shows up twice"
+ * case) compares by known vanilla components (like attribute modifiers on swords/axes), NOT by our own
+ * NBT tag. Two different custom weapons that reuse the SAME base item (e.g. two weapons built on
+ * "minecraft:iron_sword") can collide there and crash the whole game when opening the creative
+ * inventory — a single malformed content JSON shouldn't be able to do that, so any failure adding ONE
+ * entry is logged and skipped, without bringing down the rest.</p>
  */
 public class DndsheetsModCreativeTab {
 	public static final DeferredRegister<CreativeModeTab> REGISTRY = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, DndsheetsMod.MODID);
@@ -48,8 +48,8 @@ public class DndsheetsModCreativeTab {
 		.title(Component.translatable("itemGroup.dndsheets.dnd_tab"))
 		.icon(() -> new ItemStack(DndsheetsModItems.TOKEN.get()))
 		.displayItems((params, output) -> {
-			//El manual de Patchouli, si está instalado: se puede guardar en el inventario, que es la mitad
-			//de la gracia frente a una pantalla que solo se abre con un botón.
+			//The Patchouli manual, if installed: it can be kept in the inventory, which is half the point
+			//compared to a screen that only opens via a button.
 			ItemStack guide = net.hawthorn.dndsheets.compat.PatchouliCompat.bookStack();
 			if (!guide.isEmpty()) safeAccept(output, guide);
 			safeAccept(output, MonsterCommand.buildDmToolStack());
@@ -84,7 +84,7 @@ public class DndsheetsModCreativeTab {
 		try {
 			output.accept(stack);
 		} catch (RuntimeException e) {
-			DndsheetsMod.LOGGER.warn("dndsheets: no pude mostrar {} en la pestaña creativa ({}). Probablemente comparte ítem base con otra entrada cargada.", stack.getHoverName().getString(), e.getMessage());
+			DndsheetsMod.LOGGER.warn("dndsheets: could not show {} in the creative tab ({}). It probably shares its base item with another loaded entry.", stack.getHoverName().getString(), e.getMessage());
 		}
 	}
 }

@@ -5,7 +5,7 @@ license="MIT License"
 [[mods]]
 modId="dndsheets_species"
 version="1.0.0"
-displayName="D&D Sheets: Species"
+displayName="VTT MineRPG: Species"
 authors="Hawthorn, Cosmic"
 description="Aplica el Aumento de Caracteristica y los rasgos del SRD cuando el jugador elige su raza con Origins."
 
@@ -21,12 +21,12 @@ description="Aplica el Aumento de Caracteristica y los rasgos del SRD cuando el 
 [[dependencies.dndsheets_species]]
     modId="dndsheets"
     mandatory=true
-    versionRange="[1.0.2,)"
+    versionRange="[2.2.0,)"
     ordering="AFTER"
     side="BOTH"
 
-# Dependencia DURA a proposito: Origins es quien elige la raza. Sin el instalado, /dndspecies sync no
-# tiene de donde leer y falla con un mensaje claro (ver RaceOriginBridge), no en silencio.
+# HARD dependency on purpose: Origins is what picks the race. Without it installed, /dndspecies sync has
+# nothing to read from and fails with a clear message (see RaceOriginBridge), not silently.
 [[dependencies.dndsheets_species]]
     modId="origins"
     mandatory=true

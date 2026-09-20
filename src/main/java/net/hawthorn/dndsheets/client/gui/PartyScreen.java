@@ -10,16 +10,17 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 
 /**
- * <p>Vista de grupo del DM: cada jugador conectado con su personaje, PG, CA y condiciones activas, de un
- * vistazo. Hasta ahora eso solo se podía consultar de uno en uno, abriendo los Ajustes de hoja de cada
- * jugador por separado — inservible en mitad de un combate, que es justo cuando hace falta.</p>
+ * <p>DM's party view: every connected player with their character, HP, AC, and active conditions, at
+ * a glance. Until now that could only be checked one at a time, opening each player's Sheet Settings
+ * separately — useless in the middle of combat, which is exactly when it's needed.</p>
  *
- * <p>Pulsar la fila de un jugador abre sus Ajustes de hoja directamente (el mismo camino que Panel de
- * DM → Ajustes → elegir jugador, sin el paso de elegir): esta es la pantalla que el DM más mira en
- * combate, y "lo veo pero para tocarlo tengo que salir y navegar tres listas" era la queja concreta.
- * Es un ATAJO al flujo existente, no un segundo camino que mantener — la fila manda el mismo
- * {@link SheetSummaryRequestMessage} que mandaba el selector de jugador. Los PNJ llegan con id vacío
- * (no son un jugador conectado que Ajustes pueda resolver) y su fila sigue siendo solo lectura.</p>
+ * <p>Clicking a player's row opens their Sheet Settings directly (the same path as DM Panel →
+ * Settings → choose player, without the choosing step): this is the screen the DM looks at most
+ * during combat, and "I can see it but to touch it I have to back out and navigate three lists" was
+ * the specific complaint. It's a SHORTCUT to the existing flow, not a second path to maintain — the
+ * row sends the same {@link SheetSummaryRequestMessage} the player selector used to send. NPCs arrive
+ * with an empty id (they're not a connected player that Settings can resolve) and their row stays
+ * read-only.</p>
  */
 public class PartyScreen extends ListPickerScreen {
 
@@ -36,7 +37,7 @@ public class PartyScreen extends ListPickerScreen {
 		Minecraft.getInstance().setScreen(new PartyScreen(ids, rows, Minecraft.getInstance().screen));
 	}
 
-	//Más ancha que la lista estándar: cada fila lleva nombre, PG, CA y condiciones, y a 200px se cortaba.
+	//Wider than the standard list: each row carries name, HP, AC, and conditions, and at 200px it got cut off.
 	@Override
 	protected int buttonWidth() {
 		return 260;

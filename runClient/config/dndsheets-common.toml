@@ -1,60 +1,55 @@
-#Dado de golpe por clase, usado para calcular la vida máxima real a partir de clase + nivel + constitución.
-#Formato: una entrada por línea como "nombre:dado" (p.ej. "guerrero:10").
-#La coincidencia es por subcadena e insensible a mayúsculas contra el campo 'Clase y Nivel' de la hoja.
-#Añade aquí los nombres de clase que uses en tu mesa (en cualquier idioma) sin tocar el código.
+#Hit die per class, used to compute actual max HP from class + level + constitution.
+#Format: one entry per line like "name:die" (e.g. "fighter:10").
+#Matching is by substring and case-insensitive against the sheet's 'Class & Level' field.
+#Add whatever class names you use at your table here (in any language) without touching the code.
 hitDice = ["barbarian:12", "bárbaro:12", "barbaro:12", "fighter:10", "guerrero:10", "paladin:10", "paladín:10", "ranger:10", "explorador:10", "bard:8", "bardo:8", "cleric:8", "clérigo:8", "clerigo:8", "druid:8", "druida:8", "monk:8", "monje:8", "rogue:8", "pícaro:8", "picaro:8", "warlock:8", "brujo:8", "sorcerer:6", "hechicero:6", "wizard:6", "mago:6"]
-#Daño por defecto de cada arma, usado para precargar la pestaña de Ataques con las armas
-#que el jugador lleve en el inventario, y para la tirada automática al golpear un armor stand.
-#Formato: una entrada por línea como "id_de_item;dado;característica" (p.ej. "minecraft:iron_sword;1d6;str").
-#La característica es str o dex. Cada jugador puede sobrescribir su propia tirada editando la entrada en su hoja.
+#Default damage for each weapon, used to preload the Attacks tab with the weapons
+#the player is carrying in their inventory, and for the automatic roll when hitting an armor stand.
+#Format: one entry per line like "item_id;die;ability" (e.g. "minecraft:iron_sword;1d6;str").
+#Ability is str or dex. Each player can override their own roll by editing the entry on their sheet.
 #
-#También admite armas personalizadas (dagas, lanzas, dardos...) sobre CUALQUIER ítem base:
-#dale al ítem una etiqueta NBT {dndsheets:{weapon:"tu_id"}} (por /give, loot table con
-#set_nbt, etc.) y usa ese mismo "tu_id" como clave aquí, p.ej. "dndsheets:dagger;1d4;dex".
-#Esa etiqueta manda sobre el id del ítem base, así puedes repartirlas como loot.
+#Also supports custom weapons (daggers, spears, darts...) on ANY base item:
+#give the item an NBT tag {dndsheets:{weapon:"your_id"}} (via /give, a loot table with
+#set_nbt, etc.) and use that same "your_id" as the key here, e.g. "dndsheets:dagger;1d4;dex".
+#That tag takes priority over the base item's id, so you can hand them out as loot.
 weaponDamage = ["minecraft:wooden_sword;1d6;str", "minecraft:wooden_axe;1d8;str", "minecraft:stone_sword;1d6;str", "minecraft:stone_axe;1d8;str", "minecraft:iron_sword;1d6;str", "minecraft:iron_axe;1d8;str", "minecraft:golden_sword;1d6;str", "minecraft:golden_axe;1d8;str", "minecraft:diamond_sword;1d6;str", "minecraft:diamond_axe;1d8;str", "minecraft:netherite_sword;1d6;str", "minecraft:netherite_axe;1d8;str", "minecraft:bow;1d8;dex", "minecraft:crossbow;1d8;dex", "minecraft:trident;1d8;str", "dndsheets:dagger;1d4;dex", "dndsheets:spear;1d6;str", "dndsheets:dart;1d4;dex"]
-#Bono de daño por nivel de encantamiento del arma, sumado como número plano a la tirada
-#(equivalente al +1/+2/+3 de un arma mágica en 5e), no como dados extra.
-#Formato: una entrada por línea como "id_de_encantamiento;bono_por_nivel" (p.ej. "minecraft:sharpness;1").
-#Un Sharpness III con bono 1 suma +3. Añade aquí cualquier otro encantamiento que quieras que cuente.
+#Damage bonus per weapon enchantment level, added as a flat number to the roll
+#(equivalent to the +1/+2/+3 of a magic weapon in 5e), not as extra dice.
+#Format: one entry per line like "enchantment_id;bonus_per_level" (e.g. "minecraft:sharpness;1").
+#A Sharpness III with bonus 1 adds +3. Add any other enchantment here that you want to count.
 enchantmentDamageBonus = ["minecraft:sharpness;1", "minecraft:smite;1", "minecraft:bane_of_arthropods;1", "minecraft:power;1", "minecraft:impaling;1"]
-#Reglas de visión (VisionManager): en oscuridad —nivel de luz de Minecraft por debajo de 4— un
-#personaje sin visión en la oscuridad queda cegado, con lo que eso significa en 5e: ataca con
-#desventaja y le atacan con ventaja. Quien tiene el rasgo ve como en penumbra. Llevar una antorcha
-#o un farol en la mano cuenta como luz brillante.
+#Vision rules (VisionManager): in darkness — Minecraft light level below 4 — a character
+#without darkvision becomes blinded, with everything that means in 5e: attacks with
+#disadvantage and is attacked with advantage. Whoever has the trait sees as in dim light. Holding
+#a torch or lantern in hand counts as bright light.
 #
-#Apagado por defecto A PROPÓSITO: es la regla más intrusiva del mod, porque cambia cómo se juega a
-#Minecraft fuera de la mesa (minar de noche, entrar en una cueva). Se enciende y se apaga en
-#caliente con /dndvision, que escribe aquí.
+#Off by default ON PURPOSE: it's the most intrusive rule in the mod, because it changes how
+#Minecraft is played outside the table (mining at night, entering a cave). It's toggled on and
+#off live with /dndvision, which writes here.
 visionRules = false
-#Modo solo (sin DM): cuando está activo, CUALQUIER jugador conectado puede hacer todo lo que hoy
-#exige un operador —invocar monstruos, controlar turnos a mano, aplicarse un preset de clase,
-#encender/apagar reglas de mesa, e incluso aplicar condiciones o ajustar la hoja de OTRO jugador—.
-#No hay jerarquía nueva ni 'líder de grupo': en modo solo todos quedan igual de confiables entre
-#sí, el mismo nivel de confianza que ya hace falta para compartir el mismo mundo de Minecraft.
+#Solo mode (no DM): when active, ANY connected player can do everything that currently requires
+#an operator — summoning monsters, controlling turns by hand, applying a class preset to
+#themselves, toggling table rules, and even applying conditions or adjusting ANOTHER player's
+#sheet. There's no new hierarchy or 'party leader': in solo mode everyone is equally trusted
+#among themselves, the same level of trust already required to share the same Minecraft world.
 #
-#Se enciende y se apaga en caliente con /dndsolo, igual que visionRules con /dndvision — pero ESE
-#comando exige nivel de permiso 4 (dueño del server/consola), no 2: decide QUIÉN tiene poder
-#administrativo total sobre otros jugadores, así que pide el mismo acceso que ya hace falta para
-#nombrar operadores, no el nivel 2 que este mismo flag vuelve irrelevante en cuanto se enciende.
+#Toggled on and off live with /dndsolo, same as visionRules with /dndvision — but THAT command
+#requires permission level 4 (server owner/console), not 2: it decides WHO has full
+#administrative power over other players, so it demands the same access already needed to
+#appoint operators, not the level 2 that this very flag renders irrelevant the moment it's turned on.
 soloMode = false
-#Dificultad de los monstruos: 'facil' (×0.75 PG y daño), 'normal' (×1.0, como siempre) o 'dificil'
-#(×1.5 PG y daño). Solo escala al MONSTRUO —lo que un jugador hace nunca cambia—, así que sirve
-#como mando de dificultad self-service para un grupo sin DM que arbitre 'esto está siendo muy
-#duro' a ojo. Se cambia en caliente con /dnddifficulty, igual que visionRules con /dndvision.
-difficultyPreset = "normal"
-#Tiempo de lanzamiento de los conjuros, en ticks (20 ticks = 1 segundo).
+#Spell casting time, in ticks (20 ticks = 1 second).
 #
-#Un conjuro con tiempo de lanzamiento no sale en el mismo instante: el lanzador se carga de
-#partículas de su escuela, la barra de acción enseña el progreso, y recibir daño obliga a una
-#salvación de Constitución para no perderlo (el espacio de conjuro se gasta igual, como con el
-#Contrahechizo). Es lo único de este mod que hace que conjurar OCUPE tiempo real.
+#A spell with a casting time doesn't go off instantly: the caster builds up particles of its
+#school, the action bar shows progress, and taking damage forces a Constitution save to avoid
+#losing it (the spell slot is spent regardless, as with Counterspell). This is the only thing in
+#this mod that makes casting TAKE real time.
 #
-#Se calcula como nivel del conjuro x castTicksPerLevel, con castTicksMax de techo. Los trucos son
-#siempre instantáneos. Un conjuro puede fijar su propio "castTicks" en el JSON y entonces manda
-#ese (así se escribe un Escudo o un Contrahechizo, que tienen que salir ya).
+#Computed as spell level x castTicksPerLevel, capped by castTicksMax. Cantrips are always
+#instant. A spell can set its own "castTicks" in its JSON, which then takes priority
+#(this is how a Shield or a Counterspell is written, since they need to go off immediately).
 #
-#castTicksPerLevel = 0 devuelve el lanzamiento instantáneo de siempre para toda la mesa.
+#castTicksPerLevel = 0 restores the always-instant casting of old for the whole table.
 #Range: 0 ~ 40
 castTicksPerLevel = 3
 #Range: 0 ~ 200

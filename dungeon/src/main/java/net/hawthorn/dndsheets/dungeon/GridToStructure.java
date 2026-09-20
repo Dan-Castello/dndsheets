@@ -7,21 +7,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * <p>Traduce una grilla 2D dibujada por el DM (editor de trazado) a una lista plana de bloques
- * relativos al origen de la pieza. Puro: no toca {@code Level} ni {@code ServerPlayer}, así que se
- * prueba sin arrancar Forge, igual que {@link CharacterRules}. Quien la use en el mundo real (colocar
- * los bloques o volcarlos a un {@code StructureTemplate}) es una capa aparte que sí necesita el juego
- * corriendo.</p>
+ * <p>Translates a 2D grid drawn by the DM (trace editor) into a flat list of blocks relative to the
+ * piece's origin. Pure: doesn't touch {@code Level} or {@code ServerPlayer}, so it's testable without
+ * booting Forge, just like {@link CharacterRules}. Whatever uses it in the real world (placing the
+ * blocks, or dumping them into a {@code StructureTemplate}) is a separate layer that does need the
+ * game running.</p>
  *
- * <p>Una pared no tiene por qué salir un círculo geométrico: el DM la dibuja celda a celda, así que
- * sale tan reconocible como un círculo hecho a mano con bloques en el juego — bordes en escalera, no
- * un arco perfecto. Esta clase no intenta suavizarlo, solo traduce lo que hay en la grilla.</p>
+ * <p>A wall doesn't have to come out as a geometric circle: the DM draws it cell by cell, so it comes
+ * out as recognizable as a circle hand-built with blocks in-game — stair-stepped edges, not a perfect
+ * arc. This class doesn't try to smooth it out, it just translates what's on the grid.</p>
  *
- * <p>Las celdas {@code OBJECT} no llevan un bloque fijo: cargan el {@link ResourceLocation} que el DM
- * eligió en el editor (ver {@code BlockPickerScreen}), que puede ser de cualquier mod instalado —
- * muebles incluidos. {@link Kind#WALL}/{@link Kind#FLOOR} siguen usando un bloque por defecto; la capa
- * que planta los bloques decide qué hacer si el {@code ResourceLocation} de un objeto no resuelve a
- * nada (mod desinstalado).</p>
+ * <p>{@code OBJECT} cells don't carry a fixed block: they hold the {@link ResourceLocation} the DM
+ * picked in the editor (see {@code BlockPickerScreen}), which can be from any installed mod —
+ * furniture included. {@link Kind#WALL}/{@link Kind#FLOOR} still use a default block; the layer that
+ * plants the blocks decides what to do if an object's {@code ResourceLocation} doesn't resolve to
+ * anything (mod uninstalled).</p>
  */
 public final class GridToStructure {
 
@@ -45,50 +45,49 @@ public final class GridToStructure {
 	public enum Kind { FLOOR, WALL, CONNECTOR, START, OBJECT }
 
 	/**
-	 * <p>Posición relativa al origen de la pieza (x/z = columna/fila de la grilla, y = altura).
-	 * {@code blockId} solo se usa con {@link Kind#OBJECT}. {@code targetPool} solo con
-	 * {@link Kind#CONNECTOR}/{@link Kind#START}: a qué pool tira este jigsaw al conectar — null significa
-	 * "el pool de esta misma pieza" (comportamiento por defecto, quien planta el bloque decide con qué se
-	 * rellena).</p>
+	 * <p>Position relative to the piece's origin (x/z = grid column/row, y = height). {@code blockId}
+	 * is only used with {@link Kind#OBJECT}. {@code targetPool} is only used with
+	 * {@link Kind#CONNECTOR}/{@link Kind#START}: which pool this jigsaw connects to — null means "this
+	 * same piece's pool" (default behavior, whatever plants the block decides what to fill it with).</p>
 	 */
 	public record PlacedBlock(int x, int y, int z, Kind kind, Direction facing, ResourceLocation blockId, String targetPool) {}
 
 	/**
-	 * <p>Todo lo que el DM puede ajustar en una celda más allá de su tipo — qué bloque usa un
-	 * {@code OBJECT} y hacia dónde mira, o a qué pool tira y hacia dónde apunta una
-	 * {@code DOOR}/{@code START}. Los cuatro campos son independientes entre sí (un objeto nunca usa
-	 * {@code doorPool}, una puerta nunca usa {@code objectBlock}) porque una celda es una cosa o la otra,
-	 * nunca las dos. Cualquier campo en null es "usar el comportamiento por defecto" — el mismo que tenía
-	 * el editor antes de poder tocar esto.</p>
+	 * <p>Everything the DM can adjust on a cell beyond its type — which block an {@code OBJECT} uses
+	 * and which way it faces, or which pool a {@code DOOR}/{@code START} connects to and which way it
+	 * points. The four fields are independent of each other (an object never uses {@code doorPool}, a
+	 * door never uses {@code objectBlock}) because a cell is one thing or the other, never both. Any
+	 * field left null means "use the default behavior" — the same behavior the editor had before this
+	 * was adjustable.</p>
 	 */
 	public record CellOptions(ResourceLocation objectBlock, Direction objectFacing, String doorPool, Direction doorFacing) {
 		public static final CellOptions EMPTY = new CellOptions(null, null, null, null);
 	}
 
-	/** Una fila de texto por fila de grilla, todas del mismo largo. Ver {@link Cell#fromChar}. */
+	/** One text row per grid row, all the same length. See {@link Cell#fromChar}. */
 	public static Cell[][] parse(String[] rows) {
 		if (rows.length == 0) return new Cell[0][0];
 		int width = rows[0].length();
 		Cell[][] grid = new Cell[rows.length][width];
 		for (int z = 0; z < rows.length; z++) {
 			if (rows[z].length() != width) {
-				throw new IllegalArgumentException("todas las filas deben medir " + width + " celdas, la fila " + z + " mide " + rows[z].length());
+				throw new IllegalArgumentException("all rows must be " + width + " cells wide, row " + z + " is " + rows[z].length());
 			}
 			for (int x = 0; x < width; x++) grid[z][x] = Cell.fromChar(rows[z].charAt(x));
 		}
 		return grid;
 	}
 
-	/** Sin ajustes por celda — ver {@link #render(Cell[][], int, CellOptions[][])}. */
+	/** No per-cell adjustments — see {@link #render(Cell[][], int, CellOptions[][])}. */
 	public static List<PlacedBlock> render(Cell[][] grid, int height) {
 		return render(grid, height, null);
 	}
 
 	/**
-	 * @param height  alto de las columnas de pared, en bloques, por encima del piso.
-	 * @param options ajustes por celda (ver {@link CellOptions}), mismas dimensiones que {@code grid};
-	 *                null (la grilla entera, o una celda suelta) = sin ajustar, se usa el comportamiento
-	 *                por defecto de cada tipo de celda.
+	 * @param height  height of the wall columns, in blocks, above the floor.
+	 * @param options per-cell adjustments (see {@link CellOptions}), same dimensions as {@code grid};
+	 *                null (the whole grid, or a single cell) = unadjusted, uses the default behavior
+	 *                for that cell type.
 	 */
 	public static List<PlacedBlock> render(Cell[][] grid, int height, CellOptions[][] options) {
 		List<PlacedBlock> blocks = new ArrayList<>();
@@ -125,7 +124,7 @@ public final class GridToStructure {
 		return opt != null ? opt : CellOptions.EMPTY;
 	}
 
-	/** Inversa de {@link Cell#fromChar}, para que el editor pueda mandar la grilla como texto por la red. */
+	/** Inverse of {@link Cell#fromChar}, so the editor can send the grid as text over the network. */
 	public static char toChar(Cell cell) {
 		return switch (cell) {
 			case WALL -> '#';
@@ -141,10 +140,10 @@ public final class GridToStructure {
 		return render(parse(rows), height);
 	}
 
-	//ponytail: heurística simple — la puerta apunta al primer vecino vacío que encuentra, en orden
-	//N/E/S/O. Una puerta interior sin ningún vecino vacío no tiene un "afuera" natural y queda
-	//apuntando al norte por defecto. Si hace falta enrutar puertas interiores, el editor tendrá que
-	//dejar que el DM marque la dirección a mano.
+	//ponytail: simple heuristic — the door points to the first empty neighbor found, in N/E/S/W order.
+	//An interior door with no empty neighbor at all has no natural "outside" and defaults to pointing
+	//north. If routing interior doors is ever needed, the editor will have to let the DM mark the
+	//direction by hand.
 	private static Direction outwardFacing(Cell[][] grid, int x, int z) {
 		if (isOutside(grid, x, z - 1)) return Direction.NORTH;
 		if (isOutside(grid, x + 1, z)) return Direction.EAST;
@@ -159,9 +158,9 @@ public final class GridToStructure {
 	}
 
 	/**
-	 * <p>Sello circular sobre una grilla ya parseada: útil para que el editor ofrezca un pincel de
-	 * "sala circular" en vez de obligar al DM a marcar celda por celda. Compara distancia al centro, así
-	 * que el resultado sale en escalera — reconocible como círculo, no geométricamente exacto.</p>
+	 * <p>Stamps a circle onto an already-parsed grid: useful so the editor can offer a "circular room"
+	 * brush instead of forcing the DM to mark cell by cell. Compares distance to the center, so the
+	 * result comes out stair-stepped — recognizable as a circle, not geometrically exact.</p>
 	 */
 	public static void stampCircle(Cell[][] grid, int centerX, int centerZ, int radius, int wallThickness) {
 		for (int z = 0; z < grid.length; z++) {

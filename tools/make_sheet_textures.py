@@ -1,15 +1,15 @@
-# Regenera los fondos de la hoja de personaje con la MISMA identidad que los paneles (ver
-# make_panel_texture.py y GuiStyle): el marco es literalmente el cuero del tomo, la página es
-# pergamino con grano, las escuadras son el latón 0xC9A227 (que ya era el oro del original).
+# Regenerates the character sheet backgrounds with the SAME identity as the panels (see
+# make_panel_texture.py and GuiStyle): the frame is literally the tome's leather, the page is
+# grainy parchment, the corner brackets are the 0xC9A227 brass (which was already the original's gold).
 #
-#   character_sheet.png     (1592x1152) — pestaña principal, con divisoria central en x=552..554
-#   character_sheet_2.png   (1592x1152) — habilidades, sin divisoria
-#   character_sheet_3.png   (1592x1152) — ataques, sin divisoria
-#   atlas/imagebutton_tabbutton.png (50x45) — 3 estados de la pestaña lateral, 50x15 cada uno
+#   character_sheet.png     (1592x1152) — main tab, with a central divider at x=552..554
+#   character_sheet_2.png   (1592x1152) — skills, no divider
+#   character_sheet_3.png   (1592x1152) — attacks, no divider
+#   atlas/imagebutton_tabbutton.png (50x45) — 3 states of the side tab, 50x15 each
 #
-# La geometría (ventana de pergamino en (41,41)-(1551,1111), divisoria, tamaños) es la MEDIDA del
-# original: los offsets de campo de CharacterSheetScreen están hardcodeados contra ella y no se
-# tocan. Los originales viven en el historial de git; esta herramienta es la fuente desde ahora.
+# The geometry (parchment window at (41,41)-(1551,1111), divider, sizes) is MEASURED from the
+# original: the field offsets in CharacterSheetScreen are hardcoded against it and are not
+# touched. The originals live in the git history; this tool is the source from now on.
 # Semilla fija: regenerar produce exactamente los mismos PNG.
 import numpy as np
 from PIL import Image
@@ -18,16 +18,16 @@ from pathlib import Path
 OUT_DIR = Path(__file__).resolve().parent.parent / "src/main/resources/assets/dndsheets/textures/screens"
 
 WIDTH, HEIGHT = 1592, 1152
-WINDOW = (41, 41, 1551, 1111)  # ventana de pergamino, medida del original
+WINDOW = (41, 41, 1551, 1111)  # parchment window, measured from the original
 DIVIDER_X = (552, 555)
 
-LEATHER = np.array([26.0, 20.0, 14.0])      # el cuero de GuiStyle (0x1A140E)
-PARCHMENT = np.array([221.0, 205.0, 169.0]) # el pergamino del original
-BRASS = np.array([201.0, 162.0, 39.0])      # 0xC9A227 — ya era el oro del original
+LEATHER = np.array([26.0, 20.0, 14.0])      # GuiStyle's leather (0x1A140E)
+PARCHMENT = np.array([221.0, 205.0, 169.0]) # the original's parchment
+BRASS = np.array([201.0, 162.0, 39.0])      # 0xC9A227 — it was already the original's gold
 EDGE = np.array([46.0, 36.0, 24.0])         # 0x2E2418
 BEVEL_LIGHT = np.array([107.0, 86.0, 54.0]) # 0x6B5636
 BEVEL_DARK = np.array([11.0, 9.0, 6.0])     # 0x0B0906
-DIVIDER = np.array([150.0, 132.0, 102.0])   # trazo de tinta suave sobre el pergamino
+DIVIDER = np.array([150.0, 132.0, 102.0])   # soft ink stroke over the parchment
 
 
 def tileable_noise(rng, height, width, exponent):
@@ -58,7 +58,7 @@ def parchment_layer(rng, height, width):
 
 
 def vignette(height, width, depth_px, strength):
-    """Oscurecimiento suave hacia los bordes, como la sombra del marco sobre la página del original."""
+    """Soft darkening toward the edges, like the frame's shadow on the original's page."""
     y = np.arange(height)[:, None]
     x = np.arange(width)[None, :]
     dist = np.minimum(np.minimum(y, height - 1 - y), np.minimum(x, width - 1 - x))
@@ -71,7 +71,7 @@ def paint(img, x0, y0, x1, y1, color):
 
 
 def corner_brackets(img):
-    """Escuadras de latón en L por FUERA, como las del original: brazo de 110px, grosor 14, a 8px del borde."""
+    """Brass L-brackets on the OUTSIDE, like the original's: 110px arm, thickness 14, 8px from the edge."""
     arm, thick, off = 110, 14, 8
     w, h = WIDTH, HEIGHT
     for (cx, cy, sx, sy) in ((0, 0, 1, 1), (w, 0, -1, 1), (0, h, 1, -1), (w, h, -1, -1)):
@@ -88,8 +88,8 @@ def corner_brackets(img):
 def sheet(rng, with_divider):
     img = leather_layer(rng, HEIGHT, WIDTH)
 
-    # Bisel del canto exterior del tomo: contorno + luz arriba/izquierda, sombra abajo/derecha (x4,
-    # porque la textura va a 4x del tamaño de blit — 8px aquí = los 2px de GuiStyle en pantalla).
+    # Bevel of the tome's outer edge: outline + light top/left, shadow bottom/right (x4,
+    # because the texture is at 4x the blit size — 8px here = GuiStyle's 2px on screen).
     paint(img, 0, 0, WIDTH, 4, EDGE); paint(img, 0, HEIGHT - 4, WIDTH, HEIGHT, EDGE)
     paint(img, 0, 0, 4, HEIGHT, EDGE); paint(img, WIDTH - 4, 0, WIDTH, HEIGHT, EDGE)
     paint(img, 4, 4, WIDTH - 8, 12, BEVEL_LIGHT); paint(img, 4, 4, 12, HEIGHT - 8, BEVEL_LIGHT)
@@ -97,7 +97,7 @@ def sheet(rng, with_divider):
 
     corner_brackets(img)
 
-    # Ventana de pergamino, hundida: bisel invertido (sombra arriba/izquierda, luz abajo/derecha).
+    # Parchment window, recessed: inverted bevel (shadow top/left, light bottom/right).
     x0, y0, x1, y1 = WINDOW
     paint(img, x0 - 8, y0 - 8, x1 + 8, y0, BEVEL_DARK); paint(img, x0 - 8, y0 - 8, x0, y1 + 8, BEVEL_DARK)
     paint(img, x0 - 8, y1, x1 + 8, y1 + 8, BEVEL_LIGHT); paint(img, x1, y0 - 8, x1 + 8, y1 + 8, BEVEL_LIGHT)
@@ -113,8 +113,8 @@ def sheet(rng, with_divider):
 
 
 def tab_atlas(rng):
-    """Tres estados de 50x15 apilados: reposo, resaltado y activo (con filete de latón), en el cuero
-    y biselado de TomeButton para que la pestaña pertenezca al mismo tomo que el resto."""
+    """Three stacked 50x15 states: rest, highlighted and active (with a brass rail), in the leather
+    and bevel of TomeButton so the tab belongs to the same tome as the rest."""
     idle = np.array([36.0, 28.0, 19.0])   # 0x241C13
     hover = np.array([56.0, 43.0, 27.0])  # 0x382B1B
     atlas = np.zeros((45, 50, 4))
@@ -124,10 +124,10 @@ def tab_atlas(rng):
         block = base[None, None, :] * (1.0 + 0.08 * noise[y0:y0 + 15, :, None])
         atlas[y0:y0 + 15, :, :3] = block
         atlas[y0:y0 + 15, :, 3] = 255
-        atlas[y0, :, :3] = np.array([90.0, 72.0, 48.0])          # bisel claro arriba
-        atlas[y0 + 14, :, :3] = BEVEL_DARK                        # sombra abajo
+        atlas[y0, :, :3] = np.array([90.0, 72.0, 48.0])          # light bevel on top
+        atlas[y0 + 14, :, :3] = BEVEL_DARK                        # shadow below
         if brass_rail:
-            atlas[y0 + 1:y0 + 14, 0:2, :3] = BRASS                # filete de "esta es la activa"
+            atlas[y0 + 1:y0 + 14, 0:2, :3] = BRASS                # rail meaning "this is the active one"
     return Image.fromarray(np.clip(atlas, 0, 255).astype(np.uint8), "RGBA")
 
 
@@ -137,7 +137,7 @@ def main():
     sheet(rng, with_divider=False).save(OUT_DIR / "character_sheet_2.png")
     sheet(rng, with_divider=False).save(OUT_DIR / "character_sheet_3.png")
     tab_atlas(rng).save(OUT_DIR / "atlas" / "imagebutton_tabbutton.png")
-    print("escritas 3 láminas de hoja + atlas de pestañas")
+    print("wrote 3 sheet plates + tab atlas")
 
 
 if __name__ == "__main__":

@@ -8,11 +8,11 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.List;
 import java.util.function.Supplier;
 
-//Servidor -> cliente (el DM): abre el menú de ataques/hechizos de un monstruo que acaba de tocar con la vara de DM.
+//Server -> client (the DM): opens the attack/spell menu of a monster just touched with the DM rod.
 public class MonsterActionOpenMessage {
 	int entityId;
 	List<String> actionNames;
-	List<String> customAttackNames; //Subconjunto de actionNames añadido en vivo (ver MonsterRegistry.addCustomAttack): el menú los ofrece para editar/quitar aparte de los predefinidos.
+	List<String> customAttackNames; //Subset of actionNames added live (see MonsterRegistry.addCustomAttack): the menu offers them for editing/removal apart from the predefined ones.
 
 	public MonsterActionOpenMessage(int entityId, List<String> actionNames, List<String> customAttackNames) {
 		this.entityId = entityId;

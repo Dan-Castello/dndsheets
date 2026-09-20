@@ -8,13 +8,13 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente -> servidor: el jugador pulsó "Lanzar" sobre un hechizo conocido en su Grimorio.
+//Client -> server: the player pressed "Cast" on a known spell in their Spellbook.
 public class SpellCastMessage {
 	String spellId;
 	/**
-	 * Nivel de espacio elegido para lanzarlo, o 0 para "el más bajo que sirva". Va en el mensaje y no se
-	 * decide en el servidor porque subir de nivel un conjuro es una DECISIÓN del jugador: gastar un espacio
-	 * de 5º en una Bola de Fuego a cambio de más dados es exactamente lo que el servidor no puede adivinar.
+	 * Slot level chosen to cast it, or 0 for "the lowest that works". It travels in the message rather
+	 * than being decided server-side because upcasting a spell is a player DECISION: spending a 5th-level
+	 * slot on a Fireball in exchange for more dice is exactly what the server can't guess on its own.
 	 */
 	int slotLevel;
 

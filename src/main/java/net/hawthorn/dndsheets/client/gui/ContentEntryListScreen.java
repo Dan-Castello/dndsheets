@@ -14,17 +14,17 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * <p>Gestiona el contenido de un tipo: una fila por entrada que abre su editor (donde vive el botón
- * "Borrar", ver {@link SmallFormScreen#showDeleteButton()}), más "+ Añadir". Solo sabe de armas/hechizos/
- * presets/dotes/encuentros (ver {@code ContentTypeForms}) — rasgos y monstruos usan flujos propios
- * ({@code TraitEditScreen}, captura de plantilla desde {@code MonsterActionScreen}).</p>
+ * <p>Manages the content of one type: one row per entry that opens its editor (where the "Delete" button
+ * lives, see {@link SmallFormScreen#showDeleteButton()}), plus "+ Add". It only knows about weapons/spells/
+ * presets/feats/encounters (see {@code ContentTypeForms}) — traits and monsters use their own flows
+ * ({@code TraitEditScreen}, template capture from {@code MonsterActionScreen}).</p>
  *
- * <p><b>Dos secciones, no una.</b> Arriba lo que creó el DM ({@code dm_created.json}); debajo lo que trae
- * el pack. Antes solo salía lo primero, así que abrir "Encuentros" sin haber creado ninguno daba una
- * pantalla vacía teniendo cinco encuentros cargados y jugables: se lee como que esto no gestiona nada.
- * Editar uno del pack guarda TU versión con el mismo id en tu archivo, y esa es la que gana al cargar
- * (ver el orden de {@code DndPaths.autoLoadAll}) — el pack no se toca, porque se reescribe desde el jar
- * en cada arranque.</p>
+ * <p><b>Two sections, not one.</b> On top, what the DM created ({@code dm_created.json}); below, what the
+ * pack provides. It used to show only the former, so opening "Encounters" without having created any gave
+ * an empty screen despite having five loaded, playable encounters: it reads as if this manages nothing.
+ * Editing a pack entry saves YOUR version with the same id in your file, and that's the one that wins on
+ * load (see the order in {@code DndPaths.autoLoadAll}) — the pack itself isn't touched, since it's rewritten
+ * from the jar on every startup.</p>
  */
 public class ContentEntryListScreen extends ListPickerScreen {
 	private final ContentType type;
@@ -38,8 +38,8 @@ public class ContentEntryListScreen extends ListPickerScreen {
 		this.fromPacks = fromPacks;
 	}
 
-	//Mismo criterio que DungeonPieceListScreen.open: el parent es lo que esté en pantalla en ese momento
-	//(la pantalla que pidió la lista, o esta misma pantalla si es un eco tras guardar/borrar).
+	//Same criterion as DungeonPieceListScreen.open: the parent is whatever's on screen at that moment
+	//(the screen that requested the list, or this same screen if it's an echo after saving/deleting).
 	public static void open(ContentType type, String arrayJson, String packsJson) {
 		Minecraft.getInstance().setScreen(new ContentEntryListScreen(type, parse(arrayJson), parse(packsJson),
 			Minecraft.getInstance().screen));
@@ -52,12 +52,12 @@ public class ContentEntryListScreen extends ListPickerScreen {
 	}
 
 	/**
-	 * <p>Todo lo que este menu necesita saber de un tipo de contenido: como se titula, que campos pide su
-	 * formulario, como se rellena desde una entrada existente y como vuelve a JSON.</p>
+	 * <p>Everything this menu needs to know about a content type: what its title is, what fields its
+	 * form asks for, how to prefill it from an existing entry, and how to turn it back into JSON.</p>
 	 *
-	 * <p>Eran CUATRO switch paralelos sobre el mismo enum, con los mismos casos en el mismo orden. Anadir
-	 * un tipo obligaba a acordarse de tocar los cuatro, y olvidarse de uno no daba error de compilacion:
-	 * daba un {@code IllegalStateException} en ejecucion, al abrir ese menu concreto.</p>
+	 * <p>This used to be FOUR parallel switches over the same enum, with the same cases in the same order.
+	 * Adding a type meant remembering to touch all four, and forgetting one didn't give a compile error:
+	 * it gave an {@code IllegalStateException} at runtime, when opening that particular menu.</p>
 	 */
 	private record FormSpec(String titleKey,
 			List<ContentFormScreen.FieldSpec> fields,
@@ -65,9 +65,10 @@ public class ContentEntryListScreen extends ListPickerScreen {
 			Function<Map<String, String>, JsonObject> toJson) {
 	}
 
-	//TRAIT y MONSTER no tienen formulario plano: TRAIT usa TraitEditScreen (listas anidadas de nivel/dado)
-	//y MONSTER todavia no tiene UI. Llevan solo titulo, y el switch los nombra en vez de dejarlos caer en
-	//una rama default que lanzaba: asi el compilador obliga a decidir que hace un tipo NUEVO.
+	//TRAIT and MONSTER have no flat form: TRAIT uses TraitEditScreen (nested level/die tables)
+	//and MONSTER doesn't have a UI yet. They carry only a title, and the switch names them explicitly
+	//instead of letting them fall into a default branch that throws: this way the compiler forces a
+	//decision about what a NEW type does.
 	private static FormSpec specFor(ContentType type) {
 		return switch (type) {
 			case WEAPON -> new FormSpec("gui.dndsheets.content_entry.weapons",
@@ -97,8 +98,8 @@ public class ContentEntryListScreen extends ListPickerScreen {
 
 		if (fromPacks.isEmpty()) return;
 		addHeader(Component.translatable("gui.dndsheets.content_entry.from_pack"));
-		//Los ids que ya tienes tuyos no se repiten abajo: tu versión es la que manda, y verla dos veces
-		//—una editable y otra no— solo invita a editar la que no cuenta.
+		//Ids you already have your own version of aren't repeated below: your version is the one that
+		//counts, and showing it twice — one editable, one not — only invites editing the one that doesn't count.
 		java.util.Set<String> mine = new java.util.HashSet<>();
 		for (JsonObject entry : entries) if (entry.has("id")) mine.add(entry.get("id").getAsString());
 		for (JsonObject entry : fromPacks) {
@@ -110,14 +111,14 @@ public class ContentEntryListScreen extends ListPickerScreen {
 	private void addEntryRow(JsonObject entry) {
 		String id = entry.has("id") ? entry.get("id").getAsString() : "?";
 		String name = entry.has("name") ? entry.get("name").getAsString() : id;
-		//El nombre del pack es una clave de idioma ("content.dndsheets.encounter.cripta"): se traduce, que
-		//es lo que el DM reconoce. Lo que él escribe es texto suyo y ContentNames lo deja tal cual.
+		//A pack name is a language key ("content.dndsheets.encounter.crypt_guardians"): it gets translated, which
+		//is what the DM recognizes. Whatever the DM types is their own text and ContentNames leaves it as-is.
 		Component label = Component.literal(id + " — ").append(net.hawthorn.dndsheets.ContentNames.of(name));
 		addRow(id.equals(name) ? Component.literal(id) : label, b -> openEditor(entry));
 	}
 
-	//TRAIT tiene sus propias listas anidadas (nivel/dado) que no encajan en ContentFormScreen — ver
-	//TraitEditScreen. El resto usa el formulario plano genérico.
+	//TRAIT has its own nested lists (level/die) that don't fit ContentFormScreen — see
+	//TraitEditScreen. Everything else uses the generic flat form.
 	private void openEditor(JsonObject entry) {
 		String id = entry.get("id").getAsString();
 		if (type == ContentType.TRAIT) {
@@ -129,8 +130,8 @@ public class ContentEntryListScreen extends ListPickerScreen {
 		}
 	}
 
-	//Para TRAIT, "+ Añadir" solo pide id/nombre/característica (crea la entrada vacía de tablas de nivel);
-	//las tablas se agregan editando la entrada recién creada desde TraitEditScreen.
+	//For TRAIT, "+ Add" only asks for id/name/characteristic (it creates the entry with empty level
+	//tables); the tables get added by editing the newly created entry from TraitEditScreen.
 	private void openCreateForm() {
 		if (type == ContentType.TRAIT) {
 			ContentFormScreen.open(type, Component.translatable("gui.dndsheets.content_entry.add_trait").getString(),

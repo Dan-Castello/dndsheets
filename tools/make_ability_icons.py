@@ -1,32 +1,32 @@
 # -*- coding: utf-8 -*-
-"""Genera los seis iconos de caracteristica de la hoja (16x16).
+"""Generates the sheet's six ability icons (16x16).
 
-Los de MCreator eran dibujos de colores saturados —un brazo rojo, un conejo blanco, un cerebro azul, un
-buho— con estilos distintos entre si: no pertenecian a la paleta de cuero y laton del resto del mod.
+The MCreator ones were drawings in saturated colors —a red arm, a white rabbit, a blue brain, an
+owl— with styles different from each other: they did not belong to the leather-and-brass palette of the rest of the mod.
 
-La tentacion al tematizarlos era pasarlos todos a laton, como los iconos de tirada. Eso habria sido un
-error: son lo UNICO que identifica cada fila del panel lateral, y seis siluetas del mismo color se
-convierten en seis manchas parecidas. Lo que hace que se lean rapido es el color, no la forma.
+The temptation when theming them was to turn them all brass, like the roll icons. That would have been a
+mistake: they are the ONLY thing that identifies each row of the side panel, and six silhouettes of the same color
+become six similar blobs. What makes them read quickly is the color, not the shape.
 
-Asi que se conserva un color por caracteristica, pero como pigmentos de manuscrito: todos apagados al
-mismo nivel y todos con el MISMO contorno de tinta que el resto de la hoja. Es lo que convierte seis
-dibujos sueltos en un juego: contorno comun, saturacion comun, tono e identidad distintos.
+So one color per ability is kept, but as manuscript pigments: all muted to the
+same level and all with the SAME ink outline as the rest of the sheet. It is what turns six
+loose drawings into a set: common outline, common saturation, distinct hue and identity.
 
-Siluetas elegidas por legibilidad a 16 px, no por ser las mas evocadoras:
+Silhouettes chosen for legibility at 16 px, not for being the most evocative:
 
-  FUE  brazo flexionado    CON  corazon        SAB  ojo
-  DES  flecha              INT  libro abierto  CAR  corona
+  STR  flexed arm          CON  heart          WIS  eye
+  DEX  arrow               INT  open book      CHA  crown
 
-La flecha en vez de una pluma, y el ojo en vez de un buho, porque a este tamano una pluma se confunde con
-el icono de modo edicion (que ya es una) y un buho es una mancha redonda.
+The arrow instead of a feather, and the eye instead of an owl, because at this size a feather is confused with
+the edit-mode icon (which already is one) and an owl is a round blob.
 """
 from PIL import Image, ImageDraw
 
-INK = (42, 33, 24, 255)      # la misma tinta que las etiquetas de la hoja
+INK = (42, 33, 24, 255)      # the same ink as the sheet labels
 NONE = (0, 0, 0, 0)
 
-# Pigmentos apagados, no colores puros: sobre pergamino un rojo saturado grita y rompe el conjunto.
-# El de Carisma es berenjena y no dorado a proposito — el laton ya significa "pulsable" en esta interfaz.
+# Muted pigments, not pure colors: on parchment a saturated red shouts and breaks the set.
+# Charisma's is eggplant and not gold on purpose — brass already means "clickable" in this interface.
 OXIDE = (166, 67, 44, 255)      # FUE
 VERDIGRIS = (75, 122, 82, 255)  # DES
 BURGUNDY = (138, 42, 58, 255)   # CON
@@ -35,9 +35,9 @@ TEAL = (47, 107, 107, 255)      # SAB
 AUBERGINE = (99, 62, 116, 255)  # CAR
 
 
-#FUE. Brazo flexionado, a mascara y no a poligono: con un poligono salia un arco simetrico, porque lo que
-#distingue un brazo de una herradura son dos detalles asimetricos —el punho arriba a la derecha y el bulto
-#del biceps abajo a la izquierda— y esos hay que ponerlos pixel a pixel.
+#STR. A flexed arm, by mask and not by polygon: with a polygon it came out a symmetric arc, because what
+#tells an arm from a horseshoe is two asymmetric details —the fist at the top right and the bulge
+#of the biceps at the bottom left— and those have to be placed pixel by pixel.
 ARM_MASK = (
     '................',
     '..........####..',
@@ -59,7 +59,7 @@ ARM_MASK = (
 
 
 def mask_shape(mask):
-    """Dibuja una mascara y le pone contorno de tinta en todo pixel vacio que toque el relleno."""
+    """Draws a mask and gives it an ink outline on every empty pixel that touches the fill."""
     def draw_it(draw, fill):
         lleno = {(x, y) for y, fila in enumerate(mask) for x, c in enumerate(fila) if c == '#'}
         for (x, y) in lleno:
@@ -76,7 +76,7 @@ arm = mask_shape(ARM_MASK)
 
 
 def arrow(draw, fill):
-    """DES. Flecha en diagonal: direccion y punta, que a 16 px se leen mejor que una figura corriendo."""
+    """DEX. A diagonal arrow: direction and tip, which at 16 px read better than a running figure."""
     draw.polygon([(14, 2), (14, 7), (11, 5)], fill=fill, outline=INK)   # punta
     draw.line([(3, 13), (13, 3)], fill=INK, width=3)
     draw.line([(4, 12), (12, 4)], fill=fill, width=1)
@@ -89,14 +89,14 @@ def heart(draw, fill):
 
 
 def book(draw, fill):
-    """INT. Libro abierto, con el lomo marcado para que no parezca un rectangulo."""
+    """INT. An open book, with the spine marked so it doesn't look like a rectangle."""
     draw.polygon([(1, 4), (7, 6), (7, 14), (1, 12)], fill=fill, outline=INK)
     draw.polygon([(15, 4), (9, 6), (9, 14), (15, 12)], fill=fill, outline=INK)
     draw.line([(8, 6), (8, 14)], fill=INK, width=1)
 
 
 def eye(draw, fill):
-    """SAB. Ojo: la pupila en tinta le da un centro, que es lo que evita que se lea como una hoja."""
+    """WIS. An eye: the ink pupil gives it a center, which is what keeps it from reading as a leaf."""
     draw.polygon([(1, 8), (5, 4), (11, 4), (15, 8), (11, 12), (5, 12)], fill=fill, outline=INK)
     draw.ellipse([6, 6, 10, 10], fill=INK)
 
@@ -128,4 +128,4 @@ if __name__ == '__main__':
     out = sys.argv[1]
     for name, (shape, fill) in ICONS.items():
         build(shape, fill).save('%s/%s.png' % (out, name))
-    print('%d iconos de caracteristica generados en %s' % (len(ICONS), out))
+    print('%d ability icons generated in %s' % (len(ICONS), out))

@@ -12,8 +12,8 @@ import net.minecraftforge.network.PacketDistributor;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: borra una pieza de mazmorra ya capturada, desde DungeonPieceListScreen
-//(equivalente en GUI a /dnddungeon piece remove <id>, que hasta ahora era la única forma de hacerlo).
+//Client (the DM) -> server: deletes an already-captured dungeon piece, from DungeonPieceListScreen
+//(the GUI equivalent of /dnddungeon piece remove <id>, which until now was the only way to do it).
 public class DungeonPieceRemoveMessage {
 	String id;
 
@@ -39,8 +39,8 @@ public class DungeonPieceRemoveMessage {
 
 			DungeonManager.removePiece(dm.getServer(), message.id);
 			dm.sendSystemMessage(Component.translatable("chat.dndsheets.dungeon.piece_deleted", message.id));
-			//Reabre la lista ya sin la pieza borrada, en vez de simplemente cerrar — mismo eco que usa
-			//DungeonPieceUpdateMessage tras editar.
+			//Reopens the list without the deleted piece, instead of simply closing — same echo pattern
+			//DungeonPieceUpdateMessage uses after editing.
 			DndsheetsDungeonMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> dm), DungeonPieceListMessage.of(dm.serverLevel(), DungeonPieceRegistry.all()));
 		});
 	}

@@ -13,8 +13,8 @@ import net.minecraftforge.network.PacketDistributor;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: capturar una pieza nueva desde DungeonPieceAddScreen — copia el .nbt ya
-//escaneado con el bloque de estructura al datapack de la partida y la registra (ver DungeonManager.capturePiece).
+//Client (the DM) -> server: capture a new piece from DungeonPieceAddScreen — copies the .nbt already
+//scanned with the structure block into the game's datapack and registers it (see DungeonManager.capturePiece).
 public class DungeonPieceCaptureMessage {
 	String id, structureId, pool, tags;
 	int weight;

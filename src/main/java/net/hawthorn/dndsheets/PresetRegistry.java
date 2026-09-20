@@ -12,26 +12,26 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * <p>Presets de clase cargados en caliente por {@code /dndpresets load}, en memoria (igual que
- * {@link MonsterRegistry}/{@link SpellRegistry}). Elegir uno rellena los valores generales de la hoja
- * (clase, dado de golpe, características) en vez de escribirlos a mano campo por campo, y concede los
- * rasgos (pasivas/habilidades) que tenga configurados — ver {@link TraitRegistry}.</p>
+ * <p>Class presets hot-loaded by {@code /dndpresets load}, in memory (same as
+ * {@link MonsterRegistry}/{@link SpellRegistry}). Picking one fills in the sheet's general values
+ * (class, hit dice, ability scores) instead of writing them by hand field by field, and grants whatever
+ * traits (passives/features) it's configured with — see {@link TraitRegistry}.</p>
  */
-//Sin contrato de estabilidad: este mod no publica una API versionada (la fachada DndSheetsApi se
-//borró — 233 líneas que no usaba ni un solo llamador, tampoco los addons, que entran por aquí).
-//Un mod externo que llame estos métodos se expone a que cambien de firma sin aviso. Lo único
-//pensado para consumo externo son los eventos de api/event, que sí tienen consumidor real.
+//No stability contract: this mod doesn't publish a versioned API (the DndSheetsApi facade was
+//deleted — 233 lines that not a single caller used, addons included, which come in through here).
+//An external mod calling these methods risks their signature changing without notice. The only
+//thing meant for external consumption is the api/event events, which do have real consumers.
 public class PresetRegistry {
 	/**
-	 * <p>Una subclase (arquetipo): la segunda mitad de lo que es un personaje en 5e, elegida unos niveles
-	 * después de la clase. Vive DENTRO de su preset y no en un registro propio porque una subclase sin su
-	 * clase no significa nada — "Escuela de Evocación" no es elegible por un bárbaro, y un registro aparte
-	 * obligaría a llevar la pareja a mano en los dos sentidos.</p>
+	 * <p>A subclass (archetype): the second half of what a 5e character is, chosen a few levels after the
+	 * class itself. It lives INSIDE its preset rather than in its own registry because a subclass without
+	 * its class means nothing — "School of Evocation" isn't eligible for a barbarian, and a separate
+	 * registry would force keeping the pairing consistent by hand in both directions.</p>
 	 *
-	 * <p>Concede exactamente lo mismo que un preset (rasgos y hechizos) por el mismo camino, así que no
-	 * añade ninguna forma nueva de conceder nada. {@code criticalFrom} es la única excepción y existe por
-	 * un solo caso: el Campeón del guerrero critica con 19, que es el rasgo de subclase del SRD que este
-	 * motor sí puede sostener sin inventarse un subsistema. Cero significa "no lo toca".</p>
+	 * <p>It grants exactly the same things a preset does (traits and spells) through the same path, so it
+	 * adds no new way of granting anything. {@code criticalFrom} is the sole exception and exists for one
+	 * single case: the fighter's Champion crits on 19, which is the one SRD subclass feature this engine
+	 * can actually support without inventing a whole subsystem. Zero means "doesn't touch it".</p>
 	 */
 	public record Subclass(String id, String name, int level, List<String> traits, List<String> spells, int criticalFrom) {}
 
@@ -60,12 +60,11 @@ public class PresetRegistry {
 		return REGISTRY.remove(id);
 	}
 
-	//Público: usado por PresetCommand (/dndpresets load) y por DndPaths para precargar solo todos los
-	//.json de la carpeta al arrancar el servidor, sin que DndPaths tenga que depender de la capa de
-	//comandos.
+	//Public: used by PresetCommand (/dndpresets load) and by DndPaths to preload all the folder's
+	//.json files on server startup, without DndPaths having to depend on the command layer.
 	private static final JsonRegistryLoader<ClassPreset> LOADER = new JsonRegistryLoader<>("preset", PresetRegistry::parse, PresetRegistry::register);
 
-	/** Carga desde un JSON ya leído (datapack o jar de otro mod) — ver ContentDatapackLoader. */
+	/** Loads from an already-parsed JSON (datapack or another mod's jar) — see ContentDatapackLoader. */
 	public static int loadJson(com.google.gson.JsonElement root, String source, java.util.function.Consumer<String> onId) {
 		return LOADER.loadJson(root, source, onId);
 	}
@@ -98,9 +97,9 @@ public class PresetRegistry {
 			for (JsonElement el : json.getAsJsonArray("spells")) spells.add(el.getAsString());
 		}
 
-		//Equipo inicial: lo que el arma inicial no cubre y sin embargo decide la mitad de la ficha. La
-		//armadura de aquí sube la CA de verdad, porque la CA sale del atributo real de Minecraft — un
-		//guerrero recién creado valía 10 + Destreza hasta que un DM se acordaba de darle una cota.
+		//Starting gear: what the starting weapon doesn't cover and yet decides half the sheet. Armor from
+		//here actually raises AC, because AC comes from a real Minecraft attribute — a freshly created
+		//fighter was stuck at 10 + Dexterity until a DM remembered to give them a chestplate.
 		List<String> startingGear = new ArrayList<>();
 		if (json.has("startingGear")) {
 			for (JsonElement el : json.getAsJsonArray("startingGear")) startingGear.add(el.getAsString());
@@ -117,8 +116,8 @@ public class PresetRegistry {
 				subclasses.add(new Subclass(
 					entry.get("id").getAsString(),
 					entry.has("name") ? entry.get("name").getAsString() : entry.get("id").getAsString(),
-					//Nivel 3 por defecto: es el de la mayoría de las clases del SRD, y una subclase sin nivel
-					//escrito es casi siempre una que sigue la norma.
+					//Level 3 by default: that's what most SRD classes use, and a subclass with no level
+					//written is almost always one that follows the norm.
 					entry.has("level") ? entry.get("level").getAsInt() : 3,
 					subTraits, subSpells,
 					entry.has("criticalFrom") ? entry.get("criticalFrom").getAsInt() : 0));
@@ -128,7 +127,7 @@ public class PresetRegistry {
 		return new ClassPreset(id, name, hitDiceType, abilities, startingWeaponId, startingGear, spellSlotsMax, traits, spells, subclasses);
 	}
 
-	//Rellena los campos generales de la hoja. No toca "attacks" (ver PresetManager, que además entrega el arma inicial real).
+	//Fills in the sheet's general fields. Doesn't touch "attacks" (see PresetManager, which also grants the actual starting weapon).
 	public static void applyToSheet(JsonObject sheet, ClassPreset preset) {
 		revokePreviousTraits(sheet);
 		sheet.addProperty("appliedPresetId", preset.id());
@@ -141,20 +140,20 @@ public class PresetRegistry {
 		sheet.addProperty("wisdom", String.valueOf(preset.ability("wis")));
 		sheet.addProperty("charisma", String.valueOf(preset.ability("cha")));
 		if (preset.spellSlotsMax() > 0) {
-			//spellSlotsMax del preset era el total de un personaje de NIVEL 1 y no escalaba nunca. Ahora la
-			//clase decide la tabla entera; el campo se conserva solo como marca de "esta clase lanza".
+			//The preset's spellSlotsMax used to be the total for a LEVEL-1 character and never scaled. Now
+			//the class decides the whole table; the field is kept only as a marker that "this class casts".
 			SpellSlots.applyProgression(sheet, preset.name(), CharacterRules.levelOf(sheet));
 		}
 		for (String traitId : preset.traits()) TraitRegistry.grant(sheet, traitId);
-		//Rasgo icónico de un preset caster: sin esto el Grimorio se quedaba vacío pese a tener espacios de
-		//conjuro — el preset configuraba el CONTADOR de espacios pero nunca daba ningún hechizo que gastarlos.
+		//Signature feature of a caster preset: without this the Spellbook stayed empty despite having
+		//spell slots — the preset configured the slot COUNTER but never gave any spell to spend them on.
 		for (String spellId : preset.spells()) SpellRegistry.learn(sheet, spellId);
 	}
 
 	/**
-	 * <p>Las subclases que este personaje puede elegir ahora mismo: las de su preset cuyo nivel ya alcanzó.
-	 * Sin preset aplicado no hay ninguna, que es correcto — la subclase es una rama de la clase, así que
-	 * primero hay que tener clase.</p>
+	 * <p>The subclasses this character can pick right now: the ones from their preset whose level they've
+	 * already reached. With no preset applied there are none, which is correct — a subclass is a branch
+	 * of the class, so you need a class first.</p>
 	 */
 	public static List<Subclass> availableSubclasses(JsonObject sheet) {
 		if (sheet == null || !sheet.has("appliedPresetId")) return List.of();
@@ -170,21 +169,23 @@ public class PresetRegistry {
 	}
 
 	/**
-	 * <p>Aplica una subclase a la hoja. Devuelve false si esa subclase no es de la clase de este personaje o
-	 * si todavía no tiene nivel para ella: se comprueba aquí y no solo al pintar la lista, porque un cliente
-	 * modificado puede pedir cualquier id — la misma frontera de siempre.</p>
+	 * <p>Applies a subclass to the sheet. Returns false if that subclass doesn't belong to this
+	 * character's class or if they don't have the level for it yet: this is checked here and not just
+	 * when rendering the list, because a modified client can request any id — the same boundary as
+	 * always.</p>
 	 *
-	 * <p><b>La elección es permanente</b>, como el pacto del brujo: no se revoca la anterior al elegir otra.
-	 * Cambiar de subclase es rehacer el personaje, y quitarle rasgos a alguien a mitad de campaña porque
-	 * pulsó una fila es peor que dejarle una subclase que no quería, que el DM puede arreglar.</p>
+	 * <p><b>The choice is permanent</b>, like the warlock's pact: the previous one isn't revoked when
+	 * picking another. Switching subclass means remaking the character, and stripping someone's traits
+	 * mid-campaign because they clicked a row is worse than leaving them a subclass they didn't want,
+	 * which the DM can fix.</p>
 	 */
 	public static boolean applySubclass(JsonObject sheet, String subclassId) {
 		for (Subclass subclass : availableSubclasses(sheet)) {
 			if (!subclass.id().equals(subclassId)) continue;
 
 			sheet.addProperty("appliedSubclassId", subclass.id());
-			//El nombre también, y no solo el id: es lo que lee la pantalla del cliente, que no tiene el
-			//registro. Mismo par que appliedPresetId/characterClass.
+			//The name too, not just the id: that's what the client screen reads, since it doesn't have the
+			//registry. Same pairing as appliedPresetId/characterClass.
 			sheet.addProperty("characterSubclass", subclass.name());
 			if (subclass.criticalFrom() > 0) sheet.addProperty("criticalFrom", String.valueOf(subclass.criticalFrom()));
 			for (String traitId : subclass.traits()) TraitRegistry.grant(sheet, traitId);
@@ -194,10 +195,10 @@ public class PresetRegistry {
 		return false;
 	}
 
-	//Antes de conceder los rasgos del preset NUEVO, quita los del preset anterior (si había uno registrado
-	//y su id sigue cargado): sin esto, cambiar de "monje" a "mago" dejaba Artes Marciales concedido para
-	//siempre, ya que TraitRegistry.grant solo sabe añadir. "appliedPresetId" es lo único que necesitamos
-	//guardar para saber cuál era — no hace falta trackear la lista completa de rasgos por separado.
+	//Before granting the NEW preset's traits, revoke the previous preset's (if one was recorded and its id
+	//is still loaded): without this, switching from "monk" to "wizard" left Martial Arts granted forever,
+	//since TraitRegistry.grant only knows how to add. "appliedPresetId" is the only thing we need to store
+	//to know what it was — no need to track the full trait list separately.
 	private static void revokePreviousTraits(JsonObject sheet) {
 		if (!sheet.has("appliedPresetId")) return;
 		ClassPreset previous = get(sheet.get("appliedPresetId").getAsString());

@@ -26,9 +26,9 @@ import java.nio.file.Path;
 import java.util.Collection;
 
 /**
- * <p>Carga rasgos (pasivas/habilidades de clase) desde JSON en
- * {@code <carpeta del mundo>/dndsheets/traits/<archivo>.json} (ver {@link TraitRegistry} para el formato)
- * y los concede a mano a un jugador, además de lo que ya conceda su preset de clase.</p>
+ * <p>Loads traits (passives/class features) from JSON at
+ * {@code <world folder>/dndsheets/traits/<file>.json} (see {@link TraitRegistry} for the format)
+ * and grants them to a player by hand, on top of whatever their class preset already grants.</p>
  */
 @Mod.EventBusSubscriber
 public class TraitCommand {
@@ -38,11 +38,11 @@ public class TraitCommand {
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndtraits")
 			.requires(source -> DndsheetsMod.canActAsDm(source))
-			.then(ContentCommands.loadBranch(TRAITS_DIR, TraitRegistry::loadFile, "rasgos"))
-			.then(ContentCommands.listBranch(TraitRegistry::ids, "Rasgos"))
+			.then(ContentCommands.loadBranch(TRAITS_DIR, TraitRegistry::loadFile, "traits"))
+			.then(ContentCommands.listBranch(TraitRegistry::ids, "Traits"))
 			.then(Commands.literal("grant")
-				.then(Commands.argument("jugadores", EntityArgument.players())
-					.then(Commands.argument("rasgoId", ResourceLocationArgument.id())
+				.then(Commands.argument("players", EntityArgument.players())
+					.then(Commands.argument("traitId", ResourceLocationArgument.id())
 						.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(TraitRegistry.ids(), builder))
 						.executes(TraitCommand::grant)))));
 	}
@@ -50,21 +50,21 @@ public class TraitCommand {
 
 
 	private static int grant(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
-		String traitId = ResourceLocationArgument.getId(ctx, "rasgoId").toString();
+		String traitId = ResourceLocationArgument.getId(ctx, "traitId").toString();
 		TraitRegistry.Trait trait = TraitRegistry.get(traitId);
 		if (trait == null) {
-			ctx.getSource().sendFailure(Component.literal("No conozco el rasgo \"" + traitId + "\". Cárgalo con /dndtraits load."));
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.trait.no_such_load_hint", traitId));
 			return 0;
 		}
 
-		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "jugadores");
+		Collection<ServerPlayer> targets = EntityArgument.getPlayers(ctx, "players");
 		for (ServerPlayer target : targets) grantToPlayer(target, traitId);
-		ctx.getSource().sendSuccess(() -> Component.literal(targets.size() + " jugador(es) recibieron el rasgo ").append(ContentNames.of(trait.name())).append("."), true);
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.trait.granted", targets.size(), ContentNames.of(trait.name())), true);
 		return targets.size();
 	}
 
-	//Público: también lo usa el Panel de DM (ver network.TraitGrantMessage) para conceder un rasgo sin
-	//pasar por Brigadier. No valida el id: el llamador ya lo resolvió contra TraitRegistry.
+	//Public: also used by the DM Panel (see network.TraitGrantMessage) to grant a trait without going
+	//through Brigadier. Doesn't validate the id: the caller already resolved it against TraitRegistry.
 	public static void grantToPlayer(ServerPlayer target, String traitId) {
 		JsonObject sheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (sheet == null) return;

@@ -14,9 +14,9 @@ import net.minecraftforge.fml.common.Mod;
 import java.util.List;
 
 /**
- * <p>{@code /dndrolls [n]}: las últimas tiradas de la partida (ver {@link RollLog}), consultables sin
- * desplazarse por el chat. Sin permiso: es de solo lectura, y un grupo sin DM lo necesita tanto como
- * cualquiera — mismo criterio que {@code /dndchar list}.</p>
+ * <p>{@code /dndrolls [n]}: the most recent rolls of the game (see {@link RollLog}), checkable without
+ * scrolling through chat. No permission required: it's read-only, and a group without a DM needs it just
+ * as much as anyone — same criterion as {@code /dndchar list}.</p>
  */
 @Mod.EventBusSubscriber
 public class RollLogCommand {
@@ -27,18 +27,18 @@ public class RollLogCommand {
 	public static void registerCommand(RegisterCommandsEvent event) {
 		event.getDispatcher().register(Commands.literal("dndrolls")
 			.executes(ctx -> show(ctx, DEFAULT_COUNT))
-			.then(Commands.argument("cantidad", IntegerArgumentType.integer(1, MAX_COUNT))
-				.executes(ctx -> show(ctx, IntegerArgumentType.getInteger(ctx, "cantidad")))));
+			.then(Commands.argument("amount", IntegerArgumentType.integer(1, MAX_COUNT))
+				.executes(ctx -> show(ctx, IntegerArgumentType.getInteger(ctx, "amount")))));
 	}
 
 	private static int show(CommandContext<CommandSourceStack> ctx, int count) {
 		List<RollLog.Entry> recent = RollLog.recent();
 		if (recent.isEmpty()) {
-			ctx.getSource().sendSuccess(() -> Component.literal("Todavía no se tiró nada esta partida."), false);
+			ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.roll.none_yet"), false);
 			return 0;
 		}
-		//Solo a quien pregunta, no a todo el radio: es una consulta, no un anuncio de mesa — RollAnnouncerProcedure
-		//ya se encarga de anunciar cada tirada en el momento en que pasa.
+		//Only to whoever asked, not to the whole radius: it's a query, not a table announcement —
+		//RollAnnouncerProcedure already handles announcing each roll the moment it happens.
 		int shown = Math.min(count, recent.size());
 		for (int i = 0; i < shown; i++) {
 			RollLog.Entry entry = recent.get(i);

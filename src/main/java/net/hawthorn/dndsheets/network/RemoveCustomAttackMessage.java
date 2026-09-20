@@ -9,7 +9,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-//Cliente (el DM) -> servidor: quitó un ataque personalizado desde ManageCustomAttacksScreen.
+//Client (the DM) -> server: removed a custom attack from ManageCustomAttacksScreen.
 public class RemoveCustomAttackMessage {
 	int entityId;
 	String name;

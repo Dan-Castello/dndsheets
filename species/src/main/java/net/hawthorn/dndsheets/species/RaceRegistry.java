@@ -22,46 +22,46 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * <p>Razas del SRD 5e: mismo molde que {@code TraitRegistry}/{@code PresetRegistry} del core (registro
- * en memoria, cargado en caliente desde JSON, sin motor genérico — un campo por efecto, una rama donde se
- * consume). El Aumento de Característica y la velocidad se escriben directo en la ficha (igual que ya
- * hace {@code PresetRegistry.applyToSheet} con la clase); los rasgos de comportamiento (Ascendencia
- * Feérica, Suerte, Resistencia Implacable...) se conceden como {@link TraitRegistry} descriptivos, sin
- * automatizar mecánica que el motor de combate no modela todavía — mismo criterio que ya documenta
- * {@code TraitRegistry} para los rasgos de clase.</p>
+ * <p>SRD 5e races: same mold as the core's {@code TraitRegistry}/{@code PresetRegistry} (in-memory
+ * registry, hot-loaded from JSON, no generic engine — one field per effect, one branch where it's
+ * consumed). The Ability Score Increase and speed are written directly onto the sheet (same as
+ * {@code PresetRegistry.applyToSheet} already does for class); behavioral traits (Fey Ancestry, Lucky,
+ * Relentless Endurance...) are granted as descriptive {@link TraitRegistry} entries, without automating
+ * mechanics the combat engine doesn't model yet — same criterion {@code TraitRegistry} already documents
+ * for class traits.</p>
  *
- * <p>La visión en la oscuridad NO se toca aquí: {@code CharacterRules.darkvisionFeetFor} ya la deriva del
- * texto de {@code characterRace} por subcadena (elfo/enano/gnomo/orco/tiefling), así que escribir el
- * nombre de la raza alcanza — duplicarla en un campo nuevo sería dos fuentes para lo mismo.</p>
+ * <p>Darkvision is NOT touched here: {@code CharacterRules.darkvisionFeetFor} already derives it from the
+ * {@code characterRace} text by substring match (elf/dwarf/gnome/orc/tiefling), so writing the race name
+ * is enough — duplicating it into a new field would be two sources of truth for the same thing.</p>
  */
 @Mod.EventBusSubscriber
 public class RaceRegistry {
 	public record Race(String id, String name, Map<String, Integer> abilityBonus, Integer speed, List<String> traits, String note) {}
 
-	private static final NamedRegistry<Race> REGISTRY = new NamedRegistry<>("raza", Race::id);
+	private static final NamedRegistry<Race> REGISTRY = new NamedRegistry<>("race", Race::id);
 	private static final List<String> ABILITY_KEYS = List.of("strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma");
 
-	//9 razas del SRD 5.1, en Java y no en JSON a proposito (mismo motivo que el CharacterOptionsRegistry
-	//original: "para que funcione sin ningun JSON de por medio"). /dndspecies load sigue sirviendo para
-	//que un DM reemplace una entrada por id con su propia version (homebrew), igual que FeatRegistry.
+	//9 SRD 5.1 races, in Java and not JSON on purpose (same reason as the original CharacterOptionsRegistry:
+	//"so it works with no JSON involved"). /dndspecies load still serves to let a DM replace an entry by
+	//id with their own version (homebrew), same as FeatRegistry.
 	static {
-		register(new Race("human", "Humano", Map.of(
+		register(new Race("human", "Human", Map.of(
 			"strength", 1, "dexterity", 1, "constitution", 1, "intelligence", 1, "wisdom", 1, "charisma", 1
 		), 30, List.of(), null));
-		register(new Race("elf", "Elfo", Map.of("dexterity", 2), 30,
+		register(new Race("elf", "Elf", Map.of("dexterity", 2), 30,
 			List.of("dndsheets_species:fey_ancestry", "dndsheets_species:trance"), null));
-		register(new Race("dwarf", "Enano", Map.of("constitution", 2), 25,
+		register(new Race("dwarf", "Dwarf", Map.of("constitution", 2), 25,
 			List.of("dndsheets_species:dwarven_resilience", "dndsheets_species:stonecunning"), null));
-		register(new Race("halfling", "Mediano", Map.of("dexterity", 2), 25,
+		register(new Race("halfling", "Halfling", Map.of("dexterity", 2), 25,
 			List.of("dndsheets_species:lucky", "dndsheets_species:brave"), null));
-		register(new Race("dragonborn", "Dracónido", Map.of("strength", 2, "charisma", 1), 30,
+		register(new Race("dragonborn", "Dragonborn", Map.of("strength", 2, "charisma", 1), 30,
 			List.of("dndsheets_species:draconic_ancestry"), null));
-		register(new Race("gnome", "Gnomo", Map.of("intelligence", 2), 25,
+		register(new Race("gnome", "Gnome", Map.of("intelligence", 2), 25,
 			List.of("dndsheets_species:gnome_cunning"), null));
-		register(new Race("half_elf", "Semielfo", Map.of("charisma", 2), 30,
+		register(new Race("half_elf", "Half-Elf", Map.of("charisma", 2), 30,
 			List.of("dndsheets_species:fey_ancestry", "dndsheets_species:skill_versatility"),
-			"El SRD también da +1 a otras dos características a elección — ajustalas a mano en Ajustar Ficha."));
-		register(new Race("half_orc", "Semiorco", Map.of("strength", 2, "constitution", 1), 30,
+			"The SRD also gives +1 to two other abilities of your choice — adjust them by hand on the character sheet."));
+		register(new Race("half_orc", "Half-Orc", Map.of("strength", 2, "constitution", 1), 30,
 			List.of("dndsheets_species:relentless_endurance", "dndsheets_species:savage_attacks"), null));
 		register(new Race("tiefling", "Tiefling", Map.of("charisma", 2, "intelligence", 1), 30,
 			List.of("dndsheets_species:hellish_resistance", "dndsheets_species:infernal_legacy"), null));
@@ -79,15 +79,15 @@ public class RaceRegistry {
 		return REGISTRY.ids();
 	}
 
-	private static final JsonRegistryLoader<Race> LOADER = new JsonRegistryLoader<>("raza", RaceRegistry::parse, RaceRegistry::register);
+	private static final JsonRegistryLoader<Race> LOADER = new JsonRegistryLoader<>("race", RaceRegistry::parse, RaceRegistry::register);
 
 	public static int loadFile(Path file) throws IOException {
 		return LOADER.loadFile(file);
 	}
 
-	//Homebrew opcional: un JSON en dndsheets/races/<id>.json reemplaza esa raza SRD por la del DM (mismo
-	//id de NamedRegistry.register: pisa con aviso, no funde campos). Sin carpeta o sin archivos, las 9
-	//del static{} de arriba quedan como están — no hace falta ningún JSON para jugar.
+	//Optional homebrew: a JSON in dndsheets/races/<id>.json replaces that SRD race with the DM's own (same
+	//id as NamedRegistry.register: overwrites with a warning, doesn't merge fields). With no folder or no
+	//files, the 9 from the static{} block above stay as they are — no JSON is required to play.
 	@SubscribeEvent
 	public static void onServerStarting(ServerStartingEvent event) {
 		if (!Files.isDirectory(DndPaths.RACES_DIR)) return;
@@ -96,11 +96,11 @@ public class RaceRegistry {
 				try {
 					loadFile(file);
 				} catch (IOException | RuntimeException e) {
-					net.hawthorn.dndsheets.DndsheetsMod.LOGGER.warn("dndsheets_species: no pude cargar {}: {}", file, e.toString());
+					net.hawthorn.dndsheets.DndsheetsMod.LOGGER.warn("dndsheets_species: could not load {}: {}", file, e.toString());
 				}
 			}
 		} catch (IOException e) {
-			net.hawthorn.dndsheets.DndsheetsMod.LOGGER.warn("dndsheets_species: no pude listar {}: {}", DndPaths.RACES_DIR, e.toString());
+			net.hawthorn.dndsheets.DndsheetsMod.LOGGER.warn("dndsheets_species: could not list {}: {}", DndPaths.RACES_DIR, e.toString());
 		}
 	}
 
@@ -119,17 +119,17 @@ public class RaceRegistry {
 		return new Race(id, name, abilityBonus, speed, traits, note);
 	}
 
-	//--- Sheet: aplicar/reemplazar la raza elegida ---
+	//--- Sheet: apply/replace the chosen race ---
 
 	public enum ApplyOutcome {APPLIED, NO_CHANGE, UNKNOWN_RACE}
 
 	public record ApplyResult(ApplyOutcome outcome, Race race) {}
 
 	/**
-	 * <p>Aditivo, no absoluto (a diferencia de {@code PresetRegistry.applyToSheet}): el Aumento de
-	 * Característica del SRD se suma sobre lo que ya haya en la ficha, no lo reemplaza. Por eso, si ya
-	 * había OTRA raza aplicada, primero le resta su bono — sin esto, cambiar de Humano a Elfo dejaría los
-	 * dos bonos apilados.</p>
+	 * <p>Additive, not absolute (unlike {@code PresetRegistry.applyToSheet}): the SRD's Ability Score
+	 * Increase adds onto whatever is already on the sheet, it doesn't replace it. That's why, if ANOTHER
+	 * race was already applied, its bonus is subtracted first — without this, switching from Human to Elf
+	 * would leave both bonuses stacked.</p>
 	 */
 	public static ApplyResult apply(JsonObject sheet, String raceId) {
 		Race race = get(raceId);

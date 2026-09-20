@@ -1,0 +1,24 @@
+{
+  "name": "gui.dndsheets.guide.entry.cover",
+  "category": "dndsheets:combat",
+  "icon": "minecraft:shield",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.cover"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.vision"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.vision_2"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.distance"
+    }
+  ]
+}
