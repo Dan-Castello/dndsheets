@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 
 public class RollEditorScreen extends AbstractContainerScreen<RollEditorMenu> {
 	private final static HashMap<String, Object> guistate = RollEditorMenu.guistate;

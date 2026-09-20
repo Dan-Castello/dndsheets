@@ -1,6 +1,5 @@
 package net.hawthorn.dndsheets.network;
 
-import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.client.gui.MonsterActionScreen;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;

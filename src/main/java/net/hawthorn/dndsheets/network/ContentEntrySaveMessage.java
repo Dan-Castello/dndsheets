@@ -4,12 +4,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.hawthorn.dndsheets.ContentPackFile;
 import net.hawthorn.dndsheets.ContentType;
-import net.hawthorn.dndsheets.DndsheetsMod;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
 
 import java.io.IOException;
 import java.util.function.Supplier;

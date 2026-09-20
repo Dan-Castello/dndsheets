@@ -1,6 +1,5 @@
 package net.hawthorn.dndsheets.network;
 
-import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.PresetManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;

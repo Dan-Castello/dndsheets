@@ -5,7 +5,6 @@ import net.hawthorn.dndsheets.dungeon.DungeonManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.entity.JigsawBlockEntity;
 import net.minecraftforge.network.NetworkEvent;
 

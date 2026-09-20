@@ -7,7 +7,6 @@ import net.hawthorn.dndsheets.ContentType;
 import net.hawthorn.dndsheets.MonsterRegistry;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.network.NetworkEvent;
 

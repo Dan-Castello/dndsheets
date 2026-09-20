@@ -3,7 +3,6 @@ package net.hawthorn.dndsheets;
 import net.minecraft.network.chat.Component;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.network.ScreenActionMessage;
-import net.hawthorn.dndsheets.network.SheetClientMessage;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;

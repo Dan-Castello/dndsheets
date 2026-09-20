@@ -1,9 +1,7 @@
 package net.hawthorn.dndsheets.network;
 
-import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.MonsterRegistry;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraftforge.network.NetworkEvent;
 

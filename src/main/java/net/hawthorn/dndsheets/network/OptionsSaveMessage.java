@@ -1,17 +1,13 @@
 package net.hawthorn.dndsheets.network;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import net.hawthorn.dndsheets.CharacterOptionsRegistry;
 import net.hawthorn.dndsheets.ContentPackFile;
 import net.hawthorn.dndsheets.DndPaths;
-import net.hawthorn.dndsheets.DndsheetsMod;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.PacketDistributor;
 
 import java.io.IOException;
 import java.nio.file.Path;

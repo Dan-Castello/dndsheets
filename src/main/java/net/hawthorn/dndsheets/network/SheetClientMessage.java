@@ -3,7 +3,6 @@ package net.hawthorn.dndsheets.network;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;

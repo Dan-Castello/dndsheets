@@ -4,7 +4,6 @@ import net.hawthorn.dndsheets.network.NetworkUtil;
 import net.hawthorn.dndsheets.dungeon.DndsheetsDungeonMod;
 import net.hawthorn.dndsheets.dungeon.DungeonPieceRegistry;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.PacketDistributor;
 

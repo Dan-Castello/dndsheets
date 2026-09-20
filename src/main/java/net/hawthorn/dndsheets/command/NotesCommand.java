@@ -4,7 +4,6 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.hawthorn.dndsheets.AbilityItem;
 import net.hawthorn.dndsheets.DndsheetsMod;
-import net.hawthorn.dndsheets.ItemLook;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;

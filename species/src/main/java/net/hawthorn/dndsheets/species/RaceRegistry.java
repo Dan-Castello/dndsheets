@@ -1,6 +1,5 @@
 package net.hawthorn.dndsheets.species;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.DndPaths;

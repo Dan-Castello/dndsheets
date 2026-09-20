@@ -28,7 +28,6 @@ import net.minecraftforge.registries.ForgeRegistries;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * <p>{@code /dnditems}: magic items. Same set of subcommands as the rest of the content types

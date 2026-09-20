@@ -6,7 +6,6 @@ import net.hawthorn.dndsheets.SpellRegistry;
 import net.hawthorn.dndsheets.command.SpellCommand;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;

@@ -8,7 +8,6 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.hawthorn.dndsheets.BarbarianRageManager;
 import net.hawthorn.dndsheets.BardInspirationManager;
 import net.hawthorn.dndsheets.CounterspellManager;
-import net.hawthorn.dndsheets.DiceManager;
 import net.hawthorn.dndsheets.LevelUpManager;
 import net.hawthorn.dndsheets.SpellSlots;
 import net.hawthorn.dndsheets.DndsheetsMod;
