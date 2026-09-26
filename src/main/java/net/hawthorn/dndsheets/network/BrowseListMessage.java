@@ -11,6 +11,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraftforge.network.NetworkEvent;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -27,7 +28,7 @@ public class BrowseListMessage {
 	//the migration that deleted ~16 classes from this package.
 	public enum Kind { MINE, PARTY, CONTENT, DETAIL, JOURNAL, SUBCLASS, FEAT,
 		GIVE_WEAPON, GIVE_SPELL, GRANT_TRAIT, PRESET, PRESET_MULTICLASS, SPAWN_MONSTER,
-		MANAGE_OPTIONS, CONTENT_ENTRY, CHARACTER_OPTION, ENCOUNTER, ENCOUNTER_DESIGN }
+		MANAGE_OPTIONS, CONTENT_ENTRY, CHARACTER_OPTION, ENCOUNTER, ENCOUNTER_DESIGN, RULES, CONFIG, GIVE_MAGIC, CONFIG_SYNC, IDS }
 
 	final Kind kind;
 	final List<String> ids;
@@ -102,6 +103,18 @@ public class BrowseListMessage {
 				case CHARACTER_OPTION -> net.hawthorn.dndsheets.client.gui.CharacterOptionListScreen.open(
 					net.minecraft.client.Minecraft.getInstance().screen, message.context, message.ids);
 				case ENCOUNTER -> openEncounters(message);
+				case IDS -> net.hawthorn.dndsheets.client.gui.ChoiceScreen.deliver(message.context, message.ids, message.labels);
+				case CONFIG_SYNC -> net.hawthorn.dndsheets.Config.applyRemote(message.context, message.ids);
+				case CONFIG -> net.hawthorn.dndsheets.client.gui.ConfigListScreen.open(message.context, message.ids);
+				case GIVE_MAGIC -> {
+					List<net.hawthorn.dndsheets.client.gui.CommandListScreen.Row> rows = new ArrayList<>();
+					for (int i = 0; i < message.ids.size(); i++) {
+						rows.add(new net.hawthorn.dndsheets.client.gui.CommandListScreen.Row(message.labels.get(i),
+							"dnditems give " + message.context + " \"" + message.ids.get(i) + "\""));
+					}
+					net.hawthorn.dndsheets.client.gui.CommandListScreen.open(Component.translatable("gui.dndsheets.dm_panel.give_magic"), rows);
+				}
+				case RULES -> net.hawthorn.dndsheets.client.gui.RulesScreen.open(message.ids);
 				//Bestiary + party budget: the screen keeps the payload and recalculates on its own.
 				case ENCOUNTER_DESIGN -> net.hawthorn.dndsheets.client.gui.EncounterDesignerScreen.open(
 					message.ids, message.labels, message.context);

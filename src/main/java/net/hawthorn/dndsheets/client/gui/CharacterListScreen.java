@@ -94,9 +94,16 @@ public class CharacterListScreen extends ListPickerScreen {
 			Component label = deleteMode
 				? Component.translatable("gui.dndsheets.character_list.delete_row", labels.get(i))
 				: labels.get(i).copy();
+			Component rowName = labels.get(i);
 			addRow(label.copy().withStyle(color),
-				button -> DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(
-					deleteMode ? BrowseActionMessage.Action.DELETE : BrowseActionMessage.Action.SWITCH, characterId)));
+				button -> {
+					if (!deleteMode) {
+						DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.SWITCH, characterId));
+						return;
+					}
+					ConfirmScreen.ask(rowName, () -> DndsheetsMod.PACKET_HANDLER.sendToServer(
+						new BrowseActionMessage(BrowseActionMessage.Action.DELETE, characterId)));
+				});
 		}
 	}
 

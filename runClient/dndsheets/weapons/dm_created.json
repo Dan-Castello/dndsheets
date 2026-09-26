@@ -1,0 +1,11 @@
+[
+  {
+    "id": "dndsheets:dagger",
+    "name": "content.dndsheets.weapon.dagger",
+    "item": "minecraft:iron_sword",
+    "dice": "1d4",
+    "ability": "dex",
+    "damageType": "slashing",
+    "hands": "one"
+  }
+]

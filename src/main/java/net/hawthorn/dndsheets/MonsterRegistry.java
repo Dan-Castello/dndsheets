@@ -438,6 +438,19 @@ public class MonsterRegistry {
 	}
 
 	@Nullable
+	/**
+	 * <p>The name to show for this creature: the one someone gave it (name tag, anvil, {@code /data}) if any,
+	 * otherwise the stat block's. Spawning already sets a custom name — the stat block's own translation key —
+	 * so "has a custom name" isn't enough: only a name that ISN'T that key counts as the table's own.</p>
+	 */
+	public static String displayNameOf(Entity entity, MonsterStatBlock block) {
+		net.minecraft.network.chat.Component custom = entity.getCustomName();
+		if (custom == null) return block.name();
+		boolean defaultName = custom.getContents() instanceof net.minecraft.network.chat.contents.TranslatableContents tc
+			&& tc.getKey().equals(block.name());
+		return defaultName ? block.name() : custom.getString();
+	}
+
 	public static MonsterStatBlock statBlockOf(Entity entity) {
 		String id = monsterIdOf(entity);
 		return id == null ? null : get(id);

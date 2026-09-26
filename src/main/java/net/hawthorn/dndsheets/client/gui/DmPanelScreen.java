@@ -41,6 +41,7 @@ public class DmPanelScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.dm_panel.party"),
 			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.LIST_PARTY)));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.turn_mode"), b -> TurnControlScreen.open());
+		addRow(Component.translatable("gui.dndsheets.dm_panel.rules"), b -> send(BrowseActionMessage.Action.RULES_LIST, ""));
 
 		addHeader(Component.translatable("gui.dndsheets.dm_panel.section_spawn"));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.spawn_npc"), b -> SpawnGenericScreen.open());
@@ -65,6 +66,8 @@ public class DmPanelScreen extends ListPickerScreen {
 			uuid -> send(BrowseActionMessage.Action.GIVE_SPELLS, uuid)));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.sheet_adjust"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_sheet"),
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetSummaryRequestMessage(uuid))));
+		addRow(Component.translatable("gui.dndsheets.dm_panel.give_magic"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_magic"),
+			uuid -> send(BrowseActionMessage.Action.GIVE_MAGIC, uuid)));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.apply_preset"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_preset"),
 			uuid -> send(BrowseActionMessage.Action.LIST_PRESETS, uuid)));
 

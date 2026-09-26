@@ -24,42 +24,42 @@ description="A mod to let you play D&D 5e in Minecraft."
 
 
 
-# SOFT dependency: if Curios is present, magic items use its real slots (ring,
+# HARD dependency: if Curios is present, magic items use its real slots (ring,
 # necklace, cape, belt) instead of relying on attunement alone; if it isn't, the mod works
-# exactly as before. mandatory=false is what makes Forge not require it to start.
+# exactly as before. mandatory=true makes Forge refuse to start without it.
 [[dependencies.dndsheets]]
     modId="curios"
-    mandatory=false
+    mandatory=true
     versionRange="[5,)"
     ordering="AFTER"
     side="BOTH"
 
-# SOFT dependency: with Patchouli installed, the Guide opens as a manual with an index, search and
+# HARD dependency: with Patchouli installed, the Guide opens as a manual with an index, search and
 # bookmarks, and it also becomes an item the player can keep. Without it, the usual written book
 # opens with the same pages. See PatchouliCompat.
 [[dependencies.dndsheets]]
     modId="patchouli"
-    mandatory=false
+    mandatory=true
     versionRange="[1.20.1-84,)"
     ordering="AFTER"
     side="BOTH"
 
-# SOFT dependency: with Jade installed, pointing at a creature shows its AC, HP and conditions
+# HARD dependency: with Jade installed, pointing at a creature shows its AC, HP and conditions
 # on the HUD, without opening anything. Without it, nothing extra appears and everything else works the same. See JadePlugin,
 # which is the only class in the mod that names Jade types and the only one loaded by Jade itself.
 [[dependencies.dndsheets]]
     modId="jade"
-    mandatory=false
+    mandatory=true
     versionRange="[11,)"
     ordering="AFTER"
     side="BOTH"
 
-# SOFT dependency: with Pehkui installed, each creature is drawn at the size its block declares
+# HARD dependency: with Pehkui installed, each creature is drawn at the size its block declares
 # (Tiny to Gargantuan) — 149 of the bestiary's 330 are larger than Medium. Without it, all of them look
 # the way they always have. See PehkuiCompat.
 [[dependencies.dndsheets]]
     modId="pehkui"
-    mandatory=false
+    mandatory=true
     versionRange="[3,)"
     ordering="AFTER"
     side="BOTH"

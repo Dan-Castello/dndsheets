@@ -1109,7 +1109,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			editButtons.add(editButton);
 		}
 
-		ImageButton deleteButton = new ImageButton(0, 0, 8, 8, 0, 0, 8, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_delete.png"), 8, 16, e -> {
+		ImageButton deleteButton = new ImageButton(0, 0, 8, 8, 0, 0, 8, new ResourceLocation("dndsheets:textures/screens/atlas/imagebutton_delete.png"), 8, 16, e -> ConfirmScreen.ask(Component.literal(nameBox.getValue()), () -> {
 			int removedIndex = scrollList.removeListItem(e);
 			this.removeWidget(nameBox);
 			rollButtons.forEach(this::removeWidget);
@@ -1121,7 +1121,7 @@ public class CharacterSheetScreen extends AbstractContainerScreen<CharacterSheet
 			SheetLoader.validateSheet(sheet);
 			JsonArray arr = sheet.getAsJsonArray(RollIndex.Category.fromInt(category).toString());
 			if (removedIndex < arr.size()) arr.remove(removedIndex); //Defense in depth: see clearScrollList.
-		});
+		}));
 		deleteButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.character_sheet.delete_row")));
 		this.addWidget(deleteButton);
 

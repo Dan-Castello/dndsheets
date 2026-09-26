@@ -51,6 +51,11 @@ public enum ContentType {
 		public int load(Path file) throws IOException { return FeatRegistry.loadFile(file); }
 		public boolean remove(String id) { return FeatRegistry.remove(id); }
 		public int loadJson(JsonElement root, String source, Consumer<String> onId) { return FeatRegistry.loadJson(root, source, onId); }
+	},
+	MAGIC_ITEM(DndPaths.ITEMS_DIR) {
+		public int load(Path file) throws IOException { return MagicItemRegistry.loadFile(file); }
+		public boolean remove(String id) { return MagicItemRegistry.remove(id); }
+		public int loadJson(JsonElement root, String source, Consumer<String> onId) { return MagicItemRegistry.loadJson(root, source, onId); }
 	};
 
 	public final Path dir;

@@ -559,7 +559,7 @@ public interface Combatant {
 
 		@Override public Entity entity() { return monster; }
 
-		@Override public String name() { return block.name(); }
+		@Override public String name() { return MonsterRegistry.displayNameOf(monster, block); }
 
 		@Override public int armorClass() { return block.ac(); }
 

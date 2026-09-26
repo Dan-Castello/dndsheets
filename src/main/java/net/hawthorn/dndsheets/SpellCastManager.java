@@ -679,7 +679,7 @@ public class SpellCastManager {
 			return SheetLoader.characterNameOf(sheet, player);
 		}
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(target);
-		return block != null ? block.name() : target.getName().getString();
+		return block != null ? MonsterRegistry.displayNameOf(target, block) : target.getName().getString();
 	}
 
 	private static int safeInt(String value) {

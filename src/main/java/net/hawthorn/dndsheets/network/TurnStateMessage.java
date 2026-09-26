@@ -25,6 +25,7 @@ public class TurnStateMessage {
 	boolean actionUsed;
 	double originX, originY, originZ;
 	List<RosterRow> roster;
+	int feetPerBlock; //At the END of the payload (invariant 2).
 
 	/**
 	 * <p>One row of the board. {@code conditions} are labels already resolved to text (see
@@ -42,7 +43,8 @@ public class TurnStateMessage {
 	}
 
 	public TurnStateMessage(boolean active, int round, int currentEntityId, boolean actionUsed,
-							 double originX, double originY, double originZ, List<RosterRow> roster) {
+							 double originX, double originY, double originZ, List<RosterRow> roster, int feetPerBlock) {
+		this.feetPerBlock = feetPerBlock;
 		this.active = active;
 		this.round = round;
 		this.currentEntityId = currentEntityId;
@@ -65,6 +67,7 @@ public class TurnStateMessage {
 			buf.readVarInt(), buf.readUtf(), buf.readBoolean(), buf.readBoolean(), buf.readBoolean(),
 			buf.readBoolean(), buf.readBoolean(), buf.readList(FriendlyByteBuf::readUtf),
 			buf.readVarInt(), buf.readVarInt()));
+		this.feetPerBlock = buffer.readVarInt();
 	}
 
 	public static void buffer(TurnStateMessage message, FriendlyByteBuf buffer) {
@@ -87,12 +90,13 @@ public class TurnStateMessage {
 			buf.writeVarInt(row.currentHp());
 			buf.writeVarInt(row.maxHp());
 		});
+		buffer.writeVarInt(message.feetPerBlock);
 	}
 
 	public static void handler(TurnStateMessage message, Supplier<NetworkEvent.Context> contextSupplier) {
 		NetworkEvent.Context context = contextSupplier.get();
 		NetworkUtil.handleOnClient(context, () ->
 			TurnHudState.update(message.active, message.round, message.currentEntityId,
-				message.actionUsed, message.originX, message.originY, message.originZ, message.roster));
+				message.actionUsed, message.originX, message.originY, message.originZ, message.roster, message.feetPerBlock));
 	}
 }

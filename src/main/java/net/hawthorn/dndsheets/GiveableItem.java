@@ -32,7 +32,8 @@ public enum GiveableItem {
 	DM_WAND("gui.dndsheets.giveable.dm_wand", () -> List.of(MonsterCommand.buildDmToolStack())),
 	MOVE_WAND("gui.dndsheets.giveable.move_wand", () -> List.of(MonsterCommand.buildMoveToolStack())),
 	NOTEBOOK("gui.dndsheets.giveable.notebook", () -> List.of(NotesCommand.buildNotebookStack())),
-	SHOVE("gui.dndsheets.giveable.shove", () -> List.of(ShoveManager.buildShoveStack()));
+	SHOVE("gui.dndsheets.giveable.shove", () -> List.of(ShoveManager.buildShoveStack())),
+	ROLEPLAY("gui.dndsheets.giveable.roleplay", () -> List.of(RoleplayManager.buildRoleplayStack()));
 
 	private final String label;
 	private final Supplier<List<ItemStack>> stacks;

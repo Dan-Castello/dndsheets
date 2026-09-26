@@ -62,6 +62,7 @@ public class CombatManager {
 	@SubscribeEvent
 	public static void onAttackEntity(AttackEntityEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
+		if (!Config.auto(Config.Rule.COMBAT)) return; //Manual: the table rolls and applies everything by hand.
 		Player player = event.getEntity();
 		Entity target = event.getTarget();
 
@@ -136,6 +137,7 @@ public class CombatManager {
 	public static void autoStartCombatIfNeeded(Entity target, Player attacker) {
 		if (!(target.level() instanceof ServerLevel level)) return;
 		if (!TurnManager.isActive()) {
+			if (!Config.auto(Config.Rule.TURNS)) return; //Manual: only the DM starts combat.
 			TurnManager.startAt(level, target.position(), TurnManager.DEFAULT_RADIUS, attacker);
 			return;
 		}
@@ -150,6 +152,7 @@ public class CombatManager {
 	@SubscribeEvent
 	public static void onProjectileImpact(ProjectileImpactEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
+		if (!Config.auto(Config.Rule.COMBAT)) return; //Manual: the table rolls and applies everything by hand.
 		HitResult ray = event.getRayTraceResult();
 		if (!(ray instanceof EntityHitResult entityHit)) return;
 		Entity target = entityHit.getEntity();
@@ -200,6 +203,7 @@ public class CombatManager {
 	@SubscribeEvent
 	public static void onLivingHurt(LivingHurtEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
+		if (!Config.auto(Config.Rule.COMBAT)) return; //Manual: the table rolls and applies everything by hand.
 		if (!(event.getEntity() instanceof Player victim)) return; //The victim must be a player (PvP).
 
 		DamageSource source = event.getSource();
@@ -288,6 +292,7 @@ public class CombatManager {
 	 */
 	@SubscribeEvent
 	public static void onEnvironmentalDamage(LivingHurtEvent event) {
+		if (!Config.auto(Config.Rule.COMBAT)) return; //Manual: the table rolls and applies everything by hand.
 		if (event.getEntity().level().isClientSide()) return;
 		DamageSource source = event.getSource();
 		if (source.getEntity() != null) return; //Has an attacker: not environmental, already resolved through another path.

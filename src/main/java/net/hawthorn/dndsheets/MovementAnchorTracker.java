@@ -35,7 +35,6 @@ class MovementAnchorTracker {
 	private final Map<Integer, Pinned> moveOrigin = new HashMap<>();
 	private final Map<Integer, Pinned> lastGoodPos = new HashMap<>();
 	private static final int DEFAULT_SPEED_FEET = 30;
-	private static final double FEET_PER_BLOCK = 5.0;
 	//speedBlocksFor runs 20 times/sec for the duration of a player's turn: the Pattern is cached instead
 	//of being recompiled every tick.
 	private static final Pattern SPEED_FEET_PATTERN = Pattern.compile("\\d+");
@@ -124,7 +123,7 @@ class MovementAnchorTracker {
 			}
 		}
 		feet = Math.max(0, Math.min(MAX_SPEED_FEET, feet));
-		return feet / FEET_PER_BLOCK;
+		return feet / (double) Config.feetPerBlock();
 	}
 
 	//Approximate conversion of a mob's vanilla speed (MOVEMENT_SPEED attribute, an internal unit with no

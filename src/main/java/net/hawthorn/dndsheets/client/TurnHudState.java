@@ -15,9 +15,11 @@ public class TurnHudState {
 	private static boolean actionUsed = false;
 	private static double originX, originY, originZ;
 	private static List<TurnStateMessage.RosterRow> roster = List.of();
+	private static int feetPerBlock = 5;
 
 	public static void update(boolean active, int round, int currentEntityId, boolean actionUsed,
-							   double originX, double originY, double originZ, List<TurnStateMessage.RosterRow> roster) {
+							   double originX, double originY, double originZ, List<TurnStateMessage.RosterRow> roster, int feetPerBlock) {
+		TurnHudState.feetPerBlock = feetPerBlock;
 		TurnHudState.active = active;
 		TurnHudState.round = round;
 		TurnHudState.currentEntityId = currentEntityId;
@@ -28,6 +30,7 @@ public class TurnHudState {
 		TurnHudState.roster = roster;
 	}
 
+	public static int feetPerBlock() { return feetPerBlock; }
 	public static boolean active() { return active; }
 	public static int round() { return round; }
 	public static int currentEntityId() { return currentEntityId; }

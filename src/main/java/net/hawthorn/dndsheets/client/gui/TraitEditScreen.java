@@ -51,10 +51,10 @@ public class TraitEditScreen extends ListPickerScreen {
 		addTierRows("sneakAttackDiceByLevel", Component.translatable("gui.dndsheets.trait_edit.tier_sneak"));
 		addRow(Component.translatable("gui.dndsheets.trait_edit.add_sneak"), b -> TierAddScreen.open(entry, "sneakAttackDiceByLevel"));
 
-		addRow(Component.translatable("gui.dndsheets.trait_edit.delete"), b -> {
+		addRow(Component.translatable("gui.dndsheets.trait_edit.delete"), b -> ConfirmScreen.ask(Component.literal(id), () -> {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new ContentEntryRemoveMessage(ContentType.TRAIT, id));
 			this.onClose();
-		});
+		}));
 	}
 
 	private void addTierRows(String field, Component label) {
@@ -62,7 +62,8 @@ public class TraitEditScreen extends ListPickerScreen {
 		for (JsonElement el : entry.getAsJsonArray(field)) {
 			JsonObject tier = el.getAsJsonObject();
 			addRow(Component.translatable("gui.dndsheets.trait_edit.delete_tier", label, tier.get("level").getAsInt(), tier.get("dice").getAsString()),
-				b -> removeTier(field, tier));
+				b -> ConfirmScreen.ask(Component.translatable("gui.dndsheets.trait_edit.tier_name", label, tier.get("level").getAsInt()),
+					() -> removeTier(field, tier)));
 		}
 	}
 

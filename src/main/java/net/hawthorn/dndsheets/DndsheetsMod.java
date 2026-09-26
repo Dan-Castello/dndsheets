@@ -151,7 +151,12 @@ public class DndsheetsMod {
 	//instead of replying "unknown or incomplete command" — which is exactly what it told someone who was
 	//writing exactly what they wanted to do. An old client doesn't know that ordinal, so it bumps anyway.
 	//Moves NETWORK_SHAPE (118 -> 119) and NETWORK_ORDER; the wire itself doesn't change.
-	private static final String PROTOCOL_VERSION = "26";
+	//Bumped to "27": the Rules menu (Auto/Manual per automation). BrowseActionMessage.Action gains
+	//RULES_LIST/RULES_SET and BrowseListMessage.Kind gains RULES, all at the END (invariant 2), and
+	//TurnStateMessage gets feetPerBlock at the end of its payload (the HUD converts movement with it).
+	//Bumped to "28": in-game editor for the toml tables (BrowseActionMessage CONFIG_LIST/CONFIG_SET, BrowseListMessage
+	//CONFIG), handing out magic items (GIVE_MAGIC) and ContentType.MAGIC_ITEM, all appended at the END (invariant 2).
+	private static final String PROTOCOL_VERSION = "28";
 
 	/**
 	 * <p>How many pieces cross the wire: registered messages plus the enum constants that travel by
@@ -164,7 +169,7 @@ public class DndsheetsMod {
 	 * shake hands only to end up misaligned later. A number that has to be touched by hand doesn't prevent
 	 * the mistake, but it turns it into a decision instead of an oversight.</p>
 	 */
-	public static final int NETWORK_SHAPE = 119;
+	public static final int NETWORK_SHAPE = 131;
 
 	/**
 	 * <p>The exact order in which the pieces cross the wire, summarized as a hash. {@link #NETWORK_SHAPE}
@@ -177,7 +182,7 @@ public class DndsheetsMod {
 	 * hash from the source and fails the build when it doesn't match. If you move something on purpose,
 	 * bump {@link #PROTOCOL_VERSION} and paste in the number the failure gives you.</p>
 	 */
-	public static final int NETWORK_ORDER = -1875038349;
+	public static final int NETWORK_ORDER = -592047910;
 
 	/**
 	 * <p>What gets written and read on the wire, summarized as a hash: the sequence of
@@ -189,7 +194,7 @@ public class DndsheetsMod {
 	 * {@code writeComponent} left both numbers untouched and still broke compatibility: an old client
 	 * would read a text where the new server writes a Component, and it desyncs partway through the packet.</p>
 	 */
-	public static final int NETWORK_WIRE = 197534065;
+	public static final int NETWORK_WIRE = -1606748028;
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 

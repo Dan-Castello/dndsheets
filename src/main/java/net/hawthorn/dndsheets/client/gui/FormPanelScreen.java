@@ -95,6 +95,16 @@ public abstract class FormPanelScreen extends Screen {
 		return y;
 	}
 
+	/** A text box (still typeable) with a "..." button that opens {@link ChoiceScreen} for {@code source} and fills it. */
+	protected EditBox addPickField(String label, String defaultValue, int maxLength, String source, boolean multi) {
+		int y = nextRowY();
+		int left = centerX - formWidth() / 2;
+		EditBox box = registerBox(label, defaultValue, maxLength, left, y, formWidth() - 24);
+		this.addRenderableWidget(net.hawthorn.dndsheets.client.gui.components.TomeButton.of(net.minecraft.network.chat.Component.literal("..."),
+			b -> ChoiceScreen.request(source, multi, box.getValue(), box::setValue), left + formWidth() - 20, y, 20, FIELD_HEIGHT));
+		return box;
+	}
+
 	protected EditBox addField(String label, String defaultValue, int maxLength) {
 		int y = nextRowY();
 		return registerBox(label, defaultValue, maxLength, centerX - formWidth() / 2, y, formWidth());

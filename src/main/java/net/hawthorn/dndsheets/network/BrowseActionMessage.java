@@ -45,7 +45,8 @@ public class BrowseActionMessage {
 	public enum Action { LIST_MINE, LIST_PARTY, SWITCH, LIST_CONTENT, CONTENT_DETAIL, JOURNAL_DETAIL, DELETE, CREATE, SKILL_TOGGLE, LIST_SUBCLASSES, SUBCLASS_CHOOSE, LIST_FEATS, FEAT_CHOOSE,
 		GIVE_WEAPONS, GIVE_SPELLS, GRANT_TRAITS, LIST_PRESETS, LIST_PRESETS_MULTICLASS, SPAWN_MONSTERS,
 		MANAGE_OPTIONS, CONTENT_ENTRIES, CHARACTER_OPTIONS, LIST_ENCOUNTERS,
-		SPELL_PREPARE, SPELL_UNPREPARE, DESIGN_ENCOUNTER }
+		SPELL_PREPARE, SPELL_UNPREPARE, DESIGN_ENCOUNTER,
+		RULES_LIST, RULES_SET, CONFIG_LIST, CONFIG_SET, GIVE_MAGIC, LIST_IDS }
 
 	final Action action;
 	//Used by SWITCH and DELETE (an id), CREATE (the new character's name), and SKILL_TOGGLE (the skill's
@@ -179,6 +180,31 @@ public class BrowseActionMessage {
 				//encounters but the bestiary with its XP cost and the party's thresholds: with that the
 				//client recalculates difficulty on every click without another round trip per row (see
 				//EncounterDesignerScreen).
+				//The Rules menu (Auto/Manual per automation, plus feet per block and casting time). DM-gated
+				//on the server, and RULES_SET answers with the fresh list so the screen repaints itself.
+				case RULES_LIST -> {
+					if (DndsheetsMod.canActAsDm(sender)) sendRules(sender);
+				}
+				case RULES_SET -> {
+					if (DndsheetsMod.canActAsDm(sender) && applyRule(message.characterId)) sendRules(sender);
+				}
+				//Toml lists (hit dice, weapon damage, enchantment bonus) edited in-game. "TABLE" to list;
+				//"TABLEoldnew" to set (old empty = add, new empty = delete).
+				case CONFIG_LIST -> {
+					if (DndsheetsMod.canActAsDm(sender)) sendConfig(sender, message.characterId);
+				}
+				case CONFIG_SET -> {
+					if (DndsheetsMod.canActAsDm(sender)) {
+						String table = applyConfig(message.characterId);
+						if (table != null) sendConfig(sender, table);
+					}
+				}
+				//Ids of a registry, for the "pick instead of typing" list (ChoiceScreen). Content names aren't secret
+				//(the compendium shows them to everyone), so no operator check.
+				case LIST_IDS -> sendIds(sender, message.characterId);
+				case GIVE_MAGIC -> {
+					if (DndsheetsMod.canActAsDm(sender)) sendMagicItems(sender, message.characterId);
+				}
 				case DESIGN_ENCOUNTER -> {
 					if (DndsheetsMod.canActAsDm(sender)) sendEncounterDesign(sender);
 				}
@@ -251,6 +277,9 @@ public class BrowseActionMessage {
 		//ContentPackFile).
 		String mine = net.hawthorn.dndsheets.ContentPackFile.readArrayText(type.dmCreatedFile());
 		String fromPacks = net.hawthorn.dndsheets.ContentPackFile.readOtherArraysText(type.dir, type.dmCreatedFile());
+		//A component travels as at most 262144 characters of JSON: the magic-item pack alone is ~130 KB, so with
+		//more packs on top the packet would fail to encode. Over the cap the pack part is left out (yours stays).
+		if (fromPacks.length() > 200_000) fromPacks = "[]";
 		BrowseListMessage.send(dm, BrowseListMessage.Kind.CONTENT_ENTRY, List.of(),
 			List.of(Component.literal(mine), Component.literal(fromPacks)), type.name());
 	}
@@ -523,5 +552,126 @@ public class BrowseActionMessage {
 		return Component.literal(combatant.name())
 			.append(Component.translatable("gui.dndsheets.party.row_stats", combatant.currentHp(), combatant.maxHp(), combatant.armorClass()))
 			.append(label.toString());
+	}
+
+	//"KEY=value" pairs: one per Config.Rule (1 = automatic), plus FEET and CAST. Same list feeds the screen.
+	private static void sendRules(ServerPlayer to) {
+		List<String> ids = new ArrayList<>();
+		for (net.hawthorn.dndsheets.Config.Rule rule : net.hawthorn.dndsheets.Config.Rule.values()) {
+			ids.add(rule.name() + "=" + (net.hawthorn.dndsheets.Config.auto(rule) ? 1 : 0));
+		}
+		ids.add("FEET=" + net.hawthorn.dndsheets.Config.feetPerBlock());
+		ids.add("CAST=" + net.hawthorn.dndsheets.Config.castTicksPerLevel());
+		BrowseListMessage.send(to, BrowseListMessage.Kind.RULES, ids, List.of(), "");
+	}
+
+	private static boolean applyRule(String pair) {
+		String[] kv = pair.split("=", 2);
+		if (kv.length != 2) return false;
+		try {
+			int value = Integer.parseInt(kv[1].trim());
+			switch (kv[0]) {
+				case "FEET" -> {
+					net.hawthorn.dndsheets.Config.setFeetPerBlock(value);
+					net.hawthorn.dndsheets.TurnManager.refreshHud();
+				}
+				case "CAST" -> net.hawthorn.dndsheets.Config.setCastTicksPerLevel(value);
+				default -> net.hawthorn.dndsheets.Config.setAuto(net.hawthorn.dndsheets.Config.Rule.valueOf(kv[0]), value != 0);
+			}
+			return true;
+		} catch (IllegalArgumentException e) { //NumberFormatException included: a modified client can send anything.
+			return false;
+		}
+	}
+
+	private static void sendConfig(ServerPlayer to, String tableName) {
+		net.hawthorn.dndsheets.Config.Table table;
+		try {
+			table = net.hawthorn.dndsheets.Config.Table.valueOf(tableName);
+		} catch (IllegalArgumentException e) {
+			return;
+		}
+		BrowseListMessage.send(to, BrowseListMessage.Kind.CONFIG, net.hawthorn.dndsheets.Config.entries(table), List.of(), table.name());
+	}
+
+	/** @return the table changed, or null if the request was refused (unknown table, invalid entry, entry not there). */
+	private static String applyConfig(String payload) {
+		String[] parts = payload.split("", -1);
+		if (parts.length != 3) return null;
+		net.hawthorn.dndsheets.Config.Table table;
+		try {
+			table = net.hawthorn.dndsheets.Config.Table.valueOf(parts[0]);
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
+		String oldEntry = parts[1].trim(), newEntry = parts[2].trim();
+		if (!newEntry.isEmpty() && !net.hawthorn.dndsheets.Config.isValid(table, newEntry)) return null;
+		List<String> entries = net.hawthorn.dndsheets.Config.entries(table);
+		int at = oldEntry.isEmpty() ? -1 : entries.indexOf(oldEntry);
+		if (!oldEntry.isEmpty() && at < 0) return null;
+		if (newEntry.isEmpty()) {
+			if (at < 0) return null;
+			entries.remove(at);
+		} else if (at >= 0) {
+			entries.set(at, newEntry);
+		} else {
+			entries.add(newEntry);
+		}
+		net.hawthorn.dndsheets.Config.setEntries(table, entries);
+		return table.name();
+	}
+
+	//Magic items to hand out: ids + display names, with the target's uuid in context; the client turns each
+	//row into the usual /dnditems give command (permission checked there too).
+	private static void sendMagicItems(ServerPlayer dm, String targetUuid) {
+		List<String> ids = new ArrayList<>(net.hawthorn.dndsheets.MagicItemRegistry.ids());
+		java.util.Collections.sort(ids);
+		List<Component> labels = new ArrayList<>();
+		for (String id : ids) {
+			net.hawthorn.dndsheets.MagicItemRegistry.MagicItem item = net.hawthorn.dndsheets.MagicItemRegistry.get(id);
+			labels.add(item == null ? Component.literal(id) : ContentNames.of(item.name()));
+		}
+		BrowseListMessage.send(dm, BrowseListMessage.Kind.GIVE_MAGIC, ids, labels, targetUuid);
+	}
+
+	private static void sendIds(ServerPlayer to, String source) {
+		List<String> ids;
+		java.util.function.Function<String, String> nameOf = id -> id;
+		switch (source) {
+			case "SPELL" -> {
+				ids = new ArrayList<>(net.hawthorn.dndsheets.SpellRegistry.ids());
+				nameOf = id -> net.hawthorn.dndsheets.SpellRegistry.get(id).name();
+			}
+			case "TRAIT" -> {
+				ids = new ArrayList<>(net.hawthorn.dndsheets.TraitRegistry.ids());
+				nameOf = id -> net.hawthorn.dndsheets.TraitRegistry.get(id).name();
+			}
+			case "MONSTER" -> {
+				ids = new ArrayList<>(net.hawthorn.dndsheets.MonsterRegistry.ids());
+				nameOf = id -> net.hawthorn.dndsheets.MonsterRegistry.get(id).name();
+			}
+			case "MAGIC_ITEM" -> {
+				ids = new ArrayList<>(net.hawthorn.dndsheets.MagicItemRegistry.ids());
+				nameOf = id -> net.hawthorn.dndsheets.MagicItemRegistry.get(id).name();
+			}
+			case "WEAPON" -> ids = new ArrayList<>(net.hawthorn.dndsheets.Config.loadedWeaponIds());
+			case "CLASS" -> ids = new ArrayList<>(net.hawthorn.dndsheets.CharacterOptionsRegistry.get(net.hawthorn.dndsheets.CharacterOptionsRegistry.CLASS));
+			default -> {
+				return;
+			}
+		}
+		java.util.Collections.sort(ids);
+		List<Component> labels = new ArrayList<>();
+		for (String id : ids) {
+			String name;
+			try {
+				name = nameOf.apply(id);
+			} catch (RuntimeException e) { //An id that vanished between listing and naming: show the id.
+				name = id;
+			}
+			//"Fireball (dndsheets:fireball)": the name to recognise it, the id because that's what gets written.
+			labels.add(ContentNames.of(name).append(name.equals(id) ? "" : " (" + id + ")"));
+		}
+		BrowseListMessage.send(to, BrowseListMessage.Kind.IDS, ids, labels, source);
 	}
 }

@@ -456,6 +456,25 @@ ICONS = {
   '................',
   '................',
  ],
+ #Speech bubble: the roleplay wand only says things, it changes nothing.
+ 'roleplay': [
+  '................',
+  '..KKKKKKKKKKK...',
+  '.KWWWWWWWWWWWK..',
+  '.KWKKKWKKKWKWK..',
+  '.KWWWWWWWWWWWK..',
+  '.KWKKKKKWKKWWK..',
+  '.KWWWWWWWWWWWK..',
+  '.KWKKKWKKKWWWK..',
+  '.KWWWWWWWWWWWK..',
+  '..KKKKWKKKKKK...',
+  '.....KWK........',
+  '......K.........',
+  '................',
+  '................',
+  '................',
+  '................',
+ ],
 }
 
 # EXACT order of the ItemLook enum: the CustomModelData is its position + 1 and travels inside each
@@ -464,9 +483,10 @@ LOOKS = [
     'dm_wand', 'move_wand', 'rest_kit', 'turn_next', 'turn_undo', 'turn_actions',
     'rage', 'second_wind', 'inspiration', 'wild_shape', 'twinned', 'smite', 'hunters_mark',
     'shield', 'counterspell', 'turn_undead', 'help', 'staff', 'summon_card', 'shove',
+    'roleplay',
 ]
 # They are held like a wand: the "handheld" model tilts them in the hand instead of leaving them flat.
-HANDHELD = {'dm_wand', 'move_wand', 'staff', 'smite'}
+HANDHELD = {'dm_wand', 'move_wand', 'staff', 'smite', 'roleplay'}
 
 MODELS = os.path.join('src', 'main', 'resources', 'assets', 'dndsheets', 'models', 'item')
 

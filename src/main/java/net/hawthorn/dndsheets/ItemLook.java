@@ -45,7 +45,8 @@ public enum ItemLook {
 	HELP,
 	STAFF,
 	SUMMON_CARD,
-	SHOVE;
+	SHOVE,
+	ROLEPLAY;
 
 	/** The value the {@code token.json} model looks up in its overrides list. */
 	public int customModelData() {

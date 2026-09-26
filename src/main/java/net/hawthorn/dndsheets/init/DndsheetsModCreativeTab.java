@@ -53,6 +53,7 @@ public class DndsheetsModCreativeTab {
 			if (!guide.isEmpty()) safeAccept(output, guide);
 			safeAccept(output, MonsterCommand.buildDmToolStack());
 			safeAccept(output, MonsterCommand.buildMoveToolStack());
+			safeAccept(output, net.hawthorn.dndsheets.RoleplayManager.buildRoleplayStack());
 			safeAccept(output, NotesCommand.buildNotebookStack());
 			safeAccept(output, RestManager.buildRestKitStack());
 			safeAccept(output, TurnItemManager.buildNextTurnStack());

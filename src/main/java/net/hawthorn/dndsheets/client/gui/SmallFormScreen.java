@@ -62,10 +62,11 @@ public abstract class SmallFormScreen extends FormPanelScreen {
 		//an extra "Delete: X" row per item — it took up twice the height needed).
 		if (showDeleteButton()) {
 			int deleteY = nextRowY();
-			this.addRenderableWidget(TomeButton.of(deleteButtonLabel(), button -> {
-				onDelete();
-				this.onClose();
-			}, centerX - formWidth() / 2, deleteY, formWidth(), FIELD_HEIGHT));
+			this.addRenderableWidget(TomeButton.of(deleteButtonLabel(), button ->
+				ConfirmScreen.ask(this.title, () -> {
+					onDelete();
+					this.onClose();
+				}), centerX - formWidth() / 2, deleteY, formWidth(), FIELD_HEIGHT));
 			formBottom = deleteY + FIELD_HEIGHT + 10;
 		}
 	}

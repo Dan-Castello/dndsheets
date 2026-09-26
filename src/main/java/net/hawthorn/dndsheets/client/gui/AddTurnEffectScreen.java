@@ -32,7 +32,7 @@ public class AddTurnEffectScreen extends SmallFormScreen {
 
 	@Override
 	protected void buildForm() {
-		nameBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.name"), "poison", 40);
+		nameBox = addPickField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.name"), "poison", 40, "EFFECT", false);
 		dice = addCycleButton(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.dice"), DICE_OPTIONS);
 		turnsBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.turns"), "3", 2);
 	}

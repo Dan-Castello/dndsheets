@@ -60,6 +60,7 @@ public class DeathSaveManager {
 			return;
 		}
 
+		if (!Config.auto(Config.Rule.DEATH_SAVES)) return; //Manual: real vanilla death.
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
 		if (sheet == null || isDowned(sheet)) return;
 

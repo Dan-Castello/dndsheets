@@ -13,12 +13,11 @@ import net.minecraftforge.fml.common.Mod;
 
 /**
  * <p>{@code /dnddistance <target>}: straight-line distance between whoever runs the command and the
- * target, converted to feet (5 ft/block, same grid as {@link net.hawthorn.dndsheets.MovementAnchorTracker}
+ * target, converted to feet (Config.feetPerBlock, 5 by default, same grid as {@link net.hawthorn.dndsheets.MovementAnchorTracker}
  * and the rest of the table) and rounded to the nearest multiple of 5, as measured in 5e.</p>
  */
 @Mod.EventBusSubscriber
 public class DistanceCommand {
-	private static final double FEET_PER_BLOCK = 5.0;
 
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {
@@ -32,7 +31,7 @@ public class DistanceCommand {
 		Entity target = EntityArgument.getEntity(ctx, "target");
 
 		double blocks = source.position().distanceTo(target.position());
-		long feet = Math.round(blocks * FEET_PER_BLOCK / 5.0) * 5;
+		long feet = Math.round(blocks * net.hawthorn.dndsheets.Config.feetPerBlock() / 5.0) * 5;
 
 		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.distance.report",
 			target.getDisplayName(), feet), false);

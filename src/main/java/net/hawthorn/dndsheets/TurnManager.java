@@ -229,7 +229,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		//The ambushing monster also opens the order: it's the same case as a player attacking first, seen
 		//from the other side. Its hit has already landed by the time we get here, so leaving it in the
 		//middle of the order would mean it hits, and then hits again once its turn comes up.
-		if (!active) startAt(level, player.position(), DEFAULT_RADIUS, attacker);
+		if (!active && net.hawthorn.dndsheets.Config.auto(net.hawthorn.dndsheets.Config.Rule.TURNS)) startAt(level, player.position(), DEFAULT_RADIUS, attacker);
 		if (active && !isInOrder(attacker.getId())) addLateMonster(level, attacker, nameOf(attacker));
 	}
 
@@ -640,12 +640,12 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		return outcome.result() != null ? outcome.result().getValue() : 10;
 	}
 
-	private static String nameOf(Entity entity) {
+	public static String nameOf(Entity entity) {
 		if (entity instanceof Player player) {
 			return SheetLoader.characterNameOf(SheetLoader.getServerSheet(player.getStringUUID()), player);
 		}
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(entity);
-		return block != null ? block.name() : entity.getName().getString();
+		return block != null ? MonsterRegistry.displayNameOf(entity, block) : entity.getName().getString();
 	}
 
 	public static void start(ServerLevel level, List<TurnEntry> rolledOrder) {
@@ -1133,6 +1133,11 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		broadcastTurnState(combatLevel);
 	}
 
+	/** Re-sends the HUD state (e.g. after the DM changes feet per block mid-combat). */
+	public static void refreshHud() {
+		if (active && combatLevel != null) broadcastTurnState(combatLevel);
+	}
+
 	private static void broadcastTurnState(ServerLevel level) {
 		combatLevel = active ? level : null;
 		TurnEntry entry = current();
@@ -1140,7 +1145,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		boolean actioned = entry != null && actedThisTurn.contains(entry.entityId());
 		Vec3 origin = entry != null ? movementAnchors.originOf(entry.entityId()) : Vec3.ZERO;
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.ALL.noArg(),
-			new TurnStateMessage(active, round, entityId, actioned, origin.x, origin.y, origin.z, rosterOf(level)));
+			new TurnStateMessage(active, round, entityId, actioned, origin.x, origin.y, origin.z, rosterOf(level), net.hawthorn.dndsheets.Config.feetPerBlock()));
 	}
 
 	//The entire initiative row for the HUD (see TurnStateMessage.RosterRow): who's up, who's already
@@ -1250,7 +1255,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 
 		TurnEntry currentEntry = current();
 		if (currentEntry != null && currentEntry.entityId() == player.getId() && player.level() instanceof ServerLevel level) {
-			opportunityAttacks.checkOpportunityAttacks(level, player, order);
+			if (net.hawthorn.dndsheets.Config.auto(net.hawthorn.dndsheets.Config.Rule.OPPORTUNITY_ATTACKS)) opportunityAttacks.checkOpportunityAttacks(level, player, order);
 			movementAnchors.enforceMovementBudget(player);
 		}
 	}

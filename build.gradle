@@ -147,6 +147,11 @@ dependencies {
     // ships them with SRG names.
     compileOnly fg.deobf("curse.maven:jade-324717:5072729")
 
+    // JEI, SOFT and compileOnly: only the api jar, to let items be dragged from JEI's list into the content
+    // forms (see compat/DndJeiPlugin). JEI finds the plugin by annotation; without JEI nothing here loads.
+    compileOnly fg.deobf("mezz.jei:jei-1.20.1-common-api:15.20.0.106")
+    compileOnly fg.deobf("mezz.jei:jei-1.20.1-forge-api:15.20.0.106")
+
     // Only the "api" artifact, which is all that is touched: PatchouliAPI.get().
     compileOnly fg.deobf("vazkii.patchouli:Patchouli:1.20.1-85-FORGE:api")
 

@@ -82,6 +82,8 @@ public class ContentEntryListScreen extends ListPickerScreen {
 				ContentTypeForms.encounterFields(), ContentTypeForms::encounterPrefill, ContentTypeForms::encounterToJson);
 			case FEAT -> new FormSpec("gui.dndsheets.content_entry.feats",
 				ContentTypeForms.featFields(), ContentTypeForms::featPrefill, ContentTypeForms::featToJson);
+			case MAGIC_ITEM -> new FormSpec("gui.dndsheets.content_entry.magic_items",
+				ContentTypeForms.magicItemFields(), ContentTypeForms::magicItemPrefill, ContentTypeForms::magicItemToJson);
 			case TRAIT -> new FormSpec("gui.dndsheets.content_entry.traits", null, null, null);
 			case MONSTER -> new FormSpec("gui.dndsheets.content_entry.monsters", null, null, null);
 		};
@@ -127,7 +129,7 @@ public class ContentEntryListScreen extends ListPickerScreen {
 		} else {
 			FormSpec spec = specFor(type);
 			ContentFormScreen.open(type, Component.translatable("gui.dndsheets.content_entry.edit", id).getString(),
-				spec.fields(), spec.prefill().apply(entry), spec.toJson());
+				spec.fields(), spec.prefill().apply(entry), spec.toJson(), entry);
 		}
 	}
 

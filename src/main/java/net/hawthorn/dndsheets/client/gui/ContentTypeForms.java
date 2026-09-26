@@ -29,6 +29,8 @@ import java.util.Map;
  */
 final class ContentTypeForms {
 	private static final String[] BOOL_OPTIONS = {"yes", "no"};
+	//For flags that are OFF unless asked for (concentration, attunement): a new entry starts on "no".
+	private static final String[] BOOL_OPTIONS_NO_FIRST = {"no", "yes"};
 
 	//Cap for fields holding a comma-separated LIST. The normal text field's 64 characters are enough for
 	//a name, not for three namespaced ids: "dndsheets:goblin x4, dndsheets:wolf x2, dndsheets:dire_wolf"
@@ -81,13 +83,13 @@ final class ContentTypeForms {
 		return List.of(
 			FieldSpec.text("id", I18n.get("gui.dndsheets.form.id_path"), ""),
 			FieldSpec.text("name", I18n.get("gui.dndsheets.form.name"), ""),
-			FieldSpec.text("item", I18n.get("gui.dndsheets.form.base_item"), "minecraft:stick"),
+			FieldSpec.item("item", I18n.get("gui.dndsheets.form.base_item"), "minecraft:stick"),
 			FieldSpec.text("dice", I18n.get("gui.dndsheets.form.damage_dice"), "1d6"),
 			FieldSpec.cycle("ability", I18n.get("gui.dndsheets.form.ability"), new String[]{"str", "dex"}),
 			FieldSpec.cycle("damageType", I18n.get("gui.dndsheets.form.damage_type"), DamageTypes.CANONICAL),
 			FieldSpec.cycle("hands", I18n.get("gui.dndsheets.form.hands"), new String[]{"one", "two", "versatile"}),
 			FieldSpec.text("versatileDice", I18n.get("gui.dndsheets.form.versatile_dice"), ""),
-			FieldSpec.text("classes", I18n.get("gui.dndsheets.form.allowed_classes"), "", LIST_LENGTH)
+			FieldSpec.pick("classes", I18n.get("gui.dndsheets.form.allowed_classes"), "", "CLASS", true, LIST_LENGTH)
 		);
 	}
 
@@ -117,7 +119,7 @@ final class ContentTypeForms {
 	// --- Spells (see command.SpellCommand / SpellRegistry.parse) ---
 
 	static List<FieldSpec> spellFields() {
-		return List.of(
+		List<FieldSpec> fields = new java.util.ArrayList<>(List.of(
 			FieldSpec.text("id", I18n.get("gui.dndsheets.form.id_path"), ""),
 			FieldSpec.text("name", I18n.get("gui.dndsheets.form.name"), ""),
 			FieldSpec.intField("level", I18n.get("gui.dndsheets.form.level_cantrip"), "0"),
@@ -128,7 +130,9 @@ final class ContentTypeForms {
 			FieldSpec.text("dice", I18n.get("gui.dndsheets.form.dice"), "1d8"),
 			FieldSpec.cycle("damageType", I18n.get("gui.dndsheets.form.damage_type"), DamageTypes.CANONICAL),
 			FieldSpec.cycle("halfOnSave", I18n.get("gui.dndsheets.form.half_on_save"), BOOL_OPTIONS)
-		);
+		));
+		fields.addAll(spellEffectFields()); //Second page of the form.
+		return fields;
 	}
 
 	static Map<String, String> spellPrefill(JsonObject entry) {
@@ -138,6 +142,7 @@ final class ContentTypeForms {
 		}
 		if (entry.has("level")) map.put("level", entry.get("level").getAsString());
 		if (entry.has("halfOnSave")) map.put("halfOnSave", entry.get("halfOnSave").getAsBoolean() ? "yes" : "no");
+		spellEffectPrefill(map, entry);
 		return map;
 	}
 
@@ -153,6 +158,143 @@ final class ContentTypeForms {
 		entry.addProperty("dice", values.get("dice"));
 		addIfNotBlank(entry, "damageType", values.get("damageType"));
 		entry.addProperty("halfOnSave", "yes".equals(values.get("halfOnSave")));
+		spellEffectToJson(entry, values);
+		return entry;
+	}
+
+	//Second page of the spell form: everything that makes Fireball or Moonbeam more than "dice + save".
+	private static final String[] SHAPES = {"sphere", "line", "cone", "wall"};
+
+	private static List<FieldSpec> spellEffectFields() {
+		return List.of(
+			FieldSpec.cycle("concentration", I18n.get("gui.dndsheets.form.concentration"), BOOL_OPTIONS_NO_FIRST),
+			FieldSpec.intField("aoeRadius", I18n.get("gui.dndsheets.form.aoe_radius"), "0"),
+			FieldSpec.cycle("aoeShape", I18n.get("gui.dndsheets.form.aoe_shape"), SHAPES),
+			FieldSpec.text("upcastDice", I18n.get("gui.dndsheets.form.upcast_dice"), ""),
+			FieldSpec.pick("effectName", I18n.get("gui.dndsheets.form.effect_name"), "", "EFFECT", false, 64),
+			FieldSpec.text("effectDice", I18n.get("gui.dndsheets.form.effect_dice"), ""),
+			FieldSpec.intField("effectTurns", I18n.get("gui.dndsheets.form.effect_turns"), "0"),
+			FieldSpec.intField("castTicks", I18n.get("gui.dndsheets.form.cast_ticks"), "-1"),
+			FieldSpec.pick("affectsTypes", I18n.get("gui.dndsheets.form.affects_types"), "", "CREATURE_TYPE", true, LIST_LENGTH),
+			FieldSpec.pick("immuneTypes", I18n.get("gui.dndsheets.form.immune_types"), "", "CREATURE_TYPE", true, LIST_LENGTH)
+		);
+	}
+
+	private static void spellEffectPrefill(Map<String, String> map, JsonObject entry) {
+		map.put("concentration", entry.has("concentration") && entry.get("concentration").getAsBoolean() ? "yes" : "no");
+		putIfPresent(map, entry, "aoeRadius");
+		putIfPresent(map, entry, "aoeShape");
+		putIfPresent(map, entry, "upcastDice");
+		putIfPresent(map, entry, "castTicks");
+		if (entry.has("appliesEffect")) {
+			JsonObject effect = entry.getAsJsonObject("appliesEffect");
+			map.put("effectName", effect.has("name") ? effect.get("name").getAsString() : "");
+			map.put("effectDice", effect.has("dice") ? effect.get("dice").getAsString() : "");
+			map.put("effectTurns", effect.has("turns") ? effect.get("turns").getAsString() : "0");
+		}
+		map.put("affectsTypes", joinArray(entry, "affectsTypes"));
+		map.put("immuneTypes", joinArray(entry, "immuneTypes"));
+	}
+
+	private static void spellEffectToJson(JsonObject entry, Map<String, String> values) {
+		if ("yes".equals(values.get("concentration"))) entry.addProperty("concentration", true);
+		int radius = parseIntOr(values.getOrDefault("aoeRadius", "0"), 0);
+		if (radius > 0) {
+			entry.addProperty("aoeRadius", radius);
+			if (!"sphere".equals(values.get("aoeShape"))) entry.addProperty("aoeShape", values.get("aoeShape"));
+		}
+		addIfNotBlank(entry, "upcastDice", values.get("upcastDice"));
+		//-1 (or blank) = "not decided": the table's casting-time setting applies; 0 = instant, always.
+		int castTicks = parseIntOr(values.getOrDefault("castTicks", "-1"), -1);
+		if (castTicks >= 0) entry.addProperty("castTicks", castTicks);
+		String effectName = values.getOrDefault("effectName", "");
+		if (!effectName.isBlank()) {
+			JsonObject effect = new JsonObject();
+			effect.addProperty("name", effectName);
+			//The parser requires a die; "0" is the same "no damage" the spell's own dice default to.
+			String effectDice = values.getOrDefault("effectDice", "");
+			effect.addProperty("dice", effectDice.isBlank() ? "0" : effectDice);
+			effect.addProperty("turns", parseIntOr(values.getOrDefault("effectTurns", "0"), 0));
+			entry.add("appliesEffect", effect);
+		}
+		addCommaArray(entry, "affectsTypes", values.get("affectsTypes"));
+		addCommaArray(entry, "immuneTypes", values.get("immuneTypes"));
+	}
+
+	// --- Magic items (see MagicItemRegistry.parse) ---
+
+	private static final String[] RARITIES = {"common", "uncommon", "rare", "very rare", "legendary", "artifact", "varies"};
+
+	static List<FieldSpec> magicItemFields() {
+		return List.of(
+			FieldSpec.text("id", I18n.get("gui.dndsheets.form.id_path"), ""),
+			FieldSpec.text("name", I18n.get("gui.dndsheets.form.name"), ""),
+			FieldSpec.cycle("rarity", I18n.get("gui.dndsheets.form.rarity"), RARITIES),
+			FieldSpec.item("item", I18n.get("gui.dndsheets.form.base_item"), "minecraft:gold_ingot"),
+			FieldSpec.text("description", I18n.get("gui.dndsheets.form.description"), "", 256),
+			FieldSpec.intField("acBonus", I18n.get("gui.dndsheets.form.ac_bonus"), "0"),
+			FieldSpec.intField("saveBonus", I18n.get("gui.dndsheets.form.save_bonus"), "0"),
+			FieldSpec.cycle("attunement", I18n.get("gui.dndsheets.form.attunement"), BOOL_OPTIONS_NO_FIRST),
+			FieldSpec.pick("grantsSpell", I18n.get("gui.dndsheets.form.grants_spell"), "", "SPELL", false, 64),
+			FieldSpec.pick("damageAffinities", I18n.get("gui.dndsheets.form.affinities"), "", "DAMAGE_AFFINITY", true, LIST_LENGTH),
+			//Second page: consumables (potions, oils). Their effects are NOT passive, see MagicItem.isConsumable.
+			FieldSpec.text("healDice", I18n.get("gui.dndsheets.form.heal_dice"), ""),
+			FieldSpec.text("temporaryHpDice", I18n.get("gui.dndsheets.form.temp_hp_dice"), ""),
+			FieldSpec.pick("grantsCondition", I18n.get("gui.dndsheets.form.grants_condition"), "", "CONDITION", false, 64),
+			FieldSpec.intField("durationRounds", I18n.get("gui.dndsheets.form.duration_rounds"), "10"),
+			FieldSpec.pick("temporaryAffinities", I18n.get("gui.dndsheets.form.temp_affinities"), "", "DAMAGE_AFFINITY", true, LIST_LENGTH)
+		);
+	}
+
+	//"fire:resistant, cold:immune" <-> {"fire":"resistant","cold":"immune"}
+	private static String affinitiesText(JsonObject entry, String key) {
+		if (!entry.has(key)) return "";
+		StringBuilder sb = new StringBuilder();
+		for (Map.Entry<String, JsonElement> e : entry.getAsJsonObject(key).entrySet()) {
+			if (sb.length() > 0) sb.append(", ");
+			sb.append(e.getKey()).append(':').append(e.getValue().getAsString());
+		}
+		return sb.toString();
+	}
+
+	private static void addAffinities(JsonObject entry, String key, String text) {
+		if (text == null || text.isBlank()) return;
+		JsonObject map = new JsonObject();
+		for (String piece : text.split(",")) {
+			String[] kv = piece.split(":");
+			if (kv.length == 2 && !kv[0].isBlank() && !kv[1].isBlank()) map.addProperty(kv[0].trim().toLowerCase(), kv[1].trim().toLowerCase());
+		}
+		if (map.size() > 0) entry.add(key, map);
+	}
+
+	static Map<String, String> magicItemPrefill(JsonObject entry) {
+		Map<String, String> map = new LinkedHashMap<>();
+		for (String key : new String[]{"id", "name", "rarity", "item", "description", "grantsSpell", "healDice", "temporaryHpDice", "grantsCondition"}) {
+			putIfPresent(map, entry, key);
+		}
+		for (String key : new String[]{"acBonus", "saveBonus", "durationRounds"}) putIfPresent(map, entry, key);
+		map.put("attunement", entry.has("attunement") && entry.get("attunement").getAsBoolean() ? "yes" : "no");
+		map.put("damageAffinities", affinitiesText(entry, "damageAffinities"));
+		map.put("temporaryAffinities", affinitiesText(entry, "temporaryAffinities"));
+		return map;
+	}
+
+	static JsonObject magicItemToJson(Map<String, String> values) {
+		JsonObject entry = new JsonObject();
+		entry.addProperty("id", values.get("id"));
+		for (String key : new String[]{"name", "rarity", "item", "description", "grantsSpell", "healDice", "temporaryHpDice", "grantsCondition"}) {
+			addIfNotBlank(entry, key, values.get(key));
+		}
+		int ac = parseIntOr(values.getOrDefault("acBonus", "0"), 0);
+		if (ac != 0) entry.addProperty("acBonus", ac);
+		int save = parseIntOr(values.getOrDefault("saveBonus", "0"), 0);
+		if (save != 0) entry.addProperty("saveBonus", save);
+		if ("yes".equals(values.get("attunement"))) entry.addProperty("attunement", true);
+		addAffinities(entry, "damageAffinities", values.get("damageAffinities"));
+		addAffinities(entry, "temporaryAffinities", values.get("temporaryAffinities"));
+		//10 is the parser's own default; only a different duration gets written.
+		int rounds = parseIntOr(values.getOrDefault("durationRounds", "10"), 10);
+		if (rounds != 10) entry.addProperty("durationRounds", rounds);
 		return entry;
 	}
 
@@ -164,11 +306,11 @@ final class ContentTypeForms {
 			FieldSpec.text("name", I18n.get("gui.dndsheets.form.name"), ""),
 			FieldSpec.cycle("hitDiceType", I18n.get("gui.dndsheets.form.hit_die"), new String[]{"1d6", "1d8", "1d10", "1d12"}),
 			FieldSpec.text("abilities", I18n.get("gui.dndsheets.form.abilities_csv"), "10, 10, 10, 10, 10, 10"),
-			FieldSpec.text("startingWeapon", I18n.get("gui.dndsheets.form.starting_weapon"), ""),
-			FieldSpec.text("startingGear", I18n.get("gui.dndsheets.form.starting_gear"), "", LIST_LENGTH),
+			FieldSpec.pick("startingWeapon", I18n.get("gui.dndsheets.form.starting_weapon"), "", "WEAPON", false, 64),
+			FieldSpec.pick("startingGear", I18n.get("gui.dndsheets.form.starting_gear"), "", "ITEM", true, LIST_LENGTH),
 			FieldSpec.intField("spellSlotsMax", I18n.get("gui.dndsheets.form.spell_slots_max"), "0"),
-			FieldSpec.text("traits", I18n.get("gui.dndsheets.form.granted_traits"), "", LIST_LENGTH),
-			FieldSpec.text("spells", I18n.get("gui.dndsheets.form.known_spells"), "", LIST_LENGTH)
+			FieldSpec.pick("traits", I18n.get("gui.dndsheets.form.granted_traits"), "", "TRAIT", true, LIST_LENGTH),
+			FieldSpec.pick("spells", I18n.get("gui.dndsheets.form.known_spells"), "", "SPELL", true, LIST_LENGTH)
 		);
 	}
 
@@ -223,8 +365,8 @@ final class ContentTypeForms {
 			FieldSpec.text("description", I18n.get("gui.dndsheets.form.description"), ""),
 			//The same six in the same order as the preset: here they're the BONUS added, not the score.
 			FieldSpec.text("abilities", I18n.get("gui.dndsheets.form.ability_bonuses_csv"), "0, 0, 0, 0, 0, 0"),
-			FieldSpec.text("traits", I18n.get("gui.dndsheets.form.granted_traits"), "", LIST_LENGTH),
-			FieldSpec.text("spells", I18n.get("gui.dndsheets.form.granted_spells"), "", LIST_LENGTH),
+			FieldSpec.pick("traits", I18n.get("gui.dndsheets.form.granted_traits"), "", "TRAIT", true, LIST_LENGTH),
+			FieldSpec.pick("spells", I18n.get("gui.dndsheets.form.granted_spells"), "", "SPELL", true, LIST_LENGTH),
 			//Without this field, editing an imported Epic Boon here would erase its level-19 requirement:
 			//the form rewrites the entire entry, so whatever it doesn't ask for gets lost.
 			FieldSpec.text("minLevel", I18n.get("gui.dndsheets.form.min_level"), "1")
@@ -279,7 +421,7 @@ final class ContentTypeForms {
 			FieldSpec.text("id", I18n.get("gui.dndsheets.form.id"), ""),
 			FieldSpec.text("name", I18n.get("gui.dndsheets.form.name"), ""),
 			//The same syntax as in the JSON: one parser and one way to write it, not two.
-			FieldSpec.text("monsters", I18n.get("gui.dndsheets.form.monsters"), "", LIST_LENGTH)
+			FieldSpec.pick("monsters", I18n.get("gui.dndsheets.form.monsters"), "", "MONSTER", true, LIST_LENGTH)
 		);
 	}
 

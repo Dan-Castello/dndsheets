@@ -26,7 +26,7 @@ enchantmentDamageBonus = ["minecraft:sharpness;1", "minecraft:smite;1", "minecra
 #Off by default ON PURPOSE: it's the most intrusive rule in the mod, because it changes how
 #Minecraft is played outside the table (mining at night, entering a cave). It's toggled on and
 #off live with /dndvision, which writes here.
-visionRules = false
+visionRules = true
 #Solo mode (no DM): when active, ANY connected player can do everything that currently requires
 #an operator — summoning monsters, controlling turns by hand, applying a class preset to
 #themselves, toggling table rules, and even applying conditions or adjusting ANOTHER player's
@@ -54,4 +54,17 @@ soloMode = false
 castTicksPerLevel = 3
 #Range: 0 ~ 200
 castTicksMax = 20
+#Automation switches (the DM's Rules menu). true = the mod resolves it on its own; false = manual,
+#the mod doesn't intervene and the table does it by hand.
+#autoCombat: attack/damage rolls, AC and resistances applied on hit (and hits starting combat).
+#autoTurns: combat starting on its own when someone is hit (the DM can still start it by hand).
+#autoDeathSaves: reaching 0 HP puts a player in the downed/death-save state instead of dying.
+#autoOpportunityAttacks: leaving an enemy's reach on your turn provokes an attack.
+autoCombat = true
+autoTurns = true
+autoDeathSaves = true
+autoOpportunityAttacks = true
+#Feet each block counts for: distances, movement budget and the movement HUD. 5 = the usual grid.
+#Range: 1 ~ 30
+feetPerBlock = 5
 

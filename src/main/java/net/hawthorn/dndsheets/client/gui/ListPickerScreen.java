@@ -58,7 +58,11 @@ public abstract class ListPickerScreen extends Screen {
 	//it was opt-in per screen (searchable()) and the long DM Panel lists just weren't asking for it.
 	private static final int AUTO_SEARCH_MIN_ROWS = 14;
 
-	private final Screen parent;
+	//The key that opened this menu (P, H, G...) sends its character right after the screen appears, and the search
+	//box grabs focus at once, so the letter ended up typed in it. Characters in the first instants are dropped.
+	private final long openedAt = net.minecraft.Util.getMillis();
+
+	protected final Screen parent;
 	private ButtonListWidget list;
 	private EditBox searchBox;
 	private boolean searchActive;
@@ -207,6 +211,12 @@ public abstract class ListPickerScreen extends Screen {
 	@Override
 	public void onClose() {
 		Minecraft.getInstance().setScreen(parent);
+	}
+
+	@Override
+	public boolean charTyped(char codePoint, int modifiers) {
+		if (net.minecraft.Util.getMillis() - openedAt < 200) return true;
+		return super.charTyped(codePoint, modifiers);
 	}
 
 	@Override

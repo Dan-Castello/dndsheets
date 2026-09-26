@@ -83,7 +83,17 @@ public class MonsterActionManager {
 			//from another mod that hasn't been given a sheet yet isn't ours to delete, and an extra
 			//sneak + click would take out the NPC someone just built.
 			if (block == null && !isArmorStand) return;
-			Component deletedName = block != null ? ContentNames.of(block.name()) : Component.translatable("chat.dndsheets.monster.the_armor_stand");
+			//Two-step: the first sneak-click only arms it; a second on the SAME creature within 5 s deletes.
+			long now = dm.level().getGameTime();
+			Long armedAt = pendingDelete.get(dm.getUUID() + ":" + target.getId());
+			pendingDelete.values().removeIf(t -> now - t > 100); //Stale arms (and other creatures') expire.
+			if (armedAt == null || now - armedAt > 100) {
+				pendingDelete.put(dm.getUUID() + ":" + target.getId(), now);
+				dm.displayClientMessage(Component.translatable("chat.dndsheets.monster.delete_confirm").withStyle(ChatFormatting.RED), true);
+				return;
+			}
+			pendingDelete.remove(dm.getUUID() + ":" + target.getId());
+			Component deletedName = block != null ? ContentNames.of(MonsterRegistry.displayNameOf(target, block)) : Component.translatable("chat.dndsheets.monster.the_armor_stand");
 			TurnManager.markDefeated(target.getId()); //Deleted by hand by the DM: it's no longer a standing enemy, it counts the same as dead for auto-ending combat.
 			target.remove(Entity.RemovalReason.DISCARDED);
 			if (dm instanceof ServerPlayer serverDm) {
@@ -124,6 +134,9 @@ public class MonsterActionManager {
 	//hand-typed coordinates. Selection kept in memory per player: right-clicking a monster selects it
 	//(overwriting any previous selection), right-clicking a block moves it there.
 	private static final Map<UUID, Integer> pendingMove = new HashMap<>();
+
+	//"dm uuid:entity id" -> game tick of the first sneak-click, see the two-step delete in onInteractWithMonster.
+	private static final Map<String, Long> pendingDelete = new HashMap<>();
 
 	/** A DM who started moving a monster and disconnected without picking a destination left their entry behind. */
 	static void clearFor(ServerPlayer player) {
@@ -221,7 +234,7 @@ public class MonsterActionManager {
 		//In turn mode, a monster also spends its one action for the turn: if the DM insists on making it
 		//act again before its turn comes back around, it's ignored just like it would be for a player.
 		if (!TurnManager.tryAct(monsterEntity)) {
-			dm.sendSystemMessage(net.minecraft.network.chat.Component.translatable("chat.dndsheets.monster.cant_act", ContentNames.of(block.name())).withStyle(ChatFormatting.RED));
+			dm.sendSystemMessage(net.minecraft.network.chat.Component.translatable("chat.dndsheets.monster.cant_act", ContentNames.of(MonsterRegistry.displayNameOf(monsterEntity, block))).withStyle(ChatFormatting.RED));
 			return;
 		}
 
@@ -390,7 +403,7 @@ public class MonsterActionManager {
 
 		Combatant combatant = Combatant.of(target);
 		String targetName = combatant != null ? combatant.name() : target.getName().getString();
-		ChatFeedback.broadcast(monsterEntity, Component.translatable(messageKey, ContentNames.of(block.name()), targetName).withStyle(ChatFormatting.DARK_PURPLE));
+		ChatFeedback.broadcast(monsterEntity, Component.translatable(messageKey, ContentNames.of(MonsterRegistry.displayNameOf(monsterEntity, block)), targetName).withStyle(ChatFormatting.DARK_PURPLE));
 		resolveAttack(block, monsterEntity, randomOf(attacks), target);
 	}
 
@@ -428,7 +441,7 @@ public class MonsterActionManager {
 		String targetName = targetCombatant.name();
 
 		if (!result.hit()) {
-			ChatFeedback.broadcast(monsterEntity, ChatFeedback.withCover(ChatFeedback.attackResult(block.name(), targetName, attack.name(), attackRoll.outcome().formatted(), targetAc, false, null), result.cover()));
+			ChatFeedback.broadcast(monsterEntity, ChatFeedback.withCover(ChatFeedback.attackResult(MonsterRegistry.displayNameOf(monsterEntity, block), targetName, attack.name(), attackRoll.outcome().formatted(), targetAc, false, null), result.cover()));
 			return;
 		}
 
@@ -443,7 +456,7 @@ public class MonsterActionManager {
 		//shouldn't make a real immunity useless, or the other way around.
 		targetCombatant.takeDamage(Config.scaleMonsterDamage(finalAmount)); //Covers temporary HP, concentration and death in a single place.
 		CombatFx.hit(target, critical, attack.damageType());
-		ChatFeedback.broadcast(monsterEntity, ChatFeedback.withCover(ChatFeedback.attackResult(block.name(), targetName, attack.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()), result.cover()));
+		ChatFeedback.broadcast(monsterEntity, ChatFeedback.withCover(ChatFeedback.attackResult(MonsterRegistry.displayNameOf(monsterEntity, block), targetName, attack.name(), attackRoll.outcome().formatted(), targetAc, true, damageRoll.formatted()), result.cover()));
 
 		if (attack.appliesEffect()) applyEffectFromHit(target, attack.effectName(), attack.effectDice(), attack.effectTurns(), monsterEntity);
 	}
@@ -464,7 +477,7 @@ public class MonsterActionManager {
 
 		String counterer = CounterspellManager.findCounterer(monsterEntity.level(), monsterEntity.position(), monsterEntity);
 		if (counterer != null) {
-			ChatFeedback.broadcast(monsterEntity, Component.translatable("chat.dndsheets.spell.counterspelled", ContentNames.of(block.name()), ContentNames.of(spell.name()), counterer).withStyle(ChatFormatting.DARK_PURPLE));
+			ChatFeedback.broadcast(monsterEntity, Component.translatable("chat.dndsheets.spell.counterspelled", ContentNames.of(MonsterRegistry.displayNameOf(monsterEntity, block)), ContentNames.of(spell.name()), counterer).withStyle(ChatFormatting.DARK_PURPLE));
 			return;
 		}
 
@@ -484,7 +497,7 @@ public class MonsterActionManager {
 		//targetCombatant.name() and not target.getName(): the rest of the mod announces the CHARACTER's
 		//name, and the Minecraft account's was slipping in here.
 		ChatFeedback.broadcast(monsterEntity, ChatFeedback.withLegendaryResistance(
-			ChatFeedback.withCover(ChatFeedback.saveResult(block.name(), targetCombatant.name(), spell.name(),
+			ChatFeedback.withCover(ChatFeedback.saveResult(MonsterRegistry.displayNameOf(monsterEntity, block), targetCombatant.name(), spell.name(),
 				save.roll().formatted(), save.dc(), saved, save.label(), save.damageFormatted()), save.cover()),
 			save.legendaryResistance(), MonsterRegistry.legendaryResistancesLeft(target)));
 

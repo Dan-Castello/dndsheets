@@ -2956,7 +2956,7 @@ public class JsonContentSelfTest {
 		int lists = 0;
 		for (String line : forms.split("\n")) {
 			for (String field : new String[] {"monsters", "traits", "spells", "startingGear", "classes"}) {
-				if (!line.contains("FieldSpec.text(\"" + field + "\"")) continue;
+				if (!line.contains("FieldSpec.text(\"" + field + "\"") && !line.contains("FieldSpec.pick(\"" + field + "\"")) continue;
 				assertTrue(line.contains("LIST_LENGTH"),
 					"the \"" + field + "\" box carries a comma-separated list and needs LIST_LENGTH: " + line.trim());
 				lists++;
@@ -3110,7 +3110,7 @@ public class JsonContentSelfTest {
 		Set<String> allowed = Set.of(
 			"AbilityItem.java", "AbilityItemDispatcher.java", "Config.java", "ItemLook.java",
 			"JournalManager.java", "MagicItemRegistry.java", "MonsterCommand.java", "MonsterRegistry.java",
-			"PresetManager.java", "SpellCommand.java", "SpellRegistry.java");
+			"PresetManager.java", "RoleplayManager.java", "SpellCommand.java", "SpellRegistry.java");
 
 		List<Path> files;
 		try (Stream<Path> walk = Files.walk(Path.of("src", "main"))) {

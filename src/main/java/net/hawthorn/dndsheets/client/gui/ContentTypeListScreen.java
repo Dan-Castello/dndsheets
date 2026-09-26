@@ -32,6 +32,7 @@ public class ContentTypeListScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.content_type.traits"), b -> request(ContentType.TRAIT));
 		addRow(Component.translatable("gui.dndsheets.content_type.encounters"), b -> request(ContentType.ENCOUNTER));
 		addRow(Component.translatable("gui.dndsheets.content_type.feats"), b -> request(ContentType.FEAT));
+		addRow(Component.translatable("gui.dndsheets.content_type.magic_items"), b -> request(ContentType.MAGIC_ITEM));
 		//Race and Background no longer have an in-game editor: Origins picks them, /dndspecies load/loadbackground
 		//homebrews them via file (see dndsheets_species). No row here so as not to promise screens that no longer exist.
 		addRow(Component.translatable("gui.dndsheets.content_type.classes"), b -> requestOptions(CharacterOptionsRegistry.CLASS));

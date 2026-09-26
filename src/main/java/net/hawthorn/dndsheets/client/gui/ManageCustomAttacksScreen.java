@@ -37,16 +37,16 @@ public class ManageCustomAttacksScreen extends ListPickerScreen {
 	@Override
 	protected void buildRows() {
 		for (String name : customAttackNames) {
-			addRow(Component.translatable("gui.dndsheets.custom_attacks.remove", name), b -> {
+			addRow(Component.translatable("gui.dndsheets.custom_attacks.remove", name), b -> ConfirmScreen.ask(Component.literal(name), () -> {
 				DndsheetsMod.PACKET_HANDLER.sendToServer(new RemoveCustomAttackMessage(entityId, name));
 				this.onClose();
-			});
+			}));
 		}
 
-		addRow(Component.translatable("gui.dndsheets.custom_attacks.delete_all"), b -> {
+		addRow(Component.translatable("gui.dndsheets.custom_attacks.delete_all"), b -> ConfirmScreen.ask(Component.translatable("gui.dndsheets.custom_attacks.delete_all"), () -> {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new ClearCustomAttacksMessage(entityId));
 			this.onClose();
-		});
+		}));
 	}
 
 	@Nullable

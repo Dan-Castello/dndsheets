@@ -40,7 +40,6 @@ import java.util.regex.Pattern;
 @Mod.EventBusSubscriber(modid = DndsheetsMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class TurnHudOverlay {
 	private static final int DEFAULT_SPEED_FEET = 30;
-	private static final double FEET_PER_BLOCK = 5.0;
 	//speedBlocksFromClientSheet runs every frame while it's the local player's turn: the Pattern is
 	//cached instead of recompiled every frame.
 	private static final Pattern SPEED_FEET_PATTERN = Pattern.compile("\\d+");
@@ -234,6 +233,6 @@ public class TurnHudOverlay {
 				try { feet = Integer.parseInt(matcher.group()); } catch (NumberFormatException ignored) {}
 			}
 		}
-		return feet / FEET_PER_BLOCK;
+		return feet / (double) TurnHudState.feetPerBlock();
 	}
 }

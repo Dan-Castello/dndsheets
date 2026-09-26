@@ -47,6 +47,15 @@ public class Config {
 	private static final ForgeConfigSpec.BooleanValue SOLO_MODE;
 	private static final ForgeConfigSpec.IntValue CAST_TICKS_PER_LEVEL;
 	private static final ForgeConfigSpec.IntValue CAST_TICKS_MAX;
+	private static final ForgeConfigSpec.IntValue FEET_PER_BLOCK;
+	private static final java.util.EnumMap<Rule, ForgeConfigSpec.BooleanValue> AUTO = new java.util.EnumMap<>(Rule.class);
+
+	/**
+	 * <p>Automations the DM can hand back to the table (manual = the mod stops doing it, everything is
+	 * rolled/decided by hand from the sheet and the commands). {@code VISION} is the old
+	 * {@code visionRules} flag (off by default); the rest default to automatic.</p>
+	 */
+	public enum Rule { COMBAT, TURNS, DEATH_SAVES, OPPORTUNITY_ATTACKS, VISION }
 
 	static {
 		ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
@@ -122,6 +131,22 @@ public class Config {
 		);
 		SOLO_MODE = builder.define("soloMode", false);
 
+		builder.comment(
+			"Automation switches (the DM's Rules menu). true = the mod resolves it on its own; false = manual,",
+			"the mod doesn't intervene and the table does it by hand.",
+			"autoCombat: attack/damage rolls, AC and resistances applied on hit (and hits starting combat).",
+			"autoTurns: combat starting on its own when someone is hit (the DM can still start it by hand).",
+			"autoDeathSaves: reaching 0 HP puts a player in the downed/death-save state instead of dying.",
+			"autoOpportunityAttacks: leaving an enemy's reach on your turn provokes an attack."
+		);
+		for (Rule rule : Rule.values()) {
+			if (rule == Rule.VISION) AUTO.put(rule, VISION_RULES);
+			else AUTO.put(rule, builder.define(rule == Rule.OPPORTUNITY_ATTACKS ? "autoOpportunityAttacks"
+				: rule == Rule.DEATH_SAVES ? "autoDeathSaves" : rule == Rule.TURNS ? "autoTurns" : "autoCombat", true));
+		}
+		builder.comment("Feet each block counts for: distances, movement budget and the movement HUD. 5 = the usual grid.");
+		FEET_PER_BLOCK = builder.defineInRange("feetPerBlock", 5, 1, 30);
+
 		SPEC = builder.build();
 	}
 
@@ -151,6 +176,110 @@ public class Config {
 	public static void setVisionRules(boolean enabled) {
 		VISION_RULES.set(enabled);
 		VISION_RULES.save();
+	}
+
+	/** The three editable lists of the toml, for the in-game editor (see {@code BrowseActionMessage.RULES}). */
+	public enum Table { HIT_DICE, WEAPON_DAMAGE, ENCHANT_BONUS }
+
+	private static ForgeConfigSpec.ConfigValue<List<? extends String>> valueOf(Table table) {
+		return switch (table) {
+			case HIT_DICE -> HIT_DICE_ENTRIES;
+			case WEAPON_DAMAGE -> WEAPON_DAMAGE_ENTRIES;
+			case ENCHANT_BONUS -> ENCHANT_BONUS_ENTRIES;
+		};
+	}
+
+	public static List<String> entries(Table table) {
+		return new java.util.ArrayList<>(valueOf(table).get());
+	}
+
+	/** Same validators the toml uses, so a bad entry from the editor is refused instead of saved. */
+	public static boolean isValid(Table table, String entry) {
+		return switch (table) {
+			case HIT_DICE -> isValidEntry(entry);
+			case WEAPON_DAMAGE -> isValidWeaponEntry(entry) && entry.split(";")[1].trim().matches("\\d+d\\d+");
+			case ENCHANT_BONUS -> isValidEnchantEntry(entry);
+		};
+	}
+
+	/** Replaces the list, writes the toml and applies it now (the file watcher would only do it later). */
+	public static void setEntries(Table table, List<String> entries) {
+		valueOf(table).set(entries);
+		valueOf(table).save();
+		reload();
+		syncTo(net.minecraftforge.network.PacketDistributor.ALL.noArg());
+	}
+
+	/**
+	 * <p>The three tables are read on the CLIENT too (the Attacks tab preloads the weapons in the inventory), and
+	 * on a dedicated server the client's own toml has nothing to do with the server's. So the server pushes them:
+	 * on login and after every edit. The client applies them in memory only; its toml file is never touched.</p>
+	 */
+	public static void syncTo(net.minecraftforge.network.PacketDistributor.PacketTarget target) {
+		for (Table table : Table.values()) {
+			DndsheetsMod.PACKET_HANDLER.send(target, new net.hawthorn.dndsheets.network.BrowseListMessage(
+				net.hawthorn.dndsheets.network.BrowseListMessage.Kind.CONFIG_SYNC, entries(table), List.of(), table.name()));
+		}
+	}
+
+	//What the server last pushed, per table. Kept APART from the ConfigValues: Forge's toml handler autosaves on
+	//set(), so writing the server's tables into them would overwrite this client's own file with someone else's.
+	private static final java.util.EnumMap<Table, List<String>> REMOTE = new java.util.EnumMap<>(Table.class);
+
+	private static List<? extends String> effective(Table table) {
+		List<String> remote = REMOTE.get(table);
+		return remote != null ? remote : valueOf(table).get();
+	}
+
+	/** Client side of {@link #syncTo}: in memory only; the toml on disk is never touched. */
+	public static void applyRemote(String tableName, List<String> entries) {
+		try {
+			REMOTE.put(Table.valueOf(tableName), new java.util.ArrayList<>(entries));
+			reload();
+		} catch (IllegalArgumentException ignored) {
+			//Unknown table: a mismatched server, nothing to apply.
+		}
+	}
+
+	/** On leaving a server the client goes back to its own tables (singleplayer, another server). */
+	public static void clearRemote() {
+		REMOTE.clear();
+		reload();
+	}
+
+	@Mod.EventBusSubscriber
+	public static class Sync {
+		@SubscribeEvent
+		public static void onLogin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
+			if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player) {
+				syncTo(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player));
+			}
+		}
+	}
+
+	/** Whether {@code rule} is automatic. Every automation goes through here. */
+	public static boolean auto(Rule rule) {
+		return AUTO.get(rule).get();
+	}
+
+	public static void setAuto(Rule rule, boolean enabled) {
+		AUTO.get(rule).set(enabled);
+		AUTO.get(rule).save();
+	}
+
+	/** Feet per block, the single conversion for distance, movement budget and HUD. */
+	public static int feetPerBlock() {
+		return FEET_PER_BLOCK.get();
+	}
+
+	public static void setFeetPerBlock(int feet) {
+		FEET_PER_BLOCK.set(Math.max(1, Math.min(30, feet)));
+		FEET_PER_BLOCK.save();
+	}
+
+	public static void setCastTicksPerLevel(int ticks) {
+		CAST_TICKS_PER_LEVEL.set(Math.max(0, Math.min(40, ticks)));
+		CAST_TICKS_PER_LEVEL.save();
 	}
 
 	/** Casting ticks per spell level; 0 = everything instant. See {@code SpellRegistry.Spell#castTicksAt}. */
@@ -573,11 +702,11 @@ public class Config {
 
 	private static void reload() {
 		List<String> configured = new java.util.ArrayList<>();
-		for (String entry : HIT_DICE_ENTRIES.get()) configured.add(entry);
+		for (String entry : effective(Table.HIT_DICE)) configured.add(entry);
 		hitDiceByClass = parseHitDice(configured);
 
 		Map<String, WeaponDefault> parsedWeapons = new LinkedHashMap<>();
-		for (String entry : WEAPON_DAMAGE_ENTRIES.get()) {
+		for (String entry : effective(Table.WEAPON_DAMAGE)) {
 			String[] parts = entry.split(";");
 			if (parts.length != 3) continue;
 			parsedWeapons.put(parts[0].trim(), new WeaponDefault(parts[1].trim(), parts[2].trim().toLowerCase(Locale.ROOT), "physical", "one", null, List.of()));
@@ -585,7 +714,7 @@ public class Config {
 		weaponDamageByItem = parsedWeapons;
 
 		Map<String, Integer> parsedEnchants = new LinkedHashMap<>();
-		for (String entry : ENCHANT_BONUS_ENTRIES.get()) {
+		for (String entry : effective(Table.ENCHANT_BONUS)) {
 			String[] parts = entry.split(";");
 			if (parts.length != 2) continue;
 			try {
