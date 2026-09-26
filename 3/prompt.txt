@@ -1,0 +1,5 @@
+Ajustar la dependencias a hard dependencies
+
+---
+
+He probado el mod en una instancia sin las dependencias, el comportamiento esperado es que muestre en pantalla las dependencias faltantes y no inicie el juego, sin embargo sí inició sin problemas

@@ -3,7 +3,7 @@
   "checkpoint_id": "01M3E8YPTBERMQBP49EMABGQ9Z",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 47,
+  "checkpoints_count": 49,
   "files_touched": [
     "build.gradle",
     "runClient/config/dndsheets-common.toml",
@@ -87,13 +87,20 @@
       "compact_transcript": "/2/transcript.jsonl",
       "content_hash": "/2/content_hash.txt",
       "prompt": "/2/prompt.txt"
+    },
+    {
+      "metadata": "/3/metadata.json",
+      "transcript": "/3/full.jsonl",
+      "compact_transcript": "/3/transcript.jsonl",
+      "content_hash": "/3/content_hash.txt",
+      "prompt": "/3/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 578,
-    "cache_creation_tokens": 1096404,
-    "cache_read_tokens": 52822065,
-    "output_tokens": 288143,
-    "api_call_count": 270
+    "input_tokens": 596,
+    "cache_creation_tokens": 1149715,
+    "cache_read_tokens": 53240016,
+    "output_tokens": 290855,
+    "api_call_count": 279
   }
 }
