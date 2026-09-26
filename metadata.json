@@ -3,7 +3,7 @@
   "checkpoint_id": "01M3E8YPTBERMQBP49EMABGQ9Z",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 15,
+  "checkpoints_count": 47,
   "files_touched": [
     "build.gradle",
     "runClient/config/dndsheets-common.toml",
@@ -51,6 +51,7 @@
     "src/main/java/net/hawthorn/dndsheets/network/BrowseActionMessage.java",
     "src/main/java/net/hawthorn/dndsheets/network/BrowseListMessage.java",
     "src/main/java/net/hawthorn/dndsheets/network/TurnStateMessage.java",
+    "src/main/resources/META-INF/mods.toml",
     "src/main/resources/assets/dndsheets/lang/en_us.json",
     "src/main/resources/assets/dndsheets/lang/es_ar.json",
     "src/main/resources/assets/dndsheets/lang/es_cl.json",
@@ -79,13 +80,20 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": "/1/prompt.txt"
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": "/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 346,
-    "cache_creation_tokens": 374688,
-    "cache_read_tokens": 31021441,
-    "output_tokens": 174463,
-    "api_call_count": 160
+    "input_tokens": 578,
+    "cache_creation_tokens": 1096404,
+    "cache_read_tokens": 52822065,
+    "output_tokens": 288143,
+    "api_call_count": 270
   }
 }
