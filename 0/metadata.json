@@ -1,0 +1,304 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M3E8YPTBERMQBP49EMABGQ9Z",
+  "session_id": "25ce44ff-f7eb-4e53-b69a-017d2d71a409",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-26T07:13:00.0425066Z",
+  "branch": "main",
+  "checkpoints_count": 14,
+  "save_step_count": 14,
+  "files_touched": [
+    "build.gradle",
+    "runClient/config/dndsheets-common.toml",
+    "src/main/java/net/hawthorn/dndsheets/CombatManager.java",
+    "src/main/java/net/hawthorn/dndsheets/Combatant.java",
+    "src/main/java/net/hawthorn/dndsheets/Config.java",
+    "src/main/java/net/hawthorn/dndsheets/ContentType.java",
+    "src/main/java/net/hawthorn/dndsheets/DeathSaveManager.java",
+    "src/main/java/net/hawthorn/dndsheets/DndsheetsMod.java",
+    "src/main/java/net/hawthorn/dndsheets/GiveableItem.java",
+    "src/main/java/net/hawthorn/dndsheets/ItemLook.java",
+    "src/main/java/net/hawthorn/dndsheets/MonsterActionManager.java",
+    "src/main/java/net/hawthorn/dndsheets/MonsterRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/MovementAnchorTracker.java",
+    "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java",
+    "src/main/java/net/hawthorn/dndsheets/SpellCastManager.java",
+    "src/main/java/net/hawthorn/dndsheets/TurnManager.java",
+    "src/main/java/net/hawthorn/dndsheets/client/ConfigSyncClient.java",
+    "src/main/java/net/hawthorn/dndsheets/client/RoleplayClient.java",
+    "src/main/java/net/hawthorn/dndsheets/client/TurnHudOverlay.java",
+    "src/main/java/net/hawthorn/dndsheets/client/TurnHudState.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/AddTurnEffectScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/CharacterListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/CharacterSheetScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ChoiceScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ConfigListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ConfirmScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ContentEntryListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ContentFormScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ContentTypeForms.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ContentTypeListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/DmPanelScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/FormPanelScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ItemPickerScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ListPickerScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ManageCustomAttacksScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/OptionsManageScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/SmallFormScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/TraitEditScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/command/DistanceCommand.java",
+    "src/main/java/net/hawthorn/dndsheets/command/RoleplayCommand.java",
+    "src/main/java/net/hawthorn/dndsheets/compat/DndJeiPlugin.java",
+    "src/main/java/net/hawthorn/dndsheets/init/DndsheetsModCreativeTab.java",
+    "src/main/java/net/hawthorn/dndsheets/network/BrowseActionMessage.java",
+    "src/main/java/net/hawthorn/dndsheets/network/BrowseListMessage.java",
+    "src/main/java/net/hawthorn/dndsheets/network/TurnStateMessage.java",
+    "src/main/resources/assets/dndsheets/lang/en_us.json",
+    "src/main/resources/assets/dndsheets/lang/es_ar.json",
+    "src/main/resources/assets/dndsheets/lang/es_cl.json",
+    "src/main/resources/assets/dndsheets/lang/es_ec.json",
+    "src/main/resources/assets/dndsheets/lang/es_es.json",
+    "src/main/resources/assets/dndsheets/lang/es_mx.json",
+    "src/main/resources/assets/dndsheets/lang/es_uy.json",
+    "src/main/resources/assets/dndsheets/lang/es_ve.json",
+    "src/main/resources/assets/dndsheets/models/item/roleplay.json",
+    "src/main/resources/assets/dndsheets/models/item/token.json",
+    "src/main/resources/assets/dndsheets/textures/item/roleplay.png",
+    "src/test/java/net/hawthorn/dndsheets/JsonContentSelfTest.java",
+    "tools/generate_item_icons.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5",
+  "turn_id": "25dd05beb250",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 322,
+    "cache_creation_tokens": 323586,
+    "cache_read_tokens": 30193959,
+    "output_tokens": 163903,
+    "api_call_count": 148
+  },
+  "session_metrics": {
+    "turn_count": 14
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-26T07:12:59.9125028Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 201,
+    "human_modified": 18438,
+    "human_removed": 0,
+    "total_committed": 16004,
+    "total_lines_changed": 18648,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 13,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4619,
+      "agent_lines_removed": 4311,
+      "user_added_per_file": {
+        "runClient/config/dndsheets-common.toml": 13
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4385,
+      "agent_lines_removed": 3799
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 2,
+      "user_lines_removed": 2,
+      "agent_lines_added": 4385,
+      "agent_lines_removed": 3799,
+      "user_added_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 2
+      },
+      "user_removed_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 2
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 97,
+      "user_lines_removed": 93,
+      "agent_lines_added": 4444,
+      "agent_lines_removed": 3799,
+      "user_added_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 97
+      },
+      "user_removed_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 93
+      }
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 100,
+      "user_lines_removed": 93,
+      "agent_lines_added": 4444,
+      "agent_lines_removed": 3799,
+      "user_added_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 97,
+        "src/main/java/net/hawthorn/dndsheets/client/RoleplayClient.java": 3
+      },
+      "user_removed_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 93
+      }
+    },
+    {
+      "checkpoint_number": 7,
+      "user_lines_added": 100,
+      "user_lines_removed": 93,
+      "agent_lines_added": 4444,
+      "agent_lines_removed": 3799,
+      "user_added_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 97,
+        "src/main/java/net/hawthorn/dndsheets/client/RoleplayClient.java": 3
+      },
+      "user_removed_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 93
+      }
+    },
+    {
+      "checkpoint_number": 8,
+      "user_lines_added": 111,
+      "user_lines_removed": 93,
+      "agent_lines_added": 5171,
+      "agent_lines_removed": 4237,
+      "user_added_per_file": {
+        "runClient/dndsheets/weapons/dm_created.json": 11,
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 97,
+        "src/main/java/net/hawthorn/dndsheets/client/RoleplayClient.java": 3
+      },
+      "user_removed_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 93
+      }
+    },
+    {
+      "checkpoint_number": 9,
+      "user_lines_added": 195,
+      "user_lines_removed": 172,
+      "agent_lines_added": 6212,
+      "agent_lines_removed": 4516,
+      "user_added_per_file": {
+        "runClient/dndsheets/weapons/dm_created.json": 11,
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 97,
+        "src/main/java/net/hawthorn/dndsheets/client/RoleplayClient.java": 3,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 84
+      },
+      "user_removed_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 93,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 79
+      }
+    },
+    {
+      "checkpoint_number": 10,
+      "user_lines_added": 195,
+      "user_lines_removed": 172,
+      "agent_lines_added": 6246,
+      "agent_lines_removed": 4516,
+      "user_added_per_file": {
+        "runClient/dndsheets/weapons/dm_created.json": 11,
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 97,
+        "src/main/java/net/hawthorn/dndsheets/client/RoleplayClient.java": 3,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 84
+      },
+      "user_removed_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 93,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 79
+      }
+    },
+    {
+      "checkpoint_number": 11,
+      "user_lines_added": 196,
+      "user_lines_removed": 173,
+      "agent_lines_added": 6246,
+      "agent_lines_removed": 4516,
+      "user_added_per_file": {
+        "runClient/config/dndsheets-common.toml": 1,
+        "runClient/dndsheets/weapons/dm_created.json": 11,
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 97,
+        "src/main/java/net/hawthorn/dndsheets/client/RoleplayClient.java": 3,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 84
+      },
+      "user_removed_per_file": {
+        "runClient/config/dndsheets-common.toml": 1,
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 93,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 79
+      }
+    },
+    {
+      "checkpoint_number": 12,
+      "user_lines_added": 308,
+      "user_lines_removed": 289,
+      "agent_lines_added": 15022,
+      "agent_lines_removed": 12974,
+      "user_added_per_file": {
+        "runClient/dndsheets/weapons/dm_created.json": 11,
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 97,
+        "src/main/java/net/hawthorn/dndsheets/client/RoleplayClient.java": 3,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ConfigListScreen.java": 113,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 84
+      },
+      "user_removed_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 93,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ConfigListScreen.java": 117,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 79
+      }
+    },
+    {
+      "checkpoint_number": 13,
+      "user_lines_added": 321,
+      "user_lines_removed": 289,
+      "agent_lines_added": 15057,
+      "agent_lines_removed": 12974,
+      "user_added_per_file": {
+        "runClient/dndsheets/classes/dm_created.json": 13,
+        "runClient/dndsheets/weapons/dm_created.json": 11,
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 97,
+        "src/main/java/net/hawthorn/dndsheets/client/RoleplayClient.java": 3,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ConfigListScreen.java": 113,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 84
+      },
+      "user_removed_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 93,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ConfigListScreen.java": 117,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 79
+      }
+    },
+    {
+      "checkpoint_number": 14,
+      "user_lines_added": 321,
+      "user_lines_removed": 289,
+      "agent_lines_added": 17651,
+      "agent_lines_removed": 15414,
+      "user_added_per_file": {
+        "runClient/dndsheets/classes/dm_created.json": 13,
+        "runClient/dndsheets/weapons/dm_created.json": 11,
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 97,
+        "src/main/java/net/hawthorn/dndsheets/client/RoleplayClient.java": 3,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ConfigListScreen.java": 113,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 84
+      },
+      "user_removed_per_file": {
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 93,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ConfigListScreen.java": 117,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 79
+      }
+    }
+  ]
+}

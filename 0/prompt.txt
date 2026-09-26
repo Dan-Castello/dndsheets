@@ -1,0 +1,94 @@
+<pasted_content id="d137">
+Currently, the project has focused on developing a “DM-less” system, however, it’s necessary to be able to add an option or setting to disable it—that is, to keep everything manual and be able to configure absolutely everything. Therefore, the goal is to have a menu to configure which settings are in manual mode and which are in automatic mode. For example, a DM opens the settings and activates automatic mode for combat, but wants to choose the distance equivalence in blocks manually, and the same applies to everything else.
+</pasted_content id="d137">
+
+---
+
+<pasted_content id="d137">
+A role-playing tool is needed; it does not affect actions. For example, if you select the “Listen” option, click on a goblin, and then click on a player, the result is “Goblin listens to player”; or if you select the ‘Look’ option in the same scenario, the result is “Goblin looks at player.”
+</pasted_content id="d137">
+
+---
+
+<pasted_content id="d137">
+Resultado obtenido:
+[12:04:04] [Server thread/INFO] [minecraft/MinecraftServer]: content.dndsheets.monster.goblin looks at content.dndsheets.monster.orc
+[12:04:04] [Render thread/INFO] [minecraft/ChatComponent]: [System] [CHAT] content.dndsheets.monster.goblin looks at content.dndsheets.monster.orc
+
+Resultado esperado:
+goblin looks at orc
+</pasted_content id="d137">
+
+---
+
+<pasted_content id="d137">
+Instead of changing the action one by one by left-clicking while holding down the Shift key, open a list
+</pasted_content id="d137">
+
+---
+
+<pasted_content id="d137">
+The problem is that now the menu pops up even when you select the mob, and it's getting distracting.
+</pasted_content id="d137">
+
+---
+
+<pasted_content id="d137">
+Verify that it is possible to configure and add items from within the game
+</pasted_content id="d137">
+
+---
+
+<pasted_content id="d137">
+Allow users to open a menu to select objects using an icon-based interface, rather than just typing their names; allow this same interface to be used for other purposes
+</pasted_content id="d137">
+
+ similar to JEI 
+
+<pasted_content id="d137">
+or, if JEI is installed, use it if possible
+</pasted_content id="d137">
+
+---
+
+<pasted_content id="d137">
+Resolving issues that can’t be addressed within the game by taking advantage of the new interface:
+1. Magical items (rings, cloaks, etc.): There is no screen for creating them or giving them to a player. Only the /dnditems give command and the JSON files exist. They are not a ContentType, so they do not appear in the content creator.
+2. TOML configuration: damage dice per class, default weapon damage, and enchantment bonuses can only be edited manually in dndsheets-common.toml.
+3. Spells with effects (Fireball, Moonbeam): the areas, effects, and concentration still require hand-written JSON, as noted in a comment in ContentTypeForms.
+
+Look for bugs or ambiguities
+</pasted_content id="d137">
+
+---
+
+Sí, sincronizar entre jugadores
+
+---
+
+Devuelve listado de pruebas para revisión de cambios y funcionamiento
+
+---
+
+<pasted_content id="d137">
+Error detected: When you press P to open the menu, it opens already typing P in the search bar.
+If the mob has a custom name, allow it to use that name
+Selecting objects for presets should also allow the use of the item GUI; this should be enabled for anything that involves selecting objects.
+Next issue: Assigning effects and other tasks presents the same problem as typing the items by hand; improve this with a new interface and minimize manual typing as much as possible.
+</pasted_content id="d137">
+
+---
+
+buscar bugs y regresiones
+
+---
+
+<pasted_content id="d137">
+Confirm all deletions to prevent accidental deletions; limit to one call per action or type
+</pasted_content id="d137">
+
+---
+
+<pasted_content id="d137">
+Find out if it's possible to display just the name in the listings—for example, instead of “com.example.item,” display only “item.”
+</pasted_content id="d137">
