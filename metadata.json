@@ -1,0 +1,58 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4H6Q8SC4S4DE90XDK95RNQS",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 11,
+  "files_touched": [
+    "CHANGELOG.md",
+    "build.gradle",
+    "species/src/main/java/net/hawthorn/dndsheets/species/command/SpeciesCommand.java",
+    "species/src/main/resources/META-INF/mods.toml",
+    "src/main/java/net/hawthorn/dndsheets/Combatant.java",
+    "src/main/java/net/hawthorn/dndsheets/Condition.java",
+    "src/main/java/net/hawthorn/dndsheets/LegendaryActionManager.java",
+    "src/main/java/net/hawthorn/dndsheets/MonsterActionManager.java",
+    "src/main/java/net/hawthorn/dndsheets/MonsterRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/MovementAnchorTracker.java",
+    "src/main/java/net/hawthorn/dndsheets/RestManager.java",
+    "src/main/java/net/hawthorn/dndsheets/SpellCastManager.java",
+    "src/main/java/net/hawthorn/dndsheets/SpellRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/TurnManager.java",
+    "src/main/resources/META-INF/mods.toml",
+    "src/main/resources/assets/dndsheets/lang/en_us.json",
+    "src/main/resources/assets/dndsheets/lang/es_ar.json",
+    "src/main/resources/assets/dndsheets/lang/es_cl.json",
+    "src/main/resources/assets/dndsheets/lang/es_ec.json",
+    "src/main/resources/assets/dndsheets/lang/es_es.json",
+    "src/main/resources/assets/dndsheets/lang/es_mx.json",
+    "src/main/resources/assets/dndsheets/lang/es_uy.json",
+    "src/main/resources/assets/dndsheets/lang/es_ve.json",
+    "src/main/resources/dndsheets/defaults/monsters.json",
+    "src/main/resources/dndsheets/defaults/spells.json",
+    "src/test/java/net/hawthorn/dndsheets/JsonContentSelfTest.java"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 148,
+    "cache_creation_tokens": 208275,
+    "cache_read_tokens": 10283013,
+    "output_tokens": 72817,
+    "api_call_count": 68,
+    "subagent_tokens": {
+      "input_tokens": 110,
+      "cache_creation_tokens": 365552,
+      "cache_read_tokens": 1804971,
+      "output_tokens": 27644,
+      "api_call_count": 55
+    }
+  }
+}
