@@ -33,7 +33,6 @@ import java.util.UUID;
  */
 @Mod.EventBusSubscriber
 public class SpellCastManager {
-	private static final double RANGE = 30.0;
 	private static final Map<String, String> ABILITY_SHEET_KEY = Map.of(
 		"str", "strength", "dex", "dexterity", "con", "constitution",
 		"int", "intelligence", "wis", "wisdom", "cha", "charisma"
@@ -52,6 +51,10 @@ public class SpellCastManager {
 		lastCastTick.remove(event.getEntity().getUUID());
 	}
 
+	private static double rangeOf(SpellRegistry.Spell spell) {
+		return spell.rangeBlocks(Config.feetPerBlock());
+	}
+
 	private static boolean isAoe(SpellRegistry.Spell spell) {
 		//A persistent zone has aoeRadius but is NOT resolved as an area on cast: it gets placed (see ZoneManager).
 		return "save".equals(spell.mode()) && spell.aoeRadius() > 0 && !spell.isZone();
@@ -66,7 +69,7 @@ public class SpellCastManager {
 		//on purpose (it isn't resolved on cast, it gets placed), so the sneak-click drew nothing and the
 		//wall got placed blind — for ten rounds and with the slot already spent, with no way to reposition it.
 		if (spell.isZone()) {
-			ZoneManager.preview(caster, spell, spell.followsCaster() ? null : findImpactPoint(caster));
+			ZoneManager.preview(caster, spell, spell.followsCaster() ? null : findImpactPoint(caster, rangeOf(spell)));
 			return;
 		}
 		if (!isAoe(spell)) return;
@@ -74,7 +77,7 @@ public class SpellCastManager {
 		//ring at the impact point would lie about who it reaches), so the two shapes that MOST need to see
 		//the area — your own group is right behind you — were precisely the only ones without a preview.
 		if (spell.originatesAtCaster()) CombatFx.shapeOutline(caster, spell.aoeShape(), spell.aoeRadius(), spell.damageType());
-		else CombatFx.aoeRing(caster.level(), findImpactPoint(caster), spell.aoeRadius());
+		else CombatFx.aoeRing(caster.level(), findImpactPoint(caster, rangeOf(spell)), spell.aoeRadius());
 	}
 
 	/**
@@ -193,9 +196,9 @@ public class SpellCastManager {
 		if (spell.isZone() || spell.isSelfTargeted() || spell.isSummon()) {
 			//No target, but a zone DOES have a point: it's placed where aimed (see ZoneManager.place).
 			//buff/temphp/summon target the self and need neither.
-			if (spell.isZone() && !spell.followsCaster()) impactPoint = findImpactPoint(caster);
+			if (spell.isZone() && !spell.followsCaster()) impactPoint = findImpactPoint(caster, rangeOf(spell));
 		} else if (isAoe) {
-			impactPoint = findImpactPoint(caster);
+			impactPoint = findImpactPoint(caster, rangeOf(spell));
 			aoeTargets = findAoeTargets(caster, impactPoint, spell.aoeRadius(), spell.aoeShape());
 			//In an area, whoever the spell can't affect simply falls off the list: the blast passes over
 			//them. The cast itself isn't rejected, which is what does happen with a single target.
@@ -208,7 +211,7 @@ public class SpellCastManager {
 			//retreat — things that happen constantly at the table. The slot is spent and the world reacts
 			//(see SurfaceManager on resolve); there's simply no one to damage.
 		} else {
-			target = findTarget(caster);
+			target = findTarget(caster, rangeOf(spell));
 			if (target == null) {
 				//A healing spell with no one in sight is cast on the caster themself (Cure Wounds on the
 				//caster is the most common case).
@@ -218,7 +221,7 @@ public class SpellCastManager {
 				//gave the same "no target" as not aiming at anything. At the table, aiming is free and the
 				//spell still goes off.
 				if ("heal".equals(spell.mode())) target = caster;
-				else impactPoint = findImpactPoint(caster);
+				else impactPoint = findImpactPoint(caster, rangeOf(spell));
 			}
 			//Wrong target type: a warning is sent and the slot is NOT charged. Charging it would punish for
 			//a rule the mod knows and the player can't see: at the table, the DM would say "that's not a
@@ -397,7 +400,7 @@ public class SpellCastManager {
 		//twinned for free again (invariant 4). Arming it got persisted; spending it didn't.
 		SheetLoader.saveServer(casterSheet, caster.getStringUUID());
 
-		Entity secondTarget = findNearestOther(caster, firstTarget);
+		Entity secondTarget = findNearestOther(caster, firstTarget, rangeOf(spell));
 		if (secondTarget == null) {
 			caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.twin_no_target").withStyle(ChatFormatting.GRAY));
 			return;
@@ -414,8 +417,8 @@ public class SpellCastManager {
 
 	//Same valid-target criterion as findAoeTargets (player or spawned monster, alive), but by proximity to
 	//the caster instead of raycast — a second target doesn't have to be in the crosshair.
-	private static Entity findNearestOther(ServerPlayer caster, Entity excluding) {
-		AABB box = new AABB(caster.position(), caster.position()).inflate(RANGE);
+	private static Entity findNearestOther(ServerPlayer caster, Entity excluding, double range) {
+		AABB box = new AABB(caster.position(), caster.position()).inflate(range);
 		Entity best = null;
 		double bestDistSq = Double.MAX_VALUE;
 		for (Entity candidate : caster.level().getEntities((Entity) null, box,
@@ -464,12 +467,12 @@ public class SpellCastManager {
 
 	//Same raycast as findTarget but including blocks: if no entity is in the crosshair, the impact point
 	//is where the ray hits terrain (or the end of the range if it hits nothing).
-	private static Vec3 findImpactPoint(ServerPlayer caster) {
-		Entity direct = findTarget(caster);
+	private static Vec3 findImpactPoint(ServerPlayer caster, double range) {
+		Entity direct = findTarget(caster, range);
 		if (direct != null) return direct.position();
 
 		Vec3 eyePos = caster.getEyePosition(1.0f);
-		Vec3 endPos = eyePos.add(caster.getViewVector(1.0f).scale(RANGE));
+		Vec3 endPos = eyePos.add(caster.getViewVector(1.0f).scale(range));
 		BlockHitResult blockHit = caster.level().clip(new ClipContext(eyePos, endPos, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, caster));
 		return blockHit.getLocation();
 	}
@@ -573,11 +576,11 @@ public class SpellCastManager {
 	//Same raycast Minecraft uses internally to know what an arrow hit, reused to aim the spell at whatever
 	//the caster has in front of them.
 	@Nullable
-	private static Entity findTarget(ServerPlayer caster) {
+	private static Entity findTarget(ServerPlayer caster, double range) {
 		Vec3 eyePos = caster.getEyePosition(1.0f);
 		Vec3 viewVec = caster.getViewVector(1.0f);
-		Vec3 endPos = eyePos.add(viewVec.scale(RANGE));
-		AABB searchBox = caster.getBoundingBox().expandTowards(viewVec.scale(RANGE)).inflate(1.0);
+		Vec3 endPos = eyePos.add(viewVec.scale(range));
+		AABB searchBox = caster.getBoundingBox().expandTowards(viewVec.scale(range)).inflate(1.0);
 
 		EntityHitResult hit = ProjectileUtil.getEntityHitResult(caster.level(), caster, eyePos, endPos, searchBox,
 			entity -> isSpellTarget(caster, entity));

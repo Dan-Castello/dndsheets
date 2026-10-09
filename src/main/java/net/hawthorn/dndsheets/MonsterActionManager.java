@@ -4,6 +4,10 @@ import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.network.MonsterActionOpenMessage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -309,8 +313,24 @@ public class MonsterActionManager {
 
 		moveTowardIfNeeded(monsterEntity, target);
 
+		//A spent recharge ability (dragon breath) is used up: while it recharges, the monster falls back to
+		//its normal attacks. A ready one is preferred over them, as the table does with a breath weapon.
+		if (target instanceof Player breathTarget) {
+			List<MonsterRegistry.MonsterSpell> ready = new ArrayList<>();
+			for (MonsterRegistry.MonsterSpell s : block.spells()) {
+				if (s.recharge() > 0 && isRechargeReady(monsterEntity, s.name())) ready.add(s);
+			}
+			if (!ready.isEmpty()) {
+				MonsterRegistry.MonsterSpell chosen = randomOf(ready);
+				markRechargeSpent(monsterEntity, chosen.name());
+				resolveSpell(block, monsterEntity, chosen, breathTarget);
+				return;
+			}
+		}
+
 		List<MonsterRegistry.MonsterAttack> attacks = new ArrayList<>(block.attacks());
 		attacks.addAll(MonsterRegistry.customAttacksOf(monsterEntity));
+		attacks.removeIf(a -> a.recharge() > 0 && !isRechargeReady(monsterEntity, a.name()));
 		if (!attacks.isEmpty()) {
 			//Multiattack: an adult dragon makes three attacks per turn in 5e (a bite and two claws), and
 			//here it used to make ONE, i.e. a third of its threat. They're chosen at random among its
@@ -319,14 +339,76 @@ public class MonsterActionManager {
 				//Checked between hits: if the first one kills the target, the rest don't happen. A dead
 				//target doesn't take two more attacks, and without this the chat announced hits against a corpse.
 				if (!monsterEntity.isAlive() || !target.isAlive()) break;
-				resolveAttack(block, monsterEntity, randomOf(attacks), target);
+				MonsterRegistry.MonsterAttack chosen = randomOf(attacks);
+				if (chosen.recharge() > 0) {
+					markRechargeSpent(monsterEntity, chosen.name());
+					attacks.remove(chosen);
+				}
+				resolveAttack(block, monsterEntity, chosen, target);
+				if (attacks.isEmpty()) break;
 			}
 			return;
 		}
 		//Monster spells still require a player: their resolution reads the target's sheet.
 		if (!block.spells().isEmpty() && target instanceof Player playerTarget) {
-			resolveSpell(block, monsterEntity, randomOf(block.spells()), playerTarget);
+			List<MonsterRegistry.MonsterSpell> always = new ArrayList<>();
+			for (MonsterRegistry.MonsterSpell s : block.spells()) if (s.recharge() == 0) always.add(s);
+			if (!always.isEmpty()) resolveSpell(block, monsterEntity, randomOf(always), playerTarget);
 		}
+	}
+
+	//--- Recharge: names of the abilities spent, kept in the monster's own NBT (so it survives a restart) ---
+	private static final String RECHARGE_SPENT = "rechargeSpent";
+
+	private static boolean isRechargeReady(Entity monster, String name) {
+		ListTag spent = monster.getPersistentData().getCompound("dndsheets").getList(RECHARGE_SPENT, Tag.TAG_STRING);
+		for (int i = 0; i < spent.size(); i++) if (spent.getString(i).equals(name)) return false;
+		return true;
+	}
+
+	private static void markRechargeSpent(Entity monster, String name) {
+		CompoundTag data = monster.getPersistentData();
+		CompoundTag tag = data.getCompound("dndsheets");
+		ListTag spent = tag.getList(RECHARGE_SPENT, Tag.TAG_STRING);
+		spent.add(StringTag.valueOf(name));
+		tag.put(RECHARGE_SPENT, spent);
+		data.put("dndsheets", tag);
+	}
+
+	/**
+	 * <p>Start of the monster's own turn: each spent ability rolls a d6 and comes back on its recharge
+	 * number or higher ("Recharge 5-6" = 5). Called from TurnManager next to the legendary-action refill.</p>
+	 */
+	static void rollRecharges(Entity monster) {
+		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monster);
+		if (block == null) return;
+		CompoundTag data = monster.getPersistentData();
+		CompoundTag tag = data.getCompound("dndsheets");
+		ListTag spent = tag.getList(RECHARGE_SPENT, Tag.TAG_STRING);
+		if (spent.isEmpty()) return;
+
+		ListTag still = new ListTag();
+		for (int i = 0; i < spent.size(); i++) {
+			String name = spent.getString(i);
+			int need = rechargeNeeded(block, monster, name);
+			int roll = monster.level().getRandom().nextInt(6) + 1;
+			boolean back = need > 0 && roll >= need;
+			ChatFeedback.broadcast(monster, Component.translatable("chat.dndsheets.monster.recharge_roll",
+				ContentNames.of(MonsterRegistry.displayNameOf(monster, block)), ContentNames.of(name), roll, need,
+				Component.translatable(back ? "chat.dndsheets.monster.recharged" : "chat.dndsheets.monster.not_recharged"))
+				.withStyle(ChatFormatting.DARK_PURPLE));
+			if (!back) still.add(StringTag.valueOf(name));
+		}
+		tag.put(RECHARGE_SPENT, still);
+		data.put("dndsheets", tag);
+	}
+
+	private static int rechargeNeeded(MonsterRegistry.MonsterStatBlock block, Entity monster, String name) {
+		for (MonsterRegistry.MonsterSpell s : block.spells()) if (s.name().equals(name)) return s.recharge();
+		List<MonsterRegistry.MonsterAttack> all = new ArrayList<>(block.attacks());
+		all.addAll(MonsterRegistry.customAttacksOf(monster));
+		for (MonsterRegistry.MonsterAttack a : all) if (a.name().equals(name)) return a.recharge();
+		return 0;
 	}
 
 	//Picks among several options (attacks or spells) at random instead of always the first — so a
@@ -376,8 +458,18 @@ public class MonsterActionManager {
 	 * the usual rules — with its own announcement, because chat needs to be able to distinguish why the
 	 * boss just hit outside its turn.</p>
 	 */
-	public static void resolveLegendaryAttack(Entity monsterEntity, Player target) {
-		attackOutsideOwnTurn(monsterEntity, target, "chat.dndsheets.monster.legendary_action");
+	public static void resolveLegendaryAttack(Entity monsterEntity, Player target, MonsterRegistry.MonsterAttack attack) {
+		attackOutsideOwnTurn(monsterEntity, target, "chat.dndsheets.monster.legendary_action", attack);
+	}
+
+	/** A legendary action that is a save ability (Wing Attack), announced like the attack ones. */
+	public static void resolveLegendarySpell(Entity monsterEntity, Player target, MonsterRegistry.MonsterSpell spell) {
+		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monsterEntity);
+		if (block == null) return;
+		Combatant combatant = Combatant.of(target);
+		String targetName = combatant != null ? combatant.name() : target.getName().getString();
+		ChatFeedback.broadcast(monsterEntity, Component.translatable("chat.dndsheets.monster.legendary_action", ContentNames.of(MonsterRegistry.displayNameOf(monsterEntity, block)), targetName).withStyle(ChatFormatting.DARK_PURPLE));
+		resolveSpell(block, monsterEntity, spell, target);
 	}
 
 	public static void resolveOpportunityAttack(Entity monsterEntity, Player mover) {
@@ -388,12 +480,12 @@ public class MonsterActionManager {
 		attacks.addAll(MonsterRegistry.customAttacksOf(monsterEntity));
 		if (attacks.isEmpty()) return;
 
-		attackOutsideOwnTurn(monsterEntity, mover, "chat.dndsheets.monster.opportunity_attack");
+		attackOutsideOwnTurn(monsterEntity, mover, "chat.dndsheets.monster.opportunity_attack", null);
 	}
 
 	//Common body for both out-of-turn attacks: the only real difference between an opportunity attack and
 	//a legendary one is what chat says, and having it written twice was asking for the two to drift apart.
-	private static void attackOutsideOwnTurn(Entity monsterEntity, Player target, String messageKey) {
+	private static void attackOutsideOwnTurn(Entity monsterEntity, Player target, String messageKey, MonsterRegistry.MonsterAttack chosen) {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monsterEntity);
 		if (block == null) return;
 
@@ -404,7 +496,7 @@ public class MonsterActionManager {
 		Combatant combatant = Combatant.of(target);
 		String targetName = combatant != null ? combatant.name() : target.getName().getString();
 		ChatFeedback.broadcast(monsterEntity, Component.translatable(messageKey, ContentNames.of(MonsterRegistry.displayNameOf(monsterEntity, block)), targetName).withStyle(ChatFormatting.DARK_PURPLE));
-		resolveAttack(block, monsterEntity, randomOf(attacks), target);
+		resolveAttack(block, monsterEntity, chosen != null ? chosen : randomOf(attacks), target);
 	}
 
 	/**

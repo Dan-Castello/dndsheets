@@ -33,3 +33,13 @@ description="Aplica el Aumento de Caracteristica y los rasgos del SRD cuando el 
     versionRange="[1.10.0,)"
     ordering="AFTER"
     side="BOTH"
+
+# Origins:Classes ships data/origins-classes/origin_layers/class.json at the SAME path we replace with the 12 SRD
+# classes. Both are mod resource packs, so whichever loads last wins: without this ordering the addon's own
+# layer can overwrite ours depending on mod sort order. Optional: it works without the addon too.
+[[dependencies.dndsheets_species]]
+    modId="origins_classes"
+    mandatory=false
+    versionRange="[1.2.0,)"
+    ordering="AFTER"
+    side="BOTH"

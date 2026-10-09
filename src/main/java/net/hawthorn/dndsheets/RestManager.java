@@ -218,16 +218,73 @@ public class RestManager {
 			int max = sheet.get("spellSlotsMax").getAsInt();
 			SpellSlots.restoreAll(sheet);
 			WizardArcaneRecoveryManager.resetOnLongRest(player);
+			recoverHitDice(sheet);
+			Combatant exhausted = Combatant.of(player);
+			if (exhausted != null) exhausted.reduceExhaustion(); //A long rest removes one level.
 		} else {
-			float missing = player.getMaxHealth() - player.getHealth();
-			player.setHealth(Math.min(player.getMaxHealth(), player.getHealth() + missing / 2f));
+			spendHitDice(player, sheet);
 			WizardArcaneRecoveryManager.onShortRest(player, sheet);
 			WarlockPactMagicManager.onShortRest(player, sheet);
 		}
 		FighterSecondWindManager.resetOnRest(player); //5e recovers it with either kind of rest, not just the long one.
 		ClericTurnUndeadManager.resetOnRest(player);  //Channel Divinity, same: recovers on a short rest.
 
+		SheetLoader.saveServer(sheet, player.getStringUUID()); //Invariant 4: what a rest changes has to reach disk.
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+	}
+
+	/**
+	 * <p>Hit Dice (SRD): a character has as many as their level, and on a short rest spends them to heal
+	 * {@code die + CON modifier} each. Spent ones are kept in {@code hitDiceSpent} on the sheet (absent = 0).</p>
+	 *
+	 * <p>The player doesn't choose how many: dice are spent one at a time while the HP still missing is at
+	 * least an average roll, so none is wasted on a nearly healthy character. A sheet with no
+	 * {@code characterLevel} keeps the old behavior (half of the missing HP), so nothing already saved changes.
+	 * ponytail: the die is the main class's (text match), not per class for multiclass; a choose-how-many
+	 * prompt in the rest vote if tables ask for it.</p>
+	 */
+	private static void spendHitDice(ServerPlayer player, JsonObject sheet) {
+		if (!sheet.has("characterLevel")) {
+			float missing = player.getMaxHealth() - player.getHealth();
+			player.setHealth(Math.min(player.getMaxHealth(), player.getHealth() + missing / 2f));
+			return;
+		}
+		int total = CharacterRules.levelOf(sheet);
+		int spent = Math.max(0, intOf(sheet, "hitDiceSpent", 0));
+		int die = Config.hitDieFor(sheet.has("characterClass") ? sheet.get("characterClass").getAsString() : null);
+		int conMod = Math.floorDiv(intOf(sheet, "constitution", 10) - 10, 2);
+		int average = Math.max(1, die / 2 + 1 + conMod);
+
+		int used = 0;
+		float healed = 0;
+		while (spent < total && player.getMaxHealth() - player.getHealth() >= average) {
+			int roll = Math.max(1, player.getRandom().nextInt(die) + 1 + conMod);
+			float before = player.getHealth();
+			player.setHealth(Math.min(player.getMaxHealth(), before + roll));
+			healed += player.getHealth() - before;
+			spent++;
+			used++;
+		}
+		if (used > 0) {
+			sheet.addProperty("hitDiceSpent", spent);
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.rest.hit_dice", used, Math.round(healed), total - spent).withStyle(ChatFormatting.GREEN));
+		}
+	}
+
+	/** A long rest returns half of the character's total Hit Dice, at least one. */
+	static void recoverHitDice(JsonObject sheet) {
+		int spent = intOf(sheet, "hitDiceSpent", 0);
+		if (spent <= 0) return;
+		sheet.addProperty("hitDiceSpent", Math.max(0, spent - Math.max(1, CharacterRules.levelOf(sheet) / 2)));
+	}
+
+	private static int intOf(JsonObject sheet, String key, int fallback) {
+		if (!sheet.has(key)) return fallback;
+		try {
+			return Integer.parseInt(sheet.get(key).getAsString().trim());
+		} catch (RuntimeException e) {
+			return fallback;
+		}
 	}
 
 	//"server" can be null (e.g. a player disconnecting mid-shutdown); in that case there's simply

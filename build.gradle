@@ -6,7 +6,7 @@ plugins {
     id 'com.hypherionmc.modutils.modpublisher' version '2.2.3'
 }
 
-version = '2.2.1'
+version = '2.3.0'
 group = 'net.hawthorn.dndsheets'
 archivesBaseName = 'vttminerpg'
 
@@ -80,7 +80,7 @@ minecraft {
 // So runClient/mods stays EMPTY: runClient is for developing this mod, and for that it is
 // plenty. The integrations (appearance packs, Patchouli, Curios) are tested where they will be used:
 //
-//     ./gradlew build   ->   build/libs/vttminerpg-2.2.1.jar   ->   normal 1.20.1 install
+//     ./gradlew build   ->   build/libs/vttminerpg-2.3.0.jar   ->   normal 1.20.1 install
 //
 // There everything is production and everything matches.
 // tools/preflight_mods.py is still useful for the real install: it tells you what's missing before starting.
@@ -199,6 +199,16 @@ shadowJar {
     relocate 'io.github.tfriedrichs.dicebot', "${project.group}.relocated.dicebot"
     manifest modManifest
     finalizedBy 'reobfShadowJar'
+
+    // CurseForge allows ONE file per project, so the two addons ride inside this jar: three @Mod, three
+    // [[mods]] in the core's mods.toml. Their own mods.toml are left out (a jar can only have one) and stay
+    // for their dev runs. Lazy closures + string task paths: the submodules depend on this project, so they
+    // can't be read while this script is still evaluating.
+    dependsOn ':dungeon:classes', ':species:classes'
+    ['dungeon', 'species'].each { name ->
+        from({ project(":${name}").sourceSets.main.output }) { exclude 'META-INF/mods.toml' }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE // identical pack.mcmeta; the core's copy wins
 }
 
 assemble.dependsOn shadowJar
@@ -279,8 +289,8 @@ publisher {
     // none unless they are set again. That is why they are here and not left to do by hand on the web — by hand
     // you have to remember every time, and the first time it is forgotten nobody will notice.
     //
-    // ALL are optional. None is needed for the mod to start: without them it behaves like
-    // vanilla wherever nothing is configured (invariant 9).
+    // curios/patchouli/jade/pehkui and origins are REQUIRED (mandatory=true in mods.toml); the appearance
+    // packs below are optional.
     //
     // The seven appearance packs are NOT a list of tastes: they are exactly the modids that the
     // dndsheets/skins/ files reference (iceandfire, alexsmobs, naturalist, twilightforest, mowziesmobs,
@@ -304,9 +314,10 @@ publisher {
     //
     // All are OPTIONAL: with none, the mod behaves like vanilla wherever nothing is configured
     // (invariant 9). The truly required ones are the addons', and those aren't published yet.
+    //Hard dependencies (mandatory=true in mods.toml). Origins: needed by the bundled species addon.
+    //ponytail: 'origins-forge' is the assumed CurseForge slug — verify it, a bad slug fails the whole upload (error 1018).
+    def hardDeps = ['curios', 'patchouli', 'jade', 'pehkui']
     def declared = [
-        //Real integrations: all four are in mods.toml with mandatory=false and have their own *Compat class.
-        'curios', 'patchouli', 'jade', 'pehkui',
         //Appearance packs: exactly the modids that the dndsheets/skins/ JSONs reference. This list
         //is not about tastes — if a pack is added or removed, it changes with it.
         'ice-and-fire-dragons', 'alexs-mobs', 'naturalist',
@@ -318,15 +329,16 @@ publisher {
     //     Assuming it was the same cost a whole rejected upload (CurseForge error 1018).
     //   - The Twilight Forest does NOT exist on Modrinth, it is CurseForge-exclusive.
     curseDepends {
+        required(*(hardDeps + 'origins-forge'))
         optional(*(declared + 'lendercataclysm' + 'the-twilight-forest'))
     }
 
     modrinthDepends {
+        required(*(hardDeps + 'origins'))
         optional(*(declared + 'l_enders-cataclysm'))
     }
 
-    // The addons (dungeon, species) are separate jars and are uploaded separately: each one is a mod with its
-    // own modid, and species also requires Origins, which is not a dependency of the core.
+    // The addons (dungeon, species) are bundled into this jar (see shadowJar); they are not uploaded separately.
 }
 
 // Without a token, ModPublisher silently skips the platform and STILL prints "Published mod to all

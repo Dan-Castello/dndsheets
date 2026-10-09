@@ -51,18 +51,47 @@ public class LegendaryActionManager {
 			//dealing out three attacks per round. Checked BEFORE spending, so it isn't charged a use for
 			//an action that never actually happens.
 			if (TurnManager.isIncapacitated(boss)) continue;
-			if (!spendAction(boss)) continue;
+			Option option = pickOption(boss);
+			if (option == null) continue;
+			if (!spendAction(boss, option.cost())) continue;
 
 			Player target = level.getNearestPlayer(boss, TARGET_RANGE);
 			if (target == null) {
 				//Nobody in range: the use is refunded instead of wasted. Spending it against no one would
 				//punish the boss for where the party happens to be, which is exactly the opposite of what
 				//the rule is for.
-				refundAction(boss);
+				refundAction(boss, option.cost());
 				continue;
 			}
-			MonsterActionManager.resolveLegendaryAttack(boss, target);
+			if (option.spell() != null) MonsterActionManager.resolveLegendarySpell(boss, target, option.spell());
+			else MonsterActionManager.resolveLegendaryAttack(boss, target, option.attack());
 		}
+	}
+
+	/** One thing a boss can do as a legendary action: an attack (to-hit) or a save ability (Wing Attack). */
+	private record Option(MonsterRegistry.MonsterAttack attack, MonsterRegistry.MonsterSpell spell, int cost) {}
+
+	/**
+	 * <p>Which option to take as a legendary action: among those that declare {@code legendaryCost}, the ones
+	 * it can still afford; if the monster declares none, any attack for 1 (the rule before costs existed).
+	 * Null when nothing is affordable.</p>
+	 */
+	private static Option pickOption(Entity boss) {
+		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(boss);
+		if (block == null) return null;
+		java.util.List<MonsterRegistry.MonsterAttack> all = new java.util.ArrayList<>(block.attacks());
+		all.addAll(MonsterRegistry.customAttacksOf(boss));
+		boolean anyDeclared = all.stream().anyMatch(a -> a.legendaryCost() > 0)
+			|| block.spells().stream().anyMatch(sp -> sp.legendaryCost() > 0);
+		int left = actionsLeft(boss);
+		java.util.List<Option> affordable = new java.util.ArrayList<>();
+		for (MonsterRegistry.MonsterAttack a : all) {
+			if (anyDeclared ? (a.legendaryCost() > 0 && a.legendaryCost() <= left) : left >= 1) affordable.add(new Option(a, null, Math.max(1, a.legendaryCost())));
+		}
+		for (MonsterRegistry.MonsterSpell sp : block.spells()) {
+			if (sp.legendaryCost() > 0 && sp.legendaryCost() <= left) affordable.add(new Option(null, sp, sp.legendaryCost()));
+		}
+		return affordable.isEmpty() ? null : affordable.get(boss.level().getRandom().nextInt(affordable.size()));
 	}
 
 	/** At the start of its own turn it recovers them all: that's how they recharge in 5e. */
@@ -89,19 +118,23 @@ public class LegendaryActionManager {
 	 * <p>Without the tag set yet, it still counts as "has them all," same as Legendary Resistance: a boss
 	 * summoned before the rule existed shouldn't be stuck without them forever.</p>
 	 */
-	private static boolean spendAction(Entity boss) {
-		int budget = budgetOf(boss);
-		if (budget <= 0) return false;
-		CompoundTag tag = boss.getPersistentData().getCompound("dndsheets");
-		int left = tag.contains(LEGENDARY_ACTIONS_LEFT) ? tag.getInt(LEGENDARY_ACTIONS_LEFT) : budget;
-		if (left <= 0) return false;
-		write(boss, left - 1);
+	private static boolean spendAction(Entity boss, int cost) {
+		if (budgetOf(boss) <= 0) return false;
+		int left = actionsLeft(boss);
+		if (left < cost) return false;
+		write(boss, left - cost);
 		return true;
 	}
 
-	private static void refundAction(Entity boss) {
+	private static int actionsLeft(Entity boss) {
+		int budget = budgetOf(boss);
+		if (budget <= 0) return 0;
 		CompoundTag tag = boss.getPersistentData().getCompound("dndsheets");
-		write(boss, Math.min(budgetOf(boss), tag.getInt(LEGENDARY_ACTIONS_LEFT) + 1));
+		return tag.contains(LEGENDARY_ACTIONS_LEFT) ? tag.getInt(LEGENDARY_ACTIONS_LEFT) : budget;
+	}
+
+	private static void refundAction(Entity boss, int cost) {
+		write(boss, Math.min(budgetOf(boss), actionsLeft(boss) + cost));
 	}
 
 	private static void write(Entity boss, int left) {

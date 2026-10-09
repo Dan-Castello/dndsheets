@@ -133,7 +133,7 @@
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
     ],
     "abilities_special": [
-      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 17, "dice": "16d6", "halfOnSave": true, "damageType": "fire" }
+      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 17, "dice": "16d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 }
     ]
   },
   {
@@ -1785,7 +1785,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.acid_breath", "saveAbility": "dex", "saveDc": 18, "dice": "12d8", "halfOnSave": true, "damageType": "acid", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 19, "dice": "2d6 + 6", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1797,7 +1801,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.lightning_breath", "saveAbility": "dex", "saveDc": 19, "dice": "12d10", "halfOnSave": true, "damageType": "lightning", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 20, "dice": "2d6 + 7", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1809,7 +1817,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 18, "dice": "13d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 19, "dice": "2d6 + 6", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1821,7 +1833,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.lightning_breath", "saveAbility": "dex", "saveDc": 19, "dice": "12d10", "halfOnSave": true, "damageType": "lightning", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 20, "dice": "2d6 + 7", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1833,7 +1849,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.acid_breath", "saveAbility": "dex", "saveDc": 18, "dice": "12d8", "halfOnSave": true, "damageType": "acid", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 19, "dice": "2d6 + 6", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1845,7 +1865,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 21, "dice": "13d10", "halfOnSave": true, "damageType": "fire", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 22, "dice": "2d6 + 8", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1857,7 +1881,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.poison_breath", "saveAbility": "con", "saveDc": 18, "dice": "16d6", "halfOnSave": true, "damageType": "poison", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 19, "dice": "2d6 + 6", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1869,7 +1897,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 21, "dice": "18d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 22, "dice": "2d6 + 8", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1881,7 +1913,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.cold_breath", "saveAbility": "con", "saveDc": 20, "dice": "13d8", "halfOnSave": true, "damageType": "cold", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 21, "dice": "2d6 + 8", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1893,7 +1929,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.cold_breath", "saveAbility": "con", "saveDc": 19, "dice": "12d8", "halfOnSave": true, "damageType": "cold", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 19, "dice": "2d6 + 6", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1916,7 +1956,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.acid_breath", "saveAbility": "dex", "saveDc": 22, "dice": "15d8", "halfOnSave": true, "damageType": "acid", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 23, "dice": "2d6 + 8", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1928,7 +1972,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.lightning_breath", "saveAbility": "dex", "saveDc": 23, "dice": "16d10", "halfOnSave": true, "damageType": "lightning", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 24, "dice": "2d6 + 9", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1940,7 +1988,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 21, "dice": "14d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 22, "dice": "2d6 + 8", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1952,7 +2004,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.lightning_breath", "saveAbility": "dex", "saveDc": 23, "dice": "16d10", "halfOnSave": true, "damageType": "lightning", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 24, "dice": "2d6 + 9", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1964,7 +2020,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.acid_breath", "saveAbility": "dex", "saveDc": 22, "dice": "14d8", "halfOnSave": true, "damageType": "acid", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 23, "dice": "2d6 + 8", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1976,7 +2036,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 24, "dice": "22d10", "halfOnSave": true, "damageType": "fire", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 25, "dice": "2d6 + 10", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -1988,7 +2052,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "4d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.poison_breath", "saveAbility": "con", "saveDc": 22, "dice": "22d6", "halfOnSave": true, "damageType": "poison", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 23, "dice": "2d6 + 8", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -2000,7 +2068,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 24, "dice": "26d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 25, "dice": "2d6 + 10", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -2012,7 +2084,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.cold_breath", "saveAbility": "con", "saveDc": 24, "dice": "15d8", "halfOnSave": true, "damageType": "cold", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 25, "dice": "2d6 + 10", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -2024,7 +2100,11 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.cold_breath", "saveAbility": "con", "saveDc": 22, "dice": "15d8", "halfOnSave": true, "damageType": "cold", "recharge": 5 },
+      { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 22, "dice": "2d6 + 8", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
   {
@@ -2035,7 +2115,7 @@
     "damageAffinities": { "psychic": "immune" },
     "nonmagicalAffinities": { "bludgeoning": "immune", "piercing": "immune", "slashing": "immune" },
     "attacks": [
-      { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "slashing" }
+      { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "slashing", "legendaryCost": 1 }
     ]
   },
   {
@@ -2502,7 +2582,7 @@
     "damageAffinities": { "psychic": "immune" },
     "nonmagicalAffinities": { "bludgeoning": "resistant", "piercing": "resistant", "slashing": "resistant" },
     "attacks": [
-      { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "slashing" }
+      { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d8", "damageAbility": "str", "damageType": "slashing", "legendaryCost": 1 }
     ]
   },
   {
@@ -2635,7 +2715,7 @@
     "nonmagicalAffinities": { "bludgeoning": "immune", "piercing": "immune", "slashing": "immune" },
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "dex", "dice": "3d8", "damageAbility": "dex", "damageType": "piercing" },
-      { "name": "content.dndsheets.attack.tentacle", "toHitAbility": "dex", "dice": "3d6", "damageAbility": "dex", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tentacle", "toHitAbility": "dex", "dice": "3d6", "damageAbility": "dex", "damageType": "bludgeoning", "legendaryCost": 1 }
     ]
   },
   {
@@ -2656,7 +2736,7 @@
     "damageAffinities": { "cold": "resistant", "lightning": "resistant", "necrotic": "resistant", "poison": "immune" },
     "nonmagicalAffinities": { "bludgeoning": "immune", "piercing": "immune", "slashing": "immune" },
     "attacks": [
-      { "name": "content.dndsheets.attack.paralyzing_touch", "toHitAbility": "str", "dice": "3d6", "damageAbility": "str", "damageType": "cold" }
+      { "name": "content.dndsheets.attack.paralyzing_touch", "toHitAbility": "str", "dice": "3d6", "damageAbility": "str", "damageType": "cold", "legendaryCost": 2 }
     ]
   },
   {
@@ -2741,7 +2821,7 @@
     "damageAffinities": { "fire": "vulnerable", "necrotic": "immune", "poison": "immune" },
     "nonmagicalAffinities": { "bludgeoning": "immune", "piercing": "immune", "slashing": "immune" },
     "attacks": [
-      { "name": "content.dndsheets.attack.rotting_fist", "toHitAbility": "str", "dice": "3d6", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.rotting_fist", "toHitAbility": "str", "dice": "3d6", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
     ]
   },
   {
@@ -2995,10 +3075,10 @@
     "damageAffinities": { "fire": "immune", "poison": "immune" },
     "nonmagicalAffinities": { "bludgeoning": "immune", "piercing": "immune", "slashing": "immune" },
     "attacks": [
-      { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "4d12", "damageAbility": "str", "damageType": "piercing" },
-      { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "4d8", "damageAbility": "str", "damageType": "slashing" },
+      { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "4d12", "damageAbility": "str", "damageType": "piercing", "legendaryCost": 2 },
+      { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "4d8", "damageAbility": "str", "damageType": "slashing", "legendaryCost": 1 },
       { "name": "content.dndsheets.attack.horns", "toHitAbility": "str", "dice": "4d10", "damageAbility": "str", "damageType": "piercing" },
-      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "4d6", "damageAbility": "str", "damageType": "bludgeoning" }
+      { "name": "content.dndsheets.attack.tail", "toHitAbility": "str", "dice": "4d6", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
     ]
   },
   {
@@ -3074,8 +3154,8 @@
     "damageAffinities": { "necrotic": "resistant" },
     "nonmagicalAffinities": { "bludgeoning": "resistant", "piercing": "resistant", "slashing": "resistant" },
     "attacks": [
-      { "name": "content.dndsheets.attack.unarmed_strike", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "bludgeoning" },
-      { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "piercing" }
+      { "name": "content.dndsheets.attack.unarmed_strike", "toHitAbility": "str", "dice": "1d8", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 },
+      { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "1d6", "damageAbility": "str", "damageType": "piercing", "legendaryCost": 2 }
     ]
   },
   {
@@ -3294,6 +3374,9 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.acid_breath", "saveAbility": "dex", "saveDc": 14, "dice": "11d8", "halfOnSave": true, "damageType": "acid", "recharge": 5 }
     ]
   },
   {
@@ -3305,6 +3388,9 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.lightning_breath", "saveAbility": "dex", "saveDc": 16, "dice": "10d10", "halfOnSave": true, "damageType": "lightning", "recharge": 5 }
     ]
   },
   {
@@ -3316,6 +3402,9 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 14, "dice": "12d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 }
     ]
   },
   {
@@ -3327,6 +3416,9 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.lightning_breath", "saveAbility": "dex", "saveDc": 15, "dice": "10d10", "halfOnSave": true, "damageType": "lightning", "recharge": 5 }
     ]
   },
   {
@@ -3338,6 +3430,9 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.acid_breath", "saveAbility": "dex", "saveDc": 14, "dice": "9d8", "halfOnSave": true, "damageType": "acid", "recharge": 5 }
     ]
   },
   {
@@ -3349,6 +3444,9 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 17, "dice": "17d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 }
     ]
   },
   {
@@ -3360,6 +3458,9 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.poison_breath", "saveAbility": "con", "saveDc": 14, "dice": "12d6", "halfOnSave": true, "damageType": "poison", "recharge": 5 }
     ]
   },
   {
@@ -3371,6 +3472,9 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.cold_breath", "saveAbility": "con", "saveDc": 17, "dice": "12d8", "halfOnSave": true, "damageType": "cold", "recharge": 5 }
     ]
   },
   {
@@ -3382,6 +3486,9 @@
     "attacks": [
       { "name": "content.dndsheets.attack.bite", "toHitAbility": "str", "dice": "2d10", "damageAbility": "str", "damageType": "piercing" },
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.cold_breath", "saveAbility": "con", "saveDc": 15, "dice": "10d8", "halfOnSave": true, "damageType": "cold", "recharge": 5 }
     ]
   }
 ]

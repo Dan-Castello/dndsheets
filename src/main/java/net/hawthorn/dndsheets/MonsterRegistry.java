@@ -69,10 +69,22 @@ public class MonsterRegistry {
 		}
 	}
 
-	public record MonsterAttack(String name, String toHitAbility, String dice, String damageAbility, String damageType, String effectName, String effectDice, int effectTurns) {
+	/**
+	 * @param recharge      0 = always ready; N (2..6) = after use it is spent until a d6 at the start of the
+	 *                      monster's turn rolls N or more ("Recharge 5-6" is 5).
+	 * @param legendaryCost 0 = not declared as a legendary action; N = can be taken as one, spending N of the
+	 *                      budget. When NO attack declares it, every attack stays usable for 1 (the old rule).
+	 */
+	public record MonsterAttack(String name, String toHitAbility, String dice, String damageAbility, String damageType, String effectName, String effectDice, int effectTurns, int recharge, int legendaryCost) {
+		public MonsterAttack(String name, String toHitAbility, String dice, String damageAbility, String damageType, String effectName, String effectDice, int effectTurns) {
+			this(name, toHitAbility, dice, damageAbility, damageType, effectName, effectDice, effectTurns, 0, 0);
+		}
 		public boolean appliesEffect() { return effectName != null; }
 	}
-	public record MonsterSpell(String name, String saveAbility, int saveDc, String dice, boolean halfOnSave, String damageType, String effectName, String effectDice, int effectTurns) {
+	public record MonsterSpell(String name, String saveAbility, int saveDc, String dice, boolean halfOnSave, String damageType, String effectName, String effectDice, int effectTurns, int recharge, int legendaryCost) {
+		public MonsterSpell(String name, String saveAbility, int saveDc, String dice, boolean halfOnSave, String damageType, String effectName, String effectDice, int effectTurns) {
+			this(name, saveAbility, saveDc, dice, halfOnSave, damageType, effectName, effectDice, effectTurns, 0, 0);
+		}
 		public boolean appliesEffect() { return effectName != null; }
 	}
 
@@ -120,8 +132,21 @@ public class MonsterRegistry {
 		//pteranodon...). Only DruidWildShapeManager uses it: transforming into a flying beast grants real
 		//flight (not just the model), and reverting takes it away, same as with AC and physical abilities.
 		//Absent = false = how the whole bestiary behaved before this.
-		boolean flies
+		boolean flies,
+		//"lairActions": same format as abilities_special. Data only for now: nothing fires them on
+		//initiative 20 yet (needs a TurnManager hook). Kept so packs can already declare them.
+		List<MonsterSpell> lairActions
 	) {
+		public MonsterStatBlock(String id, String name, String baseEntityId, int ac, int maxHp,
+				Map<String, Integer> abilities, int proficiencyBonus, List<MonsterAttack> attacks, List<MonsterSpell> spells,
+				Map<String, String> damageAffinities, Map<String, String> nonmagicalAffinities, CreatureType type,
+				int legendaryResistances, int legendaryActions, int attacksPerTurn, CreatureSize size, Appearance appearance,
+				boolean keepsOwnAi, boolean ownClock, boolean flies) {
+			this(id, name, baseEntityId, ac, maxHp, abilities, proficiencyBonus, attacks, spells, damageAffinities,
+				nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, size, appearance,
+				keepsOwnAi, ownClock, flies, List.of());
+		}
+
 		public int abilityModifier(String key) {
 			Integer score = abilities.get(key.toLowerCase(Locale.ROOT));
 			return score == null ? 0 : Math.floorDiv(score - 10, 2);
@@ -205,7 +230,7 @@ public class MonsterRegistry {
 		REGISTRY.replace(new MonsterStatBlock(block.id(), block.name(), entityId, block.ac(), block.maxHp(),
 			block.abilities(), block.proficiencyBonus(), block.attacks(), block.spells(), block.damageAffinities(),
 			block.nonmagicalAffinities(), block.type(), block.legendaryResistances(), block.legendaryActions(),
-			block.attacksPerTurn(), block.size(), block.appearance(), block.keepsOwnAi(), block.ownClock(), block.flies()));
+			block.attacksPerTurn(), block.size(), block.appearance(), block.keepsOwnAi(), block.ownClock(), block.flies(), block.lairActions()));
 		return true;
 	}
 
@@ -271,24 +296,8 @@ public class MonsterRegistry {
 			}
 		}
 
-		List<MonsterSpell> spells = new ArrayList<>();
-		if (json.has("abilities_special")) {
-			for (JsonElement el : json.getAsJsonArray("abilities_special")) {
-				JsonObject s = el.getAsJsonObject();
-				JsonObject effect = s.has("appliesEffect") ? s.getAsJsonObject("appliesEffect") : null;
-				spells.add(new MonsterSpell(
-					s.get("name").getAsString(),
-					s.has("saveAbility") ? s.get("saveAbility").getAsString().toLowerCase(Locale.ROOT) : "dex",
-					s.has("saveDc") ? s.get("saveDc").getAsInt() : 10,
-					s.get("dice").getAsString(),
-					!s.has("halfOnSave") || s.get("halfOnSave").getAsBoolean(),
-					s.has("damageType") ? DamageTypes.normalize(s.get("damageType").getAsString()) : "physical",
-					effect != null ? effect.get("name").getAsString() : null,
-					effect != null ? effect.get("dice").getAsString() : null,
-					effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0
-				));
-			}
-		}
+		List<MonsterSpell> spells = parseSpells(json, "abilities_special");
+		List<MonsterSpell> lairActions = parseSpells(json, "lairActions");
 
 		//Optional: a monster without them behaves exactly as before, with no resistances.
 		Map<String, String> damageAffinities = readAffinities(json, "damageAffinities");
@@ -312,7 +321,39 @@ public class MonsterRegistry {
 		CreatureSize size = CreatureSize.parse(json.has("size") ? json.get("size").getAsString() : null);
 		Appearance appearance = parseAppearance(json.has("appearance") ? json.getAsJsonObject("appearance") : null);
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, size, appearance, keepsOwnAi, ownClock, flies);
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, size, appearance, keepsOwnAi, ownClock, flies, lairActions);
+	}
+
+	private static List<MonsterSpell> parseSpells(JsonObject json, String field) {
+		List<MonsterSpell> spells = new ArrayList<>();
+		if (!json.has(field)) return spells;
+		for (JsonElement el : json.getAsJsonArray(field)) {
+			JsonObject s = el.getAsJsonObject();
+			JsonObject effect = s.has("appliesEffect") ? s.getAsJsonObject("appliesEffect") : null;
+			spells.add(new MonsterSpell(
+				s.get("name").getAsString(),
+				s.has("saveAbility") ? s.get("saveAbility").getAsString().toLowerCase(Locale.ROOT) : "dex",
+				s.has("saveDc") ? s.get("saveDc").getAsInt() : 10,
+				s.get("dice").getAsString(),
+				!s.has("halfOnSave") || s.get("halfOnSave").getAsBoolean(),
+				s.has("damageType") ? DamageTypes.normalize(s.get("damageType").getAsString()) : "physical",
+				effect != null ? effect.get("name").getAsString() : null,
+				effect != null ? effect.get("dice").getAsString() : null,
+				effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0,
+				rechargeOf(s),
+				legendaryCostOf(s)
+			));
+		}
+		return spells;
+	}
+
+	private static int legendaryCostOf(JsonObject o) {
+		return o.has("legendaryCost") ? Math.max(1, Math.min(o.get("legendaryCost").getAsInt(), 3)) : 0;
+	}
+
+	//"recharge": 5 means Recharge 5-6. Clamped to 2..6: 1 would always recharge, above 6 never would.
+	private static int rechargeOf(JsonObject o) {
+		return o.has("recharge") ? Math.max(2, Math.min(o.get("recharge").getAsInt(), 6)) : 0;
 	}
 
 	private static Map<String, String> readAffinities(JsonObject json, String field) {
@@ -340,7 +381,9 @@ public class MonsterRegistry {
 			a.has("damageType") ? DamageTypes.normalize(a.get("damageType").getAsString()) : "physical",
 			effect != null ? effect.get("name").getAsString() : null,
 			effect != null ? effect.get("dice").getAsString() : null,
-			effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0
+			effect != null && effect.has("turns") ? effect.get("turns").getAsInt() : 0,
+			rechargeOf(a),
+			legendaryCostOf(a)
 		);
 	}
 
@@ -411,6 +454,8 @@ public class MonsterRegistry {
 		a.addProperty("dice", attack.dice());
 		a.addProperty("damageAbility", attack.damageAbility());
 		a.addProperty("damageType", attack.damageType());
+		if (attack.recharge() > 0) a.addProperty("recharge", attack.recharge());
+		if (attack.legendaryCost() > 0) a.addProperty("legendaryCost", attack.legendaryCost());
 		return a;
 	}
 

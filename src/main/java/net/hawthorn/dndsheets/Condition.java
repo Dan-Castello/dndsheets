@@ -20,7 +20,10 @@ import javax.annotation.Nullable;
  */
 public enum Condition {
 	BLINDED, CHARMED, DEAFENED, FRIGHTENED, GRAPPLED, INCAPACITATED, INVISIBLE,
-	PARALYZED, PETRIFIED, POISONED, PRONE, RESTRAINED, STUNNED, UNCONSCIOUS;
+	PARALYZED, PETRIFIED, POISONED, PRONE, RESTRAINED, STUNNED, UNCONSCIOUS,
+	//Last on purpose (invariant 2). It is the only LEVELED condition (1-6): the level rides in the source slot of
+	//Combatant.conditionSources, which no other consumer reads for it. See Combatant.exhaustionLevel.
+	EXHAUSTION;
 
 	/** This combatant attacks with disadvantage. */
 	public boolean selfAttackDisadvantage() {
@@ -108,6 +111,7 @@ public enum Condition {
 			case RESTRAINED -> "Restrained";
 			case STUNNED -> "Stunned";
 			case UNCONSCIOUS -> "Unconscious";
+			case EXHAUSTION -> "Exhaustion";
 		};
 	}
 
@@ -129,5 +133,6 @@ public enum Condition {
 		java.util.Map.entry("paralizado", PARALYZED), java.util.Map.entry("petrificado", PETRIFIED),
 		java.util.Map.entry("envenenado", POISONED), java.util.Map.entry("derribado", PRONE),
 		java.util.Map.entry("apresado", RESTRAINED), java.util.Map.entry("aturdido", STUNNED),
-		java.util.Map.entry("inconsciente", UNCONSCIOUS));
+		java.util.Map.entry("inconsciente", UNCONSCIOUS),
+		java.util.Map.entry("agotamiento", EXHAUSTION));
 }

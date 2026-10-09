@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.0
+
+Single file: the Dungeon Toolkit and Species addons are now bundled in this jar (CurseForge allows one
+file per project). They keep their own mod ids (`dndsheets_dungeon`, `dndsheets_species`). Curios, Patchouli,
+Jade, Pehkui and Origins are required dependencies. If you had the separate addon jars installed, delete them.
+
 ## 2.2.1
 
 Metadata only — the mod itself is byte-for-byte the same as 2.2.0.

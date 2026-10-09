@@ -1028,6 +1028,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 
 		//A boss recovers its legendary actions at the start of its turn, which is how they recharge in 5e.
 		LegendaryActionManager.onOwnTurnStart(entity);
+		MonsterActionManager.rollRecharges(entity);
 		tickEffects(level, entity, entry);
 		//Persistent walls: 5e resolves them right here, at the start of the turn of whoever's inside.
 		ZoneManager.onTurnStart(level, entity);
@@ -1163,7 +1164,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 				if (combatant != null) {
 					if (!combatant.conditions().isEmpty()) {
 						conditionLabels = new ArrayList<>(combatant.conditions().size());
-						for (Condition condition : combatant.conditions()) conditionLabels.add(condition.displayLabel());
+						for (Condition condition : combatant.conditions()) conditionLabels.add(condition == Condition.EXHAUSTION ? condition.displayLabel() + " " + combatant.exhaustionLevel() : condition.displayLabel());
 					}
 					currentHp = combatant.currentHp();
 					maxHp = combatant.maxHp();

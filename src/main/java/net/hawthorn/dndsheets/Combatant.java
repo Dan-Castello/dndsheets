@@ -166,12 +166,46 @@ public interface Combatant {
 	}
 
 	default void addCondition(Condition condition, int sourceEntityId) {
+		if (condition == Condition.EXHAUSTION) { addExhaustionLevel(); return; }
 		Map<Condition, Integer> updated = new EnumMap<>(Condition.class);
 		updated.putAll(conditionSources()); //putAll, not the copy constructor: EnumMap(Map) throws if the map comes in empty and isn't already an EnumMap.
 		//Overwritten even if already present: reapplying the same condition from a different source must
 		//update it (the dragon is scaring you now, not the goblin from last turn anymore).
 		Integer previous = updated.put(condition, sourceEntityId);
 		if (previous == null || previous != sourceEntityId) setConditionSources(updated);
+	}
+
+	/**
+	 * <p>Exhaustion level, 0 (none) to 6. The level is stored where other conditions keep their source id, so it
+	 * persists in the sheet / monster NBT with no new field. An entry written without a number counts as level 1.
+	 * SRD effects: 1 check disadvantage (not modeled: ability checks have no central roll), 2 speed halved
+	 * (MovementAnchorTracker), 3 disadvantage on attacks and saves (here), 4 max HP halved (not modeled),
+	 * 5 speed 0 ({@link #cannotMove}), 6 death ({@link #addExhaustionLevel}).</p>
+	 */
+	default int exhaustionLevel() {
+		Integer stored = conditionSources().get(Condition.EXHAUSTION);
+		return stored == null ? 0 : Math.max(1, Math.min(stored, 6));
+	}
+
+	/** Applying Exhaustion again adds a level (so the DM's usual "apply condition" stacks it). Level 6 kills. */
+	default void addExhaustionLevel() {
+		int level = Math.min(6, exhaustionLevel() + 1);
+		Map<Condition, Integer> updated = new EnumMap<>(Condition.class);
+		updated.putAll(conditionSources());
+		updated.put(Condition.EXHAUSTION, level);
+		setConditionSources(updated);
+		if (level >= 6 && entity() instanceof LivingEntity living) living.kill();
+	}
+
+	/** One level less (long rest); at 0 the condition is gone. */
+	default void reduceExhaustion() {
+		int level = exhaustionLevel();
+		if (level <= 0) return;
+		if (level == 1) { removeCondition(Condition.EXHAUSTION); return; }
+		Map<Condition, Integer> updated = new EnumMap<>(Condition.class);
+		updated.putAll(conditionSources());
+		updated.put(Condition.EXHAUSTION, level - 1);
+		setConditionSources(updated);
 	}
 
 	default void removeCondition(Condition condition) {
@@ -208,7 +242,7 @@ public interface Combatant {
 
 	/** Speed 0 (grappled, restrained, paralyzed, petrified, unconscious). */
 	default boolean cannotMove() {
-		return conditions().stream().anyMatch(Condition::preventsMovement);
+		return exhaustionLevel() >= 5 || conditions().stream().anyMatch(Condition::preventsMovement);
 	}
 
 	/** Advantage/disadvantage on attack rolls made BY this combatant, from its own conditions. */
@@ -216,7 +250,7 @@ public interface Combatant {
 		//Frightened is the only one whose disadvantage depends on seeing the source; the rest always apply.
 		boolean disadvantage = conditions().stream()
 			.filter(condition -> condition != Condition.FRIGHTENED || seesSourceOf(Condition.FRIGHTENED))
-			.anyMatch(Condition::selfAttackDisadvantage);
+			.anyMatch(Condition::selfAttackDisadvantage) || exhaustionLevel() >= 3;
 		return DiceManager.combineAdvantage(
 			conditions().stream().anyMatch(Condition::selfAttackAdvantage) ? DiceManager.Advantage.ADVANTAGE : DiceManager.Advantage.NORMAL,
 			disadvantage ? DiceManager.Advantage.DISADVANTAGE : DiceManager.Advantage.NORMAL);
@@ -281,7 +315,8 @@ public interface Combatant {
 		}
 		//Expression with the modifier already resolved instead of "$dex": the target can be a monster,
 		//which has no sheet DiceManager could pull the ability from.
-		return new SaveRoll(DiceManager.roll(new JsonObject(), "1d20 + " + abilityModifier(key)), null);
+		DiceManager.Advantage onSave = exhaustionLevel() >= 3 ? DiceManager.Advantage.DISADVANTAGE : DiceManager.Advantage.NORMAL;
+		return new SaveRoll(DiceManager.rollWithAdvantage(new JsonObject(), "1d20 + " + abilityModifier(key), onSave), null);
 	}
 
 	/** Its own resistances plus petrified's resistance to all damage, which applies to both sides. */

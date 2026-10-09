@@ -89,6 +89,7 @@ public class JsonContentSelfTest {
 		checkParchmentTextHasNoShadow();
 		checkVision();
 		checkEncounters();
+		checkSrdDataFields();
 		checkSkillProficiency();
 		checkCharacterSetup();
 		checkPortabilityCoupling();
@@ -1622,7 +1623,7 @@ public class JsonContentSelfTest {
 		assertTrue(DiceManager.combineAdvantage(dis, normal) == dis, "a single disadvantage should be kept");
 		assertTrue(DiceManager.combineAdvantage() == normal, "with no sources it should be a normal roll");
 
-		System.out.println("checkConditions: OK, the 14 5e conditions and the advantage combination behave.");
+		System.out.println("checkConditions: OK, the 15 5e conditions and the advantage combination behave.");
 	}
 
 	/**
@@ -2778,6 +2779,45 @@ public class JsonContentSelfTest {
 	 * and {@link RollIndex}'s get out of order with each other, nothing fails: you simply tick Athletics and
 	 * end up with Stealth proficiency.</p>
 	 */
+	private static void checkSrdDataFields() throws Exception {
+		//Spell range: undeclared keeps the old fixed 30 blocks; declared is feet / feetPerBlock, never below melee reach.
+		SpellRegistry.Spell plain = SpellRegistry.parse(JsonParser.parseString("{\"id\":\"test:a\"}").getAsJsonObject());
+		assertTrue(plain.rangeBlocks(5) == 30.0, "an undeclared range keeps the old 30 blocks");
+		SpellRegistry.Spell bolt = SpellRegistry.parse(JsonParser.parseString(
+			"{\"id\":\"test:b\",\"range\":120,\"castingTime\":\"1 action\",\"components\":\"V, S\",\"duration\":\"Instantaneous\"}").getAsJsonObject());
+		assertTrue(bolt.rangeBlocks(5) == 24.0, "120 ft at 5 ft per block is 24 blocks");
+		assertTrue("1 action".equals(bolt.info().castingTime()) && "V, S".equals(bolt.info().components()), "descriptive fields are read");
+		SpellRegistry.Spell touch = SpellRegistry.parse(JsonParser.parseString("{\"id\":\"test:c\",\"range\":\"touch\",\"ritual\":true}").getAsJsonObject());
+		assertTrue(touch.rangeBlocks(5) == 3.0 && touch.info().ritual(), "touch can still be aimed (melee reach) and ritual is read");
+		SpellRegistry.Spell bad = SpellRegistry.parse(JsonParser.parseString("{\"id\":\"test:d\",\"range\":\"far\"}").getAsJsonObject());
+		assertTrue(bad.rangeBlocks(5) == 30.0, "an unreadable range counts as undeclared");
+		assertTrue(bolt.upcastTo(3).info() == bolt.info() && bolt.atCasterLevel(5).info() == bolt.info(), "copies keep the info");
+
+		//Monster recharge and legendary cost.
+		MonsterRegistry.MonsterStatBlock dragon = MonsterRegistry.parse(JsonParser.parseString(
+			"{\"id\":\"test:dr\",\"hp\":10,\"attacks\":[{\"name\":\"Bite\",\"dice\":\"1d6\"},"
+			+ "{\"name\":\"Tail\",\"dice\":\"1d8\",\"legendaryCost\":2,\"recharge\":9}],"
+			+ "\"abilities_special\":[{\"name\":\"Breath\",\"dice\":\"10d6\",\"recharge\":5}],"
+			+ "\"lairActions\":[{\"name\":\"Tremor\",\"dice\":\"1d6\"}]}").getAsJsonObject());
+		assertTrue(dragon.attacks().get(0).recharge() == 0 && dragon.attacks().get(0).legendaryCost() == 0, "plain attack: always ready, not legendary");
+		assertTrue(dragon.attacks().get(1).legendaryCost() == 2, "legendary cost is read");
+		assertTrue(dragon.attacks().get(1).recharge() == 6, "recharge is clamped to 6");
+		assertTrue(dragon.spells().get(0).recharge() == 5, "Recharge 5-6 is stored as 5");
+		assertTrue(dragon.lairActions().size() == 1, "lair actions are read");
+		MonsterRegistry.MonsterStatBlock wing = MonsterRegistry.parse(JsonParser.parseString(
+			"{\"id\":\"test:w\",\"hp\":10,\"abilities_special\":[{\"name\":\"Wing\",\"dice\":\"2d6\",\"legendaryCost\":2}]}").getAsJsonObject());
+		assertTrue(wing.spells().get(0).legendaryCost() == 2, "a save ability can be a legendary action with a cost");
+		assertTrue(MonsterRegistry.toJson(dragon).getAsJsonArray("attacks").get(1).getAsJsonObject().get("legendaryCost").getAsInt() == 2, "legendary cost survives saving");
+		//Long rest returns half the Hit Dice (at least one) and never goes below zero.
+		JsonObject hd = JsonParser.parseString("{\"characterLevel\":8,\"hitDiceSpent\":6}").getAsJsonObject();
+		RestManager.recoverHitDice(hd);
+		assertTrue(hd.get("hitDiceSpent").getAsInt() == 2, "a level 8 character gets 4 hit dice back");
+		RestManager.recoverHitDice(hd);
+		RestManager.recoverHitDice(hd);
+		assertTrue(hd.get("hitDiceSpent").getAsInt() == 0, "recovery stops at zero spent");
+		System.out.println("checkSrdDataFields: OK, spell range/info and monster recharge/legendary cost/lair actions.");
+	}
+
 	private static void checkSkillProficiency() throws Exception {
 		assertTrue(RollIndex.withProficiency("1d20 + $dex", true).equals("1d20 + $dex + $prof"),
 			"marking proficiency adds the term");

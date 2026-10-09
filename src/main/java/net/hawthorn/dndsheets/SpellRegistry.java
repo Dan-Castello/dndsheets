@@ -27,14 +27,33 @@ import java.util.Set;
 //An external mod calling these methods risks their signature changing without notice. The only
 //thing meant for external consumption is the api/event events, which do have real consumers.
 public class SpellRegistry {
+	public static final double DEFAULT_RANGE_BLOCKS = 30.0;
+
 	public record Spell(
 		String id, String name, int level, String mode,
 		String castingAbility, String saveAbility, String dice, boolean halfOnSave, String damageType,
 		boolean concentration, int aoeRadius, String aoeShape, String summonEntityId, boolean followsCasterFlag,
 		String effectName, String effectDice, int effectTurns, String upcastDice,
 		java.util.Set<CreatureType> affectsTypes, java.util.Set<CreatureType> immuneTypes, MagicSchool school,
-		int declaredCastTicks
+		int declaredCastTicks,
+		Info info
 	) {
+		/**
+		 * <p>SRD descriptive data. Declared in the JSON, all optional: {@code castingTime} ("1 action"), {@code range}
+		 * (feet, or "self"/"touch"), {@code components} ("V, S, M"), {@code duration} and {@code ritual}.
+		 * Only {@code rangeFeet} changes a rule (how far the cast can aim); the rest is shown, not enforced.
+		 * {@code rangeFeet == -1} = undeclared = the old fixed {@link #DEFAULT_RANGE_BLOCKS}.</p>
+		 */
+		public record Info(String castingTime, int rangeFeet, String components, String duration, boolean ritual) {
+			static final Info NONE = new Info(null, -1, null, null, false);
+		}
+
+		/** How far, in blocks, this spell can be aimed. Never below melee reach (3), so "touch" is castable. */
+		public double rangeBlocks(int feetPerBlock) {
+			if (info.rangeFeet() < 0) return DEFAULT_RANGE_BLOCKS;
+			return Math.max(3.0, (double) info.rangeFeet() / Math.max(1, feetPerBlock));
+		}
+
 		/**
 		 * <p>Area shape: {@code sphere} (default), {@code line}, or {@code cone}. The difference isn't
 		 * cosmetic — a sphere originates at the impact point, while a line and a cone originate at the
@@ -125,7 +144,7 @@ public class SpellRegistry {
 
 			return new Spell(id, name, level, mode, castingAbility, saveAbility, repeatDice(dice, dice5eCount),
 				halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId, followsCasterFlag,
-				effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes, school, declaredCastTicks);
+				effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes, school, declaredCastTicks, info);
 		}
 
 		/**
@@ -156,7 +175,7 @@ public class SpellRegistry {
 			String scaled = "0".equals(dice.trim()) ? added : dice + " + " + added;
 			return new Spell(id, name + " (nv. " + slotLevel + ")", level, mode, castingAbility, saveAbility,
 				scaled, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId,
-				followsCasterFlag, effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes, school, declaredCastTicks);
+				followsCasterFlag, effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes, school, declaredCastTicks, info);
 		}
 	}
 
@@ -370,7 +389,24 @@ public class SpellRegistry {
 		int declaredCastTicks = json.has("castTicks") ? Math.max(0, Math.min(json.get("castTicks").getAsInt(), 200)) : -1;
 
 		return new Spell(id, name, level, mode, castingAbility, saveAbility, dice, halfOnSave, damageType, concentration, aoeRadius, aoeShape, summonEntityId, followsCaster,
-			effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes, school, declaredCastTicks);
+			effectName, effectDice, effectTurns, upcastDice, affectsTypes, immuneTypes, school, declaredCastTicks, parseInfo(json));
+	}
+
+	//Descriptive SRD fields, all optional. "range" is feet as a number, or "self" (0) / "touch" (5); anything
+	//unreadable counts as undeclared so a typo can't turn a spell into an unaimable one.
+	private static Spell.Info parseInfo(JsonObject json) {
+		int rangeFeet = -1;
+		if (json.has("range")) {
+			String raw = json.get("range").getAsString().trim().toLowerCase(Locale.ROOT);
+			if (raw.equals("self")) rangeFeet = 0;
+			else if (raw.equals("touch")) rangeFeet = 5;
+			else try { rangeFeet = Math.max(0, Integer.parseInt(raw)); } catch (NumberFormatException ignored) { }
+		}
+		return new Spell.Info(
+			json.has("castingTime") ? json.get("castingTime").getAsString() : null, rangeFeet,
+			json.has("components") ? json.get("components").getAsString() : null,
+			json.has("duration") ? json.get("duration").getAsString() : null,
+			json.has("ritual") && json.get("ritual").getAsBoolean());
 	}
 
 	//--- Quick-cast staff: any item tagged {dndsheets:{quickSpell:"id"}} (same pattern as custom weapons) ---

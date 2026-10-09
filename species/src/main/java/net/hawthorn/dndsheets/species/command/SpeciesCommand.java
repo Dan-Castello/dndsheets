@@ -83,9 +83,16 @@ public class SpeciesCommand {
 	}
 
 	/** {@code /origin gui @s <layer>}: a real Origins command (verified in its own bytecode), not
-	 *  made up. Runs with the player's own {@link CommandSourceStack} — no permission escalation. */
+	 *  made up. Its WHOLE tree — {@code gui} included — is registered with
+	 *  {@code .requires(source -> source.hasPermission(2))} (verified the same way), even for the
+	 *  {@code @s} form, so a non-op player invoking it through their own source silently gets
+	 *  "Unknown command": Brigadier hides a node its requires() rejects instead of failing inside it.
+	 *  {@code withPermission(2)} elevates only for this one dispatch — the layer is ours
+	 *  ({@link #RACE_LAYER}/{@link #BACKGROUND_LAYER}/{@link #CLASS_LAYER}), never player input, and the
+	 *  target is always the invoking player's own {@code @s}, so this can't be used to open anyone
+	 *  else's selector. */
 	private static void openOriginGui(CommandSourceStack source, ResourceLocation layerId) {
-		source.getServer().getCommands().performPrefixedCommand(source, "origin gui @s " + layerId);
+		source.getServer().getCommands().performPrefixedCommand(source.withPermission(2), "origin gui @s " + layerId);
 	}
 
 	@FunctionalInterface

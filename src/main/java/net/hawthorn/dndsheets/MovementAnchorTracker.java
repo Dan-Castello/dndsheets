@@ -176,6 +176,7 @@ class MovementAnchorTracker {
 		//in both callers. speedBlocks is ignored entirely, not reduced: in 5e the speed is 0, not "less".
 		Combatant combatant = Combatant.of(entity);
 		if (combatant != null && combatant.cannotMove()) speedBlocks = 0.0;
+		else if (combatant != null && combatant.exhaustionLevel() >= 2) speedBlocks /= 2; //Exhaustion 2: speed halved.
 		if (entity.level().dimension() != origin.dimension()) {
 			//Crossed to another level (portal) with the turn active: the recorded coordinates no longer
 			//mean anything here — the budget is released instead of comparing/teleporting across dimensions.
