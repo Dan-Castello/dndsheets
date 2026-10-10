@@ -1,0 +1,53 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4HTKZX0HSZBY4AHV1V8A2V4",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "CHANGELOG.md",
+    "src/main/java/net/hawthorn/dndsheets/AttackRules.java",
+    "src/main/java/net/hawthorn/dndsheets/Combatant.java",
+    "src/main/java/net/hawthorn/dndsheets/Condition.java",
+    "src/main/java/net/hawthorn/dndsheets/LairActionManager.java",
+    "src/main/java/net/hawthorn/dndsheets/MonsterActionManager.java",
+    "src/main/java/net/hawthorn/dndsheets/MovementAnchorTracker.java",
+    "src/main/java/net/hawthorn/dndsheets/SpellCastManager.java",
+    "src/main/java/net/hawthorn/dndsheets/TurnActionManager.java",
+    "src/main/java/net/hawthorn/dndsheets/TurnManager.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/TurnActionScreen.java",
+    "src/main/resources/assets/dndsheets/lang/en_us.json",
+    "src/main/resources/assets/dndsheets/lang/es_ar.json",
+    "src/main/resources/assets/dndsheets/lang/es_cl.json",
+    "src/main/resources/assets/dndsheets/lang/es_ec.json",
+    "src/main/resources/assets/dndsheets/lang/es_es.json",
+    "src/main/resources/assets/dndsheets/lang/es_mx.json",
+    "src/main/resources/assets/dndsheets/lang/es_uy.json",
+    "src/main/resources/assets/dndsheets/lang/es_ve.json",
+    "src/main/resources/dndsheets/defaults/monsters.json",
+    "src/test/java/net/hawthorn/dndsheets/JsonContentSelfTest.java"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 262,
+    "cache_creation_tokens": 1258180,
+    "cache_read_tokens": 27323005,
+    "output_tokens": 168358,
+    "api_call_count": 124,
+    "subagent_tokens": {
+      "input_tokens": 14,
+      "cache_creation_tokens": 39297,
+      "cache_read_tokens": 180350,
+      "output_tokens": 65,
+      "api_call_count": 7
+    }
+  }
+}
