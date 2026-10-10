@@ -2838,6 +2838,9 @@ public class JsonContentSelfTest {
 		MonsterRegistry.MonsterStatBlock resistant = MonsterRegistry.parse(JsonParser.parseString("{\"id\":\"test:mr\",\"hp\":10,\"magicResistance\":true}").getAsJsonObject());
 		assertTrue(resistant.magicResistance() && !MonsterRegistry.parse(JsonParser.parseString("{\"id\":\"test:n\",\"hp\":10}").getAsJsonObject()).magicResistance(), "magicResistance is read, default false");
 		assertTrue(RollIndex.skillAbility(TurnActionManager.STEALTH_SKILL_INDEX).equals("dex") && RollIndex.skillAbility(3).equals("dex"), "the Hide action rolls the Stealth slot (Dexterity)");
+		assertTrue(Condition.SLOWED.halvesSpeed() && Condition.SLOWED.acPenalty() == 2 && Condition.SLOWED.preventsReactions(), "slowed: half speed, -2, no reactions");
+		assertTrue(Condition.WEAKENED.strSaveDisadvantage() && !Condition.WEAKENED.halvesSpeed() && Condition.WEAKENED.acPenalty() == 0, "weakened only hurts Strength saves");
+		assertTrue(Condition.fromLabel("slowed") == Condition.SLOWED && Condition.fromLabel("debilitado") == Condition.WEAKENED, "the new conditions round-trip");
 		System.out.println("checkSrdDataFields: OK, spell range/info and monster recharge/legendary cost/lair actions.");
 	}
 

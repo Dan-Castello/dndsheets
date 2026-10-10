@@ -315,8 +315,21 @@ public interface Combatant {
 		}
 		//Expression with the modifier already resolved instead of "$dex": the target can be a monster,
 		//which has no sheet DiceManager could pull the ability from.
-		DiceManager.Advantage onSave = exhaustionLevel() >= 3 ? DiceManager.Advantage.DISADVANTAGE : DiceManager.Advantage.NORMAL;
-		return new SaveRoll(DiceManager.rollWithAdvantage(new JsonObject(), "1d20 + " + abilityModifier(key), onSave), null);
+		boolean disadvantage = exhaustionLevel() >= 3
+			|| (key.startsWith("str") && conditions().stream().anyMatch(Condition::strSaveDisadvantage));
+		DiceManager.Advantage onSave = disadvantage ? DiceManager.Advantage.DISADVANTAGE : DiceManager.Advantage.NORMAL;
+		int modifier = abilityModifier(key) - (key.startsWith("dex") ? armorClassPenalty() : 0); //Slowed: -2 to Dexterity saves too.
+		return new SaveRoll(DiceManager.rollWithAdvantage(new JsonObject(), "1d20 + " + modifier, onSave), null);
+	}
+
+	/** Penalty to AC from conditions (slowed). Added to the attacker's target number by whoever resolves the hit. */
+	default int armorClassPenalty() {
+		return conditions().stream().mapToInt(Condition::acPenalty).sum();
+	}
+
+	/** Speed halved by a condition or by exhaustion 2+ (they do not stack: halved once). */
+	default boolean speedIsHalved() {
+		return exhaustionLevel() >= 2 || conditions().stream().anyMatch(Condition::halvesSpeed);
 	}
 
 	/** Magic Resistance: advantage on saves against spells and magical effects. Only monsters declare it for now. */

@@ -311,12 +311,34 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 
 	//Action Surge armed for this turn: the NEXT action is followed by a second one, so the first doesn't end
 	//the turn. Consumed by the second tryAct. Same lifecycle as actedThisTurn.
-	private static final Set<Integer> surgeArmed = new HashSet<>();
+	private static final Map<Integer, Integer> extraActions = new HashMap<>();
 
-	/** Arms Action Surge. Only on one's own turn and before acting (the first action would already be ending the turn). */
-	public static boolean armActionSurge(Entity actor) {
-		if (!active || isIncapacitated(actor) || !isCurrentActor(actor) || actedThisTurn.contains(actor.getId())) return false;
-		return surgeArmed.add(actor.getId());
+	/** Whether extra actions can still be armed: own turn, nothing spent yet (the first action would end the turn). */
+	public static boolean canArmExtraActions(Entity actor) {
+		return active && !isIncapacitated(actor) && isCurrentActor(actor) && !actedThisTurn.contains(actor.getId());
+	}
+
+	/**
+	 * <p>Arms {@code count} extra actions after the regular one (Action Surge: 1, Flurry of Blows: 2 extra strikes).
+	 * While any is pending the first action does not end the turn. Only before acting.</p>
+	 */
+	public static boolean armExtraActions(Entity actor, int count) {
+		if (!canArmExtraActions(actor)) return false;
+		extraActions.merge(actor.getId(), count, Integer::sum);
+		return true;
+	}
+
+	private static boolean consumeExtraAction(int id) {
+		Integer left = extraActions.get(id);
+		if (left == null) return false;
+		if (left <= 1) extraActions.remove(id);
+		else extraActions.put(id, left - 1);
+		return true;
+	}
+
+	/** After a forced move (push), keeps the anchor / movement bookkeeping on the new spot. */
+	public static void repinAfterForcedMove(Entity entity) {
+		if (entity.level() instanceof ServerLevel level) movementAnchors.repin(level, entity.getId(), entity.position());
 	}
 
 	//Reactions (Opportunity Attack, Shield, Counterspell): unlike actedThisTurn, these can be spent on
@@ -341,6 +363,8 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 	//tick of whoever is moving). Same "once and done" as tryAct, but without requiring it to be the
 	//reactor's turn.
 	public static boolean tryReact(Entity actor) {
+		Combatant reactor = Combatant.of(actor);
+		if (reactor != null && reactor.conditions().stream().anyMatch(Condition::preventsReactions)) return false;
 		//"An incapacitated creature can't take actions OR REACTIONS." This used to be only in tryAct, so a
 		//paralyzed monster still made opportunity attacks and a stunned player could still use Shield and
 		//Counterspell — half a dozen conditions that stopped meaning half of what they mean. Goes before
@@ -399,13 +423,13 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 			return TurnActionManager.releaseReadied(actor);
 		}
 		boolean acted = actedThisTurn.add(actor.getId());
-		if (!acted && surgeArmed.remove(actor.getId())) acted = true; //Action Surge: the second action of the turn.
+		if (!acted && consumeExtraAction(actor.getId())) acted = true; //Action Surge / Flurry: an extra action of the turn.
 		//As soon as the action is spent, the turn ends on its own: nobody has to type /dndturns next.
 		//Deferred by one tick so the chat/HUD for the attack that just happened shows before "X's turn".
 		//With Action Surge still armed, the first action does NOT end it: the second one is coming.
 		if (acted && actor.level() instanceof ServerLevel level) {
 			broadcastTurnState(level);
-			if (!surgeArmed.contains(actor.getId())) scheduleAutoAdvance(level, actor.getId());
+			if (!extraActions.containsKey(actor.getId())) scheduleAutoAdvance(level, actor.getId());
 		}
 		return acted;
 	}
@@ -681,7 +705,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		effects.clear();
 		ZoneManager.clear(); //Without a turn order there are no rounds to count, so there's no wall to maintain.
 		SurfaceManager.clear(); //Same reason: no rounds to count, so no fire patch to maintain either.
-		actedThisTurn.clear(); surgeArmed.clear();
+		actedThisTurn.clear(); extraActions.clear();
 		reactionUsed.clear();
 		bonusActionUsed.clear();
 		TurnActionManager.clearAll(); //Outside combat, dodging/dashing/disengaging mean nothing.
@@ -722,6 +746,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		//one line. The rest of the turns don't repeat this anymore — the HUD (see network.TurnStateMessage)
 		//takes care of it.
 		broadcast(level, Component.translatable("chat.dndsheets.turn.tutorial").withStyle(ChatFormatting.GRAY));
+		LairActionManager.onRoundStart(level, order);
 		beginTurn(level);
 	}
 
@@ -746,7 +771,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		effects.clear();
 		ZoneManager.clear(); //Without a turn order there are no rounds to count, so there's no wall to maintain.
 		SurfaceManager.clear(); //Same reason: no rounds to count, so no fire patch to maintain either.
-		actedThisTurn.clear(); surgeArmed.clear();
+		actedThisTurn.clear(); extraActions.clear();
 		reactionUsed.clear();
 		bonusActionUsed.clear();
 		TurnActionManager.clearAll(); //Outside combat, dodging/dashing/disengaging mean nothing.
@@ -937,6 +962,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 			SurfaceManager.endRound(level); //Same round: fire patches decrement their duration and get redrawn.
 			tickWeaponBuffs(level);
 			SummonManager.endRound(level);
+			LairActionManager.onRoundStart(level, order); //Initiative count 20: before anyone acts in the new round.
 		}
 	}
 
@@ -1026,7 +1052,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		TurnEntry entry = current();
 		if (entry == null) return;
 		actedThisTurn.remove(entry.entityId()); //New turn, new action available.
-		surgeArmed.remove(entry.entityId());
+		extraActions.remove(entry.entityId());
 		bonusActionUsed.remove(entry.entityId()); //New turn, new bonus action available.
 		//Dodge lasts "until the start of your next turn", which is exactly right here. Dash and Disengage
 		//only lasted for their own turn, so they expire in the same place.

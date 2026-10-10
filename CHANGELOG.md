@@ -16,6 +16,9 @@ Rules and content in this release:
 - Wild Shape has 2 uses per rest and Twinned Spell costs sorcery points (a long rest returns them).
 - Damage while down is a failed death save, and massive damage kills outright.
 - Search, Hide (Stealth against nearby monsters' passive Perception: advantage on the next attack) and Ready (one action out of turn, using the reaction) in the Turn Actions menu.
+- Difficult terrain (water, cobwebs, soul sand, honey, powder snow, mud, berry bushes, vines) costs double movement in turn mode.
+- Brass dragons' sleep breath and silver dragons' paralyzing breath.
+- Slowed and Weakened conditions, a push effect, Flurry of Blows, and lair actions that fire at the start of each round.
 - Surprise (a condition the DM sets before the encounter), Magic Resistance on the monsters that have it, and total cover now blocks single-target spells. A creature that can't act has its turn skipped.
 
 ## 2.2.1

@@ -26,7 +26,12 @@ public enum Condition {
 	EXHAUSTION,
 	//Surprise (SRD): can't act or move on its first turn and can't react until that turn ends. The DM marks
 	//it before the encounter starts; TurnManager skips the turn and removes it.
-	SURPRISED;
+	SURPRISED,
+	//Slowing gas (copper dragon): speed halved, -2 to AC and Dexterity saves, no reactions.
+	SLOWED,
+	//Weakening gas (gold dragon): disadvantage on Strength saves. ponytail: the SRD also lists Strength checks and
+	//Strength damage rolls, which have no central roll to hook into.
+	WEAKENED;
 
 	/** This combatant attacks with disadvantage. */
 	public boolean selfAttackDisadvantage() {
@@ -64,6 +69,26 @@ public enum Condition {
 			case INCAPACITATED, PARALYZED, PETRIFIED, STUNNED, UNCONSCIOUS, SURPRISED -> true;
 			default -> false;
 		};
+	}
+
+	/** Speed halved (slowed). Exhaustion level 2 does the same through {@link Combatant#exhaustionLevel}. */
+	public boolean halvesSpeed() {
+		return this == SLOWED;
+	}
+
+	/** Penalty to AC and Dexterity saves. */
+	public int acPenalty() {
+		return this == SLOWED ? 2 : 0;
+	}
+
+	/** Cannot take reactions (on top of {@link #preventsActions}, which already blocks them). */
+	public boolean preventsReactions() {
+		return this == SLOWED;
+	}
+
+	/** Disadvantage on Strength saving throws. */
+	public boolean strSaveDisadvantage() {
+		return this == WEAKENED;
 	}
 
 	/** Speed 0: cannot move (see MovementAnchorTracker). */
@@ -116,6 +141,8 @@ public enum Condition {
 			case UNCONSCIOUS -> "Unconscious";
 			case EXHAUSTION -> "Exhaustion";
 			case SURPRISED -> "Surprised";
+			case SLOWED -> "Slowed";
+			case WEAKENED -> "Weakened";
 		};
 	}
 
@@ -138,5 +165,6 @@ public enum Condition {
 		java.util.Map.entry("envenenado", POISONED), java.util.Map.entry("derribado", PRONE),
 		java.util.Map.entry("apresado", RESTRAINED), java.util.Map.entry("aturdido", STUNNED),
 		java.util.Map.entry("inconsciente", UNCONSCIOUS),
-		java.util.Map.entry("agotamiento", EXHAUSTION), java.util.Map.entry("sorprendido", SURPRISED));
+		java.util.Map.entry("agotamiento", EXHAUSTION), java.util.Map.entry("sorprendido", SURPRISED),
+		java.util.Map.entry("ralentizado", SLOWED), java.util.Map.entry("debilitado", WEAKENED));
 }

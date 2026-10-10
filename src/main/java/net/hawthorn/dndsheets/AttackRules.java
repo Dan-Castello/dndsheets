@@ -98,13 +98,14 @@ final class AttackRules {
 		Cover cover = Cover.between(attacker, target.entity());
 		int value = roll.outcome().result().getValue();
 
-		int targetAc = target.armorClass() + cover.bonus();
+		int penalty = target.armorClassPenalty();
+		int targetAc = target.armorClass() + cover.bonus() - penalty;
 		//Defensive reactions (Shield): only worth asking about if the hit actually depends on AC — a
 		//critical hit always lands and a critical miss always fails, with or without Shield. The reaction
 		//has cover subtracted from the ROLL instead of added to the AC: it's the same margin, and this way
 		//Shield keeps deciding based on its own number without knowing anything about cover.
 		if (!roll.criticalHit() && !roll.criticalMiss()) {
-			targetAc = target.reactiveArmorClass(value - cover.bonus()) + cover.bonus();
+			targetAc = target.reactiveArmorClass(value - cover.bonus() + penalty) + cover.bonus() - penalty;
 		}
 
 		boolean hit = roll.criticalHit() || (!roll.criticalMiss() && value >= targetAc);

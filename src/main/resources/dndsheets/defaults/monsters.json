@@ -1821,6 +1821,7 @@
     ],
     "abilities_special": [
       { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 18, "dice": "13d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 },
+      { "name": "content.dndsheets.attack.sleep_breath", "saveAbility": "con", "saveDc": 18, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "unconscious", "dice": "0", "turns": 10 } },
       { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 19, "dice": "2d6 + 6", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
@@ -1837,6 +1838,7 @@
     ],
     "abilities_special": [
       { "name": "content.dndsheets.attack.lightning_breath", "saveAbility": "dex", "saveDc": 19, "dice": "12d10", "halfOnSave": true, "damageType": "lightning", "recharge": 5 },
+      { "name": "content.dndsheets.attack.repulsion_breath", "saveAbility": "str", "saveDc": 19, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "push", "dice": "0", "turns": 12 } },
       { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 20, "dice": "2d6 + 7", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
@@ -1853,6 +1855,7 @@
     ],
     "abilities_special": [
       { "name": "content.dndsheets.attack.acid_breath", "saveAbility": "dex", "saveDc": 18, "dice": "12d8", "halfOnSave": true, "damageType": "acid", "recharge": 5 },
+      { "name": "content.dndsheets.attack.slowing_breath", "saveAbility": "con", "saveDc": 18, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "slowed", "dice": "0", "turns": 10 } },
       { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 19, "dice": "2d6 + 6", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
@@ -1869,6 +1872,7 @@
     ],
     "abilities_special": [
       { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 21, "dice": "13d10", "halfOnSave": true, "damageType": "fire", "recharge": 5 },
+      { "name": "content.dndsheets.attack.weakening_breath", "saveAbility": "con", "saveDc": 21, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "weakened", "dice": "0", "turns": 10 } },
       { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 22, "dice": "2d6 + 8", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
@@ -1917,6 +1921,7 @@
     ],
     "abilities_special": [
       { "name": "content.dndsheets.attack.cold_breath", "saveAbility": "con", "saveDc": 20, "dice": "13d8", "halfOnSave": true, "damageType": "cold", "recharge": 5 },
+      { "name": "content.dndsheets.attack.paralyzing_breath", "saveAbility": "con", "saveDc": 20, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "paralyzed", "dice": "0", "turns": 10 } },
       { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 21, "dice": "2d6 + 8", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
@@ -1992,6 +1997,7 @@
     ],
     "abilities_special": [
       { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 21, "dice": "14d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 },
+      { "name": "content.dndsheets.attack.sleep_breath", "saveAbility": "con", "saveDc": 21, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "unconscious", "dice": "0", "turns": 10 } },
       { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 22, "dice": "2d6 + 8", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
@@ -2008,6 +2014,7 @@
     ],
     "abilities_special": [
       { "name": "content.dndsheets.attack.lightning_breath", "saveAbility": "dex", "saveDc": 23, "dice": "16d10", "halfOnSave": true, "damageType": "lightning", "recharge": 5 },
+      { "name": "content.dndsheets.attack.repulsion_breath", "saveAbility": "str", "saveDc": 23, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "push", "dice": "0", "turns": 12 } },
       { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 24, "dice": "2d6 + 9", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
@@ -2024,6 +2031,7 @@
     ],
     "abilities_special": [
       { "name": "content.dndsheets.attack.acid_breath", "saveAbility": "dex", "saveDc": 22, "dice": "14d8", "halfOnSave": true, "damageType": "acid", "recharge": 5 },
+      { "name": "content.dndsheets.attack.slowing_breath", "saveAbility": "con", "saveDc": 22, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "slowed", "dice": "0", "turns": 10 } },
       { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 23, "dice": "2d6 + 8", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
@@ -2040,6 +2048,7 @@
     ],
     "abilities_special": [
       { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 24, "dice": "22d10", "halfOnSave": true, "damageType": "fire", "recharge": 5 },
+      { "name": "content.dndsheets.attack.weakening_breath", "saveAbility": "con", "saveDc": 24, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "weakened", "dice": "0", "turns": 10 } },
       { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 25, "dice": "2d6 + 10", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
@@ -2088,6 +2097,7 @@
     ],
     "abilities_special": [
       { "name": "content.dndsheets.attack.cold_breath", "saveAbility": "con", "saveDc": 24, "dice": "15d8", "halfOnSave": true, "damageType": "cold", "recharge": 5 },
+      { "name": "content.dndsheets.attack.paralyzing_breath", "saveAbility": "con", "saveDc": 24, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "paralyzed", "dice": "0", "turns": 10 } },
       { "name": "content.dndsheets.attack.wing_attack", "saveAbility": "dex", "saveDc": 25, "dice": "2d6 + 10", "halfOnSave": false, "damageType": "bludgeoning", "legendaryCost": 2 }
     ]
   },
@@ -2737,6 +2747,10 @@
     "nonmagicalAffinities": { "bludgeoning": "immune", "piercing": "immune", "slashing": "immune" },
     "attacks": [
       { "name": "content.dndsheets.attack.paralyzing_touch", "toHitAbility": "str", "dice": "3d6", "damageAbility": "str", "damageType": "cold", "legendaryCost": 2 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.frightening_gaze", "saveAbility": "wis", "saveDc": 18, "dice": "0", "halfOnSave": false, "damageType": "physical", "appliesEffect": { "name": "frightened", "dice": "0", "turns": 10 }, "legendaryCost": 2 },
+      { "name": "content.dndsheets.attack.disrupt_life", "saveAbility": "con", "saveDc": 20, "dice": "6d6", "halfOnSave": true, "damageType": "necrotic", "legendaryCost": 3 }
     ]
   },
   {
@@ -2822,6 +2836,9 @@
     "nonmagicalAffinities": { "bludgeoning": "immune", "piercing": "immune", "slashing": "immune" },
     "attacks": [
       { "name": "content.dndsheets.attack.rotting_fist", "toHitAbility": "str", "dice": "3d6", "damageAbility": "str", "damageType": "bludgeoning", "legendaryCost": 1 }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.dreadful_glare", "saveAbility": "wis", "saveDc": 16, "dice": "0", "halfOnSave": false, "damageType": "physical", "appliesEffect": { "name": "frightened", "dice": "0", "turns": 1 }, "legendaryCost": 1 }
     ]
   },
   {
@@ -3012,6 +3029,9 @@
     "attacks": [
       { "name": "content.dndsheets.attack.greatsword", "toHitAbility": "str", "dice": "4d6", "damageAbility": "str", "damageType": "slashing" },
       { "name": "content.dndsheets.attack.slaying_longbow", "toHitAbility": "dex", "dice": "2d8", "damageAbility": "dex", "damageType": "piercing" }
+    ],
+    "abilities_special": [
+      { "name": "content.dndsheets.attack.blinding_gaze", "saveAbility": "con", "saveDc": 15, "dice": "0", "halfOnSave": false, "damageType": "physical", "appliesEffect": { "name": "blinded", "dice": "0", "turns": 1 }, "legendaryCost": 2 }
     ]
   },
   {
@@ -3404,7 +3424,8 @@
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
     ],
     "abilities_special": [
-      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 14, "dice": "12d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 }
+      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 14, "dice": "12d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 },
+      { "name": "content.dndsheets.attack.sleep_breath", "saveAbility": "con", "saveDc": 14, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "unconscious", "dice": "0", "turns": 10 } }
     ]
   },
   {
@@ -3418,7 +3439,8 @@
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
     ],
     "abilities_special": [
-      { "name": "content.dndsheets.attack.lightning_breath", "saveAbility": "dex", "saveDc": 15, "dice": "10d10", "halfOnSave": true, "damageType": "lightning", "recharge": 5 }
+      { "name": "content.dndsheets.attack.lightning_breath", "saveAbility": "dex", "saveDc": 15, "dice": "10d10", "halfOnSave": true, "damageType": "lightning", "recharge": 5 },
+      { "name": "content.dndsheets.attack.repulsion_breath", "saveAbility": "str", "saveDc": 15, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "push", "dice": "0", "turns": 6 } }
     ]
   },
   {
@@ -3432,7 +3454,8 @@
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
     ],
     "abilities_special": [
-      { "name": "content.dndsheets.attack.acid_breath", "saveAbility": "dex", "saveDc": 14, "dice": "9d8", "halfOnSave": true, "damageType": "acid", "recharge": 5 }
+      { "name": "content.dndsheets.attack.acid_breath", "saveAbility": "dex", "saveDc": 14, "dice": "9d8", "halfOnSave": true, "damageType": "acid", "recharge": 5 },
+      { "name": "content.dndsheets.attack.slowing_breath", "saveAbility": "con", "saveDc": 14, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "slowed", "dice": "0", "turns": 10 } }
     ]
   },
   {
@@ -3446,7 +3469,8 @@
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
     ],
     "abilities_special": [
-      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 17, "dice": "17d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 }
+      { "name": "content.dndsheets.attack.fire_breath", "saveAbility": "dex", "saveDc": 17, "dice": "17d6", "halfOnSave": true, "damageType": "fire", "recharge": 5 },
+      { "name": "content.dndsheets.attack.weakening_breath", "saveAbility": "con", "saveDc": 17, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "weakened", "dice": "0", "turns": 10 } }
     ]
   },
   {
@@ -3474,7 +3498,8 @@
       { "name": "content.dndsheets.attack.claw", "toHitAbility": "str", "dice": "2d6", "damageAbility": "str", "damageType": "slashing" }
     ],
     "abilities_special": [
-      { "name": "content.dndsheets.attack.cold_breath", "saveAbility": "con", "saveDc": 17, "dice": "12d8", "halfOnSave": true, "damageType": "cold", "recharge": 5 }
+      { "name": "content.dndsheets.attack.cold_breath", "saveAbility": "con", "saveDc": 17, "dice": "12d8", "halfOnSave": true, "damageType": "cold", "recharge": 5 },
+      { "name": "content.dndsheets.attack.paralyzing_breath", "saveAbility": "con", "saveDc": 17, "dice": "0", "halfOnSave": false, "damageType": "physical", "recharge": 5, "appliesEffect": { "name": "paralyzed", "dice": "0", "turns": 10 } }
     ]
   },
   {

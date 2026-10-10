@@ -462,6 +462,13 @@ public class MonsterActionManager {
 		attackOutsideOwnTurn(monsterEntity, target, "chat.dndsheets.monster.legendary_action", attack);
 	}
 
+	/** A lair action: announced, then resolved like any other monster save ability. */
+	static void resolveLairAction(Entity monster, MonsterRegistry.MonsterStatBlock block, MonsterRegistry.MonsterSpell action, Player target) {
+		ChatFeedback.broadcast(monster, Component.translatable("chat.dndsheets.monster.lair_action",
+			ContentNames.of(MonsterRegistry.displayNameOf(monster, block)), ContentNames.of(action.name())).withStyle(ChatFormatting.DARK_PURPLE));
+		resolveSpell(block, monster, action, target);
+	}
+
 	/** A legendary action that is a save ability (Wing Attack), announced like the attack ones. */
 	public static void resolveLegendarySpell(Entity monsterEntity, Player target, MonsterRegistry.MonsterSpell spell) {
 		MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monsterEntity);
@@ -555,12 +562,40 @@ public class MonsterActionManager {
 
 	//Leaves the effect ready for TurnManager to keep applying it at the start of each of the target's turns.
 	private static void applyEffectFromHit(Entity target, String name, String dice, int turns, Entity source) {
+		//"push": not a condition or a timer but a forced move, away from the source; `turns` is the distance in blocks.
+		if ("push".equals(name)) {
+			int moved = pushAway(source, target, turns);
+			Combatant pushed = Combatant.of(target);
+			String pushedName = pushed != null ? pushed.name() : target.getName().getString();
+			ChatFeedback.broadcast(target, net.minecraft.network.chat.Component.translatable("chat.dndsheets.monster.pushed", pushedName, moved).withStyle(ChatFormatting.DARK_PURPLE));
+			return;
+		}
 		TurnManager.applyEffect(target, name, dice, turns, source);
 		//Character name, not the Minecraft account's: same standard as the rest of the combat lines, and
 		//the wrong one was slipping in here. With no Combatant (a compatibility mob) it stays the usual one.
 		Combatant combatant = Combatant.of(target);
 		String targetName = combatant != null ? combatant.name() : target.getName().getString();
 		ChatFeedback.broadcast(target, net.minecraft.network.chat.Component.translatable("chat.dndsheets.monster.effect_applied", targetName, name, turns).withStyle(ChatFormatting.DARK_PURPLE));
+	}
+
+	/** Moves {@code target} up to {@code blocks} straight away from {@code source}, stopping at the first obstacle. Returns blocks moved. */
+	static int pushAway(Entity source, Entity target, int blocks) {
+		Vec3 away = new Vec3(target.getX() - source.getX(), 0, target.getZ() - source.getZ());
+		if (away.lengthSqr() < 1.0E-6) return 0;
+		away = away.normalize();
+		Vec3 start = target.position();
+		int moved = 0;
+		for (int i = 1; i <= blocks; i++) {
+			Vec3 offset = away.scale(i);
+			if (!target.level().noCollision(target, target.getBoundingBox().move(offset))) break;
+			moved = i;
+		}
+		if (moved == 0) return 0;
+		Vec3 end = start.add(away.scale(moved));
+		target.teleportTo(end.x, end.y, end.z);
+		target.setDeltaMovement(Vec3.ZERO);
+		TurnManager.repinAfterForcedMove(target);
+		return moved;
 	}
 
 	private static void resolveSpell(MonsterRegistry.MonsterStatBlock block, Entity monsterEntity, MonsterRegistry.MonsterSpell spell, Player target) {

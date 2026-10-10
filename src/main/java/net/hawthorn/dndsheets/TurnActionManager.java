@@ -52,6 +52,8 @@ public class TurnActionManager {
 		HIDE,
 		/** Hold the action: act once, out of turn, spending the reaction. Expires when the next turn starts. */
 		READY,
+		/** Monk, 1 ki: two extra unarmed strikes this turn (bonus action; arm it BEFORE the first attack). */
+		FLURRY_OF_BLOWS,
 	}
 
 	//A single map for all three, not three separate sets: they all expire at the same time (when the
@@ -68,6 +70,7 @@ public class TurnActionManager {
 		}
 		switch (action) {
 			case ACTION_SURGE -> { useActionSurge(player); return; }
+			case FLURRY_OF_BLOWS -> { useFlurry(player); return; }
 			case PATIENT_DEFENSE -> { useKi(player, TurnAction.DODGE); return; }
 			case STEP_DASH -> { useKi(player, TurnAction.DASH); return; }
 			case STEP_DISENGAGE -> { useKi(player, TurnAction.DISENGAGE); return; }
@@ -174,7 +177,7 @@ public class TurnActionManager {
 			player.sendSystemMessage(Component.translatable("chat.dndsheets.action.surge_spent").withStyle(ChatFormatting.GRAY));
 			return;
 		}
-		if (!TurnManager.armActionSurge(player)) {
+		if (!TurnManager.armExtraActions(player, 1)) {
 			player.sendSystemMessage(Component.translatable("chat.dndsheets.action.surge_too_late").withStyle(ChatFormatting.RED));
 			return;
 		}
@@ -182,6 +185,36 @@ public class TurnActionManager {
 		CombatFx.activate(player);
 		String name = SheetLoader.characterNameOf(sheet, player);
 		ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.action.surge", name).withStyle(ChatFeedback.RESOURCE));
+	}
+
+	/**
+	 * <p>Flurry of Blows: 1 ki and the bonus action buy two extra strikes. Armed before the first attack, so the turn
+	 * waits for them (see {@link TurnManager#armExtraActions}). ponytail: the extra strikes are not checked to be unarmed.</p>
+	 */
+	private static void useFlurry(ServerPlayer player) {
+		com.google.gson.JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		int max = CharacterRules.kiPointsFor(CharacterRules.classLevelOf(sheet, "monk", "monje"));
+		if (max <= 0) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.action.not_monk").withStyle(ChatFormatting.GRAY));
+			return;
+		}
+		if (RestResource.usesLeft(sheet, RestResource.KI_USES, max) <= 0) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.action.no_ki").withStyle(ChatFormatting.GRAY));
+			return;
+		}
+		if (!TurnManager.canArmExtraActions(player)) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.action.surge_too_late").withStyle(ChatFormatting.RED));
+			return;
+		}
+		if (!TurnManager.tryActBonus(player)) {
+			TurnManager.notifyCantActBonus(player);
+			return;
+		}
+		TurnManager.armExtraActions(player, 2);
+		RestResource.spendUse(player, RestResource.KI_USES, max);
+		CombatFx.activate(player);
+		ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.action.flurry", SheetLoader.characterNameOf(sheet, player)).withStyle(ChatFeedback.RESOURCE));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.action.ki_left", RestResource.usesLeft(sheet, RestResource.KI_USES, max)).withStyle(ChatFormatting.GRAY));
 	}
 
 	/** Monk ki techniques: a bonus action and 1 ki point for the Dodge / Dash / Disengage effect. */
@@ -210,7 +243,7 @@ public class TurnActionManager {
 
 	private static String messageKeyOf(TurnAction action) {
 		return switch (action) {
-			case ACTION_SURGE, PATIENT_DEFENSE, STEP_DASH, STEP_DISENGAGE, SEARCH, HIDE -> throw new IllegalArgumentException(action.name());
+			case ACTION_SURGE, PATIENT_DEFENSE, STEP_DASH, STEP_DISENGAGE, SEARCH, HIDE, FLURRY_OF_BLOWS -> throw new IllegalArgumentException(action.name());
 			case READY -> "chat.dndsheets.action.ready";
 			case DODGE -> "chat.dndsheets.action.dodge";
 			case DASH -> "chat.dndsheets.action.dash";

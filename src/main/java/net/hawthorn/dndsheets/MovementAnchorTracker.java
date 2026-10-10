@@ -10,7 +10,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
@@ -34,6 +38,13 @@ class MovementAnchorTracker {
 	//position seen within their range (lastGoodPos, where they get sent back if they overshoot).
 	private final Map<Integer, Pinned> moveOrigin = new HashMap<>();
 	private final Map<Integer, Pinned> lastGoodPos = new HashMap<>();
+
+	//Difficult terrain: every block moved through it costs double. The budget stays a straight line from the
+	//origin (see enforceMovementBudget), so the extra is accumulated apart: the horizontal distance walked
+	//while standing in difficult terrain is charged a second time. lastSeen is where it was on the previous tick.
+	private final Map<Integer, Vec3> lastSeen = new HashMap<>();
+	private final Map<Integer, Double> terrainExtra = new HashMap<>();
+	private static final double TELEPORT_STEP = 4.0; //A bigger jump in one tick is a teleport/knockback, not walking.
 	private static final int DEFAULT_SPEED_FEET = 30;
 	//speedBlocksFor runs 20 times/sec for the duration of a player's turn: the Pattern is cached instead
 	//of being recompiled every tick.
@@ -49,6 +60,12 @@ class MovementAnchorTracker {
 		anchors.put(entityId, new Pinned(level.dimension(), pos));
 	}
 
+	/** After a forced move (push): whoever is anchored stays anchored, but at the new spot. */
+	void repin(ServerLevel level, int entityId, Vec3 pos) {
+		if (anchors.containsKey(entityId)) anchors.put(entityId, new Pinned(level.dimension(), pos));
+		lastSeen.put(entityId, pos);
+	}
+
 	void release(int entityId) {
 		anchors.remove(entityId);
 	}
@@ -57,18 +74,24 @@ class MovementAnchorTracker {
 		anchors.clear();
 		moveOrigin.clear();
 		lastGoodPos.clear();
+		lastSeen.clear();
+		terrainExtra.clear();
 	}
 
 	void rekey(int oldId, int newId) {
 		if (anchors.containsKey(oldId)) anchors.put(newId, anchors.remove(oldId));
 		if (moveOrigin.containsKey(oldId)) moveOrigin.put(newId, moveOrigin.remove(oldId));
 		if (lastGoodPos.containsKey(oldId)) lastGoodPos.put(newId, lastGoodPos.remove(oldId));
+		if (lastSeen.containsKey(oldId)) lastSeen.put(newId, lastSeen.remove(oldId));
+		if (terrainExtra.containsKey(oldId)) terrainExtra.put(newId, terrainExtra.remove(oldId));
 	}
 
 	void beginMovementBudget(ServerLevel level, int entityId, Vec3 pos) {
 		Pinned pinned = new Pinned(level.dimension(), pos);
 		moveOrigin.put(entityId, pinned);
 		lastGoodPos.put(entityId, pinned);
+		lastSeen.put(entityId, pos);
+		terrainExtra.remove(entityId);
 	}
 
 	Vec3 originOf(int entityId) {
@@ -176,7 +199,7 @@ class MovementAnchorTracker {
 		//in both callers. speedBlocks is ignored entirely, not reduced: in 5e the speed is 0, not "less".
 		Combatant combatant = Combatant.of(entity);
 		if (combatant != null && combatant.cannotMove()) speedBlocks = 0.0;
-		else if (combatant != null && combatant.exhaustionLevel() >= 2) speedBlocks /= 2; //Exhaustion 2: speed halved.
+		else if (combatant != null && combatant.speedIsHalved()) speedBlocks /= 2; //Exhaustion 2+ or slowed: speed halved.
 		if (entity.level().dimension() != origin.dimension()) {
 			//Crossed to another level (portal) with the turn active: the recorded coordinates no longer
 			//mean anything here — the budget is released instead of comparing/teleporting across dimensions.
@@ -185,13 +208,43 @@ class MovementAnchorTracker {
 			return false;
 		}
 		Vec3 pos = entity.position();
-		if (pos.distanceTo(origin.pos()) <= speedBlocks) {
+		if (pos.distanceTo(origin.pos()) + chargeTerrain(entity, pos) <= speedBlocks) {
 			lastGoodPos.put(id, new Pinned(origin.dimension(), pos));
 			return false;
 		}
 		Vec3 fallback = lastGoodPos.getOrDefault(id, origin).pos();
 		entity.teleportTo(fallback.x, fallback.y, fallback.z);
 		entity.setDeltaMovement(Vec3.ZERO);
+		lastSeen.put(id, fallback);
 		return true;
+	}
+
+	/** Extra movement spent so far because of difficult terrain, updated with this tick's step. */
+	private double chargeTerrain(Entity entity, Vec3 pos) {
+		int id = entity.getId();
+		Vec3 previous = lastSeen.put(id, pos);
+		if (previous != null) {
+			double step = Math.hypot(pos.x - previous.x, pos.z - previous.z);
+			if (step > 0 && step < TELEPORT_STEP && isDifficultTerrain(entity)) terrainExtra.merge(id, step, Double::sum);
+		}
+		return terrainExtra.getOrDefault(id, 0.0);
+	}
+
+	/**
+	 * <p>Difficult terrain under or around the feet: water, cobwebs, soul sand, honey, powder snow, mud, berry
+	 * bushes and vines. Flyers ignore it. ponytail: a fixed list of vanilla blocks; a tag a pack can extend
+	 * if tables want more (rubble, deep snow layers).</p>
+	 */
+	static boolean isDifficultTerrain(Entity entity) {
+		if (entity.isNoGravity() || (entity instanceof net.minecraft.world.entity.player.Player p && p.getAbilities().flying)) return false;
+		net.minecraft.core.BlockPos feet = entity.blockPosition();
+		if (entity.level().getFluidState(feet).is(FluidTags.WATER)) return true;
+		for (net.minecraft.core.BlockPos at : new net.minecraft.core.BlockPos[]{feet, feet.below()}) {
+			BlockState state = entity.level().getBlockState(at);
+			Block block = state.getBlock();
+			if (block == Blocks.COBWEB || block == Blocks.SOUL_SAND || block == Blocks.SOUL_SOIL || block == Blocks.HONEY_BLOCK
+				|| block == Blocks.POWDER_SNOW || block == Blocks.MUD || block == Blocks.SWEET_BERRY_BUSH || block == Blocks.VINE) return true;
+		}
+		return false;
 	}
 }

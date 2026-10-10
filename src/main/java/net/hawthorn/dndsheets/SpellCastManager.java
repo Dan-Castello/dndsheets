@@ -690,7 +690,7 @@ public class SpellCastManager {
 		Combatant combatant = Combatant.of(target);
 		//10 is 5e's reference AC for something with no armor and no Dexterity bonus: it's what's left for a
 		//compatibility mob, which has neither a sheet nor a stat block to pull it from.
-		return combatant != null ? combatant.armorClass() : 10;
+		return combatant != null ? combatant.armorClass() - combatant.armorClassPenalty() : 10;
 	}
 
 	private static String nameOf(Entity target) {
