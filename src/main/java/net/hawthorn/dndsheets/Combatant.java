@@ -252,7 +252,7 @@ public interface Combatant {
 			.filter(condition -> condition != Condition.FRIGHTENED || seesSourceOf(Condition.FRIGHTENED))
 			.anyMatch(Condition::selfAttackDisadvantage) || exhaustionLevel() >= 3;
 		return DiceManager.combineAdvantage(
-			conditions().stream().anyMatch(Condition::selfAttackAdvantage) ? DiceManager.Advantage.ADVANTAGE : DiceManager.Advantage.NORMAL,
+			(conditions().stream().anyMatch(Condition::selfAttackAdvantage) || TurnActionManager.isHidden(entity())) ? DiceManager.Advantage.ADVANTAGE : DiceManager.Advantage.NORMAL,
 			disadvantage ? DiceManager.Advantage.DISADVANTAGE : DiceManager.Advantage.NORMAL);
 	}
 
@@ -317,6 +317,11 @@ public interface Combatant {
 		//which has no sheet DiceManager could pull the ability from.
 		DiceManager.Advantage onSave = exhaustionLevel() >= 3 ? DiceManager.Advantage.DISADVANTAGE : DiceManager.Advantage.NORMAL;
 		return new SaveRoll(DiceManager.rollWithAdvantage(new JsonObject(), "1d20 + " + abilityModifier(key), onSave), null);
+	}
+
+	/** Magic Resistance: advantage on saves against spells and magical effects. Only monsters declare it for now. */
+	default boolean hasMagicResistance() {
+		return false;
 	}
 
 	/** Its own resistances plus petrified's resistance to all damage, which applies to both sides. */
@@ -609,6 +614,8 @@ public interface Combatant {
 		@Override public int maxHp() { return Config.scaleMonsterMaxHp(block.maxHp()); }
 
 		@Override public int abilityModifier(String ability) { return block.abilityModifier(ability); }
+
+		@Override public boolean hasMagicResistance() { return block.magicResistance(); }
 
 		@Override public int proficiencyBonus() { return block.proficiencyBonus(); }
 

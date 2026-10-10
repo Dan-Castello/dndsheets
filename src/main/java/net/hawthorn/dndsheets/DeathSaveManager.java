@@ -9,6 +9,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -26,7 +27,9 @@ import java.util.concurrent.ThreadLocalRandom;
  * <p>When a player would hit 0 HP, their real death is canceled instead: they freeze at 1 HP,
  * incapacitated (blind, weakened and nearly immobile), and a window opens for them to roll their 3
  * death saves. Another player can revive them instantly by interacting with them. 3 successes (or a
- * natural 20) stabilizes them; 3 failures (or a natural 1, which counts double) does kill them for real.</p>
+ * natural 20) stabilizes them; 3 failures (or a natural 1, which counts double) does kill them for real.
+ * Damage taken while downed is a failed save, and massive damage (what is left after 0 HP is at least the
+ * max HP) kills outright.</p>
  */
 @Mod.EventBusSubscriber
 public class DeathSaveManager {
@@ -68,9 +71,51 @@ public class DeathSaveManager {
 		goDown(player, sheet);
 	}
 
-	//ponytail: protects the downed player with total invulnerability instead of treating extra damage as
-	//an automatic failed save (the real 5e rule). Simpler, and it stops them from being finished off by
-	//accident; add that nuance here if it's ever wanted.
+	/** Massive damage (SRD): what is left after dropping to 0 HP is at least the maximum HP -- instant death. */
+	static boolean isMassiveDamage(float health, float damage, float maxHealth) {
+		return damage - health >= maxHealth;
+	}
+
+	//Instant death by massive damage: the hit that would drop a standing player to 0 with at least their max
+	//HP left over skips the downed state. It marks allowRealDeath, the same flag a failed third save uses, so
+	//onLivingDeath lets this death through (it consumes the flag even if a totem then cancels the death).
+	@SubscribeEvent(priority = EventPriority.HIGH)
+	public static void onMassiveDamage(LivingDamageEvent event) {
+		if (event.getEntity().level().isClientSide()) return;
+		if (!(event.getEntity() instanceof ServerPlayer player) || !Config.auto(Config.Rule.DEATH_SAVES)) return;
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		if (sheet == null || isDowned(sheet)) return;
+		if (!isMassiveDamage(player.getHealth(), event.getAmount(), player.getMaxHealth())) return;
+		allowRealDeath.add(player.getUUID());
+		ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.death.massive", characterName(sheet, player)).withStyle(net.minecraft.ChatFormatting.DARK_RED));
+	}
+
+	//SRD: damage taken while at 0 HP is a failed death save (and damage of at least the max HP kills outright).
+	//The HP itself stays protected at 1 so the character is not finished by the same hit twice.
+	//ponytail: one failure per second at most, so a burn or poison tick is one failure, not three in a row; a
+	//critical hit (two failures in 5e) is not distinguished because the hurt event does not carry it.
+	private static final java.util.Map<UUID, Long> lastDownedHit = new ConcurrentHashMap<>();
+	private static final long DOWNED_HIT_COOLDOWN_TICKS = 20;
+
+	private static void failSaveFromDamage(ServerPlayer player, JsonObject sheet, float amount) {
+		long now = player.level().getGameTime();
+		Long last = lastDownedHit.get(player.getUUID());
+		if (amount <= 0 || (last != null && now - last < DOWNED_HIT_COOLDOWN_TICKS)) return;
+		lastDownedHit.put(player.getUUID(), now);
+
+		boolean massive = amount >= player.getMaxHealth();
+		int failures = (sheet.has("deathSaveFailures") ? sheet.get("deathSaveFailures").getAsInt() : 0) + 1;
+		sheet.addProperty("deathSaveFailures", Math.min(failures, 3));
+		String name = characterName(sheet, player);
+		if (massive) {
+			ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.death.massive", name).withStyle(net.minecraft.ChatFormatting.DARK_RED));
+		} else {
+			ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.death.hit_while_down", name, Math.min(failures, 3)).withStyle(net.minecraft.ChatFormatting.RED));
+		}
+		if (massive || failures >= 3) killForReal(player, sheet);
+		else sendSheetUpdate(player, sheet);
+	}
+
 	@SubscribeEvent(priority = EventPriority.HIGH)
 	public static void onLivingHurtWhileDowned(LivingHurtEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
@@ -81,7 +126,14 @@ public class DeathSaveManager {
 		//allowRealDeath is the same flag onLivingDeath already uses to avoid canceling THAT particular event.
 		if (allowRealDeath.contains(victim.getUUID())) return;
 		JsonObject sheet = SheetLoader.getServerSheet(victim.getStringUUID());
-		if (sheet != null && isDowned(sheet)) event.setCanceled(true);
+		if (sheet != null && isDowned(sheet)) {
+			event.setCanceled(true);
+			if (victim instanceof ServerPlayer downed && downed.getServer() != null) {
+				float amount = event.getAmount();
+				//Deferred to the server thread's next step: killing from inside another hurt event would nest them.
+				downed.getServer().execute(() -> failSaveFromDamage(downed, sheet, amount));
+			}
+		}
 	}
 
 	@SubscribeEvent(priority = EventPriority.HIGH)

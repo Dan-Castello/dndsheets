@@ -23,7 +23,10 @@ public enum Condition {
 	PARALYZED, PETRIFIED, POISONED, PRONE, RESTRAINED, STUNNED, UNCONSCIOUS,
 	//Last on purpose (invariant 2). It is the only LEVELED condition (1-6): the level rides in the source slot of
 	//Combatant.conditionSources, which no other consumer reads for it. See Combatant.exhaustionLevel.
-	EXHAUSTION;
+	EXHAUSTION,
+	//Surprise (SRD): can't act or move on its first turn and can't react until that turn ends. The DM marks
+	//it before the encounter starts; TurnManager skips the turn and removes it.
+	SURPRISED;
 
 	/** This combatant attacks with disadvantage. */
 	public boolean selfAttackDisadvantage() {
@@ -58,7 +61,7 @@ public enum Condition {
 	/** Cannot take actions or reactions. */
 	public boolean preventsActions() {
 		return switch (this) {
-			case INCAPACITATED, PARALYZED, PETRIFIED, STUNNED, UNCONSCIOUS -> true;
+			case INCAPACITATED, PARALYZED, PETRIFIED, STUNNED, UNCONSCIOUS, SURPRISED -> true;
 			default -> false;
 		};
 	}
@@ -66,7 +69,7 @@ public enum Condition {
 	/** Speed 0: cannot move (see MovementAnchorTracker). */
 	public boolean preventsMovement() {
 		return switch (this) {
-			case GRAPPLED, PARALYZED, PETRIFIED, RESTRAINED, UNCONSCIOUS -> true;
+			case GRAPPLED, PARALYZED, PETRIFIED, RESTRAINED, UNCONSCIOUS, SURPRISED -> true;
 			default -> false;
 		};
 	}
@@ -112,6 +115,7 @@ public enum Condition {
 			case STUNNED -> "Stunned";
 			case UNCONSCIOUS -> "Unconscious";
 			case EXHAUSTION -> "Exhaustion";
+			case SURPRISED -> "Surprised";
 		};
 	}
 
@@ -134,5 +138,5 @@ public enum Condition {
 		java.util.Map.entry("envenenado", POISONED), java.util.Map.entry("derribado", PRONE),
 		java.util.Map.entry("apresado", RESTRAINED), java.util.Map.entry("aturdido", STUNNED),
 		java.util.Map.entry("inconsciente", UNCONSCIOUS),
-		java.util.Map.entry("agotamiento", EXHAUSTION));
+		java.util.Map.entry("agotamiento", EXHAUSTION), java.util.Map.entry("sorprendido", SURPRISED));
 }

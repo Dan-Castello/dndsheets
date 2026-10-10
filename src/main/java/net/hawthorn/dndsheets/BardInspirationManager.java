@@ -24,9 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p><b>Deliberately narrowed scope</b>: 5e lets you use this die on an attack roll, an ability check OR a
  * saving throw; here it only hooks into the attack roll (the same spot where advantage/disadvantage
  * already lives in {@link CombatManager}/{@link SpellCastManager}) — extending it to checks and saves
- * would also touch {@code RollAnnouncerProcedure}, the sheet screen. There's also no limit on uses per
- * rest (in 5e it's the bard's Charisma modifier); it can be granted again whenever wanted, same as
- * Rage.</p>
+ * would also touch {@code RollAnnouncerProcedure}, the sheet screen. Uses per rest are limited to the
+ * bard's Charisma modifier (min 1), see {@link RestResource#INSPIRATION_USES}.</p>
  */
 @Mod.EventBusSubscriber
 public class BardInspirationManager {
@@ -63,12 +62,21 @@ public class BardInspirationManager {
 		JsonObject targetSheet = SheetLoader.getServerSheet(target.getStringUUID());
 		if (targetSheet == null) return;
 
+		//Uses: the bard's Charisma modifier (min 1), back on a long rest (and a short one from level 5).
+		JsonObject bardSheet = SheetLoader.getServerSheet(bard.getStringUUID());
+		int maxUses = CharacterRules.bardicInspirationUsesFor(bardSheet);
+		if (RestResource.usesLeft(bardSheet, RestResource.INSPIRATION_USES, maxUses) <= 0) {
+			bard.sendSystemMessage(Component.translatable("chat.dndsheets.resource.spent_inspiration").withStyle(ChatFormatting.GRAY));
+			return;
+		}
+
 		String die = CharacterRules.bardicInspirationDieFor(
 			SheetLoader.characterLevelOf(SheetLoader.getServerSheet(bard.getStringUUID()), bard));
 		DiceManager.RollOutcome roll = DiceManager.roll(new JsonObject(), die);
 		if (roll.result() == null) return;
 		int amount = roll.result().getValue();
 
+		RestResource.spendUse(bard, RestResource.INSPIRATION_USES, maxUses);
 		targetSheet.addProperty("bardicInspiration", amount);
 		//The target needs to be told: the die is added to THEIR next attack roll, and without this they'd
 		//have no way to know they were carrying it until it was spent on its own.

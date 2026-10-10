@@ -1,5 +1,6 @@
 package net.hawthorn.dndsheets;
 
+import com.google.gson.JsonObject;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -26,9 +27,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * ({@link DndsheetsMod#queueServerWork}). Decided ONCE, on activation; if turn mode is toggled on/off
  * mid-Rage, it doesn't switch counting mode (deliberate simplification).</p>
  *
- * <p><b>Another deliberate simplification</b>: in real 5e Rage has a limited number of uses per long rest
- * (2 at level 1-2, more at higher levels). Here there's no usage limit — activating again while Rage is
- * already up doesn't do anything strange, it just doesn't reset the counter.</p>
+ * <p>Uses per long rest follow the SRD table ({@link CharacterRules#rageUsesFor}); a long rest returns them
+ * (see {@link RestResource#RAGE_USES}). Activating again while Rage is already up spends nothing.
+ * ponytail: the level is the character's total level, not the barbarian levels of a multiclass.</p>
  */
 public class BarbarianRageManager {
 	private static final int DURATION_ROUNDS = 10; //1 minute in 5e = 10 rounds.
@@ -62,10 +63,18 @@ public class BarbarianRageManager {
 		//—activating Rage cost neither an action nor a bonus action— the only real SRD bonus action
 		//this engine wasn't charging for yet. This goes before touching the "raging" set: if it can't
 		//spend the bonus action, it must not end up marked as already raging.
+		//Uses per long rest, checked BEFORE the bonus action so a barbarian out of rages isn't charged for nothing.
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		int maxUses = CharacterRules.rageUsesFor(SheetLoader.characterLevelOf(sheet, player));
+		if (RestResource.usesLeft(sheet, RestResource.RAGE_USES, maxUses) <= 0) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.spent_rage").withStyle(ChatFormatting.GRAY));
+			return;
+		}
 		if (!TurnManager.tryActBonus(player)) {
 			TurnManager.notifyCantActBonus(player);
 			return;
 		}
+		RestResource.spendUse(player, RestResource.RAGE_USES, maxUses);
 		raging.add(player.getUUID());
 
 		UUID uuid = player.getUUID();

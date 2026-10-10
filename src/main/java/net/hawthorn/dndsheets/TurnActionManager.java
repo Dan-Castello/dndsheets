@@ -37,6 +37,21 @@ public class TurnActionManager {
 		DASH,
 		/** Moving away doesn't provoke opportunity attacks this turn. */
 		DISENGAGE,
+		//Appended (invariant 2: this enum travels by ordinal). Class features, gated by class on the server.
+		/** Fighter: one extra action this turn, once per rest. */
+		ACTION_SURGE,
+		/** Monk, 1 ki: Dodge as a bonus action. */
+		PATIENT_DEFENSE,
+		/** Monk, 1 ki: Dash as a bonus action. */
+		STEP_DASH,
+		/** Monk, 1 ki: Disengage as a bonus action. */
+		STEP_DISENGAGE,
+		/** Perception check; the table (DM) decides what it finds. */
+		SEARCH,
+		/** Stealth check against the passive Perception of nearby monsters; hidden = advantage on the next attack. */
+		HIDE,
+		/** Hold the action: act once, out of turn, spending the reaction. Expires when the next turn starts. */
+		READY,
 	}
 
 	//A single map for all three, not three separate sets: they all expire at the same time (when the
@@ -51,6 +66,13 @@ public class TurnActionManager {
 			player.sendSystemMessage(Component.translatable("chat.dndsheets.action.needs_combat").withStyle(ChatFormatting.GRAY));
 			return;
 		}
+		switch (action) {
+			case ACTION_SURGE -> { useActionSurge(player); return; }
+			case PATIENT_DEFENSE -> { useKi(player, TurnAction.DODGE); return; }
+			case STEP_DASH -> { useKi(player, TurnAction.DASH); return; }
+			case STEP_DISENGAGE -> { useKi(player, TurnAction.DISENGAGE); return; }
+			default -> { }
+		}
 		//They ARE the turn's action, same as attacking: checked with the same tryAct, so using one also
 		//ends the turn on its own and you can't dodge AND attack in the same round.
 		if (!TurnManager.tryAct(player)) {
@@ -58,14 +80,138 @@ public class TurnActionManager {
 			return;
 		}
 
+		if (action == TurnAction.SEARCH) { search(player); return; }
+		if (action == TurnAction.HIDE) { hide(player); return; }
+
 		active.computeIfAbsent(player.getId(), id -> EnumSet.noneOf(TurnAction.class)).add(action);
 		CombatFx.activate(player);
 		String name = SheetLoader.characterNameOf(SheetLoader.getServerSheet(player.getStringUUID()), player);
 		ChatFeedback.broadcast(player, Component.translatable(messageKeyOf(action), name).withStyle(ChatFeedback.RESOURCE));
 	}
 
+	//--- Hide / Search / Ready ---
+
+	/** Stealth is skill index 3 in the sheet's fixed skill order (see RollIndex; checked by the self-test). */
+	static final int STEALTH_SKILL_INDEX = 3;
+	/** How far a monster notices a hiding player, in blocks. */
+	private static final double NOTICE_RADIUS = 30.0;
+
+	//Hidden creatures and the Stealth total they hid with. Unlike the turn actions, this survives their
+	//next turn: it ends when they attack or cast, or when the encounter ends.
+	private static final Map<Integer, Integer> hidden = new HashMap<>();
+
+	private static net.hawthorn.dndsheets.DiceManager.RollOutcome skillRoll(com.google.gson.JsonObject sheet, int index) {
+		String expression = "1d20";
+		if (sheet != null && sheet.has("skills") && index < sheet.getAsJsonArray("skills").size()) {
+			expression = sheet.getAsJsonArray("skills").get(index).getAsString();
+		}
+		return DiceManager.roll(sheet != null ? sheet : new com.google.gson.JsonObject(), expression);
+	}
+
+	private static void search(ServerPlayer player) {
+		com.google.gson.JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		DiceManager.RollOutcome roll = skillRoll(sheet, RollIndex.PERCEPTION_SKILL_INDEX);
+		CombatFx.activate(player);
+		ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.action.search",
+			SheetLoader.characterNameOf(sheet, player), roll.formatted()).withStyle(ChatFeedback.RESOURCE));
+	}
+
+	/**
+	 * <p>Hide: a Stealth check against the highest passive Perception (10 + Wisdom modifier) among the monsters
+	 * within {@value #NOTICE_RADIUS} blocks; with none around it simply works. Hidden = advantage on the next
+	 * attack, which also reveals them. ponytail: no line-of-sight or cover requirement to hide, the DM's call.</p>
+	 */
+	private static void hide(ServerPlayer player) {
+		com.google.gson.JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		DiceManager.RollOutcome roll = skillRoll(sheet, STEALTH_SKILL_INDEX);
+		int total = roll.result() != null ? roll.result().getValue() : 0;
+		int worst = 0;
+		for (net.minecraft.world.entity.LivingEntity e : player.level().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
+				player.getBoundingBox().inflate(NOTICE_RADIUS), TurnManager::isMonster)) {
+			MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(e);
+			worst = Math.max(worst, 10 + (block != null ? block.abilityModifier("wis") : 0));
+		}
+		String name = SheetLoader.characterNameOf(sheet, player);
+		if (total > worst) {
+			hidden.put(player.getId(), total);
+			ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.action.hide_ok", name, roll.formatted()).withStyle(ChatFeedback.RESOURCE));
+		} else {
+			hidden.remove(player.getId());
+			ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.action.hide_fail", name, roll.formatted()).withStyle(ChatFormatting.GRAY));
+		}
+	}
+
+	/** Hidden attackers get advantage -- see {@link Combatant#ownAttackAdvantage}. */
+	public static boolean isHidden(Entity entity) {
+		return entity != null && hidden.containsKey(entity.getId());
+	}
+
+	/** Attacking or casting gives a hiding creature away. */
+	public static void reveal(Entity entity) {
+		if (entity != null && hidden.remove(entity.getId()) != null && entity instanceof ServerPlayer player) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.action.revealed").withStyle(ChatFormatting.GRAY));
+		}
+	}
+
+	/**
+	 * <p>A readied action fires: once, out of turn, spending the reaction. Called by {@link TurnManager#tryAct} when
+	 * it isn't the actor's turn. The trigger is the player's own call, as at the table.</p>
+	 */
+	static boolean releaseReadied(Entity actor) {
+		EnumSet<TurnAction> taken = actor == null ? null : active.get(actor.getId());
+		if (taken == null || !taken.contains(TurnAction.READY) || !TurnManager.tryReact(actor)) return false;
+		taken.remove(TurnAction.READY);
+		return true;
+	}
+
+	private static void useActionSurge(ServerPlayer player) {
+		com.google.gson.JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		if (CharacterRules.classLevelOf(sheet, "fighter", "guerrero") < 2) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.action.not_fighter").withStyle(ChatFormatting.GRAY));
+			return;
+		}
+		if (RestResource.isSpent(sheet, RestResource.ACTION_SURGE)) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.action.surge_spent").withStyle(ChatFormatting.GRAY));
+			return;
+		}
+		if (!TurnManager.armActionSurge(player)) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.action.surge_too_late").withStyle(ChatFormatting.RED));
+			return;
+		}
+		RestResource.spend(player, RestResource.ACTION_SURGE);
+		CombatFx.activate(player);
+		String name = SheetLoader.characterNameOf(sheet, player);
+		ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.action.surge", name).withStyle(ChatFeedback.RESOURCE));
+	}
+
+	/** Monk ki techniques: a bonus action and 1 ki point for the Dodge / Dash / Disengage effect. */
+	private static void useKi(ServerPlayer player, TurnAction effect) {
+		com.google.gson.JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		int max = CharacterRules.kiPointsFor(CharacterRules.classLevelOf(sheet, "monk", "monje"));
+		if (max <= 0) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.action.not_monk").withStyle(ChatFormatting.GRAY));
+			return;
+		}
+		if (RestResource.usesLeft(sheet, RestResource.KI_USES, max) <= 0) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.action.no_ki").withStyle(ChatFormatting.GRAY));
+			return;
+		}
+		if (!TurnManager.tryActBonus(player)) {
+			TurnManager.notifyCantActBonus(player);
+			return;
+		}
+		RestResource.spendUse(player, RestResource.KI_USES, max);
+		active.computeIfAbsent(player.getId(), id -> EnumSet.noneOf(TurnAction.class)).add(effect);
+		CombatFx.activate(player);
+		String name = SheetLoader.characterNameOf(sheet, player);
+		ChatFeedback.broadcast(player, Component.translatable(messageKeyOf(effect), name).withStyle(ChatFeedback.RESOURCE));
+		player.sendSystemMessage(Component.translatable("chat.dndsheets.action.ki_left", RestResource.usesLeft(sheet, RestResource.KI_USES, max)).withStyle(ChatFormatting.GRAY));
+	}
+
 	private static String messageKeyOf(TurnAction action) {
 		return switch (action) {
+			case ACTION_SURGE, PATIENT_DEFENSE, STEP_DASH, STEP_DISENGAGE, SEARCH, HIDE -> throw new IllegalArgumentException(action.name());
+			case READY -> "chat.dndsheets.action.ready";
 			case DODGE -> "chat.dndsheets.action.dodge";
 			case DASH -> "chat.dndsheets.action.dash";
 			case DISENGAGE -> "chat.dndsheets.action.disengage";
@@ -104,6 +250,7 @@ public class TurnActionManager {
 	/** Cleared entirely when an encounter ends: outside combat none of the three mean anything. */
 	static void clearAll() {
 		active.clear();
+		hidden.clear();
 	}
 
 	//Triggered from AbilityItemDispatcher, same as the rest of the ability items.

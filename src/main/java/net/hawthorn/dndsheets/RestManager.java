@@ -219,13 +219,21 @@ public class RestManager {
 			SpellSlots.restoreAll(sheet);
 			WizardArcaneRecoveryManager.resetOnLongRest(player);
 			recoverHitDice(sheet);
+			RestResource.restoreUses(player, RestResource.RAGE_USES);
+			RestResource.restoreUses(player, RestResource.SORCERY_POINTS); //Long rest only.
+			RestResource.restoreUses(player, RestResource.INSPIRATION_USES);
 			Combatant exhausted = Combatant.of(player);
 			if (exhausted != null) exhausted.reduceExhaustion(); //A long rest removes one level.
 		} else {
 			spendHitDice(player, sheet);
+			//Font of Inspiration: from bard level 5 the die also comes back on a short rest.
+			if (CharacterRules.levelOf(sheet) >= 5) RestResource.restoreUses(player, RestResource.INSPIRATION_USES);
 			WizardArcaneRecoveryManager.onShortRest(player, sheet);
 			WarlockPactMagicManager.onShortRest(player, sheet);
 		}
+		RestResource.restore(player, RestResource.ACTION_SURGE); //Short or long, like Second Wind.
+		RestResource.restoreUses(player, RestResource.WILD_SHAPE_USES); //Short or long.
+		RestResource.restoreUses(player, RestResource.KI_USES);   //Ki: also short or long.
 		FighterSecondWindManager.resetOnRest(player); //5e recovers it with either kind of rest, not just the long one.
 		ClericTurnUndeadManager.resetOnRest(player);  //Channel Divinity, same: recovers on a short rest.
 

@@ -13,8 +13,8 @@ import net.minecraft.network.chat.Component;
  * someone who's never played D&amp;D nothing, and this mod is played mostly by people who haven't.</p>
  */
 public class TurnActionScreen extends ModalDialogScreen {
-	private static final int WIDTH = 260;
-	private static final int HEIGHT = 104;
+	private static final int WIDTH = 340;
+	private static final int HEIGHT = 262;
 
 	protected TurnActionScreen() {
 		super(Component.translatable("gui.dndsheets.turn_action.title"), WIDTH, HEIGHT);
@@ -27,8 +27,15 @@ public class TurnActionScreen extends ModalDialogScreen {
 	@Override
 	protected void init() {
 		addAction(30, TurnActionManager.TurnAction.DODGE, "gui.dndsheets.turn_action.dodge");
-		addAction(54, TurnActionManager.TurnAction.DASH, "gui.dndsheets.turn_action.dash");
-		addAction(78, TurnActionManager.TurnAction.DISENGAGE, "gui.dndsheets.turn_action.disengage");
+		addAction(52, TurnActionManager.TurnAction.DASH, "gui.dndsheets.turn_action.dash");
+		addAction(74, TurnActionManager.TurnAction.DISENGAGE, "gui.dndsheets.turn_action.disengage");
+		addAction(96, TurnActionManager.TurnAction.ACTION_SURGE, "gui.dndsheets.turn_action.surge");
+		addAction(184, TurnActionManager.TurnAction.SEARCH, "gui.dndsheets.turn_action.search");
+		addAction(206, TurnActionManager.TurnAction.HIDE, "gui.dndsheets.turn_action.hide");
+		addAction(228, TurnActionManager.TurnAction.READY, "gui.dndsheets.turn_action.ready");
+		addAction(118, TurnActionManager.TurnAction.PATIENT_DEFENSE, "gui.dndsheets.turn_action.patient_defense");
+		addAction(140, TurnActionManager.TurnAction.STEP_DASH, "gui.dndsheets.turn_action.step_dash");
+		addAction(162, TurnActionManager.TurnAction.STEP_DISENGAGE, "gui.dndsheets.turn_action.step_disengage");
 	}
 
 	private void addAction(int y, TurnActionManager.TurnAction action, String labelKey) {

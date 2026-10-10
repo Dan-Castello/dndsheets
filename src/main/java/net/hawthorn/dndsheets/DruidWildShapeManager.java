@@ -46,6 +46,7 @@ import java.util.UUID;
 public class DruidWildShapeManager {
 	private static final int DURATION_ROUNDS = 10; //5e's 1 hour simplified to 10 rounds, same as Rage.
 	private static final int DURATION_TICKS = 20 * 60;
+	private static final int WILD_SHAPE_MAX_USES = 2;
 
 	/** Default hit if the chosen beast declares no attack. */
 	private static final String FALLBACK_DICE = "1d6";
@@ -131,6 +132,13 @@ public class DruidWildShapeManager {
 			return;
 		}
 
+		//Two uses per short or long rest (SRD). Checked before the action so a druid out of uses isn't charged
+		//one. ponytail: always 2 -- the Circle of the Moon and the higher-level options are not modeled.
+		if (RestResource.usesLeft(sheet, RestResource.WILD_SHAPE_USES, WILD_SHAPE_MAX_USES) <= 0) {
+			player.sendSystemMessage(Component.translatable("chat.dndsheets.resource.spent_wild_shape").withStyle(ChatFormatting.GRAY));
+			return;
+		}
+
 		//5e: transforming is an action. Checked AFTER validating the beast (choosing badly shouldn't cost
 		//anything) but BEFORE touching the sheet. tryAct returns true on its own outside combat
 		//(TurnManager.active==false), so this doesn't restrict anything outside an encounter — it only
@@ -139,6 +147,8 @@ public class DruidWildShapeManager {
 			TurnManager.notifyCantAct(player);
 			return;
 		}
+
+		RestResource.spendUse(player, RestResource.WILD_SHAPE_USES, WILD_SHAPE_MAX_USES);
 
 		//The health they return to is whatever they have RIGHT NOW, before anything is touched. In 5e you
 		//come back with the HP you had when you transformed, and whatever damage the beast took stays with the beast.

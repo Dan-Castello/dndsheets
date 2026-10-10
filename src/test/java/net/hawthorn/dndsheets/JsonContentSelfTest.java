@@ -2815,6 +2815,29 @@ public class JsonContentSelfTest {
 		RestManager.recoverHitDice(hd);
 		RestManager.recoverHitDice(hd);
 		assertTrue(hd.get("hitDiceSpent").getAsInt() == 0, "recovery stops at zero spent");
+		//Rage uses by level (SRD table) and Bardic Inspiration uses = Charisma modifier, at least 1.
+		assertTrue(CharacterRules.rageUsesFor(1) == 2 && CharacterRules.rageUsesFor(3) == 3 && CharacterRules.rageUsesFor(6) == 4
+			&& CharacterRules.rageUsesFor(12) == 5 && CharacterRules.rageUsesFor(17) == 6, "rage uses follow the SRD table");
+		assertTrue(CharacterRules.rageUsesFor(20) == Integer.MAX_VALUE, "rage is unlimited at 20");
+		assertTrue(CharacterRules.bardicInspirationUsesFor(JsonParser.parseString("{\"charisma\":\"18\"}").getAsJsonObject()) == 4, "CHA 18 is 4 inspirations");
+		assertTrue(CharacterRules.bardicInspirationUsesFor(JsonParser.parseString("{\"charisma\":\"8\"}").getAsJsonObject()) == 1, "never fewer than one");
+		JsonObject uses = JsonParser.parseString("{\"rageUsesSpent\":2}").getAsJsonObject();
+		assertTrue(RestResource.usesLeft(uses, RestResource.RAGE_USES, 3) == 1 && RestResource.usesLeft(uses, RestResource.RAGE_USES, 2) == 0, "uses left = max - spent");
+		assertTrue(RestResource.usesLeft(uses, RestResource.RAGE_USES, Integer.MAX_VALUE) == Integer.MAX_VALUE, "unlimited never runs out");
+		//Ki points: one per monk level from level 2. Class level lookup, single class and multiclass.
+		assertTrue(CharacterRules.kiPointsFor(1) == 0 && CharacterRules.kiPointsFor(2) == 2 && CharacterRules.kiPointsFor(9) == 9, "ki = monk level from 2");
+		JsonObject monk = JsonParser.parseString("{\"characterClass\":\"Monk\",\"characterLevel\":5}").getAsJsonObject();
+		assertTrue(CharacterRules.classLevelOf(monk, "monk", "monje") == 5 && CharacterRules.classLevelOf(monk, "fighter", "guerrero") == 0, "single class reads the whole level");
+		JsonObject multi = JsonParser.parseString("{\"characterClass\":\"Fighter\",\"characterLevel\":5,\"classLevels\":{\"fighter\":3,\"monk\":2}}").getAsJsonObject();
+		assertTrue(CharacterRules.classLevelOf(multi, "monk", "monje") == 2 && CharacterRules.classLevelOf(multi, "fighter", "guerrero") == 3, "multiclass reads classLevels");
+		assertTrue(CharacterRules.sorceryPointsFor(1) == 0 && CharacterRules.sorceryPointsFor(5) == 5, "sorcery points = sorcerer level from 2");
+		assertTrue(CharacterRules.twinnedCostFor(0) == 1 && CharacterRules.twinnedCostFor(3) == 3, "twinned costs the spell level, min 1");
+		//Massive damage: what is left after reaching 0 HP is at least the max HP.
+		assertTrue(DeathSaveManager.isMassiveDamage(10f, 30f, 20f), "30 damage on 10 HP with 20 max: 20 left over kills outright");
+		assertTrue(!DeathSaveManager.isMassiveDamage(10f, 29f, 20f), "19 left over does not");
+		MonsterRegistry.MonsterStatBlock resistant = MonsterRegistry.parse(JsonParser.parseString("{\"id\":\"test:mr\",\"hp\":10,\"magicResistance\":true}").getAsJsonObject());
+		assertTrue(resistant.magicResistance() && !MonsterRegistry.parse(JsonParser.parseString("{\"id\":\"test:n\",\"hp\":10}").getAsJsonObject()).magicResistance(), "magicResistance is read, default false");
+		assertTrue(RollIndex.skillAbility(TurnActionManager.STEALTH_SKILL_INDEX).equals("dex") && RollIndex.skillAbility(3).equals("dex"), "the Hide action rolls the Stealth slot (Dexterity)");
 		System.out.println("checkSrdDataFields: OK, spell range/info and monster recharge/legendary cost/lair actions.");
 	}
 

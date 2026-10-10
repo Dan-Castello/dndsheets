@@ -309,6 +309,16 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 	//attack as many times as they wanted just by clicking repeatedly — turn mode was purely decorative.
 	private static final Set<Integer> actedThisTurn = new HashSet<>();
 
+	//Action Surge armed for this turn: the NEXT action is followed by a second one, so the first doesn't end
+	//the turn. Consumed by the second tryAct. Same lifecycle as actedThisTurn.
+	private static final Set<Integer> surgeArmed = new HashSet<>();
+
+	/** Arms Action Surge. Only on one's own turn and before acting (the first action would already be ending the turn). */
+	public static boolean armActionSurge(Entity actor) {
+		if (!active || isIncapacitated(actor) || !isCurrentActor(actor) || actedThisTurn.contains(actor.getId())) return false;
+		return surgeArmed.add(actor.getId());
+	}
+
 	//Reactions (Opportunity Attack, Shield, Counterspell): unlike actedThisTurn, these can be spent on
 	//ANYONE's turn, not just your own — which is why it's a separate set instead of reusing
 	//actedThisTurn. Recovered at the start of one's own turn (beginTurn), same as the real 5e rule.
@@ -384,13 +394,18 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		if (isIncapacitated(actor)) return false;
 		if (!active) return true;
 		TurnEntry currentEntry = current();
-		if (currentEntry == null || currentEntry.entityId() != actor.getId()) return false;
+		if (currentEntry == null || currentEntry.entityId() != actor.getId()) {
+			//A readied action: act once out of turn, spending the reaction (see TurnActionManager.releaseReadied).
+			return TurnActionManager.releaseReadied(actor);
+		}
 		boolean acted = actedThisTurn.add(actor.getId());
+		if (!acted && surgeArmed.remove(actor.getId())) acted = true; //Action Surge: the second action of the turn.
 		//As soon as the action is spent, the turn ends on its own: nobody has to type /dndturns next.
 		//Deferred by one tick so the chat/HUD for the attack that just happened shows before "X's turn".
+		//With Action Surge still armed, the first action does NOT end it: the second one is coming.
 		if (acted && actor.level() instanceof ServerLevel level) {
 			broadcastTurnState(level);
-			scheduleAutoAdvance(level, actor.getId());
+			if (!surgeArmed.contains(actor.getId())) scheduleAutoAdvance(level, actor.getId());
 		}
 		return acted;
 	}
@@ -666,7 +681,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		effects.clear();
 		ZoneManager.clear(); //Without a turn order there are no rounds to count, so there's no wall to maintain.
 		SurfaceManager.clear(); //Same reason: no rounds to count, so no fire patch to maintain either.
-		actedThisTurn.clear();
+		actedThisTurn.clear(); surgeArmed.clear();
 		reactionUsed.clear();
 		bonusActionUsed.clear();
 		TurnActionManager.clearAll(); //Outside combat, dodging/dashing/disengaging mean nothing.
@@ -731,7 +746,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		effects.clear();
 		ZoneManager.clear(); //Without a turn order there are no rounds to count, so there's no wall to maintain.
 		SurfaceManager.clear(); //Same reason: no rounds to count, so no fire patch to maintain either.
-		actedThisTurn.clear();
+		actedThisTurn.clear(); surgeArmed.clear();
 		reactionUsed.clear();
 		bonusActionUsed.clear();
 		TurnActionManager.clearAll(); //Outside combat, dodging/dashing/disengaging mean nothing.
@@ -1011,6 +1026,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		TurnEntry entry = current();
 		if (entry == null) return;
 		actedThisTurn.remove(entry.entityId()); //New turn, new action available.
+		surgeArmed.remove(entry.entityId());
 		bonusActionUsed.remove(entry.entityId()); //New turn, new bonus action available.
 		//Dodge lasts "until the start of your next turn", which is exactly right here. Dash and Disengage
 		//only lasted for their own turn, so they expire in the same place.
@@ -1041,6 +1057,17 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		glow(entity);
 		broadcast(level, Component.translatable("chat.dndsheets.turn.round_header", round).withStyle(ChatFormatting.AQUA)
 			.append(Component.literal(entry.name()).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)));
+
+		//A creature that can't act (surprised, stunned, paralyzed...) has its turn skipped instead of stalling the
+		//encounter until someone passes it by hand. Surprise lasts only this first turn, so it ends here.
+		Combatant cantAct = Combatant.of(entity);
+		if (cantAct != null && cantAct.cannotAct()) {
+			String reason = cantAct.conditions().stream().filter(Condition::preventsActions).findFirst().map(Condition::displayLabel).orElse("");
+			broadcast(level, Component.translatable("chat.dndsheets.turn.skipped", entry.name(), reason).withStyle(ChatFormatting.GRAY));
+			cantAct.removeCondition(Condition.SURPRISED);
+			scheduleAutoAdvance(level, entry.entityId());
+			return;
+		}
 
 		if (entity instanceof ServerPlayer serverPlayer) {
 			CombatFx.actionBar(serverPlayer, Component.translatable("chat.dndsheets.turn.your_turn").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD));

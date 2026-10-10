@@ -91,6 +91,53 @@ final class CharacterRules {
 		return "1d6";
 	}
 
+	/** Barbarian Rage uses per long rest: 2 / 3 / 4 / 5 / 6 by level, unlimited at 20 ({@link Integer#MAX_VALUE}). */
+	static int rageUsesFor(int level) {
+		if (level >= 20) return Integer.MAX_VALUE;
+		if (level >= 17) return 6;
+		if (level >= 12) return 5;
+		if (level >= 6) return 4;
+		if (level >= 3) return 3;
+		return 2;
+	}
+
+	/** Bardic Inspiration uses: the Charisma modifier, at least 1. */
+	static int bardicInspirationUsesFor(JsonObject sheet) {
+		return Math.max(1, Math.floorDiv(intField(sheet, "charisma", 10) - 10, 2));
+	}
+
+	/**
+	 * <p>Levels the character has in a class, by id ("monk") or by its English / Spanish name in the free-text
+	 * class field. A multiclass sheet reads {@code classLevels}; a single-class one gives its whole level. 0 = not that class.</p>
+	 */
+	static int classLevelOf(JsonObject sheet, String classId, String spanishName) {
+		if (sheet == null) return 0;
+		java.util.Map<String, Integer> split = ClassLevels.of(sheet);
+		if (split.size() > 1) {
+			for (java.util.Map.Entry<String, Integer> e : split.entrySet()) {
+				if (e.getKey().toLowerCase(java.util.Locale.ROOT).contains(classId)) return e.getValue();
+			}
+			return 0;
+		}
+		String text = sheet.has("characterClass") ? sheet.get("characterClass").getAsString().toLowerCase(java.util.Locale.ROOT) : "";
+		return text.contains(classId) || text.contains(spanishName) ? levelOf(sheet) : 0;
+	}
+
+	/** Sorcery points: one per sorcerer level from level 2. */
+	static int sorceryPointsFor(int sorcererLevel) {
+		return sorcererLevel >= 2 ? sorcererLevel : 0;
+	}
+
+	/** Twinned Spell costs as many sorcery points as the spell's level, at least 1 (a cantrip). */
+	static int twinnedCostFor(int spellLevel) {
+		return Math.max(1, spellLevel);
+	}
+
+	/** Monk Ki points: one per monk level from level 2. */
+	static int kiPointsFor(int monkLevel) {
+		return monkLevel >= 2 ? monkLevel : 0;
+	}
+
 	static int levelOf(JsonObject sheet) {
 		if (sheet != null && sheet.has("characterLevel")) return Math.max(1, sheet.get("characterLevel").getAsInt());
 		return 1;

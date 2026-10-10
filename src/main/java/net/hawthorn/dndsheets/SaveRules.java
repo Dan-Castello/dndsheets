@@ -44,7 +44,7 @@ final class SaveRules {
 	 * @param baseDc caster's DC, before cover.
 	 */
 	@Nullable
-	static Outcome resolve(Entity caster, Entity target, String saveAbility, int baseDc, String dice, boolean halfOnSave) {
+	static Outcome resolve(Entity caster, Entity target, String saveAbility, int baseDc, String dice, boolean halfOnSave, boolean magical) {
 		//Cover boosts DEXTERITY saves and only those: it's dodging that cover helps with, not
 		//withstanding poison or resisting suggestion. It's subtracted from the DC instead of added to the
 		//roll because it's the same margin either way, and the target might not have a sheet to write a bonus on.
@@ -57,6 +57,13 @@ final class SaveRules {
 
 		Combatant.SaveRoll saveRoll = rollSave(target, saveAbility);
 		if (saveRoll == null || saveRoll.formatted() == null) return null;
+		//Magic Resistance: advantage against a spell = roll twice, keep the higher. An automatic failure
+		//(paralyzed...) stays a failure: advantage never turns it into a roll.
+		Combatant targetCombatant = Combatant.of(target);
+		if (magical && targetCombatant != null && targetCombatant.hasMagicResistance() && saveRoll.blockedBy() == null) {
+			Combatant.SaveRoll second = rollSave(target, saveAbility);
+			saveRoll = higherSave(saveRoll, second);
+		}
 
 		boolean saved = saveRoll.succeeds(dc);
 		//Legendary Resistance: a boss that fails can choose not to. Resolved HERE, after rolling and
@@ -77,6 +84,12 @@ final class SaveRules {
 
 		return new Outcome(cover, dc, saveRoll, saved, finalDamage,
 			finalDamage > 0 ? damageRoll.formatted() + " (" + finalDamage + ")" : null, label, legendary);
+	}
+
+	static Combatant.SaveRoll higherSave(Combatant.SaveRoll a, @Nullable Combatant.SaveRoll b) {
+		if (b == null || b.outcome() == null || b.outcome().result() == null) return a;
+		if (a.outcome() == null || a.outcome().result() == null) return b;
+		return b.outcome().result().getValue() > a.outcome().result().getValue() ? b : a;
 	}
 
 	@Nullable

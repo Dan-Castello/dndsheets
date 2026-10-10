@@ -400,6 +400,19 @@ public class SpellCastManager {
 		//twinned for free again (invariant 4). Arming it got persisted; spending it didn't.
 		SheetLoader.saveServer(casterSheet, caster.getStringUUID());
 
+		//Sorcery points: Twinned Spell costs the spell's level (min 1). A sheet with no sorcerer levels keeps the
+		//old free behavior (a DM-handed item), so nothing that existed stops working.
+		int sorcererLevel = CharacterRules.classLevelOf(casterSheet, "sorcerer", "hechicero");
+		if (sorcererLevel > 0) {
+			int pool = CharacterRules.sorceryPointsFor(sorcererLevel);
+			int cost = CharacterRules.twinnedCostFor(spell.level());
+			if (RestResource.usesLeft(casterSheet, RestResource.SORCERY_POINTS, pool) < cost) {
+				caster.sendSystemMessage(Component.translatable("chat.dndsheets.resource.no_sorcery_points", cost).withStyle(ChatFormatting.GRAY));
+				return;
+			}
+			RestResource.spendUses(caster, RestResource.SORCERY_POINTS, pool, cost);
+		}
+
 		Entity secondTarget = findNearestOther(caster, firstTarget, rangeOf(spell));
 		if (secondTarget == null) {
 			caster.sendSystemMessage(Component.translatable("chat.dndsheets.spell.twin_no_target").withStyle(ChatFormatting.GRAY));
@@ -583,11 +596,14 @@ public class SpellCastManager {
 		AABB searchBox = caster.getBoundingBox().expandTowards(viewVec.scale(range)).inflate(1.0);
 
 		EntityHitResult hit = ProjectileUtil.getEntityHitResult(caster.level(), caster, eyePos, endPos, searchBox,
-			entity -> isSpellTarget(caster, entity));
+			//Total cover (SRD): what is completely behind terrain cannot be chosen as a target. The spell then
+			//goes off at the ground/air like any other missed aim.
+			entity -> isSpellTarget(caster, entity) && !Cover.between(caster, entity).blocksTargeting());
 		return hit != null ? hit.getEntity() : null;
 	}
 
 	private static void castAttackSpell(ServerPlayer caster, String casterName, SpellRegistry.Spell spell, Entity target, int proficiency, int abilityMod) {
+		TurnActionManager.reveal(caster);
 		if (TurnManager.isMonster(target)) MonsterRegistry.faceTarget(target, caster);
 		JsonObject casterSheet = SheetLoader.getServerSheet(caster.getStringUUID());
 		DiceManager.Advantage advantage = casterSheet != null ? CombatManager.consumeAdvantage(casterSheet) : DiceManager.Advantage.NORMAL;
@@ -616,11 +632,12 @@ public class SpellCastManager {
 	}
 
 	private static void castSaveSpell(ServerPlayer caster, String casterName, SpellRegistry.Spell spell, Entity target, int proficiency, int abilityMod) {
+		TurnActionManager.reveal(caster);
 		if (TurnManager.isMonster(target)) MonsterRegistry.faceTarget(target, caster);
 		//Cover, real DC, save, and final damage: same rules, and the same code, as when the caster is a
 		//monster (see SaveRules).
 		SaveRules.Outcome save = SaveRules.resolve(caster, target, spell.saveAbility(),
-			8 + proficiency + abilityMod, spell.dice(), spell.halfOnSave());
+			8 + proficiency + abilityMod, spell.dice(), spell.halfOnSave(), true);
 		if (save == null) return;
 		boolean saved = save.saved();
 

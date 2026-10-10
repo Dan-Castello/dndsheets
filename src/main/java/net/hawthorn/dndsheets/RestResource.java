@@ -29,7 +29,56 @@ final class RestResource {
 	/** Wizard's Arcane Recovery: only returned by a LONG rest. */
 	static final String ARCANE_RECOVERY = "arcaneRecoveryUsed";
 
+	/** Fighter's Action Surge: once per short or long rest. */
+	static final String ACTION_SURGE = "actionSurgeUsed";
+	/** Monk's Ki points spent: a count, all returned by a short or long rest. */
+	static final String KI_USES = "kiSpent";
+	/** Druid's Wild Shape: 2 uses, returned by a short or long rest. */
+	static final String WILD_SHAPE_USES = "wildShapeUsesSpent";
+	/** Sorcerer's sorcery points spent, returned by a long rest. */
+	static final String SORCERY_POINTS = "sorceryPointsSpent";
+	/** Barbarian Rage: a COUNT of uses spent, returned by a long rest. */
+	static final String RAGE_USES = "rageUsesSpent";
+	/** Bard's Bardic Inspiration: a count of uses spent; a long rest returns it (a short one too from level 5). */
+	static final String INSPIRATION_USES = "inspirationUsesSpent";
+
 	private RestResource() {
+	}
+
+	static int usesSpent(JsonObject sheet, String key) {
+		if (sheet == null || !sheet.has(key)) return 0;
+		try {
+			return Math.max(0, sheet.get(key).getAsInt());
+		} catch (RuntimeException e) {
+			return 0;
+		}
+	}
+
+	/** Uses left out of {@code max}; {@link Integer#MAX_VALUE} means unlimited. */
+	static int usesLeft(JsonObject sheet, String key, int max) {
+		return max == Integer.MAX_VALUE ? max : Math.max(0, max - usesSpent(sheet, key));
+	}
+
+	/** Spends one use of a counted resource. Unlimited ones record nothing. */
+	static void spendUse(ServerPlayer player, String key, int max) {
+		spendUses(player, key, max, 1);
+	}
+
+	/** Spends {@code amount} uses at once (Twinned Spell costs as many sorcery points as the spell's level). */
+	static void spendUses(ServerPlayer player, String key, int max, int amount) {
+		if (max == Integer.MAX_VALUE) return;
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		if (sheet == null) return;
+		sheet.addProperty(key, usesSpent(sheet, key) + amount);
+		SheetLoader.saveServer(sheet, player.getStringUUID());
+	}
+
+	/** Returns every use of a counted resource. */
+	static void restoreUses(ServerPlayer player, String key) {
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		if (sheet == null || !sheet.has(key)) return;
+		sheet.remove(key);
+		SheetLoader.saveServer(sheet, player.getStringUUID());
 	}
 
 	static boolean isSpent(JsonObject sheet, String key) {

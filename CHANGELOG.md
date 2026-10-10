@@ -6,6 +6,18 @@ Single file: the Dungeon Toolkit and Species addons are now bundled in this jar 
 file per project). They keep their own mod ids (`dndsheets_dungeon`, `dndsheets_species`). Curios, Patchouli,
 Jade, Pehkui and Origins are required dependencies. If you had the separate addon jars installed, delete them.
 
+Rules and content in this release:
+
+- Spells now carry casting time, range, components and duration; range limits how far a spell can be aimed.
+- Monsters: Recharge 5-6 abilities, legendary action costs, and the dragon breath weapons and Wing Attack.
+- Short rests spend Hit Dice (a long rest returns half); Exhaustion is now a condition with its six levels.
+- Rage and Bardic Inspiration have limited uses per rest.
+- Fighter Action Surge and Monk ki (Patient Defense, Step of the Wind) in the Turn Actions menu.
+- Wild Shape has 2 uses per rest and Twinned Spell costs sorcery points (a long rest returns them).
+- Damage while down is a failed death save, and massive damage kills outright.
+- Search, Hide (Stealth against nearby monsters' passive Perception: advantage on the next attack) and Ready (one action out of turn, using the reaction) in the Turn Actions menu.
+- Surprise (a condition the DM sets before the encounter), Magic Resistance on the monsters that have it, and total cover now blocks single-target spells. A creature that can't act has its turn skipped.
+
 ## 2.2.1
 
 Metadata only — the mod itself is byte-for-byte the same as 2.2.0.

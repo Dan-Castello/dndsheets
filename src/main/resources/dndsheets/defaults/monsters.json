@@ -1042,7 +1042,7 @@
     ]
   },
   {
-    "id": "dndsheets:imp", "name": "content.dndsheets.monster.imp", "type": "fiend", "size": "tiny", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:imp", "name": "content.dndsheets.monster.imp", "magicResistance": true, "type": "fiend", "size": "tiny", "baseEntity": "minecraft:vex",
     "ac": 13, "hp": 10,
     "abilities": { "str": 6, "dex": 17, "con": 13, "int": 11, "wis": 12, "cha": 14 },
     "proficiencyBonus": 2,
@@ -1306,7 +1306,7 @@
     ]
   },
   {
-    "id": "dndsheets:quasit", "name": "content.dndsheets.monster.quasit", "type": "fiend", "size": "tiny", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:quasit", "name": "content.dndsheets.monster.quasit", "magicResistance": true, "type": "fiend", "size": "tiny", "baseEntity": "minecraft:vex",
     "ac": 13, "hp": 7,
     "abilities": { "str": 5, "dex": 17, "con": 10, "int": 7, "wis": 10, "cha": 10 },
     "proficiencyBonus": 2,
@@ -2119,7 +2119,7 @@
     ]
   },
   {
-    "id": "dndsheets:archmage", "name": "content.dndsheets.monster.archmage", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:evoker", "appearance": { "mainHand": "minecraft:blaze_rod", "helmet": "minecraft:golden_helmet" },
+    "id": "dndsheets:archmage", "name": "content.dndsheets.monster.archmage", "magicResistance": true, "type": "humanoid", "size": "medium", "baseEntity": "minecraft:evoker", "appearance": { "mainHand": "minecraft:blaze_rod", "helmet": "minecraft:golden_helmet" },
     "ac": 12, "hp": 99,
     "abilities": { "str": 10, "dex": 14, "con": 12, "int": 20, "wis": 15, "cha": 16 },
     "proficiencyBonus": 4,
@@ -2140,7 +2140,7 @@
     ]
   },
   {
-    "id": "dndsheets:balor", "name": "content.dndsheets.monster.balor", "type": "fiend", "size": "huge", "baseEntity": "minecraft:wither_skeleton",
+    "id": "dndsheets:balor", "name": "content.dndsheets.monster.balor", "magicResistance": true, "type": "fiend", "size": "huge", "baseEntity": "minecraft:wither_skeleton",
     "ac": 19, "hp": 262,
     "abilities": { "str": 26, "dex": 15, "con": 22, "int": 20, "wis": 16, "cha": 22 },
     "proficiencyBonus": 6,
@@ -2152,7 +2152,7 @@
     ]
   },
   {
-    "id": "dndsheets:barbed_devil", "name": "content.dndsheets.monster.barbed_devil", "type": "fiend", "size": "medium", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:barbed_devil", "name": "content.dndsheets.monster.barbed_devil", "magicResistance": true, "type": "fiend", "size": "medium", "baseEntity": "minecraft:piglin_brute",
     "ac": 15, "hp": 110,
     "abilities": { "str": 16, "dex": 17, "con": 18, "int": 12, "wis": 14, "cha": 14 },
     "proficiencyBonus": 3,
@@ -2174,7 +2174,7 @@
     ]
   },
   {
-    "id": "dndsheets:bearded_devil", "name": "content.dndsheets.monster.bearded_devil", "type": "fiend", "size": "medium", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:bearded_devil", "name": "content.dndsheets.monster.bearded_devil", "magicResistance": true, "type": "fiend", "size": "medium", "baseEntity": "minecraft:piglin_brute",
     "ac": 13, "hp": 52,
     "abilities": { "str": 16, "dex": 15, "con": 15, "int": 9, "wis": 11, "cha": 11 },
     "proficiencyBonus": 2,
@@ -2217,7 +2217,7 @@
     ]
   },
   {
-    "id": "dndsheets:bone_devil", "name": "content.dndsheets.monster.bone_devil", "type": "fiend", "size": "large", "baseEntity": "minecraft:wither_skeleton",
+    "id": "dndsheets:bone_devil", "name": "content.dndsheets.monster.bone_devil", "magicResistance": true, "type": "fiend", "size": "large", "baseEntity": "minecraft:wither_skeleton",
     "ac": 19, "hp": 142,
     "abilities": { "str": 18, "dex": 16, "con": 18, "int": 13, "wis": 14, "cha": 16 },
     "proficiencyBonus": 4,
@@ -2238,7 +2238,7 @@
     ]
   },
   {
-    "id": "dndsheets:chain_devil", "name": "content.dndsheets.monster.chain_devil", "type": "fiend", "size": "medium", "baseEntity": "minecraft:wither_skeleton",
+    "id": "dndsheets:chain_devil", "name": "content.dndsheets.monster.chain_devil", "magicResistance": true, "type": "fiend", "size": "medium", "baseEntity": "minecraft:wither_skeleton",
     "ac": 16, "hp": 85,
     "abilities": { "str": 18, "dex": 15, "con": 18, "int": 11, "wis": 12, "cha": 14 },
     "proficiencyBonus": 3,
@@ -2301,7 +2301,7 @@
     ]
   },
   {
-    "id": "dndsheets:couatl", "name": "content.dndsheets.monster.couatl", "type": "celestial", "size": "medium", "baseEntity": "minecraft:allay", "appearance": { "glowing": true },
+    "id": "dndsheets:couatl", "name": "content.dndsheets.monster.couatl", "magicResistance": true, "type": "celestial", "size": "medium", "baseEntity": "minecraft:allay", "appearance": { "glowing": true },
     "ac": 19, "hp": 97,
     "abilities": { "str": 16, "dex": 20, "con": 17, "int": 18, "wis": 20, "cha": 18 },
     "proficiencyBonus": 2,
@@ -2313,7 +2313,7 @@
     ]
   },
   {
-    "id": "dndsheets:deva", "name": "content.dndsheets.monster.deva", "type": "celestial", "size": "medium", "baseEntity": "minecraft:allay", "appearance": { "glowing": true },
+    "id": "dndsheets:deva", "name": "content.dndsheets.monster.deva", "magicResistance": true, "type": "celestial", "size": "medium", "baseEntity": "minecraft:allay", "appearance": { "glowing": true },
     "ac": 17, "hp": 136,
     "abilities": { "str": 18, "dex": 18, "con": 18, "int": 17, "wis": 20, "cha": 20 },
     "proficiencyBonus": 4,
@@ -2398,7 +2398,7 @@
     ]
   },
   {
-    "id": "dndsheets:erinyes", "name": "content.dndsheets.monster.erinyes", "type": "fiend", "size": "medium", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:erinyes", "name": "content.dndsheets.monster.erinyes", "magicResistance": true, "type": "fiend", "size": "medium", "baseEntity": "minecraft:piglin_brute",
     "ac": 18, "hp": 153,
     "abilities": { "str": 18, "dex": 16, "con": 18, "int": 14, "wis": 14, "cha": 18 },
     "proficiencyBonus": 4,
@@ -2514,7 +2514,7 @@
     ]
   },
   {
-    "id": "dndsheets:glabrezu", "name": "content.dndsheets.monster.glabrezu", "type": "fiend", "size": "large", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:glabrezu", "name": "content.dndsheets.monster.glabrezu", "magicResistance": true, "type": "fiend", "size": "large", "baseEntity": "minecraft:hoglin",
     "ac": 17, "hp": 157,
     "abilities": { "str": 20, "dex": 15, "con": 21, "int": 19, "wis": 17, "cha": 16 },
     "proficiencyBonus": 4,
@@ -2608,7 +2608,7 @@
     ]
   },
   {
-    "id": "dndsheets:hezrou", "name": "content.dndsheets.monster.hezrou", "type": "fiend", "size": "large", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:hezrou", "name": "content.dndsheets.monster.hezrou", "magicResistance": true, "type": "fiend", "size": "large", "baseEntity": "minecraft:hoglin",
     "ac": 16, "hp": 136,
     "abilities": { "str": 19, "dex": 17, "con": 20, "int": 5, "wis": 12, "cha": 13 },
     "proficiencyBonus": 3,
@@ -2630,7 +2630,7 @@
     ]
   },
   {
-    "id": "dndsheets:horned_devil", "name": "content.dndsheets.monster.horned_devil", "type": "fiend", "size": "large", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:horned_devil", "name": "content.dndsheets.monster.horned_devil", "magicResistance": true, "type": "fiend", "size": "large", "baseEntity": "minecraft:piglin_brute",
     "ac": 18, "hp": 178,
     "abilities": { "str": 22, "dex": 17, "con": 21, "int": 12, "wis": 16, "cha": 17 },
     "proficiencyBonus": 4,
@@ -2652,7 +2652,7 @@
     ]
   },
   {
-    "id": "dndsheets:ice_devil", "name": "content.dndsheets.monster.ice_devil", "type": "fiend", "size": "large", "baseEntity": "minecraft:stray",
+    "id": "dndsheets:ice_devil", "name": "content.dndsheets.monster.ice_devil", "magicResistance": true, "type": "fiend", "size": "large", "baseEntity": "minecraft:stray",
     "ac": 18, "hp": 180,
     "abilities": { "str": 21, "dex": 14, "con": 18, "int": 18, "wis": 15, "cha": 18 },
     "proficiencyBonus": 5,
@@ -2770,7 +2770,7 @@
     ]
   },
   {
-    "id": "dndsheets:marilith", "name": "content.dndsheets.monster.marilith", "type": "fiend", "size": "large", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:marilith", "name": "content.dndsheets.monster.marilith", "magicResistance": true, "type": "fiend", "size": "large", "baseEntity": "minecraft:piglin_brute",
     "ac": 18, "hp": 189,
     "abilities": { "str": 18, "dex": 20, "con": 20, "int": 18, "wis": 16, "cha": 20 },
     "proficiencyBonus": 5,
@@ -2825,7 +2825,7 @@
     ]
   },
   {
-    "id": "dndsheets:nalfeshnee", "name": "content.dndsheets.monster.nalfeshnee", "type": "fiend", "size": "large", "baseEntity": "minecraft:hoglin",
+    "id": "dndsheets:nalfeshnee", "name": "content.dndsheets.monster.nalfeshnee", "magicResistance": true, "type": "fiend", "size": "large", "baseEntity": "minecraft:hoglin",
     "ac": 18, "hp": 184,
     "abilities": { "str": 21, "dex": 10, "con": 22, "int": 19, "wis": 12, "cha": 15 },
     "proficiencyBonus": 5,
@@ -2887,7 +2887,7 @@
     ]
   },
   {
-    "id": "dndsheets:pit_fiend", "name": "content.dndsheets.monster.pit_fiend", "type": "fiend", "size": "large", "baseEntity": "minecraft:wither_skeleton",
+    "id": "dndsheets:pit_fiend", "name": "content.dndsheets.monster.pit_fiend", "magicResistance": true, "type": "fiend", "size": "large", "baseEntity": "minecraft:wither_skeleton",
     "ac": 19, "hp": 300,
     "abilities": { "str": 26, "dex": 14, "con": 24, "int": 22, "wis": 18, "cha": 24 },
     "proficiencyBonus": 6,
@@ -2901,7 +2901,7 @@
     ]
   },
   {
-    "id": "dndsheets:planetar", "name": "content.dndsheets.monster.planetar", "type": "celestial", "size": "large", "baseEntity": "minecraft:allay", "appearance": { "glowing": true },
+    "id": "dndsheets:planetar", "name": "content.dndsheets.monster.planetar", "magicResistance": true, "type": "celestial", "size": "large", "baseEntity": "minecraft:allay", "appearance": { "glowing": true },
     "ac": 19, "hp": 200,
     "abilities": { "str": 24, "dex": 20, "con": 24, "int": 19, "wis": 22, "cha": 25 },
     "proficiencyBonus": 5,
@@ -3003,7 +3003,7 @@
     ]
   },
   {
-    "id": "dndsheets:solar", "name": "content.dndsheets.monster.solar", "type": "celestial", "size": "large", "ownClock": true, "legendaryActions": 3, "baseEntity": "minecraft:allay", "appearance": { "glowing": true },
+    "id": "dndsheets:solar", "name": "content.dndsheets.monster.solar", "magicResistance": true, "type": "celestial", "size": "large", "ownClock": true, "legendaryActions": 3, "baseEntity": "minecraft:allay", "appearance": { "glowing": true },
     "ac": 21, "hp": 243,
     "abilities": { "str": 26, "dex": 22, "con": 26, "int": 25, "wis": 25, "cha": 30 },
     "proficiencyBonus": 7,
@@ -3170,7 +3170,7 @@
     ]
   },
   {
-    "id": "dndsheets:vrock", "name": "content.dndsheets.monster.vrock", "type": "fiend", "size": "large", "baseEntity": "minecraft:piglin_brute",
+    "id": "dndsheets:vrock", "name": "content.dndsheets.monster.vrock", "magicResistance": true, "type": "fiend", "size": "large", "baseEntity": "minecraft:piglin_brute",
     "ac": 15, "hp": 104,
     "abilities": { "str": 17, "dex": 15, "con": 18, "int": 8, "wis": 13, "cha": 8 },
     "proficiencyBonus": 3,

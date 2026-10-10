@@ -135,8 +135,20 @@ public class MonsterRegistry {
 		boolean flies,
 		//"lairActions": same format as abilities_special. Data only for now: nothing fires them on
 		//initiative 20 yet (needs a TurnManager hook). Kept so packs can already declare them.
-		List<MonsterSpell> lairActions
+		List<MonsterSpell> lairActions,
+		//"magicResistance": true -- advantage on saving throws against spells and other magical effects.
+		boolean magicResistance
 	) {
+		public MonsterStatBlock(String id, String name, String baseEntityId, int ac, int maxHp,
+				Map<String, Integer> abilities, int proficiencyBonus, List<MonsterAttack> attacks, List<MonsterSpell> spells,
+				Map<String, String> damageAffinities, Map<String, String> nonmagicalAffinities, CreatureType type,
+				int legendaryResistances, int legendaryActions, int attacksPerTurn, CreatureSize size, Appearance appearance,
+				boolean keepsOwnAi, boolean ownClock, boolean flies, List<MonsterSpell> lairActions) {
+			this(id, name, baseEntityId, ac, maxHp, abilities, proficiencyBonus, attacks, spells, damageAffinities,
+				nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, size, appearance,
+				keepsOwnAi, ownClock, flies, lairActions, false);
+		}
+
 		public MonsterStatBlock(String id, String name, String baseEntityId, int ac, int maxHp,
 				Map<String, Integer> abilities, int proficiencyBonus, List<MonsterAttack> attacks, List<MonsterSpell> spells,
 				Map<String, String> damageAffinities, Map<String, String> nonmagicalAffinities, CreatureType type,
@@ -144,7 +156,7 @@ public class MonsterRegistry {
 				boolean keepsOwnAi, boolean ownClock, boolean flies) {
 			this(id, name, baseEntityId, ac, maxHp, abilities, proficiencyBonus, attacks, spells, damageAffinities,
 				nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, size, appearance,
-				keepsOwnAi, ownClock, flies, List.of());
+				keepsOwnAi, ownClock, flies, List.of(), false);
 		}
 
 		public int abilityModifier(String key) {
@@ -230,7 +242,7 @@ public class MonsterRegistry {
 		REGISTRY.replace(new MonsterStatBlock(block.id(), block.name(), entityId, block.ac(), block.maxHp(),
 			block.abilities(), block.proficiencyBonus(), block.attacks(), block.spells(), block.damageAffinities(),
 			block.nonmagicalAffinities(), block.type(), block.legendaryResistances(), block.legendaryActions(),
-			block.attacksPerTurn(), block.size(), block.appearance(), block.keepsOwnAi(), block.ownClock(), block.flies(), block.lairActions()));
+			block.attacksPerTurn(), block.size(), block.appearance(), block.keepsOwnAi(), block.ownClock(), block.flies(), block.lairActions(), block.magicResistance()));
 		return true;
 	}
 
@@ -321,7 +333,8 @@ public class MonsterRegistry {
 		CreatureSize size = CreatureSize.parse(json.has("size") ? json.get("size").getAsString() : null);
 		Appearance appearance = parseAppearance(json.has("appearance") ? json.getAsJsonObject("appearance") : null);
 
-		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, size, appearance, keepsOwnAi, ownClock, flies, lairActions);
+		return new MonsterStatBlock(id, name, baseEntity, ac, hp, abilities, prof, attacks, spells, damageAffinities, nonmagicalAffinities, type, legendaryResistances, legendaryActions, attacksPerTurn, size, appearance, keepsOwnAi, ownClock, flies, lairActions,
+			json.has("magicResistance") && json.get("magicResistance").getAsBoolean());
 	}
 
 	private static List<MonsterSpell> parseSpells(JsonObject json, String field) {
@@ -399,6 +412,7 @@ public class MonsterRegistry {
 		if (block.legendaryResistances() > 0) json.addProperty("legendaryResistances", block.legendaryResistances());
 		if (block.legendaryActions() > 0) json.addProperty("legendaryActions", block.legendaryActions());
 		if (block.attacksPerTurn() > 1) json.addProperty("multiattack", block.attacksPerTurn());
+		if (block.magicResistance()) json.addProperty("magicResistance", true);
 		json.addProperty("baseEntity", block.baseEntityId());
 		if (block.keepsOwnAi()) json.addProperty("ai", true);
 		if (block.ownClock()) json.addProperty("ownClock", true);

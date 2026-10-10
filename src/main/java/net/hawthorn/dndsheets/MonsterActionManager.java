@@ -580,7 +580,7 @@ public class MonsterActionManager {
 		//caster (see SaveRules). The DC does come from different places — the monster carries it written
 		//in its block and the player computes it from their sheet — and that difference is real, not duplication.
 		SaveRules.Outcome save = SaveRules.resolve(monsterEntity, target, spell.saveAbility(),
-			spell.saveDc(), spell.dice(), spell.halfOnSave());
+			spell.saveDc(), spell.dice(), spell.halfOnSave(), false);
 		if (save == null) return;
 		boolean saved = save.saved();
 

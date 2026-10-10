@@ -94,6 +94,7 @@ final class AttackRules {
 	 *              unconscious target only happens in melee.
 	 */
 	static Against against(Entity attacker, Combatant target, DiceManager.AttackRoll roll, boolean melee) {
+		TurnActionManager.reveal(attacker); //An attack gives a hiding creature away (the advantage was already rolled).
 		Cover cover = Cover.between(attacker, target.entity());
 		int value = roll.outcome().result().getValue();
 
