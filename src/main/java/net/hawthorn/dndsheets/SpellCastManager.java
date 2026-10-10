@@ -610,6 +610,7 @@ public class SpellCastManager {
 		int inspiration = BardInspirationManager.consumeAttackBonus(casterSheet);
 		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(new JsonObject(), "1d20 + " + (abilityMod + proficiency + inspiration), advantage);
 		if (attackRoll.outcome().result() == null) return;
+		CombatFx.diceRoll(caster, attackRoll, casterName);
 		if (casterSheet != null) sendAdvantageAndInspirationUpdate(caster);
 
 		//An attack spell aims the same way an arrow does, so cover counts the same way (see Cover).

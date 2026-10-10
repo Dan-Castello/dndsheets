@@ -219,6 +219,17 @@ public class SheetLoader {
 				player.sendSystemMessage(Component.translatable("chat.dndsheets.welcome.dm_key").withStyle(ChatFormatting.GRAY));
 			}
 		});
+		//First time this character is seen: open the welcome screen once (the flag is on the sheet, so it also
+		//survives reinstalling the client, and a sheet that already existed counts as seen only after this run).
+		//Later than the chat lines so the client has finished joining and the sheet has arrived.
+		DndsheetsMod.queueServerWork(60, () -> {
+			JsonObject sheet = getServerSheet(player.getStringUUID());
+			if (sheet == null || sheet.has("onboarded")) return;
+			sheet.addProperty("onboarded", true);
+			saveServer(sheet, player.getStringUUID());
+			DndsheetsMod.PACKET_HANDLER.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+				new net.hawthorn.dndsheets.network.ScreenActionMessage(net.hawthorn.dndsheets.network.ScreenActionMessage.Action.ONBOARDING_OPEN));
+		});
 	}
 
 	private static final UUID CLASS_HP_MODIFIER_ID = UUID.fromString("6f2f8f0a-3b1a-4c8e-9d2a-1a2b3c4d5e6f");

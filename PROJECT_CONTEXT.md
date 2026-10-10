@@ -161,7 +161,11 @@ with no other paper trail:
 - **dicebot** (`io.github.tfriedrichs:dicebot`) — hard dependency, shaded and relocated into the jar
   (`shadowJar`, package `net.hawthorn.dndsheets.relocated.dicebot`) so it never collides with another
   mod's copy.
-- **Curios API**, **Patchouli** — soft dependencies. `compileOnly` against the `api` classifier only
+- **Since 2.3.0 Curios, Patchouli, Jade, Pehkui (and Origins, for species) are mandatory** in `mods.toml` and
+  required on both platforms. The `compileOnly` setup, the `isLoaded()` guards and the "degrades gracefully"
+  notes below still describe how the code is written and why it is safe; they no longer describe what the
+  published jar *asks of the player*.
+- **Curios API**, **Patchouli** — soft dependencies (in code). `compileOnly` against the `api` classifier only
   (the two or three methods actually called: `CuriosApi.getCuriosInventory`/`getEquippedCurios`,
   `PatchouliAPI.get()`), pinned to an early 5.x for Curios so the mod compiles against — and works
   with — whatever version a player has. `CuriosCompat`/`PatchouliCompat` contain **zero** references
@@ -806,16 +810,11 @@ Two slugs that cannot be shared between platforms, and assuming otherwise cost a
 upload (CurseForge, error 1018): **Cataclysm changes name** — `lendercataclysm` on CurseForge,
 `l_enders-cataclysm` on Modrinth — and **the Twilight Forest doesn't exist on Modrinth**, only on CurseForge.
 
-⚠️ **The two addons cannot be published yet.** `dungeon/build.gradle` and `species/build.gradle`
-produce their jar (`dndsheets-dungeon-1.0.0.jar`, `dndsheets-species-1.0.0.jar`) but **have no
-`publisher` block**: today there is no way to upload them, so the dungeon toolkit and the race bridge
-reach nobody even though the core does. And their dependencies **are not optional like the core's, they are
-mandatory** (`mandatory=true` in their `mods.toml`): `dungeon` requires the core `[2.2.0,)`, and `species`
-requires the core **and Origins `[1.10.0,)`** — they must be declared with `required(...)`, not `optional(...)`,
-or someone will install `species` without Origins and it won't start. Apoli isn't declared: it travels inside
-Origins' jar (see Library Audit). The real blocker: each addon needs its **own project** on CurseForge
-and on Modrinth, and neither exists. A minor note for when it is done: their `archivesBaseName` still says
-`dndsheets-*` even though their `displayName` is already "VTT MineRPG: …".
+**The addons ship inside the core jar since 2.3.0.** CurseForge allows one file per project, so `shadowJar`
+in the root `build.gradle` also packages the output of `:dungeon` and `:species`, and the core's `mods.toml`
+declares the three mods (`dndsheets`, `dndsheets_dungeon`, `dndsheets_species`). The addons' own `mods.toml`
+files are left out of the jar and exist only for their dev runs; their modules still build their own jars for
+development. There is nothing separate to publish. Origins is mandatory for the whole jar.
 
 **There is no "syncing" CurseForge and Modrinth**, and it is best not to chase it: neither platform imports
 the other's project. Description, images, categories and version history don't travel; the Modrinth page
@@ -1013,3 +1012,23 @@ The translations live in `tools/lang/` so the command can reproduce a localized 
 ships is now the English one, so `--lang` is only needed for a Spanish variant. The same importer accepts [Open5e](https://open5e.com/) for
 community **OGL** content — that material is NOT shipped with the mod; each table brings it into its world
 under the license that applies to it.
+
+## 2.3.0 engine additions (what to know before touching them)
+
+- **Conditions are append-only** (`Condition` travels by label but the enum order is still kept stable):
+  `EXHAUSTION` (leveled 1-6, the level rides in the condition's source slot — `Combatant.exhaustionLevel`,
+  `addExhaustionLevel`, `reduceExhaustion`), `SURPRISED`, `SLOWED`, `WEAKENED`. A creature that cannot act has
+  its turn skipped in `TurnManager.beginTurn`.
+- **Counted resources** live on the sheet through `RestResource` (`usesLeft` / `spendUse(s)` / `restoreUses`):
+  Rage, Bardic Inspiration, Ki, Wild Shape, sorcery points; Action Surge and the older once-per-rest flags use
+  `spend` / `restore`. A rest in `RestManager.applyRest` returns them; Hit Dice are spent on short rests.
+- **`TurnActionManager.TurnAction` is a network enum**: new values go at the END. Extra actions (Action Surge,
+  Flurry of Blows) are armed with `TurnManager.armExtraActions` before the first action; a readied action fires
+  out of turn through `tryAct` → `TurnActionManager.releaseReadied`.
+- **Monster data fields** (all optional): attack/ability `recharge` (N = Recharge N-6), `legendaryCost`, monster
+  `lairActions` (fired by `LairActionManager` at the start of each round), `magicResistance`; effect name `push`
+  moves the target (`turns` = blocks). Spell data fields: `castingTime`, `range` (limits aiming), `components`,
+  `duration`, `ritual`.
+- **Not modeled on purpose**: SRD 5.1 has no third-caster subclasses; lair actions of the dragons are Monster
+  Manual content, so the shipped pack declares none (the engine runs any a pack declares); Exhaustion levels 1 and
+  4, Weakened's Strength checks/damage, Teleport/Cantrip/Detect legendary actions.

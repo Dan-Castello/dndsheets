@@ -178,7 +178,7 @@ public class ItemPickerScreen extends Screen {
 		this.renderBackground(guiGraphics);
 		int left = gridLeft() - 6;
 		GuiStyle.panel(guiGraphics, left, 4, this.width - left, TOP + visibleRows * CELL + 6);
-		guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 12, GuiStyle.TITLE_COLOR);
+		guiGraphics.drawCenteredString(this.font, GuiStyle.title(this.title), this.width / 2, 12, GuiStyle.TITLE_COLOR);
 
 		int hovered = cellAt(mouseX, mouseY);
 		for (int i = 0; i < visibleRows * columns; i++) {

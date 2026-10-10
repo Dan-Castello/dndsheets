@@ -156,7 +156,10 @@ public class DndsheetsMod {
 	//TurnStateMessage gets feetPerBlock at the end of its payload (the HUD converts movement with it).
 	//Bumped to "28": in-game editor for the toml tables (BrowseActionMessage CONFIG_LIST/CONFIG_SET, BrowseListMessage
 	//CONFIG), handing out magic items (GIVE_MAGIC) and ContentType.MAGIC_ITEM, all appended at the END (invariant 2).
-	private static final String PROTOCOL_VERSION = "28";
+	//Bumped to "29": DiceRollMessage registered at the END (the on-screen d20), and TurnActionManager.TurnAction gains
+	//ACTION_SURGE .. FLURRY_OF_BLOWS at the end of its enum (it travels by ordinal in TurnActionMessage).
+	//Still "29" (same release): ScreenActionMessage.Action gains ONBOARDING_OPEN at the end.
+	private static final String PROTOCOL_VERSION = "29";
 
 	/**
 	 * <p>How many pieces cross the wire: registered messages plus the enum constants that travel by
@@ -169,7 +172,7 @@ public class DndsheetsMod {
 	 * shake hands only to end up misaligned later. A number that has to be touched by hand doesn't prevent
 	 * the mistake, but it turns it into a decision instead of an oversight.</p>
 	 */
-	public static final int NETWORK_SHAPE = 131;
+	public static final int NETWORK_SHAPE = 133;
 
 	/**
 	 * <p>The exact order in which the pieces cross the wire, summarized as a hash. {@link #NETWORK_SHAPE}
@@ -182,7 +185,7 @@ public class DndsheetsMod {
 	 * hash from the source and fails the build when it doesn't match. If you move something on purpose,
 	 * bump {@link #PROTOCOL_VERSION} and paste in the number the failure gives you.</p>
 	 */
-	public static final int NETWORK_ORDER = -592047910;
+	public static final int NETWORK_ORDER = 2111620449;
 
 	/**
 	 * <p>What gets written and read on the wire, summarized as a hash: the sequence of
@@ -194,7 +197,7 @@ public class DndsheetsMod {
 	 * {@code writeComponent} left both numbers untouched and still broke compatibility: an old client
 	 * would read a text where the new server writes a Component, and it desyncs partway through the packet.</p>
 	 */
-	public static final int NETWORK_WIRE = -1606748028;
+	public static final int NETWORK_WIRE = -6274259;
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 
@@ -261,6 +264,7 @@ public class DndsheetsMod {
 		addNetworkMessage(WildShapeMessage.class, WildShapeMessage::buffer, WildShapeMessage::new, WildShapeMessage::handler);
 		addNetworkMessage(StaffBindMessage.class, StaffBindMessage::buffer, StaffBindMessage::new, StaffBindMessage::handler);
 		addNetworkMessage(MulticlassMessage.class, MulticlassMessage::buffer, MulticlassMessage::new, MulticlassMessage::handler);
+		addNetworkMessage(DiceRollMessage.class, DiceRollMessage::buffer, DiceRollMessage::new, DiceRollMessage::handler);
 	}
 
 	/**

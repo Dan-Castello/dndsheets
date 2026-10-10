@@ -530,7 +530,7 @@ public class MonsterActionManager {
 			AttackRules.advantageAgainst(monsterEntity, targetCombatant, melee,
 				attackerCombatant != null ? attackerCombatant.ownAttackAdvantage() : DiceManager.Advantage.NORMAL));
 		if (attackRoll.outcome().result() == null) return;
-		CombatFx.diceTick(monsterEntity);
+		CombatFx.diceRoll(monsterEntity, attackRoll, MonsterRegistry.displayNameOf(monsterEntity, block));
 
 		//The monster plays by the SAME rules as the player, and now literally with the same code: cover,
 		//effective AC, hit and critical all come from AttackRules. Having this written twice is what left

@@ -85,6 +85,7 @@ public class JsonContentSelfTest {
 		checkDefaultsRefresh();
 		checkTabTextures();
 		checkAudioAssets();
+		checkAssetCredits();
 		checkInteractHandlers();
 		checkParchmentTextHasNoShadow();
 		checkVision();
@@ -218,6 +219,35 @@ public class JsonContentSelfTest {
 	 *     whoever adds the file remembering to export it properly.</li>
 	 * </ol>
 	 */
+	//Third-party art ships under CC BY: the licence only holds if the credit travels with the file. Every icon in
+	//textures/gui/icons must have its line in assets/dndsheets/CREDITS.txt (path | source | author | licence | url),
+	//and no line may point at a file that is gone. tools/import_game_icons.py writes that file.
+	private static void checkAssetCredits() throws Exception {
+		Path assets = Path.of("src", "main", "resources", "assets", "dndsheets");
+		Path icons = assets.resolve(Path.of("textures", "gui", "icons"));
+		Set<String> credited = new java.util.TreeSet<>();
+		for (String line : Files.readAllLines(assets.resolve("CREDITS.txt"))) {
+			if (line.isBlank() || line.startsWith("#")) continue;
+			String[] parts = line.split("\\|");
+			assertTrue(parts.length == 5, "CREDITS.txt line without the 5 fields (path | source | author | licence | url): " + line);
+			String path = parts[0].trim();
+			assertTrue(Files.exists(assets.resolve(path)), "CREDITS.txt credits a file that does not exist: " + path);
+			assertTrue(!parts[2].isBlank() && (parts[3].contains("CC BY") || parts[3].contains("CC0") || parts[3].contains("OFL")),
+				path + " does not declare an accepted licence (CC BY, CC0 or OFL) and an author: " + line);
+			credited.add(path);
+		}
+		int count = 0;
+		try (Stream<Path> walk = Files.walk(icons)) {
+			for (Path file : walk.filter(f -> f.toString().endsWith(".png")).sorted().toList()) {
+				String rel = assets.relativize(file).toString().replace('\\', '/');
+				assertTrue(credited.contains(rel), rel + " ships in the jar without its line in CREDITS.txt: CC BY needs the author credited.");
+				count++;
+			}
+		}
+		assertTrue(count > 0, "there is no icon in " + icons + ": was the folder moved?");
+		System.out.println("checkAssetCredits: OK, " + count + " icon(s), each credited with author and licence.");
+	}
+
 	private static void checkAudioAssets() throws Exception {
 		Path sounds = Path.of("src", "main", "resources", "assets", "dndsheets", "sounds");
 		List<Path> files;

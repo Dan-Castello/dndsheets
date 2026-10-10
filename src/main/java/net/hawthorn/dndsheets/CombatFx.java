@@ -276,6 +276,28 @@ public class CombatFx {
 		return new Vec3(entity.getX(), entity.getY() + entity.getBbHeight() / 2, entity.getZ());
 	}
 
+	/**
+	 * <p>Sound plus the on-screen die for everyone who gets the chat line (same radius as
+	 * {@link ChatFeedback#broadcast}). {@code kind}: 0 normal, 1 natural 20, 2 natural 1.</p>
+	 */
+	public static void diceRoll(Entity roller, int natural, int total, int kind, String who) {
+		diceTick(roller);
+		if (!(roller.level() instanceof ServerLevel level)) return;
+		double radiusSq = TurnManager.DEFAULT_RADIUS * TurnManager.DEFAULT_RADIUS;
+		net.hawthorn.dndsheets.network.DiceRollMessage message = new net.hawthorn.dndsheets.network.DiceRollMessage(natural, total, kind, who == null ? "" : who);
+		for (ServerPlayer player : level.players()) {
+			if (player.distanceToSqr(roller) <= radiusSq) {
+				DndsheetsMod.PACKET_HANDLER.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), message);
+			}
+		}
+	}
+
+	/** Same, from an attack-style roll (the natural and the crit/fumble come from the roll itself). */
+	public static void diceRoll(Entity roller, DiceManager.AttackRoll roll, String who) {
+		int total = roll.outcome().result() != null ? roll.outcome().result().getValue() : 0;
+		diceRoll(roller, DiceManager.naturalOf(roll.outcome()), total, roll.criticalHit() ? 1 : roll.criticalMiss() ? 2 : 0, who);
+	}
+
 	//The same dice sound the other rolls already use, for the death save roll (doesn't go through DiceManager).
 	public static void diceTick(Entity source) {
 		sound(source, DndsheetsModSounds.DICE.get(), 1.0f, 1.0f);

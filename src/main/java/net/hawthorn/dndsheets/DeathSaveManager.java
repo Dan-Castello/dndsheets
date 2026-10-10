@@ -178,7 +178,7 @@ public class DeathSaveManager {
 
 		int roll = ThreadLocalRandom.current().nextInt(1, 21);
 		String characterName = characterName(sheet, player);
-		CombatFx.diceTick(player);
+		CombatFx.diceRoll(player, roll, roll, roll == 20 ? 1 : roll == 1 ? 2 : 0, characterName);
 
 		if (roll == 20) {
 			stabilize(player, sheet, Component.translatable("chat.dndsheets.death.natural_twenty_title"));

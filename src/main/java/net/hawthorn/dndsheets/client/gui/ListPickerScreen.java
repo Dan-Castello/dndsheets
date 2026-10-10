@@ -126,6 +126,13 @@ public abstract class ListPickerScreen extends Screen {
 		return null;
 	}
 
+	/** Same as {@link #addRow(Component, Button.OnPress)} with a glyph at the left of the row; null icon = plain row. */
+	protected final Button addRow(Component label, @Nullable net.minecraft.resources.ResourceLocation icon, Button.OnPress onPress) {
+		Button button = addRow(label, onPress);
+		if (icon != null && button instanceof TomeButton tome) tome.withIcon(icon);
+		return button;
+	}
+
 	protected final Button addRow(Component label, Button.OnPress onPress) {
 		//TomeButton, not Button: vanilla's gray stone button on top of a leather panel reads like a
 		//widget borrowed from another interface. Changing it here repaints, from the inside, the forty-
@@ -247,7 +254,7 @@ public abstract class ListPickerScreen extends Screen {
 		//With "< Back" the title is centered in the space LEFT to its right, not the whole screen:
 		//centered on the screen, a long title would run under the button.
 		int titleLeft = parent != null ? left + 4 + BACK_BUTTON_WIDTH : left;
-		guiGraphics.drawCenteredString(this.font, this.title, (titleLeft + right) / 2, TITLE_Y, GuiStyle.TITLE_COLOR);
+		guiGraphics.drawCenteredString(this.font, GuiStyle.title(this.title), (titleLeft + right) / 2, TITLE_Y, GuiStyle.TITLE_COLOR);
 		//Rule under the title: separates the header from the content without spending a whole row of
 		//height, which is what a real separator would cost in a scrolling list. Ornate (center diamond)
 		//only here — internal separators use the plain rule (see GuiStyle.ruleOrnate).

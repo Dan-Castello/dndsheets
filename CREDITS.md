@@ -1,0 +1,13 @@
+# Credits
+
+Third-party material shipped in the mod jar. The per-file list (path, source, author, licence, URL) lives in
+[`src/main/resources/assets/dndsheets/CREDITS.txt`](src/main/resources/assets/dndsheets/CREDITS.txt) and is checked
+by the build (`checkAssetCredits`).
+
+- **Icons** (`textures/gui/icons`): [game-icons.net](https://game-icons.net/), "Icons made by Lorc, Delapouite,
+  Skoll, Sbed, Felbrigg" under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/); Zeromancer under CC0.
+  Re-rasterized and tinted by `tools/import_game_icons.py`.
+- **Font** (`font/cinzel.ttf`, screen titles): Cinzel, (c) The Cinzel Project Authors, SIL Open Font License 1.1
+  (`assets/dndsheets/font/OFL-Cinzel.txt`).
+- **Audio**: CC0 only, listed in `PROJECT_CONTEXT.md` (Attribution > Audio).
+- **Rules content**: SRD 5.1, CC BY 4.0 (see `PROJECT_CONTEXT.md`).

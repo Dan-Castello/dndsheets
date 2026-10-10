@@ -24,9 +24,10 @@ import java.util.Map;
  * used for anything else — {@link MovementAnchorTracker}'s movement budget, {@code
  * OpportunityAttackTracker}'s reach tracking, and {@link Combatant#advantageAgainst}'s advantage/disadvantage.</p>
  *
- * <p><b>Missing: Help</b>, the fourth one: it grants advantage to an ally's attack and therefore needs
- * someone to point at, same as Bardic Inspiration. It's an interact-with-entity item, not an entry in
- * this menu, and that's why it doesn't belong here.</p>
+ * <p><b>Help</b> is not here: it grants advantage to an ally's attack and therefore needs someone to point at,
+ * same as Bardic Inspiration, so it is an interact-with-entity item ({@link HelpActionManager}). The menu also
+ * carries Search, Hide and Ready, and the class features (Action Surge, Flurry of Blows, Patient Defense, Step
+ * of the Wind) gated by class on the server.</p>
  */
 public class TurnActionManager {
 

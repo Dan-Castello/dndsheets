@@ -160,6 +160,16 @@ public class CompendiumQuery {
 		if (spell.aoeRadius() > 0) {
 			text.append("\n").append(Component.translatable(KEY + "area", spell.aoeShape(), spell.aoeRadius()));
 		}
+		SpellRegistry.Spell.Info info = spell.info();
+		if (info.castingTime() != null) text.append("\n").append(Component.translatable(KEY + "spell_time", info.castingTime()));
+		if (info.rangeFeet() >= 0) {
+			text.append("\n").append(info.rangeFeet() == 0 ? Component.translatable(KEY + "spell_range_self")
+				: info.rangeFeet() <= 5 ? Component.translatable(KEY + "spell_range_touch")
+				: Component.translatable(KEY + "spell_range", info.rangeFeet()));
+		}
+		if (info.components() != null) text.append("\n").append(Component.translatable(KEY + "spell_components", info.components()));
+		if (info.duration() != null) text.append("\n").append(Component.translatable(KEY + "spell_duration", info.duration()));
+		if (info.ritual()) text.append("\n").append(Component.translatable(KEY + "spell_ritual"));
 		if (spell.concentration()) text.append("\n").append(Component.translatable(KEY + "concentration"));
 		if (spell.appliesEffect()) {
 			text.append("\n").append(Component.translatable(KEY + "applies", spell.effectName(), spell.effectTurns()));

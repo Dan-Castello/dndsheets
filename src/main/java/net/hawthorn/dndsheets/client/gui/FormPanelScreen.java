@@ -232,7 +232,7 @@ public abstract class FormPanelScreen extends Screen {
 		//the first field's label starts at formTop-10: two rows of pixels overlapped, and with Minecraft's
 		//font that doesn't read as "close together", it reads as duplicated, smeared text.
 		GuiStyle.panel(guiGraphics, centerX - formWidth() / 2 - 14, formTop - titleBand(), centerX + formWidth() / 2 + 14, formBottom);
-		guiGraphics.drawCenteredString(this.font, title, this.width / 2, formTop - titleBand() + 6, GuiStyle.TITLE_COLOR);
+		guiGraphics.drawCenteredString(this.font, GuiStyle.title(title), this.width / 2, formTop - titleBand() + 6, GuiStyle.TITLE_COLOR);
 		//Separator rule, the same resource ListPickerScreen uses for its header.
 		GuiStyle.rule(guiGraphics, centerX - formWidth() / 2 - 6, centerX + formWidth() / 2 + 6, formTop - 18);
 	}

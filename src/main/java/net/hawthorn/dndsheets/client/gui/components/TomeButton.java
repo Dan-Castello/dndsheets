@@ -6,6 +6,8 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.FormattedText;
+import net.minecraft.resources.ResourceLocation;
+import net.hawthorn.dndsheets.client.gui.Icons;
 import net.minecraft.util.Mth;
 
 /**
@@ -39,6 +41,15 @@ public class TomeButton extends Button {
 	/** Padding between the text and the edges, so clipped text doesn't sit flush against the bevel. */
 	private static final int TEXT_PADDING = 2;
 	private static final String ELLIPSIS = "...";
+
+	private static final int ICON_SIZE = 14;
+	private ResourceLocation icon;
+
+	/** A glyph at the left of the row (school, creature type...). Null = plain row. */
+	public TomeButton withIcon(ResourceLocation icon) {
+		this.icon = icon;
+		return this;
+	}
 
 	public TomeButton(int x, int y, int width, int height, Component message, OnPress onPress) {
 		super(x, y, width, height, message, onPress, DEFAULT_NARRATION);
@@ -75,6 +86,10 @@ public class TomeButton extends Button {
 		//The text is centered in the space LEFT after the rule, not the whole button: centering it on the
 		//button would leave it visibly off-center to the left.
 		int textLeft = left + 1 + RAIL_WIDTH + TEXT_PADDING;
+		if (icon != null) {
+			Icons.draw(guiGraphics, icon, textLeft, top + (this.height - ICON_SIZE) / 2, ICON_SIZE);
+			textLeft += ICON_SIZE + 3;
+		}
 		int textRight = right - TEXT_PADDING;
 		int available = textRight - textLeft;
 		Component message = this.getMessage();

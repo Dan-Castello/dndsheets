@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 //they triggered.
 public class ScreenActionMessage {
 	//At the end, never in the middle: writeEnum travels by ordinal (invariant 2 in PROJECT_CONTEXT.md).
-	public enum Action { DEATH_SAVE_OPEN, DEATH_SAVE_CLOSE, REST_CHOICE_OPEN, COMPENDIUM_OPEN, TURN_ACTION_OPEN, ABILITY_IMPROVEMENT_OPEN, NEW_CHARACTER_OPEN }
+	public enum Action { DEATH_SAVE_OPEN, DEATH_SAVE_CLOSE, REST_CHOICE_OPEN, COMPENDIUM_OPEN, TURN_ACTION_OPEN, ABILITY_IMPROVEMENT_OPEN, NEW_CHARACTER_OPEN, ONBOARDING_OPEN }
 
 	final Action action;
 
@@ -39,6 +39,7 @@ public class ScreenActionMessage {
 				case TURN_ACTION_OPEN -> net.hawthorn.dndsheets.client.gui.TurnActionScreen.open();
 				case ABILITY_IMPROVEMENT_OPEN -> net.hawthorn.dndsheets.client.gui.AbilityImprovementScreen.open();
 				case NEW_CHARACTER_OPEN -> net.hawthorn.dndsheets.client.gui.NewCharacterScreen.open();
+				case ONBOARDING_OPEN -> net.hawthorn.dndsheets.client.gui.WelcomeScreen.open();
 			}
 		});
 	}

@@ -349,7 +349,7 @@ public class CombatManager {
 		if (inspiration > 0) expression = expression + " + " + inspiration;
 		DiceManager.AttackRoll attackRoll = DiceManager.rollAttack(attackerSheet, expression, advantage);
 		if (attackRoll.outcome().result() == null) return null;
-		CombatFx.diceTick(attacker);
+		CombatFx.diceRoll(attacker, attackRoll, SheetLoader.characterNameOf(attackerSheet, attacker));
 		persistAndSendSheetUpdate(attacker);
 
 		String attackerName = SheetLoader.characterNameOf(attackerSheet, attacker);

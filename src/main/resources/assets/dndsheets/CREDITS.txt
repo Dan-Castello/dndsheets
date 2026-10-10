@@ -1,0 +1,70 @@
+# Attribution for third-party assets shipped in this jar. One line per file:
+#   path | source | author | licence | url
+# game-icons.net icons: "Icons made by <author>" (CC BY 3.0 unless the licence column says CC0).
+# Tinted and re-rasterized to 32x32 by tools/import_game_icons.py from commit 82d948812bfe3f269ef8f731dcdb07b08160edc4.
+textures/gui/icons/action/dash.png | game-icons.net lorc/sprint.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/action/disengage.png | game-icons.net lorc/back-forth.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/action/dodge.png | game-icons.net felbrigg/dodge.svg | Felbrigg | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/action/flurry.png | game-icons.net lorc/punch-blast.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/action/hide.png | game-icons.net lorc/ninja-mask.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/action/ready.png | game-icons.net lorc/hourglass.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/action/search.png | game-icons.net lorc/magnifying-glass.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/action/surge.png | game-icons.net lorc/fire-dash.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/blinded.png | game-icons.net delapouite/blindfold.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/charmed.png | game-icons.net lorc/charm.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/deafened.png | game-icons.net skoll/hearing-disabled.svg | Skoll | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/exhaustion.png | game-icons.net delapouite/tired-eye.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/frightened.png | game-icons.net lorc/screaming.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/grappled.png | game-icons.net lorc/grapple.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/incapacitated.png | game-icons.net delapouite/knocked-out-stars.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/invisible.png | game-icons.net delapouite/invisible.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/paralyzed.png | game-icons.net delapouite/frozen-body.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/petrified.png | game-icons.net lorc/stone-block.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/poisoned.png | game-icons.net lorc/poison-bottle.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/prone.png | game-icons.net sbed/fall-down.svg | Sbed | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/restrained.png | game-icons.net lorc/handcuffs.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/slowed.png | game-icons.net lorc/snail.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/stunned.png | game-icons.net lorc/star-swirl.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/surprised.png | game-icons.net lorc/surprised.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/unconscious.png | game-icons.net lorc/sleepy.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/condition/weakened.png | game-icons.net lorc/broken-heart.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/aberration.png | game-icons.net delapouite/brain-tentacle.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/beast.png | game-icons.net lorc/paw-print.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/celestial.png | game-icons.net lorc/angel-wings.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/construct.png | game-icons.net delapouite/golem-head.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/dragon.png | game-icons.net lorc/dragon-head.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/elemental.png | game-icons.net lorc/lightning-frequency.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/fey.png | game-icons.net lorc/fairy.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/fiend.png | game-icons.net lorc/horned-skull.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/giant.png | game-icons.net delapouite/giant.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/humanoid.png | game-icons.net delapouite/person.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/monstrosity.png | game-icons.net lorc/hydra.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/ooze.png | game-icons.net delapouite/slime.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/plant.png | game-icons.net delapouite/carnivorous-plant.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/creature/undead.png | game-icons.net delapouite/shambling-zombie.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/resource/inspiration.png | game-icons.net delapouite/inspiration.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/resource/ki.png | game-icons.net lorc/lotus.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/resource/rage.png | game-icons.net delapouite/enrage.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/resource/second_wind.png | game-icons.net zeromancer/heart-plus.svg | Zeromancer | CC0 | https://game-icons.net/
+textures/gui/icons/resource/smite.png | game-icons.net lorc/holy-symbol.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/resource/sorcery.png | game-icons.net lorc/magic-swirl.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/resource/turn_undead.png | game-icons.net lorc/ghost.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/resource/wild_shape.png | game-icons.net lorc/paw.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/school/abjuration.png | game-icons.net lorc/magic-shield.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/school/conjuration.png | game-icons.net lorc/magic-swirl.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/school/divination.png | game-icons.net lorc/crystal-ball.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/school/enchantment.png | game-icons.net lorc/charm.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/school/evocation.png | game-icons.net lorc/fire-ray.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/school/illusion.png | game-icons.net delapouite/invisible-face.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/school/necromancy.png | game-icons.net lorc/skull-crossed-bones.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/school/transmutation.png | game-icons.net lorc/cauldron.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/stat/ac.png | game-icons.net lorc/armor-vest.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/stat/concentration.png | game-icons.net lorc/concentration-orb.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/stat/d20.png | game-icons.net delapouite/dice-twenty-faces-twenty.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/stat/death.png | game-icons.net lorc/skull-crossed-bones.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/stat/gold.png | game-icons.net delapouite/coins.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/stat/hp.png | game-icons.net delapouite/heart-beats.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/stat/initiative.png | game-icons.net lorc/winged-sword.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/stat/speed.png | game-icons.net lorc/boots.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/stat/spell.png | game-icons.net delapouite/spell-book.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+font/cinzel.ttf | Cinzel, google/fonts ofl/cinzel (OFL text: font/OFL-Cinzel.txt) | The Cinzel Project Authors (NDISCOVER) | SIL OFL 1.1 | https://github.com/NDISCOVER/Cinzel

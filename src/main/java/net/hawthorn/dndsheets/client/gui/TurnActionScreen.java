@@ -14,7 +14,7 @@ import net.minecraft.network.chat.Component;
  */
 public class TurnActionScreen extends ModalDialogScreen {
 	private static final int WIDTH = 340;
-	private static final int HEIGHT = 278;
+	private static final int HEIGHT = 204;
 
 	protected TurnActionScreen() {
 		super(Component.translatable("gui.dndsheets.turn_action.title"), WIDTH, HEIGHT);
@@ -24,19 +24,27 @@ public class TurnActionScreen extends ModalDialogScreen {
 		Minecraft.getInstance().setScreen(new TurnActionScreen());
 	}
 
+	//Two pages so the dialog fits small screens: the actions everyone has, and the class features.
+	private boolean classPage = false;
+
 	@Override
 	protected void init() {
-		addAction(30, TurnActionManager.TurnAction.DODGE, "gui.dndsheets.turn_action.dodge");
-		addAction(51, TurnActionManager.TurnAction.DASH, "gui.dndsheets.turn_action.dash");
-		addAction(72, TurnActionManager.TurnAction.DISENGAGE, "gui.dndsheets.turn_action.disengage");
-		addAction(93, TurnActionManager.TurnAction.ACTION_SURGE, "gui.dndsheets.turn_action.surge");
-		addAction(114, TurnActionManager.TurnAction.FLURRY_OF_BLOWS, "gui.dndsheets.turn_action.flurry");
-		addAction(135, TurnActionManager.TurnAction.PATIENT_DEFENSE, "gui.dndsheets.turn_action.patient_defense");
-		addAction(156, TurnActionManager.TurnAction.STEP_DASH, "gui.dndsheets.turn_action.step_dash");
-		addAction(177, TurnActionManager.TurnAction.STEP_DISENGAGE, "gui.dndsheets.turn_action.step_disengage");
-		addAction(198, TurnActionManager.TurnAction.SEARCH, "gui.dndsheets.turn_action.search");
-		addAction(219, TurnActionManager.TurnAction.HIDE, "gui.dndsheets.turn_action.hide");
-		addAction(240, TurnActionManager.TurnAction.READY, "gui.dndsheets.turn_action.ready");
+		TurnActionManager.TurnAction[] actions = classPage
+			? new TurnActionManager.TurnAction[]{TurnActionManager.TurnAction.ACTION_SURGE, TurnActionManager.TurnAction.FLURRY_OF_BLOWS,
+				TurnActionManager.TurnAction.PATIENT_DEFENSE, TurnActionManager.TurnAction.STEP_DASH, TurnActionManager.TurnAction.STEP_DISENGAGE}
+			: new TurnActionManager.TurnAction[]{TurnActionManager.TurnAction.DODGE, TurnActionManager.TurnAction.DASH,
+				TurnActionManager.TurnAction.DISENGAGE, TurnActionManager.TurnAction.SEARCH, TurnActionManager.TurnAction.HIDE,
+				TurnActionManager.TurnAction.READY};
+		String[] keys = classPage
+			? new String[]{"surge", "flurry", "patient_defense", "step_dash", "step_disengage"}
+			: new String[]{"dodge", "dash", "disengage", "search", "hide", "ready"};
+		for (int i = 0; i < actions.length; i++) addAction(30 + i * 24, actions[i], "gui.dndsheets.turn_action." + keys[i]);
+
+		addModalButton(20, 30 + 6 * 24, WIDTH - 40, 20,
+			Component.translatable(classPage ? "gui.dndsheets.turn_action.page_basic" : "gui.dndsheets.turn_action.page_class"), button -> {
+				classPage = !classPage;
+				this.rebuildWidgets();
+			});
 	}
 
 	private void addAction(int y, TurnActionManager.TurnAction action, String labelKey) {

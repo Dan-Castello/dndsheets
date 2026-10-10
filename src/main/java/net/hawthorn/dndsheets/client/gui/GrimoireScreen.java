@@ -46,14 +46,14 @@ public class GrimoireScreen extends ListPickerScreen {
 	/** Width of each column in the slot table: fits "9/9" and all nine levels fit in the panel. */
 	private static final int SLOT_COL_WIDTH = 24;
 	/** Fixed rows below the list: slot level, cast, prepare, and bind to staff. */
-	private static final int FIXED_ROWS = 4;
+	private static final int FIXED_ROWS = 5;
 
 	/**
 	 * <p>{@code label} is how it appears in the LIST — with level, school, and whether it's unprepared,
 	 * which is what sorts, distinguishes, and makes the rows searchable — and plain {@code name} is what
 	 * goes on the buttons, where the level that matters is the chosen slot's, not the spell's own.</p>
 	 */
-	private record KnownSpell(String id, String name, String label, int level, boolean prepared) {}
+	private record KnownSpell(String id, String name, String label, int level, boolean prepared, String school) {}
 
 	/**
 	 * <p>The last spell cast from here, for the quick-cast keybind (see
@@ -69,6 +69,7 @@ public class GrimoireScreen extends ListPickerScreen {
 	private Button slotLevelButton;
 	private Button prepareButton;
 	private Button bindButton;
+	private Button detailsButton;
 	/** Slot level chosen for the selected spell; 0 = the lowest one that works. */
 	private int chosenSlotLevel;
 
@@ -112,6 +113,7 @@ public class GrimoireScreen extends ListPickerScreen {
 		int castY = slotY + BUTTON_HEIGHT + SPACING;
 		int prepareY = castY + BUTTON_HEIGHT + SPACING;
 		int bindY = prepareY + BUTTON_HEIGHT + SPACING;
+		int detailsY = bindY + BUTTON_HEIGHT + SPACING;
 
 		//Casting at a higher level is a DECISION, not something the server can guess: spending a 5th-level
 		//slot on a Fireball in exchange for more dice is only known by the one casting it. A cycling
@@ -150,6 +152,13 @@ public class GrimoireScreen extends ListPickerScreen {
 			DndsheetsMod.PACKET_HANDLER.sendToServer(new StaffBindMessage(selected.id()));
 		}, left, bindY, buttonWidth(), BUTTON_HEIGHT));
 
+		//The spell's rules text (casting time, range, components, duration, dice): it lives on the server, so this
+		//asks for the same detail card the Compendium shows.
+		detailsButton = this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.grimoire.details"), button -> {
+			if (selected == null) return;
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.CONTENT_DETAIL, "spells|" + selected.id()));
+		}, left, detailsY, buttonWidth(), BUTTON_HEIGHT));
+
 		updateButtons();
 	}
 
@@ -170,7 +179,7 @@ public class GrimoireScreen extends ListPickerScreen {
 					: Component.translatable("gui.dndsheets.grimoire.level", spell.level()));
 				lastLevel = spell.level();
 			}
-			addRow(Component.literal(spell.label()), b -> { //i18n-ok: label() already comes resolved (see knownSpells)
+			addRow(Component.literal(spell.label()), spell.school().isEmpty() ? null : Icons.school(spell.school()), b -> { //i18n-ok: label() already comes resolved (see knownSpells)
 				selected = spell;
 				//The chosen level resets to the spell's own: inheriting the "lv. 5" from the previous
 				//selection would spend an expensive slot on the wrong spell without anyone asking for it.
@@ -209,6 +218,8 @@ public class GrimoireScreen extends ListPickerScreen {
 			: selected.level() == 0 ? Component.translatable("gui.dndsheets.grimoire.prepare_cantrip")
 			: selected.prepared() ? Component.translatable("gui.dndsheets.grimoire.unprepare", net.hawthorn.dndsheets.ContentNames.of(selected.name()))
 			: Component.translatable("gui.dndsheets.grimoire.prepare", net.hawthorn.dndsheets.ContentNames.of(selected.name())));
+
+		detailsButton.active = selected != null;
 
 		boolean holdingConfigurableStaff = isHoldingConfigurableStaff();
 		bindButton.active = selected != null && holdingConfigurableStaff;
@@ -360,7 +371,7 @@ public class GrimoireScreen extends ListPickerScreen {
 			//typing "evoc" or "unprep" filters without spending a screen row on a filter button.
 			if (entry.has("school")) label.append(" · ").append(entry.get("school").getAsString());
 			if (!prepared) label.append(Component.translatable("gui.dndsheets.grimoire.tag_unprepared").getString());
-			result.add(new KnownSpell(id, name, label.toString(), level, prepared));
+			result.add(new KnownSpell(id, name, label.toString(), level, prepared, entry.has("school") ? entry.get("school").getAsString().toLowerCase(java.util.Locale.ROOT) : ""));
 		}
 		result.sort(java.util.Comparator.comparingInt(KnownSpell::level).thenComparing(KnownSpell::name));
 		return result;

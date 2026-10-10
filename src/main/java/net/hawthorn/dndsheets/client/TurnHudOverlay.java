@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.client.gui.GuiStyle;
+import net.hawthorn.dndsheets.client.gui.Icons;
 import net.hawthorn.dndsheets.network.TurnStateMessage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -59,6 +60,8 @@ public class TurnHudOverlay {
 	private static final int GOOD_COLOR = 0xFF6FCB6F;
 	private static final int ENEMY_COLOR = 0xFFCC7A6E;
 	private static final int CONDITION_COLOR = 0xFFB08A5A;
+	private static final int ICON_SIZE = 8;
+	private static final int MAX_ROW_ICONS = 3;
 
 	@SubscribeEvent
 	public static void registerOverlays(RegisterGuiOverlaysEvent event) {
@@ -174,7 +177,27 @@ public class TurnHudOverlay {
 			suffix = "✓";
 			suffixColor = GuiStyle.MUTED_COLOR;
 		}
-		if (suffix != null) {
+		if (!row.defeated() && !row.conditions().isEmpty()) {
+			//Glyphs instead of words for the conditions that have one (up to three, then "+N"): 8px each, so a
+			//row of them is shorter than one word and the name never gets pushed.
+			int x = right;
+			int shown = 0;
+			for (String label : row.conditions()) {
+				net.minecraft.resources.ResourceLocation glyph = Icons.condition(label);
+				if (glyph == null || shown == MAX_ROW_ICONS) continue;
+				x -= ICON_SIZE;
+				Icons.draw(guiGraphics, glyph, x, y, ICON_SIZE);
+				x -= 1;
+				shown++;
+			}
+			int hidden = row.conditions().size() - shown;
+			if (shown == 0) {
+				guiGraphics.drawString(font, suffix, right - font.width(suffix), y, suffixColor);
+			} else if (hidden > 0) {
+				String more = "+" + hidden;
+				guiGraphics.drawString(font, more, x - font.width(more), y, suffixColor);
+			}
+		} else if (suffix != null) {
 			guiGraphics.drawString(font, suffix, right - font.width(suffix), y, suffixColor);
 		}
 	}

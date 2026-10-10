@@ -162,6 +162,11 @@ public class DiceManager {
 	//The library's pretty-printer shows every rolled die in brackets (e.g. "[15] + 3 = 18"). The first
 	//bracket always corresponds to the d20 in an attack roll ("1d20 + ..."), so it's enough to read it to
 	//know whether it came up natural 20/1, without walking DiceResult's internal tree.
+	/** The natural d20 of an already-rolled attack-style outcome, or 0 if it can't be read. Cosmetic use (the on-screen die). */
+	public static int naturalOf(RollOutcome outcome) {
+		return outcome == null || outcome.result() == null ? 0 : Math.max(0, firstDieValue(outcome.result()));
+	}
+
 	private static int firstDieValue(DiceResult result) {
 		Matcher m = BRACKETED_DIE_PATTERN.matcher(new DiceResultPrettyPrinter().prettyPrint(result));
 		if (!m.find()) return -1;

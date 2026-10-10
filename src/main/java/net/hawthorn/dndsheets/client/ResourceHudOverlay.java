@@ -4,10 +4,12 @@ import com.google.gson.JsonObject;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.client.gui.GuiStyle;
+import net.hawthorn.dndsheets.client.gui.Icons;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -45,7 +47,16 @@ public class ResourceHudOverlay {
 	//when the sheet changes. Each line carries its own color: they don't all mean the same thing (a
 	//condition isn't a resource), so a single color for the whole panel would make them indistinguishable
 	//at a glance.
-	private record Line(String text, int color) {}
+	//A line is text, or (when icons is not empty) a row of condition glyphs drawn instead of text.
+	private record Line(String text, int color, java.util.List<ResourceLocation> icons) {
+		Line(String text, int color) {
+			this(text, color, java.util.List.of());
+		}
+	}
+
+	private static final int ICON_SIZE = 14;
+	private static final int ICON_GAP = 2;
+	private static final int ICON_ROW_HEIGHT = ICON_SIZE + 2;
 
 	private static int cachedVersion = -1;
 	private static Line[] cachedLines = new Line[0];
@@ -70,7 +81,11 @@ public class ResourceHudOverlay {
 		//reads as the mod being broken rather than as the rule it actually is. Half a dozen rules-engine
 		//checks depend on conditions and none of them were visible from the sufferer's side.
 		String conditions = activeConditionLabels(sheet);
-		if (!conditions.isEmpty()) lines.add(new Line(conditions, 0xFFFF5555));
+		if (!conditions.isEmpty()) {
+			java.util.List<ResourceLocation> glyphs = conditionIcons(sheet);
+			if (!glyphs.isEmpty()) lines.add(new Line("", 0, glyphs));
+			lines.add(new Line(conditions, 0xFFFF5555));
+		}
 
 		//The "things you're carrying" that decide your next roll. All of it used to live server-side: you'd
 		//receive Bardic Inspiration and not know it, prime a Smite and not know if it was still armed three
@@ -98,20 +113,38 @@ public class ResourceHudOverlay {
 
 		Font font = Minecraft.getInstance().font;
 		int contentWidth = MIN_WIDTH;
-		for (Line line : cachedLines) contentWidth = Math.max(contentWidth, font.width(line.text()));
+		int rowsHeight = 0;
+		for (Line line : cachedLines) {
+			if (line.icons().isEmpty()) {
+				contentWidth = Math.max(contentWidth, font.width(line.text()));
+				rowsHeight += ROW_HEIGHT;
+			} else {
+				contentWidth = Math.max(contentWidth, line.icons().size() * (ICON_SIZE + ICON_GAP) - ICON_GAP);
+				rowsHeight += ICON_ROW_HEIGHT;
+			}
+		}
 
 		int top = 8;
 		int left = 8;
 		int right = left + contentWidth + 2 * PADDING;
-		int bottom = top + 2 * PADDING - 4 + cachedLines.length * ROW_HEIGHT;
+		int bottom = top + 2 * PADDING - 4 + rowsHeight;
 
 		GuiStyle.panel(guiGraphics, left, top, right, bottom);
 
 		int textX = left + PADDING;
 		int y = top + PADDING - 2;
 		for (Line line : cachedLines) {
-			guiGraphics.drawString(font, line.text(), textX, y, line.color());
-			y += ROW_HEIGHT;
+			if (line.icons().isEmpty()) {
+				guiGraphics.drawString(font, line.text(), textX, y, line.color());
+				y += ROW_HEIGHT;
+			} else {
+				int x = textX;
+				for (ResourceLocation glyph : line.icons()) {
+					Icons.draw(guiGraphics, glyph, x, y, ICON_SIZE);
+					x += ICON_SIZE + ICON_GAP;
+				}
+				y += ICON_ROW_HEIGHT;
+			}
 		}
 	}
 
@@ -130,6 +163,18 @@ public class ResourceHudOverlay {
 			labels.append(at < 0 ? entry : entry.substring(0, at));
 		}
 		return labels.length() == 0 ? "" : Component.translatable("hud.dndsheets.conditions", labels.toString()).getString();
+	}
+
+	/** One glyph per active condition that has one; a condition without a glyph still shows in the text line. */
+	private static java.util.List<ResourceLocation> conditionIcons(JsonObject sheet) {
+		java.util.List<ResourceLocation> glyphs = new java.util.ArrayList<>();
+		for (var element : sheet.getAsJsonArray("conditions")) {
+			String entry = element.getAsString();
+			int at = entry.indexOf('@');
+			ResourceLocation glyph = Icons.condition(at < 0 ? entry : entry.substring(0, at));
+			if (glyph != null && !glyphs.contains(glyph)) glyphs.add(glyph);
+		}
+		return glyphs;
 	}
 
 	/** The "things carried" that change the next roll: concentration, inspiration die, armed smite, pending advantage. */

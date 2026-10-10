@@ -72,7 +72,7 @@ public class ConfirmScreen extends ModalDialogScreen {
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderPanel(guiGraphics);
-		guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, dialogTop() + 8, GuiStyle.TITLE_COLOR);
+		guiGraphics.drawCenteredString(this.font, GuiStyle.title(this.title), this.width / 2, dialogTop() + 8, GuiStyle.TITLE_COLOR);
 		List<FormattedCharSequence> lines = this.font.split(Component.translatable("gui.dndsheets.confirm.body", what), WIDTH - 24);
 		int y = dialogTop() + 26;
 		for (FormattedCharSequence line : lines) {

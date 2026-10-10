@@ -176,7 +176,13 @@ final class ContentTypeForms {
 			FieldSpec.intField("effectTurns", I18n.get("gui.dndsheets.form.effect_turns"), "0"),
 			FieldSpec.intField("castTicks", I18n.get("gui.dndsheets.form.cast_ticks"), "-1"),
 			FieldSpec.pick("affectsTypes", I18n.get("gui.dndsheets.form.affects_types"), "", "CREATURE_TYPE", true, LIST_LENGTH),
-			FieldSpec.pick("immuneTypes", I18n.get("gui.dndsheets.form.immune_types"), "", "CREATURE_TYPE", true, LIST_LENGTH)
+			FieldSpec.pick("immuneTypes", I18n.get("gui.dndsheets.form.immune_types"), "", "CREATURE_TYPE", true, LIST_LENGTH),
+			//SRD descriptive data (SpellRegistry.Spell.Info). Only the range changes a rule: how far the cast can aim.
+			FieldSpec.text("castingTime", I18n.get("gui.dndsheets.form.casting_time"), ""),
+			FieldSpec.text("range", I18n.get("gui.dndsheets.form.range_feet"), ""),
+			FieldSpec.text("components", I18n.get("gui.dndsheets.form.components"), ""),
+			FieldSpec.text("duration", I18n.get("gui.dndsheets.form.duration"), ""),
+			FieldSpec.cycle("ritual", I18n.get("gui.dndsheets.form.ritual"), BOOL_OPTIONS_NO_FIRST)
 		);
 	}
 
@@ -194,6 +200,8 @@ final class ContentTypeForms {
 		}
 		map.put("affectsTypes", joinArray(entry, "affectsTypes"));
 		map.put("immuneTypes", joinArray(entry, "immuneTypes"));
+		for (String key : new String[]{"castingTime", "range", "components", "duration"}) putIfPresent(map, entry, key);
+		map.put("ritual", entry.has("ritual") && entry.get("ritual").getAsBoolean() ? "yes" : "no");
 	}
 
 	private static void spellEffectToJson(JsonObject entry, Map<String, String> values) {
@@ -219,6 +227,8 @@ final class ContentTypeForms {
 		}
 		addCommaArray(entry, "affectsTypes", values.get("affectsTypes"));
 		addCommaArray(entry, "immuneTypes", values.get("immuneTypes"));
+		for (String key : new String[]{"castingTime", "range", "components", "duration"}) addIfNotBlank(entry, key, values.get(key));
+		if ("yes".equals(values.get("ritual"))) entry.addProperty("ritual", true);
 	}
 
 	// --- Magic items (see MagicItemRegistry.parse) ---

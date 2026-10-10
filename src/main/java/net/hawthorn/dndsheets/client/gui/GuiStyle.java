@@ -1,6 +1,7 @@
 package net.hawthorn.dndsheets.client.gui;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -108,6 +109,13 @@ public final class GuiStyle {
 		//Bottom right.
 		guiGraphics.fill(right - 2 - arm, bottom - 2 - s, right - 2, bottom - 2, STUD_COLOR);
 		guiGraphics.fill(right - 2 - s, bottom - 2 - arm, right - 2, bottom - 2, STUD_COLOR);
+	}
+
+	/** Screen titles in Cinzel (SIL OFL, see CREDITS); anything the font lacks falls back to the default one. */
+	private static final ResourceLocation TITLE_FONT = new ResourceLocation("dndsheets", "title");
+
+	public static Component title(Component text) {
+		return text.copy().withStyle(style -> style.withFont(TITLE_FONT));
 	}
 
 	/**
