@@ -1,0 +1,60 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4HKAWPEPM68PGWYYXEWWSBJ",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "CHANGELOG.md",
+    "src/main/java/net/hawthorn/dndsheets/AttackRules.java",
+    "src/main/java/net/hawthorn/dndsheets/BarbarianRageManager.java",
+    "src/main/java/net/hawthorn/dndsheets/BardInspirationManager.java",
+    "src/main/java/net/hawthorn/dndsheets/CharacterRules.java",
+    "src/main/java/net/hawthorn/dndsheets/Combatant.java",
+    "src/main/java/net/hawthorn/dndsheets/Condition.java",
+    "src/main/java/net/hawthorn/dndsheets/DeathSaveManager.java",
+    "src/main/java/net/hawthorn/dndsheets/DruidWildShapeManager.java",
+    "src/main/java/net/hawthorn/dndsheets/MonsterActionManager.java",
+    "src/main/java/net/hawthorn/dndsheets/MonsterRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/RestManager.java",
+    "src/main/java/net/hawthorn/dndsheets/RestResource.java",
+    "src/main/java/net/hawthorn/dndsheets/SaveRules.java",
+    "src/main/java/net/hawthorn/dndsheets/SpellCastManager.java",
+    "src/main/java/net/hawthorn/dndsheets/TurnActionManager.java",
+    "src/main/java/net/hawthorn/dndsheets/TurnManager.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/TurnActionScreen.java",
+    "src/main/resources/assets/dndsheets/lang/en_us.json",
+    "src/main/resources/assets/dndsheets/lang/es_ar.json",
+    "src/main/resources/assets/dndsheets/lang/es_cl.json",
+    "src/main/resources/assets/dndsheets/lang/es_ec.json",
+    "src/main/resources/assets/dndsheets/lang/es_es.json",
+    "src/main/resources/assets/dndsheets/lang/es_mx.json",
+    "src/main/resources/assets/dndsheets/lang/es_uy.json",
+    "src/main/resources/assets/dndsheets/lang/es_ve.json",
+    "src/main/resources/dndsheets/defaults/monsters.json",
+    "src/test/java/net/hawthorn/dndsheets/JsonContentSelfTest.java"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 228,
+    "cache_creation_tokens": 872097,
+    "cache_read_tokens": 21686565,
+    "output_tokens": 138333,
+    "api_call_count": 108,
+    "subagent_tokens": {
+      "input_tokens": 0,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 0,
+      "output_tokens": 0,
+      "api_call_count": 0
+    }
+  }
+}

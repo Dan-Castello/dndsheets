@@ -1,0 +1,103 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4HKAWPEPM68PGWYYXEWWSBJ",
+  "session_id": "32a992cf-5adc-4c41-8011-158f7d8f3c97",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T00:27:50.1295743Z",
+  "branch": "main",
+  "checkpoints_count": 4,
+  "save_step_count": 5,
+  "files_touched": [
+    "CHANGELOG.md",
+    "src/main/java/net/hawthorn/dndsheets/AttackRules.java",
+    "src/main/java/net/hawthorn/dndsheets/BarbarianRageManager.java",
+    "src/main/java/net/hawthorn/dndsheets/BardInspirationManager.java",
+    "src/main/java/net/hawthorn/dndsheets/CharacterRules.java",
+    "src/main/java/net/hawthorn/dndsheets/Combatant.java",
+    "src/main/java/net/hawthorn/dndsheets/Condition.java",
+    "src/main/java/net/hawthorn/dndsheets/DeathSaveManager.java",
+    "src/main/java/net/hawthorn/dndsheets/DruidWildShapeManager.java",
+    "src/main/java/net/hawthorn/dndsheets/MonsterActionManager.java",
+    "src/main/java/net/hawthorn/dndsheets/MonsterRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/RestManager.java",
+    "src/main/java/net/hawthorn/dndsheets/RestResource.java",
+    "src/main/java/net/hawthorn/dndsheets/SaveRules.java",
+    "src/main/java/net/hawthorn/dndsheets/SpellCastManager.java",
+    "src/main/java/net/hawthorn/dndsheets/TurnActionManager.java",
+    "src/main/java/net/hawthorn/dndsheets/TurnManager.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/TurnActionScreen.java",
+    "src/main/resources/assets/dndsheets/lang/en_us.json",
+    "src/main/resources/assets/dndsheets/lang/es_ar.json",
+    "src/main/resources/assets/dndsheets/lang/es_cl.json",
+    "src/main/resources/assets/dndsheets/lang/es_ec.json",
+    "src/main/resources/assets/dndsheets/lang/es_es.json",
+    "src/main/resources/assets/dndsheets/lang/es_mx.json",
+    "src/main/resources/assets/dndsheets/lang/es_uy.json",
+    "src/main/resources/assets/dndsheets/lang/es_ve.json",
+    "src/main/resources/dndsheets/defaults/monsters.json",
+    "src/test/java/net/hawthorn/dndsheets/JsonContentSelfTest.java"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5-5",
+  "turn_id": "e47167393ba4",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 228,
+    "cache_creation_tokens": 872097,
+    "cache_read_tokens": 21686565,
+    "output_tokens": 138333,
+    "api_call_count": 108,
+    "subagent_tokens": {
+      "input_tokens": 0,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 0,
+      "output_tokens": 0,
+      "api_call_count": 0
+    }
+  },
+  "session_metrics": {
+    "turn_count": 15
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T00:27:49.9373671Z",
+    "agent_lines": 465,
+    "agent_removed": 53,
+    "human_added": 0,
+    "human_modified": 9885,
+    "human_removed": 0,
+    "total_committed": 10350,
+    "total_lines_changed": 10403,
+    "agent_percentage": 4.979332884744785,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 4761,
+      "agent_lines_removed": 4657
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 6227,
+      "agent_lines_removed": 5922
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 10072,
+      "agent_lines_removed": 9570
+    }
+  ]
+}
