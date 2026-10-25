@@ -3,7 +3,7 @@
   "checkpoint_id": "01M5SVYQKKQS6CDQ0TZRS6NAPG",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 28,
+  "checkpoints_count": 29,
   "files_touched": [
     ".gitignore",
     "CHANGELOG.md",
@@ -314,14 +314,21 @@
       "compact_transcript": "/2/transcript.jsonl",
       "content_hash": "/2/content_hash.txt",
       "prompt": "/2/prompt.txt"
+    },
+    {
+      "metadata": "/3/metadata.json",
+      "transcript": "/3/full.jsonl",
+      "compact_transcript": "/3/transcript.jsonl",
+      "content_hash": "/3/content_hash.txt",
+      "prompt": "/3/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 1286,
-    "cache_creation_tokens": 5642136,
-    "cache_read_tokens": 222791472,
-    "output_tokens": 866822,
-    "api_call_count": 623,
+    "input_tokens": 1292,
+    "cache_creation_tokens": 5664962,
+    "cache_read_tokens": 222929254,
+    "output_tokens": 868368,
+    "api_call_count": 626,
     "subagent_tokens": {
       "input_tokens": 114,
       "cache_creation_tokens": 582581,
