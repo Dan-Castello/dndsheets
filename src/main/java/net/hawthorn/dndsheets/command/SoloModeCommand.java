@@ -19,7 +19,7 @@ import net.minecraftforge.fml.common.Mod;
  * this very flag makes irrelevant the moment it's turned on— is what stops anyone with "DM" permission
  * from self-escalating to "server owner".</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class SoloModeCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {

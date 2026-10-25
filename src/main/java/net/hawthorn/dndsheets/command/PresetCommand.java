@@ -34,7 +34,7 @@ import java.util.Collection;
  * }]
  * </pre>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class PresetCommand {
 	private static final Path PRESETS_DIR = DndPaths.PRESETS_DIR;
 

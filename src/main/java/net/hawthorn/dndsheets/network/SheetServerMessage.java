@@ -104,7 +104,7 @@ public class SheetServerMessage {
 			if (sanitized != null) sheet.add(key, sanitized);
 		}
 
-		boolean isOp = entity.hasPermissions(2);
+		boolean isOp = entity.hasPermissions(2) || DndsheetsMod.isHost(entity);
 		for (String key : OP_ONLY_ROLL_KEYS) {
 			if (!incoming.has(key)) continue;
 			if (isOp) {

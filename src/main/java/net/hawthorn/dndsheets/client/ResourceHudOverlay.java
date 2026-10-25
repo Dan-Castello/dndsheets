@@ -48,11 +48,22 @@ public class ResourceHudOverlay {
 	//condition isn't a resource), so a single color for the whole panel would make them indistinguishable
 	//at a glance.
 	//A line is text, or (when icons is not empty) a row of condition glyphs drawn instead of text.
-	private record Line(String text, int color, java.util.List<ResourceLocation> icons) {
+	private record Line(String text, int color, java.util.List<ResourceLocation> icons, ResourceLocation rowIcon) {
 		Line(String text, int color) {
-			this(text, color, java.util.List.of());
+			this(text, color, java.util.List.of(), null);
+		}
+
+		Line(String text, int color, ResourceLocation rowIcon) {
+			this(text, color, java.util.List.of(), rowIcon);
+		}
+
+		Line(String text, int color, java.util.List<ResourceLocation> icons) {
+			this(text, color, icons, null);
 		}
 	}
+
+	private static final int ROW_ICON = 10;
+	private static final int ROW_ICON_GAP = 3;
 
 	private static final int ICON_SIZE = 14;
 	private static final int ICON_GAP = 2;
@@ -67,14 +78,14 @@ public class ResourceHudOverlay {
 		int spellSlotsMax = sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
 		if (spellSlotsMax > 0) {
 			int slots = sheet.has("spellSlotsCurrent") ? sheet.get("spellSlotsCurrent").getAsInt() : 0;
-			lines.add(new Line(Component.translatable("hud.dndsheets.spell_slots", slots, spellSlotsMax).getString(), 0xFF55FFFF));
+			lines.add(new Line(Component.translatable("hud.dndsheets.spell_slots", slots, spellSlotsMax).getString(), 0xFF55FFFF, Icons.stat("spell")));
 		}
 
 		//Temporary HP: a buffer Minecraft doesn't represent (its health bar is only the real HP), so
 		//without this a player with temporary HP had no way to know how much buffer they had left until a
 		//hit started eating into it.
 		int temporaryHp = sheet.has("temporaryHp") ? sheet.get("temporaryHp").getAsInt() : 0;
-		if (temporaryHp > 0) lines.add(new Line(Component.translatable("hud.dndsheets.temp_hp", temporaryHp).getString(), 0xFF7FE0A0));
+		if (temporaryHp > 0) lines.add(new Line(Component.translatable("hud.dndsheets.temp_hp", temporaryHp).getString(), 0xFF7FE0A0, Icons.stat("hp")));
 
 		//Active conditions, in red and above everything else. These used to live ONLY in the DM Panel, so
 		//a paralyzed player had no way to know it: their clicks simply stopped doing anything, and that
@@ -93,9 +104,9 @@ public class ResourceHudOverlay {
 		//chat line that scrolls away. A modifier you can't see isn't something you can play around; you only
 		//find out about it after the fact, in the result.
 		String held = heldEffects(sheet);
-		if (!held.isEmpty()) lines.add(new Line(held, 0xFFFFD9A0));
+		if (!held.isEmpty()) lines.add(new Line(held, 0xFFFFD9A0, Icons.stat("concentration")));
 
-		if (sheet.has("gold")) lines.add(new Line(Component.translatable("hud.dndsheets.gold", sheet.get("gold").getAsInt()).getString(), 0xFFFFD700));
+		if (sheet.has("gold")) lines.add(new Line(Component.translatable("hud.dndsheets.gold", sheet.get("gold").getAsInt()).getString(), 0xFFFFD700, Icons.stat("gold")));
 
 		cachedLines = lines.toArray(new Line[0]);
 	}
@@ -116,7 +127,7 @@ public class ResourceHudOverlay {
 		int rowsHeight = 0;
 		for (Line line : cachedLines) {
 			if (line.icons().isEmpty()) {
-				contentWidth = Math.max(contentWidth, font.width(line.text()));
+				contentWidth = Math.max(contentWidth, font.width(line.text()) + (line.rowIcon() != null ? ROW_ICON + ROW_ICON_GAP : 0));
 				rowsHeight += ROW_HEIGHT;
 			} else {
 				contentWidth = Math.max(contentWidth, line.icons().size() * (ICON_SIZE + ICON_GAP) - ICON_GAP);
@@ -135,7 +146,12 @@ public class ResourceHudOverlay {
 		int y = top + PADDING - 2;
 		for (Line line : cachedLines) {
 			if (line.icons().isEmpty()) {
-				guiGraphics.drawString(font, line.text(), textX, y, line.color());
+				int textStart = textX;
+				if (line.rowIcon() != null) {
+					Icons.draw(guiGraphics, line.rowIcon(), textX, y - 1, ROW_ICON);
+					textStart += ROW_ICON + ROW_ICON_GAP;
+				}
+				guiGraphics.drawString(font, line.text(), textStart, y, line.color());
 				y += ROW_HEIGHT;
 			} else {
 				int x = textX;

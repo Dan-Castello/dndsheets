@@ -38,7 +38,7 @@ import java.util.Collection;
  * problem unique to Minecraft — there's no ring slot or cloak slot to wear a Ring of Protection in, so
  * without it there'd be no way for an item of that type to be "in use".</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class MagicItemCommand {
 
 	@SubscribeEvent

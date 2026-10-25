@@ -124,7 +124,7 @@ public class CompendiumEntryScreen extends ModalDialogScreen {
 		//The second possible target: another player. DM-only, because the command behind it already
 		//requires operator, and offering a regular player a button that will always tell them they can't
 		//is worse than not offering it at all. The real check still lives in the command, not here.
-		if (command != null && hasTarget() && Minecraft.getInstance().player.hasPermissions(2)) {
+		if (command != null && hasTarget() && (Minecraft.getInstance().player.hasPermissions(2) || Minecraft.getInstance().hasSingleplayerServer())) {
 			addModalButton(PADDING + 100, HEIGHT - 24, 108, 16, Component.translatable("gui.dndsheets.compendium.action.to_player"),
 				b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.compendium.pick_player"), uuid -> {
 					String name = playerNameOf(uuid);

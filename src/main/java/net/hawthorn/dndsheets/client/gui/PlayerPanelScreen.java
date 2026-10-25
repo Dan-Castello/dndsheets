@@ -50,7 +50,7 @@ public class PlayerPanelScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.player_panel.items"), b -> command("dnditems list"));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.roll_log"), b -> command("dndrolls"));
 		addRow(Component.translatable("gui.dndsheets.guide.button"),
-			b -> GuideBook.open(this.minecraft.player != null && this.minecraft.player.hasPermissions(2)));
+			b -> GuideBook.open(this.minecraft.player != null && (this.minecraft.player.hasPermissions(2) || this.minecraft.hasSingleplayerServer())));
 
 		//Not gated by permissions, for the same reason as the DM Panel keybind (see
 		//DndsheetsModKeyMappings.DM_PANEL): the client doesn't know whether solo mode is on, and

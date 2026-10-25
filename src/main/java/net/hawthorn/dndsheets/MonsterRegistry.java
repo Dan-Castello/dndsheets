@@ -752,6 +752,37 @@ public class MonsterRegistry {
 	 *       duration of combat and gives it back when it ends (see {@code TurnManager.freeze}).</li>
 	 * </ul>
 	 */
+	/**
+	 * <p>Gives a hostile mob with no stat block (vanilla, or another mod's) one built from its attributes, so combat can treat
+	 * it like any bestiary monster. Idempotent; leaves its AI and name alone and keeps the fraction of health it has; after a
+	 * server restart the generated block no longer exists in memory but the entity still carries its id, so it is rebuilt
+	 * and the saved hit points are kept. Does nothing for players, allies with a sheet, non-hostile mobs, or when
+	 * {@code adoptVanillaMobs} is off.</p>
+	 *
+	 * @return true if the entity now has a stat block that it did not have a moment ago.
+	 */
+	public static boolean adoptVanilla(Entity entity) {
+		if (!Config.adoptVanillaMobs()) return false;
+		if (!(entity instanceof net.minecraft.world.entity.Mob mob) || !(entity instanceof net.minecraft.world.entity.monster.Enemy)) return false;
+		if (!mob.isAlive() || statBlockOf(entity) != null || Combatant.characterIdOf(entity) != null) return false;
+
+		MonsterStatBlock block = VanillaStatBlocks.forEntity(mob);
+		if (get(block.id()) == null) register(block);
+
+		int scaledMax = Config.scaleMonsterMaxHp(block.maxHp());
+		boolean hadTag = monsterIdOf(entity) != null; //A tag whose block was lost on restart: keep its hit points.
+		int current = hadTag ? currentHpOf(entity)
+			: (int) Math.ceil(mob.getHealth() / Math.max(1.0f, mob.getMaxHealth()) * scaledMax);
+		current = Math.max(1, Math.min(scaledMax, current));
+
+		tagAsMonster(entity, block.id(), current);
+		if (mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH) != null) {
+			mob.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH).setBaseValue(scaledMax);
+			mob.setHealth(mob.getMaxHealth()); //Like every stat-block monster: the 5e hit points live in the tag, real health stays full.
+		}
+		return true;
+	}
+
 	public static void applyStatBlock(Entity target, MonsterStatBlock block) {
 		//Same difficulty scaling as spawnAt; see the comment there.
 		int scaledMaxHp = Config.scaleMonsterMaxHp(block.maxHp());

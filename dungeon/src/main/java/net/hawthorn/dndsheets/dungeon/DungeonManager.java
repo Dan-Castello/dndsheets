@@ -353,7 +353,7 @@ public class DungeonManager {
 			try {
 				Files.createDirectories(poolFile.getParent());
 				try (OutputStream out = Files.newOutputStream(poolFile, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-					out.write(DndsheetsMod.PRETTY_GSON.toJson(entry.getValue()).getBytes());
+					out.write(DndsheetsMod.PRETTY_GSON.toJson(entry.getValue()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
 				}
 			} catch (IOException e) {
 				DndsheetsMod.LOGGER.error("dndsheets: could not write pool {}.", entry.getKey(), e);
@@ -467,7 +467,7 @@ public class DungeonManager {
 			root.add("pack", packSection);
 
 			try (OutputStream out = Files.newOutputStream(mcmeta, StandardOpenOption.CREATE)) {
-				out.write(DndsheetsMod.PRETTY_GSON.toJson(root).getBytes());
+				out.write(DndsheetsMod.PRETTY_GSON.toJson(root).getBytes(java.nio.charset.StandardCharsets.UTF_8));
 			}
 		} catch (IOException e) {
 			DndsheetsMod.LOGGER.error("dndsheets: could not create pack.mcmeta for the dungeon datapack.", e);

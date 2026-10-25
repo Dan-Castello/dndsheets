@@ -21,7 +21,7 @@ import net.minecraftforge.fml.common.Mod;
  * the regular config instead of custom state is what makes it survive a restart without inventing new
  * persistence.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class VisionCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {

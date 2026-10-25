@@ -52,7 +52,7 @@ import java.util.Optional;
  * another one if they switch characters within those seconds; if Origins ever exposes a real callback,
  * this wait is the first thing that can be deleted.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.species.DndsheetsSpeciesMod.MODID)
 public class SpeciesCommand {
 	private static final ResourceLocation RACE_LAYER = new ResourceLocation("dndsheets_species", "race");
 	private static final ResourceLocation BACKGROUND_LAYER = new ResourceLocation("dndsheets_species", "background");

@@ -39,7 +39,7 @@ import java.util.Collection;
  * immediately without depending separately on {@code /dndsheet setslots} or {@code /dndspells
  * staff}.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class SpellCommand {
 	private static final Path SPELLS_DIR = DndPaths.SPELLS_DIR;
 

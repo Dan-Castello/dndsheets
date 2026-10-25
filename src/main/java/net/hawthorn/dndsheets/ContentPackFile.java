@@ -43,7 +43,7 @@ public final class ContentPackFile {
 	private static void writeArray(Path file, JsonArray array) throws IOException {
 		Files.createDirectories(file.getParent());
 		try (OutputStream out = Files.newOutputStream(file, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-			out.write(PRETTY_GSON.toJson(array).getBytes());
+			out.write(PRETTY_GSON.toJson(array).getBytes(java.nio.charset.StandardCharsets.UTF_8));
 		}
 	}
 

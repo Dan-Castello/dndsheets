@@ -25,7 +25,7 @@ import java.util.Collection;
  * the inventory. This command just makes it easy to get and gates "giving it out" to operators, same as
  * the rest of the DM tools.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class NotesCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {

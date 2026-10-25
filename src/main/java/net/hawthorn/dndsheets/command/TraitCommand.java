@@ -30,7 +30,7 @@ import java.util.Collection;
  * {@code <world folder>/dndsheets/traits/<file>.json} (see {@link TraitRegistry} for the format)
  * and grants them to a player by hand, on top of whatever their class preset already grants.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class TraitCommand {
 	private static final Path TRAITS_DIR = DndPaths.TRAITS_DIR;
 

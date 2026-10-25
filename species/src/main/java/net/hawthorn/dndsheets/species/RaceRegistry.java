@@ -33,7 +33,7 @@ import java.util.stream.Stream;
  * {@code characterRace} text by substring match (elf/dwarf/gnome/orc/tiefling), so writing the race name
  * is enough — duplicating it into a new field would be two sources of truth for the same thing.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.species.DndsheetsSpeciesMod.MODID)
 public class RaceRegistry {
 	public record Race(String id, String name, Map<String, Integer> abilityBonus, Integer speed, List<String> traits, String note) {}
 

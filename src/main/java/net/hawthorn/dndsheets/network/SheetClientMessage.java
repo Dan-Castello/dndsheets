@@ -41,7 +41,7 @@ public class SheetClientMessage {
 		//since almost any interaction on that screen saves whatever its fields hold
 		//(CharacterSheetSaveProcedure), the first roll after switching would write the old character's
 		//data OVER the new one. It wasn't just a stale display: data was actually lost.
-		net.hawthorn.dndsheets.client.gui.CharacterSheetScreen.refreshIfOpen();
+		net.hawthorn.dndsheets.client.gui.PlayerSheetScreen.refreshIfOpen();
 		net.hawthorn.dndsheets.client.gui.SkillProficiencyScreen.refreshIfOpen();
 		net.hawthorn.dndsheets.client.gui.CharacterSetupScreen.refreshIfOpen();
 	}

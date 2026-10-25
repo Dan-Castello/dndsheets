@@ -33,7 +33,7 @@ import java.util.UUID;
  * monster (a real attack/save roll, real damage applied). Sneak + right-click (on a monster OR an armor
  * stand) removes it instantly, to clean up if too many were summoned.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class MonsterActionManager {
 
 	@SubscribeEvent
@@ -278,7 +278,13 @@ public class MonsterActionManager {
 				//string — falls back to the nearest player instead of crashing the resolution.
 			}
 		}
-		return monsterEntity.level().getNearestPlayer(monsterEntity, 30);
+		return nearestLivingPlayer(monsterEntity.level(), monsterEntity, 30);
+	}
+
+	/** The nearest player who is standing: not a spectator, not down, not just revived. */
+	static Player nearestLivingPlayer(net.minecraft.world.level.Level level, Entity from, double range) {
+		return level.getNearestPlayer(from.getX(), from.getY(), from.getZ(), range,
+			e -> net.minecraft.world.entity.EntitySelector.NO_SPECTATORS.test(e) && e instanceof Player p && !DeathSaveManager.isDownedOrProtected(p));
 	}
 
 	//Monster's automatic turn: TurnManager.beginTurn calls this as soon as it's a monster's turn, without
@@ -308,7 +314,7 @@ public class MonsterActionManager {
 		//this distinction, Spiritual Weapon would hit whoever summoned it.
 		Entity target = SummonManager.ownerOf(monsterEntity) != null
 			? SummonManager.findEnemyTarget(level, monsterEntity, 30)
-			: level.getNearestPlayer(monsterEntity, 30);
+			: nearestLivingPlayer(level, monsterEntity, 30);
 		if (target == null) return; //Nobody nearby: pass the turn without doing anything, it was already consumed above.
 
 		moveTowardIfNeeded(monsterEntity, target);

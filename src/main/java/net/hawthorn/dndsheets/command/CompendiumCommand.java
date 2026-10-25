@@ -13,7 +13,7 @@ import net.minecraftforge.network.PacketDistributor;
  * material, and it reveals nothing a player couldn't already see in their Spellbook or in a monster's
  * sheet while fighting it. The DM also has it as a row in the DM Panel.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class CompendiumCommand {
 
 	@SubscribeEvent

@@ -10,6 +10,7 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -31,13 +32,45 @@ import java.util.concurrent.ThreadLocalRandom;
  * Damage taken while downed is a failed save, and massive damage (what is left after 0 HP is at least the
  * max HP) kills outright.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class DeathSaveManager {
 	private static final int INFINITE_DURATION = 1_000_000;
 	private static final Set<UUID> allowRealDeath = ConcurrentHashMap.newKeySet();
 
 	static void clearFor(ServerPlayer player) {
 		allowRealDeath.remove(player.getUUID());
+		massiveMarked.remove(player.getUUID());
+		lastDownedHit.remove(player.getUUID());
+		reviveGrace.remove(player.getUUID());
+	}
+
+	//Seconds after being revived during which nothing can hurt (or re-down) the character. Without it, a monster
+	//whose turn came right after the revive put them back at 0 HP and the saves restarted from nothing.
+	private static final long REVIVE_GRACE_TICKS = 100;
+	private static final java.util.Map<UUID, Long> reviveGrace = new ConcurrentHashMap<>();
+	//Deaths we asked for through the massive-damage rule, so the flag can be taken back if the damage is canceled.
+	private static final Set<UUID> massiveMarked = ConcurrentHashMap.newKeySet();
+
+	/** Pure: is a grace window that ends at {@code until} still running at game time {@code now}? */
+	static boolean graceActive(long until, long now) {
+		return now < until;
+	}
+
+	public static boolean hasGrace(net.minecraft.world.entity.player.Player player) {
+		Long until = reviveGrace.get(player.getUUID());
+		return until != null && graceActive(until, player.level().getGameTime());
+	}
+
+	/** Monsters do not pick a character who is down or has just been revived as their target (see MonsterActionManager). */
+	public static boolean isDownedOrProtected(net.minecraft.world.entity.player.Player player) {
+		if (hasGrace(player)) return true;
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		return sheet != null && isDowned(sheet);
+	}
+
+	/** A death we asked for is in progress: other handlers (wild shape) must not cancel it. */
+	static boolean realDeathPending(ServerPlayer player) {
+		return allowRealDeath.contains(player.getUUID());
 	}
 
 	//Real death is canceled and the "downed" state is entered instead, unless the player has already
@@ -46,19 +79,13 @@ public class DeathSaveManager {
 	public static void onLivingDeath(LivingDeathEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
+		DndsheetsMod.LOGGER.debug("death event for {}: canceled={}, asked-for={}", player.getGameProfile().getName(), event.isCanceled(), allowRealDeath.contains(player.getUUID()));
+		//Falling out of the world is not something death saves can undo: the player would stay "downed" falling forever.
+		if (event.getSource().is(net.minecraft.world.damagesource.DamageTypes.FELL_OUT_OF_WORLD)) return;
 		if (allowRealDeath.remove(player.getUUID())) {
-			//Actual real death (3 failed saves): before this the sheet stayed with downed=true forever.
-			//The player respawned at full health but onAttackWhileDowned/onLivingHurtWhileDowned kept
-			//treating them as downed (unable to attack or take damage ever again), and resendStateOnJoin
-			//reopened the death-save screen on every reconnect. It's cleared the same way as stabilize(),
-			//because this IS the end of the "downed" state.
-			JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
-			if (sheet != null) {
-				sheet.addProperty("downed", false);
-				sheet.addProperty("deathSaveSuccesses", 0);
-				sheet.addProperty("deathSaveFailures", 0);
-				sendSheetUpdate(player, sheet);
-			}
+			//The death we asked for (3 failed saves, giving up, massive damage): it goes through. 'downed' is NOT cleared here:
+			//another listener (or a totem) can still abort the death after this point, and a character who is alive but no
+			//longer marked as down was sent straight back into the death saves by the next hit. The respawn clears it.
 			DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new ScreenActionMessage(ScreenActionMessage.Action.DEATH_SAVE_CLOSE));
 			return;
 		}
@@ -69,6 +96,21 @@ public class DeathSaveManager {
 
 		event.setCanceled(true);
 		goDown(player, sheet);
+	}
+
+	/** The new body after a real death: standing, no saves pending, no leftover protection. */
+	@SubscribeEvent
+	public static void clearDownedOnRespawn(PlayerEvent.PlayerRespawnEvent event) {
+		if (event.getEntity().level().isClientSide() || !(event.getEntity() instanceof ServerPlayer player)) return;
+		clearFor(player);
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		if (sheet != null && (isDowned(sheet) || sheet.has("deathSaveFailures"))) {
+			sheet.addProperty("downed", false);
+			sheet.addProperty("deathSaveSuccesses", 0);
+			sheet.addProperty("deathSaveFailures", 0);
+			sendSheetUpdate(player, sheet);
+		}
+		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> player), new ScreenActionMessage(ScreenActionMessage.Action.DEATH_SAVE_CLOSE));
 	}
 
 	/** Massive damage (SRD): what is left after dropping to 0 HP is at least the maximum HP -- instant death. */
@@ -84,10 +126,19 @@ public class DeathSaveManager {
 		if (event.getEntity().level().isClientSide()) return;
 		if (!(event.getEntity() instanceof ServerPlayer player) || !Config.auto(Config.Rule.DEATH_SAVES)) return;
 		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
-		if (sheet == null || isDowned(sheet)) return;
+		if (sheet == null || isDowned(sheet) || hasGrace(player)) return;
 		if (!isMassiveDamage(player.getHealth(), event.getAmount(), player.getMaxHealth())) return;
 		allowRealDeath.add(player.getUUID());
+		massiveMarked.add(player.getUUID());
 		ChatFeedback.broadcast(player, Component.translatable("chat.dndsheets.death.massive", characterName(sheet, player)).withStyle(net.minecraft.ChatFormatting.DARK_RED));
+	}
+
+	//If something cancels that damage, the death we asked for will not happen: take the flag back, or the player's NEXT
+	//death, from anything, would skip the death saves.
+	@SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+	public static void onMassiveDamageCanceled(LivingDamageEvent event) {
+		if (!(event.getEntity() instanceof ServerPlayer player)) return;
+		if (massiveMarked.remove(player.getUUID()) && event.isCanceled()) allowRealDeath.remove(player.getUUID());
 	}
 
 	//SRD: damage taken while at 0 HP is a failed death save (and damage of at least the max HP kills outright).
@@ -97,7 +148,11 @@ public class DeathSaveManager {
 	private static final java.util.Map<UUID, Long> lastDownedHit = new ConcurrentHashMap<>();
 	private static final long DOWNED_HIT_COOLDOWN_TICKS = 20;
 
-	private static void failSaveFromDamage(ServerPlayer player, JsonObject sheet, float amount) {
+	private static void failSaveFromDamage(ServerPlayer player, float amount) {
+		//The live sheet, read when this runs (a tick after the hit): in between the character may have been stabilized, have
+		//given up or died, and a failure must not be added to someone who is no longer down.
+		JsonObject sheet = SheetLoader.getServerSheet(player.getStringUUID());
+		if (sheet == null || !isDowned(sheet) || !player.isAlive() || hasGrace(player)) return;
 		long now = player.level().getGameTime();
 		Long last = lastDownedHit.get(player.getUUID());
 		if (amount <= 0 || (last != null && now - last < DOWNED_HIT_COOLDOWN_TICKS)) return;
@@ -125,13 +180,21 @@ public class DeathSaveManager {
 		//never drop below 1 and the player would stay downed forever without ever dying for real.
 		//allowRealDeath is the same flag onLivingDeath already uses to avoid canceling THAT particular event.
 		if (allowRealDeath.contains(victim.getUUID())) return;
+		if (event.getSource().is(net.minecraft.world.damagesource.DamageTypes.FELL_OUT_OF_WORLD)) { //The void kills, downed or not.
+			allowRealDeath.add(victim.getUUID());
+			return;
+		}
+		if (hasGrace(victim)) { //Just revived: not even a hit that was already coming can put them back down.
+			event.setCanceled(true);
+			return;
+		}
 		JsonObject sheet = SheetLoader.getServerSheet(victim.getStringUUID());
 		if (sheet != null && isDowned(sheet)) {
 			event.setCanceled(true);
 			if (victim instanceof ServerPlayer downed && downed.getServer() != null) {
 				float amount = event.getAmount();
 				//Deferred to the server thread's next step: killing from inside another hurt event would nest them.
-				downed.getServer().execute(() -> failSaveFromDamage(downed, sheet, amount));
+				downed.getServer().execute(() -> failSaveFromDamage(downed, amount));
 			}
 		}
 	}
@@ -225,23 +288,34 @@ public class DeathSaveManager {
 
 	//Actual real death (3 failed saves, or giving up by hand): allowRealDeath is the flag that tells
 	//onLivingDeath/onLivingHurtWhileDowned not to cancel THIS death like any other damage while downed.
+	//It has to work whatever protects the player: genericKill ignores invulnerability and Resistance (a creative or
+	//invulnerable character used to survive "give up"), and if something still stops it (a totem of undying) the death
+	//is forced through directly.
 	private static void killForReal(ServerPlayer player, JsonObject sheet) {
+		//A druid in beast shape would otherwise be turned back by the shape-drop handler instead of dying.
+		if (DruidWildShapeManager.isShifted(player)) DruidWildShapeManager.revert(player, false);
+
 		allowRealDeath.add(player.getUUID());
 		sendSheetUpdate(player, sheet);
-		player.hurt(player.damageSources().generic(), Float.MAX_VALUE);
-		//player.hurt() already fired (and cleared) the flag if the player really died. If something
-		//intercepted the death before LivingDeathEvent (a totem of undying, total absorption...), the
-		//flag would have stayed stuck forever, and this player's NEXT real death, from any unrelated
-		//cause, would have silently skipped the death-save system. No-op if it's already cleared.
+		net.minecraft.world.damagesource.DamageSource source = player.damageSources().genericKill();
+		player.hurt(source, Float.MAX_VALUE);
+		if (!player.isDeadOrDying()) {
+			player.setHealth(0.0F);
+			player.die(source);
+		}
+		boolean dead = player.isDeadOrDying();
+		DndsheetsMod.LOGGER.debug("killForReal for {}: dead={}", player.getGameProfile().getName(), dead);
+		//The flag is dropped only now: the death event it exists for has already been delivered.
 		allowRealDeath.remove(player.getUUID());
 
-		//If this was the last person alive in an active encounter, end turn mode right now — without
+		//If this was the last person alive in an active encounter, end turn mode right now: without
 		//this, any compatibility mob stayed frozen (NoAI) forever, with nobody having permission to run
-		///dndturns end in a session with no DM live.
-		if (player.level() instanceof net.minecraft.server.level.ServerLevel level) TurnManager.onPlayerRealDeath(level, player);
+		///dndturns end in a session with no DM live. Only when the death really happened.
+		if (dead && player.level() instanceof net.minecraft.server.level.ServerLevel level) TurnManager.onPlayerRealDeath(level, player);
 	}
 
 	private static void goDown(ServerPlayer player, JsonObject sheet) {
+		lastDownedHit.remove(player.getUUID());
 		player.setHealth(1.0f);
 		sheet.addProperty("downed", true);
 		sheet.addProperty("deathSaveSuccesses", 0);
@@ -258,6 +332,9 @@ public class DeathSaveManager {
 	}
 
 	private static void stabilize(ServerPlayer player, JsonObject sheet, Component titleText) {
+		lastDownedHit.remove(player.getUUID());
+		reviveGrace.put(player.getUUID(), player.level().getGameTime() + REVIVE_GRACE_TICKS);
+		CombatFx.actionBar(player, Component.translatable("chat.dndsheets.death.grace").withStyle(net.minecraft.ChatFormatting.GREEN));
 		sheet.addProperty("downed", false);
 		sheet.addProperty("deathSaveSuccesses", 0);
 		sheet.addProperty("deathSaveFailures", 0);

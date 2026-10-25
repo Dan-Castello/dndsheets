@@ -38,7 +38,7 @@ import java.util.Collection;
  * move or attack with them on its own. See {@link MonsterRegistry} for the JSON format and
  * {@link net.hawthorn.dndsheets.MonsterActionManager} for how the DM triggers their attacks/spells.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class MonsterCommand {
 	private static final Path MONSTERS_DIR = DndPaths.MONSTERS_DIR;
 

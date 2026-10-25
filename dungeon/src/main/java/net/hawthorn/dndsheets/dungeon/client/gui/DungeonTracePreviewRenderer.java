@@ -36,7 +36,7 @@ import java.util.List;
  * in a {@link GhostVertexConsumer} that forces every vertex's alpha — so ANY block, translucent or not
  * in the real game, comes out semi-transparent in the projection.</p>
  */
-@Mod.EventBusSubscriber(value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.dungeon.DndsheetsDungeonMod.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public final class DungeonTracePreviewRenderer {
 
 	private DungeonTracePreviewRenderer() {}

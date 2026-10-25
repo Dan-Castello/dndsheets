@@ -48,6 +48,11 @@ public class BrowseActionMessage {
 		SPELL_PREPARE, SPELL_UNPREPARE, DESIGN_ENCOUNTER,
 		RULES_LIST, RULES_SET, CONFIG_LIST, CONFIG_SET, GIVE_MAGIC, LIST_IDS }
 
+	//The actions that only a DM may request (the per-case checks below stay as the second line of defense).
+	private static final java.util.Set<Action> DM_ONLY = java.util.EnumSet.of(Action.LIST_PARTY, Action.GIVE_WEAPONS, Action.GIVE_SPELLS,
+		Action.GRANT_TRAITS, Action.SPAWN_MONSTERS, Action.MANAGE_OPTIONS, Action.CONTENT_ENTRIES, Action.LIST_ENCOUNTERS,
+		Action.DESIGN_ENCOUNTER, Action.RULES_LIST, Action.RULES_SET, Action.CONFIG_LIST, Action.CONFIG_SET, Action.GIVE_MAGIC);
+
 	final Action action;
 	//Used by SWITCH and DELETE (an id), CREATE (the new character's name), and SKILL_TOGGLE (the skill's
 	//index); the rest send it empty.
@@ -78,6 +83,12 @@ public class BrowseActionMessage {
 		NetworkUtil.handleOnServer(context, () -> {
 			ServerPlayer sender = context.getSender();
 			if (sender == null) return;
+			//The DM Panel is open to everyone (the client cannot know who is a DM), so a refused click has to SAY so: the
+			//silent `if (canActAsDm) ...` below made every button look dead for whoever was not an operator.
+			if (DM_ONLY.contains(message.action) && !DndsheetsMod.canActAsDm(sender)) {
+				sender.sendSystemMessage(Component.translatable("chat.dndsheets.dm_required").withStyle(ChatFormatting.RED));
+				return;
+			}
 			switch (message.action) {
 				case LIST_MINE -> sendOwnCharacters(sender);
 				case LIST_PARTY -> {

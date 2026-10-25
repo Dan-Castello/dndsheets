@@ -38,70 +38,70 @@ public class DmPanelScreen extends ListPickerScreen {
 		addHeader(Component.translatable("gui.dndsheets.dm_panel.section_party"));
 		//This is what a DM checks most often per session, and until now each player's Sheet Adjust screen
 		//had to be opened separately to see their HP.
-		addRow(Component.translatable("gui.dndsheets.dm_panel.party"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.party"), Icons.byPath("creature/humanoid"),
 			b -> DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.LIST_PARTY)));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.turn_mode"), b -> TurnControlScreen.open());
-		addRow(Component.translatable("gui.dndsheets.dm_panel.rules"), b -> send(BrowseActionMessage.Action.RULES_LIST, ""));
+		addRow(Component.translatable("gui.dndsheets.dm_panel.turn_mode"), Icons.byPath("stat/initiative"), b -> TurnControlScreen.open());
+		addRow(Component.translatable("gui.dndsheets.dm_panel.rules"), Icons.byPath("stat/spell"), b -> send(BrowseActionMessage.Action.RULES_LIST, ""));
 
 		addHeader(Component.translatable("gui.dndsheets.dm_panel.section_spawn"));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.spawn_npc"), b -> SpawnGenericScreen.open());
-		addRow(Component.translatable("gui.dndsheets.dm_panel.spawn_monster"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.spawn_npc"), Icons.byPath("creature/humanoid"), b -> SpawnGenericScreen.open());
+		addRow(Component.translatable("gui.dndsheets.dm_panel.spawn_monster"), Icons.byPath("creature/dragon"),
 			b -> send(BrowseActionMessage.Action.SPAWN_MONSTERS, ""));
 		//Full encounters ("goblin x4, wolf x2"): the list comes from the server and each row triggers the
 		//usual /dndencounters spawn — before, this only existed typed by hand.
-		addRow(Component.translatable("gui.dndsheets.dm_panel.encounters"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.encounters"), Icons.byPath("stat/attack"),
 			b -> send(BrowseActionMessage.Action.LIST_ENCOUNTERS, ""));
 		//Build a new one while watching the difficulty it produces for the party, instead of writing
 		//"goblin x4" blindly in the content creator — see EncounterDesignerScreen.
-		addRow(Component.translatable("gui.dndsheets.dm_panel.design_encounter"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.design_encounter"), Icons.byPath("ui/edit"),
 			b -> send(BrowseActionMessage.Action.DESIGN_ENCOUNTER, ""));
 
 		addHeader(Component.translatable("gui.dndsheets.dm_panel.section_give"));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.grant_trait"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_trait"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.grant_trait"), Icons.byPath("resource/inspiration"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_trait"),
 			uuid -> send(BrowseActionMessage.Action.GRANT_TRAITS, uuid)));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.give_item"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_item"), GiveItemListScreen::open));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.give_weapon"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_weapon"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.give_item"), Icons.byPath("stat/gold"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_item"), GiveItemListScreen::open));
+		addRow(Component.translatable("gui.dndsheets.dm_panel.give_weapon"), Icons.byPath("stat/damage"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_weapon"),
 			uuid -> send(BrowseActionMessage.Action.GIVE_WEAPONS, uuid)));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.give_spell"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_spell"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.give_spell"), Icons.byPath("school/evocation"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_spell"),
 			uuid -> send(BrowseActionMessage.Action.GIVE_SPELLS, uuid)));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.sheet_adjust"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_sheet"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.sheet_adjust"), Icons.byPath("ui/edit"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_sheet"),
 			uuid -> DndsheetsMod.PACKET_HANDLER.sendToServer(new SheetSummaryRequestMessage(uuid))));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.give_magic"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_magic"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.give_magic"), Icons.byPath("school/transmutation"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_magic"),
 			uuid -> send(BrowseActionMessage.Action.GIVE_MAGIC, uuid)));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.apply_preset"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_preset"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.apply_preset"), Icons.byPath("resource/second_wind"), b -> PlayerPickerScreen.open(Component.translatable("gui.dndsheets.dm_panel.pick_preset"),
 			uuid -> send(BrowseActionMessage.Action.LIST_PRESETS, uuid)));
 
 		addHeader(Component.translatable("gui.dndsheets.dm_panel.section_world"));
 		//The dungeon toolkit lives in its own addon (dndsheets_dungeon) since PROJECT_CONTEXT.md /
 		//Modularity Map: this panel no longer knows its network messages, it only triggers its command —
 		//same pattern as "journal" below. If the addon isn't installed, Brigadier already rejects the command.
-		addRow(Component.translatable("gui.dndsheets.dm_panel.dungeons"),
+		addRow(Component.translatable("gui.dndsheets.dm_panel.dungeons"), Icons.byPath("creature/construct"),
 			b -> Minecraft.getInstance().player.connection.sendCommand("dnddungeon gui"));
 		//Monster difficulty no longer has its own command: it reads from the WORLD's difficulty (see
 		//Config.difficultyMultiplier), so these rows send vanilla's /difficulty. There used to be two
 		//commands for the same question and they could contradict each other — world on Hard, the mod's
 		//monsters on Easy, with nothing warning about it. It's still offered here because that's where the DM will look for it.
-		addRow(Component.translatable("gui.dndsheets.dm_panel.difficulty"), b -> CommandListScreen.open(
+		addRow(Component.translatable("gui.dndsheets.dm_panel.difficulty"), Icons.byPath("stat/death"), b -> CommandListScreen.open(
 			Component.translatable("gui.dndsheets.dm_panel.difficulty"),
 			java.util.List.of(
 				new CommandListScreen.Row(Component.translatable("gui.dndsheets.difficulty.easy"), "difficulty easy"),
 				new CommandListScreen.Row(Component.translatable("gui.dndsheets.difficulty.normal"), "difficulty normal"),
 				new CommandListScreen.Row(Component.translatable("gui.dndsheets.difficulty.hard"), "difficulty hard"))));
 		//The roll log already prints nicely to chat; the row just avoids having to know the command.
-		addRow(Component.translatable("gui.dndsheets.dm_panel.roll_log"), b -> {
+		addRow(Component.translatable("gui.dndsheets.dm_panel.roll_log"), Icons.byPath("stat/d20"), b -> {
 			Minecraft.getInstance().player.connection.sendCommand("dndrolls");
 			Minecraft.getInstance().setScreen(null);
 		});
 		//The journal opens via command (/dndjournal) and not from here with a message: the server already
 		//knows what each person can read, and requesting it from the client would be an extra round trip for the same result.
-		addRow(Component.translatable("gui.dndsheets.dm_panel.journal"), b -> {
+		addRow(Component.translatable("gui.dndsheets.dm_panel.journal"), Icons.byPath("stat/spell"), b -> {
 			net.minecraft.client.Minecraft.getInstance().player.connection.sendCommand("dndjournal");
 		});
-		addRow(Component.translatable("gui.dndsheets.dm_panel.compendium"), b -> CompendiumScreen.open());
+		addRow(Component.translatable("gui.dndsheets.dm_panel.compendium"), Icons.byPath("school/divination"), b -> CompendiumScreen.open());
 
 		addHeader(Component.translatable("gui.dndsheets.dm_panel.section_content"));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.create_content"), b -> ContentTypeListScreen.open());
-		addRow(Component.translatable("gui.dndsheets.guide.button"), b -> GuideBook.open(true));
+		addRow(Component.translatable("gui.dndsheets.dm_panel.create_content"), Icons.byPath("ui/edit"), b -> ContentTypeListScreen.open());
+		addRow(Component.translatable("gui.dndsheets.guide.button"), Icons.byPath("stat/spell"), b -> GuideBook.open(true));
 	}
 
 	private static void send(BrowseActionMessage.Action action, String argument) {

@@ -33,7 +33,7 @@ import java.util.Map;
  * <p>Per-class hit die table, in config/dndsheets-common.toml, so it can be edited (or translated, or
  * extended by hand) in bulk without touching code or recompiling.</p>
  */
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 //No stability contract: this mod doesn't publish a versioned API (the DndSheetsApi facade was deleted —
 //233 lines that not a single caller used, not even the addons, which come in through here). An external
 //mod calling these methods is exposed to their signature changing without notice. The only thing
@@ -45,6 +45,7 @@ public class Config {
 	private static final ForgeConfigSpec.ConfigValue<List<? extends String>> ENCHANT_BONUS_ENTRIES;
 	private static final ForgeConfigSpec.BooleanValue VISION_RULES;
 	private static final ForgeConfigSpec.BooleanValue SOLO_MODE;
+	private static final ForgeConfigSpec.BooleanValue ADOPT_VANILLA;
 	private static final ForgeConfigSpec.IntValue CAST_TICKS_PER_LEVEL;
 	private static final ForgeConfigSpec.IntValue CAST_TICKS_MAX;
 	private static final ForgeConfigSpec.IntValue FEET_PER_BLOCK;
@@ -130,6 +131,14 @@ public class Config {
 			"appoint operators, not the level 2 that this very flag renders irrelevant the moment it's turned on."
 		);
 		SOLO_MODE = builder.define("soloMode", false);
+
+		builder.comment(
+			"adoptVanillaMobs: when combat touches a hostile mob that has no stat block (vanilla or from another mod), it is",
+			"given one built from its Minecraft attributes (HP, armor, attack damage, size) so it fights under the same rules as",
+			"the bestiary: attack rolls against AC, damage, its own turn. false = the old behavior (the hit only spends your",
+			"action and Minecraft resolves the damage; the mob acts with its own AI)."
+		);
+		ADOPT_VANILLA = builder.define("adoptVanillaMobs", true);
 
 		builder.comment(
 			"Automation switches (the DM's Rules menu). true = the mod resolves it on its own; false = manual,",
@@ -247,7 +256,7 @@ public class Config {
 		reload();
 	}
 
-	@Mod.EventBusSubscriber
+	@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 	public static class Sync {
 		@SubscribeEvent
 		public static void onLogin(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
@@ -293,6 +302,11 @@ public class Config {
 	}
 
 	/** Whether solo mode (no DM) is active. See {@link net.hawthorn.dndsheets.DndsheetsMod#canActAsDm}. */
+	/** Whether hostile mobs without a stat block get a generated one when combat touches them. */
+	public static boolean adoptVanillaMobs() {
+		return ADOPT_VANILLA.get();
+	}
+
 	public static boolean soloMode() {
 		return SOLO_MODE.get();
 	}

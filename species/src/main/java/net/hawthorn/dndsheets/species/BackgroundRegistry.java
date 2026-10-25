@@ -30,7 +30,7 @@ import java.util.stream.Stream;
  * engine consumes that today (unlike proficiencies, which the whole roll system already reads), so it
  * would be mechanics with no one using them — same criterion as {@code TraitRegistry}.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.species.DndsheetsSpeciesMod.MODID)
 public class BackgroundRegistry {
 	public record Background(String id, String name, int skillA, int skillB, List<String> traits) {}
 

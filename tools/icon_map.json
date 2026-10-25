@@ -69,5 +69,10 @@
   "stat/gold": "delapouite/coins",
   "stat/death": "lorc/skull-crossed-bones",
   "stat/spell": "delapouite/spell-book",
-  "stat/d20": "delapouite/dice-twenty-faces-twenty"
+  "stat/d20": "delapouite/dice-twenty-faces-twenty",
+  "stat/damage": "lorc/sword-wound",
+  "stat/attack": "lorc/crossed-swords",
+
+  "ui/edit": "delapouite/pencil",
+  "ui/delete": "delapouite/trash-can"
 }

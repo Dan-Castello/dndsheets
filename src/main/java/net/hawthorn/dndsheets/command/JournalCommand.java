@@ -34,7 +34,7 @@ import java.util.List;
  *   own.</li>
  * </ul>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class JournalCommand {
 
 	@SubscribeEvent

@@ -32,7 +32,7 @@ import java.util.Optional;
  * step). The DM Panel GUI calls the same {@code DungeonManager}/{@code DungeonPieceRegistry} methods
  * via network messages — this command doesn't duplicate that logic, it just exposes it in chat.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.dungeon.DndsheetsDungeonMod.MODID)
 public class DungeonCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {

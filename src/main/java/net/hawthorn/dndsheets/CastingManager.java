@@ -40,7 +40,7 @@ import java.util.UUID;
  * pending advantage already use, no new networking— so the first-person animation knows when to start and
  * when to stop (see {@code client.SpellCastAnimator}).</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class CastingManager {
 	/** Deliberately mutable: {@code ticksLeft} decreases every tick, and a record would force re-inserting into the map. */
 	private static final class Casting {

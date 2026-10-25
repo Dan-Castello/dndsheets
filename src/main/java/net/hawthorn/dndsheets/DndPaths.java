@@ -17,7 +17,7 @@ import java.util.stream.Stream;
  * to run {@code /dndweapons load} (etc.) by hand — those commands still work for hot-reloading without
  * restarting the server.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class DndPaths {
 	public static final Path ROOT = SheetLoader.GAME_DIR.resolve("dndsheets");
 	public static final Path WEAPONS_DIR = ROOT.resolve("weapons");

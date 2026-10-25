@@ -7,7 +7,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /** {@code /dndrp <verb>}: what the Roleplay Wand's verb list runs. Narration only, no permission needed. */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class RoleplayCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {

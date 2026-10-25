@@ -16,7 +16,7 @@ import net.minecraftforge.fml.common.Mod;
  * target, converted to feet (Config.feetPerBlock, 5 by default, same grid as {@link net.hawthorn.dndsheets.MovementAnchorTracker}
  * and the rest of the table) and rounded to the nearest multiple of 5, as measured in 5e.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class DistanceCommand {
 
 	@SubscribeEvent

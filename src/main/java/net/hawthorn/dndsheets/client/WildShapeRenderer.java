@@ -32,7 +32,7 @@ import java.util.UUID;
  * renderer — meaning with the pose stack already positioned on the player. Passing the position again
  * would draw the beast at twice its distance from the camera.</p>
  */
-@Mod.EventBusSubscriber(value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class WildShapeRenderer {
 
 	private static final Map<UUID, String> shapes = new HashMap<>();

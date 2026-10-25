@@ -31,7 +31,7 @@ import java.util.Scanner;
  * — because pieces only make sense alongside that same game's datapack, where
  * {@link DungeonManager#publish} copies their .nbt.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.dungeon.DndsheetsDungeonMod.MODID)
 public class DungeonPieceRegistry {
 	public record DungeonPiece(String id, String structureId, String pool, int weight, String tags) {
 	}
@@ -68,7 +68,7 @@ public class DungeonPieceRegistry {
 		if (!Files.exists(file)) return;
 
 		try (InputStream in = Files.newInputStream(file)) {
-			Scanner scanner = new Scanner(in).useDelimiter("\\A");
+			Scanner scanner = new Scanner(in, java.nio.charset.StandardCharsets.UTF_8).useDelimiter("\\A");
 			String content = scanner.hasNext() ? scanner.next() : "[]";
 			JsonArray array = JsonParser.parseString(content).getAsJsonArray();
 			for (JsonElement el : array) {
@@ -106,7 +106,7 @@ public class DungeonPieceRegistry {
 			Files.createDirectories(file.getParent());
 
 			try (OutputStream out = Files.newOutputStream(file, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-				out.write(DndsheetsMod.PRETTY_GSON.toJson(array).getBytes());
+				out.write(DndsheetsMod.PRETTY_GSON.toJson(array).getBytes(java.nio.charset.StandardCharsets.UTF_8));
 			}
 		} catch (IOException e) {
 			DndsheetsMod.LOGGER.error("dndsheets: could not save the dungeon pieces.", e);

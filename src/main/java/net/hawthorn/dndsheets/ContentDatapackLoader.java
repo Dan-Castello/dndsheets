@@ -35,7 +35,7 @@ import java.util.Map;
  * the order we want: an addon's content is a starting point, and whoever is running the game has the
  * final word.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class ContentDatapackLoader extends SimpleJsonResourceReloadListener {
 
 	private static final Gson GSON = new Gson();

@@ -8,6 +8,6 @@ by the build (`checkAssetCredits`).
   Skoll, Sbed, Felbrigg" under [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/); Zeromancer under CC0.
   Re-rasterized and tinted by `tools/import_game_icons.py`.
 - **Font** (`font/cinzel.ttf`, screen titles): Cinzel, (c) The Cinzel Project Authors, SIL Open Font License 1.1
-  (`assets/dndsheets/font/OFL-Cinzel.txt`).
+  (`assets/dndsheets/font/ofl-cinzel.txt`).
 - **Audio**: CC0 only, listed in `PROJECT_CONTEXT.md` (Attribution > Audio).
 - **Rules content**: SRD 5.1, CC BY 4.0 (see `PROJECT_CONTEXT.md`).

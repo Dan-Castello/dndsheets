@@ -21,7 +21,7 @@ import java.util.UUID;
  * of verbs (look, listen...); right-click one creature (the actor), then another (the target), and the table
  * reads "Goblin looks at Aria". Same two-click selection as the Move Wand.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class RoleplayManager {
 	//Order is stored in the stack as an index: append-only, like ItemLook.
 	public enum Verb { LOOK, LISTEN, SPEAK, GREET, IGNORE, FOLLOW }

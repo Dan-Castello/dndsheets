@@ -3,7 +3,6 @@ package net.hawthorn.dndsheets.init;
 
 import net.hawthorn.dndsheets.client.gui.DmPanelScreen;
 import net.hawthorn.dndsheets.client.gui.GrimoireScreen;
-import net.hawthorn.dndsheets.network.CharacterSheetOpenMessage;
 import org.lwjgl.glfw.GLFW;
 
 import net.minecraftforge.fml.common.Mod;
@@ -17,7 +16,7 @@ import net.minecraft.client.KeyMapping;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD, value = {Dist.CLIENT})
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = {Dist.CLIENT})
 public class DndsheetsModKeyMappings {
 	public static final KeyMapping CHARACTER = new KeyMapping("key.dndsheets.character", GLFW.GLFW_KEY_H, "key.categories.dndsheets") {
 		private boolean isDownOld = false;
@@ -27,8 +26,7 @@ public class DndsheetsModKeyMappings {
 			super.setDown(isDown);
 			if (isDownOld != isDown && isDown) {
 
-				DndsheetsMod.PACKET_HANDLER.sendToServer(new CharacterSheetOpenMessage());
-				CharacterSheetOpenMessage.pressAction(Minecraft.getInstance().player);
+				net.hawthorn.dndsheets.client.gui.PlayerSheetScreen.toggle();
 			}
 			isDownOld = isDown;
 		}
@@ -94,7 +92,7 @@ public class DndsheetsModKeyMappings {
 		event.register(QUICK_CAST);
 	}
 
-	@Mod.EventBusSubscriber({Dist.CLIENT})
+	@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID, value = {Dist.CLIENT})
 	public static class KeyEventListener {
 		@SubscribeEvent
 		public static void onClientTick(TickEvent.ClientTickEvent event) {

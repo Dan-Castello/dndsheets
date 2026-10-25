@@ -39,7 +39,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 //No stability contract: this mod doesn't publish a versioned API (the DndSheetsApi facade was
 //deleted — 233 lines not used by a single caller, not even the addons, which come in through here).
 //An external mod calling these methods is exposed to their signature changing without warning. The
@@ -322,6 +322,11 @@ public class SheetLoader {
 	//(IllegalArgumentException, "takes an argument that is not a subtype of ... IModBusEvent").
 	@SubscribeEvent
 	public void onServerStarting(ServerStartingEvent event) {
+		//Load the sheets HERE, while the world is still starting. In single-player and LAN the dedicated-server hook never fires, so
+		//load() used to run on the first player's join: a synchronous read of every sheet on the server thread while the player was
+		//already standing in the new world. With big sheets that froze the server for many seconds, the spawn chunks never became
+		//ready and the character fell into the void.
+		if (sheets.isEmpty()) load();
 		scheduleAutosave();
 	}
 
@@ -542,6 +547,8 @@ public class SheetLoader {
 	}
 
 	//Loads each JSON file under the "charactersheets" folder in the Minecraft instance into JSON objects, filling the "sheets" HashMap.
+	private static final long MAX_SHEET_BYTES = 20L * 1024 * 1024;
+
 	private static void load() {
 		sheets = new HashMap<String, JsonObject>();
 		ArrayList<Path> files = new ArrayList<Path>();
@@ -567,9 +574,17 @@ public class SheetLoader {
 		//IOException) propagated uncaught and broke every player's join from that point on.
 		for (Path path : files) {
 			try {
-				InputStream in = Files.newInputStream(path, StandardOpenOption.READ);
-				Scanner s = new Scanner(in).useDelimiter("\\A");
-				String result = s.hasNext() ? s.next() : "";
+				//A real sheet is a few KB. Anything past this is a damaged file (the 2.3.0 re-encoding bug grew some to 229 MB): reading
+				//it freezes the server and can run it out of memory, so it is skipped, not parsed, and left on disk untouched.
+				if (Files.size(path) > MAX_SHEET_BYTES) {
+					DndsheetsMod.LOGGER.error("Skipping character sheet {} ({} MB): far too large to be a sheet. Repair it with tools/repair_sheet_mojibake.py or delete it.",
+						path.getFileName(), Files.size(path) / (1024 * 1024));
+					continue;
+				}
+				//UTF-8 explicitly: a bare Scanner uses the platform charset (windows-1252 on Windows), so a sheet with an
+				//accent ("Daño") was decoded as mojibake, saved back as UTF-8 and grew about 3x on every load: three sheets
+				//reached 229 MB each and the server ran out of memory writing them.
+				String result = Files.readString(path, java.nio.charset.StandardCharsets.UTF_8);
 				JsonObject json = JsonParser.parseString(result).getAsJsonObject();
 				migrateIfNeeded(json);
 				sheets.put(path.getFileName().normalize().toString().replace(".json",""), json);

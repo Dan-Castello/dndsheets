@@ -18,7 +18,7 @@ import java.util.List;
  * scrolling through chat. No permission required: it's read-only, and a group without a DM needs it just
  * as much as anyone — same criterion as {@code /dndchar list}.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class RollLogCommand {
 	private static final int DEFAULT_COUNT = 15;
 	private static final int MAX_COUNT = 100;

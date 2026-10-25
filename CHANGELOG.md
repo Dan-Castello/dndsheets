@@ -14,10 +14,12 @@ Rules and content in this release:
 - Rage and Bardic Inspiration have limited uses per rest.
 - Fighter Action Surge and Monk ki (Patient Defense, Step of the Wind) in the Turn Actions menu.
 - Wild Shape has 2 uses per rest and Twinned Spell costs sorcery points (a long rest returns them).
+- Death saves: giving up and three failed saves always kill (even creative, invulnerable or with a totem), a revived character is protected for 5 seconds, monsters stop targeting a downed character, and the downed state is cleared on respawn instead of on the death event.
 - Damage while down is a failed death save, and massive damage kills outright.
 - Search, Hide (Stealth against nearby monsters' passive Perception: advantage on the next attack) and Ready (one action out of turn, using the reaction) in the Turn Actions menu.
 - Difficult terrain (water, cobwebs, soul sand, honey, powder snow, mud, berry bushes, vines) costs double movement in turn mode.
 - Brass dragons' sleep breath and silver dragons' paralyzing breath.
+- Player experience: a rebuilt character sheet (H key) with Overview, Skills, Combat and Spells tabs, visible modifiers and bonuses, class resource pips and condition glyphs; game-icons.net icons (CC BY 3.0, credited in CREDITS.md) for conditions, spell schools and actions; an animated d20 on attack, spell-attack and death-save rolls; condition glyphs over combatants; a welcome screen on a character's first login; spell details in the Grimoire; Cinzel (OFL) screen titles.
 - Slowed and Weakened conditions, a push effect, Flurry of Blows, and lair actions that fire at the start of each round.
 - Surprise (a condition the DM sets before the encounter), Magic Resistance on the monsters that have it, and total cover now blocks single-target spells. A creature that can't act has its turn skipped.
 

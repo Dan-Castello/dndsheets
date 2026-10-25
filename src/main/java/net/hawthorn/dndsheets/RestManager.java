@@ -27,7 +27,7 @@ import java.util.UUID;
  * sent to every connected player. Only if EVERYONE accepts does the rest apply to everyone;
  * if anyone rejects, it's cancelled. Only one vote can be pending at a time.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class RestManager {
 	public enum RestType {
 		SHORT("short"), LONG("long");

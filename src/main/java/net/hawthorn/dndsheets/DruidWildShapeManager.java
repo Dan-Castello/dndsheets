@@ -42,7 +42,7 @@ import java.util.UUID;
  * proficiencies, and it doesn't cap by CR (the bestiary doesn't carry that data). The DM decides which
  * beast is fair, the same way it's played at a table.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class DruidWildShapeManager {
 	private static final int DURATION_ROUNDS = 10; //5e's 1 hour simplified to 10 rounds, same as Rage.
 	private static final int DURATION_TICKS = 20 * 60;
@@ -227,7 +227,7 @@ public class DruidWildShapeManager {
 	public static void onShapeDropped(LivingDeathEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
-		if (!isShifted(player)) return;
+		if (!isShifted(player) || DeathSaveManager.realDeathPending(player)) return; //A death the saves asked for goes through.
 		event.setCanceled(true);
 		revert(player, true);
 		player.sendSystemMessage(Component.translatable("chat.dndsheets.wildshape.dropped").withStyle(ChatFormatting.GRAY));

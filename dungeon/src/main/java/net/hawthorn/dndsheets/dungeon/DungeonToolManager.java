@@ -36,7 +36,7 @@ import java.util.UUID;
  * for confirmation) the form of any other jigsaw touched afterward — to give several exits to the same
  * pool without retyping the name by hand each time.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.dungeon.DndsheetsDungeonMod.MODID)
 public class DungeonToolManager {
 	private record JigsawClipboard(String pool, boolean isStart) {}
 

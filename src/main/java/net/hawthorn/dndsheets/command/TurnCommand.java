@@ -27,7 +27,7 @@ import java.util.Collection;
  * etc.) to a player by hand, which {@link TurnManager} will keep rolling on its own at the start of each
  * of their turns.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class TurnCommand {
 	//Tab suggestions only: any other text is still valid, this doesn't restrict the argument.
 	//5e's 14 conditions first (those DO have real mechanical consequences, see Condition and

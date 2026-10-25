@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * would also touch {@code RollAnnouncerProcedure}, the sheet screen. Uses per rest are limited to the
  * bard's Charisma modifier (min 1), see {@link RestResource#INSPIRATION_USES}.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class BardInspirationManager {
 	//The die comes from the BARD's level (see CharacterRules.bardicInspirationDieFor), not a constant:
 	//it used to be fixed at 1d6, so the resource that defines the class never improved. And from the

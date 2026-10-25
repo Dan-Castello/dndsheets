@@ -59,7 +59,7 @@ import java.util.Set;
  * becomes per-encounter state (one instance per combat, chosen by proximity/dimension) — a big rewrite,
  * not a patch.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class TurnManager { //ponytail: one combat per server; per-encounter state if there's ever 2 tables.
 	//isMonster is set when initiative is assembled (startAt), never re-inferred afterward: if the
 	//combatant gets removed from the world mid-encounter (DM, DM Wand...) there'd be no way left to ask
@@ -198,7 +198,15 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 	public static void onMobTurnAttack(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
 		if (event.getEntity().level().isClientSide()) return;
 		Entity attacker = event.getSource().getEntity();
-		if (!(attacker instanceof Mob mob) || MonsterRegistry.statBlockOf(attacker) != null) return;
+		if (!(attacker instanceof Mob mob)) return;
+		MonsterRegistry.MonsterStatBlock ownBlock = MonsterRegistry.statBlockOf(attacker);
+		if (ownBlock != null) {
+			//A monster that keeps its own AI (an adopted vanilla mob, or an NPC mod's) must not ALSO hit with it during combat:
+			//its attacks are resolved by MonsterActionManager.autoAct (whose damage carries no attacker), so a vanilla contact hit
+			//would be a second, unrolled attack on top of the roll.
+			if (active && ownBlock.keepsOwnAi()) event.setCanceled(true);
+			return;
+		}
 
 		//Frozen by us (not their turn): NoAI switches off its goal selector (chase, aim...) but NOT contact
 		//damage, which runs separately from that — Slime.playerTouch, for instance, fires on hitbox
@@ -225,6 +233,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		if (!(event.getEntity() instanceof ServerPlayer player)) return;
 		Entity attacker = event.getSource().getEntity();
 		if (attacker == null || !isMonster(attacker) || !(attacker.level() instanceof ServerLevel level)) return;
+		MonsterRegistry.adoptVanilla(attacker);
 
 		//The ambushing monster also opens the order: it's the same case as a player attacking first, seen
 		//from the other side. Its hit has already landed by the time we get here, so leaving it in the
@@ -595,6 +604,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		//damage nor act. Without this filter, a DM/observer in spectator mode near combat would join
 		//initiative just like any PC and end up occupying a turn nobody was ever going to play.
 		for (Entity entity : level.getEntities((Entity) null, box, e -> (e instanceof Player p && !p.isSpectator()) || isMonster(e))) {
+			MonsterRegistry.adoptVanilla(entity); //Before the initiative roll and the name are read.
 			String playerUuid = entity instanceof Player player ? player.getStringUUID() : null;
 			rolled.add(new Rolled(entity.getId(), nameOf(entity), rollInitiative(entity), isMonster(entity), playerUuid));
 		}
@@ -639,6 +649,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 			AABB box = new AABB(combatOrigin.x - combatRadius, combatOrigin.y - combatRadius, combatOrigin.z - combatRadius,
 				combatOrigin.x + combatRadius, combatOrigin.y + combatRadius, combatOrigin.z + combatRadius);
 			for (Entity entity : level.getEntities((Entity) null, box, e -> isMonster(e) && !isInOrder(e.getId()))) {
+				MonsterRegistry.adoptVanilla(entity);
 				addLateMonster(level, entity, nameOf(entity));
 			}
 			scheduleLateMonsterScan(level);
@@ -802,6 +813,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 	//from outside the area).
 	public static void addLateMonster(ServerLevel level, Entity monster, String displayName) {
 		if (!active) return;
+		MonsterRegistry.adoptVanilla(monster);
 		//isMonster here means "is an ENEMY", and that's what decides when the encounter ends (see
 		//allEnemiesDefeated). A player's summon joins initiative — it has to act — but is NOT an enemy:
 		//marking it as one would leave combat never ending for as long as Spiritual Weapon lasted. Same
@@ -1105,6 +1117,8 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 			//its own as soon as its turn comes (see MonsterActionManager.autoAct). autoAct always reaches
 			//tryAct (block/isAlive were already checked above), which already sends its own
 			//broadcastTurnState — no need for another one here, it would be the same packet duplicated.
+			//An AI-keeping monster (adopted vanilla mob) must not wander off or bite on its own while autoAct resolves its turn.
+			if (entity instanceof Mob mob && !mob.isNoAi()) setCompatMobActive(entity, false);
 			MonsterActionManager.autoAct(level, entity);
 		} else {
 			//Compatibility mob (another mod's Enemy, or any loose vanilla hostile that entered via

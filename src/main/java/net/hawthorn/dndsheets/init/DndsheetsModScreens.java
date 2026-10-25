@@ -1,26 +1,8 @@
-
-
 package net.hawthorn.dndsheets.init;
 
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.api.distmarker.Dist;
-
-import net.minecraft.client.gui.screens.MenuScreens;
-
-import net.hawthorn.dndsheets.client.gui.RollEditorScreen;
-import net.hawthorn.dndsheets.client.gui.AdvancedRollEditorScreen;
-import net.hawthorn.dndsheets.client.gui.CharacterSheetScreen;
-
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+/**
+ * <p>Nothing to register: there are no container menus left (see {@link DndsheetsModMenus}). The class is kept so the
+ * references to it in the mod stay valid.</p>
+ */
 public class DndsheetsModScreens {
-	@SubscribeEvent
-	public static void clientLoad(FMLClientSetupEvent event) {
-		event.enqueueWork(() -> {
-			MenuScreens.register(DndsheetsModMenus.ADVANCED_ROLL_EDITOR.get(), AdvancedRollEditorScreen::new);
-			MenuScreens.register(DndsheetsModMenus.CHARACTER_SHEET.get(), CharacterSheetScreen::new);
-			MenuScreens.register(DndsheetsModMenus.ROLL_EDITOR.get(), RollEditorScreen::new);
-		});
-	}
 }

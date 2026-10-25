@@ -26,7 +26,7 @@ final class LairActionManager {
 			MonsterRegistry.MonsterStatBlock block = MonsterRegistry.statBlockOf(monster);
 			if (block == null || block.lairActions().isEmpty()) continue;
 
-			Player target = level.getNearestPlayer(monster, REACH);
+			Player target = MonsterActionManager.nearestLivingPlayer(level, monster, REACH);
 			if (target == null) return;
 			List<MonsterRegistry.MonsterSpell> options = block.lairActions();
 			MonsterActionManager.resolveLairAction(monster, block, options.get(monster.level().getRandom().nextInt(options.size())), target);

@@ -46,7 +46,7 @@ import java.util.function.Supplier;
  * {@code spellSlotsMax} was never written anywhere except its default of 0, so the Spellbook
  * was unusable without editing the sheet's JSON by hand on disk.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class SheetCommand {
 	//Tab suggestions only (5e's 13 damage types): any other text is still valid, but for
 	//DamageTypes.multiplierFor to actually match what weapons/spells say, it's best to always write the

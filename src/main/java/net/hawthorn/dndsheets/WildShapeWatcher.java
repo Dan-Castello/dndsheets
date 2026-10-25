@@ -23,7 +23,7 @@ import java.util.List;
  * ({@code DeathSaveManager.resendState}): someone who just connected never saw the original packet, and
  * without this they'd see the bear as a normal player until it shifted back.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class WildShapeWatcher {
 
 	private WildShapeWatcher() {

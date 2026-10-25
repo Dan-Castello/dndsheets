@@ -17,7 +17,7 @@ import net.minecraftforge.network.PacketDistributor;
  * demand, without having to remember the sheet's or the DM Panel's button. Open to any player,
  * like {@code /dnddistance}; the DM pages are included automatically if whoever runs it is an operator.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class GuideCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {

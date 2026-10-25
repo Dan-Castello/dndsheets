@@ -24,7 +24,7 @@ import net.minecraftforge.fml.common.Mod;
  * {@code /dndspecies choose*} and it syncs; that's preferable to "clearing" the choice, because Origins
  * has no public method to leave a layer unchosen.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.species.DndsheetsSpeciesMod.MODID)
 public class CharacterSwitchListener {
 	private static final ResourceLocation RACE_LAYER = new ResourceLocation("dndsheets_species", "race");
 	private static final ResourceLocation BACKGROUND_LAYER = new ResourceLocation("dndsheets_species", "background");

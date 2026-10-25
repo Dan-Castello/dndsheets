@@ -27,7 +27,7 @@ import net.minecraftforge.fml.common.Mod;
  * ({@code castingSpell}/{@code castingTicks}/{@code castingUntil}) — the same pipeline as concentration
  * and pending advantage, with no network message of its own.</p>
  */
-@Mod.EventBusSubscriber(value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID, value = Dist.CLIENT)
 public class SpellCastAnimator {
 
 	/**

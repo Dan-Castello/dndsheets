@@ -31,7 +31,7 @@ import java.util.UUID;
  * Minecraft uses for arrows) and resolves the spell with the same attack-vs-AC or save-vs-DC mechanic
  * already used by weapons and monsters, spending a spell slot.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class SpellCastManager {
 	private static final Map<String, String> ABILITY_SHEET_KEY = Map.of(
 		"str", "strength", "dex", "dexterity", "con", "constitution",
@@ -604,6 +604,7 @@ public class SpellCastManager {
 
 	private static void castAttackSpell(ServerPlayer caster, String casterName, SpellRegistry.Spell spell, Entity target, int proficiency, int abilityMod) {
 		TurnActionManager.reveal(caster);
+		MonsterRegistry.adoptVanilla(target);
 		if (TurnManager.isMonster(target)) MonsterRegistry.faceTarget(target, caster);
 		JsonObject casterSheet = SheetLoader.getServerSheet(caster.getStringUUID());
 		DiceManager.Advantage advantage = casterSheet != null ? CombatManager.consumeAdvantage(casterSheet) : DiceManager.Advantage.NORMAL;
@@ -634,6 +635,7 @@ public class SpellCastManager {
 
 	private static void castSaveSpell(ServerPlayer caster, String casterName, SpellRegistry.Spell spell, Entity target, int proficiency, int abilityMod) {
 		TurnActionManager.reveal(caster);
+		MonsterRegistry.adoptVanilla(target);
 		if (TurnManager.isMonster(target)) MonsterRegistry.faceTarget(target, caster);
 		//Cover, real DC, save, and final damage: same rules, and the same code, as when the caster is a
 		//monster (see SaveRules).

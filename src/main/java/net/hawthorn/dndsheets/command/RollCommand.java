@@ -27,7 +27,7 @@ import com.mojang.brigadier.context.CommandContext;
  * because {@code expression} uses {@code MessageArgument.message()}, which captures the rest of the
  * text: there's no clean way to distinguish a trailing flag from the dice expression itself.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class RollCommand {
 	@SubscribeEvent
 	public static void registerCommand(RegisterCommandsEvent event) {

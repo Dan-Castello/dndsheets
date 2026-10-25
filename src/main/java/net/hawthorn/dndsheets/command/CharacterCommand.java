@@ -34,7 +34,7 @@ import java.util.List;
  *   <li>{@code /dndchar npc <name>} — DM only: NPC sheet, no owner, with the same rules as a PC.</li>
  * </ul>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class CharacterCommand {
 
 	@SubscribeEvent

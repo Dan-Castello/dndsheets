@@ -55,7 +55,7 @@ public class LegendaryActionManager {
 			if (option == null) continue;
 			if (!spendAction(boss, option.cost())) continue;
 
-			Player target = level.getNearestPlayer(boss, TARGET_RANGE);
+			Player target = MonsterActionManager.nearestLivingPlayer(level, boss, TARGET_RANGE);
 			if (target == null) {
 				//Nobody in range: the use is refunded instead of wasted. Spending it against no one would
 				//punish the boss for where the party happens to be, which is exactly the opposite of what

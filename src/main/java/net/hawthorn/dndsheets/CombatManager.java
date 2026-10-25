@@ -36,7 +36,7 @@ import java.util.Map;
  * and, on a hit, the real damage is replaced by the configured damage roll. If the weapon isn't
  * configured, nothing is touched and Minecraft behaves as always.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class CombatManager {
 
 	private record Roll(int amount, String formatted, String weaponName, String characterName) {}
@@ -75,6 +75,7 @@ public class CombatManager {
 			return;
 		}
 
+		MonsterRegistry.adoptVanilla(target); //A hostile mob with no stat block gets one built from its attributes (see VanillaStatBlocks).
 		if (TurnManager.isCombatTarget(target)) {
 			if (Combatant.of(target) == null) {
 				//Boss/enemy from another mod, with no representation in the rules (no stat block or
@@ -85,6 +86,10 @@ public class CombatManager {
 				if (!TurnManager.tryAct(player)) {
 					event.setCanceled(true);
 					TurnManager.notifyCantAct(player);
+				} else if (TurnManager.isActive()) {
+					//The hit has no 5e roll to announce (no stat block), so nothing said that it just spent the action: the
+					//next click then answered "you already used your action" for a swing the player never saw count.
+					CombatFx.actionBar((net.minecraft.server.level.ServerPlayer) player, Component.translatable("chat.dndsheets.combat.action_spent", target.getName()).withStyle(ChatFormatting.GOLD));
 				}
 				return;
 			}
@@ -116,7 +121,10 @@ public class CombatManager {
 				TurnManager.notifyCantAct(player);
 				return;
 			}
-			if (weapon == null) return; //No weapon and no bare-hand trait: Minecraft resolves the normal hit, turn already spent.
+			if (weapon == null) { //No weapon and no bare-hand trait: Minecraft resolves the normal hit, turn already spent.
+				if (TurnManager.isActive()) CombatFx.actionBar((net.minecraft.server.level.ServerPlayer) player, Component.translatable("chat.dndsheets.combat.action_spent", target.getName()).withStyle(ChatFormatting.GOLD));
+				return;
+			}
 			event.setCanceled(true); //Resolved as a real encounter, not as Minecraft's hit.
 			resolveAttackOnCreature(player, target, weapon, true);
 		}
@@ -167,6 +175,7 @@ public class CombatManager {
 			return;
 		}
 
+		MonsterRegistry.adoptVanilla(target);
 		if (TurnManager.isCombatTarget(target)) {
 			if (Combatant.of(target) == null) {
 				//Same compatibility criterion as onAttackEntity: with no representation in the rules, the

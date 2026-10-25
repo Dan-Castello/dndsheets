@@ -278,12 +278,23 @@ public class DndsheetsMod {
 	 * through here.</p>
 	 */
 	public static boolean canActAsDm(CommandSourceStack source) {
-		return source.hasPermission(2) || Config.soloMode();
+		return source.hasPermission(2) || Config.soloMode() || isHost(source.getEntity());
 	}
 
 	/** Same question as {@link #canActAsDm(CommandSourceStack)}, for call sites that only have the entity at hand. */
 	public static boolean canActAsDm(Entity entity) {
-		return entity.hasPermissions(2) || Config.soloMode();
+		return entity.hasPermissions(2) || Config.soloMode() || isHost(entity);
+	}
+
+	/**
+	 * <p>Whether this is the player who owns the world they are running (single-player, or the host of a LAN / e4mc game).
+	 * They are the table's DM by definition: a new world is created WITHOUT cheats, so without this the owner of a fresh
+	 * world was nobody, every DM Panel button was refused, and {@code /dndsolo} (permission 4) could not be typed to fix it.
+	 * A dedicated server has no owner, so there it is still the operator list that decides.</p>
+	 */
+	public static boolean isHost(Entity entity) {
+		return entity instanceof net.minecraft.server.level.ServerPlayer player && player.getServer() != null
+			&& player.getServer().isSingleplayerOwner(player.getGameProfile());
 	}
 
 	//Pattern repeated across client(DM)->server messages that act on ANOTHER player (SheetAdjustMessage,

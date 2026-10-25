@@ -61,6 +61,8 @@ public class TurnHudOverlay {
 	private static final int ENEMY_COLOR = 0xFFCC7A6E;
 	private static final int CONDITION_COLOR = 0xFFB08A5A;
 	private static final int ICON_SIZE = 8;
+	private static final int CHIP_HEIGHT = 14;
+	private static final int CHIP_ICON = 12;
 	private static final int MAX_ROW_ICONS = 3;
 
 	@SubscribeEvent
@@ -97,7 +99,7 @@ public class TurnHudOverlay {
 		int contentTop = top + PADDING;
 
 		int height = ROW_HEIGHT + 4 + (end - start) * ROW_HEIGHT + (truncated ? ROW_HEIGHT : 0);
-		if (myRow != null) height += 4 + 4 * ROW_HEIGHT; //Action, Bonus Action, Reaction, Movement.
+		if (myRow != null) height += 4 + CHIP_HEIGHT + ROW_HEIGHT + 3; //Action / bonus / reaction chips, then movement.
 		int bottom = contentTop + height + PADDING - 4;
 
 		GuiStyle.panel(guiGraphics, left, top, right, bottom);
@@ -106,7 +108,7 @@ public class TurnHudOverlay {
 		int textRight = right - PADDING;
 		int y = contentTop;
 
-		guiGraphics.drawString(font, Component.translatable("hud.dndsheets.round", TurnHudState.round()), textLeft, y, GuiStyle.ACCENT_COLOR);
+		guiGraphics.drawString(font, GuiStyle.title(Component.translatable("hud.dndsheets.round", TurnHudState.round())), textLeft, y, GuiStyle.ACCENT_COLOR);
 		y += ROW_HEIGHT;
 		GuiStyle.rule(guiGraphics, textLeft, textRight, y);
 		y += 4;
@@ -146,6 +148,11 @@ public class TurnHudOverlay {
 	//important of the two.
 	private static void drawRosterRow(GuiGraphics guiGraphics, Font font, TurnStateMessage.RosterRow row,
 									   int left, int right, int y, boolean isCurrent) {
+		if (isCurrent) {
+			//Whose turn it is should read at a glance: a brass bar and a faint fill behind the row, not just a marker.
+			guiGraphics.fill(left - 3, y - 1, right + 3, y + ROW_HEIGHT - 1, 0x33C9A227);
+			guiGraphics.fill(left - 3, y - 1, left - 1, y + ROW_HEIGHT - 1, GuiStyle.ACCENT_COLOR);
+		}
 		String marker = isCurrent ? "▶ " : "   ";
 		int nameColor = row.defeated() ? GuiStyle.MUTED_COLOR
 			: isCurrent ? GuiStyle.TITLE_COLOR
@@ -213,18 +220,20 @@ public class TurnHudOverlay {
 
 		boolean bonusActionAvailable = myTurn && !myRow.bonusActionUsed();
 
-		drawEconomyLine(guiGraphics, font, Component.translatable("hud.dndsheets.action"), actionAvailable, myTurn, left, right, y);
-		y += ROW_HEIGHT;
-		drawEconomyLine(guiGraphics, font, Component.translatable("hud.dndsheets.bonus_action"), bonusActionAvailable, myTurn, left, right, y);
-		y += ROW_HEIGHT;
-		drawEconomyLine(guiGraphics, font, Component.translatable("hud.dndsheets.reaction"), !myRow.reactionUsed(), true, left, right, y);
-		y += ROW_HEIGHT;
+		//Three chips instead of three text lines: the glyph is lit while that part of the turn can still be spent and
+		//dimmed once it is used (or, for action and bonus action, when it is not your turn).
+		int chipW = (right - left) / 3;
+		drawChip(guiGraphics, font, Icons.stat("attack"), Component.translatable("hud.dndsheets.action"), actionAvailable, left, y, chipW);
+		drawChip(guiGraphics, font, Icons.byPath("action/surge"), Component.translatable("hud.dndsheets.bonus_action"), bonusActionAvailable, left + chipW, y, chipW);
+		drawChip(guiGraphics, font, Icons.byPath("action/ready"), Component.translatable("hud.dndsheets.reaction"), !myRow.reactionUsed(), left + 2 * chipW, y, chipW);
+		y += CHIP_HEIGHT;
 
 		double speedBlocks = speedBlocksFromClientSheet();
 		double distanceMoved = minecraft.player.position().distanceTo(new Vec3(TurnHudState.originX(), TurnHudState.originY(), TurnHudState.originZ()));
 		double remaining = Math.max(0, speedBlocks - distanceMoved);
 		Component moveText = Component.translatable("hud.dndsheets.movement", Math.round(remaining), Math.round(speedBlocks));
-		guiGraphics.drawString(font, moveText, left, y, MOVEMENT_COLOR);
+		Icons.draw(guiGraphics, Icons.stat("speed"), left, y - 1, 10);
+		guiGraphics.drawString(font, moveText, left + 13, y, MOVEMENT_COLOR);
 
 		int barWidth = right - left;
 		int barY = y + 9;
@@ -233,16 +242,15 @@ public class TurnHudOverlay {
 		guiGraphics.fill(left, barY, left + (int) Math.round(barWidth * fraction), barY + 2, MOVEMENT_COLOR);
 	}
 
-	//"available" is only painted green when it can genuinely be spent right now (a reaction whenever it
-	//hasn't been used; an action only on the player's own turn) — otherwise, dimmed, so as not to promise
-	//a click that TurnManager is going to reject.
-	private static void drawEconomyLine(GuiGraphics guiGraphics, Font font, Component label, boolean available,
-										 boolean usable, int left, int right, int y) {
-		guiGraphics.drawString(font, label, left, y, GuiStyle.SUBTITLE_COLOR);
-		Component state = available ? Component.translatable("hud.dndsheets.available")
-			: usable ? Component.translatable("hud.dndsheets.used") : Component.literal("—");
-		int color = available ? GOOD_COLOR : GuiStyle.MUTED_COLOR;
-		guiGraphics.drawString(font, state, right - font.width(state), y, color);
+	private static void drawChip(GuiGraphics guiGraphics, Font font, net.minecraft.resources.ResourceLocation icon, Component label,
+								  boolean available, int x, int y, int width) {
+		com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+		float shade = available ? 1.0f : 0.35f;
+		com.mojang.blaze3d.systems.RenderSystem.setShaderColor(shade, shade, shade, 1.0f);
+		Icons.draw(guiGraphics, icon, x, y, CHIP_ICON);
+		com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
+		guiGraphics.drawString(font, font.plainSubstrByWidth(label.getString(), width - CHIP_ICON - 3), x + CHIP_ICON + 3, y + 2,
+			available ? GOOD_COLOR : GuiStyle.MUTED_COLOR);
 	}
 
 	//Same conversion as MovementAnchorTracker.speedBlocksFor on the server, but read from the sheet already

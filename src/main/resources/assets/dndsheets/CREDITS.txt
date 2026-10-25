@@ -59,12 +59,16 @@ textures/gui/icons/school/illusion.png | game-icons.net delapouite/invisible-fac
 textures/gui/icons/school/necromancy.png | game-icons.net lorc/skull-crossed-bones.svg | Lorc | CC BY 3.0 | https://game-icons.net/
 textures/gui/icons/school/transmutation.png | game-icons.net lorc/cauldron.svg | Lorc | CC BY 3.0 | https://game-icons.net/
 textures/gui/icons/stat/ac.png | game-icons.net lorc/armor-vest.svg | Lorc | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/stat/attack.png | game-icons.net lorc/crossed-swords.svg | Lorc | CC BY 3.0 | https://game-icons.net/
 textures/gui/icons/stat/concentration.png | game-icons.net lorc/concentration-orb.svg | Lorc | CC BY 3.0 | https://game-icons.net/
 textures/gui/icons/stat/d20.png | game-icons.net delapouite/dice-twenty-faces-twenty.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/stat/damage.png | game-icons.net lorc/sword-wound.svg | Lorc | CC BY 3.0 | https://game-icons.net/
 textures/gui/icons/stat/death.png | game-icons.net lorc/skull-crossed-bones.svg | Lorc | CC BY 3.0 | https://game-icons.net/
 textures/gui/icons/stat/gold.png | game-icons.net delapouite/coins.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
 textures/gui/icons/stat/hp.png | game-icons.net delapouite/heart-beats.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
 textures/gui/icons/stat/initiative.png | game-icons.net lorc/winged-sword.svg | Lorc | CC BY 3.0 | https://game-icons.net/
 textures/gui/icons/stat/speed.png | game-icons.net lorc/boots.svg | Lorc | CC BY 3.0 | https://game-icons.net/
 textures/gui/icons/stat/spell.png | game-icons.net delapouite/spell-book.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
-font/cinzel.ttf | Cinzel, google/fonts ofl/cinzel (OFL text: font/OFL-Cinzel.txt) | The Cinzel Project Authors (NDISCOVER) | SIL OFL 1.1 | https://github.com/NDISCOVER/Cinzel
+textures/gui/icons/ui/delete.png | game-icons.net delapouite/trash-can.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+textures/gui/icons/ui/edit.png | game-icons.net delapouite/pencil.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
+font/cinzel.ttf | Cinzel, google/fonts ofl/cinzel (OFL text: font/ofl-cinzel.txt) | The Cinzel Project Authors (NDISCOVER) | SIL OFL 1.1 | https://github.com/NDISCOVER/Cinzel

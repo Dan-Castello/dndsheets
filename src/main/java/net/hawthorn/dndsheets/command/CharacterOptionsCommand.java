@@ -26,7 +26,7 @@ import java.util.List;
  *
  * <pre>["Barbarian", "Bard", "Cleric"]</pre>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class CharacterOptionsCommand {
 	//RACE and BACKGROUND no longer live here (see /dndspecies load / loadbackground in dndsheets_species).
 	private static final String[] CATEGORIES = {CharacterOptionsRegistry.CLASS};

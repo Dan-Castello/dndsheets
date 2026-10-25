@@ -17,7 +17,7 @@ import net.minecraftforge.fml.common.Mod;
 //because it needs the target of the click) so as not to change anyone's behavior. "quickSpell" is
 //the exception: it's not a boolean flag but a spell id (String), so it's detected with
 //dndTag.contains(...) instead of dndTag.getBoolean(...).
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class AbilityItemDispatcher {
 
 	@SubscribeEvent

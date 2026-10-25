@@ -41,7 +41,7 @@ import net.minecraftforge.fml.common.Mod;
  * around every living entity in the world every tick — costs far more than it fixes. A DM who wants to
  * blind one specific monster already has {@code /dndturns effect}.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public final class VisionManager {
 	/** Once per second: a block's light doesn't change fast enough to warrant checking it 20 times. */
 	private static final int CHECK_INTERVAL_TICKS = 20;

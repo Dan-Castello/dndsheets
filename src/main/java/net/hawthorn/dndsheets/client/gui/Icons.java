@@ -51,6 +51,11 @@ public final class Icons {
 		return icon("stat", key);
 	}
 
+	/** An icon by its {@code category/name} path ("resource/rage"). */
+	public static ResourceLocation byPath(String path) {
+		return new ResourceLocation("dndsheets", "textures/gui/icons/" + path + ".png");
+	}
+
 	private static ResourceLocation icon(String category, String name) {
 		return new ResourceLocation("dndsheets", "textures/gui/icons/" + category + "/" + name + ".png");
 	}

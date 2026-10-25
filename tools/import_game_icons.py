@@ -43,7 +43,7 @@ AUTHORS = {  # folder in the repo -> (display name, licence)
 }
 
 EXTRA_CREDITS = [  # assets that are not icons but live in the same list
-    'font/cinzel.ttf | Cinzel, google/fonts ofl/cinzel (OFL text: font/OFL-Cinzel.txt) | The Cinzel Project Authors (NDISCOVER) | SIL OFL 1.1 | https://github.com/NDISCOVER/Cinzel',
+    'font/cinzel.ttf | Cinzel, google/fonts ofl/cinzel (OFL text: font/ofl-cinzel.txt) | The Cinzel Project Authors (NDISCOVER) | SIL OFL 1.1 | https://github.com/NDISCOVER/Cinzel',
 ]
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')

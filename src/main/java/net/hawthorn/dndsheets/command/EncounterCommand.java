@@ -38,7 +38,7 @@ import java.util.Set;
  * <p>Without {@code load} nothing needs to be touched: the whole folder is read at server startup, same
  * as the rest of the content. {@code load} exists to hot-reload what you just edited.</p>
  */
-@Mod.EventBusSubscriber
+@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID)
 public class EncounterCommand {
 	private static final Path ENCOUNTERS_DIR = DndPaths.ENCOUNTERS_DIR;
 
