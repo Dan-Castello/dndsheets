@@ -9,7 +9,7 @@
     ]
   },
   {
-    "id": "dndsheets:orc", "name": "content.dndsheets.monster.orc", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:zombie", "appearance": { "mainHand": "minecraft:iron_axe", "helmet": "minecraft:iron_helmet", "model": "brute", "variant": "orc" },
+    "id": "dndsheets:orc", "name": "content.dndsheets.monster.orc", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:zombie", "appearance": { "mainHand": "minecraft:iron_axe", "helmet": "minecraft:iron_helmet", "model": "orc", "variant": "orc" },
     "ac": 13, "hp": 15,
     "abilities": { "str": 16, "dex": 12, "con": 16, "int": 7, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
@@ -31,7 +31,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_spider", "name": "content.dndsheets.monster.giant_spider", "type": "beast", "size": "large", "baseEntity": "minecraft:spider", "appearance": { "model": "spider", "variant": "spider" },
+    "id": "dndsheets:giant_spider", "name": "content.dndsheets.monster.giant_spider", "type": "beast", "size": "large", "baseEntity": "minecraft:spider", "appearance": { "model": "brood_mother", "variant": "brood_mother" },
     "ac": 14, "hp": 26,
     "abilities": { "str": 14, "dex": 16, "con": 12, "int": 2, "wis": 11, "cha": 4 },
     "proficiencyBonus": 2,
@@ -394,7 +394,7 @@
     ]
   },
   {
-    "id": "dndsheets:constrictor_snake", "name": "content.dndsheets.monster.constrictor_snake", "type": "beast", "size": "large", "baseEntity": "minecraft:frog", "appearance": { "model": "serpent", "variant": "constrictor" },
+    "id": "dndsheets:constrictor_snake", "name": "content.dndsheets.monster.constrictor_snake", "type": "beast", "size": "large", "baseEntity": "minecraft:frog", "appearance": { "model": "rattlesnake", "variant": "rattlesnake" },
     "ac": 12, "hp": 13,
     "abilities": { "str": 15, "dex": 14, "con": 12, "int": 1, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -423,7 +423,7 @@
     ]
   },
   {
-    "id": "dndsheets:crocodile", "name": "content.dndsheets.monster.crocodile", "type": "beast", "size": "large", "baseEntity": "minecraft:frog", "appearance": { "model": "reptile", "variant": "crocodile" },
+    "id": "dndsheets:crocodile", "name": "content.dndsheets.monster.crocodile", "type": "beast", "size": "large", "baseEntity": "minecraft:frog", "appearance": { "model": "crocodile", "variant": "crocodile" },
     "ac": 12, "hp": 19,
     "abilities": { "str": 15, "dex": 10, "con": 13, "int": 2, "wis": 10, "cha": 5 },
     "proficiencyBonus": 2,
@@ -432,7 +432,7 @@
     ]
   },
   {
-    "id": "dndsheets:cult_fanatic", "name": "content.dndsheets.monster.cult_fanatic", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:illusioner",
+    "id": "dndsheets:cult_fanatic", "name": "content.dndsheets.monster.cult_fanatic", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:illusioner", "appearance": { "model": "warlock", "variant": "warlock" },
     "ac": 13, "hp": 22,
     "abilities": { "str": 11, "dex": 14, "con": 12, "int": 10, "wis": 13, "cha": 14 },
     "proficiencyBonus": 2,
@@ -693,7 +693,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_constrictor_snake", "name": "content.dndsheets.monster.giant_constrictor_snake", "type": "beast", "size": "huge", "baseEntity": "minecraft:frog", "appearance": { "model": "serpent", "variant": "constrictor" },
+    "id": "dndsheets:giant_constrictor_snake", "name": "content.dndsheets.monster.giant_constrictor_snake", "type": "beast", "size": "huge", "baseEntity": "minecraft:frog", "appearance": { "model": "rattlesnake", "variant": "rattlesnake" },
     "ac": 12, "hp": 60,
     "abilities": { "str": 19, "dex": 14, "con": 12, "int": 1, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -777,7 +777,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_octopus", "name": "content.dndsheets.monster.giant_octopus", "type": "beast", "size": "large", "baseEntity": "minecraft:glow_squid",
+    "id": "dndsheets:giant_octopus", "name": "content.dndsheets.monster.giant_octopus", "type": "beast", "size": "large", "baseEntity": "minecraft:glow_squid", "appearance": { "model": "kraken", "variant": "kraken" },
     "ac": 11, "hp": 52,
     "abilities": { "str": 17, "dex": 13, "con": 13, "int": 4, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -795,7 +795,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_poisonous_snake", "name": "content.dndsheets.monster.giant_poisonous_snake", "type": "beast", "size": "medium", "baseEntity": "minecraft:frog", "appearance": { "model": "serpent", "variant": "poisonous" },
+    "id": "dndsheets:giant_poisonous_snake", "name": "content.dndsheets.monster.giant_poisonous_snake", "type": "beast", "size": "medium", "baseEntity": "minecraft:frog", "appearance": { "model": "rattlesnake", "variant": "rattlesnake" },
     "ac": 14, "hp": 11,
     "abilities": { "str": 10, "dex": 18, "con": 13, "int": 2, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -804,7 +804,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_rat", "name": "content.dndsheets.monster.giant_rat", "type": "beast", "size": "small", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:giant_rat", "name": "content.dndsheets.monster.giant_rat", "type": "beast", "size": "small", "baseEntity": "minecraft:silverfish", "appearance": { "model": "rat", "variant": "rat" },
     "ac": 12, "hp": 7,
     "abilities": { "str": 7, "dex": 15, "con": 11, "int": 2, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -813,7 +813,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_rat_diseased", "name": "content.dndsheets.monster.giant_rat_diseased", "type": "beast", "size": "small", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:giant_rat_diseased", "name": "content.dndsheets.monster.giant_rat_diseased", "type": "beast", "size": "small", "baseEntity": "minecraft:silverfish", "appearance": { "model": "rat", "variant": "rat" },
     "ac": 12, "hp": 7,
     "abilities": { "str": 7, "dex": 15, "con": 11, "int": 2, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -868,7 +868,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_wolf_spider", "name": "content.dndsheets.monster.giant_wolf_spider", "type": "beast", "size": "medium", "baseEntity": "minecraft:spider", "appearance": { "model": "spider", "variant": "wolf_spider" },
+    "id": "dndsheets:giant_wolf_spider", "name": "content.dndsheets.monster.giant_wolf_spider", "type": "beast", "size": "medium", "baseEntity": "minecraft:spider", "appearance": { "model": "web_spider", "variant": "web_spider" },
     "ac": 13, "hp": 11,
     "abilities": { "str": 12, "dex": 16, "con": 13, "int": 3, "wis": 12, "cha": 4 },
     "proficiencyBonus": 2,
@@ -1014,7 +1014,7 @@
     ]
   },
   {
-    "id": "dndsheets:hunter_shark", "name": "content.dndsheets.monster.hunter_shark", "type": "beast", "size": "large", "baseEntity": "minecraft:dolphin", "appearance": { "model": "shark", "variant": "shark" },
+    "id": "dndsheets:hunter_shark", "name": "content.dndsheets.monster.hunter_shark", "type": "beast", "size": "large", "baseEntity": "minecraft:dolphin", "appearance": { "model": "blue_shark", "variant": "blue_shark" },
     "ac": 12, "hp": 45,
     "abilities": { "str": 18, "dex": 13, "con": 15, "int": 1, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -1072,7 +1072,7 @@
     ]
   },
   {
-    "id": "dndsheets:lion", "name": "content.dndsheets.monster.lion", "type": "beast", "size": "large", "baseEntity": "minecraft:cat", "appearance": { "model": "beast", "variant": "lion" },
+    "id": "dndsheets:lion", "name": "content.dndsheets.monster.lion", "type": "beast", "size": "large", "baseEntity": "minecraft:cat", "appearance": { "model": "lion", "variant": "lion" },
     "ac": 12, "hp": 26,
     "abilities": { "str": 17, "dex": 15, "con": 13, "int": 3, "wis": 12, "cha": 8 },
     "proficiencyBonus": 2,
@@ -1259,7 +1259,7 @@
     ]
   },
   {
-    "id": "dndsheets:poisonous_snake", "name": "content.dndsheets.monster.poisonous_snake", "type": "beast", "size": "tiny", "baseEntity": "minecraft:frog", "appearance": { "model": "serpent", "variant": "poisonous" },
+    "id": "dndsheets:poisonous_snake", "name": "content.dndsheets.monster.poisonous_snake", "type": "beast", "size": "tiny", "baseEntity": "minecraft:frog", "appearance": { "model": "rattlesnake", "variant": "rattlesnake" },
     "ac": 13, "hp": 2,
     "abilities": { "str": 2, "dex": 16, "con": 11, "int": 1, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -1326,7 +1326,7 @@
     ]
   },
   {
-    "id": "dndsheets:rat", "name": "content.dndsheets.monster.rat", "type": "beast", "size": "tiny", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:rat", "name": "content.dndsheets.monster.rat", "type": "beast", "size": "tiny", "baseEntity": "minecraft:silverfish", "appearance": { "model": "rat", "variant": "rat" },
     "ac": 10, "hp": 1,
     "abilities": { "str": 2, "dex": 11, "con": 9, "int": 2, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -1344,7 +1344,7 @@
     ]
   },
   {
-    "id": "dndsheets:reef_shark", "name": "content.dndsheets.monster.reef_shark", "type": "beast", "size": "medium", "baseEntity": "minecraft:dolphin", "appearance": { "model": "shark", "variant": "reef_shark" },
+    "id": "dndsheets:reef_shark", "name": "content.dndsheets.monster.reef_shark", "type": "beast", "size": "medium", "baseEntity": "minecraft:dolphin", "appearance": { "model": "blue_shark", "variant": "blue_shark" },
     "ac": 12, "hp": 22,
     "abilities": { "str": 14, "dex": 13, "con": 13, "int": 1, "wis": 10, "cha": 4 },
     "proficiencyBonus": 2,
@@ -1412,7 +1412,7 @@
     ]
   },
   {
-    "id": "dndsheets:scorpion", "name": "content.dndsheets.monster.scorpion", "type": "beast", "size": "tiny", "baseEntity": "minecraft:spider",
+    "id": "dndsheets:scorpion", "name": "content.dndsheets.monster.scorpion", "type": "beast", "size": "tiny", "baseEntity": "minecraft:spider", "appearance": { "model": "scorpion", "variant": "scorpion" },
     "ac": 11, "hp": 1,
     "abilities": { "str": 2, "dex": 11, "con": 8, "int": 1, "wis": 8, "cha": 2 },
     "proficiencyBonus": 2,
@@ -1431,7 +1431,7 @@
     ]
   },
   {
-    "id": "dndsheets:sea_hag", "name": "content.dndsheets.monster.sea_hag", "type": "fey", "size": "medium", "baseEntity": "minecraft:witch",
+    "id": "dndsheets:sea_hag", "name": "content.dndsheets.monster.sea_hag", "type": "fey", "size": "medium", "baseEntity": "minecraft:witch", "appearance": { "model": "crone", "variant": "crone" },
     "ac": 14, "hp": 52,
     "abilities": { "str": 16, "dex": 13, "con": 16, "int": 12, "wis": 12, "cha": 13 },
     "proficiencyBonus": 2,
@@ -1440,7 +1440,7 @@
     ]
   },
   {
-    "id": "dndsheets:shadow", "name": "content.dndsheets.monster.shadow", "type": "undead", "size": "medium", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:shadow", "name": "content.dndsheets.monster.shadow", "type": "undead", "size": "medium", "baseEntity": "minecraft:vex", "appearance": { "model": "wraith", "variant": "border" },
     "ac": 12, "hp": 16,
     "abilities": { "str": 6, "dex": 14, "con": 13, "int": 6, "wis": 10, "cha": 8 },
     "proficiencyBonus": 2,
@@ -1461,7 +1461,7 @@
     ]
   },
   {
-    "id": "dndsheets:specter", "name": "content.dndsheets.monster.specter", "type": "undead", "size": "medium", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:specter", "name": "content.dndsheets.monster.specter", "type": "undead", "size": "medium", "baseEntity": "minecraft:vex", "appearance": { "model": "specter", "variant": "specter" },
     "ac": 12, "hp": 22,
     "abilities": { "str": 1, "dex": 14, "con": 11, "int": 10, "wis": 10, "cha": 11 },
     "proficiencyBonus": 2,
@@ -1560,7 +1560,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_poisonous_snakes", "name": "content.dndsheets.monster.swarm_of_poisonous_snakes", "type": "beast", "size": "medium", "baseEntity": "minecraft:frog", "appearance": { "model": "serpent", "variant": "poisonous" },
+    "id": "dndsheets:swarm_of_poisonous_snakes", "name": "content.dndsheets.monster.swarm_of_poisonous_snakes", "type": "beast", "size": "medium", "baseEntity": "minecraft:frog", "appearance": { "model": "rattlesnake", "variant": "rattlesnake" },
     "ac": 14, "hp": 36,
     "abilities": { "str": 8, "dex": 18, "con": 11, "int": 1, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -1580,7 +1580,7 @@
     ]
   },
   {
-    "id": "dndsheets:swarm_of_rats", "name": "content.dndsheets.monster.swarm_of_rats", "type": "beast", "size": "medium", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:swarm_of_rats", "name": "content.dndsheets.monster.swarm_of_rats", "type": "beast", "size": "medium", "baseEntity": "minecraft:silverfish", "appearance": { "model": "rat", "variant": "rat" },
     "ac": 10, "hp": 24,
     "abilities": { "str": 9, "dex": 11, "con": 9, "int": 2, "wis": 10, "cha": 3 },
     "proficiencyBonus": 2,
@@ -1718,7 +1718,7 @@
     ]
   },
   {
-    "id": "dndsheets:wererat_rat", "name": "content.dndsheets.monster.wererat_rat", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:silverfish",
+    "id": "dndsheets:wererat_rat", "name": "content.dndsheets.monster.wererat_rat", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:silverfish", "appearance": { "model": "rat", "variant": "rat" },
     "ac": 12, "hp": 33,
     "abilities": { "str": 10, "dex": 15, "con": 12, "int": 11, "wis": 10, "cha": 8 },
     "proficiencyBonus": 2,
@@ -2129,7 +2129,7 @@
     ]
   },
   {
-    "id": "dndsheets:archmage", "name": "content.dndsheets.monster.archmage", "magicResistance": true, "type": "humanoid", "size": "medium", "baseEntity": "minecraft:evoker", "appearance": { "mainHand": "minecraft:blaze_rod", "helmet": "minecraft:golden_helmet" },
+    "id": "dndsheets:archmage", "name": "content.dndsheets.monster.archmage", "magicResistance": true, "type": "humanoid", "size": "medium", "baseEntity": "minecraft:evoker", "appearance": { "mainHand": "minecraft:blaze_rod", "helmet": "minecraft:golden_helmet", "model": "warlock", "variant": "warlock" },
     "ac": 12, "hp": 99,
     "abilities": { "str": 10, "dex": 14, "con": 12, "int": 20, "wis": 15, "cha": 16 },
     "proficiencyBonus": 4,
@@ -2474,7 +2474,7 @@
     ]
   },
   {
-    "id": "dndsheets:ghost", "name": "content.dndsheets.monster.ghost", "type": "undead", "size": "medium", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:ghost", "name": "content.dndsheets.monster.ghost", "type": "undead", "size": "medium", "baseEntity": "minecraft:vex", "appearance": { "model": "specter", "variant": "specter" },
     "ac": 11, "hp": 45,
     "abilities": { "str": 7, "dex": 13, "con": 10, "int": 10, "wis": 12, "cha": 17 },
     "proficiencyBonus": 2,
@@ -2495,7 +2495,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_crocodile", "name": "content.dndsheets.monster.giant_crocodile", "type": "beast", "size": "huge", "baseEntity": "minecraft:frog", "appearance": { "model": "reptile", "variant": "crocodile" },
+    "id": "dndsheets:giant_crocodile", "name": "content.dndsheets.monster.giant_crocodile", "type": "beast", "size": "huge", "baseEntity": "minecraft:frog", "appearance": { "model": "crocodile", "variant": "crocodile" },
     "ac": 14, "hp": 85,
     "abilities": { "str": 21, "dex": 9, "con": 17, "int": 2, "wis": 10, "cha": 7 },
     "proficiencyBonus": 3,
@@ -2505,7 +2505,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_scorpion", "name": "content.dndsheets.monster.giant_scorpion", "type": "beast", "size": "large", "baseEntity": "minecraft:spider",
+    "id": "dndsheets:giant_scorpion", "name": "content.dndsheets.monster.giant_scorpion", "type": "beast", "size": "large", "baseEntity": "minecraft:spider", "appearance": { "model": "scorpion", "variant": "scorpion" },
     "ac": 15, "hp": 52,
     "abilities": { "str": 15, "dex": 13, "con": 15, "int": 1, "wis": 9, "cha": 3 },
     "proficiencyBonus": 2,
@@ -2515,7 +2515,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_shark", "name": "content.dndsheets.monster.giant_shark", "type": "beast", "size": "huge", "baseEntity": "minecraft:dolphin", "appearance": { "model": "shark", "variant": "shark" },
+    "id": "dndsheets:giant_shark", "name": "content.dndsheets.monster.giant_shark", "type": "beast", "size": "huge", "baseEntity": "minecraft:dolphin", "appearance": { "model": "blue_shark", "variant": "blue_shark" },
     "ac": 13, "hp": 126,
     "abilities": { "str": 23, "dex": 11, "con": 21, "int": 1, "wis": 10, "cha": 5 },
     "proficiencyBonus": 3,
@@ -2566,7 +2566,7 @@
     ]
   },
   {
-    "id": "dndsheets:green_hag", "name": "content.dndsheets.monster.green_hag", "type": "fey", "size": "medium", "baseEntity": "minecraft:witch",
+    "id": "dndsheets:green_hag", "name": "content.dndsheets.monster.green_hag", "type": "fey", "size": "medium", "baseEntity": "minecraft:witch", "appearance": { "model": "crone", "variant": "crone" },
     "ac": 17, "hp": 82,
     "abilities": { "str": 18, "dex": 12, "con": 16, "int": 13, "wis": 14, "cha": 14 },
     "proficiencyBonus": 2,
@@ -2717,7 +2717,7 @@
     ]
   },
   {
-    "id": "dndsheets:kraken", "name": "content.dndsheets.monster.kraken", "type": "monstrosity", "size": "gargantuan", "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:glow_squid",
+    "id": "dndsheets:kraken", "name": "content.dndsheets.monster.kraken", "type": "monstrosity", "size": "gargantuan", "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:glow_squid", "appearance": { "model": "kraken", "variant": "kraken" },
     "ac": 18, "hp": 472,
     "abilities": { "str": 30, "dex": 11, "con": 25, "int": 22, "wis": 18, "cha": 20 },
     "proficiencyBonus": 7,
@@ -2739,7 +2739,7 @@
     ]
   },
   {
-    "id": "dndsheets:lich", "name": "content.dndsheets.monster.lich", "type": "undead", "size": "medium", "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:skeleton", "appearance": { "mainHand": "minecraft:blaze_rod", "helmet": "minecraft:golden_helmet" },
+    "id": "dndsheets:lich", "name": "content.dndsheets.monster.lich", "type": "undead", "size": "medium", "ownClock": true, "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:skeleton", "appearance": { "mainHand": "minecraft:blaze_rod", "helmet": "minecraft:golden_helmet", "model": "necromancer", "variant": "necromancer" },
     "ac": 17, "hp": 135,
     "abilities": { "str": 11, "dex": 16, "con": 16, "int": 20, "wis": 14, "cha": 16 },
     "proficiencyBonus": 7,
@@ -2754,7 +2754,7 @@
     ]
   },
   {
-    "id": "dndsheets:mage", "name": "content.dndsheets.monster.mage", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:witch", "appearance": { "mainHand": "minecraft:stick" },
+    "id": "dndsheets:mage", "name": "content.dndsheets.monster.mage", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:witch", "appearance": { "mainHand": "minecraft:stick", "model": "warlock", "variant": "warlock" },
     "ac": 12, "hp": 40,
     "abilities": { "str": 9, "dex": 14, "con": 11, "int": 17, "wis": 12, "cha": 11 },
     "proficiencyBonus": 3,
@@ -2807,7 +2807,7 @@
     ]
   },
   {
-    "id": "dndsheets:minotaur", "name": "content.dndsheets.monster.minotaur", "type": "monstrosity", "size": "large", "baseEntity": "minecraft:ravager", "appearance": { "model": "brute", "variant": "minotaur" },
+    "id": "dndsheets:minotaur", "name": "content.dndsheets.monster.minotaur", "type": "monstrosity", "size": "large", "baseEntity": "minecraft:ravager", "appearance": { "model": "minotaur", "variant": "minotaur" },
     "ac": 14, "hp": 76,
     "abilities": { "str": 18, "dex": 11, "con": 16, "int": 6, "wis": 16, "cha": 9 },
     "proficiencyBonus": 2,
@@ -2817,7 +2817,7 @@
     ]
   },
   {
-    "id": "dndsheets:mummy", "name": "content.dndsheets.monster.mummy", "type": "undead", "size": "medium", "baseEntity": "minecraft:husk", "appearance": { "model": "undead", "variant": "mummy" },
+    "id": "dndsheets:mummy", "name": "content.dndsheets.monster.mummy", "type": "undead", "size": "medium", "baseEntity": "minecraft:husk", "appearance": { "model": "mummy", "variant": "mummy" },
     "ac": 11, "hp": 58,
     "abilities": { "str": 16, "dex": 8, "con": 15, "int": 6, "wis": 10, "cha": 12 },
     "proficiencyBonus": 2,
@@ -2828,7 +2828,7 @@
     ]
   },
   {
-    "id": "dndsheets:mummy_lord", "name": "content.dndsheets.monster.mummy_lord", "type": "undead", "size": "medium", "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:husk", "appearance": { "helmet": "minecraft:golden_helmet", "model": "undead", "variant": "mummy_lord" },
+    "id": "dndsheets:mummy_lord", "name": "content.dndsheets.monster.mummy_lord", "type": "undead", "size": "medium", "legendaryActions": 3, "legendaryResistances": 3, "baseEntity": "minecraft:husk", "appearance": { "helmet": "minecraft:golden_helmet", "model": "mummy", "variant": "mummy" },
     "ac": 17, "hp": 97,
     "abilities": { "str": 18, "dex": 10, "con": 17, "int": 11, "wis": 18, "cha": 16 },
     "proficiencyBonus": 5,
@@ -2854,7 +2854,7 @@
     ]
   },
   {
-    "id": "dndsheets:night_hag", "name": "content.dndsheets.monster.night_hag", "type": "fiend", "size": "medium", "baseEntity": "minecraft:witch",
+    "id": "dndsheets:night_hag", "name": "content.dndsheets.monster.night_hag", "type": "fiend", "size": "medium", "baseEntity": "minecraft:witch", "appearance": { "model": "crone", "variant": "crone" },
     "ac": 17, "hp": 112,
     "abilities": { "str": 18, "dex": 15, "con": 16, "int": 16, "wis": 14, "cha": 16 },
     "proficiencyBonus": 3,
@@ -3000,7 +3000,7 @@
     ]
   },
   {
-    "id": "dndsheets:shambling_mound", "name": "content.dndsheets.monster.shambling_mound", "type": "plant", "size": "large", "baseEntity": "minecraft:slime",
+    "id": "dndsheets:shambling_mound", "name": "content.dndsheets.monster.shambling_mound", "type": "plant", "size": "large", "baseEntity": "minecraft:slime", "appearance": { "model": "whisperer", "variant": "whisperer" },
     "ac": 15, "hp": 136,
     "abilities": { "str": 18, "dex": 8, "con": 16, "int": 5, "wis": 10, "cha": 5 },
     "proficiencyBonus": 3,
@@ -3055,7 +3055,7 @@
     ]
   },
   {
-    "id": "dndsheets:stone_golem", "name": "content.dndsheets.monster.stone_golem", "type": "construct", "size": "large", "baseEntity": "minecraft:iron_golem", "appearance": { "model": "golem", "variant": "stone_golem" },
+    "id": "dndsheets:stone_golem", "name": "content.dndsheets.monster.stone_golem", "type": "construct", "size": "large", "baseEntity": "minecraft:iron_golem", "appearance": { "model": "redstone_golem", "variant": "redstone_golem" },
     "ac": 17, "hp": 178,
     "abilities": { "str": 22, "dex": 9, "con": 20, "int": 3, "wis": 11, "cha": 1 },
     "proficiencyBonus": 4,
@@ -3322,7 +3322,7 @@
     ]
   },
   {
-    "id": "dndsheets:werewolf_hybrid", "name": "content.dndsheets.monster.werewolf_hybrid", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:zombie",
+    "id": "dndsheets:werewolf_hybrid", "name": "content.dndsheets.monster.werewolf_hybrid", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:zombie", "appearance": { "model": "werewolf", "variant": "werewolf" },
     "ac": 12, "hp": 58,
     "abilities": { "str": 15, "dex": 13, "con": 14, "int": 10, "wis": 11, "cha": 10 },
     "proficiencyBonus": 2,
@@ -3353,7 +3353,7 @@
     ]
   },
   {
-    "id": "dndsheets:wraith", "name": "content.dndsheets.monster.wraith", "type": "undead", "size": "medium", "baseEntity": "minecraft:vex",
+    "id": "dndsheets:wraith", "name": "content.dndsheets.monster.wraith", "type": "undead", "size": "medium", "baseEntity": "minecraft:vex", "appearance": { "model": "wraith", "variant": "wraith" },
     "ac": 13, "hp": 67,
     "abilities": { "str": 6, "dex": 16, "con": 16, "int": 12, "wis": 14, "cha": 15 },
     "proficiencyBonus": 3,
@@ -3364,7 +3364,7 @@
     ]
   },
   {
-    "id": "dndsheets:wyvern", "name": "content.dndsheets.monster.wyvern", "type": "dragon", "size": "large", "baseEntity": "minecraft:phantom", "appearance": { "model": "dragon", "variant": "#6a5a3a" },
+    "id": "dndsheets:wyvern", "name": "content.dndsheets.monster.wyvern", "type": "dragon", "size": "large", "baseEntity": "minecraft:phantom", "appearance": { "model": "drake", "variant": "drake" },
     "ac": 13, "hp": 110,
     "abilities": { "str": 19, "dex": 10, "con": 16, "int": 5, "wis": 12, "cha": 6 },
     "proficiencyBonus": 3,

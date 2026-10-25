@@ -85,6 +85,7 @@ public class JsonContentSelfTest {
 		checkDefaultsRefresh();
 		checkAudioAssets();
 		checkAssetCredits();
+		checkGeckoLibFolders();
 		checkNoPlatformCharset();
 		checkModBusSubscribersNameTheirMod();
 		checkInteractHandlers();
@@ -222,6 +223,28 @@ public class JsonContentSelfTest {
 		System.out.println("checkNoPlatformCharset: OK, " + files + " source files read and written with an explicit charset.");
 	}
 
+	//GeckoLib loads EVERY .json under geo/ as a model and under animations/ as animations, and one that is not crashes the
+	//client at startup (a scales.json under geo/entity did: "Index 0 out of bounds" in GeometryTree.fromModel).
+	private static void checkGeckoLibFolders() throws Exception {
+		Path assets = Path.of("src", "main", "resources", "assets", "dndsheets");
+		int count = 0;
+		for (String[] folder : new String[][] {{"geo", "minecraft:geometry"}, {"animations", "animations"}}) {
+			Path dir = assets.resolve(folder[0]);
+			if (!Files.exists(dir)) continue;
+			try (Stream<Path> walk = Files.walk(dir)) {
+				for (Path file : walk.filter(f -> f.toString().endsWith(".json")).sorted().toList()) {
+					JsonObject json = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
+					boolean ok = json.has(folder[1]) && (folder[0].equals("animations")
+						? json.getAsJsonObject(folder[1]).size() > 0 : json.getAsJsonArray(folder[1]).size() > 0);
+					assertTrue(ok, file + " is under " + folder[0] + "/ but has no " + folder[1]
+						+ ": GeckoLib loads every json there and crashes on it. Keep other data out of " + folder[0] + "/.");
+					count++;
+				}
+			}
+		}
+		System.out.println("checkGeckoLibFolders: OK, " + count + " geo/animation file(s), each one GeckoLib can load.");
+	}
+
 	private static void checkAssetCredits() throws Exception {
 		Path assets = Path.of("src", "main", "resources", "assets", "dndsheets");
 		Path icons = assets.resolve(Path.of("textures", "gui", "icons"));
@@ -232,8 +255,8 @@ public class JsonContentSelfTest {
 			assertTrue(parts.length == 5, "CREDITS.txt line without the 5 fields (path | source | author | licence | url): " + line);
 			String path = parts[0].trim();
 			assertTrue(Files.exists(assets.resolve(path)), "CREDITS.txt credits a file that does not exist: " + path);
-			assertTrue(!parts[2].isBlank() && (parts[3].contains("CC BY") || parts[3].contains("CC0") || parts[3].contains("OFL")),
-				path + " does not declare an accepted licence (CC BY, CC0 or OFL) and an author: " + line);
+			assertTrue(!parts[2].isBlank() && (parts[3].contains("CC BY") || parts[3].contains("CC0") || parts[3].contains("OFL") || parts[3].contains("MIT")),
+				path + " does not declare an accepted licence (CC BY, CC0, OFL or MIT) and an author: " + line);
 			credited.add(path);
 		}
 		int count = 0;
@@ -245,7 +268,25 @@ public class JsonContentSelfTest {
 			}
 		}
 		assertTrue(count > 0, "there is no icon in " + icons + ": was the folder moved?");
-		System.out.println("checkAssetCredits: OK, " + count + " icon(s), each credited with author and licence.");
+		//Imported creatures (tools/blockbench/import): a model without a mask.png ships someone else's art, so its geometry
+		//and every texture need their line too. The mod's own (mask + palettes) are original and need none.
+		int imported = 0;
+		Path entities = assets.resolve(Path.of("textures", "entity"));
+		try (Stream<Path> dirs = Files.list(entities)) {
+			for (Path dir : dirs.filter(Files::isDirectory).sorted().toList()) {
+				if (Files.exists(dir.resolve("mask.png"))) continue;
+				String model = dir.getFileName().toString();
+				assertTrue(credited.contains("geo/entity/" + model + ".geo.json"), "geo/entity/" + model + ".geo.json is imported art without its line in CREDITS.txt");
+				try (Stream<Path> files = Files.list(dir)) {
+					for (Path file : files.filter(f -> f.toString().endsWith(".png")).toList()) {
+						String rel = assets.relativize(file).toString().replace('\\', '/');
+						assertTrue(credited.contains(rel), rel + " is imported art without its line in CREDITS.txt");
+						imported++;
+					}
+				}
+			}
+		}
+		System.out.println("checkAssetCredits: OK, " + count + " icon(s) and " + imported + " imported creature texture(s), each credited with author and licence.");
 	}
 
 	private static void checkAudioAssets() throws Exception {
@@ -713,13 +754,17 @@ public class JsonContentSelfTest {
 				assertTrue(json.has("baseEntity") && json.get("baseEntity").getAsString().startsWith("minecraft:"),
 					id + " names a model, so its baseEntity must be the vanilla fallback (a minecraft: entity)");
 				Path assets = Path.of("src", "main", "resources", "assets", "dndsheets");
-				for (String file : new String[] {"geo/entity/" + model + ".geo.json", "animations/entity/" + model + ".animation.json",
-						"textures/entity/" + model + "/mask.png", "textures/entity/" + model + "/variants.json"}) {
+				for (String file : new String[] {"geo/entity/" + model + ".geo.json", "animations/entity/" + model + ".animation.json"}) {
 					assertTrue(Files.exists(assets.resolve(file)), id + " needs assets/dndsheets/" + file + ", which does not exist");
 				}
-				//A variant is a key of variants.json, or a raw "#RRGGBB" the client derives a palette from.
-				assertTrue(variant.startsWith("#") || JsonParser.parseString(Files.readString(assets.resolve("textures/entity/" + model + "/variants.json"))).getAsJsonObject().has(variant),
-					id + " asks for variant \"" + variant + "\" which is not in " + model + "/variants.json");
+				//Either an imported model's own PNG for that variant, or the mask coloured by a key of variants.json
+				//(or a raw "#RRGGBB" the client derives a palette from).
+				Path textures = assets.resolve("textures/entity/" + model);
+				boolean plain = Files.exists(textures.resolve(variant + ".png"));
+				boolean masked = Files.exists(textures.resolve("mask.png")) && Files.exists(textures.resolve("variants.json"))
+					&& (variant.startsWith("#") || JsonParser.parseString(Files.readString(textures.resolve("variants.json"))).getAsJsonObject().has(variant));
+				assertTrue(plain || masked, id + " asks for variant \"" + variant + "\" of " + model
+					+ ": there is no textures/entity/" + model + "/" + variant + ".png nor a mask.png + variants.json with that key");
 			}
 			if (!json.has("appearance")) continue;
 			dressed++;

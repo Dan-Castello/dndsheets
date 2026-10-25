@@ -92,7 +92,7 @@ def check_animations(model, rep):
                         if ch == 'rotation':
                             d = np.minimum(d % 360, 360 - d % 360)
                         if d.max() > 0.5:
-                            rep.error('loop_seam', '%s %s.%s starts at %s and ends at %s' % (name, bone, ch, v0.round(1).tolist(), v1.round(1).tolist()))
+                            (rep.warn if model.pngs else rep.error)('loop_seam', '%s %s.%s starts at %s and ends at %s' % (name, bone, ch, v0.round(1).tolist(), v1.round(1).tolist()))
         allowed = DEATH_SINK if name == 'death' else SINK_TOLERANCE
         worst, worst_t, worst_bone = 0.0, 0.0, None
         drift = {}
@@ -110,7 +110,8 @@ def check_animations(model, rep):
                 if g > drift.get(b, (0, 0))[0]:
                     drift[b] = (g, t)
         if worst > allowed:
-            rep.error('ground_sink', '%s sinks "%s" %.1f units below the ground at %.2fs (allowed %.1f)' % (name, worst_bone, worst, worst_t, allowed))
+            # An imported model's clips may be its author's own (a dragon breathing fire at the floor): reported only.
+            (rep.warn if model.pngs else rep.error)('ground_sink', '%s sinks "%s" %.1f units below the ground at %.2fs (allowed %.1f)' % (name, worst_bone, worst, worst_t, allowed))
         for b, (g, t) in drift.items():
             if g > DETACH_GAP:
                 rep.error('detachment', '%s pulls "%s" %.1f units off "%s" at %.2fs' % (name, b, g, solid_parent(model, b), t))
@@ -139,10 +140,13 @@ def check_z_fighting(model, rep):
                 continue
             for side, (pa, pb) in (('min', (alo[ax], blo[ax])), ('max', (ahi[ax], bhi[ax]))):
                 if abs(pa - pb) < 1e-3:
-                    rep.error('z_fighting', '%s and %s share their %s%s face plane' % (na, nb, side, 'xyz'[ax]))
+                    # An imported model's are the source's own geometry: reported, not "fixed" by reshaping their art.
+                    (rep.warn if model.pngs else rep.error)('z_fighting', '%s and %s share their %s%s face plane' % (na, nb, side, 'xyz'[ax]))
 
 
 def check_palettes(model, rep):
+    if model.pngs:
+        return  # imported: finished textures, no palette roles
     bases = {}
     for v, pal in model.palettes.items():
         missing = [r for r in R.ROLES if r not in pal]

@@ -23,6 +23,15 @@ demon, undead, golem, beast, reptile, serpent, spider, ooze, elemental, bird, sh
 yet seen in game). Deliberately left vanilla: equipped humanoids, skeletons,
 bears, horses, deer, bats, small fish, octopi, unique aberrations and composite creatures (griffon, chimera, hydra).
 
+Imported models:
+- **Search:** `tools/models_survey/survey.py` ranks permissive-licence models from Modrinth (downloads) and Sketchfab (views, likes), and writes `reference/creature-model-survey.md`.
+- **Gates:** licence, then originality (Mojang re-uploads are refused), then an importable format.
+- **Conversion:** `tools/blockbench/import/javamodel.py` turns a Forge `createBodyLayer()` into a geo, takes the source's PNGs as variants (`MonsterTextures` draws `textures/entity/<model>/<variant>.png` as is), gives it this mod's animations, and writes `CREDITS.txt`. It also follows `createMesh()` inheritance.
+- **Imported from Goety (MIT):** `wraith`, `specter`, `necromancer` (lich), `crone` (hags), `warlock` (mage, archmage, cult fanatic), `brood_mother` (giant spider), `web_spider` (giant wolf spider), `redstone_golem` (stone golem) and `whisperer` (shambling mound).
+- **Shared vanilla layout:** a model that shares Mojang's humanoid/illager/skeleton boxes is reviewed one by one: what its author added and whose texture it is. The decision goes in `IMPORTS[...]['reviewed']`, and without it the import stops. `HumanoidModel.createMesh()` only contributes pivots, never Mojang's boxes.
+- **Sketchfab:** `tools/blockbench/import/gltf.py` downloads with the API token (`SKETCHFAB_TOKEN`; zips are cached in the git-ignored `tools/blockbench/out/import`). It rebuilds bones and cubes from the glTF of a Blockbench export, re-bakes the textures to box UV with GeckoLib's floored net, maps the author's clips to idle/attack/hurt/death/fly, grounds the rest pose, and records a size factor in `creatures/scales.json`, which `MonsterModelRenderer` applies. Imported: `blue_shark`, `kraken`, `drake` (wyvern), `orc`, `werewolf`, `rattlesnake`, `crocodile`, `scorpion`, `rat`, `lion`, `minotaur` and `mummy`. Where an import is better, it replaces the archetype for those monsters; the archetypes still cover the rest, such as ogres, giants and the other serpents.
+- **Self-test:** checks that every imported file is credited.
+
 Review and validation (skill `.claude/skills/creature-models`, agent `creature-model-reviewer`, command `/model-review`):
 - **Render:** `tools/blockbench/mobs/render.py` is a numpy/PIL software renderer, because Blockbench's WebGL/WebGPU renders are blank on the dev machine. It draws the INSTALLED geo + mask + palette, posed by the animation JSON, and writes contact sheets to `tools/blockbench/out/review/` (git-ignored).
 - **Conventions:** checked against GeckoLib 4.4.9 bytecode. Bone and keyframe X/Y rotations are negated, the order is Z·Y·X, and the animated position's X is negated. The geo file is X-mirrored from Blockbench and GeckoLib mirrors it back, so Blockbench +X (`_r`) is the creature's right.

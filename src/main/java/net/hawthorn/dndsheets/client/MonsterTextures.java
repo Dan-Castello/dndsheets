@@ -23,7 +23,8 @@ import java.util.Map;
  * {@code textures/entity/<model>/mask.png} (per pixel: which colour role it is, how much of the dark colour to mix in, a
  * highlight amount) and one {@code variants.json} of palettes; the first time a variant is drawn this paints it into a
  * {@link DynamicTexture} and caches it. So a dragon colour is one line of JSON, not one more PNG, and a monster may
- * even ask for a raw {@code "#RRGGBB"} variant that derives its palette from that colour.</p>
+ * even ask for a raw {@code "#RRGGBB"} variant that derives its palette from that colour. An imported model instead
+ * ships {@code textures/entity/<model>/<variant>.png}, which is used as it is.</p>
  *
  * <p>Mask encoding (RGBA, written by {@code tools/blockbench/mobs/mobkit.py}): R = mix toward {@code dark},
  * G = role * 40 (base, dark, belly, horn, membrane, eye), B = whiten, A = 255 painted / 0 empty.</p>
@@ -41,13 +42,20 @@ public final class MonsterTextures {
 
 	/** Called on every resource reload: palettes or masks may have changed. */
 	public static void clear() {
-		CACHE.values().forEach(location -> Minecraft.getInstance().getTextureManager().release(location));
+		//Only the coloured ones are ours to release; a plain PNG belongs to the texture manager's normal lifecycle.
+		CACHE.values().stream().filter(location -> location.getPath().startsWith("dynamic/"))
+			.forEach(location -> Minecraft.getInstance().getTextureManager().release(location));
 		CACHE.clear();
 	}
 
 	private static ResourceLocation build(String model, String variant) {
 		try {
 			ResourceManager resources = Minecraft.getInstance().getResourceManager();
+			//An imported model (tools/blockbench/import) ships finished art: one PNG per variant, drawn as is.
+			if (variant.matches("[a-z0-9_.-]+")) {
+				ResourceLocation plain = new ResourceLocation(DndsheetsMod.MODID, "textures/entity/" + model + "/" + variant + ".png");
+				if (resources.getResource(plain).isPresent()) return plain;
+			}
 			int[][] palette = palette(resources, model, variant);
 			ResourceLocation maskLocation = new ResourceLocation(DndsheetsMod.MODID, "textures/entity/" + model + "/mask.png");
 			try (InputStream in = resources.open(maskLocation); NativeImage mask = NativeImage.read(in)) {

@@ -68,14 +68,36 @@ public class MonsterModelRenderer extends GeoEntityRenderer<MonsterModelEntity> 
 	@Override
 	public void scaleModelForRender(float widthScale, float heightScale, PoseStack poseStack, MonsterModelEntity entity,
 			BakedGeoModel model, boolean isReRender, float partialTick, int packedLight, int packedOverlay) {
-		float baby = entity.isBaby() ? 0.5f : 1f;
-		super.scaleModelForRender(widthScale * baby, heightScale * baby, poseStack, entity, model, isReRender, partialTick, packedLight, packedOverlay);
+		float scale = (entity.isBaby() ? 0.5f : 1f) * modelScale(entity.getModel());
+		super.scaleModelForRender(widthScale * scale, heightScale * scale, poseStack, entity, model, isReRender, partialTick, packedLight, packedOverlay);
+	}
+
+	//creatures/scales.json: {model: factor} for imported models authored at another size than our Medium base (a
+	//6-block drake is a Large wyvern at 0.4). Read once, dropped on every resource reload; a model not listed is 1.
+	private static Map<String, Float> scales;
+
+	private static float modelScale(String model) {
+		if (scales == null) {
+			Map<String, Float> read = new ConcurrentHashMap<>();
+			try (var in = net.minecraft.client.Minecraft.getInstance().getResourceManager()
+					.open(new ResourceLocation(DndsheetsMod.MODID, "creatures/scales.json"))) {
+				com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8))
+					.getAsJsonObject().entrySet().forEach(e -> read.put(e.getKey(), e.getValue().getAsFloat()));
+			} catch (Exception e) {
+				//No file (no imported model) or a broken one: every model at its own size.
+			}
+			scales = read;
+		}
+		return scales.getOrDefault(model, 1f);
 	}
 
 	//Palettes and masks may change with a resource pack: recolour on the next draw after every reload.
 	@SubscribeEvent
 	public static void reloadTextures(net.minecraftforge.client.event.RegisterClientReloadListenersEvent event) {
-		event.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener) manager -> MonsterTextures.clear());
+		event.registerReloadListener((net.minecraft.server.packs.resources.ResourceManagerReloadListener) manager -> {
+			MonsterTextures.clear();
+			scales = null;
+		});
 	}
 
 	@SubscribeEvent

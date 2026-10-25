@@ -37,18 +37,31 @@ class Model:
             cubes = []
             for c in b.get('cubes', []):
                 (ox, oy, oz), (sx, sy, sz) = c['origin'], c['size']
-                cubes.append(dict(lo=np.array([-(ox + sx), oy, oz], float), size=np.array([sx, sy, sz], float), uv=c['uv']))
+                g = c.get('inflate', 0.0)  # grows the box, not its texture rectangle
+                cubes.append(dict(lo=np.array([-(ox + sx) - g, oy - g, oz - g], float), size=np.array([sx + 2 * g, sy + 2 * g, sz + 2 * g], float),
+                                  uv=c['uv'], uv_size=np.array([sx, sy, sz], float)))
             self.bones[b['name']] = dict(parent=b.get('parent'), pivot=np.array([-px, py, pz], float),
                                          rest=np.array([-rx, -ry, rz], float), cubes=cubes)
         tex = os.path.join(ASSETS, 'textures', 'entity', name)
-        self.mask = np.array(Image.open(os.path.join(tex, 'mask.png')).convert('RGBA'), dtype=np.int32)
-        self.palettes = json.load(open(os.path.join(tex, 'variants.json'), encoding='utf-8'))
+        if os.path.exists(os.path.join(tex, 'mask.png')):
+            self.mask = np.array(Image.open(os.path.join(tex, 'mask.png')).convert('RGBA'), dtype=np.int32)
+            self.palettes = json.load(open(os.path.join(tex, 'variants.json'), encoding='utf-8'))
+            self.pngs = {}
+        else:  # an imported model: one finished PNG per variant (MonsterTextures draws it as is)
+            self.pngs = {f[:-4]: os.path.join(tex, f) for f in sorted(os.listdir(tex)) if f.endswith('.png')}
+            self.palettes = {v: None for v in self.pngs}
+            self.mask = np.array(self.texture(next(iter(self.pngs))), dtype=np.int32)
         path = os.path.join(ASSETS, 'animations', 'entity', name + '.animation.json')
         self.animations = json.load(open(path, encoding='utf-8'))['animations'] if os.path.exists(path) else {}
 
     def texture(self, variant):
         """The mask coloured with one palette: the same formula as MonsterTextures.colour (RGBA mask, R=dark mix,
-        G=role*40, B=whiten)."""
+        G=role*40, B=whiten). An imported model's variant is its own PNG, scaled to the geo's texture size."""
+        if self.pngs:
+            img = Image.open(self.pngs.get(variant, next(iter(self.pngs.values())))).convert('RGBA')
+            if img.size != (self.tw, self.th):
+                img = img.resize((self.tw, self.th), Image.NEAREST)
+            return np.array(img, float)
         pal = self.palettes[variant] if variant in self.palettes else derived(variant)
         P = np.array([pal[r] for r in ROLES], float)
         m = self.mask
@@ -146,7 +159,7 @@ def posed_cubes(model, anim=None, t=0.0):
 def faces(c):
     """Box-UV faces: (corner origin, edge u, edge v, normal, texture rect (x, y, w, h)) in cube-local units.
     The texture rect's top row maps to the top of side faces."""
-    w, h, d = (int(v) for v in c['size'])
+    w, h, d = (int(v) for v in c['uv_size'])
     u, v = c['uv']
     lo, sz = c['lo'], c['size']
     X, Y, Z = np.array([sz[0], 0, 0]), np.array([0, sz[1], 0]), np.array([0, 0, sz[2]])

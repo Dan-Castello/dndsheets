@@ -18,6 +18,13 @@
 - Every monster keeps its vanilla entity as a fallback. New config `ownCreatureModels` (default true): false spawns
   them all as before. Skin packs for other creature mods still win, and a model missing on a client draws as the
   dragon instead of crashing.
+- Wraiths, shadows, specters, ghosts, werewolves in hybrid form, liches, hags, mages, archmages and cult fanatics
+  use models from Goety – The Dark Arts (MIT,
+  credited in CREDITS.md), converted for this mod and animated with its own animations.
+- Krakens and giant octopuses, wyverns, sharks, orcs, werewolves, snakes, crocodiles, scorpions, rats, lions,
+  minotaurs and mummies use community models from Sketchfab (CC BY, credited in CREDITS.md); several keep their
+  authors' own animations (the orc's attack, the snake's strike, the wyvern's fire breath).
+- Giant spiders, giant wolf spiders, stone golems and shambling mounds use more Goety models.
 - Monsters that don't fit a model (equipped humanoids, skeletons, horses, composite creatures…) stay vanilla.
 
 ### Item models

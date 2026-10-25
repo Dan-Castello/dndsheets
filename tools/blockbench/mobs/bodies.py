@@ -558,3 +558,39 @@ def fish_anims():
         'death': anim(1.4, {'body': {'rotation': {0: [0, 0, 0], 1.2: [0, 0, 175], 1.4: [0, 0, 180]},
                                       'position': {0: [0, 0, 0], 1.2: [0, 3, 0]}}}, loop=False),
     }
+
+
+# --- floating spirits (imported ghosts: wraith, specter) ------------------------------------------------------------
+
+def ghost_anims():
+    """No legs to stand on: the whole figure hovers and bobs; the arms reach for the attack; it fades into the ground."""
+    return {
+        'idle': anim(3.0, {'root': {'position': sway(3.0, 1.2, axis=1, base=2.0)},
+                           'arm_r': {'rotation': sway(3.0, 6, axis=0)}, 'arm_l': {'rotation': sway(3.0, 6, axis=0, phase=0.5)},
+                           'head': {'rotation': sway(3.0, 6)}}),
+        'fly': anim(3.0, {'root': {'position': sway(3.0, 1.2, axis=1, base=2.0)}}),
+        'attack': anim(0.6, {'root': {'position': {0: [0, 2, 0], 0.3: [0, 2, -3], 0.6: [0, 2, 0]}},
+                             'arm_r': {'rotation': {0: [0, 0, 0], 0.15: [-40, 0, 0], 0.3: [-100, 0, 0], 0.6: [0, 0, 0]}},
+                             'arm_l': {'rotation': {0: [0, 0, 0], 0.18: [-40, 0, 0], 0.33: [-100, 0, 0], 0.6: [0, 0, 0]}}}, loop=False),
+        'hurt': anim(0.4, {'root': {'rotation': {0: [0, 0, 0], 0.1: [-10, 0, 0], 0.4: [0, 0, 0]},
+                                    'position': {0: [0, 2, 0], 0.4: [0, 2, 0]}}}, loop=False),
+        # Dissipates upward: shrinking toward a rising point never drags the robe through the floor.
+        'death': anim(1.4, {'root': {'scale': {0: [1, 1, 1], 1.4: [0.05, 0.05, 0.05]},
+                                     'position': {0: [0, 2, 0], 1.4: [0, 10, 0]}}}, loop=False),
+    }
+
+
+# --- any rig (imported models): only root, head and arm_r/arm_l are assumed, and nothing ever goes below the ground --
+
+def generic_anims():
+    return {
+        'idle': anim(3.0, {'root': {'scale': {0: [1, 1, 1], 1.5: [1, 1.015, 1], 3: [1, 1, 1]}},
+                           'head': {'rotation': sway(3.0, 6)},
+                           'arm_r': {'rotation': sway(3.0, 3, axis=0)}, 'arm_l': {'rotation': sway(3.0, 3, axis=0, phase=0.5)}}),
+        'attack': anim(0.7, {'root': {'position': {0: [0, 0, 0], 0.3: [0, 0.5, -1.5], 0.45: [0, 0.5, -1], 0.7: [0, 0, 0]}},
+                             'arm_r': {'rotation': {0: [0, 0, 0], 0.25: [-60, 0, 0], 0.4: [-15, 0, 0], 0.7: [0, 0, 0]}},
+                             'head': {'rotation': {0: [0, 0, 0], 0.3: [10, 0, 0], 0.7: [0, 0, 0]}}}, loop=False),
+        'hurt': anim(0.4, {'head': {'rotation': {0: [0, 0, 0], 0.1: [-15, 0, 0], 0.4: [0, 0, 0]}},
+                           'root': {'position': {0: [0, 0, 0], 0.1: [0, 0, 1], 0.4: [0, 0, 0]}}}, loop=False),
+        'death': anim(1.2, {'root': {'scale': {0: [1, 1, 1], 1.0: [1.15, 0.1, 1.15], 1.2: [1.2, 0.05, 1.2]}}}, loop=False),
+    }

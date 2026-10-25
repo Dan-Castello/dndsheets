@@ -1,0 +1,18 @@
+{
+ "blue_shark": 0.7,
+ "brood_mother": 0.25,
+ "crocodile": 0.5,
+ "drake": 0.4,
+ "kraken": 0.6,
+ "lion": 0.6,
+ "minotaur": 0.4,
+ "mummy": 1.0,
+ "orc": 1.7,
+ "rat": 1.0,
+ "rattlesnake": 1.0,
+ "redstone_golem": 0.4,
+ "scorpion": 1.0,
+ "web_spider": 0.8,
+ "werewolf": 1.0,
+ "whisperer": 0.5
+}
