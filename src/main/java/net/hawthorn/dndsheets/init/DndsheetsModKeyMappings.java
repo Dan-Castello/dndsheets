@@ -15,6 +15,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.KeyMapping;
 
 import net.hawthorn.dndsheets.DndsheetsMod;
+import net.hawthorn.dndsheets.SpellRegistry;
+import net.hawthorn.dndsheets.network.StaffBindMessage;
+import net.minecraftforge.client.event.InputEvent;
 
 @Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = {Dist.CLIENT})
 public class DndsheetsModKeyMappings {
@@ -84,12 +87,39 @@ public class DndsheetsModKeyMappings {
 		}
 	};
 
+	//Cycle the active spell of the staff in hand (same as Shift+scroll, see KeyEventListener).
+	public static final KeyMapping STAFF_NEXT = staffKey("key.dndsheets.staff_next", GLFW.GLFW_KEY_X, StaffBindMessage.Action.NEXT);
+	public static final KeyMapping STAFF_PREV = staffKey("key.dndsheets.staff_prev", GLFW.GLFW_KEY_Z, StaffBindMessage.Action.PREV);
+
+	private static KeyMapping staffKey(String name, int key, StaffBindMessage.Action action) {
+		return new KeyMapping(name, key, "key.categories.dndsheets") {
+			private boolean isDownOld = false;
+
+			@Override
+			public void setDown(boolean isDown) {
+				super.setDown(isDown);
+				if (isDownOld != isDown && isDown) sendStaff(action);
+				isDownOld = isDown;
+			}
+		};
+	}
+
+	//The server re-validates everything; the client check only avoids sending packets for nothing.
+	static boolean sendStaff(StaffBindMessage.Action action) {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.player == null || mc.screen != null || !(SpellRegistry.isConfigurableStaff(mc.player.getMainHandItem()) || net.hawthorn.dndsheets.MonsterRegistry.isConfigurableCard(mc.player.getMainHandItem()))) return false;
+		DndsheetsMod.PACKET_HANDLER.sendToServer(new StaffBindMessage("", action));
+		return true;
+	}
+
 	@SubscribeEvent
 	public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
 		event.register(CHARACTER);
 		event.register(DM_PANEL);
 		event.register(GRIMOIRE);
 		event.register(QUICK_CAST);
+		event.register(STAFF_NEXT);
+		event.register(STAFF_PREV);
 	}
 
 	@Mod.EventBusSubscriber(modid = net.hawthorn.dndsheets.DndsheetsMod.MODID, value = {Dist.CLIENT})
@@ -101,7 +131,16 @@ public class DndsheetsModKeyMappings {
 				DM_PANEL.consumeClick();
 				GRIMOIRE.consumeClick();
 				QUICK_CAST.consumeClick();
+				STAFF_NEXT.consumeClick();
+				STAFF_PREV.consumeClick();
 			}
+		}
+
+		//Shift+scroll with a reconfigurable staff in hand cycles its spells instead of the hotbar.
+		@SubscribeEvent
+		public static void onScroll(InputEvent.MouseScrollingEvent event) {
+			if (!net.minecraft.client.gui.screens.Screen.hasShiftDown() || event.getScrollDelta() == 0) return;
+			if (sendStaff(event.getScrollDelta() > 0 ? StaffBindMessage.Action.PREV : StaffBindMessage.Action.NEXT)) event.setCanceled(true);
 		}
 	}
 }

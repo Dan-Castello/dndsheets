@@ -139,4 +139,31 @@ public class CombatantGameTests {
 			"a block that is not in the registry cannot resolve: the tag stores the id, not the stats");
 		helper.succeed();
 	}
+
+	/**
+	 * <p>The mod's own creature model: a shipped dragon wyrmling must come out of {@code spawnAt} as the generic
+	 * GeckoLib entity wearing the dragon archetype in its colour, scaled down as a baby, still a rules monster, and
+	 * keep all of that through a save/load (what a chunk reload does). Needs a world: the synced data and the NBT are
+	 * exactly what no standing-up test can see.</p>
+	 */
+	@GameTest(template = "arena")
+	public static void aShippedDragonWearsItsOwnModel(GameTestHelper helper) {
+		net.minecraft.core.BlockPos at = helper.absolutePos(new net.minecraft.core.BlockPos(4, 1, 4));
+		net.minecraft.world.entity.Entity spawned = MonsterRegistry.spawnAt(helper.getLevel(), at.getX() + 0.5, at.getY(), at.getZ() + 0.5, "dndsheets:red_dragon_wyrmling");
+		helper.assertTrue(spawned instanceof net.hawthorn.dndsheets.entity.MonsterModelEntity,
+			"a shipped dragon did not spawn as dndsheets:monster_model (got " + spawned + ")");
+		net.hawthorn.dndsheets.entity.MonsterModelEntity dragon = (net.hawthorn.dndsheets.entity.MonsterModelEntity) spawned;
+		helper.assertTrue("dragon".equals(dragon.getModel()) && "red".equals(dragon.getVariant()),
+			"wrong archetype/variant: " + dragon.getModel() + "/" + dragon.getVariant());
+		helper.assertTrue(dragon.isBaby(), "a wyrmling is the baby flag: it renders at half size");
+		helper.assertTrue(Combatant.of(dragon) != null, "the model entity is still a monster of the 5e rules");
+
+		net.hawthorn.dndsheets.entity.MonsterModelEntity reloaded = new net.hawthorn.dndsheets.entity.MonsterModelEntity(
+			net.hawthorn.dndsheets.init.DndsheetsModEntities.MONSTER_MODEL.get(), helper.getLevel());
+		reloaded.load(dragon.saveWithoutId(new net.minecraft.nbt.CompoundTag()));
+		helper.assertTrue("dragon".equals(reloaded.getModel()) && "red".equals(reloaded.getVariant()) && reloaded.isBaby(),
+			"model/variant/baby did not survive the NBT round trip: " + reloaded.getModel() + "/" + reloaded.getVariant());
+		dragon.discard();
+		helper.succeed();
+	}
 }

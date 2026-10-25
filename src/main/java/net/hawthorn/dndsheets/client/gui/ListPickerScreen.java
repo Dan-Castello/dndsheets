@@ -80,6 +80,8 @@ public abstract class ListPickerScreen extends Screen {
 	//never matches a search, so headers disappear when filtering and only results remain.
 	private final List<Button> allButtons = new ArrayList<>();
 	private final List<String> allLabels = new ArrayList<>();
+	//A search is active and nothing matches: say so instead of leaving the panel blank.
+	private boolean noMatches;
 
 	/** Root screen, with nothing to go back to (e.g. opened via keybind or right-click). */
 	protected ListPickerScreen(Component title) {
@@ -206,6 +208,7 @@ public abstract class ListPickerScreen extends Screen {
 			}
 		}
 		list.replaceRows(visible);
+		noMatches = !query.isEmpty() && visible.isEmpty();
 	}
 
 	@Override
@@ -224,6 +227,24 @@ public abstract class ListPickerScreen extends Screen {
 	public boolean charTyped(char codePoint, int modifiers) {
 		if (net.minecraft.Util.getMillis() - openedAt < 200) return true;
 		return super.charTyped(codePoint, modifiers);
+	}
+
+	//Enter in the search box presses the first matching row: type, Enter, done.
+	@Override
+	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+		if ((keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER)
+			&& searchBox != null && searchBox.isFocused()) {
+			String query = searchBox.getValue().trim().toLowerCase(Locale.ROOT);
+			for (int i = 0; i < allButtons.size(); i++) {
+				String label = allLabels.get(i);
+				Button b = allButtons.get(i);
+				if (label != null && b.active && (query.isEmpty() || label.contains(query))) {
+					b.onPress();
+					return true;
+				}
+			}
+		}
+		return super.keyPressed(keyCode, scanCode, modifiers);
 	}
 
 	@Override
@@ -260,7 +281,9 @@ public abstract class ListPickerScreen extends Screen {
 		//only here — internal separators use the plain rule (see GuiStyle.ruleOrnate).
 		GuiStyle.ruleOrnate(guiGraphics, left + 8, right - 8, 28);
 
-		Component empty = emptyMessage();
+		Component empty = noMatches ? Component.translatable("gui.dndsheets.common.no_results", searchBox.getValue().trim())
+			: allButtons.isEmpty() && emptyMessage() == null ? Component.translatable("gui.dndsheets.common.empty")
+			: emptyMessage();
 		if (empty != null) {
 			guiGraphics.drawCenteredString(this.font, empty, this.width / 2, this.height / 2, GuiStyle.MUTED_COLOR);
 		}

@@ -44,6 +44,9 @@ public class TomeButton extends Button {
 
 	private static final int ICON_SIZE = 14;
 	private ResourceLocation icon;
+	//The message the automatic "full text" tooltip was made for (null = none): truncated text is otherwise
+	//unreadable at rest, see renderWidget.
+	private Component autoTip;
 
 	/** A glyph at the left of the row (school, creature type...). Null = plain row. */
 	public TomeButton withIcon(ResourceLocation icon) {
@@ -93,6 +96,16 @@ public class TomeButton extends Button {
 		int textRight = right - TEXT_PADDING;
 		int available = textRight - textLeft;
 		Component message = this.getMessage();
+		boolean truncated = minecraft.font.width(message) > available;
+		if (truncated && (autoTip != message)) {
+			if (autoTip != null || this.getTooltip() == null) {
+				this.setTooltip(net.minecraft.client.gui.components.Tooltip.create(message));
+				autoTip = message;
+			}
+		} else if (!truncated && autoTip != null) {
+			this.setTooltip(null);
+			autoTip = null;
+		}
 
 		//Plain drawCenteredString doesn't clip ANYTHING: a label wider than the row —"Bandit Ambush ·
 		//Bandit x4, Bandit Captain · Deadly", and half the compendium list— overflowed on both sides and

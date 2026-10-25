@@ -46,9 +46,13 @@ public class Config {
 	private static final ForgeConfigSpec.BooleanValue VISION_RULES;
 	private static final ForgeConfigSpec.BooleanValue SOLO_MODE;
 	private static final ForgeConfigSpec.BooleanValue ADOPT_VANILLA;
+	private static final ForgeConfigSpec.BooleanValue OWN_MODELS;
 	private static final ForgeConfigSpec.IntValue CAST_TICKS_PER_LEVEL;
 	private static final ForgeConfigSpec.IntValue CAST_TICKS_MAX;
 	private static final ForgeConfigSpec.IntValue FEET_PER_BLOCK;
+	private static final ForgeConfigSpec.IntValue FLEE_DISTANCE;
+	private static final ForgeConfigSpec.IntValue FLEE_END_SECONDS;
+	private static final ForgeConfigSpec.IntValue FLEE_WINDOW_SECONDS;
 	private static final java.util.EnumMap<Rule, ForgeConfigSpec.BooleanValue> AUTO = new java.util.EnumMap<>(Rule.class);
 
 	/**
@@ -141,6 +145,12 @@ public class Config {
 		ADOPT_VANILLA = builder.define("adoptVanillaMobs", true);
 
 		builder.comment(
+			"ownCreatureModels: monsters with an appearance.model (dragon, goblinoid, beast...) spawn as the mod's own animated",
+			"model. false = every monster spawns as its vanilla baseEntity instead (zombie, wolf, ravager...), as before."
+		);
+		OWN_MODELS = builder.define("ownCreatureModels", true);
+
+		builder.comment(
 			"Automation switches (the DM's Rules menu). true = the mod resolves it on its own; false = manual,",
 			"the mod doesn't intervene and the table does it by hand.",
 			"autoCombat: attack/damage rolls, AC and resistances applied on hit (and hits starting combat).",
@@ -155,6 +165,18 @@ public class Config {
 		}
 		builder.comment("Feet each block counts for: distances, movement budget and the movement HUD. 5 = the usual grid.");
 		FEET_PER_BLOCK = builder.defineInRange("feetPerBlock", 5, 1, 30);
+
+		builder.comment(
+			"Fleeing an encounter (0 turns each piece off):",
+			"fleeDistance: blocks. If no living monster of the encounter is within this distance (never less than the combat's capture",
+			"radius + 5) of any player for fleeEndSeconds, the encounter ends (\"you escaped\").",
+			"fleeEndSeconds: how long that distance has to hold.",
+			"fleeWindowSeconds: after fleeing, a monster hitting a player does NOT start a new encounter for this long. The player",
+			"attacking, or the DM (/dndturns start), still can."
+		);
+		FLEE_DISTANCE = builder.defineInRange("fleeDistance", 40, 0, 128);
+		FLEE_END_SECONDS = builder.defineInRange("fleeEndSeconds", 5, 0, 60);
+		FLEE_WINDOW_SECONDS = builder.defineInRange("fleeWindowSeconds", 10, 0, 120);
 
 		SPEC = builder.build();
 	}
@@ -281,6 +303,18 @@ public class Config {
 		return FEET_PER_BLOCK.get();
 	}
 
+	public static int fleeDistance() {
+		return FLEE_DISTANCE.get();
+	}
+
+	public static int fleeEndSeconds() {
+		return FLEE_END_SECONDS.get();
+	}
+
+	public static int fleeWindowSeconds() {
+		return FLEE_WINDOW_SECONDS.get();
+	}
+
 	public static void setFeetPerBlock(int feet) {
 		FEET_PER_BLOCK.set(Math.max(1, Math.min(30, feet)));
 		FEET_PER_BLOCK.save();
@@ -303,6 +337,10 @@ public class Config {
 
 	/** Whether solo mode (no DM) is active. See {@link net.hawthorn.dndsheets.DndsheetsMod#canActAsDm}. */
 	/** Whether hostile mobs without a stat block get a generated one when combat touches them. */
+	public static boolean ownCreatureModels() {
+		return OWN_MODELS.get();
+	}
+
 	public static boolean adoptVanillaMobs() {
 		return ADOPT_VANILLA.get();
 	}

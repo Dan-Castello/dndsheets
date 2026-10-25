@@ -78,14 +78,14 @@ public class ResourceHudOverlay {
 		int spellSlotsMax = sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
 		if (spellSlotsMax > 0) {
 			int slots = sheet.has("spellSlotsCurrent") ? sheet.get("spellSlotsCurrent").getAsInt() : 0;
-			lines.add(new Line(Component.translatable("hud.dndsheets.spell_slots", slots, spellSlotsMax).getString(), 0xFF55FFFF, Icons.stat("spell")));
+			lines.add(new Line(Component.translatable("hud.dndsheets.spell_slots", slots, spellSlotsMax).getString(), GuiStyle.INFO_COLOR, Icons.stat("spell")));
 		}
 
 		//Temporary HP: a buffer Minecraft doesn't represent (its health bar is only the real HP), so
 		//without this a player with temporary HP had no way to know how much buffer they had left until a
 		//hit started eating into it.
 		int temporaryHp = sheet.has("temporaryHp") ? sheet.get("temporaryHp").getAsInt() : 0;
-		if (temporaryHp > 0) lines.add(new Line(Component.translatable("hud.dndsheets.temp_hp", temporaryHp).getString(), 0xFF7FE0A0, Icons.stat("hp")));
+		if (temporaryHp > 0) lines.add(new Line(Component.translatable("hud.dndsheets.temp_hp", temporaryHp).getString(), GuiStyle.GOOD_COLOR, Icons.stat("hp")));
 
 		//Active conditions, in red and above everything else. These used to live ONLY in the DM Panel, so
 		//a paralyzed player had no way to know it: their clicks simply stopped doing anything, and that
@@ -95,7 +95,7 @@ public class ResourceHudOverlay {
 		if (!conditions.isEmpty()) {
 			java.util.List<ResourceLocation> glyphs = conditionIcons(sheet);
 			if (!glyphs.isEmpty()) lines.add(new Line("", 0, glyphs));
-			lines.add(new Line(conditions, 0xFFFF5555));
+			lines.add(new Line(conditions, GuiStyle.BAD_COLOR));
 		}
 
 		//The "things you're carrying" that decide your next roll. All of it used to live server-side: you'd
@@ -112,6 +112,9 @@ public class ResourceHudOverlay {
 	}
 
 	private static void render(GuiGraphics guiGraphics) {
+		//Under any open screen but chat the sheet/menu panel covers it and half the text shows through: hide it.
+		var screen = Minecraft.getInstance().screen;
+		if (screen != null && !(screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
 		JsonObject sheet = SheetLoader.getClientSheet();
 		if (sheet == null) return;
 

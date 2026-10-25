@@ -46,7 +46,10 @@ public enum ItemLook {
 	STAFF,
 	SUMMON_CARD,
 	SHOVE,
-	ROLEPLAY;
+	ROLEPLAY,
+	//Appended at the END (the order is pinned, see checkItemLooks): the staff / summon card once it holds something.
+	STAFF_CHARGED,
+	SUMMON_CARD_FILLED;
 
 	/** The value the {@code token.json} model looks up in its overrides list. */
 	public int customModelData() {
@@ -56,6 +59,18 @@ public enum ItemLook {
 	/** {@code assets/dndsheets/textures/item/<this>.png} and {@code .../models/item/<this>.json}. */
 	public String textureName() {
 		return name().toLowerCase(java.util.Locale.ROOT);
+	}
+
+	/**
+	 * Switches a stack between a "blank" look and its "loaded" twin (staff / summon card) as its contents
+	 * change. Only touches a stack that already carries one of the two: an item the DM based on a vanilla item
+	 * has no look and keeps looking like that item.
+	 */
+	public static void swapLook(ItemStack stack, ItemLook blank, ItemLook loaded, boolean isLoaded) {
+		var tag = stack.getTag();
+		if (tag == null || !tag.contains("CustomModelData")) return;
+		int current = tag.getInt("CustomModelData");
+		if (current == blank.customModelData() || current == loaded.customModelData()) (isLoaded ? loaded : blank).applyTo(stack);
 	}
 
 	/** Paints this look onto an already-built stack. */

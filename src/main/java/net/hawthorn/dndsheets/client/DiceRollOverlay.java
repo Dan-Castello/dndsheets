@@ -69,7 +69,7 @@ public class DiceRollOverlay {
 
 		int centerX = width / 2;
 		int centerY = (int) (height * 0.27f);
-		int tint = kind == 1 ? 0xFFFFD34D : kind == 2 ? 0xFFE35A4B : 0xFFFFFFFF;
+		int tint = kind == 1 ? 0xFFFFD34D : kind == 2 ? GuiStyle.BAD_COLOR : 0xFFFFFFFF;
 
 		RenderSystem.enableBlend();
 		guiGraphics.pose().pushPose();

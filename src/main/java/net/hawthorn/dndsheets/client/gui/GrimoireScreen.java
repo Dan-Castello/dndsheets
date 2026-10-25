@@ -149,7 +149,8 @@ public class GrimoireScreen extends ListPickerScreen {
 		//active if you're actually holding a configurable one.
 		bindButton = this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.grimoire.bind_staff"), button -> {
 			if (selected == null) return;
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new StaffBindMessage(selected.id()));
+			//Toggle: adds the spell to the staff, or removes it if it's already on it.
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new StaffBindMessage(selected.id(), staffHas(selected.id()) ? StaffBindMessage.Action.REMOVE : StaffBindMessage.Action.ADD));
 		}, left, bindY, buttonWidth(), BUTTON_HEIGHT));
 
 		//The spell's rules text (casting time, range, components, duration, dice): it lives on the server, so this
@@ -226,7 +227,12 @@ public class GrimoireScreen extends ListPickerScreen {
 		bindButton.setMessage(
 			!holdingConfigurableStaff ? Component.translatable("gui.dndsheets.grimoire.bind_none")
 			: selected == null ? Component.translatable("gui.dndsheets.grimoire.bind_pick")
-			: Component.translatable("gui.dndsheets.grimoire.bind_to", net.hawthorn.dndsheets.ContentNames.of(selected.name())));
+			: Component.translatable(staffHas(selected.id()) ? "gui.dndsheets.grimoire.unbind_from" : "gui.dndsheets.grimoire.bind_to", net.hawthorn.dndsheets.ContentNames.of(selected.name())));
+	}
+
+	private static boolean staffHas(String spellId) {
+		net.minecraft.client.player.LocalPlayer p = Minecraft.getInstance().player;
+		return p != null && net.hawthorn.dndsheets.SpellRegistry.staffSpells(p.getMainHandItem()).contains(spellId);
 	}
 
 	//Only checked when building the buttons and when picking a spell (see init/buildRows), not every

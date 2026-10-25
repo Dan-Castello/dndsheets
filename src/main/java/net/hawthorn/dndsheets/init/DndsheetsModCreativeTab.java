@@ -70,13 +70,10 @@ public class DndsheetsModCreativeTab {
 			for (String weaponId : Config.customWeaponIds()) {
 				safeAccept(output, Config.buildWeaponStack(weaponId, 1));
 			}
-			for (String spellId : SpellRegistry.ids()) {
-				SpellRegistry.Spell spell = SpellRegistry.get(spellId);
-				if (spell != null) safeAccept(output, SpellCommand.buildStaffStack(spellId, spell, null));
-			}
-			for (String monsterId : MonsterRegistry.ids()) {
-				safeAccept(output, MonsterRegistry.buildSpawnCard(monsterId));
-			}
+			//One multi-spell staff instead of one per spell (87+): fill it from the Spellbook.
+			safeAccept(output, SpellCommand.buildBlankStaff());
+			//One multi-monster card instead of one per monster (330+): fill it from the DM panel's monster list.
+			safeAccept(output, MonsterRegistry.buildBlankCard());
 		})
 		.build());
 

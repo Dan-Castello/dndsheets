@@ -58,14 +58,16 @@ public class MonsterRegistry {
 	 * by writing its id there, without touching this mod.</p>
 	 */
 	public record Appearance(String mainHand, String offHand, String helmet, String chestplate, String leggings,
-			String boots, boolean baby, boolean glowing) {
+			String boots, boolean baby, boolean glowing, String model, String variant) {
 
-		static final Appearance DEFAULT = new Appearance(null, null, null, null, null, null, false, false);
-		static final Appearance GLOWING = new Appearance(null, null, null, null, null, null, false, true);
+		static final Appearance DEFAULT = new Appearance(null, null, null, null, null, null, false, false, null, null);
+		static final Appearance GLOWING = new Appearance(null, null, null, null, null, null, false, true, null, null);
 
+		//model/variant: which of the mod's own archetype models (and which palette of it) the monster spawns as;
+		//baseEntity is then only the vanilla fallback (see spawnAt). Ignored by every other entity.
 		public boolean isDefault() {
 			return this == DEFAULT || (mainHand == null && offHand == null && helmet == null && chestplate == null
-				&& leggings == null && boots == null && !baby && !glowing);
+				&& leggings == null && boots == null && !baby && !glowing && model == null && variant == null);
 		}
 	}
 
@@ -239,10 +241,12 @@ public class MonsterRegistry {
 		ResourceLocation loc = ResourceLocation.tryParse(entityId);
 		if (loc == null || !ForgeRegistries.ENTITY_TYPES.containsKey(loc)) return false;
 
+		Appearance a = block.appearance(); //Without its own model, so the skin pack's creature is what spawns.
+		Appearance look = new Appearance(a.mainHand(), a.offHand(), a.helmet(), a.chestplate(), a.leggings(), a.boots(), a.baby(), a.glowing(), null, null);
 		REGISTRY.replace(new MonsterStatBlock(block.id(), block.name(), entityId, block.ac(), block.maxHp(),
 			block.abilities(), block.proficiencyBonus(), block.attacks(), block.spells(), block.damageAffinities(),
 			block.nonmagicalAffinities(), block.type(), block.legendaryResistances(), block.legendaryActions(),
-			block.attacksPerTurn(), block.size(), block.appearance(), block.keepsOwnAi(), block.ownClock(), block.flies(), block.lairActions(), block.magicResistance()));
+			block.attacksPerTurn(), block.size(), look,block.keepsOwnAi(), block.ownClock(), block.flies(), block.lairActions(), block.magicResistance()));
 		return true;
 	}
 
@@ -276,7 +280,8 @@ public class MonsterRegistry {
 			str(json, "mainHand"), str(json, "offHand"), str(json, "helmet"), str(json, "chestplate"),
 			str(json, "leggings"), str(json, "boots"),
 			json.has("baby") && json.get("baby").getAsBoolean(),
-			json.has("glowing") && json.get("glowing").getAsBoolean());
+			json.has("glowing") && json.get("glowing").getAsBoolean(),
+			str(json, "model"), str(json, "variant"));
 	}
 
 	@Nullable
@@ -458,6 +463,8 @@ public class MonsterRegistry {
 		if (look.boots() != null) out.addProperty("boots", look.boots());
 		if (look.baby()) out.addProperty("baby", true);
 		if (look.glowing()) out.addProperty("glowing", true);
+		if (look.model() != null) out.addProperty("model", look.model());
+		if (look.variant() != null) out.addProperty("variant", look.variant());
 		json.add("appearance", out);
 	}
 
@@ -628,10 +635,81 @@ public class MonsterRegistry {
 		return dndTag.contains("monsterSpawn") ? dndTag.getString("monsterSpawn") : null;
 	}
 
+	//--- Multi-monster card: the same idea as the multi-spell staff (see SpellRegistry.staffAdd). One blank,
+	//configurable card holds up to CARD_MAX_MONSTERS ids ("monsters") and summons the active one
+	//("monsterSpawn", so onUseSpawnCard is untouched). Old single-monster cards keep working. ---
+	public static final int CARD_MAX_MONSTERS = 9;
+
+	public static boolean isConfigurableCard(ItemStack stack) {
+		CompoundTag tag = stack.getTag();
+		return tag != null && tag.contains("dndsheets") && tag.getCompound("dndsheets").getBoolean("cardConfigurable");
+	}
+
+	public static java.util.List<String> cardMonsters(ItemStack stack) {
+		java.util.List<String> out = new java.util.ArrayList<>();
+		if (!isConfigurableCard(stack)) return out;
+		CompoundTag dnd = stack.getTag().getCompound("dndsheets");
+		for (net.minecraft.nbt.Tag t : dnd.getList("monsters", net.minecraft.nbt.Tag.TAG_STRING)) out.add(t.getAsString());
+		String active = dnd.getString("monsterSpawn");
+		if (!active.isEmpty() && !out.contains(active)) out.add(0, active);
+		return out;
+	}
+
+	private static void writeCard(ItemStack stack, java.util.List<String> monsters, @Nullable String active) {
+		CompoundTag dnd = stack.getTag().getCompound("dndsheets");
+		net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+		for (String m : monsters) list.add(net.minecraft.nbt.StringTag.valueOf(m));
+		dnd.put("monsters", list);
+		if (active == null) dnd.remove("monsterSpawn"); else dnd.putString("monsterSpawn", active);
+		ItemLook.swapLook(stack, ItemLook.SUMMON_CARD, ItemLook.SUMMON_CARD_FILLED, !monsters.isEmpty());
+	}
+
+	/** Adds (or just activates) a monster. @return false if not a card or the card is full. */
+	public static boolean cardAdd(ItemStack stack, String monsterId) {
+		if (!isConfigurableCard(stack)) return false;
+		java.util.List<String> monsters = cardMonsters(stack);
+		if (!monsters.contains(monsterId)) {
+			if (monsters.size() >= CARD_MAX_MONSTERS) return false;
+			monsters.add(monsterId);
+		}
+		writeCard(stack, monsters, monsterId);
+		return true;
+	}
+
+	/** Removes a monster; the active one moves to the first left (or none). @return false if it wasn't there. */
+	public static boolean cardRemove(ItemStack stack, String monsterId) {
+		java.util.List<String> monsters = cardMonsters(stack);
+		if (!monsters.remove(monsterId)) return false;
+		String active = monsterSpawnIdOf(stack);
+		writeCard(stack, monsters, monsters.contains(active) ? active : monsters.isEmpty() ? null : monsters.get(0));
+		return true;
+	}
+
+	/** Moves the active monster by delta, wrapping. @return the new active id, or null if nothing to cycle. */
+	@Nullable
+	public static String cardCycle(ItemStack stack, int delta) {
+		java.util.List<String> monsters = cardMonsters(stack);
+		if (monsters.isEmpty()) return null;
+		String next = monsters.get(Math.floorMod(monsters.indexOf(monsterSpawnIdOf(stack)) + delta, monsters.size()));
+		writeCard(stack, monsters, next);
+		return next;
+	}
+
+	//The single card shown in the creative tab: blank, filled from the DM panel's monster list.
+	public static ItemStack buildBlankCard() {
+		ItemStack stack = ItemLook.SUMMON_CARD.applyTo(
+			new ItemStack(net.hawthorn.dndsheets.init.DndsheetsModItems.TOKEN.get()));
+		CompoundTag dndTag = new CompoundTag();
+		dndTag.putBoolean("cardConfigurable", true);
+		stack.getOrCreateTag().put("dndsheets", dndTag);
+		stack.setHoverName(Component.translatable("chat.dndsheets.monster.card_blank"));
+		return stack;
+	}
+
 	//For the creative tab (DndsheetsModCreativeTab): one relabeled spawn egg per loaded monster.
 	public static ItemStack buildSpawnCard(String monsterId) {
 		MonsterStatBlock block = get(monsterId);
-		ItemStack stack = ItemLook.SUMMON_CARD.applyTo(
+		ItemStack stack = ItemLook.SUMMON_CARD_FILLED.applyTo(
 			new ItemStack(net.hawthorn.dndsheets.init.DndsheetsModItems.TOKEN.get()));
 		CompoundTag dndTag = new CompoundTag();
 		dndTag.putString("monsterSpawn", monsterId);
@@ -685,6 +763,9 @@ public class MonsterRegistry {
 
 		ResourceLocation entityLoc = ResourceLocation.tryParse(block.baseEntityId());
 		EntityType<?> type = entityLoc != null ? ForgeRegistries.ENTITY_TYPES.getValue(entityLoc) : null;
+		//The mod's own model when the monster has one; baseEntity stays the vanilla fallback (config off, or a skin
+		//pack applied: reskin() drops the model so the other mod's creature wins).
+		if (block.appearance().model() != null && Config.ownCreatureModels()) type = net.hawthorn.dndsheets.init.DndsheetsModEntities.MONSTER_MODEL.get();
 		if (type == null) {
 			//An unknown id is almost always an addon pointing at an entity from ANOTHER mod that isn't
 			//installed. Returning null left the DM with a command that did nothing and no explanation. A
@@ -812,12 +893,16 @@ public class MonsterRegistry {
 		PehkuiCompat.applySize(entity, block.size());
 
 		Appearance look = block.appearance();
+		if (entity instanceof net.hawthorn.dndsheets.entity.MonsterModelEntity own) {
+			own.configure(look == null ? null : look.model(), look == null ? null : look.variant(), block.flies());
+		}
 		if (look == null || look.isDefault()) return;
 		if (look.glowing()) entity.setGlowingTag(true);
 		if (look.baby()) {
 			//Zombie is NOT an AgeableMob (the undead don't grow up), so both branches are needed.
 			if (entity instanceof net.minecraft.world.entity.monster.Zombie zombie) zombie.setBaby(true);
 			else if (entity instanceof net.minecraft.world.entity.AgeableMob ageable) ageable.setBaby(true);
+			else if (entity instanceof net.hawthorn.dndsheets.entity.MonsterModelEntity own) own.setBaby(true);
 		}
 		if (!(entity instanceof Mob mob)) return;
 		equip(mob, net.minecraft.world.entity.EquipmentSlot.MAINHAND, look.mainHand());

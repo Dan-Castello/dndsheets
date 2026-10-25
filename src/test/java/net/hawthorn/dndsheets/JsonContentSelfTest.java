@@ -39,6 +39,7 @@ public class JsonContentSelfTest {
 		checkCreatureSize();
 		checkMonsterSkins();
 		checkItemLooks();
+		checkCombatLifecycleGuards();
 		checkPatchouliBook();
 		checkGuideLayout();
 		checkKeepsOwnAi();
@@ -688,7 +689,7 @@ public class JsonContentSelfTest {
 		//The ones MonsterRegistry.parseAppearance reads. Writing "mainhand" or "head" breaks nothing: the
 		//monster comes out without a weapon and nobody finds out until seeing it at the table.
 		java.util.Set<String> keys = java.util.Set.of("mainHand", "offHand", "helmet", "chestplate",
-			"leggings", "boots", "baby", "glowing");
+			"leggings", "boots", "baby", "glowing", "model", "variant");
 		//Models that do NOT draw equipment. Dressing one is wasted work: a villager with a sword looks the same
 		//as one without it. It was the first attempt with the Guard, and that is why it is here.
 		java.util.Set<String> noEquipment = java.util.Set.of("minecraft:villager", "minecraft:wandering_trader",
@@ -702,6 +703,24 @@ public class JsonContentSelfTest {
 			JsonObject json = el.getAsJsonObject();
 			String id = json.get("id").getAsString();
 			models.add(json.get("baseEntity").getAsString());
+			//The mod's own archetype models: the geometry, the animations and the variant's texture must ship, or the
+			//monster would spawn invisible (a missing geo file renders nothing and only logs).
+			if (json.has("appearance") && json.getAsJsonObject("appearance").has("model")) {
+				JsonObject look = json.getAsJsonObject("appearance");
+				String model = look.get("model").getAsString();
+				String variant = look.has("variant") ? look.get("variant").getAsString() : "red";
+				//baseEntity is the fallback (ownCreatureModels off, a skin pack): it must be a vanilla entity that always exists.
+				assertTrue(json.has("baseEntity") && json.get("baseEntity").getAsString().startsWith("minecraft:"),
+					id + " names a model, so its baseEntity must be the vanilla fallback (a minecraft: entity)");
+				Path assets = Path.of("src", "main", "resources", "assets", "dndsheets");
+				for (String file : new String[] {"geo/entity/" + model + ".geo.json", "animations/entity/" + model + ".animation.json",
+						"textures/entity/" + model + "/mask.png", "textures/entity/" + model + "/variants.json"}) {
+					assertTrue(Files.exists(assets.resolve(file)), id + " needs assets/dndsheets/" + file + ", which does not exist");
+				}
+				//A variant is a key of variants.json, or a raw "#RRGGBB" the client derives a palette from.
+				assertTrue(variant.startsWith("#") || JsonParser.parseString(Files.readString(assets.resolve("textures/entity/" + model + "/variants.json"))).getAsJsonObject().has(variant),
+					id + " asks for variant \"" + variant + "\" which is not in " + model + "/variants.json");
+			}
 			if (!json.has("appearance")) continue;
 			dressed++;
 
@@ -709,7 +728,7 @@ public class JsonContentSelfTest {
 			boolean hasEquipment = false;
 			for (String key : look.keySet()) {
 				assertTrue(keys.contains(key), "\"" + key + "\" is not an appearance key (in " + id + ")");
-				if (key.equals("baby") || key.equals("glowing")) continue;
+				if (key.equals("baby") || key.equals("glowing") || key.equals("model") || key.equals("variant")) continue;
 				hasEquipment = true;
 				assertTrue(look.get(key).getAsString().contains(":"),
 					"the item for " + key + " in " + id + " needs a namespace (minecraft:...)");
@@ -818,7 +837,7 @@ public class JsonContentSelfTest {
 			if (!monster.has("appearance")) continue;
 			JsonObject look = monster.getAsJsonObject("appearance");
 			for (String slot : look.keySet()) {
-				if (slot.equals("baby") || slot.equals("glowing")) continue;
+				if (slot.equals("baby") || slot.equals("glowing") || slot.equals("model") || slot.equals("variant")) continue;
 				checked += assertVanilla(vanilla, "item", look.get(slot).getAsString(), "the " + slot + " of " + id);
 			}
 		}
@@ -1162,18 +1181,63 @@ public class JsonContentSelfTest {
 			assertTrue(token.contains("\"custom_model_data\": " + look.customModelData() + " }, \"model\": \"dndsheets:item/" + name + "\""),
 				"token.json does not send custom_model_data " + look.customModelData() + " to the model of " + look);
 		}
+		//Every look's texture is a 16x16 sprite, and every texture its model references exists (the 3D staff
+		//models point at a palette texture besides the sprite).
+		for (ItemLook look : ItemLook.values()) {
+			java.awt.image.BufferedImage image = javax.imageio.ImageIO.read(textures.resolve(look.textureName() + ".png").toFile());
+			assertTrue(image != null && image.getWidth() == 16 && image.getHeight() == 16, look + " texture must be a 16x16 PNG");
+			JsonObject modelJson = JsonParser.parseString(Files.readString(models.resolve(look.textureName() + ".json"))).getAsJsonObject();
+			for (var entry : modelJson.getAsJsonObject("textures").entrySet()) {
+				String ref = entry.getValue().getAsString();
+				assertTrue(ref.startsWith("dndsheets:item/") && Files.exists(textures.resolve(ref.substring("dndsheets:item/".length()) + ".png")),
+					"the model of " + look + " references a texture that does not exist: " + ref);
+			}
+			if (modelJson.has("elements")) {
+				assertTrue(!modelJson.has("parent"), "the 3D model of " + look + " must not inherit item/generated (the sprite generator would replace its elements)");
+				assertTrue(modelJson.has("display"), "the 3D model of " + look + " needs its own display transforms");
+			}
+		}
 		//The default texture: the one seen if an old ItemStack carries no CustomModelData.
 		assertTrue(Files.exists(textures.resolve("token.png")), "missing the sheet's base icon");
 
 		//The order, pinned. Changing it means changing the icon of what was already handed out.
 		assertTrue(ItemLook.DM_WAND.customModelData() == 1 && ItemLook.RAGE.customModelData() == 7
-				&& ItemLook.SUMMON_CARD.customModelData() == 19,
+				&& ItemLook.SUMMON_CARD.customModelData() == 19 && ItemLook.STAFF.customModelData() == 18
+				&& ItemLook.ROLEPLAY.customModelData() == 21 && ItemLook.STAFF_CHARGED.customModelData() == 22
+				&& ItemLook.SUMMON_CARD_FILLED.customModelData() == 23,
 			"the order of ItemLook has changed: items already in someone's world would change icon");
 
 		//No mod item should still be a renamed vanilla item: that was exactly the problem.
 		String abilityItem = Files.readString(Path.of("src", "main", "java", "net", "hawthorn", "dndsheets", "AbilityItem.java"));
 		assertTrue(abilityItem.contains("look.applyTo"), "AbilityItem should build on the mod's sheet item, with its look");
 		System.out.println("checkItemLooks: OK, " + ItemLook.values().length + " items with their own texture and model.");
+	}
+
+	//Regression guards for two combat bugs (no runtime here, so they read the source): a spell at a cow started an
+	//encounter with nobody to fight that could never end (the player stayed stuck on the movement budget), and
+	//after fleeing, a chasing monster's next hit started the encounter again. Dash/Disengage also ended the turn the
+	//same tick they were used, wiping their own effect.
+	private static void checkCombatLifecycleGuards() throws Exception {
+		Path dir = Path.of("src", "main", "java", "net", "hawthorn", "dndsheets");
+		String combat = Files.readString(dir.resolve("CombatManager.java"));
+		assertTrue(combat.contains("TurnManager.hasMonsterNear(level, target.position()"),
+			"autoStartCombatIfNeeded no longer requires a monster: hitting or spelling a cow starts an unendable encounter");
+		String turns = Files.readString(dir.resolve("TurnManager.java"));
+		assertTrue(turns.contains("!inFleeWindow(level)) startAt("),
+			"a monster's hit starts an encounter inside the flee window again: fleeing would loop");
+		assertTrue(turns.contains("if (checkAutoEnd(level)) return;"), "the periodic scan no longer ends auto-started/fled encounters");
+		String actions = Files.readString(dir.resolve("TurnActionManager.java"));
+		assertTrue(actions.contains("TurnManager.tryActNoAdvance(player)"), "Dash/Disengage end the turn on use again, which erases their effect");
+		String config = Files.readString(dir.resolve("Config.java"));
+		for (String key : new String[] {"fleeDistance", "fleeEndSeconds", "fleeWindowSeconds"}) {
+			assertTrue(config.contains("\"" + key + "\""), "config key missing: " + key);
+		}
+		try (java.util.stream.Stream<Path> langs = Files.list(Path.of("src", "main", "resources", "assets", "dndsheets", "lang"))) {
+			for (Path lang : langs.filter(p -> p.toString().endsWith(".json")).toList()) {
+				assertTrue(Files.readString(lang).contains("\"chat.dndsheets.turn.fled\""), lang.getFileName() + " lacks chat.dndsheets.turn.fled");
+			}
+		}
+		System.out.println("checkCombatLifecycleGuards: OK, no encounter without a monster, flee window, Dash/Disengage keep the turn.");
 	}
 
 	private static void checkMonsterSkins() throws Exception {

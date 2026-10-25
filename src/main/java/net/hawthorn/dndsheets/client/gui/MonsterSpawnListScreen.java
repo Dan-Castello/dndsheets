@@ -2,7 +2,9 @@ package net.hawthorn.dndsheets.client.gui;
 
 import javax.annotation.Nullable;
 import net.hawthorn.dndsheets.DndsheetsMod;
+import net.hawthorn.dndsheets.MonsterRegistry;
 import net.hawthorn.dndsheets.network.MonsterSpawnMessage;
+import net.hawthorn.dndsheets.network.StaffBindMessage;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -33,9 +35,17 @@ public class MonsterSpawnListScreen extends ListPickerScreen {
 
 	@Override
 	protected void buildRows() {
+		//Holding a configurable card: a click adds/removes the monster on it (checked ones are already on
+		//it) instead of spawning. Same message as the multi-spell staff.
+		var player = Minecraft.getInstance().player;
+		var card = player != null && MonsterRegistry.isConfigurableCard(player.getMainHandItem()) ? MonsterRegistry.cardMonsters(player.getMainHandItem()) : null;
+		if (card != null) addHeader(Component.translatable("gui.dndsheets.monster_spawn.card_hint"));
 		for (String monsterId : ids) {
-			addRow(Component.literal(monsterId), b -> {
-				DndsheetsMod.PACKET_HANDLER.sendToServer(new MonsterSpawnMessage(monsterId));
+			boolean onCard = card != null && card.contains(monsterId);
+			addRow(Component.literal((onCard ? "✔ " : "") + monsterId), b -> {
+				DndsheetsMod.PACKET_HANDLER.sendToServer(card == null
+					? new MonsterSpawnMessage(monsterId)
+					: new StaffBindMessage(monsterId, onCard ? StaffBindMessage.Action.REMOVE : StaffBindMessage.Action.ADD));
 				this.onClose();
 			});
 		}

@@ -79,7 +79,9 @@ public class TurnActionManager {
 		}
 		//They ARE the turn's action, same as attacking: checked with the same tryAct, so using one also
 		//ends the turn on its own and you can't dodge AND attack in the same round.
-		if (!TurnManager.tryAct(player)) {
+		//Dash and Disengage do NOT end the turn: their effect is for the movement made after them (see tryActNoAdvance).
+		boolean keepsTurn = action == TurnAction.DASH || action == TurnAction.DISENGAGE;
+		if (!(keepsTurn ? TurnManager.tryActNoAdvance(player) : TurnManager.tryAct(player))) {
 			TurnManager.notifyCantAct(player);
 			return;
 		}

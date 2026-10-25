@@ -71,6 +71,18 @@ public abstract class SmallFormScreen extends FormPanelScreen {
 		}
 	}
 
+	//Enter confirms (after the focused widget had its chance: a focused button presses itself).
+	@Override
+	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+		if (super.keyPressed(keyCode, scanCode, modifiers)) return true;
+		if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER) {
+			onConfirm();
+			this.onClose();
+			return true;
+		}
+		return false;
+	}
+
 	@Override
 	public final void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
 		this.renderBackground(guiGraphics);

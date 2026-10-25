@@ -85,6 +85,17 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 	//already inside at the exact instant of /dndturns start would join. combatOrigin null = no scan
 	//pending (encounter over).
 	private static Vec3 combatOrigin;
+
+	//Bug history (cow after a spell, fleeing zombie): see "Combat lifecycle" in PROJECT_CONTEXT.md.
+	//true if the DM started this encounter by hand (/dndturns start, DM panel): only those may exist with no monsters.
+	private static boolean manualStart;
+	private static long combatStartTick;
+	private static long noMonsterSince = -1;
+	private static long fleeSince = -1;
+	//Game tick until which a monster's hit does not start an encounter (the window after fleeing one).
+	private static long fleeWindowUntil;
+	private static final long NO_MONSTER_END_TICKS = 60;      //3s with an auto-started encounter and no monster in it.
+	private static final long FLEE_ARMED_AFTER_TICKS = 300;   //15s: monsters at the edge of the capture box are not "fled from".
 	private static double combatRadius;
 	private static final int LATE_MONSTER_SCAN_INTERVAL_TICKS = 20; //1s: no need to notice a newcomer instantly.
 
@@ -238,7 +249,7 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		//The ambushing monster also opens the order: it's the same case as a player attacking first, seen
 		//from the other side. Its hit has already landed by the time we get here, so leaving it in the
 		//middle of the order would mean it hits, and then hits again once its turn comes up.
-		if (!active && net.hawthorn.dndsheets.Config.auto(net.hawthorn.dndsheets.Config.Rule.TURNS)) startAt(level, player.position(), DEFAULT_RADIUS, attacker);
+		if (!active && net.hawthorn.dndsheets.Config.auto(net.hawthorn.dndsheets.Config.Rule.TURNS) && !inFleeWindow(level)) startAt(level, player.position(), DEFAULT_RADIUS, attacker);
 		if (active && !isInOrder(attacker.getId())) addLateMonster(level, attacker, nameOf(attacker));
 	}
 
@@ -444,6 +455,23 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 	}
 
 	/**
+	 * <p>Same as {@link #tryAct} (it spends the action, once per turn) but the turn does NOT end by itself. For Dash
+	 * and Disengage: they only mean something for the movement you make AFTER using them, so ending the turn on the
+	 * spot (what {@code tryAct} schedules) erased them before they could be used. The turn ends with the next-turn
+	 * item or its own end, like any turn in which the player keeps moving.</p>
+	 */
+	public static boolean tryActNoAdvance(Entity actor) {
+		if (isIncapacitated(actor)) return false;
+		if (!active) return true;
+		TurnEntry currentEntry = current();
+		if (currentEntry == null || currentEntry.entityId() != actor.getId()) return false;
+		boolean acted = actedThisTurn.add(actor.getId());
+		if (!acted && consumeExtraAction(actor.getId())) acted = true;
+		if (acted && actor.level() instanceof ServerLevel level) broadcastTurnState(level);
+		return acted;
+	}
+
+	/**
 	 * <p>Same as {@link #tryAct} but for the bonus ACTION: same turn/incapacitation gating, same "once and
 	 * done", but a separate resource (see {@link #bonusActionUsed}) that does NOT advance the turn when
 	 * spent — unlike the action, the bonus action isn't the only thing that can be done in a turn.</p>
@@ -631,7 +659,13 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 			//fresh on every pass, so a hot restart gets the new area on its own.
 			combatOrigin = pos;
 			combatRadius = radius;
-			if (!wasActive) scheduleLateMonsterScan(level);
+			if (!wasActive) {
+				manualStart = initiator == null;
+				combatStartTick = level.getGameTime();
+				noMonsterSince = -1;
+				fleeSince = -1;
+				scheduleLateMonsterScan(level);
+			}
 			//Explained in chat because otherwise, someone with a 7 initiative showing up first reads as an
 			//ordering bug rather than the rule it actually is.
 			if (initiator != null) {
@@ -652,8 +686,81 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 				MonsterRegistry.adoptVanilla(entity);
 				addLateMonster(level, entity, nameOf(entity));
 			}
+			if (checkAutoEnd(level)) return;
 			scheduleLateMonsterScan(level);
 		});
+	}
+
+	/** Whether a monster's hit may not start an encounter right now (just after the players fled one). */
+	public static boolean inFleeWindow(ServerLevel level) {
+		return level.getGameTime() < fleeWindowUntil;
+	}
+
+	/** Whether there is a living monster to fight within {@code radius} of {@code pos}: an encounter needs one to exist. */
+	public static boolean hasMonsterNear(ServerLevel level, Vec3 pos, double radius) {
+		AABB box = new AABB(pos.x - radius, pos.y - radius, pos.z - radius, pos.x + radius, pos.y + radius, pos.z + radius);
+		return !level.getEntities((Entity) null, box, e -> isMonster(e) && e.isAlive()).isEmpty();
+	}
+
+	//Runs on the periodic scan. Ends the encounter when (1) an auto-started one has no monster in it (a spell
+	//cast at a cow used to leave a combat nobody could end, with the player stuck on the movement budget), or
+	//(2) every player has been out of reach of every living monster for fleeEndSeconds: a successful escape,
+	//which also opens the window in which a chasing monster's hit does not start the encounter again.
+	//@return true if it ended the encounter (the scan must not re-queue itself).
+	private static boolean checkAutoEnd(ServerLevel level) {
+		long now = level.getGameTime();
+		if (!manualStart) {
+			boolean anyMonster = false;
+			for (TurnEntry entry : order) {
+				if (entry.isMonster()) { anyMonster = true; break; }
+			}
+			if (anyMonster) noMonsterSince = -1;
+			else if (noMonsterSince < 0) noMonsterSince = now;
+			else if (now - noMonsterSince >= NO_MONSTER_END_TICKS) {
+				end(level);
+				return true;
+			}
+		}
+
+		int fleeBlocks = net.hawthorn.dndsheets.Config.fleeDistance();
+		int fleeSeconds = net.hawthorn.dndsheets.Config.fleeEndSeconds();
+		if (fleeBlocks <= 0 || fleeSeconds <= 0 || now - combatStartTick < FLEE_ARMED_AFTER_TICKS) {
+			fleeSince = -1;
+			return false;
+		}
+		double limit = Math.max(fleeBlocks, combatRadius + 5);
+		double limitSq = limit * limit;
+		boolean anyPlayer = false, anyLivingMonster = false, anyClose = false;
+		List<Entity> players = new ArrayList<>();
+		List<Entity> monsters = new ArrayList<>();
+		for (TurnEntry entry : order) {
+			Entity entity = level.getEntity(entry.entityId());
+			if (entry.isMonster()) {
+				if (confirmedDefeated.contains(entry.entityId())) continue;
+				anyLivingMonster = true; //Unloaded (null) still counts as alive: it is far, which is the point.
+				if (entity != null && entity.isAlive()) monsters.add(entity);
+			} else if (entity instanceof ServerPlayer player && player.isAlive() && !player.isSpectator()) {
+				anyPlayer = true;
+				players.add(player);
+			}
+		}
+		for (Entity player : players) {
+			for (Entity monster : monsters) {
+				if (player.distanceToSqr(monster) < limitSq) { anyClose = true; break; }
+			}
+			if (anyClose) break;
+		}
+		if (!anyPlayer || !anyLivingMonster || anyClose) {
+			fleeSince = -1;
+			return false;
+		}
+		if (fleeSince < 0) fleeSince = now;
+		if (now - fleeSince < fleeSeconds * 20L) return false;
+
+		broadcast(level, Component.translatable("chat.dndsheets.turn.fled").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
+		fleeWindowUntil = now + net.hawthorn.dndsheets.Config.fleeWindowSeconds() * 20L;
+		end(level);
+		return true;
 	}
 
 	private static boolean isInOrder(int entityId) {
@@ -791,6 +898,9 @@ public class TurnManager { //ponytail: one combat per server; per-encounter stat
 		confirmedDefeated.clear();
 		mobTurnStartTick.clear();
 		combatOrigin = null; //Cuts off the late-monster re-scan (see scheduleLateMonsterScan) on its next pass.
+		manualStart = false;
+		noMonsterSince = -1;
+		fleeSince = -1;
 		active = false;
 		currentIndex = -1;
 		round = 0;

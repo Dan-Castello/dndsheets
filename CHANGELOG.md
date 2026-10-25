@@ -1,5 +1,66 @@
 # Changelog
 
+## Unreleased
+
+**GeckoLib 4 is now a required dependency** (for the creature models below). Install it alongside the mod.
+
+### Animated creature models
+
+- 15 animated creature models of the mod's own: dragons, goblinoids, brutes and giants, kobolds and lizardfolk,
+  devils and demons, undead, golems, wolves and big cats, crocodiles and lizards, snakes and nagas, spiders, oozes,
+  elementals and mephits, birds, and sharks. **144 monsters** use them, each in its own colours.
+- Each model has idle, attack, hurt and death animations, and flying creatures have a flight animation. The attack
+  animation plays on every monster attack, including legendary and opportunity attacks.
+- Weapons in a monster's hands are drawn, in the right hand.
+- Wyrmlings and pseudodragons are drawn small; the size category still scales everything else with Pehkui.
+- A colour is a palette, not another texture: one model per creature type, and a pack can give a monster any colour
+  with `"variant": "#RRGGBB"`.
+- Every monster keeps its vanilla entity as a fallback. New config `ownCreatureModels` (default true): false spawns
+  them all as before. Skin packs for other creature mods still win, and a model missing on a client draws as the
+  dragon instead of crashing.
+- Monsters that don't fit a model (equipped humanoids, skeletons, horses, composite creatures…) stay vanilla.
+
+### Item models
+
+- 3D held models, in a dark arcane style, for the DM wand, move wand, rest kit, summon card, spell staff and the
+  ability medallions.
+- 21 weapons from the weapon list get their own model in hand.
+- The staff and the summon card look different once they hold something.
+
+### One staff, one card
+
+- **Multi-spell staff:** one staff holds up to 9 spells and casts the active one. Change the active spell with Shift+scroll or
+  the new X / Z keys; the action bar shows it. "Bind to staff" in the Spellbook adds a spell to the staff in your
+  hand, or removes it if it's already there. The creative tab now has one empty staff instead of one per spell.
+- **Multi-monster summon card:** one summon card holds several monsters. With the card in hand, clicking a monster
+  in the DM's monster list adds it to the card or removes it. The creative tab now has one empty card instead of
+  330+.
+- Old single-spell staffs and single-monster cards keep working.
+
+### Combat
+
+- Hitting a creature that isn't a monster (a cow, a villager) no longer starts an encounter. Before, it started one
+  that never ended and left you stuck on the movement budget.
+- Fleeing works: if no monster of the encounter is near any player for a while, the encounter ends ("You escaped
+  the encounter."). For a short time after, a chasing monster's hit doesn't start a new one; you attacking, or the
+  DM, still can. New configs: `fleeDistance`, `fleeEndSeconds`, `fleeWindowSeconds` (0 turns each one off).
+- Dash and Disengage no longer end your turn: their effect applies to the movement you make after using them.
+
+### Screens
+
+- Character sheet:
+  - the hit-point value no longer overlaps its label;
+  - long lines wrap inside the panel;
+  - conditions are shown on the Overview tab;
+  - hovering a saving-throw pip says whether you are proficient.
+- Lists:
+  - an empty list says so;
+  - a search with no matches says "No results for …";
+  - Enter in the search box picks the first match.
+- Forms confirm with Enter.
+- Truncated button labels show the full text in a tooltip.
+- The resource HUD hides behind open menus instead of showing through them.
+
 ## 2.3.0
 
 Single file: the Dungeon Toolkit and Species addons are now bundled in this jar (CurseForge allows one

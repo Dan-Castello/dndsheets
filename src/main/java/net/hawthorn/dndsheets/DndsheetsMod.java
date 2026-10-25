@@ -62,6 +62,8 @@ public class DndsheetsMod {
 		IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 		net.hawthorn.dndsheets.init.DndsheetsModItems.REGISTRY.register(bus);
 		DndsheetsModSounds.REGISTRY.register(bus);
+		net.hawthorn.dndsheets.init.DndsheetsModEntities.REGISTRY.register(bus);
+		bus.addListener(net.hawthorn.dndsheets.init.DndsheetsModEntities::registerAttributes);
 
 		DndsheetsModMenus.REGISTRY.register(bus);
 		DndsheetsModCreativeTab.REGISTRY.register(bus);
@@ -159,7 +161,8 @@ public class DndsheetsMod {
 	//Bumped to "29": DiceRollMessage registered at the END (the on-screen d20), and TurnActionManager.TurnAction gains
 	//ACTION_SURGE .. FLURRY_OF_BLOWS at the end of its enum (it travels by ordinal in TurnActionMessage).
 	//Still "29" (same release): ScreenActionMessage.Action gains ONBOARDING_OPEN at the end.
-	private static final String PROTOCOL_VERSION = "29";
+	//Bumped to "30": StaffBindMessage carries an Action (ADD/REMOVE/NEXT/PREV) — a reconfigurable staff holds several spells.
+	private static final String PROTOCOL_VERSION = "30";
 
 	/**
 	 * <p>How many pieces cross the wire: registered messages plus the enum constants that travel by
@@ -172,7 +175,7 @@ public class DndsheetsMod {
 	 * shake hands only to end up misaligned later. A number that has to be touched by hand doesn't prevent
 	 * the mistake, but it turns it into a decision instead of an oversight.</p>
 	 */
-	public static final int NETWORK_SHAPE = 133;
+	public static final int NETWORK_SHAPE = 137;
 
 	/**
 	 * <p>The exact order in which the pieces cross the wire, summarized as a hash. {@link #NETWORK_SHAPE}
@@ -185,7 +188,7 @@ public class DndsheetsMod {
 	 * hash from the source and fails the build when it doesn't match. If you move something on purpose,
 	 * bump {@link #PROTOCOL_VERSION} and paste in the number the failure gives you.</p>
 	 */
-	public static final int NETWORK_ORDER = 2111620449;
+	public static final int NETWORK_ORDER = 2098738074;
 
 	/**
 	 * <p>What gets written and read on the wire, summarized as a hash: the sequence of
@@ -197,7 +200,7 @@ public class DndsheetsMod {
 	 * {@code writeComponent} left both numbers untouched and still broke compatibility: an old client
 	 * would read a text where the new server writes a Component, and it desyncs partway through the packet.</p>
 	 */
-	public static final int NETWORK_WIRE = -6274259;
+	public static final int NETWORK_WIRE = 445339368;
 	public static final SimpleChannel PACKET_HANDLER = NetworkRegistry.newSimpleChannel(new ResourceLocation(MODID, MODID), () -> PROTOCOL_VERSION, PROTOCOL_VERSION::equals, PROTOCOL_VERSION::equals);
 	private static int messageID = 0;
 

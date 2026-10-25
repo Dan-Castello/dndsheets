@@ -115,6 +115,13 @@ repositories {
         url = "https://api.modrinth.com/maven"
         content { includeGroup "maven.modrinth" }
     }
+
+    // GeckoLib 4: animated entity models (the mod's own creature models, see MonsterModelEntity). Unlike
+    // Curios/Jade it is a HARD dependency compiled in AND run in the dev client: the entity type is always registered.
+    maven {
+        url = "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/"
+        content { includeGroup "software.bernie.geckolib" }
+    }
 }
 
 dependencies {
@@ -125,6 +132,8 @@ dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.4.22'
     // https://mvnrepository.com/artifact/io.github.tfriedrichs/dicebot
     minecraftLibrary 'io.github.tfriedrichs:dicebot:1.0.0'
+    // 4.4.9: the last release before 4.7's API moves; mods.toml asks for [4.4,) so newer 4.x installs work.
+    implementation fg.deobf("software.bernie.geckolib:geckolib-forge-1.20.1:4.4.9")
     shade 'io.github.tfriedrichs:dicebot:1.0.0'
 
     // The "api" classifier and not the full jar: it is all that is needed to compile against Curios,

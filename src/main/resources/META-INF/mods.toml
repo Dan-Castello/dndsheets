@@ -64,6 +64,15 @@ description="A mod to let you play D&D 5e in Minecraft."
     ordering="AFTER"
     side="BOTH"
 
+# HARD dependency: the mod's own animated creature models (dragons, goblinoids...) are GeckoLib entities.
+# See MonsterModelEntity. A monster whose baseEntity is dndsheets:monster_model can't be created without it.
+[[dependencies.dndsheets]]
+    modId="geckolib"
+    mandatory=true
+    versionRange="[4.4,5)"
+    ordering="AFTER"
+    side="BOTH"
+
 # ---- Bundled addons: CurseForge allows one file per project, so they ship inside this jar ----
 
 [[mods]]

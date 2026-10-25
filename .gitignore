@@ -126,3 +126,6 @@ runClient/config/ferritecore-mixin.toml
 # files that ARE versioned (the content packs the game regenerates), but this is a
 # throwaway server — world, logs, eula and config— that is created from scratch on every run.
 runGameTest/
+
+# Blockbench tool output (exported geo copies, review renders); the installed assets are the source of truth
+tools/blockbench/out/

@@ -483,10 +483,14 @@ LOOKS = [
     'dm_wand', 'move_wand', 'rest_kit', 'turn_next', 'turn_undo', 'turn_actions',
     'rage', 'second_wind', 'inspiration', 'wild_shape', 'twinned', 'smite', 'hunters_mark',
     'shield', 'counterspell', 'turn_undead', 'help', 'staff', 'summon_card', 'shove',
-    'roleplay',
+    'roleplay', 'staff_charged', 'summon_card_filled',
 ]
 # They are held like a wand: the "handheld" model tilts them in the hand instead of leaving them flat.
 HANDHELD = {'dm_wand', 'move_wand', 'staff', 'smite', 'roleplay'}
+# Authored by hand, NOT generated here: 'staff' and 'staff_charged' are 3D models exported from
+# tools/blockbench/*.bbmodel, and 'staff_charged.png' / 'summon_card_filled.png' are edited sprites. This script must
+# not overwrite their models (it still writes staff.png, which those models use as the particle texture).
+HAND_AUTHORED = set(LOOKS)  # every look now has a 3D model built by tools/blockbench/build_items.py + build_more.py
 
 MODELS = os.path.join('src', 'main', 'resources', 'assets', 'dndsheets', 'models', 'item')
 
@@ -494,6 +498,8 @@ MODELS = os.path.join('src', 'main', 'resources', 'assets', 'dndsheets', 'models
 def write_models():
     os.makedirs(MODELS, exist_ok=True)
     for name in LOOKS:
+        if name in HAND_AUTHORED:
+            continue
         parent = 'minecraft:item/handheld' if name in HANDHELD else 'minecraft:item/generated'
         body = [
             '{',

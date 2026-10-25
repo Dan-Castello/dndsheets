@@ -146,6 +146,9 @@ public class CombatManager {
 		if (!(target.level() instanceof ServerLevel level)) return;
 		if (!TurnManager.isActive()) {
 			if (!Config.auto(Config.Rule.TURNS)) return; //Manual: only the DM starts combat.
+			//No monster to fight (a cow, a villager): there is no encounter. Otherwise it started with only the
+			//player in the order, could never end, and left them stuck on the movement budget.
+			if (!TurnManager.hasMonsterNear(level, target.position(), TurnManager.DEFAULT_RADIUS)) return;
 			TurnManager.startAt(level, target.position(), TurnManager.DEFAULT_RADIUS, attacker);
 			return;
 		}

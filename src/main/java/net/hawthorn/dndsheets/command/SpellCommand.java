@@ -102,7 +102,9 @@ public class SpellCommand {
 		int slotsMax = sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
 		if (slotsMax <= 0) SpellSlots.setFlat(sheet, 1, 1);
 		if (!alreadyKnown) {
-			target.getInventory().add(buildStaffStack(spellId, spell, null));
+			//One staff holds several spells: add to the one they already carry instead of handing out another.
+			ItemStack owned = target.getInventory().items.stream().filter(SpellRegistry::isConfigurableStaff).findFirst().orElse(null);
+			if (owned == null || !SpellRegistry.staffAdd(owned, spellId)) target.getInventory().add(buildStaffStack(spellId, spell, null));
 		}
 
 		DndsheetsMod.PACKET_HANDLER.send(PacketDistributor.PLAYER.with(() -> target), new SheetClientMessage(sheet.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
@@ -132,6 +134,17 @@ public class SpellCommand {
 		return targets.size();
 	}
 
+	//The single staff shown in the creative tab: empty, fill it from the Spellbook ("Bind to staff").
+	public static ItemStack buildBlankStaff() {
+		ItemStack stack = new ItemStack(net.hawthorn.dndsheets.init.DndsheetsModItems.TOKEN.get());
+		net.hawthorn.dndsheets.ItemLook.STAFF.applyTo(stack);
+		CompoundTag dndTag = new CompoundTag();
+		dndTag.putBoolean("staffConfigurable", true);
+		stack.getOrCreateTag().put("dndsheets", dndTag);
+		stack.setHoverName(Component.translatable("chat.dndsheets.staff.blank"));
+		return stack;
+	}
+
 	//Public: also used by the creative tab (DndsheetsModCreativeTab) to display the staves for each loaded spell.
 	public static ItemStack buildStaffStack(String spellId, SpellRegistry.Spell spell, String itemId) {
 		//null = "the mod's own staff". Requested by the three call sites that used to pass a blaze rod by hand.
@@ -143,7 +156,7 @@ public class SpellCommand {
 		if (ownStaff) baseItem = net.hawthorn.dndsheets.init.DndsheetsModItems.TOKEN.get();
 
 		ItemStack stack = new ItemStack(baseItem);
-		if (ownStaff) net.hawthorn.dndsheets.ItemLook.STAFF.applyTo(stack);
+		if (ownStaff) net.hawthorn.dndsheets.ItemLook.STAFF_CHARGED.applyTo(stack);
 		CompoundTag dndTag = new CompoundTag();
 		dndTag.putString("quickSpell", spellId);
 		dndTag.putBoolean("staffConfigurable", true);

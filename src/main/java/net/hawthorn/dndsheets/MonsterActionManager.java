@@ -215,7 +215,8 @@ public class MonsterActionManager {
 		CombatFx.monsterSpawn(spawned);
 
 		Player player = event.getEntity();
-		if (!player.getAbilities().instabuild) stack.shrink(1);
+		//A multi-monster card is a reusable deck: never consumed.
+		if (!player.getAbilities().instabuild && !MonsterRegistry.isConfigurableCard(stack)) stack.shrink(1);
 	}
 
 	/**
@@ -521,6 +522,7 @@ public class MonsterActionManager {
 	private static void resolveAttack(MonsterRegistry.MonsterStatBlock block, Entity monsterEntity, MonsterRegistry.MonsterAttack attack, Entity target) {
 		Combatant targetCombatant = Combatant.of(target);
 		if (targetCombatant == null) return;
+		net.hawthorn.dndsheets.entity.MonsterModelEntity.play(monsterEntity, "attack");
 
 		int toHitMod = block.abilityModifier(attack.toHitAbility()) + block.proficiencyBonus();
 		//Assumed melee: a stat block doesn't say its attacks' reach, and the monster closes in to

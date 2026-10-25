@@ -10,6 +10,7 @@ import net.hawthorn.dndsheets.RollIndex;
 import net.hawthorn.dndsheets.SheetLoader;
 import net.hawthorn.dndsheets.client.gui.components.IconButton;
 import net.hawthorn.dndsheets.client.gui.components.TomeButton;
+import net.hawthorn.dndsheets.client.gui.components.TomeField;
 import net.hawthorn.dndsheets.network.BrowseActionMessage;
 import net.hawthorn.dndsheets.network.SheetRollButtonMessage;
 import net.hawthorn.dndsheets.network.SheetServerMessage;
@@ -55,8 +56,8 @@ public class PlayerSheetScreen extends ModalDialogScreen {
 
 	private static final int PANEL_DARK = 0xAA140F09;
 	private static final int PANEL_EDGE = 0xFF3A2D1C;
-	private static final int GOOD = 0xFF7FD68F;
-	private static final int BAD = 0xFFE35A4B;
+	private static final int GOOD = GuiStyle.GOOD_COLOR;
+	private static final int BAD = GuiStyle.BAD_COLOR;
 
 	private final int dialogW;
 	private final int dialogH;
@@ -204,6 +205,7 @@ public class PlayerSheetScreen extends ModalDialogScreen {
 		//Header: name, editable.
 		nameBox = new EditBox(this.font, dialogLeft() + PAD, dialogTop() + 8, Math.min(190, dialogW / 2 - PAD), 16,
 			Component.translatable("gui.dndsheets.character_sheet.name"));
+		nameBox.setTextColor(GuiStyle.TITLE_COLOR);
 		nameBox.setMaxLength(40);
 		nameBox.setValue(textOf(sheet, "characterName"));
 		nameBox.setResponder(text -> dirty = true);
@@ -222,7 +224,7 @@ public class PlayerSheetScreen extends ModalDialogScreen {
 		for (int i = 0; i < tabs.length; i++) {
 			Tab target = tabs[i];
 			Component label = Component.translatable("gui.dndsheets.sheet.tab_" + target.name().toLowerCase(java.util.Locale.ROOT));
-			if (target == tab) label = label.copy().withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+			if (target == tab) label = label.copy().withStyle(st -> st.withColor(GuiStyle.ACCENT_COLOR & 0xFFFFFF).withBold(true));
 			addModalButton(PAD + i * (tabW + gap), TAB_Y, tabW, 16, label, b -> {
 				saveFields();
 				tab = target;
@@ -273,7 +275,9 @@ public class PlayerSheetScreen extends ModalDialogScreen {
 
 	// --- OVERVIEW ---
 
-	private static final int PLATE_H = 30;
+	private static final int PLATE_H = 34;
+	private static final int TILE_H = 68;
+	private static final int PIP_BIG = 7;
 
 	private void initOverview(JsonObject sheet) {
 		int plateW = (contentW() - 8) / 3;
@@ -282,6 +286,7 @@ public class PlayerSheetScreen extends ModalDialogScreen {
 		//Speed: the one vital that is typed.
 		int speedX = PAD + (plateW + 4) * 2 + 22;
 		speedBox = new EditBox(this.font, dialogLeft() + speedX, dialogTop() + top + 12, plateW - 26, 14, Component.translatable("gui.dndsheets.character_sheet.label_speed"));
+		speedBox.setTextColor(GuiStyle.TITLE_COLOR);
 		speedBox.setMaxLength(24);
 		speedBox.setValue(textOf(sheet, "speed"));
 		speedBox.setResponder(text -> dirty = true);
@@ -298,6 +303,7 @@ public class PlayerSheetScreen extends ModalDialogScreen {
 			final int index = i;
 			EditBox box = new EditBox(this.font, dialogLeft() + x + (tileW - 26) / 2, dialogTop() + tilesTop + 12, 26, 14,
 				Component.translatable("gui.dndsheets.character_sheet.ability_" + ABBR_KEYS[i]));
+			box.setTextColor(GuiStyle.TITLE_COLOR);
 			box.setMaxLength(2);
 			box.setFilter(text -> text.matches("\\d{0,2}"));
 			box.setValue(Integer.toString(intOf(sheet, ABILITY_KEYS[i], 10)));
@@ -323,13 +329,15 @@ public class PlayerSheetScreen extends ModalDialogScreen {
 		int maxHp = player == null ? 0 : (int) Math.ceil(player.getMaxHealth());
 		int temp = player == null ? 0 : (int) Math.ceil(player.getAbsorptionAmount());
 		plate(g, left, top, plateW, Icons.stat("hp"), Component.translatable("gui.dndsheets.sheet.hp"));
-		int barX = left + 24;
-		int barY = top + 17;
-		int barW = plateW - 30;
-		g.fill(barX, barY, barX + barW, barY + 6, 0xFF0B0906);
+		//Value on the same line as the other plates' values (y+14), bar under it: the value used to sit at
+		//y+8 and was drawn over the "Hit points" label (y+3).
+		int barX = left + 26;
+		int barY = top + 25;
+		int barW = plateW - 32;
+		g.fill(barX, barY, barX + barW, barY + 5, 0xFF0B0906);
 		double fraction = maxHp <= 0 ? 0 : Math.min(1.0, hp / (double) maxHp);
-		g.fill(barX + 1, barY + 1, barX + 1 + (int) ((barW - 2) * fraction), barY + 5, fraction > 0.5 ? GOOD : fraction > 0.25 ? 0xFFE0B63F : BAD);
-		g.drawString(this.font, hp + " / " + maxHp + (temp > 0 ? "  +" + temp : ""), barX, top + 8, GuiStyle.TITLE_COLOR, false);
+		g.fill(barX + 1, barY + 1, barX + 1 + (int) ((barW - 2) * fraction), barY + 4, fraction > 0.5 ? GOOD : fraction > 0.25 ? GuiStyle.WARN_COLOR : BAD);
+		g.drawString(this.font, hp + " / " + maxHp + (temp > 0 ? "  +" + temp : ""), barX, top + 14, GuiStyle.TITLE_COLOR, false);
 
 		int ac = player == null ? 10 : CombatManager.armorClassOf(player, sheet);
 		plate(g, left + plateW + 4, top, plateW, Icons.stat("ac"), Component.translatable("gui.dndsheets.sheet.ac"));
@@ -349,19 +357,31 @@ public class PlayerSheetScreen extends ModalDialogScreen {
 		//Ability tiles.
 		int tilesTop = top + 2 * (PLATE_H + 4) + 6;
 		int tileW = (contentW() - 5 * 4) / 6;
+		java.util.Arrays.fill(savePips, null);
 		for (int i = 0; i < 6; i++) {
 			int x = left + i * (tileW + 4);
-			g.fill(x, tilesTop, x + tileW, tilesTop + 62, PANEL_DARK);
-			g.renderOutline(x, tilesTop, tileW, 62, PANEL_EDGE);
+			g.fill(x, tilesTop, x + tileW, tilesTop + TILE_H, PANEL_DARK);
+			g.renderOutline(x, tilesTop, tileW, TILE_H, PANEL_EDGE);
 			Component name = Component.translatable("gui.dndsheets.sheet.abbr_" + ABBR_KEYS[i]);
 			g.drawCenteredString(this.font, name, x + tileW / 2, tilesTop + 3, GuiStyle.ACCENT_COLOR);
 			int mod = modOf(intOf(sheet, ABILITY_KEYS[i], 10));
 			g.drawCenteredString(this.font, signed(mod), x + tileW / 2, tilesTop + 12 + 14 + 2, GuiStyle.TITLE_COLOR);
 			//Save proficiency pip, under the save button.
 			boolean saveProf = RollIndex.isProficient(expressionAt("saves", i));
-			pip(g, x + tileW / 2 + 2 + 5, tilesTop + 12 + 14 + 14 + 17, saveProf);
+			int pipX = x + tileW / 2 + 6;
+			int pipY = tilesTop + 12 + 14 + 14 + 17 + 1;
+			pip(g, pipX, pipY, PIP_BIG, saveProf);
+			savePips[i] = new int[] {pipX, pipY, saveProf ? 1 : 0};
 		}
-		g.drawString(this.font, Component.translatable("gui.dndsheets.sheet.hint_overview"), left, tilesTop + 62 + 5, GuiStyle.MUTED_COLOR, false);
+		//Wrapped to the panel: one long line ran past its right edge.
+		int hintY = tilesTop + TILE_H + 5;
+		for (var line : this.font.split(Component.translatable("gui.dndsheets.sheet.hint_overview"), contentW())) {
+			g.drawString(this.font, line, left, hintY, GuiStyle.MUTED_COLOR, false);
+			hintY += 10;
+		}
+		//Conditions at a glance (the Combat tab has the same row): fills the space below the tiles.
+		//Only if it fits above the footer (small windows / large GUI scales have less room).
+		if (hintY + 6 + 16 <= dialogTop() + dialogH - FOOTER) renderConditionsRow(g, sheet, left, hintY + 6);
 	}
 
 	private void plate(GuiGraphics g, int x, int y, int w, ResourceLocation icon, Component label) {
@@ -372,9 +392,17 @@ public class PlayerSheetScreen extends ModalDialogScreen {
 	}
 
 	private static void pip(GuiGraphics g, int x, int y, boolean filled) {
-		g.renderOutline(x, y, PIP, PIP, GuiStyle.ACCENT_COLOR);
-		if (filled) g.fill(x + 1, y + 1, x + PIP - 1, y + PIP - 1, GuiStyle.ACCENT_COLOR);
+		pip(g, x, y, PIP, filled);
 	}
+
+	private static void pip(GuiGraphics g, int x, int y, int size, boolean filled) {
+		g.renderOutline(x, y, size, size, GuiStyle.ACCENT_COLOR);
+		if (filled) g.fill(x + 1, y + 1, x + size - 1, y + size - 1, GuiStyle.ACCENT_COLOR);
+	}
+
+	//{x, y, filled} of each ability's save-proficiency pip, as last drawn: lets render() show what the bare
+	//square means when the mouse is over it.
+	private final int[][] savePips = new int[6][];
 
 	/** The proficiency pip of a skill row, clickable: it asks the server to toggle it. */
 	private static final class PipButton extends Button {
@@ -515,11 +543,8 @@ public class PlayerSheetScreen extends ModalDialogScreen {
 		return Math.max(1, available / 18);
 	}
 
-	private void renderCombat(GuiGraphics g, JsonObject sheet) {
-		int left = contentLeft();
-		int y = dialogTop() + CONTENT_Y;
-
-		//Conditions: glyphs with the name on hover (the HUD does the same), or "none".
+	//Conditions: glyphs with the name on hover (the HUD does the same), or "none".
+	private void renderConditionsRow(GuiGraphics g, JsonObject sheet, int left, int y) {
 		g.drawString(this.font, Component.translatable("gui.dndsheets.sheet.conditions"), left, y + 2, GuiStyle.ACCENT_COLOR, false);
 		int x = left + this.font.width(Component.translatable("gui.dndsheets.sheet.conditions")) + 8;
 		boolean any = false;
@@ -540,6 +565,13 @@ public class PlayerSheetScreen extends ModalDialogScreen {
 			}
 		}
 		if (!any) g.drawString(this.font, Component.translatable("gui.dndsheets.sheet.none"), x, y + 2, GuiStyle.MUTED_COLOR, false);
+	}
+
+	private void renderCombat(GuiGraphics g, JsonObject sheet) {
+		int left = contentLeft();
+		int y = dialogTop() + CONTENT_Y;
+
+		renderConditionsRow(g, sheet, left, y);
 		y += conditionsBlockHeight(sheet);
 
 		//Class resources as pips.
@@ -704,6 +736,34 @@ public class PlayerSheetScreen extends ModalDialogScreen {
 			case COMBAT -> renderCombat(g, sheet);
 			case SPELLS -> renderSpells(g, sheet);
 		}
+		//Active tab: a brass underline besides the colour, so it does not rely on colour alone.
+		int tabCount = Tab.values().length;
+		int tabW = (contentW() - 4 * (tabCount - 1)) / tabCount;
+		int tabX = dialogLeft() + PAD + tab.ordinal() * (tabW + 4);
+		g.fill(tabX, dialogTop() + TAB_Y + 16, tabX + tabW, dialogTop() + TAB_Y + 18, GuiStyle.ACCENT_COLOR);
+
 		super.render(g, mouseX, mouseY, partialTicks);
+
+		//Repaint vanilla's white/gray EditBox ring in brass (focused = bright), same as the other sheet slots.
+		for (EditBox box : fieldBoxes()) {
+			if (box != null) TomeField.frameWidget(g, box.getX(), box.getY(), box.getWidth(), box.getHeight(), box.isFocused());
+		}
+
+		if (tab == Tab.OVERVIEW) {
+			for (int i = 0; i < savePips.length; i++) {
+				int[] p = savePips[i];
+				if (p == null || mouseX < p[0] - 2 || mouseX > p[0] + PIP_BIG + 2 || mouseY < p[1] - 2 || mouseY > p[1] + PIP_BIG + 2) continue;
+				g.renderTooltip(this.font, Component.translatable(p[2] == 1 ? "gui.dndsheets.sheet.save_prof_yes" : "gui.dndsheets.sheet.save_prof_no",
+					Component.translatable("gui.dndsheets.character_sheet.ability_" + ABBR_KEYS[i])), mouseX, mouseY);
+			}
+		}
+	}
+
+	private List<EditBox> fieldBoxes() {
+		List<EditBox> boxes = new ArrayList<>();
+		boxes.add(nameBox);
+		boxes.add(speedBox);
+		boxes.addAll(java.util.Arrays.asList(scoreBoxes));
+		return boxes;
 	}
 }

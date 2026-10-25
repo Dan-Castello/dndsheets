@@ -433,4 +433,59 @@ public class SpellRegistry {
 		stack.getTag().getCompound("dndsheets").putString("quickSpell", spellId);
 		return true;
 	}
+
+	//A staff holds several spells ("spells" list) and casts the active one ("quickSpell", which the
+	//dispatcher already reads — so nothing downstream changed). An old staff with only quickSpell counts as a
+	//list of one.
+	public static final int STAFF_MAX_SPELLS = 9;
+
+	public static java.util.List<String> staffSpells(ItemStack stack) {
+		java.util.List<String> out = new java.util.ArrayList<>();
+		if (!isConfigurableStaff(stack)) return out;
+		CompoundTag dnd = stack.getTag().getCompound("dndsheets");
+		for (net.minecraft.nbt.Tag t : dnd.getList("spells", net.minecraft.nbt.Tag.TAG_STRING)) out.add(t.getAsString());
+		String active = dnd.getString("quickSpell");
+		if (!active.isEmpty() && !out.contains(active)) out.add(0, active);
+		return out;
+	}
+
+	private static void writeStaff(ItemStack stack, java.util.List<String> spells, String active) {
+		CompoundTag dnd = stack.getTag().getCompound("dndsheets");
+		net.minecraft.nbt.ListTag list = new net.minecraft.nbt.ListTag();
+		for (String s : spells) list.add(net.minecraft.nbt.StringTag.valueOf(s));
+		dnd.put("spells", list);
+		if (active == null) dnd.remove("quickSpell"); else dnd.putString("quickSpell", active);
+		ItemLook.swapLook(stack, ItemLook.STAFF, ItemLook.STAFF_CHARGED, !spells.isEmpty());
+	}
+
+	/** Adds (or just activates) a spell. @return false if not a staff or the staff is full. */
+	public static boolean staffAdd(ItemStack stack, String spellId) {
+		java.util.List<String> spells = staffSpells(stack);
+		if (!isConfigurableStaff(stack)) return false;
+		if (!spells.contains(spellId)) {
+			if (spells.size() >= STAFF_MAX_SPELLS) return false;
+			spells.add(spellId);
+		}
+		writeStaff(stack, spells, spellId);
+		return true;
+	}
+
+	/** Removes a spell; the active one moves to the first left (or none). @return false if it wasn't there. */
+	public static boolean staffRemove(ItemStack stack, String spellId) {
+		java.util.List<String> spells = staffSpells(stack);
+		if (!spells.remove(spellId)) return false;
+		String active = stack.getTag().getCompound("dndsheets").getString("quickSpell");
+		writeStaff(stack, spells, spells.contains(active) ? active : spells.isEmpty() ? null : spells.get(0));
+		return true;
+	}
+
+	/** Moves the active spell by delta, wrapping. @return the new active id, or null if nothing to cycle. */
+	public static String staffCycle(ItemStack stack, int delta) {
+		java.util.List<String> spells = staffSpells(stack);
+		if (spells.isEmpty()) return null;
+		int i = spells.indexOf(stack.getTag().getCompound("dndsheets").getString("quickSpell"));
+		String next = spells.get(Math.floorMod(i + delta, spells.size()));
+		writeStaff(stack, spells, next);
+		return next;
+	}
 }
