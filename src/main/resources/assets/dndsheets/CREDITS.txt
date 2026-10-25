@@ -72,29 +72,6 @@ textures/gui/icons/stat/spell.png | game-icons.net delapouite/spell-book.svg | D
 textures/gui/icons/ui/delete.png | game-icons.net delapouite/trash-can.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
 textures/gui/icons/ui/edit.png | game-icons.net delapouite/pencil.svg | Delapouite | CC BY 3.0 | https://game-icons.net/
 font/cinzel.ttf | Cinzel, google/fonts ofl/cinzel (OFL text: font/ofl-cinzel.txt) | The Cinzel Project Authors (NDISCOVER) | SIL OFL 1.1 | https://github.com/NDISCOVER/Cinzel
-textures/entity/necromancer/necromancer.png | Polarice3/Goety-2 NecromancerModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/necromancer/frost.png | Polarice3/Goety-2 NecromancerModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/necromancer/mossy.png | Polarice3/Goety-2 NecromancerModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/necromancer/drowned.png | Polarice3/Goety-2 NecromancerModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-geo/entity/necromancer.geo.json | Polarice3/Goety-2 NecromancerModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/crone/crone.png | Polarice3/Goety-2 CroneModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-geo/entity/crone.geo.json | Polarice3/Goety-2 CroneModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/brood_mother/brood_mother.png | Polarice3/Goety-2 BroodMotherModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-geo/entity/brood_mother.geo.json | Polarice3/Goety-2 BroodMotherModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/web_spider/web_spider.png | Polarice3/Goety-2 WebSpiderModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-geo/entity/web_spider.geo.json | Polarice3/Goety-2 WebSpiderModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/redstone_golem/redstone_golem.png | Polarice3/Goety-2 RedstoneGolemModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-geo/entity/redstone_golem.geo.json | Polarice3/Goety-2 RedstoneGolemModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/whisperer/whisperer.png | Polarice3/Goety-2 WhispererModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-geo/entity/whisperer.geo.json | Polarice3/Goety-2 WhispererModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/warlock/warlock.png | Polarice3/Goety-2 WarlockModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-geo/entity/warlock.geo.json | Polarice3/Goety-2 WarlockModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/wraith/wraith.png | Polarice3/Goety-2 WraithModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/wraith/border.png | Polarice3/Goety-2 WraithModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/wraith/muck.png | Polarice3/Goety-2 WraithModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-geo/entity/wraith.geo.json | Polarice3/Goety-2 WraithModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-textures/entity/specter/specter.png | Polarice3/Goety-2 SpecterModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
-geo/entity/specter.geo.json | Polarice3/Goety-2 SpecterModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
 textures/entity/kraken/kraken.png | Sketchfab "Pixel Kraken" (re-baked to box UV by tools/blockbench/import/gltf.py) | Ycar (Ycar) | CC BY 4.0 | https://sketchfab.com/3d-models/pixel-kraken-995973df0f0e47a7bde5603500bd4027
 geo/entity/kraken.geo.json | Sketchfab "Pixel Kraken" (re-baked to box UV by tools/blockbench/import/gltf.py) | Ycar (Ycar) | CC BY 4.0 | https://sketchfab.com/3d-models/pixel-kraken-995973df0f0e47a7bde5603500bd4027
 textures/entity/drake/drake.png | Sketchfab "Leathern Drake - Blockbench" (re-baked to box UV by tools/blockbench/import/gltf.py) | Breathfang (Drageon DB) (drageondb) | CC BY 4.0 | https://sketchfab.com/3d-models/leathern-drake-blockbench-021865367838492a9839c64c6f3cb984
@@ -119,3 +96,36 @@ textures/entity/minotaur/minotaur.png | Sketchfab "Minotaur alpha" (re-baked to 
 geo/entity/minotaur.geo.json | Sketchfab "Minotaur alpha" (re-baked to box UV by tools/blockbench/import/gltf.py) | HiimSix. (HiimSix.) | CC BY 4.0 | https://sketchfab.com/3d-models/minotaur-alpha-60e3f514f5e34c4086d0e7422d9f3099
 textures/entity/mummy/mummy.png | Sketchfab "Mummy" (re-baked to box UV by tools/blockbench/import/gltf.py) | Nightfoxy3D (Nightfoxymc) | CC BY 4.0 | https://sketchfab.com/3d-models/mummy-2bd48b1ca610462dbb9d8ee121949c48
 geo/entity/mummy.geo.json | Sketchfab "Mummy" (re-baked to box UV by tools/blockbench/import/gltf.py) | Nightfoxy3D (Nightfoxymc) | CC BY 4.0 | https://sketchfab.com/3d-models/mummy-2bd48b1ca610462dbb9d8ee121949c48
+textures/entity/ogre/ogre.png | Sketchfab "Ogrin giant" (re-baked to box UV by tools/blockbench/import/gltf.py) | margaux_kane (margaux_kane) | CC BY 4.0 | https://sketchfab.com/3d-models/ogrin-giant-85471a1dd86d4dac962ff58fc43a69ab
+geo/entity/ogre.geo.json | Sketchfab "Ogrin giant" (re-baked to box UV by tools/blockbench/import/gltf.py) | margaux_kane (margaux_kane) | CC BY 4.0 | https://sketchfab.com/3d-models/ogrin-giant-85471a1dd86d4dac962ff58fc43a69ab
+textures/entity/troll/troll.png | Sketchfab "Minecraft Blue Troll" (re-baked to box UV by tools/blockbench/import/gltf.py) | Creative Orc (Creative_Orc_) | CC BY 4.0 | https://sketchfab.com/3d-models/minecraft-blue-troll-e7e5c3201f4841f0ba989120292ac6cb
+geo/entity/troll.geo.json | Sketchfab "Minecraft Blue Troll" (re-baked to box UV by tools/blockbench/import/gltf.py) | Creative Orc (Creative_Orc_) | CC BY 4.0 | https://sketchfab.com/3d-models/minecraft-blue-troll-e7e5c3201f4841f0ba989120292ac6cb
+textures/entity/bear/bear.png | Sketchfab "Kodiak Bear [ Minecraft Bedrock Edition ]" (re-baked to box UV by tools/blockbench/import/gltf.py) | DrPlatipi (DrPlatipi) | CC BY 4.0 | https://sketchfab.com/3d-models/kodiak-bear-minecraft-bedrock-edition-452b6a429f08481db25be36395741dce
+geo/entity/bear.geo.json | Sketchfab "Kodiak Bear [ Minecraft Bedrock Edition ]" (re-baked to box UV by tools/blockbench/import/gltf.py) | DrPlatipi (DrPlatipi) | CC BY 4.0 | https://sketchfab.com/3d-models/kodiak-bear-minecraft-bedrock-edition-452b6a429f08481db25be36395741dce
+textures/entity/eagle/eagle.png | Sketchfab "Aguia negra da Savana" (re-baked to box UV by tools/blockbench/import/gltf.py) | Ðinei 001 (dinei00161) | CC BY 4.0 | https://sketchfab.com/3d-models/aguia-negra-da-savana-ca159e950d784d8d8075cefbb2664f3d
+geo/entity/eagle.geo.json | Sketchfab "Aguia negra da Savana" (re-baked to box UV by tools/blockbench/import/gltf.py) | Ðinei 001 (dinei00161) | CC BY 4.0 | https://sketchfab.com/3d-models/aguia-negra-da-savana-ca159e950d784d8d8075cefbb2664f3d
+textures/entity/earth_golem/earth_golem.png | Sketchfab "Minecraft Stone Golem Mob" (re-baked to box UV by tools/blockbench/import/gltf.py) | Purple Anvil (purpleanvil) | CC BY 4.0 | https://sketchfab.com/3d-models/minecraft-stone-golem-mob-d3ab72e33146440d937c688dba463f77
+geo/entity/earth_golem.geo.json | Sketchfab "Minecraft Stone Golem Mob" (re-baked to box UV by tools/blockbench/import/gltf.py) | Purple Anvil (purpleanvil) | CC BY 4.0 | https://sketchfab.com/3d-models/minecraft-stone-golem-mob-d3ab72e33146440d937c688dba463f77
+textures/entity/necromancer/necromancer.png | Polarice3/Goety-2 NecromancerModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/necromancer/frost.png | Polarice3/Goety-2 NecromancerModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/necromancer/mossy.png | Polarice3/Goety-2 NecromancerModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/necromancer/drowned.png | Polarice3/Goety-2 NecromancerModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+geo/entity/necromancer.geo.json | Polarice3/Goety-2 NecromancerModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/crone/crone.png | Polarice3/Goety-2 CroneModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+geo/entity/crone.geo.json | Polarice3/Goety-2 CroneModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/brood_mother/brood_mother.png | Polarice3/Goety-2 BroodMotherModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+geo/entity/brood_mother.geo.json | Polarice3/Goety-2 BroodMotherModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/web_spider/web_spider.png | Polarice3/Goety-2 WebSpiderModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+geo/entity/web_spider.geo.json | Polarice3/Goety-2 WebSpiderModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/redstone_golem/redstone_golem.png | Polarice3/Goety-2 RedstoneGolemModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+geo/entity/redstone_golem.geo.json | Polarice3/Goety-2 RedstoneGolemModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/whisperer/whisperer.png | Polarice3/Goety-2 WhispererModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+geo/entity/whisperer.geo.json | Polarice3/Goety-2 WhispererModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/warlock/warlock.png | Polarice3/Goety-2 WarlockModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+geo/entity/warlock.geo.json | Polarice3/Goety-2 WarlockModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/wraith/wraith.png | Polarice3/Goety-2 WraithModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/wraith/border.png | Polarice3/Goety-2 WraithModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/wraith/muck.png | Polarice3/Goety-2 WraithModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+geo/entity/wraith.geo.json | Polarice3/Goety-2 WraithModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+textures/entity/specter/specter.png | Polarice3/Goety-2 SpecterModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2
+geo/entity/specter.geo.json | Polarice3/Goety-2 SpecterModel (converted by tools/blockbench/import/javamodel.py) | Polarice3 | MIT | https://github.com/Polarice3/Goety-2

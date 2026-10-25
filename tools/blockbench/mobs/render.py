@@ -38,8 +38,18 @@ class Model:
             for c in b.get('cubes', []):
                 (ox, oy, oz), (sx, sy, sz) = c['origin'], c['size']
                 g = c.get('inflate', 0.0)  # grows the box, not its texture rectangle
+                # A cube's own rotation (Blockbench models use it; Java ones never do) turns it about its own pivot,
+                # before the bone's transform. Same sign conventions as the bones.
+                local = np.eye(4)
+                if any(c.get('rotation', [0, 0, 0])):
+                    cx, cy, cz = c.get('pivot', [0, 0, 0])
+                    rx_, ry_, rz_ = c['rotation']
+                    P, Pi, Rc = np.eye(4), np.eye(4), np.eye(4)
+                    P[:3, 3], Pi[:3, 3] = [-cx, cy, cz], [cx, -cy, -cz]
+                    Rc[:3, :3] = rot([-rx_, -ry_, rz_])
+                    local = P @ Rc @ Pi
                 cubes.append(dict(lo=np.array([-(ox + sx) - g, oy - g, oz - g], float), size=np.array([sx + 2 * g, sy + 2 * g, sz + 2 * g], float),
-                                  uv=c['uv'], uv_size=np.array([sx, sy, sz], float)))
+                                  uv=c['uv'], uv_size=np.array([sx, sy, sz], float), local=local))
             self.bones[b['name']] = dict(parent=b.get('parent'), pivot=np.array([-px, py, pz], float),
                                          rest=np.array([-rx, -ry, rz], float), cubes=cubes)
         tex = os.path.join(ASSETS, 'textures', 'entity', name)
@@ -149,7 +159,7 @@ def posed_cubes(model, anim=None, t=0.0):
         M = mats[name]
         for c in b['cubes']:
             pts = c['lo'] + CORNERS * c['size']
-            w = (M @ np.c_[pts, np.ones(8)].T).T[:, :3]
+            w = (M @ c['local'] @ np.c_[pts, np.ones(8)].T).T[:, :3]
             out.append((name, c, w))
     return out
 
@@ -186,9 +196,9 @@ def project(model, tex, mats, V):
     """All visible face quads in view space with their texture rects."""
     quads = []
     for name, b in model.bones.items():
-        M = mats[name]
-        R3 = V @ M[:3, :3]
         for c in b['cubes']:
+            M = mats[name] @ c['local']
+            R3 = V @ M[:3, :3]
             for o, eu, ev, n, rect in faces(c):
                 if rect[2] <= 0 or rect[3] <= 0:
                     continue

@@ -11,6 +11,7 @@ import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import com.mojang.math.Axis;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -54,8 +55,21 @@ public class MonsterModelRenderer extends GeoEntityRenderer<MonsterModelEntity> 
 			@Override
 			protected void renderStackForBone(PoseStack poseStack, GeoBone bone, ItemStack stack, MonsterModelEntity entity,
 					MultiBufferSource buffers, float partialTick, int packedLight, int packedOverlay) {
-				poseStack.mulPose(Axis.XP.rotationDegrees(-90)); //Held like a vanilla mob's: blade forward, not up the arm.
-				super.renderStackForBone(poseStack, bone, stack, entity, buffers, partialTick, packedLight, packedOverlay);
+				//Vanilla's ItemInHandLayer, replayed. The items' third-person display transforms (a shield's above all) are
+				//authored for vanilla's model space, which is GeckoLib's turned 180 degrees about Z (vanilla draws with
+				//scale(-1, -1, 1)): go back to it first, or a shield in the left hand ends up above the head and a club
+				//hangs backwards. Then vanilla's own steps; its final -0.625 walks from the shoulder to the hand, and our
+				//item bone already IS the hand, so it is left out.
+				boolean left = bone.getName().equals("item_l");
+				poseStack.mulPose(Axis.ZP.rotationDegrees(180));
+				poseStack.mulPose(Axis.XP.rotationDegrees(-90));
+				poseStack.mulPose(Axis.YP.rotationDegrees(180));
+				poseStack.translate((left ? -1 : 1) / 16f, 0.125f, 0);
+				//Not super: GeckoLib's call has no left-hand flag, and vanilla mirrors an item's third-person transform
+				//for the left hand (a shield's is 12 px off for that hand against -4 for the right: drawn unmirrored it
+				//floated a block up, over the head). This is ItemInHandRenderer's own call.
+				Minecraft.getInstance().getItemRenderer().renderStatic(entity, stack, getTransformTypeForStack(bone, stack, entity),
+					left, poseStack, buffers, entity.level(), packedLight, packedOverlay, entity.getId());
 			}
 		});
 	}

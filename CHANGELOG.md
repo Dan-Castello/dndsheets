@@ -22,7 +22,7 @@
   use models from Goety – The Dark Arts (MIT,
   credited in CREDITS.md), converted for this mod and animated with its own animations.
 - Krakens and giant octopuses, wyverns, sharks, orcs, werewolves, snakes, crocodiles, scorpions, rats, lions,
-  minotaurs and mummies use community models from Sketchfab (CC BY, credited in CREDITS.md); several keep their
+  minotaurs, mummies, ogres and hill giants, trolls, bears, eagles and earth elementals use community models from Sketchfab (CC BY, credited in CREDITS.md); several keep their
   authors' own animations (the orc's attack, the snake's strike, the wyvern's fire breath).
 - Giant spiders, giant wolf spiders, stone golems and shambling mounds use more Goety models.
 - Monsters that don't fit a model (equipped humanoids, skeletons, horses, composite creatures…) stay vanilla.

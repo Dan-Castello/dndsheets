@@ -757,6 +757,15 @@ public class JsonContentSelfTest {
 				for (String file : new String[] {"geo/entity/" + model + ".geo.json", "animations/entity/" + model + ".animation.json"}) {
 					assertTrue(Files.exists(assets.resolve(file)), id + " needs assets/dndsheets/" + file + ", which does not exist");
 				}
+				//MonsterModelEntity plays these by name; a missing one leaves the creature frozen in its rest pose
+				//(and a flyer frozen in the air). Whether each clip visibly MOVES is tools/blockbench/mobs/lint.py's job.
+				JsonObject clips = JsonParser.parseString(Files.readString(assets.resolve("animations/entity/" + model + ".animation.json")))
+					.getAsJsonObject().getAsJsonObject("animations");
+				for (String clip : json.has("flies") && json.get("flies").getAsBoolean()
+						? new String[] {"idle", "attack", "hurt", "death", "fly"} : new String[] {"idle", "attack", "hurt", "death"}) {
+					assertTrue(clips.has(clip) && clips.getAsJsonObject(clip).getAsJsonObject("bones").size() > 0,
+						id + " uses model " + model + ", whose animation file has no \"" + clip + "\" clip (or an empty one)");
+				}
 				//Either an imported model's own PNG for that variant, or the mask coloured by a key of variants.json
 				//(or a raw "#RRGGBB" the client derives a palette from).
 				Path textures = assets.resolve("textures/entity/" + model);

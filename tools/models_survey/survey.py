@@ -217,14 +217,28 @@ IMPORTED = [
     '| Minecraft Lion | APlant | lion | imported (x0.6) |',
     '| Minotaur alpha | HiimSix. | minotaur | imported (x0.4), own idle |',
     '| Mummy | Nightfoxymc | mummy, mummy lord | imported, replaces the undead archetype there |',
-    '| The Lich, Minecraft Stone Golem Mob, Aguia negra, Ogrin giant, Minecraft Blue Troll, Kodiak Bear | – | – | left out: loose or misplaced parts after conversion |',
-    '| Minecraft Centaur, Centaur // Satyr | – | – | left out: the horse body is missing from the export |',
+    '| Ogrin giant | margaux_kane | ogre, hill giant | imported (`ogre`, x0.45), own idle; first discarded, recovered (see below) |',
+    '| Minecraft Blue Troll | Creative_Orc_ | troll | imported (x0.45); recovered |',
+    '| Kodiak Bear | DrPlatipi | black, brown and were- bears | imported (`bear`, x0.8); recovered |',
+    '| Aguia negra da Savana | dinei00161 | eagle, giant eagle | imported (`eagle`, x0.3), own fly and attack; recovered |',
+    '| Minecraft Stone Golem Mob | purpleanvil | earth elemental | imported (`earth_golem`), own idle and attack; recovered |',
+    '| The Lich (Blockbench) | – | – | left out: an FBX-converted triangle mesh, not cubes |',
+    '| Minecraft Centaur, Centaur // Satyr | – | – | left out: one merged block / no horse body in the export |',
+    '| Infected Bear, Golden Protector, Minecraft Scorpion | – | – | left out: no monster fits / unreadable |',
     '| Ghoul v4 Blox Fruits, Mimikyu, Indominus Rex, I Heard It Too wraiths, AsteronMod Ogre, Lololoshka characters | – | – | left out: characters of other franchises or mods |',
     '| Succubus Boss for Model Engine | SuccubusInSc | – | left out: effect props floating around a T-pose |',
     '| Ghasklle | LironHero | – | left out: loose fragments |',
     '| Golem | bada9889 | – | left out: modelled facing sideways, no monster fits |',
     '| Realistic / Fire dragon minecraft | nayav / DPancito | – | left out: broken scale; the dragon archetype covers them |',
-    '| T-rex Minecraft, Minecraft Bat | – | – | left out: merged OBJ/FBX meshes, not cubes |', '']
+    '| T-rex Minecraft, Minecraft Bat | – | – | left out: merged OBJ/FBX meshes, not cubes |', '',
+    '### Why some were first discarded', '',
+    'A per-cube comparison of every converted model against its glTF (full transform chain) found four bugs, all fixed:',
+    '- the review renderer ignored the rotation of each cube (troll, bear, stone golem, eagle only LOOKED broken);',
+    '- Euler angles lost a component in gimbal lock (Y = +-90): tentacles of the kraken came out wrong;',
+    '- the Sketchfab display orientation chosen by the author was applied: the orc faced backwards, the giant was turned;',
+    '- a uniform scale inside the content (FBX-converted exports) was ignored.',
+    'After the fixes all 20 downloaded models match their glTF exactly; the ones still left out are left out for what',
+    'they are, not for the conversion.', '']
 
 
 def main():

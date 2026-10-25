@@ -582,15 +582,33 @@ def ghost_anims():
 
 # --- any rig (imported models): only root, head and arm_r/arm_l are assumed, and nothing ever goes below the ground --
 
-def generic_anims():
+def generic_anims(bones=()):
+    """Any rig: always alive through 'root' (a slow turn and breathing), plus whatever the rig has by name: a head
+    that looks around, arms, tails that sway in a wave, a jaw or mouth that opens to bite. `bones` are the rig's bone
+    names; without them only root/head/arm_r/arm_l are assumed."""
+    import re as _re
+    names = list(bones) or ['root', 'head', 'arm_r', 'arm_l']
+    tails = [b for b in names if _re.search(r'tail', b, _re.I)]
+    jaws = [b for b in names if _re.search(r'jaw|mouth', b, _re.I)]
+    heads = [b for b in names if _re.fullmatch(r'head\d*', b, _re.I)][:1]
+    idle = {'root': {'scale': {0: [1, 1, 1], 1.5: [1, 1.03, 1], 3: [1, 1, 1]}, 'rotation': sway(3.0, 4)},
+            'arm_r': {'rotation': sway(3.0, 3, axis=0)}, 'arm_l': {'rotation': sway(3.0, 3, axis=0, phase=0.5)}}
+    attack = {'root': {'position': {0: [0, 0, 0], 0.3: [0, 0.5, -1.5], 0.45: [0, 0.5, -1], 0.7: [0, 0, 0]}},
+              'arm_r': {'rotation': {0: [0, 0, 0], 0.25: [-60, 0, 0], 0.4: [-15, 0, 0], 0.7: [0, 0, 0]}}}
+    hurt = {'root': {'position': {0: [0, 0, 0], 0.1: [0, 0, 1], 0.4: [0, 0, 0]}, 'rotation': {0: [0, 0, 0], 0.1: [0, 8, 0], 0.4: [0, 0, 0]}}}
+    for h in heads:
+        idle[h] = {'rotation': sway(3.0, 6)}
+        attack[h] = {'rotation': {0: [0, 0, 0], 0.3: [10, 0, 0], 0.7: [0, 0, 0]}}
+        hurt[h] = {'rotation': {0: [0, 0, 0], 0.1: [-15, 0, 0], 0.4: [0, 0, 0]}}
+    for k, t in enumerate(tails):  # a wave down the chain: each segment a little later and wider
+        idle[t] = {'rotation': sway(3.0, 6 + 2 * k, phase=-0.1 * k)}
+        attack[t] = {'rotation': sway(0.7, 10 + 3 * k, phase=-0.1 * k, n=4)}
+    for j in jaws:
+        attack[j] = {'rotation': {0: [0, 0, 0], 0.2: [25, 0, 0], 0.4: [0, 0, 0]}}
+        hurt[j] = {'rotation': {0: [0, 0, 0], 0.1: [15, 0, 0], 0.4: [0, 0, 0]}}
     return {
-        'idle': anim(3.0, {'root': {'scale': {0: [1, 1, 1], 1.5: [1, 1.015, 1], 3: [1, 1, 1]}},
-                           'head': {'rotation': sway(3.0, 6)},
-                           'arm_r': {'rotation': sway(3.0, 3, axis=0)}, 'arm_l': {'rotation': sway(3.0, 3, axis=0, phase=0.5)}}),
-        'attack': anim(0.7, {'root': {'position': {0: [0, 0, 0], 0.3: [0, 0.5, -1.5], 0.45: [0, 0.5, -1], 0.7: [0, 0, 0]}},
-                             'arm_r': {'rotation': {0: [0, 0, 0], 0.25: [-60, 0, 0], 0.4: [-15, 0, 0], 0.7: [0, 0, 0]}},
-                             'head': {'rotation': {0: [0, 0, 0], 0.3: [10, 0, 0], 0.7: [0, 0, 0]}}}, loop=False),
-        'hurt': anim(0.4, {'head': {'rotation': {0: [0, 0, 0], 0.1: [-15, 0, 0], 0.4: [0, 0, 0]}},
-                           'root': {'position': {0: [0, 0, 0], 0.1: [0, 0, 1], 0.4: [0, 0, 0]}}}, loop=False),
+        'idle': anim(3.0, idle),
+        'attack': anim(0.7, attack, loop=False),
+        'hurt': anim(0.4, hurt, loop=False),
         'death': anim(1.2, {'root': {'scale': {0: [1, 1, 1], 1.0: [1.15, 0.1, 1.15], 1.2: [1.2, 0.05, 1.2]}}}, loop=False),
     }

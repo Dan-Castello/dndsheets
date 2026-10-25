@@ -52,7 +52,7 @@
     ]
   },
   {
-    "id": "dndsheets:ogre", "name": "content.dndsheets.monster.ogre", "type": "giant", "size": "large", "baseEntity": "minecraft:zombie", "appearance": { "mainHand": "minecraft:iron_axe", "model": "brute", "variant": "ogre" },
+    "id": "dndsheets:ogre", "name": "content.dndsheets.monster.ogre", "type": "giant", "size": "large", "baseEntity": "minecraft:zombie", "appearance": { "mainHand": "minecraft:iron_axe", "model": "ogre", "variant": "ogre" },
     "ac": 11, "hp": 59,
     "abilities": { "str": 19, "dex": 8, "con": 16, "int": 5, "wis": 7, "cha": 7 },
     "proficiencyBonus": 2,
@@ -61,7 +61,7 @@
     ]
   },
   {
-    "id": "dndsheets:troll", "name": "content.dndsheets.monster.troll", "type": "giant", "size": "large", "baseEntity": "minecraft:zombie", "appearance": { "model": "brute", "variant": "troll" },
+    "id": "dndsheets:troll", "name": "content.dndsheets.monster.troll", "type": "giant", "size": "large", "baseEntity": "minecraft:zombie", "appearance": { "model": "troll", "variant": "troll" },
     "ac": 15, "hp": 84,
     "abilities": { "str": 18, "dex": 13, "con": 20, "int": 7, "wis": 9, "cha": 7 },
     "proficiencyBonus": 3,
@@ -260,7 +260,7 @@
     ]
   },
   {
-    "id": "dndsheets:black_bear", "name": "content.dndsheets.monster.black_bear", "type": "beast", "size": "medium", "baseEntity": "minecraft:polar_bear",
+    "id": "dndsheets:black_bear", "name": "content.dndsheets.monster.black_bear", "type": "beast", "size": "medium", "baseEntity": "minecraft:polar_bear", "appearance": { "model": "bear", "variant": "bear" },
     "ac": 11, "hp": 19,
     "abilities": { "str": 15, "dex": 10, "con": 14, "int": 2, "wis": 12, "cha": 7 },
     "proficiencyBonus": 2,
@@ -327,7 +327,7 @@
     ]
   },
   {
-    "id": "dndsheets:brown_bear", "name": "content.dndsheets.monster.brown_bear", "type": "beast", "size": "large", "baseEntity": "minecraft:polar_bear",
+    "id": "dndsheets:brown_bear", "name": "content.dndsheets.monster.brown_bear", "type": "beast", "size": "large", "baseEntity": "minecraft:polar_bear", "appearance": { "model": "bear", "variant": "bear" },
     "ac": 11, "hp": 34,
     "abilities": { "str": 19, "dex": 10, "con": 16, "int": 2, "wis": 13, "cha": 7 },
     "proficiencyBonus": 2,
@@ -565,7 +565,7 @@
     ]
   },
   {
-    "id": "dndsheets:eagle", "name": "content.dndsheets.monster.eagle", "type": "beast", "size": "small", "flies": true, "baseEntity": "minecraft:parrot", "appearance": { "model": "bird", "variant": "eagle" },
+    "id": "dndsheets:eagle", "name": "content.dndsheets.monster.eagle", "type": "beast", "size": "small", "flies": true, "baseEntity": "minecraft:parrot", "appearance": { "model": "eagle", "variant": "eagle" },
     "ac": 12, "hp": 3,
     "abilities": { "str": 6, "dex": 15, "con": 10, "int": 2, "wis": 14, "cha": 7 },
     "proficiencyBonus": 2,
@@ -712,7 +712,7 @@
     ]
   },
   {
-    "id": "dndsheets:giant_eagle", "name": "content.dndsheets.monster.giant_eagle", "type": "beast", "size": "large", "flies": true, "baseEntity": "minecraft:parrot", "appearance": { "model": "bird", "variant": "eagle" },
+    "id": "dndsheets:giant_eagle", "name": "content.dndsheets.monster.giant_eagle", "type": "beast", "size": "large", "flies": true, "baseEntity": "minecraft:parrot", "appearance": { "model": "eagle", "variant": "eagle" },
     "ac": 13, "hp": 26,
     "abilities": { "str": 16, "dex": 17, "con": 13, "int": 8, "wis": 14, "cha": 10 },
     "proficiencyBonus": 2,
@@ -2376,7 +2376,7 @@
     ]
   },
   {
-    "id": "dndsheets:earth_elemental", "name": "content.dndsheets.monster.earth_elemental", "type": "elemental", "size": "large", "baseEntity": "minecraft:iron_golem", "appearance": { "model": "golem", "variant": "earth_elemental" },
+    "id": "dndsheets:earth_elemental", "name": "content.dndsheets.monster.earth_elemental", "type": "elemental", "size": "large", "baseEntity": "minecraft:iron_golem", "appearance": { "model": "earth_golem", "variant": "earth_golem" },
     "ac": 17, "hp": 126,
     "abilities": { "str": 20, "dex": 8, "con": 20, "int": 5, "wis": 10, "cha": 5 },
     "proficiencyBonus": 3,
@@ -2630,7 +2630,7 @@
     ]
   },
   {
-    "id": "dndsheets:hill_giant", "name": "content.dndsheets.monster.hill_giant", "type": "giant", "size": "huge", "multiattack": 2, "baseEntity": "minecraft:iron_golem", "appearance": { "model": "brute", "variant": "hill_giant" },
+    "id": "dndsheets:hill_giant", "name": "content.dndsheets.monster.hill_giant", "type": "giant", "size": "huge", "multiattack": 2, "baseEntity": "minecraft:iron_golem", "appearance": { "model": "ogre", "variant": "ogre" },
     "ac": 13, "hp": 105,
     "abilities": { "str": 21, "dex": 8, "con": 19, "int": 5, "wis": 9, "cha": 6 },
     "proficiencyBonus": 3,
@@ -3213,7 +3213,7 @@
     ]
   },
   {
-    "id": "dndsheets:werebear_bear", "name": "content.dndsheets.monster.werebear_bear", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:polar_bear",
+    "id": "dndsheets:werebear_bear", "name": "content.dndsheets.monster.werebear_bear", "type": "humanoid", "size": "medium", "baseEntity": "minecraft:polar_bear", "appearance": { "model": "bear", "variant": "bear" },
     "ac": 11, "hp": 135,
     "abilities": { "str": 19, "dex": 10, "con": 17, "int": 11, "wis": 12, "cha": 12 },
     "proficiencyBonus": 3,

@@ -32,9 +32,10 @@ from mobkit import pack, Cube as PackCube
 # name -> Sketchfab uid, cache folder, fallback body plan for clips the source lacks, bone renames (source -> ours).
 # Scale: the source's size against the Medium creature our size categories scale from (written to creatures/scales.json,
 # applied by MonsterModelRenderer). Evaluated and left out (reference/creature-model-survey.md): "Succubus Boss for Model
-# Engine" (effect props floating around a T-pose), "Ghasklle" (loose fragments), "Golem" by bada9889 (modelled facing
-# sideways, no monster fits), "Realistic Dragon Minecraft" and "Fire dragon minecraft" (broken scale / the dragon
-# archetype covers them), "T-rex Minecraft" and "Minecraft Bat" (merged OBJ/FBX meshes, not cubes).
+# Engine" (effect props floating around a T-pose), "Ghasklle" (loose fragments), "Golem" by bada9889 (no monster fits),
+# "Realistic Dragon Minecraft" and "Fire dragon minecraft" (the dragon archetype covers them), "T-rex Minecraft",
+# "Minecraft Bat" and "The Lich (Blockbench)" (triangulated OBJ/FBX meshes, not cubes), "Minecraft Centaur" (one
+# merged block) and "Centaur // Satyr" (no horse body in the export).
 IMPORTS = {
     'kraken': dict(uid='995973df0f0e47a7bde5603500bd4027', dir='pixel_kraken', scale=0.6),
     'drake': dict(uid='021865367838492a9839c64c6f3cb984', dir='leathern_drake_blockbench', scale=0.4),
@@ -48,6 +49,12 @@ IMPORTS = {
     'lion': dict(uid='a072e49ead7e4cc49eba840c0f3b2cfe', dir='tri_lion', scale=0.6),
     'minotaur': dict(uid='60e3f514f5e34c4086d0e7422d9f3099', dir='tri_minotaur', scale=0.4),
     'mummy': dict(uid='2bd48b1ca610462dbb9d8ee121949c48', dir='tri_mummy', scale=1.0),
+    # Recovered once the converter stopped applying Sketchfab's display orientation, handled gimbal lock and nested scale.
+    'ogre': dict(uid='85471a1dd86d4dac962ff58fc43a69ab', dir='tri_giant', scale=0.45),
+    'troll': dict(uid='e7e5c3201f4841f0ba989120292ac6cb', dir='tri_troll', scale=0.45),
+    'bear': dict(uid='452b6a429f08481db25be36395741dce', dir='tri_bear', scale=0.8),
+    'eagle': dict(uid='ca159e950d784d8d8075cefbb2664f3d', dir='tri_eagle', scale=0.3),
+    'earth_golem': dict(uid='d3ab72e33146440d937c688dba463f77', dir='tri_stone_golem', scale=1.0),
 }
 
 CLIP_KEYS = [('death', r'death|die|dead'), ('hurt', r'hurt|damage|hit_?react'), ('attack', r'attack|bite|swing|slash|strike|melee|breath'),
@@ -150,6 +157,10 @@ def quat(q):
 def euler_zyx(R):
     """R = Rz(z) Ry(y) Rx(x), degrees (Blockbench / GeckoLib order)."""
     y = math.degrees(math.asin(max(-1.0, min(1.0, -R[2, 0]))))
+    if math.hypot(R[2, 1], R[2, 2]) < 1e-6:
+        # Gimbal lock (Y = +-90, common in Blockbench): X and Z turn about the same axis, so X takes 0 and Z all of it.
+        # The general formulas would read atan2(0, 0) and drop the rotation (a kraken's tentacles came out straight).
+        return np.array([0.0, y, math.degrees(math.atan2(-R[0, 1], R[1, 1]))])
     x = math.degrees(math.atan2(R[2, 1], R[2, 2]))
     z = math.degrees(math.atan2(R[1, 0], R[0, 0]))
     return np.array([x, y, z])
@@ -182,19 +193,11 @@ def convert(gl, rename, units=1.0):
     g = gl.g
     nodes = g['nodes']
     top = content_root(g)
-    frame = np.eye(4)  # wrappers above the content: axis swaps that cancel out, or a real frame to undo
-    parents = {c: i for i, n in enumerate(nodes) for c in n.get('children', [])}
-    i = top
-    chain = []
-    while i is not None:
-        chain.append(i)
-        i = parents.get(i)
-    for i in reversed(chain):
-        frame = frame @ local_matrix(nodes[i])
-    F = frame[:3, :3]
-    scale = np.cbrt(abs(np.linalg.det(F))) or 1.0
-    F = F / scale
-    scale *= units
+    # Everything above the content root is Sketchfab's: its Z-up wrapper and the author's DISPLAY orientation and scale
+    # (an orc turned 180 degrees for the viewer). The content below is Blockbench's own export, in editor space, which
+    # is what we want: none of the wrappers is applied.
+    F = np.eye(3)
+    scale = units
 
     bones, cubes, names = [], [], {}
     rest = {}
@@ -206,12 +209,16 @@ def convert(gl, rename, units=1.0):
             name, k = '%s%d' % (base, k), k + 1
         return name
 
-    def walk(i, bone, origin):
+    def walk(i, bone, origin, s=1.0):
         n = nodes[i]
         M = local_matrix(n)
-        t = F @ (M[:3, 3] * scale)
-        R = F @ M[:3, :3] @ F.T
+        # A uniform scale inside the content (an FBX-converted export carries a 0.01 node) scales everything below it;
+        # bones and cubes then keep only the rotation.
+        own = float(np.cbrt(abs(np.linalg.det(M[:3, :3])))) or 1.0
+        t = F @ (M[:3, 3] * scale * s)
+        R = F @ (M[:3, :3] / own) @ F.T
         pos = origin + t
+        s *= own
         if is_cube(g, i):
             verts, faces = [], []
             meshes = [n['mesh']] if 'mesh' in n else [nodes[k]['mesh'] for k in n.get('children', [])]
@@ -219,7 +226,7 @@ def convert(gl, rename, units=1.0):
             for mesh, L in zip(meshes, locals_):
                 for p in g['meshes'][mesh]['primitives']:
                     P = gl.accessor(p['attributes']['POSITION'])
-                    P = (F @ (((L[:3, :3] @ P.T).T + L[:3, 3]) * scale).T).T
+                    P = (F @ (((L[:3, :3] @ P.T).T + L[:3, 3]) * scale * s).T).T
                     uv = gl.accessor(p['attributes']['TEXCOORD_0']) if 'TEXCOORD_0' in p['attributes'] else None
                     idx = gl.accessor(p['indices'])[:, 0].astype(int) if 'indices' in p else np.arange(len(P))
                     img = gl.material_image(p.get('material'))
@@ -235,7 +242,7 @@ def convert(gl, rename, units=1.0):
         bones.append(dict(name=name, parent=bone, pivot=pos, rot=euler_zyx(R)))
         rest[i] = (name, M)
         for c in n.get('children', []):
-            walk(c, name, pos)
+            walk(c, name, pos, s)
 
     bones.append(dict(name='root', parent=None, pivot=np.zeros(3), rot=np.zeros(3)))
     names[top] = 'root'
@@ -385,9 +392,16 @@ def clips(gl, rest, F, scale, plan, bone_names, use_source=True):
                     frames[round(float(t), 3)] = [round(float(x), 3) for x in v]
             bones.setdefault(bone, {})[path if path != 'translation' else 'position'] = {('%g' % t): f for t, f in sorted(frames.items())}
         if bones:
+            if key in ('idle', 'fly'):
+                # Authors' loops often stop a frame short of their start; close them so the wrap does not jerk.
+                end = '%g' % round(length, 3)
+                for chans in bones.values():
+                    for frames in chans.values():
+                        if frames:
+                            frames[end] = frames[min(frames, key=float)]
             found[key] = {'animation_length': round(length, 3), 'loop': True if key in ('idle', 'fly') else 'hold_on_last_frame', 'bones': bones}
     from_source = sorted(found)
-    base = B.ghost_anims() if plan == 'ghost' else B.generic_anims()
+    base = B.ghost_anims() if plan == 'ghost' else B.generic_anims(bone_names)
     for k, a in base.items():
         found.setdefault(k, dict(a, bones={b: ch for b, ch in a['bones'].items() if b in bone_names}))
     return found, from_source

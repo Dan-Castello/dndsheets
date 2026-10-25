@@ -4,6 +4,8 @@ as render.py. Errors exit 1; warnings only print.
   python tools/blockbench/mobs/lint.py [archetype ...] [--no-mcp] [--self-test]
 
 Gates
+- animations: idle, attack, hurt and death exist (and fly when a monster using the model flies), each touches bones the
+  model has and moves them visibly.
 - mcp: bbmodel_validate on the .bbmodel (outliner, degenerate, floating, interpenetration, mirror). Its errors fail;
   its warnings print unless accepted in archetypes.ACCEPTED.
 - keyframes: every animated bone exists; no key outside 0..animation_length.
@@ -47,6 +49,13 @@ def gap(a, b):
     return float(np.linalg.norm(d))
 
 
+def local_gap(parent_matrix, child_ws, parent_ws):
+    """Gap between a part and its parent measured in the parent's own frame: rigid motion of both reads as zero."""
+    inv = np.linalg.inv(parent_matrix)
+    to_p = lambda ws: [aabb((inv @ np.c_[w, np.ones(len(w))].T).T[:, :3]) for w in ws]
+    return nearest(to_p(child_ws), to_p(parent_ws))
+
+
 def times(length):
     n = max(1, int(round(length * RATE)))
     return [length * i / n for i in range(n + 1)]
@@ -75,6 +84,11 @@ def check_animations(model, rep):
     ground = min(w[:, 1].min() for _, _, w in rest)
     rest_boxes = boxes_by_bone(model)
     attached = [b for b in rest_boxes if solid_parent(model, b) and nearest(rest_boxes[b], rest_boxes[solid_parent(model, b)]) <= 0.01]
+    rest_mats = R.bone_matrices(model)
+    rest_local = {}
+    for bone, _, w in rest:
+        rest_local.setdefault(bone, []).append(w)
+    rest_gap = {b: local_gap(rest_mats[solid_parent(model, b)], rest_local[b], rest_local[solid_parent(model, b)]) for b in attached}
     for name, a in model.animations.items():
         length = float(a.get('animation_length', 0))
         for bone, chans in a['bones'].items():
@@ -102,11 +116,15 @@ def check_animations(model, rep):
                 sink = ground - w[:, 1].min()
                 if sink > worst:
                     worst, worst_t, worst_bone = sink, t, bone
-            boxes = {}
+            # Measured in the parent's own frame: a turn of the whole body moves both rigidly and must read as zero
+            # (world-axis boxes grow when they rotate, which once flagged a spider for turning its head).
+            mats = R.bone_matrices(model, name, t)
+            local = {}
             for bone, _, w in posed:
-                boxes.setdefault(bone, []).append(aabb(w))
+                local.setdefault(bone, []).append(w)
             for b in attached:
-                g = nearest(boxes[b], boxes[solid_parent(model, b)])
+                p = solid_parent(model, b)
+                g = local_gap(mats[p], local[b], local[p]) - rest_gap[b]
                 if g > drift.get(b, (0, 0))[0]:
                     drift[b] = (g, t)
         if worst > allowed:
@@ -123,7 +141,7 @@ def check_z_fighting(model, rep):
     for name, b in model.bones.items():
         M = mats[name]
         for i, c in enumerate(b['cubes']):
-            cubes.append(('%s#%d' % (name, i), M, c))
+            cubes.append(('%s#%d' % (name, i), M @ c['local'], c))  # with the cube's own rotation
     for (na, Ma, ca), (nb, Mb, cb) in itertools.combinations(cubes, 2):
         if not np.allclose(Ma[:3, :3], Mb[:3, :3], atol=1e-4):
             continue
@@ -142,6 +160,39 @@ def check_z_fighting(model, rep):
                 if abs(pa - pb) < 1e-3:
                     # An imported model's are the source's own geometry: reported, not "fixed" by reshaping their art.
                     (rep.warn if model.pngs else rep.error)('z_fighting', '%s and %s share their %s%s face plane' % (na, nb, side, 'xyz'[ax]))
+
+
+REQUIRED_CLIPS = ('idle', 'attack', 'hurt', 'death')  # what MonsterModelEntity plays; 'fly' too when a user flies
+MIN_MOTION = 0.5  # model units: below this a clip reads as a still frame
+
+
+def flying_users():
+    """Models some monster of monsters.json flies with (they play 'fly' instead of 'idle')."""
+    path = os.path.join(R.REPO, 'src', 'main', 'resources', 'dndsheets', 'defaults', 'monsters.json')
+    out = set()
+    for m in json.load(open(path, encoding='utf-8')):
+        look = m.get('appearance') or {}
+        if look.get('model') and m.get('flies'):
+            out.add(look['model'])
+    return out
+
+
+def check_clips(model, rep, flies):
+    """Every clip the entity can ask for exists, touches bones this model has, and visibly moves them."""
+    for clip in REQUIRED_CLIPS + (('fly',) if flies else ()):
+        a = model.animations.get(clip)
+        if a is None:
+            rep.error('animations', '%s is missing: the creature would freeze when it is played' % clip)
+            continue
+        if not any(b in model.bones for b in a['bones']):
+            rep.error('animations', '%s animates no bone of this model (its bones: %s)' % (clip, ', '.join(list(model.bones)[:6])))
+            continue
+        rest = [w for _, _, w in R.posed_cubes(model)]
+        length = float(a.get('animation_length', 1.0))
+        moved = max(float(np.abs(w - w0).max()) for t in np.linspace(0, length, 9)
+                    for (_, _, w), w0 in zip(R.posed_cubes(model, clip, t), rest))
+        if moved < MIN_MOTION:
+            rep.error('animations', '%s barely moves (%.2f units at most)' % (clip, moved))
 
 
 def check_palettes(model, rep):
@@ -202,9 +253,13 @@ def check_mcp(name, rep, client, accepted, self_test=False):
                 rep.warn('mcp/self_test', 'gate %s does not discriminate on this model' % st.get('gate'))
 
 
+FLYING = flying_users()
+
+
 def lint(name, client=None, accepted=(), self_test=False, model=None):
     model = model or R.Model(name)
     rep = Report(name)
+    check_clips(model, rep, name in FLYING)
     check_animations(model, rep)
     check_z_fighting(model, rep)
     check_palettes(model, rep)
@@ -212,6 +267,12 @@ def lint(name, client=None, accepted=(), self_test=False, model=None):
     if client:
         check_mcp(name, rep, client, accepted, self_test)
     return rep
+
+
+def _mutated(base, mutate):
+    m = copy.deepcopy(base)
+    mutate(m)
+    return m
 
 
 def planted_defects(name):
@@ -249,6 +310,15 @@ def planted_defects(name):
         c = m.bones[bone]['cubes'][0]
         m.bones[bone]['cubes'].append(dict(c, size=c['size'] * np.array([1, 0.5, 1])))
 
+    def drop_clip(m):
+        m.animations.pop('hurt', None)
+
+    def frozen_clip(m):
+        m.animations['attack'] = {'animation_length': 0.5, 'bones': {bone: {'rotation': {'0': [0, 0, 0], '0.5': [0, 0.1, 0]}}}}
+
+    caught('animations', drop_clip)
+    results.append(('animations/frozen', any(e.startswith('animations') and 'barely moves' in e
+                                             for e in lint(name, model=_mutated(base, frozen_clip)).errors)))
     caught('keyframes', late_key)
     caught('loop_seam', open_loop)
     caught('ground_sink', sink)
@@ -282,7 +352,9 @@ def main(argv):
                 print('   warn ', w)
             failed |= bool(rep.errors)
             if self_test and name == names[0]:
-                for gate, ok in planted_defects(name):
+                # The planted defects need a model of our own: on an imported one three gates only warn.
+                own = next(n for n in R.all_models() if not R.Model(n).pngs)
+                for gate, ok in planted_defects(own):
                     print('   self-test %-12s %s' % (gate, 'caught' if ok else 'MISSED'))
                     failed |= not ok
     finally:

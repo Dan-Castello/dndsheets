@@ -325,7 +325,7 @@ def animations(plan, geo):
     if plan == 'ghost':
         anims = B.ghost_anims()
     elif plan == 'generic':
-        anims = B.generic_anims()
+        anims = B.generic_anims(bones)
     else:
         raise ValueError(plan)
     return {k: dict(a, bones={b: ch for b, ch in a['bones'].items() if b in bones}) for k, a in anims.items()}
