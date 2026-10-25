@@ -1,0 +1,1 @@
+validar que se haya instalado correctamente el plugin https://github.com/jasonjgardner/blockbench-mcp-plugin y sea posible la conexion con blockbench
