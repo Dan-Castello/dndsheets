@@ -1,0 +1,171 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M5T4YRJ9M54B4D1H2VM6X57G",
+  "session_id": "e25a6d8e-74d5-4dc4-ba43-23e65275bb65",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-25T18:25:27.8889658Z",
+  "branch": "main",
+  "checkpoints_count": 4,
+  "save_step_count": 5,
+  "files_touched": [
+    "CHANGELOG.md",
+    "CREDITS.md",
+    "PROJECT_CONTEXT.md",
+    "reference/creature-model-survey.md",
+    "src/main/java/net/hawthorn/dndsheets/client/MonsterModelRenderer.java",
+    "src/main/resources/assets/dndsheets/CREDITS.txt",
+    "src/main/resources/assets/dndsheets/animations/entity/bear.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/blue_shark.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/brood_mother.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/crocodile.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/crone.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/drake.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/eagle.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/earth_golem.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/kraken.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/lion.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/minotaur.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/mummy.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/necromancer.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/ogre.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/orc.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/rat.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/rattlesnake.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/redstone_golem.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/scorpion.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/troll.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/warlock.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/web_spider.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/werewolf.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/whisperer.animation.json",
+    "src/main/resources/assets/dndsheets/creatures/scales.json",
+    "src/main/resources/assets/dndsheets/geo/entity/bear.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/blue_shark.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/drake.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/eagle.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/earth_golem.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/kraken.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/minotaur.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/ogre.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/orc.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/scorpion.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/troll.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/werewolf.geo.json",
+    "src/main/resources/assets/dndsheets/textures/entity/bear/bear.png",
+    "src/main/resources/assets/dndsheets/textures/entity/drake/drake.png",
+    "src/main/resources/assets/dndsheets/textures/entity/eagle/eagle.png",
+    "src/main/resources/assets/dndsheets/textures/entity/earth_golem/earth_golem.png",
+    "src/main/resources/assets/dndsheets/textures/entity/minotaur/minotaur.png",
+    "src/main/resources/assets/dndsheets/textures/entity/ogre/ogre.png",
+    "src/main/resources/assets/dndsheets/textures/entity/orc/orc.png",
+    "src/main/resources/assets/dndsheets/textures/entity/troll/troll.png",
+    "src/main/resources/assets/dndsheets/textures/entity/werewolf/werewolf.png",
+    "src/main/resources/dndsheets/defaults/monsters.json",
+    "src/test/java/net/hawthorn/dndsheets/JsonContentSelfTest.java",
+    "tools/blockbench/import/gltf.py",
+    "tools/blockbench/import/javamodel.py",
+    "tools/blockbench/mobs/bodies.py",
+    "tools/blockbench/mobs/lint.py",
+    "tools/blockbench/mobs/render.py",
+    "tools/models_survey/survey.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "75f742409f1b",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 732,
+    "cache_creation_tokens": 1106854,
+    "cache_read_tokens": 136853550,
+    "output_tokens": 507178,
+    "api_call_count": 358,
+    "subagent_tokens": {
+      "input_tokens": 0,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 0,
+      "output_tokens": 0,
+      "api_call_count": 0
+    }
+  },
+  "session_metrics": {
+    "turn_count": 26
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-25T18:25:27.0118064Z",
+    "agent_lines": 21279,
+    "agent_removed": 4591,
+    "human_added": 831,
+    "human_modified": 81,
+    "human_removed": 0,
+    "total_committed": 22164,
+    "total_lines_changed": 26782,
+    "agent_percentage": 96.59472780225525,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 2,
+      "user_lines_removed": 0,
+      "agent_lines_added": 30212,
+      "agent_lines_removed": 15610,
+      "user_added_per_file": {
+        "dungeongen/donjon.json": 1,
+        "dungeongen/dungeon-map.dd2vtt": 1
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 304,
+      "user_lines_removed": 27,
+      "agent_lines_added": 33026,
+      "agent_lines_removed": 15748,
+      "user_added_per_file": {
+        "dungeongen/donjon.json": 1,
+        "dungeongen/dungeon-map.dd2vtt": 1,
+        "src/main/resources/assets/dndsheets/animations/entity/bear.animation.json": 71,
+        "src/main/resources/assets/dndsheets/animations/entity/eagle.animation.json": 120,
+        "src/main/resources/assets/dndsheets/animations/entity/earth_golem.animation.json": 23,
+        "src/main/resources/assets/dndsheets/animations/entity/ogre.animation.json": 23,
+        "src/main/resources/assets/dndsheets/animations/entity/troll.animation.json": 65
+      },
+      "user_removed_per_file": {
+        "src/main/resources/assets/dndsheets/animations/entity/bear.animation.json": 7,
+        "src/main/resources/assets/dndsheets/animations/entity/eagle.animation.json": 7,
+        "src/main/resources/assets/dndsheets/animations/entity/earth_golem.animation.json": 6,
+        "src/main/resources/assets/dndsheets/animations/entity/ogre.animation.json": 6,
+        "src/main/resources/assets/dndsheets/animations/entity/troll.animation.json": 1
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 304,
+      "user_lines_removed": 27,
+      "agent_lines_added": 33036,
+      "agent_lines_removed": 15749,
+      "user_added_per_file": {
+        "dungeongen/donjon.json": 1,
+        "dungeongen/dungeon-map.dd2vtt": 1,
+        "src/main/resources/assets/dndsheets/animations/entity/bear.animation.json": 71,
+        "src/main/resources/assets/dndsheets/animations/entity/eagle.animation.json": 120,
+        "src/main/resources/assets/dndsheets/animations/entity/earth_golem.animation.json": 23,
+        "src/main/resources/assets/dndsheets/animations/entity/ogre.animation.json": 23,
+        "src/main/resources/assets/dndsheets/animations/entity/troll.animation.json": 65
+      },
+      "user_removed_per_file": {
+        "src/main/resources/assets/dndsheets/animations/entity/bear.animation.json": 7,
+        "src/main/resources/assets/dndsheets/animations/entity/eagle.animation.json": 7,
+        "src/main/resources/assets/dndsheets/animations/entity/earth_golem.animation.json": 6,
+        "src/main/resources/assets/dndsheets/animations/entity/ogre.animation.json": 6,
+        "src/main/resources/assets/dndsheets/animations/entity/troll.animation.json": 1
+      }
+    }
+  ]
+}
