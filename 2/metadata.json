@@ -1,0 +1,292 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M5T2EQ7AM2GE2X031PPBMC04",
+  "session_id": "e25a6d8e-74d5-4dc4-ba43-23e65275bb65",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-25T17:41:50.5715452Z",
+  "branch": "main",
+  "checkpoints_count": 11,
+  "save_step_count": 12,
+  "files_touched": [
+    "CHANGELOG.md",
+    "CREDITS.md",
+    "PROJECT_CONTEXT.md",
+    "reference/creature-model-survey.json",
+    "reference/creature-model-survey.md",
+    "src/main/java/net/hawthorn/dndsheets/client/MonsterModelRenderer.java",
+    "src/main/java/net/hawthorn/dndsheets/client/MonsterTextures.java",
+    "src/main/resources/assets/dndsheets/CREDITS.txt",
+    "src/main/resources/assets/dndsheets/animations/entity/blue_shark.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/brood_mother.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/crocodile.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/crone.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/drake.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/kraken.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/lion.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/minotaur.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/mummy.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/necromancer.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/orc.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/rat.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/rattlesnake.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/redstone_golem.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/scorpion.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/specter.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/warlock.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/web_spider.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/werewolf.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/whisperer.animation.json",
+    "src/main/resources/assets/dndsheets/animations/entity/wraith.animation.json",
+    "src/main/resources/assets/dndsheets/creatures/scales.json",
+    "src/main/resources/assets/dndsheets/geo/entity/blue_shark.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/brood_mother.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/crocodile.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/crone.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/drake.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/kraken.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/lion.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/minotaur.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/mummy.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/necromancer.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/orc.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/rat.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/rattlesnake.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/redstone_golem.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/scorpion.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/specter.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/warlock.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/web_spider.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/werewolf.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/whisperer.geo.json",
+    "src/main/resources/assets/dndsheets/geo/entity/wraith.geo.json",
+    "src/main/resources/assets/dndsheets/textures/entity/blue_shark/blue_shark.png",
+    "src/main/resources/assets/dndsheets/textures/entity/brood_mother/brood_mother.png",
+    "src/main/resources/assets/dndsheets/textures/entity/crocodile/crocodile.png",
+    "src/main/resources/assets/dndsheets/textures/entity/crone/crone.png",
+    "src/main/resources/assets/dndsheets/textures/entity/drake/drake.png",
+    "src/main/resources/assets/dndsheets/textures/entity/kraken/kraken.png",
+    "src/main/resources/assets/dndsheets/textures/entity/lion/lion.png",
+    "src/main/resources/assets/dndsheets/textures/entity/minotaur/minotaur.png",
+    "src/main/resources/assets/dndsheets/textures/entity/mummy/mummy.png",
+    "src/main/resources/assets/dndsheets/textures/entity/necromancer/drowned.png",
+    "src/main/resources/assets/dndsheets/textures/entity/necromancer/frost.png",
+    "src/main/resources/assets/dndsheets/textures/entity/necromancer/mossy.png",
+    "src/main/resources/assets/dndsheets/textures/entity/necromancer/necromancer.png",
+    "src/main/resources/assets/dndsheets/textures/entity/orc/orc.png",
+    "src/main/resources/assets/dndsheets/textures/entity/rat/rat.png",
+    "src/main/resources/assets/dndsheets/textures/entity/rattlesnake/rattlesnake.png",
+    "src/main/resources/assets/dndsheets/textures/entity/redstone_golem/redstone_golem.png",
+    "src/main/resources/assets/dndsheets/textures/entity/scorpion/scorpion.png",
+    "src/main/resources/assets/dndsheets/textures/entity/specter/specter.png",
+    "src/main/resources/assets/dndsheets/textures/entity/warlock/warlock.png",
+    "src/main/resources/assets/dndsheets/textures/entity/web_spider/web_spider.png",
+    "src/main/resources/assets/dndsheets/textures/entity/werewolf/werewolf.png",
+    "src/main/resources/assets/dndsheets/textures/entity/whisperer/whisperer.png",
+    "src/main/resources/assets/dndsheets/textures/entity/wraith/border.png",
+    "src/main/resources/assets/dndsheets/textures/entity/wraith/muck.png",
+    "src/main/resources/assets/dndsheets/textures/entity/wraith/wraith.png",
+    "src/main/resources/dndsheets/defaults/monsters.json",
+    "src/test/java/net/hawthorn/dndsheets/JsonContentSelfTest.java",
+    "tools/blockbench/import/gltf.py",
+    "tools/blockbench/import/javamodel.py",
+    "tools/blockbench/mobs/bodies.py",
+    "tools/blockbench/mobs/lint.py",
+    "tools/blockbench/mobs/render.py",
+    "tools/models_survey/survey.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "8a14e5efc05f",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 630,
+    "cache_creation_tokens": 1014974,
+    "cache_read_tokens": 101522664,
+    "output_tokens": 446747,
+    "api_call_count": 307,
+    "subagent_tokens": {
+      "input_tokens": 0,
+      "cache_creation_tokens": 0,
+      "cache_read_tokens": 0,
+      "output_tokens": 0,
+      "api_call_count": 0
+    }
+  },
+  "session_metrics": {
+    "turn_count": 22
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-25T17:41:49.8422233Z",
+    "agent_lines": 0,
+    "agent_removed": 57,
+    "human_added": 75881,
+    "human_modified": 11127,
+    "human_removed": 0,
+    "total_committed": 75881,
+    "total_lines_changed": 87065,
+    "agent_percentage": 0.06546832826049502,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 15351,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3674,
+      "agent_lines_removed": 25,
+      "user_added_per_file": {
+        "reference/creature-model-survey.json": 15214,
+        "reference/creature-model-survey.md": 137
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 15351,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3674,
+      "agent_lines_removed": 25,
+      "user_added_per_file": {
+        "reference/creature-model-survey.json": 15214,
+        "reference/creature-model-survey.md": 137
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 11262,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3720,
+      "agent_lines_removed": 25,
+      "user_added_per_file": {
+        "reference/creature-model-survey.json": 11106,
+        "reference/creature-model-survey.md": 156
+      }
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 11262,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3724,
+      "agent_lines_removed": 25,
+      "user_added_per_file": {
+        "reference/creature-model-survey.json": 11106,
+        "reference/creature-model-survey.md": 156
+      }
+    },
+    {
+      "checkpoint_number": 7,
+      "user_lines_added": 11262,
+      "user_lines_removed": 0,
+      "agent_lines_added": 3724,
+      "agent_lines_removed": 25,
+      "user_added_per_file": {
+        "reference/creature-model-survey.json": 11106,
+        "reference/creature-model-survey.md": 156
+      }
+    },
+    {
+      "checkpoint_number": 8,
+      "user_lines_added": 11268,
+      "user_lines_removed": 0,
+      "agent_lines_added": 6041,
+      "agent_lines_removed": 32,
+      "user_added_per_file": {
+        "reference/creature-model-survey.json": 11106,
+        "reference/creature-model-survey.md": 162
+      }
+    },
+    {
+      "checkpoint_number": 9,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 10,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 38299,
+      "agent_lines_removed": 42
+    },
+    {
+      "checkpoint_number": 11,
+      "user_lines_added": 4,
+      "user_lines_removed": 4,
+      "agent_lines_added": 38322,
+      "agent_lines_removed": 42,
+      "user_added_per_file": {
+        "reference/creature-model-survey.md": 1,
+        "tools/blockbench/import/gltf.py": 2,
+        "tools/models_survey/survey.py": 1
+      },
+      "user_removed_per_file": {
+        "reference/creature-model-survey.md": 1,
+        "tools/blockbench/import/gltf.py": 2,
+        "tools/models_survey/survey.py": 1
+      }
+    },
+    {
+      "checkpoint_number": 12,
+      "user_lines_added": 47567,
+      "user_lines_removed": 5,
+      "agent_lines_added": 55693,
+      "agent_lines_removed": 42,
+      "user_added_per_file": {
+        "reference/creature-model-survey.md": 1,
+        "src/main/resources/assets/dndsheets/CREDITS.txt": 36,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_bear.animation.json": 197,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_centaur.animation.json": 110,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_centaur2.animation.json": 197,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_crocodile.animation.json": 110,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_eagle.animation.json": 8947,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_giant.animation.json": 454,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_golden_golem.animation.json": 110,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_infected_bear.animation.json": 397,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_lion.animation.json": 197,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_minotaur.animation.json": 181,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_mummy.animation.json": 197,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_rat.animation.json": 146,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_scorpion.animation.json": 110,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_scorpion2.animation.json": 110,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_snake.animation.json": 410,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_stone_golem.animation.json": 874,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_troll.animation.json": 110,
+        "src/main/resources/assets/dndsheets/animations/entity/tri_werewolf.animation.json": 13698,
+        "src/main/resources/assets/dndsheets/creatures/scales.json": 21,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_bear.geo.json": 300,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_centaur.geo.json": 47,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_centaur2.geo.json": 950,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_crocodile.geo.json": 579,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_eagle.geo.json": 1285,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_giant.geo.json": 1083,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_golden_golem.geo.json": 449,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_infected_bear.geo.json": 1083,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_lion.geo.json": 388,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_minotaur.geo.json": 616,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_mummy.geo.json": 368,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_rat.geo.json": 140,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_scorpion.geo.json": 1291,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_scorpion2.geo.json": 2087,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_snake.geo.json": 764,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_stone_golem.geo.json": 553,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_troll.geo.json": 604,
+        "src/main/resources/assets/dndsheets/geo/entity/tri_werewolf.geo.json": 8364,
+        "tools/blockbench/import/gltf.py": 2,
+        "tools/models_survey/survey.py": 1
+      },
+      "user_removed_per_file": {
+        "reference/creature-model-survey.md": 1,
+        "src/main/resources/assets/dndsheets/creatures/scales.json": 1,
+        "tools/blockbench/import/gltf.py": 2,
+        "tools/models_survey/survey.py": 1
+      }
+    }
+  ]
+}
