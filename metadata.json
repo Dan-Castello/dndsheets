@@ -3,14 +3,58 @@
   "checkpoint_id": "01M5SVYQKKQS6CDQ0TZRS6NAPG",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 1,
+  "checkpoints_count": 17,
   "files_touched": [
     "CHANGELOG.md",
+    "DESIGN.md",
+    "PROJECT_CONTEXT.md",
+    "src/main/java/net/hawthorn/dndsheets/CombatManager.java",
+    "src/main/java/net/hawthorn/dndsheets/Config.java",
+    "src/main/java/net/hawthorn/dndsheets/DndsheetsMod.java",
+    "src/main/java/net/hawthorn/dndsheets/ItemLook.java",
     "src/main/java/net/hawthorn/dndsheets/MonsterActionManager.java",
     "src/main/java/net/hawthorn/dndsheets/MonsterRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/SpellRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/TurnActionManager.java",
     "src/main/java/net/hawthorn/dndsheets/TurnManager.java",
+    "src/main/java/net/hawthorn/dndsheets/client/DiceRollOverlay.java",
     "src/main/java/net/hawthorn/dndsheets/client/ResourceHudOverlay.java",
-    "src/main/java/net/hawthorn/dndsheets/command/SpellCommand.java"
+    "src/main/java/net/hawthorn/dndsheets/client/gui/GrimoireScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/GuiStyle.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ListPickerScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/MonsterSpawnListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/PlayerSheetScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/SmallFormScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/components/TomeButton.java",
+    "src/main/java/net/hawthorn/dndsheets/command/SpellCommand.java",
+    "src/main/java/net/hawthorn/dndsheets/init/DndsheetsModCreativeTab.java",
+    "src/main/java/net/hawthorn/dndsheets/init/DndsheetsModKeyMappings.java",
+    "src/main/java/net/hawthorn/dndsheets/network/StaffBindMessage.java",
+    "src/main/resources/assets/dndsheets/lang/en_us.json",
+    "src/main/resources/assets/dndsheets/lang/es_ar.json",
+    "src/main/resources/assets/dndsheets/lang/es_cl.json",
+    "src/main/resources/assets/dndsheets/lang/es_ec.json",
+    "src/main/resources/assets/dndsheets/lang/es_es.json",
+    "src/main/resources/assets/dndsheets/lang/es_mx.json",
+    "src/main/resources/assets/dndsheets/lang/es_uy.json",
+    "src/main/resources/assets/dndsheets/lang/es_ve.json",
+    "src/main/resources/assets/dndsheets/models/item/staff.json",
+    "src/main/resources/assets/dndsheets/models/item/staff_charged.json",
+    "src/main/resources/assets/dndsheets/models/item/summon_card_filled.json",
+    "src/main/resources/assets/dndsheets/models/item/token.json",
+    "src/main/resources/assets/dndsheets/textures/item/staff_3d.png",
+    "src/main/resources/assets/dndsheets/textures/item/staff_3d_charged.png",
+    "src/main/resources/assets/dndsheets/textures/item/staff_charged.png",
+    "src/main/resources/assets/dndsheets/textures/item/summon_card_filled.png",
+    "src/test/java/net/hawthorn/dndsheets/JsonContentSelfTest.java",
+    "tools/blockbench/bbmcp.py",
+    "tools/blockbench/build_staff.py",
+    "tools/blockbench/flat.py",
+    "tools/blockbench/staff_3d.bbmodel",
+    "tools/blockbench/staff_3d.png",
+    "tools/blockbench/staff_3d_charged.bbmodel",
+    "tools/blockbench/staff_3d_charged.png",
+    "tools/generate_item_icons.py"
   ],
   "sessions": [
     {
@@ -19,13 +63,27 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": "/0/prompt.txt"
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": "/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 688,
-    "cache_creation_tokens": 4221544,
-    "cache_read_tokens": 163349875,
-    "output_tokens": 433014,
-    "api_call_count": 333
+    "input_tokens": 922,
+    "cache_creation_tokens": 4901039,
+    "cache_read_tokens": 186522376,
+    "output_tokens": 584531,
+    "api_call_count": 443,
+    "subagent_tokens": {
+      "input_tokens": 94,
+      "cache_creation_tokens": 486412,
+      "cache_read_tokens": 2145064,
+      "output_tokens": 49329,
+      "api_call_count": 47
+    }
   }
 }

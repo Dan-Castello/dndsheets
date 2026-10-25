@@ -1,0 +1,212 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M5SVYQKKQS6CDQ0TZRS6NAPG",
+  "session_id": "b1963bc7-cd21-4bc3-90cc-133f52bce434",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-25T15:48:11.3603394Z",
+  "branch": "main",
+  "checkpoints_count": 16,
+  "save_step_count": 14,
+  "files_touched": [
+    "DESIGN.md",
+    "PROJECT_CONTEXT.md",
+    "src/main/java/net/hawthorn/dndsheets/CombatManager.java",
+    "src/main/java/net/hawthorn/dndsheets/Config.java",
+    "src/main/java/net/hawthorn/dndsheets/DndsheetsMod.java",
+    "src/main/java/net/hawthorn/dndsheets/ItemLook.java",
+    "src/main/java/net/hawthorn/dndsheets/MonsterActionManager.java",
+    "src/main/java/net/hawthorn/dndsheets/MonsterRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/SpellRegistry.java",
+    "src/main/java/net/hawthorn/dndsheets/TurnActionManager.java",
+    "src/main/java/net/hawthorn/dndsheets/TurnManager.java",
+    "src/main/java/net/hawthorn/dndsheets/client/DiceRollOverlay.java",
+    "src/main/java/net/hawthorn/dndsheets/client/ResourceHudOverlay.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/GrimoireScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/GuiStyle.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ListPickerScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/MonsterSpawnListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/PlayerSheetScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/SmallFormScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/components/TomeButton.java",
+    "src/main/java/net/hawthorn/dndsheets/command/SpellCommand.java",
+    "src/main/java/net/hawthorn/dndsheets/init/DndsheetsModCreativeTab.java",
+    "src/main/java/net/hawthorn/dndsheets/init/DndsheetsModKeyMappings.java",
+    "src/main/java/net/hawthorn/dndsheets/network/StaffBindMessage.java",
+    "src/main/resources/assets/dndsheets/lang/en_us.json",
+    "src/main/resources/assets/dndsheets/lang/es_ar.json",
+    "src/main/resources/assets/dndsheets/lang/es_cl.json",
+    "src/main/resources/assets/dndsheets/lang/es_ec.json",
+    "src/main/resources/assets/dndsheets/lang/es_es.json",
+    "src/main/resources/assets/dndsheets/lang/es_mx.json",
+    "src/main/resources/assets/dndsheets/lang/es_uy.json",
+    "src/main/resources/assets/dndsheets/lang/es_ve.json",
+    "src/main/resources/assets/dndsheets/models/item/staff.json",
+    "src/main/resources/assets/dndsheets/models/item/staff_charged.json",
+    "src/main/resources/assets/dndsheets/models/item/summon_card_filled.json",
+    "src/main/resources/assets/dndsheets/models/item/token.json",
+    "src/main/resources/assets/dndsheets/textures/item/staff_3d.png",
+    "src/main/resources/assets/dndsheets/textures/item/staff_3d_charged.png",
+    "src/main/resources/assets/dndsheets/textures/item/staff_charged.png",
+    "src/main/resources/assets/dndsheets/textures/item/summon_card_filled.png",
+    "src/test/java/net/hawthorn/dndsheets/JsonContentSelfTest.java",
+    "tools/blockbench/bbmcp.py",
+    "tools/blockbench/build_staff.py",
+    "tools/blockbench/flat.py",
+    "tools/blockbench/staff_3d.bbmodel",
+    "tools/blockbench/staff_3d.png",
+    "tools/blockbench/staff_3d_charged.bbmodel",
+    "tools/blockbench/staff_3d_charged.png",
+    "tools/generate_item_icons.py"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-sonnet-5-5",
+  "turn_id": "7d297f75e10b",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 234,
+    "cache_creation_tokens": 679495,
+    "cache_read_tokens": 23172501,
+    "output_tokens": 151517,
+    "api_call_count": 110,
+    "subagent_tokens": {
+      "input_tokens": 94,
+      "cache_creation_tokens": 486412,
+      "cache_read_tokens": 2145064,
+      "output_tokens": 49329,
+      "api_call_count": 47
+    }
+  },
+  "session_metrics": {
+    "turn_count": 16
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-25T15:48:11.055441Z",
+    "agent_lines": 6424,
+    "agent_removed": 71,
+    "human_added": 199887,
+    "human_modified": 24430,
+    "human_removed": 0,
+    "total_committed": 230741,
+    "total_lines_changed": 231017,
+    "agent_percentage": 2.8114814061302846,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2303,
+      "agent_lines_removed": 2111
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2303,
+      "agent_lines_removed": 2111
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 22010,
+      "agent_lines_removed": 21674
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 22010,
+      "agent_lines_removed": 21674
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 22010,
+      "agent_lines_removed": 21674
+    },
+    {
+      "checkpoint_number": 7,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 22082,
+      "agent_lines_removed": 21674
+    },
+    {
+      "checkpoint_number": 8,
+      "user_lines_added": 8,
+      "user_lines_removed": 5,
+      "agent_lines_added": 22650,
+      "agent_lines_removed": 22170,
+      "user_added_per_file": {
+        "DESIGN.md": 8
+      },
+      "user_removed_per_file": {
+        "DESIGN.md": 5
+      }
+    },
+    {
+      "checkpoint_number": 9,
+      "user_lines_added": 8,
+      "user_lines_removed": 5,
+      "agent_lines_added": 22650,
+      "agent_lines_removed": 22170,
+      "user_added_per_file": {
+        "DESIGN.md": 8
+      },
+      "user_removed_per_file": {
+        "DESIGN.md": 5
+      }
+    },
+    {
+      "checkpoint_number": 10,
+      "user_lines_added": 8,
+      "user_lines_removed": 5,
+      "agent_lines_added": 22965,
+      "agent_lines_removed": 22404,
+      "user_added_per_file": {
+        "DESIGN.md": 8
+      },
+      "user_removed_per_file": {
+        "DESIGN.md": 5
+      }
+    },
+    {
+      "checkpoint_number": 11,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 22968,
+      "agent_lines_removed": 22404
+    },
+    {
+      "checkpoint_number": 12,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 22968,
+      "agent_lines_removed": 22404
+    },
+    {
+      "checkpoint_number": 13,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 32433,
+      "agent_lines_removed": 23027
+    },
+    {
+      "checkpoint_number": 14,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 32433,
+      "agent_lines_removed": 23027
+    }
+  ]
+}

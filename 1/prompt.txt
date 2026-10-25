@@ -1,0 +1,773 @@
+Problema detectado, se van agregando staff para lanzar hechizos, a este momento ya son demasiados y aun faltan más por agregar, no se ve viable, hace falta otro enfoque para poder gestionar los lanzamientos rapidos, ya existen mods de magia como iron spells que abordan este problema de distintas maneras mas eficientes, analizarlas y aplicar
+
+---
+
+<task-notification>
+<task-id>a5422517092f3fe7d</task-id>
+<tool-use-id>toolu_01HVArVpkcDm7NAjhYkxnYkS</tool-use-id>
+<output-file>C:\Users\DANCAS~1\AppData\Local\Temp\claude\C--Users-DanCastello-Documents-GitHub-dndsheets\b1963bc7-cd21-4bc3-90cc-133f52bce434\tasks\a5422517092f3fe7d.output</output-file>
+<status>completed</status>
+<summary>Agent "Investigar mods de magia" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result># Informe comparativo: lanzar muchos hechizos sin un item por hechizo
+
+Solo pude confirmar por búsqueda algunos datos de Ars Nouveau y de addons de Iron's. El resto (Iron's base, Electroblob's, Hex, Botania) es de memoria y no lo verifiqué. Las páginas oficiales de Iron's y de Electroblob's no salieron en las búsquedas.
+
+## Por mod
+
+**Iron's Spells 'n Spellbooks** (parcialmente verificado)
+- **Datos:** el spellbook guarda N slots, cada uno con id de hechizo y nivel, en el NBT del item. El jugador tiene un capability de maná y cooldowns. El scroll guarda un único hechizo.
+- **Selección:** hay una rueda radial con keybind. Además hay keybinds de quick-cast numerados, uno por slot. Un addon amplía esos quick-cast hasta 99, y otro añade una barra de 9 slots con HUD. Un tercero ([No More Spellsbook](https://www.curseforge.com/minecraft/mc-mods/no-more-spellsbook-irons-spells-addon)) instala los hechizos de scrolls en la rueda.
+- **Casteo:** el quick-cast lanza el hechizo con el libro equipado, sin cambiar el slot seleccionado. El clic derecho lanza el hechizo activo. Los tipos de cast son instantáneo, de carga (suelta para lanzar), continuo (mantén pulsado, consume maná por tick) y long cast. Los scrolls se lanzan con clic derecho y, según una guía, [sin consumir maná](https://www.minecraft-guides.com/mod-guides/irons-spells-and-spellbooks-how-to-add-spells-to-books/).
+- **Armas con hechizo fijo:** los staffs y las armas imbuidas llevan un hechizo en NBT y lo lanzan con clic derecho. No tienen selección.
+
+**Ars Nouveau** (verificado en [la guía de spell books](https://www.minecraft-guides.com/mod/ars-nouveau/wiki/spell-books/))
+- **Datos:** el libro guarda hasta 10 hechizos, cada uno como una lista de glifos con nombre. Se editan en una GUI de "craft".
+- **Selección:** la tecla V abre la rueda radial. Z y X pasan al hechizo anterior o siguiente. Un addon añade una keybind "Cast Slotted Spellbook" (R por defecto) y su propia rueda (G).
+- **Casteo:** hay que sostener el libro en la mano, y el clic derecho lanza el hechizo. El pergamino (parchment) guarda un hechizo para copiarlo o transferirlo, no para lanzarlo.
+
+**Electroblob's Wizardry** (de memoria)
+- **Datos:** la varita lleva en NBT una lista de hechizos, los "spell bindings", más las mejoras.
+- **Selección:** se cambia de hechizo con la rueda del ratón mientras se sostiene la varita, o con teclas. Los hechizos se aprenden de libros y scrolls.
+- **Casteo:** hay instantáneo, de carga y continuo. Los cooldowns se guardan por varita, lo que permite explotar el sistema (esto sí aparece en una reseña).
+
+**Hex Casting** (de memoria)
+- **Datos:** el hechizo es una secuencia de patrones dibujados, almacenada en un "foco" o "spellbook" (páginas con un patrón o hechizo cada una).
+- **Selección:** se cambia de página con scroll o con teclas.
+- **Casteo:** dibujas el hechizo en una GUI y lo lanzas con clic derecho. Es el modelo más caro y no encaja con un D&amp;D con hechizos fijos.
+
+**Botania** (de memoria)
+- Cada varita o item tiene una función fija y casi sin selección. Lo relevante es que el uso es siempre clic derecho con maná.
+
+## Patrones comunes
+
+| Elemento | Patrón dominante |
+|---|---|
+| Item | Un contenedor (libro, varita o foco) con una lista de ids de hechizo y un índice activo en NBT |
+| Selección | Rueda radial con una tecla, más scroll o teclas de ciclo |
+| Casteo | Clic derecho con el item en mano, o una keybind de quick-cast independiente |
+| Tipos de cast | Un enum por hechizo: instantáneo, carga o continuo |
+
+## Coste de implementación en Forge 1.20.x
+
+1. **Barato:** un solo item `Grimorio` con `ListTag` de ids y un `int selected` en NBT. El ciclo con Shift+scroll, o con dos keybinds, es un `InputEvent.MouseScrollingEvent` que cancela el scroll y envía un paquete. El clic derecho dispara `use()` en el servidor.
+2. **Medio:** la keybind de cast sin item en mano. Es un `RegisterKeyMappingsEvent`, un paquete C2S y una búsqueda del grimorio en el inventario. Las teclas 1-9 de quick-cast siguen el mismo patrón.
+3. **Algo más caro:** la rueda radial. Es una `Screen` de cliente que se abre al mantener una tecla, dibuja sectores con `GuiGraphics` y, al soltar, envía el índice elegido.
+4. **Caro y no recomendable al inicio:** cast types de carga o continuo (necesitan `UseAnim`, `onUseTick` y `releaseUsing`). Tampoco conviene aún un editor de hechizos al estilo Ars, un maná propio ni los scrolls consumibles.
+
+## Recomendación del patrón mínimo viable
+
+- **Un único item `Grimorio`.** Su NBT guarda una lista de ids de hechizo (los de vuestros packs JSON) y el índice activo.
+- **Un paquete C2S `CastSpell(slot)`.** Lo usan por igual el clic derecho (hechizo activo), las teclas numeradas y la rueda.
+- **Fase 1:** ciclo con Shift+scroll o dos keybinds, y clic derecho para lanzar. Mostrad el hechizo activo en el HUD, que es una línea de texto.
+- **Fase 2:** rueda radial en una `Screen`, abierta con una keybind mantenida.
+- **Fase 3:** teclas de quick-cast 1-9 y scrolls de un solo uso. El scroll es el mismo item con una lista de longitud 1 que se destruye al lanzar.
+- **Casteo instantáneo desde el inicio.** Encaja con D&amp;D, donde el coste lo marca el espacio de conjuro y la acción, no el maná ni el tiempo de carga. Las excepciones se resuelven en el servidor, no en la animación.
+- **Staffs con hechizo fijo:** son el mismo item con una lista de un elemento y sin ciclo.
+
+Si ya hay un gestor de espacios de conjuro y un resolvedor de hechizos en el servidor, el grimorio solo necesita llamar a `castSpell(player, spellId)`. Así el item queda casi sin lógica.
+
+Sources:
+- [Spell Books (Ars Nouveau)](https://www.minecraft-guides.com/mod/ars-nouveau/wiki/spell-books/)
+- [Ars Curio Spellbook](https://www.curseforge.com/minecraft/mc-mods/ars-curio-spellbook)
+- [Ars Curios Book](https://www.curseforge.com/minecraft/mc-mods/ars-curios-book)
+- [Spell Binder (Not Enough Glyphs)](https://ars.guide/book/spell_casting/item.not_enough_glyphs.spell_binder/)
+- [SpellActionBar](https://www.curseforge.com/minecraft/mc-mods/spellactionbar)
+- [No More Spellsbook](https://www.curseforge.com/minecraft/mc-mods/no-more-spellsbook-irons-spells-addon)
+- [Iron's Spells: How to Add Spells to Books](https://www.minecraft-guides.com/mod-guides/irons-spells-and-spellbooks-how-to-add-spells-to-books/)
+- [Electroblob's Wizardry (CurseForge)](https://www.curseforge.com/minecraft/mc-mods/electroblobs-wizardry)</result>
+<usage><subagent_tokens>50154</subagent_tokens><tool_uses>4</tool_uses><duration_ms>33863</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ad5494790b070cda6</task-id>
+<tool-use-id>toolu_01RC2rHSwuErnFusQQ7FEqFv</tool-use-id>
+<output-file>C:\Users\DANCAS~1\AppData\Local\Temp\claude\C--Users-DanCastello-Documents-GitHub-dndsheets\b1963bc7-cd21-4bc3-90cc-133f52bce434\tasks\ad5494790b070cda6.output</output-file>
+<status>completed</status>
+<summary>Agent "Explorar sistema de staffs" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>**Informe: lanzamiento de hechizos con staffs en dndsheets**
+
+Esto es solo lectura. No modifiqué nada. No hay clase ni ítem por staff: todo se define con datos en un único ítem. Todas las rutas parten de `C:\Users\DanCastello\Documents\GitHub\dndsheets\`. Abrevio `J` = `src/main/java/net/hawthorn/dndsheets/`.
+
+## 1. Staffs: no hay clases por staff
+
+- **Un solo ítem registrado en todo el mod**: `dndsheets:token`, en `J/init/DndsheetsModItems.java:25-26`. Es un `Item` con `stacksTo(1)` (líneas 1-27). Wands, tótems, staffs y cartas de invocación son ese mismo ítem con distinto `CustomModelData`.
+- **El aspecto sale del enum `J/ItemLook.java`.** Tiene 21 constantes, y `STAFF` es la 18ª, es decir `custom_model_data` 18 (línea 46). `applyTo()` escribe el valor ordinal+1 en el NBT. El enum es append-only, porque el número queda guardado en los ítems ya entregados.
+- **Staff de hechizo** (el que lanza un conjuro):
+  - `SpellCommand.buildStaffStack` construye el stack en `J/command/SpellCommand.java:136-157`. Usa `TOKEN`, le aplica `ItemLook.STAFF` y escribe en el NBT `dndsheets:{quickSpell:"&lt;id&gt;", staffConfigurable:true}`.
+  - El nombre sale de la clave `chat.dndsheets.staff.item_name` ("Staff of %s", `en_us.json:383`).
+  - Con `/dndspells staff &lt;jugadores&gt; &lt;spell&gt; [itemBase]` se puede usar cualquier ítem base, por ejemplo `minecraft:blaze_rod` (líneas 57-64 y 117-133).
+  - Hay un staff por cada hechizo cargado en la pestaña creativa: `J/init/DndsheetsModCreativeTab.java:75`.
+  - El DM también puede entregarlo por GUI con `SpellGiveMessage` (`asStaff`) desde `J/client/gui/SpellGiveListScreen.java:39`.
+- **Un mismo staff se puede reasignar.** El botón "Bind to staff" del Grimoire (`J/client/gui/GrimoireScreen.java:146-152`) envía `StaffBindMessage` (`J/network/StaffBindMessage.java:36-48`).
+  - El mensaje reescribe `quickSpell` del ítem en la mano principal.
+  - Solo actúa si ese ítem ya tiene `staffConfigurable`, lo que impide que un cliente modificado convierta cualquier ítem en staff (`SpellRegistry.bindStaff`, `J/SpellRegistry.java:431-435`).
+- **Staffs mágicos del SRD**: son 12 entradas en `src/main/resources/dndsheets/defaults/items.json:312-323`, todas con ítem base `minecraft:stick`. Son Charming, Fire, Frost, Healing, Power, Striking, Swarming Insects, the Magi, the Python, the Woodlands, Thunder and Lightning y Withering.
+  - Ninguna de las 12 tiene `grantsSpell`. Solo dan afinidades de daño o una descripción.
+  - Los ítems con `grantsSpell` son 5 en total: `circlet_of_blasting`, `eyes_of_charming`, `wand_of_fireballs` y dos más. Estos sí reciben `quickSpell` automático en `J/MagicItemRegistry.java:132-139`.
+
+## 2. Conexión staff → hechizo y ejecución
+
+**Registro de hechizos**
+- `J/SpellRegistry.java:29-60` define el `record Spell` (id, nivel, `mode`, `aoeRadius`, `aoeShape`, `concentration`, `Info.rangeFeet`, etc.).
+- El registro es un `NamedRegistry` (línea 198). `get(id)` está en la línea 205 y `ids()` en la 209.
+- Se carga desde JSON con `loadJson`/`loadFile` (líneas 222-228) y `parse` (línea 334).
+- El JSON está en `src/main/resources/dndsheets/defaults/spells.json`: 87 hechizos, 32 de ellos con `aoeRadius`.
+- Los ids llevan el prefijo `dndsheets:`.
+
+**Del clic al hechizo**
+1. `J/AbilityItemDispatcher.java:81` ve `dndTag.contains("quickSpell")` y llama a `QuickSpellManager.tryUse`.
+2. `J/QuickSpellManager.java:23-32` cancela el evento. Con shift pulsado llama a `SpellCastManager.previewAoe`. Sin shift llama a `handleCastRequest(player, spellId)`.
+3. Los tres eventos de clic (aire, bloque y entidad) pasan por un único `dispatch`, en `AbilityItemDispatcher.java:62-82`.
+
+**Validaciones**
+
+`SpellCastManager` está en `J/SpellCastManager.java`. `prepare()` valida y cobra (líneas 142-290), y `resolve()` aplica el efecto (desde la línea 295).
+- **Antirrebote**: `lastCastTick` (línea 148) rechaza dos lanzamientos en el mismo tick. No hay cooldowns propios en segundos ni en ticks.
+- **Preparado**: `preparationAllows` (`SpellRegistry.java:282`). Un conjuro desconocido para la ficha pasa, que es el caso del staff, y uno desmarcado se rechaza.
+- **Espacios**: `SpellSlots.hasSlotFor` se comprueba sin gastar, y `spendSlot` gasta después (líneas 90-107). Los trucos (nivel 0) no gastan. El gasto se persiste con `SheetLoader.saveServer`.
+- **Objetivo y tipo de criatura**: `affects(type)`. Si el objetivo es de tipo inválido, el lanzamiento se rechaza sin cobrar.
+- **Turno**: `TurnManager.tryAct`, que se comprueba al final.
+- **Contrahechizo**: `CounterspellManager.findCounterer`. El espacio se pierde aunque lo contrarresten.
+- **Concentración**: `ConcentrationManager.startConcentrating` en `resolve()`. Hay una sola concentración por jugador, en un mapa en RAM (`J/ConcentrationManager.java:29-50`). Se pierde con una salvación de CON `max(10, daño/2)`.
+- **Tiempo de lanzamiento**: `CastingManager.begin` (`J/CastingManager.java:75`) con `castTicks`. Lo interrumpen el daño, quedar incapacitado o moverse.
+- **Ficha**: `sheet.spells[]` tiene `{id,name,level,school,prepared}` y el límite de preparados lo calcula `CharacterRules.preparedLimitFor`. No hay capabilities de Forge, la ficha es un JSON por personaje (`SheetLoader`).
+- **Fuente de verdad**: los hechizos conocidos viven en el JSON de la ficha. El registro de hechizos solo existe en memoria del servidor, y el cliente recibe la lista en la ficha.
+
+## 3. GUI, keybinds y selección
+
+Ya existe casi todo.
+
+- **Teclas** (`J/init/DndsheetsModKeyMappings.java`):
+
+| Acción | Tecla | Líneas |
+|---|---|---|
+| `CHARACTER` | H | 21 |
+| `DM_PANEL` | P | 41 |
+| `GRIMOIRE` | G | 57 |
+| `QUICK_CAST` | R | 74-85 |
+
+  `QUICK_CAST` llama a `GrimoireScreen.castLast()` (`GrimoireScreen.java:86-88`), que repite el último conjuro y nivel de espacio.
+- **Grimoire** (`J/client/gui/GrimoireScreen.java`, 42+ líneas, hereda de `ListPickerScreen`):
+  - Muestra secciones por nivel.
+  - Tiene botones de nivel de espacio, lanzar, preparar y "Bind to staff".
+  - Envía `SpellCastMessage(id, slotLevel)` (línea 133).
+- **No hay hotbar de hechizos, rueda radial ni lista de favoritos.** `PROJECT_CONTEXT.md` (sección "Skipped on purpose") lo descarta de forma explícita hasta que alguien lo pida.
+- **No hay selección de hechizo con rueda del ratón sobre el staff.** El único camino para cambiar el conjuro es el botón "Bind to staff".
+
+## 4. Boilerplate de texturas, modelos y lang por staff
+
+- **Para un staff de hechizo (`ItemLook.STAFF`): cero archivos nuevos.** Todos comparten una textura y un modelo (`textures/item/staff.png` y `models/item/staff.json`), y se enlazan desde el `overrides` de `models/item/token.json`.
+- **Un `ItemLook` nuevo cuesta** una constante al final del enum, una textura `.png`, un `models/item/&lt;x&gt;.json` y una entrada en `overrides` de `token.json`. Las texturas las dibuja `tools/generate_item_icons.py`.
+- **Lang**: el nombre usa la clave `chat.dndsheets.staff.item_name` con el nombre del hechizo. Hay 8 idiomas (en_us y 7 variantes es_*).
+- Los 12 staffs mágicos del SRD tienen cada uno una clave `content.dndsheets.item.*` en `en_us.json:879-890` y en cada es_*.
+
+## 5. Red y GUIs reutilizables
+
+- **Canal**: `DndsheetsMod.PACKET_HANDLER` es un `SimpleChannel` (`J/DndsheetsMod.java:201`). `PROTOCOL_VERSION` es "29". Los mensajes se registran con `addNetworkMessage(...)` en las líneas 225-266.
+  - **Orden append-only**: cada mensaje nuevo va al final de la lista, porque su id de red es su orden de registro (comentario en la línea 255).
+  - **Versión**: hay que subir `PROTOCOL_VERSION` y actualizar `NETWORK_SHAPE` y `NETWORK_ORDER` (líneas 162-186).
+- **Mensajes existentes**: hay 47 clases en `J/network/`. Los relevantes para hechizos son `SpellCastMessage`, `SpellGiveMessage`, `StaffBindMessage` y `BrowseActionMessage`/`BrowseListMessage`. Estos dos son genéricos, y preparar y despreparar conjuros son dos constantes de `BrowseActionMessage.Action`.
+- **Bases de GUI**: hay 36 pantallas que heredan de `ListPickerScreen` (`J/client/gui/ListPickerScreen.java`) y 11 de `SmallFormScreen`. `ListPickerScreen` ofrece `buildRows()` y `addRow(label, onPress)` y añade buscador automático a partir de 14 filas. `SmallFormScreen` hereda de `FormPanelScreen` y es un formulario con Confirmar/Cancelar.
+- **Regla de diseño**: la invariante 7 de `PROJECT_CONTEXT.md` exige extender una de las cuatro bases, nunca `Screen` a pelo.
+
+## 6. Hechizos con puntería, objetivo y área
+
+Todo se resuelve por el `mode` y la forma del hechizo, no por el staff. El staff solo dispara `handleCastRequest`, igual que el Grimoire.
+
+Hay 87 hechizos, repartidos así:
+
+| Modo | Cantidad |
+|---|---|
+| `save` | 51 |
+| `attack` | 14 |
+| `heal` | 8 |
+| `zone` | 7 |
+| `summon` | 4 |
+| `buff` | 2 |
+| `temphp` | 1 |
+
+- **Área** (`save` con `aoeRadius &gt; 0`, y no zona): `findImpactPoint` más `findAoeTargets` con la forma (`sphere`, `line`, `cone`), en `SpellCastManager.java:200-210`. `originatesAtCaster()` es true para `line`, `cone` y zonas. Un área vacía se lanza igual.
+  - Alcance: `rangeOf` usa `Info.rangeFeet` entre `Config.feetPerBlock()`, con un mínimo de 3 bloques. Si el hechizo no declara alcance, usa 30 bloques.
+- **Zona persistente** (`mode:"zone"` o `aoeShape:"wall"`): se coloca en el punto apuntado, o sigue al lanzador si `followsCaster` (`ZoneManager`).
+- **Un solo objetivo**: `findTarget`. Si no hay ninguno, `heal` va al propio lanzador y el resto se lanza al suelo o al aire (`impactPoint`).
+- **Self, summon, buff y temphp** (`isSelfTargeted`/`isSummon`): no necesitan objetivo.
+- **Preview**: shift más clic con un staff de área o zona llama a `previewAoe`, que dibuja la forma con `CombatFx.shapeOutline`, `aoeRing` o `ZoneManager.preview` sin gastar nada (`SpellCastManager.java:63-81`).
+- **Sin proyectil físico**: el dado decide el impacto, no la puntería. El rastro visual es decorativo (`CombatFx.spellTravel`).
+
+## Roadmap y pendientes
+
+- `PROJECT_CONTEXT.md` tiene el roadmap en las líneas 637-873: R1 (rediseño de interfaz, items 1-4 hechos y el 5 pendiente), R2 (combate), R3, R4 (distribución) y R5 (techos documentados, no tocar sin decisión nueva). No hay ninguna sección dedicada a staffs.
+- **Descartado a propósito** (líneas ~316-326 de `PROJECT_CONTEXT.md`): proyectil con física propia, rueda radial de hechizos, lista de favoritos y bloqueo de re-preparar hechizos hasta un descanso largo.
+- **Pendiente en los datos**: los 12 staffs mágicos del SRD no lanzan nada. Solo 5 ítems tienen `grantsSpell`.
+- No encontré `TODO` explícitos sobre staffs. Tampoco existe una carpeta `docs/`.
+
+## Para implementar una selección de hechizo en el staff
+
+Lo más barato es reutilizar `staffConfigurable`/`quickSpell` y `StaffBindMessage`, que ya hacen la parte difícil.
+- Un keybind que abra una `ListPickerScreen` filtrada por los hechizos conocidos y envíe `StaffBindMessage` evitaría un paquete nuevo.
+- Añadir `grantsSpell` a algunas entradas de los staffs del SRD en `items.json` costaría una línea de datos por staff.</result>
+<usage><subagent_tokens>93352</subagent_tokens><tool_uses>11</tool_uses><duration_ms>67963</duration_ms></usage>
+</task-notification>
+
+---
+
+Es posible hacer algo parecido para los spawners?
+
+---
+
+<task-notification>
+<task-id>a5a083c3fac28a998</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>C:\Users\DANCAS~1\AppData\Local\Temp\claude\C--Users-DanCastello-Documents-GitHub-dndsheets\b1963bc7-cd21-4bc3-90cc-133f52bce434\tasks\a5a083c3fac28a998.output</output-file>
+<status>completed</status>
+<summary>Agent "Explorar spawners de monstruos" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Informe (solo lectura). Raíz: `C:\Users\DanCastello\Documents\GitHub\dndsheets\`, y `src/main/java/net/hawthorn/dndsheets/` abreviado como `J/`.
+
+## 1. `buildSpawnCard` y sus usos
+
+- **Definición:** `J/MonsterRegistry.java:632-645`.
+  - Item base: `DndsheetsModItems.TOKEN`.
+  - Look: `ItemLook.SUMMON_CARD.applyTo(...)`, que escribe `CustomModelData = 19`.
+  - NBT: `{dndsheets:{monsterSpawn:"&lt;id&gt;"}}`.
+  - Nombre: `setHoverName(translatable("chat.dndsheets.monster.summon_card_name", ContentNames.of(block.name())))`.
+  - Lectura del tag: `MonsterRegistry.monsterSpawnIdOf(stack)` en `MonsterRegistry.java:623-629`.
+- **Único uso de `buildSpawnCard`:** `J/init/DndsheetsModCreativeTab.java:75-77`. Es un bucle sobre `MonsterRegistry.ids()` con `safeAccept`, una carta por monstruo.
+- **Cuántas cartas salen:**
+  - `src/main/resources/dndsheets/defaults/monsters.json` tiene 330 monstruos con 330 ids únicos.
+  - `ids()` es `REGISTRY.ids()` (`MonsterRegistry.java:249`), o sea todo lo cargado. La pestaña muestra 330 cartas más las de addons/datapacks y las de `/dndmonsters load` (`DndPaths.java:81` hace autocarga de la carpeta `monsters`, y `ContentDatapackLoader.java:67` carga los datapacks).
+  - Hoy hay unas 330 cartas contra 1 báculo en blanco.
+- **`MonsterCommand.buildMoveToolStack`** (`J/command/MonsterCommand.java:375`) no es una carta de monstruo. Es la varita de movimiento: `ItemLook.MOVE_WAND`, tag `movetool:true`, más lore. La usan `DndsheetsModCreativeTab.java:55`, `GiveableItem.java:33` y `MonsterCommand.java:364`.
+- **ItemLook:** `J/ItemLook.java`, enum append-only. `SUMMON_CARD` es el valor 19 y el test `JsonContentSelfTest.java:1170` lo fija.
+- **Comandos:**
+  - `/dndmonsters spawn &lt;id&gt; [amount]` (`MonsterCommand.java:125-131`, `spawn()` en 185-212). Genera N unidades en la posición del ejecutor con `spawnAt` y `CombatFx.monsterSpawn`.
+  - `spawnGeneric` en 275, y la galería en 146-250.
+- **GUIs:**
+  - `DmPanelScreen.java:46-49`: fila "spawn_monster" que manda `BrowseActionMessage.Action.SPAWN_MONSTERS`.
+  - El servidor (`BrowseActionMessage.java:174-177`) comprueba `canActAsDm` y responde con `BrowseListMessage.Kind.SPAWN_MONSTER` y los ids.
+  - El cliente abre `MonsterSpawnListScreen` (`BrowseListMessage.java:95`).
+  - Esa pantalla (`client/gui/MonsterSpawnListScreen.java:17-49`) extiende `ListPickerScreen` con búsqueda y envía `MonsterSpawnMessage(monsterId)`.
+
+## 2. Uso de la carta al hacer clic
+
+- **No pasa por `AbilityItemDispatcher`.** El dispatcher (`J/AbilityItemDispatcher.java:65-82`) es una cadena de flags, y `monsterSpawn` no está en ella.
+- **Handler real:** `MonsterActionManager.onUseSpawnCard`, `J/MonsterActionManager.java:202-219`, suscrito a `PlayerInteractEvent.RightClickBlock`.
+  - Solo servidor.
+  - Llama a `InteractionEvents.consume(event)`.
+  - Posición: `event.getPos().relative(event.getFace())`, con x+0.5 y z+0.5.
+  - Spawnea de a 1 con `MonsterRegistry.spawnAt(...)` y `CombatFx.monsterSpawn`.
+  - Consume 1 carta solo si no está en creativo (`if (!instabuild) stack.shrink(1)`).
+  - Solo funciona con clic en bloque. No hay handler para clic al aire ni para clic en entidad.
+- **`spawnAt`** (`MonsterRegistry.java:669-730+`) crea la entidad base, pone nombre visible y `setNoAi` salvo `ai:true` u `ownClock`. Aplica los looks y escala la vida por dificultad. Además registra el monstruo en el orden de turnos (`TurnManager.addLateMonster`). Hay una sobrecarga con `Consumer&lt;Entity&gt; configure`, usada por `SummonManager`.
+- **Cantidad:** la carta siempre invoca 1. `/dndmonsters spawn` admite N, y el mensaje del panel invoca 1.
+- **Sobre tokens y mobs:** lo invocado es un mob vanilla, o de otro mod, tomado de `baseEntity`. Si el tipo no existe, cae a zombie con un warning.
+- **Observación:** el handler no comprueba permiso de DM. Cualquiera que tenga la carta puede usarla.
+
+## 3. GUI de DM, mensajes de red y teclas
+
+- **GUI existente:** `MonsterSpawnListScreen` sobre `ListPickerScreen`. Hay otras pantallas con el mismo patrón: `SpawnGenericScreen` (NPC en blanco), `WildShapeListScreen` y `MonsterBindListScreen`. Ese último no lo abrí, así que no sé si sirve para atar monstruos a algo.
+- **Mensajes de red implicados:**
+  - `BrowseActionMessage.Action.SPAWN_MONSTERS` (`network/BrowseActionMessage.java:46`).
+  - `BrowseListMessage.Kind.SPAWN_MONSTER` (`BrowseListMessage.java:29-30`).
+  - `MonsterSpawnMessage(String monsterId)`: sin enum, un solo string, se registra en `DndsheetsMod.java:227`. Es la que dispara el spawn desde la lista.
+  - `SpawnGenericMessage` (name, baseEntity, ac, hp) para el NPC en blanco.
+  - `StaffBindMessage` se registra en `DndsheetsMod.java:266`. No tuve que tocar `NETWORK_SHAPE`/`ORDER`/`WIRE` para esta consulta (hoy 137 / 2098738074 / 445339368, protocolo "30" en las líneas 163-201).
+- **Teclas ya usadas** (`J/init/DndsheetsModKeyMappings.java`):
+  - H: ficha.
+  - P: panel DM.
+  - G: grimorio.
+  - R: lanzado rápido.
+  - X: `STAFF_NEXT`.
+  - Z: `STAFF_PREV`.
+  - Shift+rueda: cicla el báculo (`onScroll`, 141-144).
+  - No hay otros `KeyMapping` en el repo (grep). Las categorías de i18n son `key.categories.dndsheets`.
+- **Teclas libres razonables:** C, V, B, N, M, J, K. Cuidado con los vanilla, que las comprobaría el usuario en su cliente: F es mano secundaria, Q soltar, E inventario, T chat.
+- **Para reusar el ciclo del báculo:** hay que generalizar `sendStaff` (línea 108-113) para que acepte también la carta de monstruos. Hoy comprueba `SpellRegistry.isConfigurableStaff(mainHand)`, y Shift+rueda se cancela solo si eso es true.
+
+## 4. Otros spawners del mod
+
+Ninguno sigue el patrón de un item por entrada. Solo la carta de monstruo lo hace.
+
+- **`SummonManager.summon`** (`J/SummonManager.java:49-100`): es un hechizo (`spell.summonEntityId()`) que registra un bloque al vuelo y usa `spawnAt` con `configure` para etiquetar al dueño. No tiene item.
+- **Wild Shape:** `DruidWildShapeManager` más un único item (`buildWildShapeStack`, `ItemLook.WILD_SHAPE`, flag `wildShape`). Al usarlo abre un selector. `WildShapeMessage.Kind { OPEN_PICKER, CHOOSE, SHAPE }` y `WildShapeListScreen`. Transforma al jugador y no spawnea.
+- **Dungeon** (`dungeon/.../EncounterPopulator.java:25-60`): `MonsterRegistry.spawnAt` por habitación, 1 a 3 monstruos al azar.
+- **Encuentros:** `EncounterRegistry.java:148` llama a `spawnAt`.
+- **NPC genérico:** `MonsterRegistry.spawnGeneric` (`MonsterRegistry.java:654-661`), registrado con id `dndsheets:npc_N`.
+
+## 5. Textos (lang)
+
+Hay 8 ficheros en `src/main/resources/assets/dndsheets/lang/`: `en_us` y `es_ar`, `es_cl`, `es_ec`, `es_es`, `es_mx`, `es_uy`, `es_ve`. Las claves tienen los mismos números de línea en todos:
+
+- `chat.dndsheets.monster.summon_card_name` en la línea 219 ("Summon: %s" / "Invocar: %s").
+- `chat.dndsheets.monster.spawned` en 217, `spawned_count` en 218, `no_such` en 210.
+- `gui.dndsheets.dm_panel.spawn_monster` en 1643 y `spawn_npc` en 1644.
+- `gui.dndsheets.monster_spawn.empty` en 1927.
+- `key.dndsheets.*` en 2188-2193 (aquí van las dos teclas nuevas, junto a `staff_next` y `staff_prev`).
+- El nombre del báculo en blanco usa la clave `chat.dndsheets.staff.blank`, y el mensaje de estado activo `chat.dndsheets.staff.active`.
+
+## Qué habría que tocar para replicar el patrón de los staffs
+
+- **Lógica del item:** `MonsterRegistry` ya está en la lista autorizada de `checkPortabilityCoupling` (`JsonContentSelfTest.java:3113-3116`). Ahí irían `cardAdd`, `cardRemove`, `cardCycle` y `cardMonsters`, más `buildBlankCard()` y un tag `cardConfigurable`, copiando el modelo de `SpellRegistry.java:425-495`. Eso no obliga a añadir ficheros nuevos a la lista. Si la lógica fuera a una clase nueva que toque NBT, sí.
+- **Item:** sustituir el bucle de la línea 75-77 de `DndsheetsModCreativeTab` por una sola carta en blanco. Conviene mantener la lectura de `monsterSpawn` para las cartas ya repartidas.
+- **Red:** hace falta un mensaje nuevo, tipo `CardBindMessage` con `Action { ADD, REMOVE, NEXT, PREV }`, o reutilizar `StaffBindMessage`. Tocar la red obliga a subir el protocolo a "31" y a actualizar `NETWORK_SHAPE`, `NETWORK_ORDER` y `NETWORK_WIRE`.
+- **GUI:** añadir un botón "Añadir a la carta" en `MonsterSpawnListScreen`, o un `MonsterBindListScreen` nuevo.
+- **Clic:** `onUseSpawnCard` lee hoy un solo id. Pasaría a leer el id activo de la lista.
+
+Preguntas de diseño que quedan abiertas:
+
+- Si la carta en blanco se consume en supervivencia, o si la lista sirve como "mazo" no consumible.
+- El tope de entradas: los staffs usan `STAFF_MAX_SPELLS = 9`.
+- Con qué se activa el ciclo: Shift+rueda y las teclas X/Z comparten hoy la comprobación de báculo.</result>
+<usage><subagent_tokens>88950</subagent_tokens><tool_uses>28</tool_uses><duration_ms>72162</duration_ms></usage>
+</task-notification>
+
+---
+
+Es posible aplicar las habilidades de https://github.com/Leonxlnx/taste-skill/ para poder diseñar una mejor UI?  Alternativas que se enfocan en diseño web, pero se enfocan en experiencia de usuario https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md https://github.com/voltagent/awesome-design-md
+
+---
+
+<task-notification>
+<task-id>ac4c341fa9b01b7f1</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>C:\Users\DANCAS~1\AppData\Local\Temp\claude\C--Users-DanCastello-Documents-GitHub-dndsheets\b1963bc7-cd21-4bc3-90cc-133f52bce434\tasks\ac4c341fa9b01b7f1.output</output-file>
+<status>completed</status>
+<summary>Agent "Investigar guías de diseño UI" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>**Informe de lectura (solo lectura, nada modificado).** Los datos salen de WebFetch, que resume con un modelo pequeño. No leí los archivos SKILL.md ni las reglas completas de taste-skill. Tampoco abrí el repo `vercel-labs/web-interface-guidelines`, solo `command.md`.
+
+## 1. Taste Skill
+https://github.com/Leonxlnx/taste-skill/
+
+**(a) Qué es.**
+- Es una skill de agente, `design-taste-frontend`, para que el agente diseñe webs y pantallas de apps con una dirección artística.
+- Su proceso:
+  - Elige una de 20 direcciones artísticas.
+  - Construye con fotos reales y con crédito.
+  - Revisa el resultado en un navegador a tres anchos.
+  - Corrige los tres peores problemas, hasta tres rondas.
+- Otras skills (`minimalist-ui`, `industrial-brutalist-ui`, `brandkit`, `image-to-code`) se mudaron a los repos `taste-skill-classics` e `imagegen-skills`.
+- Instalación:
+  - `npx skills add https://github.com/Leonxlnx/taste-skill --skill "design-taste-frontend"`.
+  - O como plugin de Claude Code: `/plugin marketplace add Leonxlnx/taste-skill`, y luego `/plugin install taste-skill@taste-skill`.
+  - O con `./install.sh`, que crea enlaces simbólicos desde un clon.
+- Requiere Node 22+ y Chrome, Edge o Chromium.
+
+**(b) Aplicable.** Casi nada. El flujo depende de HTML, fotos y capturas de navegador, y nada de eso existe en una `Screen` de Forge.
+- Las reglas de layout no son web en esencia: título claro en la primera pantalla, márgenes iguales, sin huecos aleatorios.
+- Las de dashboard tampoco: paneles discretos, cifras alineadas, color reservado para datos.
+- La página no lista el conjunto completo de reglas. Por eso no puedo decir qué más contiene.
+
+**(c) Transferible.** El bucle "construir, mirar la captura, corregir los tres peores problemas" funciona igual en un mod. La regla de reservar el color para datos también.
+
+## 2. Vercel Web Interface Guidelines
+https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md
+
+**(a) Qué es.**
+- `command.md` es un prompt de revisión escrito como slash command. Lleva frontmatter con `description` y `argument-hint: &lt;file-or-pattern&gt;`.
+- Sustituye `$ARGUMENTS` por la ruta o el glob que le pases. El agente lee esos archivos y reporta hallazgos en formato `file:line`.
+- Para usarlo en Claude Code, hay que copiarlo a `.claude/commands/`. No lo verifiqué.
+- Sus categorías: accesibilidad, foco, formularios, animación, tipografía, contenido, imágenes, rendimiento, navegación y estado, táctil, safe areas, modo oscuro, i18n, hidratación, hover y copy.
+
+**(b) Solo web, inaplicable.**
+- ARIA y HTML semántico.
+- `:focus-visible`.
+- `autocomplete`, `inputmode`, bloqueo de pegado.
+- Estado en la URL y enlaces reales.
+- `transition: all`, `prefers-reduced-motion`.
+- `color-scheme`, `theme-color`.
+- Hidratación, `Intl`, `translate="no"`.
+- Safe areas y `touch-action`.
+- Precarga de fuentes y lazy-load de imágenes.
+- `min-w-0` en flex.
+
+**(c) Transferible.**
+- Todo control interactivo tiene que tener foco o selección visible.
+- El estado hover, activo o seleccionado debe verse más fuerte que el de reposo.
+- Los botones solo con icono necesitan etiqueta, que en un juego es un tooltip.
+- Los contenedores deben tolerar texto largo (recortar con "…" o hacer scroll) y los estados vacíos deben mostrarse bien.
+- Las cifras de las tablas deben ir alineadas.
+- Las acciones destructivas piden confirmación o permiten deshacer.
+- Los errores deben incluir el siguiente paso.
+- Los botones deben tener etiquetas específicas.
+- Las animaciones deben poder interrumpirse.
+- Hay que tener una alternativa que no dependa del ratón.
+- Las listas largas deben virtualizarse.
+- Hay que ofrecer una opción para reducir el movimiento.
+
+## 3. Awesome DESIGN.md
+https://github.com/voltagent/awesome-design-md
+
+**(a) Qué es.**
+- Es una colección con licencia MIT, de unas 84 entradas según el contador de la página.
+- Cada entrada es un `DESIGN.md` derivado del sitio público de una marca. Se copia a la raíz del proyecto y se le pide al agente que construya UI con ese estilo.
+- El formato viene de Google Stitch y tiene 9 secciones:
+  1. Ambiente y tema visual.
+  2. Paleta de color y roles.
+  3. Tipografía.
+  4. Estilo de componentes.
+  5. Principios de layout.
+  6. Profundidad y elevación.
+  7. Qué hacer y qué evitar.
+  8. Comportamiento responsive.
+  9. Guía de prompts para el agente.
+- Cada entrada trae además `preview.html` y `preview-dark.html`.
+
+**(b) Aplicable.**
+- Lo útil es el formato: un documento de tokens y reglas.
+- Las entradas de marcas están sacadas de CSS web, así que sus valores no sirven tal cual.
+- Quedan fuera responsive y los previews HTML.
+- Aviso de los mantenedores: los valores son CSS visible públicamente y no reclaman propiedad sobre la identidad visual de nadie.
+
+**(c) Ejemplos cercanos a juego u oscuro.**
+- PlayStation, Nintendo (estilo "console chrome", con paneles biselados) y 1win (negro con tiles densos).
+- Entre las UIs oscuras: Raycast, Spotify y ElevenLabs.
+- Ninguna es de fantasía.
+- No abrí ninguna entrada individual, así que no puedo confirmar su calidad.
+
+## Recomendación
+No los instalaría tal cual.
+- Taste Skill es para webs con navegador y fotos. Vercel es una checklist de HTML, CSS y ARIA. Instalarlos añade ruido y puede hacer que el agente proponga cosas inaplicables.
+- Lo mejor es destilar un `DESIGN.md` propio del mod, con el formato Stitch recortado:
+  1. Tema y ambiente (grimorio, fantasía, oscuro).
+  2. Paleta con roles, con constantes ARGB reutilizadas.
+  3. Tipografía y límites de texto: ancho máximo, recorte con "…", scroll.
+  4. Estados de componentes: reposo, hover, seleccionado, deshabilitado, foco por teclado.
+  5. Espaciado y jerarquía: una rejilla de márgenes y rellenos, un acento por pantalla.
+  6. Feedback: sonido de clic, confirmación en acciones destructivas, mensajes de error con siguiente paso.
+  7. Teclado y gamepad: orden de tabulación, Esc para cerrar, Enter para confirmar.
+  8. Tooltips para botones con icono.
+  9. Qué hacer y qué evitar.
+- Eso lo puede leer el agente `dndsheets-gui` y mantiene la identidad visual que ya tienen `ListPickerScreen` y `SmallFormScreen`.
+- Como mucho, hojea una o dos entradas de awesome-design-md (Nintendo o PlayStation) como inspiración de paleta y de bisel. No las copies.</result>
+<usage><subagent_tokens>50614</subagent_tokens><tool_uses>4</tool_uses><duration_ms>35680</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a3b258f11bcf7782a</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>C:\Users\DANCAS~1\AppData\Local\Temp\claude\C--Users-DanCastello-Documents-GitHub-dndsheets\b1963bc7-cd21-4bc3-90cc-133f52bce434\tasks\a3b258f11bcf7782a.output</output-file>
+<status>completed</status>
+<summary>Agent "Explorar identidad visual de GUI" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Informe de solo lectura. No hay DESIGN.md ni docs/, y `GUI_REFERENCE.md` no existe aunque el agente lo exige.
+
+## 1. PROJECT_CONTEXT.md (1039 líneas)
+- **Invariante 7** (`PROJECT_CONTEXT.md:44-48`): "nunca montes un layout a mano, extiende una de las cuatro bases".
+  - Las bases son `FormPanelScreen` (panel, marco, título, regla, suelo `Math.max(44,…)`, `addFieldRow`), `SmallFormScreen`, `ListPickerScreen` y `ModalDialogScreen`.
+  - Dice que "ninguna pantalla concreta extiende `Screen` desnuda".
+- **Arquitectura GUI** (`:354-361`):
+  - Hay 3 `AbstractContainerScreen` reales: hoja de personaje y 2 editores de tiradas.
+  - `GuiStyle` es "la única fuente del aspecto compartido" y `TomeButton` es "la fila estándar".
+  - Hay 3 overlays HUD con el mismo aspecto de tomo: `TurnHudOverlay`, `ResourceHudOverlay` y `CombatLogOverlay`.
+- **R1, rediseño de interfaz** (`:720-747`):
+  - Los puntos 1 a 5 están hechos: `GuiStyle` v2, `ListPickerScreen` v2, panel DM seccionado, checklist de personaje y coherencia hoja-paneles.
+  - La verificación es solo visual, a cargo del dueño. El self-test no ve los píxeles.
+  - Otros puntos relacionados: `:319` (búsqueda), `:390-414` (bugs de UX históricos) y `:773` (publicar después de R1).
+- **Paleta y espaciado**: no están documentados en PROJECT_CONTEXT. Solo existen como constantes en el código.
+
+## 2. Paquete client/gui (`src/main/java/net/hawthorn/dndsheets/client/gui`)
+- **Fuente de verdad visual**: `GuiStyle.java`.
+  - Colores públicos (`:27-32`): `TITLE_COLOR` 0xFFE9D8B4, `SUBTITLE_COLOR` 0xFFB9A88C, `MUTED_COLOR` 0xFF8C8071 y `ACCENT_COLOR` 0xFFC9A227 (latón).
+  - Colores privados (`:40-47`): cuero, bisel claro 6B5636, bisel oscuro 0B0906, borde 2E2418 y tachuelas de latón.
+  - Métodos: `panel()`, `title()` (fuente Cinzel, `:114-119`), `rule()` y `ruleOrnate()`.
+  - Texturas y fuente: `assets/dndsheets/textures/screens/panel_leather.png` y `font/cinzel.ttf` con `title.json`.
+  - Generadores en `tools/`: `make_panel_texture.py` y `make_sheet_textures.py`.
+- **Componentes** (`gui/components`): `TomeButton`, `TomeField`, `IconButton`, `SectionHeader`, `ButtonListWidget` y `DirectionalCycleButton`. También `Icons.java`.
+- **TomeButton** (`components/TomeButton.java:30-38`): tiene su propia paleta privada, por eso hay dos fuentes de color en vez de una. Gestiona bien el texto largo: puntos suspensivos en reposo (`:113-116`) y scroll horizontal al pasar el ratón (`:100-104`).
+- **Constantes de layout**: `FormPanelScreen:33-38` (`FIELD_WIDTH` 160, `ROW_HEIGHT` 30, relleno 14 en `:234`) y `ListPickerScreen:46-59` (`AUTO_SEARCH_MIN_ROWS` 14, botón atrás 14).
+- **Pantallas**: 61 archivos con una clase `*Screen`; 57 extienden una de las 4 bases, más 3 `AbstractContainerScreen`.
+  - **`ItemPickerScreen.java:32` extiende `Screen` directamente** y viola la invariante 7. Es la única que se salta las bases.
+  - Los addons tienen 8 pantallas más en `dungeon/.../client/gui`, que reutilizan `GuiStyle`, `TomeButton` y las bases.
+- **Colores hardcodeados fuera de `GuiStyle`**: `SheetAdjustScreen` (11), `PlayerSheetScreen` (6; `:57-59` define `PANEL_EDGE`, `GOOD` y `BAD`; barra de PG en `:329-331` con 0xFFE0B63F), `TurnHudOverlay` (5), `ResourceHudOverlay` (5), `TomeField` (4), `IconButton` (6), `DeathSaveScreen` (3) y varias con 1 (`RestVoteScreen`, `TurnActionScreen`, `RollFormulaScreen`, `RestChoiceScreen`, `ConfirmScreen`, `AbilityImprovementScreen`, `DiceRollOverlay`). No hay tokens semánticos de bien, mal o aviso.
+
+## 3. Documentación y agentes
+- **No existen** DESIGN.md, docs/ ni CLAUDE.md del proyecto. En `.claude/` solo hay `settings*.json` y `agents/` (README, dndsheets-gui, dnd5e-rules-auditor, mc-forge-auditor, mc-forge-env-setup, mc-forge-refactorer, srd-content-builder).
+- **`.claude/agents/dndsheets-gui.md`**:
+  - Exige leer `GUI_REFERENCE.md` (`:17`) y actualizarlo (`:74`), pero ese archivo no existe en el repo. Es una referencia rota.
+  - Dice "dos bases" (`:22`) y "~43 pantallas" (`:10`). Hoy son cuatro bases y 61 pantallas, sin mencionar `FormPanelScreen` ni `ModalDialogScreen`.
+  - Solo dice "no inventes colores" (`:37`). No da paleta, tokens, fuente Cinzel, `ruleOrnate`, `TomeButton` ni los overlays HUD.
+  - No dice nada de tooltips, estados vacíos, accesibilidad, atajos de teclado ni cuándo usar `addHeader`.
+  - No lo lista como lectura el CHANGELOG ni el apartado R1.
+- **Dónde encajaría la guía**: un `DESIGN.md` en la raíz, o `docs/DESIGN.md`. Debería ser la referencia autoritativa de paleta, tipografía, espaciado, componentes y patrones UX. Conviene enlazarlo desde la invariante 7 y desde `dndsheets-gui.md`, y sustituir en el agente la referencia a `GUI_REFERENCE.md`.
+
+## 4. Problemas de UX visibles en el código
+- **Tooltips**: casi inexistentes. Solo 5 archivos usan tooltip (`IconButton`, `ItemPickerScreen`, `PlayerSheetScreen`, `RollFormulaScreen`, `SheetAdjustScreen`). `TomeButton` y `TomeField` no tienen soporte propio ni convención.
+- **Textos largos**: `TomeButton` los resuelve con puntos suspensivos y scroll al pasar el ratón. Pero el texto truncado en reposo solo se lee con el ratón encima, no hay tooltip, y no hay equivalente para etiquetas de formulario ni títulos. Ese texto se corta sin aviso (sin comprobar etiquetas de `FormPanelScreen`).
+- **Estados vacíos**: existe `emptyMessage()` en `ListPickerScreen:123-125`, pintado en `:263-265`, pero solo lo implementan unas 6 pantallas (`CharacterListScreen`, `CharacterOptionListScreen`, `CompendiumListScreen`, `ContentEntryListScreen`, `FeatScreen`, `GrimoireScreen`). El mensaje va centrado en `height/2` sin icono ni acción sugerida. No hay estado vacío cuando el filtro de búsqueda no devuelve nada.
+- **Teclado**: solo `PlayerSheetScreen.keyPressed` (`:586`) personaliza teclas. No hay atajos en las bases, ni Enter para confirmar en `SmallFormScreen`, ni flechas para moverse por las listas.
+- **Scroll**: `ListPickerScreen.mouseScrolled` (`:230-233`) funciona. Sin comprobar en esta pasada: indicador visual de scroll en `ButtonListWidget` y si `FormPanelScreen` permite scroll cuando hay muchas filas (solo tiene el suelo `Math.max(44,…)` de `:86`).
+- **Verificación**: R1 se valida solo a ojo (`PROJECT_CONTEXT.md:746`), sin capturas de referencia ni checklist de regresión visual.</result>
+<usage><subagent_tokens>51003</subagent_tokens><tool_uses>10</tool_uses><duration_ms>44244</duration_ms></usage>
+</task-notification>
+
+---
+
+Fase 2
+
+---
+
+[Image #1] HUI actual, evaluar
+
+---
+
+Aplicar los cinco
+
+---
+
+Se ha instalado el MCP para blockbench https://github.com/jasonjgardner/blockbench-mcp-plugin para permitir la creación de material requerido, validar funcionalidad
+
+---
+
+<task-notification>
+<task-id>a39260bce1de655c1</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>C:\Users\DANCAS~1\AppData\Local\Temp\claude\C--Users-DanCastello-Documents-GitHub-dndsheets\b1963bc7-cd21-4bc3-90cc-133f52bce434\tasks\a39260bce1de655c1.output</output-file>
+<status>completed</status>
+<summary>Agent "Inventario de assets visuales" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Inventario de solo lectura. No he modificado nada.
+
+## 1) ItemLook: 21 constantes, CustomModelData = ordinal()+1
+Archivo: `src/main/java/net/hawthorn/dndsheets/ItemLook.java`.
+
+- **Rutas:** cada look tiene `assets/dndsheets/textures/item/&lt;nombre&gt;.png` y `models/item/&lt;nombre&gt;.json`, y una línea en el `overrides` de `models/item/token.json`.
+- **Texturas y modelos:** las 21 texturas son propias (16x16, de 110 a 154 bytes) y los 21 modelos existen. Ninguno reutiliza la textura o el modelo de otro. No hay placeholders de textura duplicada.
+- **Parent del modelo:** `item/handheld` en `dm_wand`, `move_wand`, `staff`, `smite` y `roleplay`. Los otros 16 usan `item/generated`.
+
+| CMD | Look | CMD | Look |
+|---|---|---|---|
+| 1 | DM_WAND | 12 | SMITE |
+| 2 | MOVE_WAND | 13 | HUNTERS_MARK |
+| 3 | REST_KIT | 14 | SHIELD |
+| 4 | TURN_NEXT | 15 | COUNTERSPELL |
+| 5 | TURN_UNDO | 16 | TURN_UNDEAD |
+| 6 | TURN_ACTIONS | 17 | HELP |
+| 7 | RAGE | 18 | STAFF |
+| 8 | SECOND_WIND | 19 | SUMMON_CARD |
+| 9 | INSPIRATION | 20 | SHOVE |
+| 10 | WILD_SHAPE | 21 | ROLEPLAY |
+| 11 | TWINNED | | |
+
+- **`token.png`:** es el icono base del ítem registrado `dndsheets:token` (16x16). Es lo que se ve cuando no hay CustomModelData.
+- **Todos los ítems del mod son el mismo ítem registrado:** `DndsheetsModItems.TOKEN` más NBT `CustomModelData`.
+- **Aviso en el Javadoc:** el orden es append-only. Insertar una constante en medio cambia el icono de todo lo ya repartido.
+
+## 2) tools/
+- **`generate_item_icons.py`** (528 líneas):
+  - Dibuja los iconos 16x16 en ASCII-art con una paleta compartida: pergamino y tinta como base, y un color por rol (rojo, oro, verde, azul, violeta, acero, madera, cian).
+  - Escribe los PNG con zlib, sin dependencias.
+  - Escribe los `models/item/*.json`: lista `HANDHELD = {...}` en la línea 489 y `write_models()` en la 494.
+  - El docstring dice "twenty", pero ya son 21.
+- **`import_game_icons.py`**:
+  - Importa los glifos de game-icons.net con commit pinneado.
+  - Los rasteriza con Pillow y svgelements, los tiñe y los deja a 32x32 con contorno oscuro.
+  - Usa `tools/icon_map.json` como mapa concepto → autor/nombre.
+  - Regenera `CREDITS.txt`.
+- **`make_panel_texture.py`:** genera `textures/screens/panel_leather.png`, 64x64, tileable (ruido rosa por FFT, semilla fija).
+- **Otros scripts:** `check_skins.py`, `make_gametest_arena.py`, `add_spell_school.py` y los de lang/SRD no generan arte.
+- **`make_sheet_textures.py`:** PROJECT_CONTEXT.md (línea 740) dice que regenera las texturas de la hoja de personaje. El `.py` no existe, solo queda su `.pyc` en `tools/__pycache__`. Tampoco existen `character_sheet*.png` en `textures/screens/`, que solo contiene `panel_leather.png`. Es una referencia obsoleta en la documentación.
+
+## 3) 3D y GUI
+- **Modelos 3D y entidades:** no hay `models/block`, `models/entity`, geo, renderers ni `.bbmodel`. Solo existe `models/item`. PROJECT_CONTEXT (línea 710) deja fuera de alcance "the mod's own creature models".
+- **Iconos de GUI:** `textures/gui/icons/&lt;categoría&gt;/&lt;nombre&gt;.png`, todos de 32x32, de game-icons.net con licencia CC BY 3.0 y algunos CC0.
+
+| Categoría | Archivos |
+|---|---|
+| action | 8 |
+| condition | 18 |
+| creature | 14 |
+| resource | 8 |
+| school | 8 |
+| stat | 11 |
+| ui | 2 (`delete`, `edit`) |
+
+- **Convención de rutas:** `Icons.java` (`client/gui/Icons.java`) tiene los métodos `condition`, `school`, `creature`, `action`, `resource` y `stat`. `byPath("categoría/nombre")` construye `dndsheets:textures/gui/icons/&lt;path&gt;.png`. El método `draw(...)` pinta el icono.
+- **Fuente:** `font/cinzel.ttf`, con licencia OFL.
+- **Creditos:** `CREDITS.md` en la raíz resume y apunta a `assets/dndsheets/CREDITS.txt`.
+
+## 4) PROJECT_CONTEXT.md
+- **Pack de apariencias (líneas 798, 921):** los 7 appearance packs son de contenido JSON y mods compañeros, no assets propios. La apariencia de un monstruo sale de `MonsterRegistry.Appearance` (equipo, baby, glow) y de `baseEntity`.
+- **ItemLook append-only:** está documentado en el Javadoc de `ItemLook`. Su equivalente "append-only" en PROJECT_CONTEXT son las constantes de red (invariantes 1 a 3).
+- **Resoluciones:** no hay una regla escrita. Los 16 y 32 salen de los generadores.
+- **Créditos:** audio CC0 con lista en PROJECT_CONTEXT ("Attribution &gt; Audio"), checkeada por `checkAudioAssets`. SRD 5.1 con CC BY 4.0.
+- **"Skipped on purpose" visual:** en la línea 268 dice "Zero new assets" (partículas y sonidos vanilla). En la línea 326 se omite la entidad proyectil, los `.ogg` propios y los `ParticleType` propios. Los modelos de criatura propios están fuera de alcance.
+- **Arte original:** el Javadoc de `ItemLook` dice que el arte de los ítems es original porque no se puede redistribuir arte ajeno.
+
+## 5) STAFF y SUMMON_CARD
+- **STAFF:**
+  - Tiene una textura propia (`staff.png`) y modelo `handheld`.
+  - Lo aplican `SpellCommand.buildStaffStack` y `buildBlankStaff`.
+  - Si el DM configura un `itemId` vanilla, el bastón no lleva el look y se ve como ese ítem.
+  - El bastón en blanco y el cargado se ven iguales. Solo cambian el nombre (`chat.dndsheets.staff.blank` frente a `staff.item_name`) y el NBT `quickSpell` / `staffConfigurable`.
+- **SUMMON_CARD:**
+  - Se aplica en `MonsterRegistry.buildBlankCard` y `buildSpawnCard`, con la textura `summon_card.png`.
+  - La carta en blanco (`cardConfigurable`) y la cargada (`monsterSpawn`, o la lista de monstruos de la carta multi-monstruo) llevan el mismo CustomModelData 19. Solo se distinguen por el nombre del ítem.
+  - Tampoco hay ningún indicador visual de cuál monstruo o hechizo está activo.
+- **Dónde está el hueco:** el look va por ordinal, así que un look nuevo (por ejemplo `STAFF_CHARGED` o `SUMMON_CARD_FILLED`) debería ir al final de `ItemLook`.
+
+## 6) Tests (`src/test/java/net/hawthorn/dndsheets/JsonContentSelfTest.java`)
+- **`checkItemLooks()` (línea 1153):** para cada `ItemLook` comprueba que exista la textura, que exista el modelo y que `token.json` contenga el override exacto `"custom_model_data": N }, "model": "dndsheets:item/&lt;name&gt;"`. También comprueba que exista `token.png`.
+- **Ordinales fijados:** solo comprueba `DM_WAND==1`, `RAGE==7` y `SUMMON_CARD==19`. Ni el resto ni los últimos looks (`SHOVE` 20 y `ROLEPLAY` 21) quedan blindados contra reordenamientos.
+- **No valida:** que las texturas sean 16x16, que el `layer0` del modelo apunte a la textura correcta, que no haya PNG huérfanos, ni la coherencia del parent `handheld`.
+- **`checkAssetCredits` (línea 172):** cada PNG de `textures/gui/icons` debe tener su línea en `CREDITS.txt`. No cubre `textures/item`.
+- **`checkAudioAssets`:** cada `.ogg` debe estar en `sounds.json` y en la lista de créditos de audio.
+
+## Qué se podría crear con Blockbench
+- **Candidatos propios:** son los que hoy no tienen nada.
+  - Modelos 3D de `staff`, `dm_wand` y `move_wand`.
+  - Variantes visuales cargado/en blanco de `STAFF` y `SUMMON_CARD`, que habría que agregar al final de `ItemLook`.
+  - Modelos propios de criatura o entidad: hoy no hay ninguno, y el proyecto lo deja fuera de alcance.
+- **Con regeneración:** si los iconos 16x16 se editan a mano en Blockbench, el script `generate_item_icons.py` dejaría de ser la fuente de verdad y volvería a sobrescribir los cambios.</result>
+<usage><subagent_tokens>49059</subagent_tokens><tool_uses>6</tool_uses><duration_ms>46272</duration_ms></usage>
+</task-notification>
+
+---
+
+continúa con Blockbench
+
+---
+
+Ha funcionado correctamente el staff de prueba, agregar la información y funcionamiento en registro para uso futuro, problema detectado, iniciar un combate contra mobs pasivos deja congelado al jugador una vez hayan muerto y al huir de un combate contra mobs hostiles puede quedar en un bucle de intentar huir y que un golpe reinicie el combate, crear una ventana para poder huir sin reiniciarlo
+
+---
+
+<task-notification>
+<task-id>a3f271aaf1ae41eec</task-id>
+<tool-use-id>toolu_019LnoUaR98kfRYEvLuZ6jTc</tool-use-id>
+<output-file>C:\Users\DANCAS~1\AppData\Local\Temp\claude\C--Users-DanCastello-Documents-GitHub-dndsheets\b1963bc7-cd21-4bc3-90cc-133f52bce434\tasks\a3f271aaf1ae41eec.output</output-file>
+<status>completed</status>
+<summary>Agent "Explorar ciclo de vida del combate" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Hay dos causas probables, y las dos salen de reglas de `TurnManager` que no cubren estos casos. No ejecuté ni modifiqué nada. La causa del BUG 1 está en el código, pero no la reproduje en juego. La del BUG 2 es una reconstrucción del código, y falta confirmar cómo termina el combate en tu caso.
+
+Rutas base:
+- `T` = `C:\Users\DanCastello\Documents\GitHub\dndsheets\src\main\java\net\hawthorn\dndsheets\TurnManager.java`
+- `C` = `...\dndsheets\CombatManager.java`
+- `S` = `...\dndsheets\SpellCastManager.java`
+- `M` = `...\dndsheets\MovementAnchorTracker.java`
+- `A` = `...\dndsheets\TurnActionManager.java`
+
+## 1. Ciclo de vida del combate
+
+**Quién cuenta como enemigo y quién entra en el orden**
+- `isMonster` (T:276-278) devuelve true si la entidad tiene `dndsheets.monster` en su NBT o si es `Enemy`. Vacas y cerdos no son `Enemy`, así que no son monstruos.
+- `isCombatTarget` (T:292) es `isMonster || Player || NPC con ficha`. Tampoco incluye pasivos.
+- `startAt` (T:606) solo mete en la iniciativa a jugadores no espectadores y a `isMonster`. Los pasivos nunca entran. El flag `TurnEntry.isMonster` se fija en ese momento.
+- `addLateMonster` (T:814) y el escaneo periódico cada 20 ticks (T:646-657) también filtran por `isMonster`.
+
+**Cómo se inicia**
+1. Ataque cuerpo a cuerpo (C:62-131): `onAttackEntity` solo actúa si `isCombatTarget(target)` (C:79). Llama a `autoStartCombatIfNeeded` (C:118), que a su vez llama a `startAt` con el atacante como iniciador (C:145-153). Esto requiere `autoTurns` activo (C:148).
+2. Proyectil (C:160-207): igual, con `isCombatTarget`.
+3. Hechizo (S:245-248): `autoStartCombatIfNeeded(aggressed, caster)` se llama para **cualquier** objetivo, sin filtro `isCombatTarget`. `isSpellTarget` (S:585-587) acepta cualquier `LivingEntity`, y el comentario de S:575-579 cita vacas y aldeanos a propósito.
+4. Un mob hostil golpea al jugador (T:230-243, `onMobHitsPlayer`): si no hay combate y `autoTurns` está activo, hace `startAt` centrado en la víctima con el mob como iniciador (T:241). Si ya hay combate y el mob no está en el orden, lo añade (T:242).
+5. Manual: `/dndturns start|next|cancel|end` (`TurnCommand`, líneas 25-70 aprox.) y el panel del DM (`network\TurnControlMessage.java:33-36`, con las acciones start, next, cancel y end).
+6. Invocar un monstruo (`MonsterRegistry.java:793`) o dar cuerpo a un NPC (`SheetLoader.java:870`) llama a `addLateMonster`.
+
+**Cómo termina**
+- `end()` (T:776-805) solo se llama desde cuatro sitios:
+  - Todos los enemigos derrotados, en `beginTurn` (T:1058-1062) y en `checkAllEnemiesDefeated` (T:300-305).
+  - Todos los jugadores muertos de verdad (T:1176-1183).
+  - El comando `/dndturns end` y el panel del DM.
+- No hay fin por distancia, por inactividad ni por huida. No existe un `combatTimeout` ni un `fleeDistance`.
+- `allEnemiesDefeated` (T:1144-1156) devuelve `hadMonster`. Si ninguna entrada del orden es monstruo, devuelve **false para siempre**.
+- Cuando muere el último monstruo propio, `onMonsterDeath` (T:178-185) llama a `checkAllEnemiesDefeated` y se llama a `end`. También se marca como derrotado en `Combatant.java:592` y `Combatant.java:676`, y al borrarlo el DM en `MonsterActionManager.java:101-108`.
+- Una vaca que muere no es `isMonster`, así que `onMonsterDeath` retorna en T:181 y nadie evalúa el fin.
+
+## 2. Qué congela o limita al jugador
+
+**Mecanismos**
+- Ancla de posición, cuando no es tu turno (M:103-130): teletransporta a X/Z y pone la velocidad en cero. Se levanta en `beginTurn` con `movementAnchors.release` (T:1073) o en `end()` con `movementAnchors.clear()` (T:790).
+- Presupuesto de movimiento en tu turno (M:175-220): máximo `speed / feetPerBlock` bloques en línea recta desde el origen del turno (30 ft / 5 = 6 bloques). Si te pasas, `teleportTo` a la última posición buena y `setDeltaMovement(ZERO)` (M:216-217). `onPlayerTick` lo aplica (T:1317-1329). El origen se reinicia en `beginTurn` (T:1113).
+- Efecto Glowing en quien tiene el turno (T:1047), y `NoAI` en los mobs que esperan (T:1038, `setCompatMobActive`).
+- No hay efectos de lentitud ni `LivingEvent` de input.
+
+**Qué se queda activo si el combate no termina**
+- Si `active` sigue en true, el presupuesto de 6 bloques sigue vigente.
+- El origen solo se reinicia al empezar un turno nuevo, y eso solo ocurre cuando el propio jugador gasta su acción (`tryAct` programa `advance`, T:439-442).
+- Si no ataca ni lanza hechizos, el jugador queda rebotando contra los 6 bloques indefinidamente, sin límite de tiempo. Eso es "congelado".
+- `hadMonster == false` mantiene el combate vivo para siempre (T:1155).
+
+**Para los mobs**
+- Hay un timeout de turno de 30 ticks (T:122) y un presupuesto de movimiento propio (T:249-264).
+- `restoreAllCompatMobAi` y la etiqueta `FROZEN_TAG` (T:132-154) devuelven la IA al terminar.
+
+## 3. Huida: lo que existe y el bucle
+
+**Lo que existe**
+- Dodge, Dash y Disengage (A:34-94), más Step of the Wind del monje (A:77, A:221-243).
+- Ataque de oportunidad (`OpportunityAttackTracker.java:63-86`, alcance 3.0 bloques), solo contra monstruos con ficha y sin `isDisengaged`.
+
+**Dash y Disengage se anulan solos**
+- En A:82 `use()` llama a `tryAct`, que programa el avance de turno para el tick siguiente (T:439-442).
+- El efecto se guarda en A:90, pero el turno ya está terminando. Después `advance` ancla al jugador (T:993) y el efecto se borra en `beginTurn` con `clearFor` (T:1071).
+- El doble de movimiento (M:179) y el no provocar ataques de oportunidad (OAT:67) solo se evalúan para el actor actual. En la práctica no aplican.
+- La excepción es Step Dash / Step Disengage del monje, que usan `tryActBonus` y no terminan el turno.
+- Esto se deduce leyendo el código. No encontré ningún test que lo cubra.
+
+**El bucle, reconstruido**
+1. El jugador huye en tramos de 6 bloques por turno. Los mobs con IA (adoptados) persiguen y golpean en su turno (T:1115-1137).
+2. El combate no se cierra al alejarse, porque no hay condición de distancia.
+3. Tras `end()`, que puede ser un `/dndturns end` o el botón del panel, el mob hostil sigue persiguiendo y su siguiente golpe dispara `onMobHitsPlayer` (T:241). Con `!active` y `autoTurns` activo, hace `startAt` otra vez y reinicia iniciativa y presupuesto.
+4. Segunda vía de reinicio: un hechizo del jugador contra el mob también reinicia vía S:247.
+5. Además, `startAt` con combate activo y zona distinta devuelve 0 con el mensaje "bloqueado en otro sitio" (T:590-597). El jugador que huyó más de 30 + 30 bloques no puede recibir un combate nuevo mientras el viejo siga vivo.
+
+**Dónde enganchar la ventana de huida**
+- Lo más natural es una marca `lastEndedTick` o `fleeUntil` en `end()` (T:776).
+- Se consultaría en `onMobHitsPlayer` (T:241) y en `autoStartCombatIfNeeded` (C:147-150).
+- No hay hoy ningún estado así.
+
+## 4. Configuración
+
+`Config.java` solo tiene (Rule en línea 59, definiciones en 143-157):
+- `autoCombat`, `autoTurns` (inicio automático), `autoDeathSaves`, `autoOpportunityAttacks`.
+- `feetPerBlock` (1-30, por defecto 5, línea 157).
+- `adoptVanillaMobs` (línea 141).
+- `soloMode`, `visionRules`, `castTicksPerLevel` y `castTicksMax`.
+
+No existen `combatTimeout`, `fleeDistance` ni distancia de salida de combate. Valores actuales en `runClient\config\dndsheets-common.toml` (autoCombat, autoTurns, autoDeathSaves y autoOpportunityAttacks en `true`, `feetPerBlock = 5`).
+
+## 5. Tests y documentación
+
+- `src\test\java\net\hawthorn\dndsheets\JsonContentSelfTest.java`: solo comprueba por texto fuente que `TurnManager.freeze` usa `isNoAi` (líneas 1039-1043). No cubre inicio, fin, huida ni pasivos.
+- `src\main\java\net\hawthorn\dndsheets\gametest\CombatantGameTests.java` (líneas 61-126): solo cubre `Combatant` y bloques de monstruo. No hay gametest de ciclo de combate.
+- `TurnManager.moveToFront` está marcado como testeable sin servidor, pero no encontré un test que lo cubra.
+- `PROJECT_CONTEXT.md`:
+  - 251-256: techo conocido de un solo combate por servidor.
+  - 464-470: bug histórico, el ataque que inicia combate se perdía (ya arreglado con `startAt(..., initiator)`).
+  - 470-471: Dodge/Dash/Disengage "enchufan en la maquinaria existente".
+  - 644-646: `isMonster` separado de `isCombatTarget` a propósito, para que un NPC amigo no impida terminar el combate.
+  - No documenta pasivos ni huida.
+
+## 6. Red, HUD y teclas
+
+- `network\TurnStateMessage.java` (líneas 30-102): lleva `active`, `round`, `currentEntityId`, `actionUsed`, origen, roster y `feetPerBlock`. La emite `broadcastTurnState` (T:1209-1217). Un latido cada 20 ticks la reenvía (T:1197-1202). `end()` la envía con `active=false`, que oculta el HUD.
+- `client\TurnHudState.java` y `client\TurnHudOverlay.java` (línea 74, `if (!TurnHudState.active()) return`).
+- Terminar combate: botones start/next/cancel/end en `client\gui\TurnControlScreen.java:16` y la tecla del ítem `TurnItemManager.java:20-50`. Ese ítem solo pasa de turno o deshace una acción, no termina el combate.
+- `init\DndsheetsModKeyMappings.java`: no hay tecla para terminar combate.
+
+## Hipótesis de causa raíz
+
+**BUG 1 (congelado tras matar pasivos)**
+- Un hechizo ofensivo contra una vaca o cerdo inicia combate (S:245-248, sin filtro, S:585-587).
+- `startAt` mete solo al jugador y no a los pasivos (T:606).
+- Sin entradas con `isMonster`, `allEnemiesDefeated` es siempre false (T:1155). El `LivingDeathEvent` de un pasivo no ejecuta el cierre (T:181).
+- Resultado: combate activo sin fin posible. El jugador queda limitado a 6 bloques por turno (M:211-217) y solo se libera gastando acción.
+- Arreglo mínimo: filtrar `isCombatTarget` antes de `autoStartCombatIfNeeded` en el camino de hechizos, o terminar el combate si tras `startAt` no hay ningún `isMonster`.
+- Comprobación pendiente: si una vaca fue vinculada con `/dndmonsters bind`, entra como monstruo y debería cerrar bien vía `onMonsterDeath`.
+
+**BUG 2 (bucle de huida)**
+- Dash y Disengage se anulan por el auto-avance (A:82/90 frente a T:439-442/1071).
+- No existe fin de combate por distancia ni por inactividad.
+- Al terminar el combate, el siguiente golpe de un mob lo reinicia (T:241).
+- Arreglo propuesto: una ventana de gracia tras `end()` o tras alejarse, consultada en T:241 y C:147-150.
+
+Una pregunta abierta: no está claro cómo termina el combate en tu escenario de huida (comando del DM, muerte de jugador, o nunca). Esa parte la reconstruí solo con el código.</result>
+<usage><subagent_tokens>131062</subagent_tokens><tool_uses>25</tool_uses><duration_ms>113996</duration_ms></usage>
+</task-notification>
