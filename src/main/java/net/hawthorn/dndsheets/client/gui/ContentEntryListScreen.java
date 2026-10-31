@@ -42,8 +42,11 @@ public class ContentEntryListScreen extends ListPickerScreen {
 	//Same criterion as DungeonPieceListScreen.open: the parent is whatever's on screen at that moment
 	//(the screen that requested the list, or this same screen if it's an echo after saving/deleting).
 	public static void open(ContentType type, String arrayJson, String packsJson) {
-		Minecraft.getInstance().setScreen(new ContentEntryListScreen(type, parse(arrayJson), parse(packsJson),
-			Minecraft.getInstance().screen));
+		Screen current = Minecraft.getInstance().screen;
+		//After a save the form has already returned to the OLD list: take its parent, so "< Back" leads to
+		//the menu instead of a stale copy of this same list.
+		Screen parent = current instanceof ContentEntryListScreen stale && stale.type == type ? stale.parent : current;
+		Minecraft.getInstance().setScreen(new ContentEntryListScreen(type, parse(arrayJson), parse(packsJson), parent));
 	}
 
 	private static List<JsonObject> parse(String arrayJson) {
@@ -100,7 +103,8 @@ public class ContentEntryListScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.content_entry.add"), b -> openCreateForm());
 
 		if (fromPacks.isEmpty()) return;
-		addHeader(Component.translatable("gui.dndsheets.content_entry.from_pack"));
+		addHeader(Component.translatable("gui.dndsheets.content_entry.from_pack"))
+			.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("gui.dndsheets.content_entry.from_pack_tip")));
 		//Ids you already have your own version of aren't repeated below: your version is the one that
 		//counts, and showing it twice — one editable, one not — only invites editing the one that doesn't count.
 		java.util.Set<String> mine = new java.util.HashSet<>();
@@ -116,7 +120,9 @@ public class ContentEntryListScreen extends ListPickerScreen {
 		String name = entry.has("name") ? entry.get("name").getAsString() : id;
 		//A pack name is a language key ("content.dndsheets.encounter.crypt_guardians"): it gets translated, which
 		//is what the DM recognizes. Whatever the DM types is their own text and ContentNames leaves it as-is.
-		Component label = Component.literal(id + " — ").append(net.hawthorn.dndsheets.ContentNames.of(name));
+		//The name leads; the id trails, dimmed. It's still in the label, so the search box finds either.
+		Component label = net.hawthorn.dndsheets.ContentNames.of(name).copy()
+			.append(Component.literal("  " + id).withStyle(net.minecraft.ChatFormatting.DARK_GRAY));
 		addRow(id.equals(name) ? Component.literal(id) : label, b -> openEditor(entry));
 	}
 
@@ -128,7 +134,9 @@ public class ContentEntryListScreen extends ListPickerScreen {
 			TraitEditScreen.open(entry);
 		} else {
 			FormSpec spec = specFor(type);
-			ContentFormScreen.open(type, Component.translatable("gui.dndsheets.content_entry.edit", id).getString(),
+			//The title names the entry ("Edit: Dagger"), not its id: the id is still on the list row.
+			String name = entry.has("name") ? net.hawthorn.dndsheets.ContentNames.plain(entry.get("name").getAsString()) : id;
+			ContentFormScreen.open(type, Component.translatable("gui.dndsheets.content_entry.edit", name).getString(),
 				spec.fields(), spec.prefill().apply(entry), spec.toJson(), entry);
 		}
 	}

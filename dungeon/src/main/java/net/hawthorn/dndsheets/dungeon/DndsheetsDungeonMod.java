@@ -64,5 +64,6 @@ public class DndsheetsDungeonMod {
 		addNetworkMessage(DungeonPieceRemoveMessage.class, DungeonPieceRemoveMessage::buffer, DungeonPieceRemoveMessage::new, DungeonPieceRemoveMessage::handler);
 		addNetworkMessage(DungeonPieceUpdateMessage.class, DungeonPieceUpdateMessage::buffer, DungeonPieceUpdateMessage::new, DungeonPieceUpdateMessage::handler);
 		addNetworkMessage(DungeonTraceCaptureMessage.class, DungeonTraceCaptureMessage::buffer, DungeonTraceCaptureMessage::new, DungeonTraceCaptureMessage::handler);
+		addNetworkMessage(DungeonTraceChunkMessage.class, DungeonTraceChunkMessage::buffer, DungeonTraceChunkMessage::new, DungeonTraceChunkMessage::handler);
 	}
 }

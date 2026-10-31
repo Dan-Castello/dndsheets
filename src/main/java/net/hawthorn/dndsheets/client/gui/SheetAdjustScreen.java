@@ -61,8 +61,18 @@ public class SheetAdjustScreen extends FormPanelScreen {
 	//Width of ONE column within the row; the width of the whole row is formWidth().
 	private static final int COLUMN_WIDTH = 90;
 
-	//Wide panel and tight rows: there are ten actions, and they don't fit with the default spacing.
-	@Override protected int formWidth() { return 190; }
+	//One column of the panel, and the gap between the two columns.
+	private static final int PANEL_COLUMN = 190;
+	private static final int COLUMN_GAP = 8;
+	//A row of buttons, and a row whose field carries a label 10px above it.
+	private static final int BUTTON_ROW = 24;
+	private static final int LABELLED_ROW = EDIT_HEIGHT + 14;
+
+	private boolean twoColumns() {
+		return this.width >= 2 * PANEL_COLUMN + COLUMN_GAP + 40;
+	}
+
+	@Override protected int formWidth() { return twoColumns() ? 2 * PANEL_COLUMN + COLUMN_GAP : PANEL_COLUMN; }
 	@Override protected int rowHeight() { return 26; }
 	//Tall band: below the title there's a second, read-only line with HP/AC.
 	@Override protected int titleBand() { return 44; }
@@ -116,97 +126,104 @@ public class SheetAdjustScreen extends FormPanelScreen {
 
 	@Override
 	protected void buildForm() {
-		int y = formTop;
+		//Two columns when the window is wide enough: stacked in one, the ten actions made a 320px-tall
+		//panel, and at GUI scale 4 (270px) Conditions and Back fell off the bottom. Left = sheet values
+		//(gold, slots, level); right = rules switches (advantage, affinity, pact, passive).
+		int left = centerX - formWidth() / 2;
+		int rightX = twoColumns() ? left + PANEL_COLUMN + COLUMN_GAP : left;
 
 		//--- Gold ---
-		goldAmountBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.gold_amount").getString(), "0", 10, y, centerX - formWidth() / 2, COLUMN_WIDTH);
+		int y = formTop;
+		goldAmountBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.gold_amount").getString(), "0", 10, y, left, COLUMN_WIDTH);
 		goldAmountBox.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.gold_tip")));
 		Button addGoldButton = TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.gold_add"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.gold(targetUuid, "add", parseIntOr(goldAmountBox.getValue(), 0))), centerX - formWidth() / 2 + COLUMN_WIDTH + 4, y, 40, FIELD_HEIGHT);
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.gold(targetUuid, "add", parseIntOr(goldAmountBox.getValue(), 0))), left + COLUMN_WIDTH + 4, y, 46, EDIT_HEIGHT);
 		addGoldButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.gold_add_tip")));
 		this.addRenderableWidget(addGoldButton);
 
 		Button setGoldButton = TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.gold_set"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.gold(targetUuid, "set", parseIntOr(goldAmountBox.getValue(), 0))), centerX - formWidth() / 2 + COLUMN_WIDTH + 48, y, 40, FIELD_HEIGHT);
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.gold(targetUuid, "set", parseIntOr(goldAmountBox.getValue(), 0))), left + COLUMN_WIDTH + 54, y, 46, EDIT_HEIGHT);
 		setGoldButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.gold_set_tip")));
 		this.addRenderableWidget(setGoldButton);
-		y += rowHeight();
+		y += LABELLED_ROW;
 
 		//--- Spell slots ---
-		slotsMaxBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.slots_max").getString(), String.valueOf(slotsMax), 3, y, centerX - formWidth() / 2, COLUMN_WIDTH);
+		slotsMaxBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.slots_max").getString(), String.valueOf(slotsMax), 3, y, left, COLUMN_WIDTH);
 		slotsMaxBox.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.slots_max_tip")));
 
-		slotsCurrentBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.slots_current").getString(), String.valueOf(slotsCurrent), 3, y, centerX - formWidth() / 2 + COLUMN_WIDTH + 4, COLUMN_WIDTH);
+		slotsCurrentBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.slots_current").getString(), String.valueOf(slotsCurrent), 3, y, left + COLUMN_WIDTH + 4, COLUMN_WIDTH);
 		slotsCurrentBox.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.slots_current_tip")));
-		y += rowHeight();
+		y += EDIT_HEIGHT + 4;
 
-		//Its own row for "Apply": the two fields (90px each) already nearly fill formWidth() (190px), so
+		//Its own row for "Apply": the two fields (90px each) already nearly fill the column (190px), so
 		//sharing the row with them left the button at 190-188=2 PIXELS wide — practically
-		//impossible to click, the real cause of "spell slot changes don't apply" (it wasn't
-		//the vertical clipping fixed earlier, this is a separate width bug).
+		//impossible to click, the real cause of "spell slot changes don't apply".
 		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.slots_apply"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.slots(targetUuid, parseIntOr(slotsMaxBox.getValue(), 0), parseIntOr(slotsCurrentBox.getValue(), 0))), centerX - formWidth() / 2, y, formWidth(), FIELD_HEIGHT));
-		y += rowHeight();
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.slots(targetUuid, parseIntOr(slotsMaxBox.getValue(), 0), parseIntOr(slotsCurrentBox.getValue(), 0))), left, y, PANEL_COLUMN, FIELD_HEIGHT));
+		y += FIELD_HEIGHT + 14; //Room for the next row's label.
+
+		//--- Character level (permanent choice) ---
+		levelBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.level").getString(), "1", 2, y, left, COLUMN_WIDTH);
+		levelBox.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.level_tip")));
+		Button setLevelButton = TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.level_set"), button ->
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.level(targetUuid, parseIntOr(levelBox.getValue(), 1))), left + COLUMN_WIDTH + 4, y, PANEL_COLUMN - COLUMN_WIDTH - 4, EDIT_HEIGHT);
+		setLevelButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.level_set_tip")));
+		this.addRenderableWidget(setLevelButton);
+		y += EDIT_HEIGHT + 6;
+		int leftBottom = y;
+
+		//--- Right column (or below, in one column) ---
+		y = twoColumns() ? formTop : y;
 
 		//--- Next attack advantage ---
-		advantageButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - formWidth() / 2, y, formWidth() - 60, FIELD_HEIGHT,
+		advantageButton = this.addRenderableWidget(new DirectionalCycleButton(rightX, y, PANEL_COLUMN - 60, FIELD_HEIGHT,
 			translatedLabel("gui.dndsheets.sheet_adjust.next_attack", ADVANTAGE_LABELS[advantageIndex]),
 			() -> { advantageIndex = (advantageIndex + 1) % ADVANTAGE_LABELS.length; advantageButton.setMessage(translatedLabel("gui.dndsheets.sheet_adjust.next_attack", ADVANTAGE_LABELS[advantageIndex])); },
 			() -> { advantageIndex = (advantageIndex - 1 + ADVANTAGE_LABELS.length) % ADVANTAGE_LABELS.length; advantageButton.setMessage(translatedLabel("gui.dndsheets.sheet_adjust.next_attack", ADVANTAGE_LABELS[advantageIndex])); }));
 		advantageButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.advantage_tip")));
 		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.apply"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.advantage(targetUuid, ADVANTAGE_LABELS[advantageIndex])), centerX - formWidth() / 2 + formWidth() - 56, y, 56, FIELD_HEIGHT));
-		y += rowHeight();
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.advantage(targetUuid, ADVANTAGE_LABELS[advantageIndex])), rightX + PANEL_COLUMN - 56, y, 56, FIELD_HEIGHT));
+		y += BUTTON_ROW;
 
 		//--- Damage type / affinity ---
-		damageTypeButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - formWidth() / 2, y, COLUMN_WIDTH, FIELD_HEIGHT,
+		damageTypeButton = this.addRenderableWidget(new DirectionalCycleButton(rightX, y, COLUMN_WIDTH, FIELD_HEIGHT,
 			translatedLabel("gui.dndsheets.sheet_adjust.type", DamageTypes.CANONICAL[damageTypeIndex]),
 			() -> { damageTypeIndex = (damageTypeIndex + 1) % DamageTypes.CANONICAL.length; damageTypeButton.setMessage(translatedLabel("gui.dndsheets.sheet_adjust.type", DamageTypes.CANONICAL[damageTypeIndex])); },
 			() -> { damageTypeIndex = (damageTypeIndex - 1 + DamageTypes.CANONICAL.length) % DamageTypes.CANONICAL.length; damageTypeButton.setMessage(translatedLabel("gui.dndsheets.sheet_adjust.type", DamageTypes.CANONICAL[damageTypeIndex])); }));
-		affinityButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - formWidth() / 2 + COLUMN_WIDTH + 4, y, COLUMN_WIDTH, FIELD_HEIGHT,
+		affinityButton = this.addRenderableWidget(new DirectionalCycleButton(rightX + COLUMN_WIDTH + 4, y, PANEL_COLUMN - COLUMN_WIDTH - 4, FIELD_HEIGHT,
 			translatedLabel("gui.dndsheets.sheet_adjust.affinity", AFFINITIES[affinityIndex]),
 			() -> { affinityIndex = (affinityIndex + 1) % AFFINITIES.length; affinityButton.setMessage(translatedLabel("gui.dndsheets.sheet_adjust.affinity", AFFINITIES[affinityIndex])); },
 			() -> { affinityIndex = (affinityIndex - 1 + AFFINITIES.length) % AFFINITIES.length; affinityButton.setMessage(translatedLabel("gui.dndsheets.sheet_adjust.affinity", AFFINITIES[affinityIndex])); }));
 		affinityButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.affinity_tip")));
-		y += rowHeight();
+		y += BUTTON_ROW;
 
 		//Same dedicated row as above, same width bug (190-188=2px) if it shared a row with the two cycle buttons.
 		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.affinity_apply"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.damageAffinity(targetUuid, DamageTypes.CANONICAL[damageTypeIndex], AFFINITIES[affinityIndex])), centerX - formWidth() / 2, y, formWidth(), FIELD_HEIGHT));
-		y += rowHeight();
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.damageAffinity(targetUuid, DamageTypes.CANONICAL[damageTypeIndex], AFFINITIES[affinityIndex])), rightX, y, PANEL_COLUMN, FIELD_HEIGHT));
+		y += BUTTON_ROW;
 
 		//--- Warlock pact (permanent choice) ---
-		pactButton = this.addRenderableWidget(new DirectionalCycleButton(centerX - formWidth() / 2, y, formWidth() - 60, FIELD_HEIGHT,
+		pactButton = this.addRenderableWidget(new DirectionalCycleButton(rightX, y, PANEL_COLUMN - 60, FIELD_HEIGHT,
 			translatedLabel("gui.dndsheets.sheet_adjust.pact", PACTS[pactIndex]),
 			() -> { pactIndex = (pactIndex + 1) % PACTS.length; pactButton.setMessage(translatedLabel("gui.dndsheets.sheet_adjust.pact", PACTS[pactIndex])); },
 			() -> { pactIndex = (pactIndex - 1 + PACTS.length) % PACTS.length; pactButton.setMessage(translatedLabel("gui.dndsheets.sheet_adjust.pact", PACTS[pactIndex])); }));
 		pactButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.pact_tip")));
 		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.apply"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.pact(targetUuid, PACTS[pactIndex])), centerX - formWidth() / 2 + formWidth() - 56, y, 56, FIELD_HEIGHT));
-		y += rowHeight();
-
-		//--- Character level (permanent choice) ---
-		levelBox = addFieldAt(Component.translatable("gui.dndsheets.sheet_adjust.level").getString(), "1", 2, y, centerX - formWidth() / 2, COLUMN_WIDTH);
-		levelBox.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.level_tip")));
-		Button setLevelButton = TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.level_set"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.level(targetUuid, parseIntOr(levelBox.getValue(), 1))), centerX - formWidth() / 2 + COLUMN_WIDTH + 4, y, formWidth() - COLUMN_WIDTH - 4, FIELD_HEIGHT);
-		setLevelButton.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.sheet_adjust.level_set_tip")));
-		this.addRenderableWidget(setLevelButton);
-		y += rowHeight();
+			DndsheetsMod.PACKET_HANDLER.sendToServer(SheetAdjustMessage.pact(targetUuid, PACTS[pactIndex])), rightX + PANEL_COLUMN - 56, y, 56, FIELD_HEIGHT));
+		y += BUTTON_ROW;
 
 		//--- Passive perception ---
 		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.passive"), button ->
-			DndsheetsMod.PACKET_HANDLER.sendToServer(new PassivePerceptionRequestMessage(targetUuid)), centerX - formWidth() / 2, y, formWidth(), FIELD_HEIGHT));
-		y += rowHeight() + 4;
+			DndsheetsMod.PACKET_HANDLER.sendToServer(new PassivePerceptionRequestMessage(targetUuid)), rightX, y, PANEL_COLUMN, FIELD_HEIGHT));
+		y += BUTTON_ROW;
 
-		//One row, not fourteen: conditions live in their own list (see ConditionListScreen). This
-		//screen already overflowed the top with 8 rows (see PROJECT_CONTEXT.md, bug #2), so it's not
-		//the place to cram in a control per condition.
+		//--- Footer: Conditions and Back share one full-width row ---
+		//Conditions live in their own list (see ConditionListScreen): one button, not fourteen controls.
+		y = Math.max(y, leftBottom) + 4;
 		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.sheet_adjust.conditions"), button ->
-			ConditionListScreen.open(targetUuid, targetName, conditionsCsv), centerX - formWidth() / 2, y, formWidth(), FIELD_HEIGHT));
-		y += rowHeight() + 4;
-
-		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.back"), button -> this.onClose(), centerX - formWidth() / 2, y, formWidth(), FIELD_HEIGHT));
+			ConditionListScreen.open(targetUuid, targetName, conditionsCsv), left, y, formWidth() / 2 - 2, FIELD_HEIGHT));
+		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.back"), button -> this.onClose(),
+			centerX + 2, y, formWidth() / 2 - 2, FIELD_HEIGHT));
 
 		formBottom = y + FIELD_HEIGHT + 10;
 	}
@@ -232,7 +249,7 @@ public class SheetAdjustScreen extends FormPanelScreen {
 		//Read-only: the player's real HP/AC, so they don't have to be asked to open their own sheet in
 		//the middle of combat. It's the only extra thing this panel draws, which is why its header band is taller.
 		guiGraphics.drawCenteredString(this.font, Component.translatable("gui.dndsheets.sheet_adjust.vitals", hp, maxHp, ac),
-			centerX, formTop - titleBand() + 16, 0xFFAA00);
+			centerX, formTop - titleBand() + 16, GuiStyle.WARN_COLOR);
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
 		//The four fields, each with its label above: they used to be rendered one by one by hand and none
 		//showed what it was for.

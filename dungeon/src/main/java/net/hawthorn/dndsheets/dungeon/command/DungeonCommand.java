@@ -8,6 +8,8 @@ import net.hawthorn.dndsheets.DndPaths;
 import net.hawthorn.dndsheets.DndsheetsMod;
 import net.hawthorn.dndsheets.dungeon.DndsheetsDungeonMod;
 import net.hawthorn.dndsheets.dungeon.DungeonManager;
+import net.hawthorn.dndsheets.dungeon.DungeonPiecePlacer;
+import net.hawthorn.dndsheets.dungeon.GridToStructure;
 import net.hawthorn.dndsheets.dungeon.DungeonPieceRegistry;
 import net.hawthorn.dndsheets.dungeon.network.DungeonPieceListMessage;
 import net.minecraft.commands.CommandSourceStack;
@@ -73,7 +75,82 @@ public class DungeonCommand {
 			//directly over this addon's channel, which the core can no longer do without depending on
 			//it. The Panel sends this command via chat instead (same pattern as "journal"), and this
 			//responds with exactly what that message used to respond with.
-			.then(Commands.literal("gui").executes(DungeonCommand::gui)));
+			.then(Commands.literal("gui").executes(DungeonCommand::gui))
+			//A map from an online generator (donjon, Universal VTT, Dungeon Scrawl), pasted at the DM's feet.
+			.then(Commands.literal("importmap")
+				.then(Commands.argument("file", StringArgumentType.string())
+					.suggests((ctx, builder) -> SharedSuggestionProvider.suggest(mapFiles(), builder))
+					.executes(ctx -> importMap(ctx, 3, 4))
+					.then(Commands.argument("scale", IntegerArgumentType.integer(1, 6))
+						.executes(ctx -> importMap(ctx, IntegerArgumentType.getInteger(ctx, "scale"), 4))
+						.then(Commands.argument("height", IntegerArgumentType.integer(2, 10))
+							.executes(ctx -> importMap(ctx, IntegerArgumentType.getInteger(ctx, "scale"), IntegerArgumentType.getInteger(ctx, "height")))))))
+			//Takes back the DM's last room pasted from the trace editor (see PasteHistory).
+			.then(Commands.literal("undopaste").executes(DungeonCommand::undoPaste)));
+	}
+
+	private static final java.nio.file.Path MAPS_DIR = DndPaths.ROOT.resolve("dungeon_maps").toAbsolutePath().normalize();
+
+	private static List<String> mapFiles() {
+		try {
+			java.nio.file.Files.createDirectories(MAPS_DIR);
+			try (var files = java.nio.file.Files.list(MAPS_DIR)) {
+				return files.filter(java.nio.file.Files::isRegularFile).map(p -> p.getFileName().toString()).toList();
+			}
+		} catch (java.io.IOException e) {
+			return List.of();
+		}
+	}
+
+	/**
+	 * <p>Pastes a generator's map (see DungeonMapImporter) with its north-west corner at the DM's feet:
+	 * walls, floor, a ceiling, and the inside carved out, so it can go straight into a hillside or
+	 * underground. Undo with /dnddungeon undopaste like a pasted room.</p>
+	 */
+	private static int importMap(CommandContext<CommandSourceStack> ctx, int scale, int height) throws CommandSyntaxException {
+		ServerPlayer dm = ctx.getSource().getPlayerOrException();
+		String name = StringArgumentType.getString(ctx, "file");
+		mapFiles(); //creates the folder, so the "not found" message points at a folder that exists
+		java.nio.file.Path file = MAPS_DIR.resolve(name).normalize();
+		//Only files inside the maps folder: the name comes from chat.
+		if (!file.startsWith(MAPS_DIR) || !java.nio.file.Files.isRegularFile(file)) {
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.dungeon.map_missing", name, MAPS_DIR.toString()));
+			return 0;
+		}
+		net.hawthorn.dndsheets.dungeon.DungeonMapImporter.Result map;
+		try {
+			map = net.hawthorn.dndsheets.dungeon.DungeonMapImporter.read(file, scale);
+		} catch (java.io.IOException | RuntimeException e) {
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.dungeon.map_failed", name, String.valueOf(e.getMessage())));
+			return 0;
+		}
+
+		//Ceiling, carved inside and the map's notes as signs; for lights and materials, the editor (DM Panel).
+		GridToStructure.Cell[][] grid = map.grid();
+		List<GridToStructure.PlacedBlock> blocks = GridToStructure.renderLayers(java.util.Collections.singletonList(grid), new int[]{height},
+			java.util.Collections.singletonList(map.options()), new GridToStructure.Extras(true, true, null, 0, map.notes()));
+		if (net.hawthorn.dndsheets.dungeon.PasteQueue.busy(dm)) {
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.dungeon.paste_busy"));
+			return 0;
+		}
+		BlockPos origin = dm.blockPosition();
+		net.hawthorn.dndsheets.dungeon.PasteQueue.paste(dm, dm.serverLevel(), origin, blocks, DungeonPiecePlacer.Materials.DEFAULTS,
+			net.hawthorn.dndsheets.dungeon.network.DungeonTraceCaptureMessage.pastedMessage(Component.translatable("chat.dndsheets.dungeon.map_imported",
+				map.format(), grid[0].length, grid.length, origin.getX(), origin.getY(), origin.getZ())));
+		return 1;
+	}
+
+	private static int undoPaste(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		ServerPlayer player = ctx.getSource().getPlayerOrException();
+		//A paste still going in: stop it first, or it would keep building over what's being restored.
+		net.hawthorn.dndsheets.dungeon.PasteQueue.cancel(player);
+		int restored = net.hawthorn.dndsheets.dungeon.PasteHistory.undo(player);
+		if (restored < 0) {
+			ctx.getSource().sendFailure(Component.translatable("chat.dndsheets.dungeon.trace_paste_nothing"));
+			return 0;
+		}
+		ctx.getSource().sendSuccess(() -> Component.translatable("chat.dndsheets.dungeon.trace_paste_undone", restored), false);
+		return 1;
 	}
 
 	private static int gui(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {

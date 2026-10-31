@@ -32,7 +32,10 @@ public class OptionsManageScreen extends ListPickerScreen {
 	public static void open(String category, String arrayJson) {
 		List<String> values = new ArrayList<>();
 		for (JsonElement el : JsonParser.parseString(arrayJson).getAsJsonArray()) values.add(el.getAsString());
-		Minecraft.getInstance().setScreen(new OptionsManageScreen(category, values, Minecraft.getInstance().screen));
+		Screen current = Minecraft.getInstance().screen;
+		//Reopened by the server after an add/remove: replace the stale list, keep its parent (see ContentEntryListScreen.open).
+		Screen parent = current instanceof OptionsManageScreen stale && stale.category.equals(category) ? stale.parent : current;
+		Minecraft.getInstance().setScreen(new OptionsManageScreen(category, values, parent));
 	}
 
 	@Override

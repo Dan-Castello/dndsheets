@@ -27,7 +27,8 @@ public class DiceRollOverlay {
 	private static final long TUMBLE_MS = 850;
 	private static final long HOLD_MS = 1900;
 	private static final long FADE_MS = 650;
-	private static final int DIE = 56;
+	//Was 56: 30% smaller, in line with the rest of the HUD, so the die doesn't cover what you're aiming at.
+	private static final int DIE = 40;
 
 	private static long startedAt = -1;
 	private static int natural, total, kind;
@@ -47,7 +48,7 @@ public class DiceRollOverlay {
 	}
 
 	private static void render(GuiGraphics guiGraphics, int width, int height) {
-		if (startedAt < 0) return;
+		if (startedAt < 0 || Minecraft.getInstance().options.hideGui) return;
 		long elapsed = System.currentTimeMillis() - startedAt;
 		if (elapsed > TUMBLE_MS + HOLD_MS + FADE_MS) {
 			startedAt = -1;
@@ -90,9 +91,9 @@ public class DiceRollOverlay {
 
 		if (!tumbling) {
 			int textY = centerY + DIE / 2 + 6;
-			guiGraphics.drawCenteredString(font, Component.translatable("hud.dndsheets.dice.total", who, total), centerX, textY, (0x00FFFFFF & GuiStyle.SUBTITLE_COLOR) | a);
+			guiGraphics.drawCenteredString(font, Component.translatable("hud.dndsheets.dice.total", net.hawthorn.dndsheets.ContentNames.of(who), total), centerX, textY, (0x00FFFFFF & GuiStyle.SUBTITLE_COLOR) | a);
 			if (kind != 0) {
-				guiGraphics.drawCenteredString(font, GuiStyle.title(Component.translatable(kind == 1 ? "hud.dndsheets.dice.crit" : "hud.dndsheets.dice.fumble")),
+				guiGraphics.drawCenteredString(font, Component.translatable(kind == 1 ? "hud.dndsheets.dice.crit" : "hud.dndsheets.dice.fumble"),
 					centerX, textY + 11, (0x00FFFFFF & tint) | a);
 			}
 		}

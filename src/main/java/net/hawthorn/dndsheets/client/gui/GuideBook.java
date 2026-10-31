@@ -199,7 +199,8 @@ public class GuideBook {
 		}
 
 		List<Integer> heights = new ArrayList<>();
-		for (IndexLine line : index) heights.add(measure(font, line.label().getString()));
+		//Measured with its style: rubrics are drawn bold, and measuring them plain under-counted the lines.
+		for (IndexLine line : index) heights.add(Math.max(1, font.getSplitter().splitLines(line.label(), PAGE_WIDTH, Style.EMPTY).size()));
 		List<Integer> indexPages = GuideLayout.paginate(heights, PAGE_LINES);
 
 		ListTag pages = new ListTag();

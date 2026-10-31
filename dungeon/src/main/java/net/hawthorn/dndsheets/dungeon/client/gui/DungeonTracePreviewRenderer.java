@@ -45,18 +45,23 @@ public final class DungeonTracePreviewRenderer {
 	private static final int START_COLOR = 0x2ECC71;
 	//0-255: transparent enough to read as "not there yet" while the shape is still recognizable.
 	private static final int GHOST_ALPHA = 120;
+	private static final int PREVIEW_RADIUS = 32;
 
 	@SubscribeEvent
 	public static void onRenderLevel(RenderLevelStageEvent event) {
 		if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
-		if (!(Minecraft.getInstance().screen instanceof DungeonTraceScreen trace)) return;
+		//The editor itself, or a draft left in the world with "Preview in world" (see DungeonTracePreview).
+		DungeonTraceScreen trace = Minecraft.getInstance().screen instanceof DungeonTraceScreen open ? open : DungeonTracePreview.draft;
 		Player player = Minecraft.getInstance().player;
-		if (player == null) return;
+		net.minecraft.world.level.Level level = Minecraft.getInstance().level;
+		if (trace == null || player == null || level == null) return;
 
-		BlockPos origin = BlockPos.containing(player.position()).offset(trace.originDx(), 0, trace.originDz());
-		List<GridToStructure.PlacedBlock> blocks = GridToStructure.render(
-			trace.gridSnapshot(), trace.pieceHeight(), trace.optionsSnapshot());
-		if (blocks.isEmpty()) return;
+		BlockPos origin = trace.previewOrigin(player);
+		List<GridToStructure.PlacedBlock> blocks = trace.placedBlocks();
+		if (blocks.isEmpty()) {
+			DungeonTracePreview.conflicts = 0;
+			return;
+		}
 
 		PoseStack poseStack = event.getPoseStack();
 		Vec3 cam = event.getCamera().getPosition();
@@ -69,8 +74,25 @@ public final class DungeonTracePreviewRenderer {
 		poseStack.pushPose();
 		poseStack.translate(-cam.x, -cam.y, -cam.z);
 
+		//The piece's footprint, so its extent reads even where the ghosts blend into the terrain.
+		int maxX = 0, maxY = 0, maxZ = 0;
 		for (GridToStructure.PlacedBlock block : blocks) {
+			maxX = Math.max(maxX, block.x() + 1);
+			maxY = Math.max(maxY, block.y() + 1);
+			maxZ = Math.max(maxZ, block.z() + 1);
+		}
+		LevelRenderer.renderLineBox(poseStack, bufferSource.getBuffer(RenderType.lines()),
+			origin.getX(), origin.getY(), origin.getZ(), origin.getX() + maxX, origin.getY() + maxY, origin.getZ() + maxZ,
+			1f, 1f, 1f, 0.6f);
+
+		int conflicts = 0;
+		for (GridToStructure.PlacedBlock block : blocks) {
+			//Carved air draws nothing; and an imported dungeon is far too many ghosts per frame, so only the
+			//ones around the camera (the outline above still shows the whole extent).
+			if (block.kind() == GridToStructure.Kind.AIR) continue;
 			BlockPos at = origin.offset(block.x(), block.y(), block.z());
+			if (Math.abs(at.getX() + 0.5 - cam.x) > PREVIEW_RADIUS || Math.abs(at.getY() + 0.5 - cam.y) > PREVIEW_RADIUS
+				|| Math.abs(at.getZ() + 0.5 - cam.z) > PREVIEW_RADIUS) continue;
 			poseStack.pushPose();
 			poseStack.translate(at.getX(), at.getY(), at.getZ());
 
@@ -80,6 +102,18 @@ public final class DungeonTracePreviewRenderer {
 					((color >> 16) & 0xFF) / 255f, ((color >> 8) & 0xFF) / 255f, (color & 0xFF) / 255f, 1f);
 			} else {
 				BlockState state = stateFor(block, trace);
+				//Litematica's colours: already built = nothing drawn, something else in the way = red box.
+				BlockState there = level.getBlockState(at);
+				if (there.is(state.getBlock())) {
+					poseStack.popPose();
+					continue;
+				}
+				if (!there.canBeReplaced()) {
+					conflicts++;
+					LevelRenderer.renderLineBox(poseStack, bufferSource.getBuffer(RenderType.lines()), 0, 0, 0, 1, 1, 1, 1f, 0.2f, 0.2f, 1f);
+					poseStack.popPose();
+					continue;
+				}
 				BakedModel model = blockRenderer.getBlockModel(state);
 				VertexConsumer ghost = new GhostVertexConsumer(bufferSource.getBuffer(RenderType.translucent()), GHOST_ALPHA);
 				blockRenderer.getModelRenderer().renderModel(poseStack.last(), ghost, state, model,
@@ -91,14 +125,20 @@ public final class DungeonTracePreviewRenderer {
 
 		poseStack.popPose();
 		bufferSource.endBatch();
+		DungeonTracePreview.conflicts = conflicts;
 	}
 
 	private static BlockState stateFor(GridToStructure.PlacedBlock block, DungeonTraceScreen trace) {
 		return switch (block.kind()) {
-			case FLOOR -> DungeonPiecePlacer.resolveOrDefault(trace.floorBlockId(), DungeonPiecePlacer.DEFAULT_FLOOR);
-			case WALL -> DungeonPiecePlacer.resolveOrDefault(trace.wallBlockId(), DungeonPiecePlacer.DEFAULT_WALL);
+			case FLOOR -> DungeonPiecePlacer.resolveOrDefault(block.blockId(), DungeonPiecePlacer.resolveOrDefault(trace.floorBlockId(), DungeonPiecePlacer.DEFAULT_FLOOR));
+			case WALL -> DungeonPiecePlacer.resolveOrDefault(block.blockId(), DungeonPiecePlacer.resolveOrDefault(trace.wallBlockId(), DungeonPiecePlacer.DEFAULT_WALL));
 			case OBJECT -> DungeonPiecePlacer.objectStateFor(block.blockId(), block.facing());
-			case CONNECTOR, START -> DungeonPiecePlacer.DEFAULT_OBJECT; //unreachable: the two branches above already catch these first
+			case STAIRS -> DungeonPiecePlacer.stairsState(block.blockId(), block.facing());
+			case DOORWAY -> DungeonPiecePlacer.doorwayState(block.blockId(), block.facing(), true);
+			case LIGHT -> DungeonPiecePlacer.lightState(block.blockId(), block.facing());
+			case SIGN -> net.minecraft.world.level.block.Blocks.OAK_SIGN.defaultBlockState();
+			//unreachable: connectors are drawn as boxes and air is skipped before this
+			case CONNECTOR, START, AIR -> DungeonPiecePlacer.DEFAULT_OBJECT;
 		};
 	}
 

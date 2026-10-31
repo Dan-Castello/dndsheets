@@ -56,8 +56,8 @@ public class ConditionListScreen extends ListPickerScreen {
 
 	private Component rowLabel(Condition condition) {
 		boolean on = active.contains(condition);
-		return Component.literal((on ? "✔ " : "  ") + condition.displayLabel())
-			.withStyle(on ? ChatFormatting.RED : ChatFormatting.GRAY);
+		return Component.literal((on ? "✔ " : "  ") + OptionLabels.of(condition.label()))
+			.withStyle(on ? ChatFormatting.RED : ChatFormatting.RESET);
 	}
 
 	private void toggle(Condition condition) {

@@ -48,7 +48,10 @@ public class TurnHudOverlay {
 	//Shrunk on request: the panel was taking up too much screen. PADDING doesn't go below 7 even as
 	//everything else is tightened — any less and the text sinks under the corner's brass brace (see
 	//GuiStyle: 3px arm + 2px margin = 5px minimum to avoid overlapping it).
-	private static final int PANEL_WIDTH = 176;
+	//190 and not 176: at 176 each economy chip was 54px and "Reaction" came out as "Reactio".
+	private static final int PANEL_WIDTH = 190;
+	//Drawn 30% smaller than its native layout, same as ResourceHudOverlay: full size took too much screen.
+	private static final float SCALE = 0.7f;
 	private static final int PADDING = 7;
 	private static final int ROW_HEIGHT = 10;
 	//Used to be 10: with a large encounter the panel became huge before the centered window (see
@@ -67,13 +70,22 @@ public class TurnHudOverlay {
 
 	@SubscribeEvent
 	public static void registerOverlays(RegisterGuiOverlaysEvent event) {
-		event.registerAboveAll("dndsheets_turns", (gui, guiGraphics, partialTick, width, height) -> render(guiGraphics, width));
+		event.registerAboveAll("dndsheets_turns", (gui, guiGraphics, partialTick, width, height) -> {
+			//Laid out in a virtual screen 1/SCALE wider, so every constant below keeps its native meaning.
+			guiGraphics.pose().pushPose();
+			guiGraphics.pose().scale(SCALE, SCALE, 1);
+			render(guiGraphics, Math.round(width / SCALE));
+			guiGraphics.pose().popPose();
+		});
 	}
 
 	private static void render(GuiGraphics guiGraphics, int screenWidth) {
 		if (!TurnHudState.active()) return;
 		Minecraft minecraft = Minecraft.getInstance();
 		if (minecraft.player == null) return;
+		//Forge custom overlays don't get vanilla's F1/F3 checks for free: hidden GUI means hidden, and the
+		//F3 text runs down this same corner.
+		if (minecraft.options.hideGui || minecraft.options.renderDebug) return;
 		Font font = minecraft.font;
 
 		List<TurnStateMessage.RosterRow> roster = TurnHudState.roster();
@@ -83,17 +95,20 @@ public class TurnHudOverlay {
 		//cap alone isn't enough — without this, if the active turn fell past row 10 the panel would leave
 		//it out of view with no warning, and the HUD would look "stuck" on a combatant whose turn already
 		//passed.
+		//Compact by default: only whoever has the turn. Holding the player-list key (Tab) unfolds the whole
+		//initiative order, same gesture as ResourceHudOverlay's cards.
 		int total = roster.size();
-		boolean truncated = total > MAX_ROSTER_ROWS;
-		int windowCap = truncated ? MAX_ROSTER_ROWS - 1 : MAX_ROSTER_ROWS; //One row fewer if the "+N hidden" indicator is needed.
 		int currentIdx = indexOfCurrent(roster);
-		int start = truncated ? Math.max(0, Math.min(currentIdx - windowCap / 2, total - windowCap)) : 0;
-		int end = truncated ? start + windowCap : total;
+		boolean expanded = minecraft.options.keyPlayerList.isDown();
+		boolean truncated = expanded && total > MAX_ROSTER_ROWS;
+		int windowCap = truncated ? MAX_ROSTER_ROWS - 1 : MAX_ROSTER_ROWS; //One row fewer if the "+N hidden" indicator is needed.
+		int start = !expanded ? Math.min(currentIdx, Math.max(0, total - 1)) : truncated ? Math.max(0, Math.min(currentIdx - windowCap / 2, total - windowCap)) : 0;
+		int end = !expanded ? Math.min(total, start + 1) : truncated ? start + windowCap : total;
 		int hidden = total - (end - start);
 
 		//Two passes: first the required panel size is measured, then the background is drawn, then the
 		//content on top of it — GuiStyle.panel needs to know the bottom edge BEFORE anything is painted.
-		int top = 8;
+		int top = Math.round(effectsClearance(minecraft) / SCALE);
 		int left = screenWidth - 8 - PANEL_WIDTH;
 		int right = screenWidth - 8;
 		int contentTop = top + PADDING;
@@ -108,7 +123,8 @@ public class TurnHudOverlay {
 		int textRight = right - PADDING;
 		int y = contentTop;
 
-		guiGraphics.drawString(font, GuiStyle.title(Component.translatable("hud.dndsheets.round", TurnHudState.round())), textLeft, y, GuiStyle.ACCENT_COLOR);
+		//Plain font, not GuiStyle.title: the serif title face is unreadable at HUD size (worse once scaled down).
+		guiGraphics.drawString(font, Component.translatable("hud.dndsheets.round", TurnHudState.round()), textLeft, y, GuiStyle.ACCENT_COLOR);
 		y += ROW_HEIGHT;
 		GuiStyle.rule(guiGraphics, textLeft, textRight, y);
 		y += 4;
@@ -129,6 +145,20 @@ public class TurnHudOverlay {
 			y += 4;
 			drawEconomy(guiGraphics, font, myRow, minecraft, textLeft, textRight, y);
 		}
+	}
+
+	/**
+	 * Real-pixel Y below vanilla's status effect icons, which share this top-right corner (1.20.1
+	 * Gui.renderEffects: beneficial row at y=1, harmful row at y=27, 24px each). Without it the turn panel
+	 * sat on top of a Night Vision or Poison icon and hid it.
+	 */
+	private static int effectsClearance(Minecraft minecraft) {
+		int clearance = 8;
+		for (net.minecraft.world.effect.MobEffectInstance effect : minecraft.player.getActiveEffects()) {
+			if (!effect.showIcon()) continue;
+			clearance = Math.max(clearance, (effect.getEffect().isBeneficial() ? 1 : 27) + 24 + 3);
+		}
+		return clearance;
 	}
 
 	//0 if not found (combat just started, first packet): better to center the window at the start of the

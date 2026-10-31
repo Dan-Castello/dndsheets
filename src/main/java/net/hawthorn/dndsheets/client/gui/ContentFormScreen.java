@@ -113,9 +113,18 @@ public class ContentFormScreen extends SmallFormScreen {
 		return list;
 	}
 
+	//Rows that fit under the header at this window height, besides Confirm (and Delete, and the page
+	//button when paging): a 10-field weapon or an 8-per-page spell ran past the bottom at 270px, leaving
+	//Confirm and Delete unreachable. Never fewer than 3, a page has to hold something.
+	private int fittingRows() {
+		int fixed = 1 + (showDeleteButton() ? 1 : 0);
+		return Math.max(3, (this.height - 44 - 14) / rowHeight() - fixed);
+	}
+
 	private int pageSize() {
 		int n = editableFields().size();
-		return n <= SINGLE_PAGE_MAX ? Math.max(1, n) : PAGE_SIZE;
+		if (n <= Math.min(SINGLE_PAGE_MAX, fittingRows())) return Math.max(1, n);
+		return Math.max(3, Math.min(PAGE_SIZE, fittingRows() - 1));
 	}
 
 	private int pageCount() {
@@ -129,7 +138,7 @@ public class ContentFormScreen extends SmallFormScreen {
 		List<FieldSpec> all = editableFields();
 		int from = Math.min(page, pageCount() - 1) * pageSize();
 		for (FieldSpec field : all.subList(from, Math.min(all.size(), from + pageSize()))) {
-			String initial = current.getOrDefault(field.key(), prefill.getOrDefault(field.key(), field.defaultValue()));
+			String initial = current.getOrDefault(field.key(), shown(field.key(), prefill.getOrDefault(field.key(), field.defaultValue())));
 			if (field.kind() == FieldKind.CYCLE) {
 				int startIndex = Math.max(0, indexOf(field.cycleOptions(), initial));
 				cycleFields.put(field.key(), addCycleButton(field.label(), field.cycleOptions(), field.cycleOptions(), startIndex));
@@ -141,7 +150,7 @@ public class ContentFormScreen extends SmallFormScreen {
 				this.addRenderableWidget(net.hawthorn.dndsheets.client.gui.components.TomeButton.of(Component.literal("..."), b -> {
 					snapshot();
 					ChoiceScreen.request(field.source(), field.multi(), textBoxes.get(field.key()).getValue(), text -> textBoxes.get(field.key()).setValue(text));
-				}, left + formWidth() - 20, y, 20, FIELD_HEIGHT));
+				}, left + formWidth() - 20, y, 20, EDIT_HEIGHT));
 			} else {
 				textBoxes.put(field.key(), addField(field.label(), initial, field.maxLength()));
 			}
@@ -155,6 +164,17 @@ public class ContentFormScreen extends SmallFormScreen {
 					this.rebuildWidgets();
 				}, centerX - formWidth() / 2, y, formWidth(), FIELD_HEIGHT));
 		}
+	}
+
+	/**
+	 * <p>A pack entry's name is a language key ("content.dndsheets.weapon.dagger"): the box shows what it
+	 * means ("Dagger") instead of the key scrolled to its tail. {@link #onConfirm()} puts the key back if the
+	 * DM left that text untouched, so saving an edit doesn't freeze a translation into the copy.</p>
+	 */
+	private String shown(String key, String value) {
+		if (!"name".equals(key) || value == null) return value;
+		String resolved = net.hawthorn.dndsheets.ContentNames.plain(value);
+		return resolved.isEmpty() ? value : resolved;
 	}
 
 	private static int indexOf(String[] options, String value) {
@@ -177,6 +197,8 @@ public class ContentFormScreen extends SmallFormScreen {
 		snapshot();
 		Map<String, String> values = initialValues();
 		for (Map.Entry<String, String> entry : current.entrySet()) values.put(entry.getKey(), entry.getValue().trim());
+		String originalName = prefill.get("name");
+		if (originalName != null && shown("name", originalName).equals(values.get("name"))) values.put("name", originalName);
 
 		JsonObject entry = toJson.apply(values);
 		if (!entry.has("id") || entry.get("id").getAsString().isBlank()) return;
@@ -210,6 +232,12 @@ public class ContentFormScreen extends SmallFormScreen {
 	@Override
 	protected boolean showDeleteButton() {
 		return prefill.containsKey("id");
+	}
+
+	@Override
+	protected Component deleteSubject() {
+		String name = prefill.get("name");
+		return Component.literal(name != null && !name.isBlank() ? shown("name", name) : prefill.getOrDefault("id", "")); //i18n-ok: content data
 	}
 
 	@Override

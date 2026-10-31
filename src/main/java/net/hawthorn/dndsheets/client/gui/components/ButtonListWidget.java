@@ -83,7 +83,9 @@ public class ButtonListWidget extends AbstractScrollWidget {
 	@Override
 	public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
 		if (!this.visible) return;
-		this.renderBackground(guiGraphics);
+		//Engraved card instead of vanilla's black box with a white/grey ring, which read as a widget
+		//borrowed from another interface on top of the leather panel.
+		net.hawthorn.dndsheets.client.gui.GuiStyle.inset(guiGraphics, this.getX(), this.getY(), this.getX() + this.width, this.getY() + this.height);
 		guiGraphics.enableScissor(this.getX() + 1, this.getY() + 1, this.getX() + this.width - 1, this.getY() + this.height - 1);
 		renderContents(guiGraphics, mouseX, mouseY, partialTick);
 		guiGraphics.disableScissor();
@@ -106,7 +108,9 @@ public class ButtonListWidget extends AbstractScrollWidget {
 			//One step of margin above and below, so it doesn't "pop" right at the edge.
 			boolean rowVisible = top + step >= -step && top <= this.height + step;
 			button.visible = rowVisible;
-			button.active = rowVisible;
+			//Clickable only when the WHOLE row is inside the list: a row half-scrolled under the search box
+			//or the panel's bottom edge used to take clicks meant for what was drawn over it.
+			button.active = top >= 0 && top + button.getHeight() <= this.height;
 			if (!rowVisible) continue;
 			button.setX(this.getX());
 			button.setY(this.getY() + top);

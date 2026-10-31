@@ -17,6 +17,7 @@ Authoritative visual and UX reference for every screen in `client/gui` (and the 
 | Bad | `BAD_COLOR` | `0xFFE35A4B` | failure, critical HP |
 | Warn | `WARN_COLOR` | `0xFFE0B63F` | caution, middling HP |
 | Accent (brass) | `ACCENT_COLOR` | `0xFFC9A227` | active values, markers — "stand out without shouting" |
+| Ability identity | `ABILITY_COLORS[6]` | STR…CHA, muted | the sheet's ability tile stripe and abbreviation only — identity, never state |
 
 Private to `GuiStyle` (don't copy them): bevel light `0xFF6B5636`, bevel dark `0xFF0B0906`, edge `0xFF2E2418`, studs `0xFFC9A227`.
 
@@ -52,6 +53,7 @@ States every interactive control must show distinctly: **rest, hover, selected/a
 
 ## 6. Depth
 - Panel = leather + top-lit gradient + 2 px bevel + brass corners (`GuiStyle.panel`).
+- `GuiStyle.inset` = a card engraved into the panel (inverted 1 px bevel): stat boxes inside a panel, instead of a flat fill + outline.
 - `GuiStyle.ruleOrnate` once under a screen's **title**; `GuiStyle.rule` for internal separators (an ornament repeated per section stops being an ornament).
 - No soft shadows (they look dirty at pixel scale); separate with the 1 px outer edge.
 

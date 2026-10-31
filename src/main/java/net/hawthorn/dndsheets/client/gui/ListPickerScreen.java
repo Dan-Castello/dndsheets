@@ -94,9 +94,12 @@ public abstract class ListPickerScreen extends Screen {
 		this.parent = parent;
 	}
 
-	/** Width of the list buttons and the panel. Override for a wider list (e.g. the Spellbook). */
+	/**
+	 * Width of the list buttons and the panel: grows with the window (2/5 of it, 200 to 300px), so a big
+	 * window or a small GUI scale doesn't leave a narrow column with long names cut. Override for a fixed width.
+	 */
 	protected int buttonWidth() {
-		return 200;
+		return Math.max(200, Math.min(300, this.width * 2 / 5));
 	}
 
 	/** true forces the search box even if the list is short. With {@value #AUTO_SEARCH_MIN_ROWS}+ rows it appears on its own — see {@code init()}. */
@@ -104,14 +107,42 @@ public abstract class ListPickerScreen extends Screen {
 		return false;
 	}
 
-	/** Y where the list starts, below the title (and the search box, if {@link #searchable()}). Override to leave room for a subtitle. */
+	/**
+	 * Width of a pane to the RIGHT of the list, inside the same panel (0 = none, the default). A screen
+	 * that shows detail for the selected row (Grimoire) draws and places its widgets there, from
+	 * {@link #sidePaneLeft()}, instead of stacking fixed rows under the list.
+	 */
+	protected int sidePaneWidth() {
+		return 0;
+	}
+
+	private int contentWidth() {
+		return sidePaneWidth() > 0 ? buttonWidth() + 3 * SPACING + sidePaneWidth() : buttonWidth();
+	}
+
+	/** Left edge of the list (and of the search box above it). */
+	protected int listLeft() {
+		return (this.width - contentWidth()) / 2;
+	}
+
+	protected int sidePaneLeft() {
+		return listLeft() + buttonWidth() + 3 * SPACING;
+	}
+
 	/** Left edge of the panel. Used by init() (to place "< Back") and render(), which must agree. */
 	private int panelLeft() {
-		return (this.width - buttonWidth()) / 2 - PANEL_PADDING;
+		return listLeft() - PANEL_PADDING;
+	}
+
+	/** Y where the list starts, below the title (and the search box, if {@link #searchable()}). Override to leave room for a subtitle. */
+
+	/** Y of the first thing under the title rule (search box, or the list). Override to leave a band for a subtitle above both. */
+	protected int contentTop() {
+		return LIST_TOP;
 	}
 
 	protected int listTop() {
-		return searchActive ? LIST_TOP + SEARCH_HEIGHT + SEARCH_GAP : LIST_TOP;
+		return searchActive ? contentTop() + SEARCH_HEIGHT + SEARCH_GAP : contentTop();
 	}
 
 	/** Height available for the list. Override to leave room for a fixed button underneath. */
@@ -150,11 +181,12 @@ public abstract class ListPickerScreen extends Screen {
 	}
 
 	/** Section header: a label between rules, not clickable and excluded from search. For long menus (see DM Panel). */
-	protected final void addHeader(Component label) {
+	protected final Button addHeader(Component label) {
 		Button header = new SectionHeader(label, buttonWidth(), HEADER_HEIGHT);
 		this.addWidget(header);
 		allButtons.add(header);
 		allLabels.add(null);
+		return header;
 	}
 
 	@Override
@@ -166,7 +198,7 @@ public abstract class ListPickerScreen extends Screen {
 
 		searchActive = searchable() || allButtons.size() >= AUTO_SEARCH_MIN_ROWS;
 		if (searchActive) {
-			searchBox = new EditBox(this.font, (this.width - buttonWidth()) / 2, LIST_TOP, buttonWidth(), SEARCH_HEIGHT, Component.translatable("gui.dndsheets.common.search"));
+			searchBox = new EditBox(this.font, listLeft(), contentTop(), buttonWidth(), SEARCH_HEIGHT, Component.translatable("gui.dndsheets.common.search"));
 			searchBox.setHint(Component.translatable("gui.dndsheets.common.search_hint"));
 			//setValue BEFORE setResponder: the responder calls applyFilter, and "list" doesn't exist yet
 			//at this point in init — filtering with the restored text is done by the applyFilter call below.
@@ -181,7 +213,7 @@ public abstract class ListPickerScreen extends Screen {
 			searchBox = null;
 		}
 
-		list = new ButtonListWidget((this.width - buttonWidth()) / 2, listTop(), buttonWidth(), listHeight(), SPACING);
+		list = new ButtonListWidget(listLeft(), listTop(), buttonWidth(), listHeight(), SPACING);
 		applyFilter();
 		//After applyFilter(): the scroll ceiling comes from the height of the rows the list currently
 		//has, and setScrollAmount clamps on its own if the list ended up shorter.
@@ -264,7 +296,7 @@ public abstract class ListPickerScreen extends Screen {
 		this.renderBackground(guiGraphics);
 
 		int left = panelLeft();
-		int right = this.width - left;
+		int right = listLeft() + contentWidth() + PANEL_PADDING;
 		//The header sits at a fixed spot (further down), so the panel's top edge does too, instead of
 		//depending on listTop() — a screen with a subtitle (Spellbook) moves listTop() further down
 		//without leaving the title sticking out above the panel.
@@ -275,7 +307,12 @@ public abstract class ListPickerScreen extends Screen {
 		//With "< Back" the title is centered in the space LEFT to its right, not the whole screen:
 		//centered on the screen, a long title would run under the button.
 		int titleLeft = parent != null ? left + 4 + BACK_BUTTON_WIDTH : left;
-		guiGraphics.drawCenteredString(this.font, GuiStyle.title(this.title), (titleLeft + right) / 2, TITLE_Y, GuiStyle.TITLE_COLOR);
+		//Cut to the room it really has (beside "< Back"), whole text on hover: long prompts ("Choose who
+		//receives the effect", "Edit trait: ...") used to run under the button or past the panel's edge.
+		Component title = GuiStyle.title(this.title);
+		int titleRoom = right - titleLeft - 12;
+		guiGraphics.drawCenteredString(this.font, GuiStyle.fit(this.font, title, titleRoom), (titleLeft + right) / 2, TITLE_Y, GuiStyle.TITLE_COLOR);
+		boolean titleCut = this.font.width(title) > titleRoom;
 		//Rule under the title: separates the header from the content without spending a whole row of
 		//height, which is what a real separator would cost in a scrolling list. Ornate (center diamond)
 		//only here — internal separators use the plain rule (see GuiStyle.ruleOrnate).
@@ -285,9 +322,20 @@ public abstract class ListPickerScreen extends Screen {
 			: allButtons.isEmpty() && emptyMessage() == null ? Component.translatable("gui.dndsheets.common.empty")
 			: emptyMessage();
 		if (empty != null) {
-			guiGraphics.drawCenteredString(this.font, empty, this.width / 2, this.height / 2, GuiStyle.MUTED_COLOR);
+			//Wrapped to the list: a one-line hint like "No presets loaded (ask the DM...)" was wider than the panel.
+			List<net.minecraft.util.FormattedCharSequence> lines = this.font.split(empty, buttonWidth());
+			int y = this.height / 2 - lines.size() * 5;
+			for (net.minecraft.util.FormattedCharSequence line : lines) {
+				guiGraphics.drawCenteredString(this.font, line, listLeft() + buttonWidth() / 2, y, GuiStyle.MUTED_COLOR);
+				y += 10;
+			}
 		}
 
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
+		//Brass ring over vanilla's white one, same as every form field (see FormPanelScreen.renderFields).
+		if (searchBox != null) net.hawthorn.dndsheets.client.gui.components.TomeField.frameWidget(guiGraphics, searchBox.getX(), searchBox.getY(), searchBox.getWidth(), searchBox.getHeight(), searchBox.isFocused());
+		if (titleCut && mouseX >= titleLeft && mouseX < right && mouseY >= TITLE_Y - 2 && mouseY < TITLE_Y + 10) {
+			guiGraphics.renderTooltip(this.font, this.title, mouseX, mouseY);
+		}
 	}
 }

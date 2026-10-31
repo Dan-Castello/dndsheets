@@ -39,6 +39,18 @@ public abstract class SmallFormScreen extends FormPanelScreen {
 		return Component.translatable("gui.dndsheets.common.delete");
 	}
 
+	/** What the delete confirmation names ("Delete "Longsword"?"); the form's title unless overridden. */
+	protected Component deleteSubject() {
+		return this.title;
+	}
+
+	//onConfirm may itself open the next screen (TraitEditScreen.save reopens the trait with the new data):
+	//closing after it would jump back to the stale parent on top of that. Only close if we're still here.
+	private void confirmAndClose() {
+		onConfirm();
+		if (net.minecraft.client.Minecraft.getInstance().screen == this) this.onClose();
+	}
+
 	@Override
 	protected final void init() {
 		layoutTop();
@@ -47,10 +59,7 @@ public abstract class SmallFormScreen extends FormPanelScreen {
 		int y = nextRowY();
 		//TomeButton, same as ListPickerScreen's rows: the two are the mod's only button factories,
 		//so the look gets changed in two places and reaches every screen.
-		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.confirm"), button -> {
-			onConfirm();
-			this.onClose();
-		}, centerX - formWidth() / 2, y, formWidth() / 2 - 2, FIELD_HEIGHT));
+		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.confirm"), button -> confirmAndClose(), centerX - formWidth() / 2, y, formWidth() / 2 - 2, FIELD_HEIGHT));
 
 		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.cancel"), button -> this.onClose(),
 			centerX + 2, y, formWidth() / 2 - 2, FIELD_HEIGHT));
@@ -63,7 +72,7 @@ public abstract class SmallFormScreen extends FormPanelScreen {
 		if (showDeleteButton()) {
 			int deleteY = nextRowY();
 			this.addRenderableWidget(TomeButton.of(deleteButtonLabel(), button ->
-				ConfirmScreen.ask(this.title, () -> {
+				ConfirmScreen.ask(deleteSubject(), () -> {
 					onDelete();
 					this.onClose();
 				}), centerX - formWidth() / 2, deleteY, formWidth(), FIELD_HEIGHT));
@@ -76,8 +85,7 @@ public abstract class SmallFormScreen extends FormPanelScreen {
 	public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
 		if (super.keyPressed(keyCode, scanCode, modifiers)) return true;
 		if (keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER || keyCode == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER) {
-			onConfirm();
-			this.onClose();
+			confirmAndClose();
 			return true;
 		}
 		return false;

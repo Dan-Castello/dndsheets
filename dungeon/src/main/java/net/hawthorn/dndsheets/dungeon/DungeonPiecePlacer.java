@@ -40,6 +40,11 @@ public final class DungeonPiecePlacer {
 	public static final BlockState DEFAULT_FLOOR = Blocks.POLISHED_ANDESITE.defaultBlockState();
 	public static final BlockState DEFAULT_WALL = Blocks.STONE_BRICKS.defaultBlockState();
 	public static final BlockState DEFAULT_OBJECT = Blocks.BARREL.defaultBlockState();
+	//Scaffolding: climbable on its own, no wall to hang on and no facing (a ladder needs both). Distance 0 =
+	//standing on the block below, so the column doesn't collapse on its first tick.
+	public static final BlockState DEFAULT_STAIRS = Blocks.SCAFFOLDING.defaultBlockState().setValue(net.minecraft.world.level.block.ScaffoldingBlock.DISTANCE, 0);
+	//The steps of a staircase with a direction, when the DM picks no block: matches the default wall.
+	public static final BlockState DEFAULT_STEP = Blocks.STONE_BRICK_STAIRS.defaultBlockState();
 
 	/**
 	 * <p>Wall and floor material for the WHOLE piece — unlike {@code OBJECT}, which picks a block cell
@@ -69,9 +74,6 @@ public final class DungeonPiecePlacer {
 		}
 		if (blocks.isEmpty()) return Optional.of("the grid is empty, there is nothing to plant.");
 
-		BlockState floorState = resolveOrDefault(materials.floorBlockId(), DEFAULT_FLOOR);
-		BlockState wallState = resolveOrDefault(materials.wallBlockId(), DEFAULT_WALL);
-
 		int width = 0, tallest = 0, depth = 0;
 		for (GridToStructure.PlacedBlock block : blocks) {
 			width = Math.max(width, block.x() + 1);
@@ -79,16 +81,7 @@ public final class DungeonPiecePlacer {
 			depth = Math.max(depth, block.z() + 1);
 		}
 
-		for (GridToStructure.PlacedBlock block : blocks) {
-			BlockPos at = origin.offset(block.x(), block.y(), block.z());
-			switch (block.kind()) {
-				case FLOOR -> level.setBlock(at, floorState, 3);
-				case WALL -> level.setBlock(at, wallState, 3);
-				case OBJECT -> level.setBlock(at, objectStateFor(block.blockId(), block.facing()), 3);
-				case CONNECTOR, START -> placeJigsaw(level, at, block.facing(),
-					block.targetPool() != null ? block.targetPool() : piece.pool(), block.kind() == GridToStructure.Kind.START);
-			}
-		}
+		place(level, origin, blocks, materials, piece.pool(), true);
 
 		StructureTemplateManager manager = level.getStructureManager();
 		StructureTemplate template = manager.getOrCreate(structureId);
@@ -100,8 +93,64 @@ public final class DungeonPiecePlacer {
 		return DungeonManager.capturePiece(level.getServer(), piece);
 	}
 
+	/**
+	 * <p>Plants the blocks and nothing else. {@code connectors} false is a room pasted straight into the world
+	 * (not a dungeon piece): doors and entrances are left as open doorways instead of jigsaw blocks, which
+	 * would only mean something to the dungeon generator.</p>
+	 */
+	public static void place(ServerLevel level, BlockPos origin, List<GridToStructure.PlacedBlock> blocks, Materials materials,
+			String pool, boolean connectors) {
+		BlockState floorState = resolveOrDefault(materials.floorBlockId(), DEFAULT_FLOOR);
+		BlockState wallState = resolveOrDefault(materials.wallBlockId(), DEFAULT_WALL);
+		for (GridToStructure.PlacedBlock block : blocks) {
+			BlockPos at = origin.offset(block.x(), block.y(), block.z());
+			switch (block.kind()) {
+				//A painted cell carries its own block; the rest use the piece's material.
+				case FLOOR -> level.setBlock(at, resolveOrDefault(block.blockId(), floorState), 3);
+				case WALL -> level.setBlock(at, resolveOrDefault(block.blockId(), wallState), 3);
+				case OBJECT -> level.setBlock(at, objectStateFor(block.blockId(), block.facing()), 3);
+				case STAIRS -> level.setBlock(at, stairsState(block.blockId(), block.facing()), 3);
+				case CONNECTOR, START -> {
+					//A ceiling hatch with nothing chosen closes as scaffolding: the climb goes on into the piece above.
+					BlockState closed = block.blockId() != null ? doorwayState(block.blockId(), block.facing(), false)
+						: block.facing() == Direction.UP ? DEFAULT_STAIRS : null;
+					if (connectors) placeJigsaw(level, at, block.facing(),
+						block.targetPool() != null ? block.targetPool() : pool, block.kind() == GridToStructure.Kind.START, closed);
+					else level.setBlock(at, closed != null ? closed : Blocks.AIR.defaultBlockState(), 2);
+				}
+				//Flag 2 (no neighbour updates): a door's lower half alone would pop off before its upper half lands.
+				case DOORWAY -> level.setBlock(at, doorwayState(block.blockId(), block.facing(), true), 2);
+				case AIR -> level.setBlock(at, Blocks.AIR.defaultBlockState(), 2);
+				case LIGHT -> level.setBlock(at, lightState(block.blockId(), block.facing()), 3);
+				case SIGN -> {
+					level.setBlock(at, Blocks.OAK_SIGN.defaultBlockState(), 3);
+					if (level.getBlockEntity(at) instanceof net.minecraft.world.level.block.entity.SignBlockEntity sign) {
+						net.minecraft.world.level.block.entity.SignText text = new net.minecraft.world.level.block.entity.SignText();
+						List<String> lines = GridToStructure.signLines(block.targetPool() != null ? block.targetPool().split("\n")[0] : "");
+						for (int i = 0; i < lines.size(); i++) text = text.setMessage(i, net.minecraft.network.chat.Component.literal(lines.get(i)));
+						sign.setText(text, true);
+						sign.setChanged();
+					}
+				}
+			}
+		}
+	}
+
+	public static final BlockState DEFAULT_LIGHT = Blocks.LANTERN.defaultBlockState();
+
+	/** A light from the "lights every N" option: hanging (facing DOWN) when the block can hang. */
+	public static BlockState lightState(ResourceLocation blockId, Direction facing) {
+		BlockState state = resolveOrDefault(blockId, DEFAULT_LIGHT);
+		var hanging = net.minecraft.world.level.block.state.properties.BlockStateProperties.HANGING;
+		if (state.hasProperty(hanging)) state = state.setValue(hanging, facing == Direction.DOWN);
+		return state;
+	}
+
+
 	public static BlockState resolveOrDefault(ResourceLocation blockId, BlockState fallback) {
-		if (blockId == null) return fallback;
+		//containsKey, not just a null check: the block registry answers AIR for an id it doesn't know, so
+		//an empty material ("" parses as "minecraft:") pasted walls and floors made of air.
+		if (blockId == null || !ForgeRegistries.BLOCKS.containsKey(blockId)) return fallback;
 		net.minecraft.world.level.block.Block block = ForgeRegistries.BLOCKS.getValue(blockId);
 		return block != null ? block.defaultBlockState() : fallback;
 	}
@@ -112,10 +161,32 @@ public final class DungeonPiecePlacer {
 	//come out complete: each grid cell is a single BlockPos, and that's already a ceiling of the
 	//editor, not of this function.
 	public static BlockState objectStateFor(ResourceLocation blockId, Direction facing) {
-		BlockState state = resolveOrDefault(blockId, DEFAULT_OBJECT);
-		if (facing != null && facing.getAxis().isHorizontal()
-				&& state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)) {
-			state = state.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING, facing);
+		return orient(resolveOrDefault(blockId, DEFAULT_OBJECT), facing);
+	}
+
+	/** Scaffolding with no direction; with one, a step of the chosen stairs block climbing that way. */
+	public static BlockState stairsState(ResourceLocation blockId, Direction facing) {
+		return facing == null ? DEFAULT_STAIRS : orient(resolveOrDefault(blockId, DEFAULT_STEP), facing);
+	}
+
+	//Whichever orientation property the block has, from any mod: horizontal facing (stairs, furniture),
+	//full facing (dispensers, rods), axis (logs, pillars). Down on stairs/slabs/trapdoors = upside down.
+	private static BlockState orient(BlockState state, Direction facing) {
+		if (facing == null) return state;
+		if (facing.getAxis().isHorizontal() && state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING)) {
+			return state.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING, facing);
+		}
+		if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING)) {
+			return state.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING, facing);
+		}
+		if (state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS)) {
+			return state.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.AXIS, facing.getAxis());
+		}
+		if (facing == Direction.DOWN && state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.HALF)) {
+			return state.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HALF, net.minecraft.world.level.block.state.properties.Half.TOP);
+		}
+		if (facing == Direction.DOWN && state.hasProperty(net.minecraft.world.level.block.state.properties.BlockStateProperties.SLAB_TYPE)) {
+			return state.setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.SLAB_TYPE, net.minecraft.world.level.block.state.properties.SlabType.TOP);
 		}
 		return state;
 	}
@@ -123,11 +194,36 @@ public final class DungeonPiecePlacer {
 	//The "outward" direction GridToStructure computed is already the horizontal Direction; the jigsaw
 	//also needs an "up" for its full orientation (FrontAndTop) — DOWN/UP don't apply to openings on the
 	//grid's plane, so it's always UP.
-	private static void placeJigsaw(ServerLevel level, BlockPos at, Direction facing, String pool, boolean isStart) {
+	/**
+	 * <p>The block closing a doorway, lower or upper part: a door gets the matching half and faces along the
+	 * opening; any other block (the wall's, for a hidden room) is just itself.</p>
+	 */
+	public static BlockState doorwayState(ResourceLocation blockId, Direction facing, boolean upper) {
+		BlockState state = resolveOrDefault(blockId, Blocks.AIR.defaultBlockState());
+		var half = net.minecraft.world.level.block.state.properties.BlockStateProperties.DOUBLE_BLOCK_HALF;
+		if (state.hasProperty(half)) state = state.setValue(half, upper
+			? net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER
+			: net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER);
+		var horizontal = net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING;
+		if (facing != null && facing.getAxis().isHorizontal() && state.hasProperty(horizontal)) state = state.setValue(horizontal, facing);
+		return state;
+	}
+
+	//closed != null: what the jigsaw turns into once the dungeon is generated (its "final state"), so
+	//the connection point ends up as a door or a hidden wall instead of an open gap.
+	private static void placeJigsaw(ServerLevel level, BlockPos at, Direction facing, String pool, boolean isStart, BlockState closed) {
 		BlockState state = Blocks.JIGSAW.defaultBlockState()
-			.setValue(JigsawBlock.ORIENTATION, FrontAndTop.fromFrontAndTop(facing, Direction.UP));
+			.setValue(JigsawBlock.ORIENTATION, FrontAndTop.fromFrontAndTop(facing, facing.getAxis().isVertical() ? Direction.NORTH : Direction.UP));
 		level.setBlock(at, state, 3);
 		BlockEntity entity = level.getBlockEntity(at);
-		if (entity instanceof JigsawBlockEntity jigsaw) DungeonManager.configureJigsaw(jigsaw, pool, isStart);
+		if (entity instanceof JigsawBlockEntity jigsaw) {
+			DungeonManager.configureJigsaw(jigsaw, pool, isStart);
+			//Floor/ceiling hatches: rollable, so the piece on the other side may join at any rotation.
+			if (facing.getAxis().isVertical()) jigsaw.setJoint(JigsawBlockEntity.JointType.ROLLABLE);
+			if (closed != null) {
+				jigsaw.setFinalState(net.minecraft.commands.arguments.blocks.BlockStateParser.serialize(closed));
+				jigsaw.setChanged();
+			}
+		}
 	}
 }

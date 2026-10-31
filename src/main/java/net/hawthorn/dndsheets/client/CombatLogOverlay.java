@@ -43,6 +43,8 @@ public class CombatLogOverlay {
 	private static final int PADDING = 7;
 	private static final int LINE_HEIGHT = 9;
 	private static final int CONTENT_WIDTH = 170;
+	//Drawn 30% smaller than its native layout, same as the other HUD panels.
+	private static final float SCALE = 0.7f;
 
 	private record Entry(Component line, long bornAt) {}
 
@@ -50,7 +52,13 @@ public class CombatLogOverlay {
 
 	@SubscribeEvent
 	public static void registerOverlays(RegisterGuiOverlaysEvent event) {
-		event.registerAboveAll("dndsheets_combat_log", (gui, guiGraphics, partialTick, width, height) -> render(guiGraphics, width, height));
+		event.registerAboveAll("dndsheets_combat_log", (gui, guiGraphics, partialTick, width, height) -> {
+			//Laid out in a virtual screen 1/SCALE larger; 45/SCALE keeps the real gap above the hotbar.
+			guiGraphics.pose().pushPose();
+			guiGraphics.pose().scale(SCALE, SCALE, 1);
+			render(guiGraphics, Math.round(width / SCALE), Math.round((height - 45) / SCALE) + 45);
+			guiGraphics.pose().popPose();
+		});
 	}
 
 	//FORGE bus (game events), separate from the class's MOD bus (overlay registration).
@@ -97,6 +105,7 @@ public class CombatLogOverlay {
 	}
 
 	private static void render(GuiGraphics guiGraphics, int screenWidth, int screenHeight) {
+		if (Minecraft.getInstance().options.hideGui) return;
 		long now = System.currentTimeMillis();
 		while (!entries.isEmpty() && now - entries.peekFirst().bornAt() > LIFE_MS) entries.removeFirst();
 		if (entries.isEmpty()) return;

@@ -35,7 +35,8 @@ public class WeaponGiveListScreen extends ListPickerScreen {
 	@Override
 	protected void buildRows() {
 		for (String weaponId : ids) {
-			addRow(Component.literal(weaponId), b -> {
+			addRow(Component.literal(OptionLabels.contentName("weapon", weaponId)) //i18n-ok: content name
+				.append(Component.literal("  " + weaponId).withStyle(net.minecraft.ChatFormatting.DARK_GRAY)), b -> {
 				DndsheetsMod.PACKET_HANDLER.sendToServer(new WeaponGiveMessage(targetUuid, weaponId));
 				this.onClose();
 			});

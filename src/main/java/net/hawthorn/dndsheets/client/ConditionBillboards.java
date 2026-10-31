@@ -42,6 +42,8 @@ public class ConditionBillboards {
 		LivingEntity entity = event.getEntity();
 		//Your own row is on the HUD; in first person the camera sits inside your head.
 		if (entity == Minecraft.getInstance().player) return;
+		//An invisible creature must stay invisible: floating glyphs would point right at it.
+		if (entity.isInvisibleTo(Minecraft.getInstance().player)) return;
 		TurnStateMessage.RosterRow row = TurnHudState.myRow(entity.getId());
 		if (row == null || row.defeated() || row.conditions().isEmpty()) return;
 

@@ -82,20 +82,20 @@ public class ChoiceScreen extends ListPickerScreen {
 			case "CONDITION" -> open(source, conditions(), mode, current, onDone);
 			case "EFFECT" -> {
 				List<Option> list = new ArrayList<>();
-				for (String name : new String[] {"poison", "burning", "bleeding"}) list.add(new Option(name, Component.literal(name)));
+				for (String name : new String[] {"poison", "burning", "bleeding"}) list.add(new Option(name, Component.literal(OptionLabels.of(name)))); //i18n-ok: translated by OptionLabels
 				list.addAll(conditions());
 				open(source, list, mode, current, onDone);
 			}
 			case "CREATURE_TYPE" -> {
 				List<Option> list = new ArrayList<>();
 				for (CreatureType type : CreatureType.values()) {
-					if (type != CreatureType.UNKNOWN) list.add(new Option(type.name().toLowerCase(Locale.ROOT), Component.literal(type.name().toLowerCase(Locale.ROOT))));
+					if (type != CreatureType.UNKNOWN) list.add(new Option(type.name().toLowerCase(Locale.ROOT), Component.literal(OptionLabels.of(type.name().toLowerCase(Locale.ROOT))))); //i18n-ok: translated by OptionLabels
 				}
 				open(source, list, mode, current, onDone);
 			}
 			case "DAMAGE_AFFINITY" -> {
 				List<Option> list = new ArrayList<>();
-				for (String type : DamageTypes.CANONICAL) list.add(new Option(type, Component.literal(type)));
+				for (String type : DamageTypes.CANONICAL) list.add(new Option(type, Component.literal(OptionLabels.of(type)))); //i18n-ok: translated by OptionLabels
 				open(source, list, mode, current, onDone);
 			}
 			default -> {
@@ -108,7 +108,7 @@ public class ChoiceScreen extends ListPickerScreen {
 
 	private static List<Option> conditions() {
 		List<Option> list = new ArrayList<>();
-		for (Condition condition : Condition.values()) list.add(new Option(condition.label(), Component.literal(condition.label())));
+		for (Condition condition : Condition.values()) list.add(new Option(condition.label(), Component.literal(OptionLabels.of(condition.label())))); //i18n-ok: translated by OptionLabels
 		return list;
 	}
 

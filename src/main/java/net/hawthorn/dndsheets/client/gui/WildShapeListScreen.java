@@ -44,7 +44,7 @@ public class WildShapeListScreen extends ListPickerScreen {
 	//Name + HP + AC doesn't fit the standard width without getting cut off, same issue the party list had.
 	@Override
 	protected int buttonWidth() {
-		return 260;
+		return Math.max(260, super.buttonWidth());
 	}
 
 	@Override

@@ -160,18 +160,38 @@ public class CompendiumEntryScreen extends ModalDialogScreen {
 		int x = dialogLeft() + PADDING;
 		int y = dialogTop() + PADDING;
 
-		guiGraphics.drawString(this.font, heading, x, y, GuiStyle.TITLE_COLOR);
-		y += 14;
-
-		for (net.minecraft.util.FormattedCharSequence line : lines) {
-			//Cut off once it reaches the close button instead of writing over it: a long entry gets
-			//truncated, which is preferable to illegible text on top of a control.
-			if (y > dialogTop() + HEIGHT - 34) break;
-			guiGraphics.drawString(this.font, line, x, y, GuiStyle.MUTED_COLOR);
+		//Heading wrapped (two lines at most) instead of running past the dialog's right edge.
+		List<net.minecraft.util.FormattedCharSequence> headingLines = this.font.split(Component.literal(heading), WIDTH - PADDING * 2); //i18n-ok: content text
+		for (int i = 0; i < Math.min(2, headingLines.size()); i++) {
+			guiGraphics.drawString(this.font, headingLines.get(i), x, y, GuiStyle.TITLE_COLOR);
 			y += 10;
 		}
+		y += 4;
+
+		//The body scrolls with the wheel: a long entry (a monster's stat block, Wish) used to be cut off
+		//silently at the buttons, with nothing saying there was more.
+		int visible = Math.max(1, (dialogTop() + HEIGHT - 30 - y) / 10);
+		scroll = Math.max(0, Math.min(scroll, lines.size() - visible));
+		for (int i = scroll; i < Math.min(lines.size(), scroll + visible); i++) {
+			guiGraphics.drawString(this.font, lines.get(i), x, y, GuiStyle.MUTED_COLOR);
+			y += 10;
+		}
+		if (lines.size() > visible) {
+			String more = (scroll + 1) + "-" + Math.min(lines.size(), scroll + visible) + " / " + lines.size();
+			guiGraphics.drawString(this.font, more, dialogLeft() + WIDTH - PADDING - this.font.width(more), dialogTop() + PADDING, GuiStyle.MUTED_COLOR);
+		}
+		maxScroll = Math.max(0, lines.size() - visible);
 
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
+	}
+
+	private int scroll = 0;
+	private int maxScroll = 0;
+
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+		scroll = Math.max(0, Math.min(maxScroll, scroll - (int) Math.signum(delta) * 3));
+		return true;
 	}
 
 	@Override

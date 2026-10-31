@@ -157,8 +157,18 @@ public class BrowseActionMessage {
 						new ArrayList<>(net.hawthorn.dndsheets.Config.loadedWeaponIds()), List.of(), message.characterId);
 				}
 				case GIVE_SPELLS -> {
-					if (DndsheetsMod.canActAsDm(sender)) BrowseListMessage.send(sender, BrowseListMessage.Kind.GIVE_SPELL,
-						new ArrayList<>(net.hawthorn.dndsheets.SpellRegistry.ids()), List.of(), message.characterId);
+					if (!DndsheetsMod.canActAsDm(sender)) break;
+					//"level|school|name" per id: the client has no registry, and its list groups by level
+					//and shows the school, like the Grimoire.
+					List<String> ids = new ArrayList<>();
+					List<Component> labels = new ArrayList<>();
+					for (String id : net.hawthorn.dndsheets.SpellRegistry.ids()) {
+						net.hawthorn.dndsheets.SpellRegistry.Spell spell = net.hawthorn.dndsheets.SpellRegistry.get(id);
+						if (spell == null) continue;
+						ids.add(id);
+						labels.add(Component.literal(spell.level() + "|" + net.hawthorn.dndsheets.MagicSchool.KEYS[spell.school().ordinal()] + "|" + spell.name())); //i18n-ok: data, not shown
+					}
+					BrowseListMessage.send(sender, BrowseListMessage.Kind.GIVE_SPELL, ids, labels, message.characterId);
 				}
 				case GRANT_TRAITS -> {
 					if (DndsheetsMod.canActAsDm(sender)) sendTraits(sender, message.characterId);

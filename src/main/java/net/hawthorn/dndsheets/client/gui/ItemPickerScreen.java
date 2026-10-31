@@ -92,12 +92,14 @@ public class ItemPickerScreen extends Screen {
 		});
 		this.addRenderableWidget(search);
 		this.setInitialFocus(search);
-		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.back"), b -> this.onClose(), 8, 8, 60, 18));
+		//Inside the panel's top corners (they used to sit at the SCREEN's corners, outside the frame).
+		int panelLeft = gridLeft() - 6;
+		this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.common.back"), b -> this.onClose(), panelLeft + 6, 8, 56, 16));
 		if (multi) {
 			this.addRenderableWidget(TomeButton.of(Component.translatable("gui.dndsheets.choice.done"), b -> {
 				Minecraft.getInstance().setScreen(parent);
 				onPick.accept(String.join(", ", selected.values()));
-			}, this.width - 68, 8, 60, 18));
+			}, this.width - panelLeft - 62, 8, 56, 16));
 		}
 		applyFilter();
 	}
@@ -178,7 +180,8 @@ public class ItemPickerScreen extends Screen {
 		this.renderBackground(guiGraphics);
 		int left = gridLeft() - 6;
 		GuiStyle.panel(guiGraphics, left, 4, this.width - left, TOP + visibleRows * CELL + 6);
-		guiGraphics.drawCenteredString(this.font, GuiStyle.title(this.title), this.width / 2, 12, GuiStyle.TITLE_COLOR);
+		//Between the Back/Done buttons, cut to that room.
+		guiGraphics.drawCenteredString(this.font, GuiStyle.fit(this.font, GuiStyle.title(this.title), this.width - 2 * left - 136), this.width / 2, 12, GuiStyle.TITLE_COLOR);
 
 		int hovered = cellAt(mouseX, mouseY);
 		for (int i = 0; i < visibleRows * columns; i++) {
@@ -187,7 +190,9 @@ public class ItemPickerScreen extends Screen {
 			int x = gridLeft() + (i % columns) * CELL;
 			int y = TOP + (i / columns) * CELL;
 			boolean picked = multi && selected.containsKey(idOf(shown.get(index)));
-			guiGraphics.fill(x, y, x + CELL - 1, y + CELL - 1, picked ? 0xAA4F9B46 : index == hovered ? 0x66FFD9A0 : 0x44000000);
+			GuiStyle.inset(guiGraphics, x, y, x + CELL - 1, y + CELL - 1);
+			if (picked) guiGraphics.fill(x + 1, y + 1, x + CELL - 2, y + CELL - 2, (GuiStyle.GOOD_COLOR & 0xFFFFFF) | 0x88000000);
+			else if (index == hovered) guiGraphics.fill(x + 1, y + 1, x + CELL - 2, y + CELL - 2, (GuiStyle.ACCENT_COLOR & 0xFFFFFF) | 0x55000000);
 			guiGraphics.renderItem(shown.get(index), x + 2, y + 2);
 		}
 		if (shown.isEmpty()) {
@@ -195,6 +200,7 @@ public class ItemPickerScreen extends Screen {
 		}
 
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);
+		net.hawthorn.dndsheets.client.gui.components.TomeField.frameWidget(guiGraphics, search.getX(), search.getY(), search.getWidth(), search.getHeight(), search.isFocused());
 		if (hovered >= 0) guiGraphics.renderTooltip(this.font, shown.get(hovered), mouseX, mouseY);
 	}
 }

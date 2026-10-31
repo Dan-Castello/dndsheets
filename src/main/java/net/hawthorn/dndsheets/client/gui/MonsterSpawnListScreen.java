@@ -42,7 +42,9 @@ public class MonsterSpawnListScreen extends ListPickerScreen {
 		if (card != null) addHeader(Component.translatable("gui.dndsheets.monster_spawn.card_hint"));
 		for (String monsterId : ids) {
 			boolean onCard = card != null && card.contains(monsterId);
-			addRow(Component.literal((onCard ? "✔ " : "") + monsterId), b -> {
+			//The name leads, the id trails dimmed (still in the label, so search finds either).
+			addRow(Component.literal((onCard ? "✔ " : "") + OptionLabels.contentName("monster", monsterId)) //i18n-ok: content name
+				.append(Component.literal("  " + monsterId).withStyle(net.minecraft.ChatFormatting.DARK_GRAY)), b -> {
 				DndsheetsMod.PACKET_HANDLER.sendToServer(card == null
 					? new MonsterSpawnMessage(monsterId)
 					: new StaffBindMessage(monsterId, onCard ? StaffBindMessage.Action.REMOVE : StaffBindMessage.Action.ADD));

@@ -88,7 +88,7 @@ public class BrowseListMessage {
 					message.labels.isEmpty() ? "" : message.labels.get(0).getString(),
 					message.ids.isEmpty() ? "" : message.ids.get(0));
 				case GIVE_WEAPON -> net.hawthorn.dndsheets.client.gui.WeaponGiveListScreen.open(message.context, message.ids);
-				case GIVE_SPELL -> net.hawthorn.dndsheets.client.gui.SpellGiveListScreen.open(message.context, message.ids);
+				case GIVE_SPELL -> net.hawthorn.dndsheets.client.gui.SpellGiveListScreen.open(message.context, message.ids, plainLabels(message.labels));
 				case GRANT_TRAIT -> net.hawthorn.dndsheets.client.gui.TraitGrantScreen.open(message.context, message.ids, plainLabels(message.labels));
 				case PRESET -> net.hawthorn.dndsheets.client.gui.PresetScreen.open(message.context, false, message.ids, plainLabels(message.labels));
 				case PRESET_MULTICLASS -> net.hawthorn.dndsheets.client.gui.PresetScreen.open("", true, message.ids, plainLabels(message.labels));

@@ -30,8 +30,8 @@ public class SpawnGenericScreen extends SmallFormScreen {
 	protected void buildForm() {
 		nameBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.name"), "NPC", 40);
 		baseEntityBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.base_entity"), "minecraft:villager", 64);
-		acBox = addField("CA", "10", 3);
-		hpBox = addField("PG", "10", 4);
+		acBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.ac"), "10", 3);
+		hpBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.hp"), "10", 4);
 	}
 
 	@Override

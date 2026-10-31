@@ -33,9 +33,9 @@ public class DungeonPieceEditScreen extends SmallFormScreen {
 
 	@Override
 	protected void buildForm() {
-		poolBox = addField("Pool", piece.pool(), 32);
+		poolBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.pool"), piece.pool(), 32);
 		weightBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.weight_range"), String.valueOf(piece.weight()), 4);
-		tagsBox = addField("Tags", piece.tags(), 64);
+		tagsBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.tags"), piece.tags(), 64);
 	}
 
 	@Override

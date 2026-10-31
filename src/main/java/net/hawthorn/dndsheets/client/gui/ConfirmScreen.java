@@ -75,8 +75,10 @@ public class ConfirmScreen extends ModalDialogScreen {
 		guiGraphics.drawCenteredString(this.font, GuiStyle.title(this.title), this.width / 2, dialogTop() + 8, GuiStyle.TITLE_COLOR);
 		List<FormattedCharSequence> lines = this.font.split(Component.translatable("gui.dndsheets.confirm.body", what), WIDTH - 24);
 		int y = dialogTop() + 26;
-		for (FormattedCharSequence line : lines) {
-			guiGraphics.drawCenteredString(this.font, line, this.width / 2, y, 0xFFFFFF);
+		//Parchment, not white (DESIGN.md section 1), and never down into the buttons: 3 lines fit above them.
+		int maxLines = (HEIGHT - 32 - 26) / 10;
+		for (int i = 0; i < Math.min(maxLines, lines.size()); i++) {
+			guiGraphics.drawCenteredString(this.font, lines.get(i), this.width / 2, y, GuiStyle.TITLE_COLOR);
 			y += 10;
 		}
 		super.render(guiGraphics, mouseX, mouseY, partialTicks);

@@ -32,6 +32,9 @@ public abstract class FormPanelScreen extends Screen {
 
 	protected static final int FIELD_WIDTH = 160;
 	protected static final int FIELD_HEIGHT = 20;
+	//Text boxes are shorter than buttons: at 20 a box ended flush against the next row's label (drawn 10px
+	//above that row), so the label read as stuck to the field ABOVE it. 16 leaves a 4px gap.
+	protected static final int EDIT_HEIGHT = 16;
 	//30, not 26: leaves 10px free above each field for its label (see addField) without overlapping the
 	//previous field — before this, no field on this form showed on screen what it was for, only its
 	//narration Component (invisible, screen readers only) and the default value already typed in.
@@ -101,7 +104,7 @@ public abstract class FormPanelScreen extends Screen {
 		int left = centerX - formWidth() / 2;
 		EditBox box = registerBox(label, defaultValue, maxLength, left, y, formWidth() - 24);
 		this.addRenderableWidget(net.hawthorn.dndsheets.client.gui.components.TomeButton.of(net.minecraft.network.chat.Component.literal("..."),
-			b -> ChoiceScreen.request(source, multi, box.getValue(), box::setValue), left + formWidth() - 20, y, 20, FIELD_HEIGHT));
+			b -> ChoiceScreen.request(source, multi, box.getValue(), box::setValue), left + formWidth() - 20, y, 20, EDIT_HEIGHT));
 		return box;
 	}
 
@@ -143,7 +146,7 @@ public abstract class FormPanelScreen extends Screen {
 	}
 
 	private EditBox registerBox(String label, String defaultValue, int maxLength, int x, int y, int width) {
-		EditBox box = new EditBox(this.font, x, y, width, FIELD_HEIGHT, Component.literal(label));
+		EditBox box = new EditBox(this.font, x, y, width, EDIT_HEIGHT, Component.literal(label));
 		//The cap FIRST and the value after, never the other way around. Both calls truncate: setValue cuts
 		//to whatever maxLength is worth AT THAT MOMENT, and a freshly constructed EditBox comes with 32 —
 		//vanilla's default — so filling in before raising the cap truncated every prefilled form to 32
@@ -183,15 +186,19 @@ public abstract class FormPanelScreen extends Screen {
 			int y, int x, int width) {
 		CycleField field = new CycleField(options);
 		field.index = initialIndex >= 0 && initialIndex < options.length ? initialIndex : 0;
+		//Display labels that are just the stored codes ("str", "versatile", "very rare") are shown translated;
+		//value() still returns the code.
+		if (displayLabels == options) displayLabels = OptionLabels.of(options);
+		String[] shown = displayLabels;
 		field.button = this.addRenderableWidget(new DirectionalCycleButton(x, y, width, FIELD_HEIGHT,
-			cycleLabel(prefix, displayLabels[field.index]),
+			cycleLabel(prefix, shown[field.index]),
 			() -> {
 				field.index = (field.index + 1) % options.length;
-				field.button.setMessage(cycleLabel(prefix, displayLabels[field.index]));
+				field.button.setMessage(cycleLabel(prefix, shown[field.index]));
 			},
 			() -> {
 				field.index = (field.index - 1 + options.length) % options.length;
-				field.button.setMessage(cycleLabel(prefix, displayLabels[field.index]));
+				field.button.setMessage(cycleLabel(prefix, shown[field.index]));
 			}));
 		return field;
 	}
@@ -232,18 +239,40 @@ public abstract class FormPanelScreen extends Screen {
 		//the first field's label starts at formTop-10: two rows of pixels overlapped, and with Minecraft's
 		//font that doesn't read as "close together", it reads as duplicated, smeared text.
 		GuiStyle.panel(guiGraphics, centerX - formWidth() / 2 - 14, formTop - titleBand(), centerX + formWidth() / 2 + 14, formBottom);
-		guiGraphics.drawCenteredString(this.font, GuiStyle.title(title), this.width / 2, formTop - titleBand() + 6, GuiStyle.TITLE_COLOR);
+		//Cut to the panel (whole title on hover, see renderFields): "Settings of <long name> (current gold: ...)" ran past it.
+		guiGraphics.drawCenteredString(this.font, GuiStyle.fit(this.font, GuiStyle.title(title), formWidth() + 20), this.width / 2, formTop - titleBand() + 6, GuiStyle.TITLE_COLOR);
 		//Separator rule, the same resource ListPickerScreen uses for its header.
 		GuiStyle.rule(guiGraphics, centerX - formWidth() / 2 - 6, centerX + formWidth() / 2 + 6, formTop - 18);
 	}
 
-	/** The fields with their label above. Goes after super.render so it stays in front of the panel. */
+	/**
+	 * <p>The fields with their label above. Goes after super.render so it stays in front of the panel.</p>
+	 *
+	 * <p>Labels are secondary text (the value is what matters) and never run past the panel: a long one
+	 * ("Allowed classes (empty = all, comma-separated)") is cut with an ellipsis and shown whole on hover.
+	 * The box's vanilla white/grey ring is repainted in brass, like the character sheet's fields.</p>
+	 */
 	protected final void renderFields(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+		int labelRight = centerX + formWidth() / 2;
+		Component tooltip = null;
 		for (int i = 0; i < editBoxes.size(); i++) {
 			EditBox box = editBoxes.get(i);
-			guiGraphics.drawString(this.font, editBoxLabels.get(i), box.getX(), box.getY() - 10, GuiStyle.TITLE_COLOR, false);
+			String label = editBoxLabels.get(i);
+			int room = labelRight - box.getX();
+			int labelY = box.getY() - 10;
+			if (this.font.width(label) > room) {
+				guiGraphics.drawString(this.font, this.font.plainSubstrByWidth(label, room - this.font.width("\u2026")) + "\u2026", box.getX(), labelY, GuiStyle.SUBTITLE_COLOR, false);
+				if (mouseX >= box.getX() && mouseX < labelRight && mouseY >= labelY && mouseY < labelY + 9) tooltip = Component.literal(label);
+			} else {
+				guiGraphics.drawString(this.font, label, box.getX(), labelY, GuiStyle.SUBTITLE_COLOR, false);
+			}
 			box.render(guiGraphics, mouseX, mouseY, partialTicks);
+			net.hawthorn.dndsheets.client.gui.components.TomeField.frameWidget(guiGraphics, box.getX(), box.getY(), box.getWidth(), box.getHeight(), box.isFocused());
 		}
+		int titleY = formTop - titleBand() + 6;
+		if (this.font.width(GuiStyle.title(title)) > formWidth() + 20 && mouseY >= titleY - 2 && mouseY < titleY + 10
+			&& Math.abs(mouseX - this.width / 2) < formWidth() / 2 + 14) tooltip = title;
+		if (tooltip != null) guiGraphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
 	}
 
 	//Returns to the previous screen instead of closing the whole menu — same navigation mechanism as

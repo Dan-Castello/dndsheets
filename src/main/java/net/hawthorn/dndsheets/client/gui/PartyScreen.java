@@ -41,7 +41,7 @@ public class PartyScreen extends ListPickerScreen {
 	//Wider than the standard list: each row carries name, HP, AC, and conditions, and at 200px it got cut off.
 	@Override
 	protected int buttonWidth() {
-		return 260;
+		return Math.max(260, super.buttonWidth());
 	}
 
 	@Override

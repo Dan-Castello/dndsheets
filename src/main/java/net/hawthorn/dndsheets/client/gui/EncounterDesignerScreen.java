@@ -170,7 +170,10 @@ public class EncounterDesignerScreen extends ListPickerScreen {
 			summary = Component.translatable("gui.dndsheets.encounter_designer.summary",
 				net.hawthorn.dndsheets.network.BrowseActionMessage.difficultyName(rating), totalXp(), partySize);
 		}
-		guiGraphics.drawCenteredString(this.font, summary, this.width / 2, super.listTop(), GuiStyle.SUBTITLE_COLOR);
+		//Cut to the list's width (the "no party" verdict was wider than the panel), whole on hover.
+		guiGraphics.drawCenteredString(this.font, GuiStyle.fit(this.font, summary, buttonWidth()), listLeft() + buttonWidth() / 2, super.listTop(), GuiStyle.SUBTITLE_COLOR);
+		if (this.font.width(summary) > buttonWidth() && mouseY >= super.listTop() - 1 && mouseY < super.listTop() + 9
+			&& mouseX >= listLeft() && mouseX < listLeft() + buttonWidth()) guiGraphics.renderTooltip(this.font, summary, mouseX, mouseY);
 	}
 
 	/** The bestiary to pick one from; returns to the designer with the pick (and whatever was already chosen). */

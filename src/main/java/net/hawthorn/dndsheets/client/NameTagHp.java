@@ -28,6 +28,8 @@ public class NameTagHp {
 		if (!TurnHudState.active()) return;
 		TurnStateMessage.RosterRow row = TurnHudState.myRow(event.getEntity().getId());
 		if (row == null || row.maxHp() <= 0 || row.defeated()) return;
+		//Forcing the nametag on an invisible creature would give its position away.
+		if (event.getEntity().isInvisibleTo(net.minecraft.client.Minecraft.getInstance().player)) return;
 
 		//ALLOW, not just setContent: a mob with no custom name never shows a nametag on its own
 		//(shouldShowName is false), so without forcing it the HP only appeared over players and named

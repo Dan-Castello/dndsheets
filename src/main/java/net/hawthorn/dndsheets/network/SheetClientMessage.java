@@ -43,6 +43,7 @@ public class SheetClientMessage {
 		//data OVER the new one. It wasn't just a stale display: data was actually lost.
 		net.hawthorn.dndsheets.client.gui.PlayerSheetScreen.refreshIfOpen();
 		net.hawthorn.dndsheets.client.gui.SkillProficiencyScreen.refreshIfOpen();
+		net.hawthorn.dndsheets.client.gui.GrimoireScreen.refreshIfOpen();
 		net.hawthorn.dndsheets.client.gui.CharacterSetupScreen.refreshIfOpen();
 	}
 }

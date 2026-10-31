@@ -39,11 +39,11 @@ public class DungeonPieceAddScreen extends SmallFormScreen {
 
 	@Override
 	protected void buildForm() {
-		idBox = addField("Id", prefillId, 32);
+		idBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.id"), prefillId, 32);
 		structureBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.structure_path"), prefillStructureId, 64);
-		poolBox = addField("Pool", "", 32);
+		poolBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.pool"), "", 32);
 		weightBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.weight_range"), "1", 4);
-		tagsBox = addField("Tags", "", 64);
+		tagsBox = addField(net.minecraft.client.resources.language.I18n.get("gui.dndsheets.form.tags"), "", 64);
 
 		//Extra row before Confirm/Cancel (which SmallFormScreen adds on its own, see its init()): the same
 		//"Structure" field above serves as the target whether it's hand-scanned or drawn, so the form

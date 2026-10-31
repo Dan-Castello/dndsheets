@@ -18,11 +18,20 @@ public abstract class ModalDialogScreen extends Screen {
 	}
 
 	protected int dialogLeft() {
-		return (this.width - dialogWidth) / 2;
+		return (this.width - dialogWidth()) / 2;
+	}
+
+	//Both overridable for a dialog whose size depends on the window (DungeonTraceScreen).
+	protected int dialogWidth() {
+		return dialogWidth;
+	}
+
+	protected int dialogHeight() {
+		return dialogHeight;
 	}
 
 	protected int dialogTop() {
-		return (this.height - dialogHeight) / 2;
+		return (this.height - dialogHeight()) / 2;
 	}
 
 	//First line of render() in every subclass, instead of a bare renderBackground(): draws vanilla's
@@ -30,7 +39,7 @@ public abstract class ModalDialogScreen extends Screen {
 	//and buttons floating over the world. Previously only DeathSaveScreen drew its own panel.
 	protected final void renderPanel(GuiGraphics guiGraphics) {
 		this.renderBackground(guiGraphics);
-		GuiStyle.panel(guiGraphics, dialogLeft(), dialogTop(), dialogLeft() + dialogWidth, dialogTop() + dialogHeight);
+		GuiStyle.panel(guiGraphics, dialogLeft(), dialogTop(), dialogLeft() + dialogWidth(), dialogTop() + dialogHeight());
 	}
 
 	//x/y relative to the dialog's top-left corner, same as the coordinates each screen already used by

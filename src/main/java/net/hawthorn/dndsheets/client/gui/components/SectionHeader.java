@@ -26,11 +26,17 @@ public class SectionHeader extends Button {
 		Font font = Minecraft.getInstance().font;
 		int centerX = this.getX() + this.width / 2;
 		int ruleY = this.getY() + this.height / 2;
-		int halfText = font.width(this.getMessage()) / 2;
+		//Never wider than the row: a long header used to run past both edges of the list.
+		String text = this.getMessage().getString();
+		int room = this.width - 12;
+		if (font.width(text) > room) text = font.plainSubstrByWidth(text, room - font.width("\u2026")) + "\u2026";
+		int halfText = font.width(text) / 2;
 
-		GuiStyle.rule(guiGraphics, this.getX() + 6, centerX - halfText - 6, ruleY);
-		GuiStyle.rule(guiGraphics, centerX + halfText + 6, this.getX() + this.width - 6, ruleY);
-		guiGraphics.drawCenteredString(font, this.getMessage(), centerX, this.getY() + (this.height - 8) / 2, GuiStyle.ACCENT_COLOR);
+		if (centerX - halfText - 6 > this.getX() + 6) {
+			GuiStyle.rule(guiGraphics, this.getX() + 6, centerX - halfText - 6, ruleY);
+			GuiStyle.rule(guiGraphics, centerX + halfText + 6, this.getX() + this.width - 6, ruleY);
+		}
+		guiGraphics.drawCenteredString(font, text, centerX, this.getY() + (this.height - 8) / 2, GuiStyle.ACCENT_COLOR);
 	}
 
 	//A label, not a control: no clicking, sound, or keyboard focus (ButtonListWidget re-enables

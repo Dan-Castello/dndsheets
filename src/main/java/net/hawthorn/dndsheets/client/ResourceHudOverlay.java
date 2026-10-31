@@ -24,196 +24,185 @@ import net.minecraftforge.fml.common.Mod;
  *
  * <p>It's the persistent counterpart to {@link TurnHudOverlay}, which only exists while combat is
  * active: half of this data (conditions, concentration) matters outside of turns too, so it lives in
- * its own panel, in the opposite corner of the screen, with the same tome-like look (see
- * {@link GuiStyle}) so the two pieces read as one interface instead of two separate mods.</p>
+ * the opposite corner of the screen, as one card per effect styled like the vanilla potion effects in
+ * the inventory, so it reads as part of the game's own status display.</p>
  */
 @Mod.EventBusSubscriber(modid = DndsheetsMod.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ResourceHudOverlay {
 
-	//PADDING doesn't go below 7: any less and the text sinks under the corner's brass brace (see
-	//GuiStyle — same limit as TurnHudOverlay). Everything else, tightened per request.
-	private static final int PADDING = 7;
-	private static final int ROW_HEIGHT = 9;
-	private static final int MIN_WIDTH = 95;
+	//One card per effect, drawn on the vanilla wide effect background (inventory.png, 0,166 120x32) so it
+	//reads like the potion effects in the inventory — and follows whatever resource pack re-skins those.
+	private static final ResourceLocation EFFECT_BACKGROUND = new ResourceLocation("textures/gui/container/inventory.png");
+	private static final int CARD_WIDTH = 120;
+	private static final int CARD_HEIGHT = 32;
+	private static final int TEXT_WIDTH = CARD_WIDTH - 28 - 4;
+	private static final int SUBTITLE_COLOR = 0xFF7F7F7F;
+	private static final int ICON_FRAME = 24;
+	//Everything drawn 30% smaller than vanilla's effect widgets: full size took too much of the screen.
+	private static final float SCALE = 0.7f;
 
 	@SubscribeEvent
 	public static void registerOverlays(RegisterGuiOverlaysEvent event) {
 		event.registerAboveAll("dndsheets_resources", (gui, guiGraphics, partialTick, width, height) -> render(guiGraphics));
 	}
 
-	//The HUD lines, already assembled, and the sheet version they were assembled from. This render runs
+	//The HUD cards, already assembled, and the sheet version they were assembled from. This render runs
 	//every FRAME with nothing needing to be opened, so it's the mod's most-frequently-executed code;
 	//rebuilding these strings at 120 fps was ~2,500 allocations per second for text that only changes
-	//when the sheet changes. Each line carries its own color: they don't all mean the same thing (a
-	//condition isn't a resource), so a single color for the whole panel would make them indistinguishable
-	//at a glance.
-	//A line is text, or (when icons is not empty) a row of condition glyphs drawn instead of text.
-	private record Line(String text, int color, java.util.List<ResourceLocation> icons, ResourceLocation rowIcon) {
-		Line(String text, int color) {
-			this(text, color, java.util.List.of(), null);
-		}
-
-		Line(String text, int color, ResourceLocation rowIcon) {
-			this(text, color, java.util.List.of(), rowIcon);
-		}
-
-		Line(String text, int color, java.util.List<ResourceLocation> icons) {
-			this(text, color, icons, null);
-		}
-	}
-
-	private static final int ROW_ICON = 10;
-	private static final int ROW_ICON_GAP = 3;
-
-	private static final int ICON_SIZE = 14;
-	private static final int ICON_GAP = 2;
-	private static final int ICON_ROW_HEIGHT = ICON_SIZE + 2;
+	//when the sheet changes. Each card carries its own title color: they don't all mean the same thing (a
+	//condition isn't a resource), so a single color would make them indistinguishable at a glance.
+	//subtitle is null for cards with nothing to show under the name (a condition has no timer).
+	private record Card(ResourceLocation icon, String title, String subtitle, int titleColor) {}
 
 	private static int cachedVersion = -1;
-	private static Line[] cachedLines = new Line[0];
+	private static Card[] cachedCards = new Card[0];
+
+	private static String tr(String key) {
+		return Component.translatable(key).getString();
+	}
 
 	private static void rebuild(JsonObject sheet) {
-		java.util.List<Line> lines = new java.util.ArrayList<>();
+		java.util.List<Card> cards = new java.util.ArrayList<>();
 
 		int spellSlotsMax = sheet.has("spellSlotsMax") ? sheet.get("spellSlotsMax").getAsInt() : 0;
 		if (spellSlotsMax > 0) {
 			int slots = sheet.has("spellSlotsCurrent") ? sheet.get("spellSlotsCurrent").getAsInt() : 0;
-			lines.add(new Line(Component.translatable("hud.dndsheets.spell_slots", slots, spellSlotsMax).getString(), GuiStyle.INFO_COLOR, Icons.stat("spell")));
+			cards.add(new Card(Icons.stat("spell"), tr("hud.dndsheets.card.spell_slots"), slots + "/" + spellSlotsMax, GuiStyle.INFO_COLOR));
 		}
 
 		//Temporary HP: a buffer Minecraft doesn't represent (its health bar is only the real HP), so
 		//without this a player with temporary HP had no way to know how much buffer they had left until a
 		//hit started eating into it.
 		int temporaryHp = sheet.has("temporaryHp") ? sheet.get("temporaryHp").getAsInt() : 0;
-		if (temporaryHp > 0) lines.add(new Line(Component.translatable("hud.dndsheets.temp_hp", temporaryHp).getString(), GuiStyle.GOOD_COLOR, Icons.stat("hp")));
+		if (temporaryHp > 0) cards.add(new Card(Icons.stat("hp"), tr("hud.dndsheets.card.temp_hp"), String.valueOf(temporaryHp), GuiStyle.GOOD_COLOR));
 
-		//Active conditions, in red and above everything else. These used to live ONLY in the DM Panel, so
-		//a paralyzed player had no way to know it: their clicks simply stopped doing anything, and that
-		//reads as the mod being broken rather than as the rule it actually is. Half a dozen rules-engine
-		//checks depend on conditions and none of them were visible from the sufferer's side.
-		String conditions = activeConditionLabels(sheet);
-		if (!conditions.isEmpty()) {
-			java.util.List<ResourceLocation> glyphs = conditionIcons(sheet);
-			if (!glyphs.isEmpty()) lines.add(new Line("", 0, glyphs));
-			lines.add(new Line(conditions, GuiStyle.BAD_COLOR));
+		//Active conditions, one card each, in red. These used to live ONLY in the DM Panel, so a paralyzed
+		//player had no way to know it: their clicks simply stopped doing anything, and that reads as the mod
+		//being broken rather than as the rule it actually is. The "@id" each one carries its source with (see
+		//Combatant.formatEntry) is stripped: what matters is being frightened, not the entity number.
+		if (sheet.has("conditions")) {
+			java.util.Set<String> seen = new java.util.HashSet<>();
+			for (var element : sheet.getAsJsonArray("conditions")) {
+				String entry = element.getAsString();
+				int at = entry.indexOf('@');
+				String label = at < 0 ? entry : entry.substring(0, at);
+				if (label.isEmpty() || !seen.add(label)) continue;
+				String title = net.hawthorn.dndsheets.client.gui.OptionLabels.of(label);
+				cards.add(new Card(Icons.condition(label), title, null, GuiStyle.BAD_COLOR));
+			}
 		}
 
 		//The "things you're carrying" that decide your next roll. All of it used to live server-side: you'd
 		//receive Bardic Inspiration and not know it, prime a Smite and not know if it was still armed three
 		//turns later, and concentration — one of the most-checked things at a table — only existed as a
-		//chat line that scrolls away. A modifier you can't see isn't something you can play around; you only
-		//find out about it after the fact, in the result.
-		String held = heldEffects(sheet);
-		if (!held.isEmpty()) lines.add(new Line(held, 0xFFFFD9A0, Icons.stat("concentration")));
+		//chat line that scrolls away. A modifier you can't see isn't something you can play around.
+		ResourceLocation held = Icons.stat("concentration");
+		if (sheet.has("concentratingOn")) cards.add(new Card(held, tr("hud.dndsheets.card.concentrating"), net.hawthorn.dndsheets.ContentNames.of(sheet.get("concentratingOn").getAsString()).getString(), 0xFFFFD9A0));
+		if (sheet.has("bardicInspiration")) cards.add(new Card(held, tr("hud.dndsheets.card.inspiration"), "+" + sheet.get("bardicInspiration").getAsInt(), 0xFFFFD9A0));
+		if (sheet.has("smitePending")) cards.add(new Card(held, tr("hud.dndsheets.smite_armed"), null, 0xFFFFD9A0));
+		//"normal" is the resting value, not a pending advantage: a permanent card that says nothing would
+		//end up ignored along with the ones that actually matter.
+		if (sheet.has("nextAttackAdvantage")) {
+			String advantage = sheet.get("nextAttackAdvantage").getAsString();
+			if ("advantage".equals(advantage)) cards.add(new Card(held, tr("hud.dndsheets.advantage"), null, 0xFFFFD9A0));
+			else if ("disadvantage".equals(advantage)) cards.add(new Card(held, tr("hud.dndsheets.disadvantage"), null, 0xFFFFD9A0));
+		}
 
-		if (sheet.has("gold")) lines.add(new Line(Component.translatable("hud.dndsheets.gold", sheet.get("gold").getAsInt()).getString(), 0xFFFFD700, Icons.stat("gold")));
+		if (sheet.has("gold")) cards.add(new Card(Icons.stat("gold"), tr("hud.dndsheets.card.gold"), String.valueOf(sheet.get("gold").getAsInt()), 0xFFFFD700));
 
-		cachedLines = lines.toArray(new Line[0]);
+		cachedCards = cards.toArray(new Card[0]);
 	}
 
-	private static void render(GuiGraphics guiGraphics) {
-		//Under any open screen but chat the sheet/menu panel covers it and half the text shows through: hide it.
-		var screen = Minecraft.getInstance().screen;
-		if (screen != null && !(screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+	//Rebuilds the cached cards if the sheet changed; false when there's no sheet or nothing to show.
+	private static boolean refresh() {
 		JsonObject sheet = SheetLoader.getClientSheet();
-		if (sheet == null) return;
-
+		if (sheet == null) return false;
 		int version = SheetLoader.clientSheetVersion();
 		if (version != cachedVersion) {
 			rebuild(sheet);
 			cachedVersion = version;
 		}
-		if (cachedLines.length == 0) return; //Nothing active: better no panel than an empty one taking up a corner.
+		return cachedCards.length > 0; //Nothing active: better nothing than an empty strip taking up a corner.
+	}
 
+	//In play the HUD is a row of small icons, like the vanilla effect icons in the top-right corner; holding
+	//the player-list key (Tab) unfolds them into the full cards, and the inventory shows them too (see Inventory).
+	private static void render(GuiGraphics guiGraphics) {
+		//Under any open screen but chat the sheet/menu panel covers it and half the text shows through: hide it.
+		Minecraft minecraft = Minecraft.getInstance();
+		if (minecraft.screen != null && !(minecraft.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) return;
+		//F1 hides the GUI and F3's text fills this corner: custom overlays have to check both themselves.
+		if (minecraft.options.hideGui || minecraft.options.renderDebug) return;
+		if (!refresh()) return;
+		if (minecraft.options.keyPlayerList.isDown()) drawCards(guiGraphics, 8, 8);
+		else drawIcons(guiGraphics, 8, 8, true);
+	}
+
+	//Vanilla HUD effect icon: 24x24 frame from inventory.png (141,166) with the 18px icon inset. Cards with a
+	//short value (slots, temp HP, gold...) show it in the corner like an item count, so the numbers that
+	//matter mid-fight are still readable without unfolding anything.
+	private static void drawIcons(GuiGraphics guiGraphics, int screenX, int screenY, boolean horizontal) {
 		Font font = Minecraft.getInstance().font;
-		int contentWidth = MIN_WIDTH;
-		int rowsHeight = 0;
-		for (Line line : cachedLines) {
-			if (line.icons().isEmpty()) {
-				contentWidth = Math.max(contentWidth, font.width(line.text()) + (line.rowIcon() != null ? ROW_ICON + ROW_ICON_GAP : 0));
-				rowsHeight += ROW_HEIGHT;
-			} else {
-				contentWidth = Math.max(contentWidth, line.icons().size() * (ICON_SIZE + ICON_GAP) - ICON_GAP);
-				rowsHeight += ICON_ROW_HEIGHT;
+		guiGraphics.pose().pushPose();
+		guiGraphics.pose().translate(screenX, screenY, 0);
+		guiGraphics.pose().scale(SCALE, SCALE, 1);
+		int x = 0;
+		int y = 0;
+		for (Card card : cachedCards) {
+			guiGraphics.blit(EFFECT_BACKGROUND, x, y, 141, 166, ICON_FRAME, ICON_FRAME);
+			if (card.icon() != null) Icons.draw(guiGraphics, card.icon(), x + 3, y + 3, 18);
+			if (card.subtitle() != null && font.width(card.subtitle()) <= ICON_FRAME) {
+				//A dark backing under the value: drawn straight over the glyph, "0/2" was unreadable.
+				int badgeX = x + ICON_FRAME - font.width(card.subtitle()) - 1;
+				guiGraphics.fill(badgeX - 1, y + ICON_FRAME - 9, x + ICON_FRAME, y + ICON_FRAME, 0xC0000000);
+				guiGraphics.drawString(font, card.subtitle(), badgeX, y + ICON_FRAME - 8, 0xFFFFFFFF);
 			}
+			if (horizontal) x += ICON_FRAME + 1;
+			else y += ICON_FRAME + 1;
 		}
+		guiGraphics.pose().popPose();
+	}
 
-		int top = 8;
-		int left = 8;
-		int right = left + contentWidth + 2 * PADDING;
-		int bottom = top + 2 * PADDING - 4 + rowsHeight;
-
-		GuiStyle.panel(guiGraphics, left, top, right, bottom);
-
-		int textX = left + PADDING;
-		int y = top + PADDING - 2;
-		for (Line line : cachedLines) {
-			if (line.icons().isEmpty()) {
-				int textStart = textX;
-				if (line.rowIcon() != null) {
-					Icons.draw(guiGraphics, line.rowIcon(), textX, y - 1, ROW_ICON);
-					textStart += ROW_ICON + ROW_ICON_GAP;
-				}
-				guiGraphics.drawString(font, line.text(), textStart, y, line.color());
-				y += ROW_HEIGHT;
+	private static void drawCards(GuiGraphics guiGraphics, int screenX, int screenY) {
+		Font font = Minecraft.getInstance().font;
+		guiGraphics.pose().pushPose();
+		guiGraphics.pose().translate(screenX, screenY, 0);
+		guiGraphics.pose().scale(SCALE, SCALE, 1);
+		int x = 0;
+		int y = 0;
+		//Same squeeze as the vanilla inventory: past 5 effects the cards overlap instead of running off-screen.
+		int step = cachedCards.length > 5 ? 132 / (cachedCards.length - 1) : CARD_HEIGHT + 1;
+		for (Card card : cachedCards) {
+			guiGraphics.blit(EFFECT_BACKGROUND, x, y, 0, 166, CARD_WIDTH, CARD_HEIGHT);
+			if (card.icon() != null) Icons.draw(guiGraphics, card.icon(), x + 6, y + 7, 18);
+			String title = font.plainSubstrByWidth(card.title(), TEXT_WIDTH);
+			if (card.subtitle() == null) {
+				guiGraphics.drawString(font, title, x + 28, y + 12, card.titleColor());
 			} else {
-				int x = textX;
-				for (ResourceLocation glyph : line.icons()) {
-					Icons.draw(guiGraphics, glyph, x, y, ICON_SIZE);
-					x += ICON_SIZE + ICON_GAP;
-				}
-				y += ICON_ROW_HEIGHT;
+				guiGraphics.drawString(font, title, x + 28, y + 6, card.titleColor());
+				guiGraphics.drawString(font, font.plainSubstrByWidth(card.subtitle(), TEXT_WIDTH), x + 28, y + 16, SUBTITLE_COLOR);
 			}
+			y += step;
 		}
+		guiGraphics.pose().popPose();
 	}
 
 	/**
-	 * <p>Labels of the active conditions, comma-separated. The "@id" that each one carries its source
-	 * with (see {@code Combatant.formatEntry}) is stripped: what matters to the one suffering it is that
-	 * they're frightened, not the entity number that frightened them.</p>
+	 * <p>The full cards in the inventory, mirrored to the LEFT of the container: vanilla 1.20.1 already puts
+	 * the potion effects on its right, so the two columns frame the inventory instead of overlapping. When
+	 * the window is too narrow for a 120px card, falls back to the icon column, as vanilla does.</p>
 	 */
-	private static String activeConditionLabels(JsonObject sheet) {
-		if (!sheet.has("conditions")) return "";
-		StringBuilder labels = new StringBuilder();
-		for (var element : sheet.getAsJsonArray("conditions")) {
-			String entry = element.getAsString();
-			int at = entry.indexOf('@');
-			if (labels.length() > 0) labels.append(", ");
-			labels.append(at < 0 ? entry : entry.substring(0, at));
+	@Mod.EventBusSubscriber(modid = DndsheetsMod.MODID, value = Dist.CLIENT)
+	public static class Inventory {
+		@SubscribeEvent
+		public static void onScreenRender(net.minecraftforge.client.event.ScreenEvent.Render.Post event) {
+			if (!(event.getScreen() instanceof net.minecraft.client.gui.screens.inventory.EffectRenderingInventoryScreen<?> screen)) return;
+			if (!refresh()) return;
+			int room = screen.getGuiLeft() - 2;
+			int cardWidth = Math.round(CARD_WIDTH * SCALE);
+			int iconWidth = Math.round(ICON_FRAME * SCALE);
+			if (room >= cardWidth) drawCards(event.getGuiGraphics(), room - cardWidth, screen.getGuiTop());
+			else if (room >= iconWidth) drawIcons(event.getGuiGraphics(), room - iconWidth, screen.getGuiTop(), false);
 		}
-		return labels.length() == 0 ? "" : Component.translatable("hud.dndsheets.conditions", labels.toString()).getString();
-	}
-
-	/** One glyph per active condition that has one; a condition without a glyph still shows in the text line. */
-	private static java.util.List<ResourceLocation> conditionIcons(JsonObject sheet) {
-		java.util.List<ResourceLocation> glyphs = new java.util.ArrayList<>();
-		for (var element : sheet.getAsJsonArray("conditions")) {
-			String entry = element.getAsString();
-			int at = entry.indexOf('@');
-			ResourceLocation glyph = Icons.condition(at < 0 ? entry : entry.substring(0, at));
-			if (glyph != null && !glyphs.contains(glyph)) glyphs.add(glyph);
-		}
-		return glyphs;
-	}
-
-	/** The "things carried" that change the next roll: concentration, inspiration die, armed smite, pending advantage. */
-	private static String heldEffects(JsonObject sheet) {
-		StringBuilder held = new StringBuilder();
-		if (sheet.has("concentratingOn")) append(held, Component.translatable("hud.dndsheets.concentrating", net.hawthorn.dndsheets.ContentNames.of(sheet.get("concentratingOn").getAsString())).getString());
-		if (sheet.has("bardicInspiration")) append(held, Component.translatable("hud.dndsheets.inspiration", sheet.get("bardicInspiration").getAsInt()).getString());
-		if (sheet.has("smitePending")) append(held, Component.translatable("hud.dndsheets.smite_armed").getString());
-		//"normal" is the resting value, not a pending advantage: showing it would be a permanent line that
-		//says nothing and would end up ignored along with the ones that actually matter.
-		if (sheet.has("nextAttackAdvantage")) {
-			String advantage = sheet.get("nextAttackAdvantage").getAsString();
-			if ("advantage".equals(advantage)) append(held, Component.translatable("hud.dndsheets.advantage").getString());
-			else if ("disadvantage".equals(advantage)) append(held, Component.translatable("hud.dndsheets.disadvantage").getString());
-		}
-		return held.toString();
-	}
-
-	private static void append(StringBuilder to, String text) {
-		if (to.length() > 0) to.append(" · ");
-		to.append(text);
 	}
 }

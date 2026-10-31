@@ -17,7 +17,8 @@ public class TraitBasicInfoScreen extends SmallFormScreen {
 	private CycleField abilityField;
 
 	private TraitBasicInfoScreen(JsonObject entry, Screen parent) {
-		super(Component.translatable("gui.dndsheets.trait_basic.title", entry.get("id").getAsString()), 1, parent);
+		super(Component.translatable("gui.dndsheets.trait_basic.title", net.hawthorn.dndsheets.ContentNames.of(
+			entry.has("name") ? entry.get("name").getAsString() : entry.get("id").getAsString())), 1, parent);
 		this.entry = entry;
 	}
 

@@ -29,7 +29,7 @@ public class DungeonGenerateScreen extends SmallFormScreen {
 	@Override
 	protected void buildForm() {
 		BlockPos pos = Minecraft.getInstance().player.blockPosition();
-		poolBox = addField("Pool", "", 32);
+		poolBox = addField(I18n.get("gui.dndsheets.form.pool"), "", 32);
 		maxDepthBox = addField(I18n.get("gui.dndsheets.dungeon_generate.max_depth"), "7", 2);
 		xBox = addField("X", String.valueOf(pos.getX()), 8);
 		yBox = addField("Y", String.valueOf(pos.getY()), 8);

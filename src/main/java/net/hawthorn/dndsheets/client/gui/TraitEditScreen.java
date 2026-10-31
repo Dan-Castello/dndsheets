@@ -29,7 +29,9 @@ public class TraitEditScreen extends ListPickerScreen {
 	private final String id;
 
 	private TraitEditScreen(JsonObject entry, Screen parent) {
-		super(Component.translatable("gui.dndsheets.trait_edit.title", entry.get("id").getAsString()), parent);
+		//Named by what the DM recognizes, not the id (a pack trait's name is a language key).
+		super(Component.translatable("gui.dndsheets.trait_edit.title", net.hawthorn.dndsheets.ContentNames.of(
+			entry.has("name") ? entry.get("name").getAsString() : entry.get("id").getAsString())), parent);
 		this.entry = entry;
 		this.id = entry.get("id").getAsString();
 	}
@@ -42,8 +44,8 @@ public class TraitEditScreen extends ListPickerScreen {
 	protected void buildRows() {
 		String name = entry.has("name") ? entry.get("name").getAsString() : id;
 		String unarmedAbility = entry.has("unarmedAbility") ? entry.get("unarmedAbility").getAsString() : "str";
-		addRow(Component.translatable("gui.dndsheets.trait_edit.name", name), b -> TraitBasicInfoScreen.open(entry));
-		addRow(Component.translatable("gui.dndsheets.trait_edit.unarmed", unarmedAbility), b -> TraitBasicInfoScreen.open(entry));
+		addRow(Component.translatable("gui.dndsheets.trait_edit.name", net.hawthorn.dndsheets.ContentNames.of(name)), b -> TraitBasicInfoScreen.open(entry));
+		addRow(Component.translatable("gui.dndsheets.trait_edit.unarmed", OptionLabels.of(unarmedAbility)), b -> TraitBasicInfoScreen.open(entry));
 
 		addTierRows("unarmedDiceByLevel", Component.translatable("gui.dndsheets.trait_edit.tier_martial"));
 		addRow(Component.translatable("gui.dndsheets.trait_edit.add_martial"), b -> TierAddScreen.open(entry, "unarmedDiceByLevel"));

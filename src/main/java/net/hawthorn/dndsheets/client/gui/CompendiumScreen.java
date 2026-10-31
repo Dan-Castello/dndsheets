@@ -15,12 +15,13 @@ import net.minecraft.network.chat.Component;
  */
 public class CompendiumScreen extends ListPickerScreen {
 
-	private CompendiumScreen() {
-		super(Component.translatable("gui.dndsheets.compendium.title"));
+	private CompendiumScreen(net.minecraft.client.gui.screens.Screen parent) {
+		super(Component.translatable("gui.dndsheets.compendium.title"), parent);
 	}
 
+	//Parent = whatever is open (DM Panel, player menu): "< Back" returns there. From a keybind/command it's null.
 	public static void open() {
-		Minecraft.getInstance().setScreen(new CompendiumScreen());
+		Minecraft.getInstance().setScreen(new CompendiumScreen(Minecraft.getInstance().screen));
 	}
 
 	@Override
