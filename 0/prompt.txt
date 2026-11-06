@@ -1,0 +1,366 @@
+[Image #1] La barra de estados es funcional, pero se prefiere tener como los efectos de pociones en inventario [Image #2]
+
+---
+
+[Image #3] Este es el hud completo, abarca demasiado espacio, mantener iconos pequeños y desarrollar al abrir el inventario o tab
+
+---
+
+reducir tamaño en un 30%
+
+---
+
+Aplicar mejoras a HUB de combate [Image #4]
+
+---
+
+Mejorar HUD de hoja de personaje [Image #6]
+
+---
+
+Mejorar grimorio [Image #7]
+
+---
+
+Revisiñon y mejoras de todos los HUD
+
+---
+
+Mejorar HUDs de creacion de contenido [Image #8] [Image #9]
+
+---
+
+Todo el DM panel requiere de revision y correcciones de HUD
+
+---
+
+<task-notification>
+<task-id>a904e9a2fe2c30266</task-id>
+<tool-use-id>toolu_01XZJ9aT9Bq3K7cKKsNX5ZKW</tool-use-id>
+<output-file>C:\Users\DANCAS~1\AppData\Local\Temp\claude\C--Users-DanCastello-Documents-GitHub-dndsheets\cc5a3939-1f04-4ba4-8227-65748f74cabb\tasks\a904e9a2fe2c30266.output</output-file>
+<status>completed</status>
+<summary>Agent "Map DM panel screen tree" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I traced every screen reachable from the DM Panel. The worst bugs are three tall screens (the content forms, Sheet Adjust and the dungeon Trace room) that run past the bottom or top of the window at common GUI scales, so their Confirm, Back or top-row buttons can't be seen or clicked.
+
+Path roots used below:
+- **G** = `C:\Users\DanCastello\Documents\GitHub\dndsheets\src\main\java\net\hawthorn\dndsheets\client\gui\`
+- **D** = `C:\Users\DanCastello\Documents\GitHub\dndsheets\dungeon\src\main\java\net\hawthorn\dndsheets\dungeon\client\gui\`
+
+Lang strings are from `C:\Users\DanCastello\Documents\GitHub\dndsheets\src\main\resources\assets\dndsheets\lang\en_us.json`. No key used by these screens is missing, so no raw keys show on screen.
+
+**Base classes, facts the findings rely on:**
+- **ListPickerScreen** (G\ListPickerScreen.java)
+  - Panel runs from y=6 to `listTop()+listHeight()+10`, which is height-4 by default. Width is 220 at the default `buttonWidth` of 200.
+  - The title uses the Cinzel font and is not clipped (line 307). With a Back button it is centered in only about 166px.
+  - The empty message is one centered line with no wrapping (line 317).
+  - The search box is a vanilla `EditBox` with a brass frame drawn over it (198, 322).
+  - Rows are TomeButtons that cut long text with "..." and show it in full on hover.
+  - Rows that are half scrolled out of view stay clickable, because ButtonListWidget sets `active` true up to one row outside the visible area (components\ButtonListWidget.java:109-111). Rows are registered before the search box, so they win clicks over it.
+- **FormPanelScreen / SmallFormScreen**
+  - `formTop = max(44, h/2 - rowHeight*titleRows)` (FormPanelScreen:89), with no clamp at the bottom.
+  - The title is not clipped (238). Field labels are cut with "…" (259).
+- **ModalDialogScreen**: a fixed-size box centered on screen, with no clamp.
+
+---
+
+### Screen inventory (DM Panel → …)
+
+**DmPanelScreen**: G\DmPanelScreen.java, ListPickerScreen, the root screen (no parent). No layout overrides. It has 22 rows, so the search box turns on automatically. "Dungeons (pieces and generation)" is 32 characters plus an icon and gets cut with "..." (line 78).
+
+**PartyScreen** (G\PartyScreen.java), ListPickerScreen. Row `dm_panel.party` → LIST_PARTY → PARTY. Overrides `buttonWidth=260`. NPC rows use a gray style that overrides the button's hover colour (52). Condition names in the rows come from `Condition.displayLabel()`, which is hardcoded English (Condition.java:128+). Clicking a player → SheetAdjustScreen.
+
+**TurnControlScreen** (G\TurnControlScreen.java), ListPickerScreen. Row `turn_mode`. No overrides. Its add_effect row → PlayerPickerScreen ("Choose who receives the effect", 30 characters) → **AddTurnEffectScreen** (G\AddTurnEffectScreen.java, SmallFormScreen). That form has a name pick field, a dice cycle and a turns field. The "..." button opens ChoiceScreen EFFECT.
+
+**RulesScreen** (G\RulesScreen.java), ListPickerScreen. Row `rules` → RULES_LIST → RULES.
+- No overrides. The row "Feet/block: %s · Cast ticks/level: %s" (37+ characters) gets cut (54).
+- Inner **ValuesForm** (SmallFormScreen, 2 fields, line 62).
+- The table rows → CONFIG_LIST → **ConfigListScreen** (G\ConfigListScreen.java, ListPickerScreen, searchable).
+  - Its inner **EntryForm** (SmallFormScreen, line 52) shows the ability cycle as raw "str"/"dex" (79).
+  - EntryForm's Delete calls `ConfirmScreen.ask(this.title)`, so the prompt reads "Delete "Table entry"?" and never names the entry (SmallFormScreen:66).
+  - The pick fields open ChoiceScreen CLASS/ENCHANTMENT, or ItemPickerScreen.
+
+**SpawnGenericScreen** (G\SpawnGenericScreen.java), SmallFormScreen with 4 fields. Row `spawn_npc`. The field labels **"CA"/"PG"** are hardcoded Spanish (33-34).
+
+**MonsterSpawnListScreen** (G\MonsterSpawnListScreen.java), ListPickerScreen, searchable. Row `spawn_monster`. Rows show **raw monster ids** as literal text (45).
+
+**CommandListScreen** (G\CommandListScreen.java), ListPickerScreen. Used by three things:
+- the `encounters` row (labels from the server: name · composition · difficulty, long, cut);
+- the `difficulty` row;
+- give_magic (`ContentNames`, with the id as a fallback).
+
+**EncounterDesignerScreen** (G\EncounterDesignerScreen.java), ListPickerScreen. Row `design_encounter`.
+- Overrides `listTop()+12` (75) and `render()`. It hand-draws the summary with `drawCenteredString` at `width/2, super.listTop()` (173). It isn't clipped: the `no_party` text (about 42 characters) is wider than the 220px panel.
+- Inner **MonsterPickScreen** (ListPickerScreen, line 177).
+- "Save" → ContentFormScreen ENCOUNTER. "Manage" → ContentEntryListScreen.
+
+**PlayerPickerScreen** (G\PlayerPickerScreen.java), ListPickerScreen, searchable. Used by 7 Give rows plus TurnControl and CompendiumEntry. Its titles (`pick_*`, 24-30 characters in Cinzel) have about 166px next to "&lt; Back" and are likely to overlap it or the panel's right edge. It leads to:
+- **TraitGrantScreen** (G\TraitGrantScreen.java): names, OK.
+- **GiveItemListScreen** (G\GiveItemListScreen.java): OK.
+- **WeaponGiveListScreen** (G\WeaponGiveListScreen.java): **raw ids** (38). The server sends no names (BrowseActionMessage:156-157).
+- **SpellGiveListScreen** (G\SpellGiveListScreen.java): "Learn: &lt;raw id&gt;" and "Staff: &lt;raw id&gt;", two rows per spell (38-39).
+- **SheetAdjustScreen** (below).
+- CommandListScreen (give_magic).
+- **PresetScreen** (G\PresetScreen.java): the empty message "No presets loaded (ask the DM…)" is 52 characters, about 270px, on one line, so it is wider than the panel.
+
+**SheetAdjustScreen** (G\SheetAdjustScreen.java), FormPanelScreen.
+- Overrides `formWidth=190`, `rowHeight=26`, `titleBand=44` (65-68), and `init`/`render`.
+- Every widget is hand-placed with absolute offsets (122-209).
+- It hand-draws the vitals line in the hex colour **0xFFAA00** (234-235).
+- The title "%s settings (current gold: %s)" (95) is wider than the 218px panel when the player name is long.
+- The panel is about 298px tall starting at formTop=44, so at 270px window height the Conditions and Back buttons end up off screen.
+- The cycle options are translated (they go through `DISPLAY_KEYS`).
+- → **ConditionListScreen** (G\ConditionListScreen.java, ListPickerScreen). Its labels are hardcoded English plus GRAY/RED styles, which turn off the hover colour (59-60).
+
+**CompendiumScreen** (G\CompendiumScreen.java), ListPickerScreen. Row `compendium`. It is opened **without a parent** (19), so it has no Back button and Escape closes everything.
+- → **CompendiumListScreen** (G\CompendiumListScreen.java): `buttonWidth=260`. The title "Compendium · %s" uses the **raw category id** ("spells") (36-39). The rows are forced GRAY (56).
+- → **CompendiumEntryScreen** (G\CompendiumEntryScreen.java), ModalDialogScreen 300×200.
+  - The heading is drawn with `drawString` and is not wrapped or clipped (163).
+  - The body is **silently cut off** at `HEIGHT-34`, with no scrolling (169).
+  - Its buttons are hand-placed: 96px, 108px and 60px wide at y=HEIGHT-24.
+  - "To another player" → PlayerPickerScreen.
+
+**JournalScreen** (G\JournalScreen.java), ListPickerScreen, `buttonWidth=260`. It is opened via `/dndjournal` and has **no parent** (26). The rows are forced GRAY (49). An entry opens CompendiumEntryScreen.
+
+**ContentTypeListScreen** (G\ContentTypeListScreen.java), ListPickerScreen. Row `create_content`.
+- → **ContentEntryListScreen** (G\ContentEntryListScreen.java), searchable. Rows show "name  id" with the id in dark gray (121-123).
+  - → **ContentFormScreen** (G\ContentFormScreen.java), SmallFormScreen (details below).
+  - → **TraitEditScreen** (G\TraitEditScreen.java), ListPickerScreen. Its title is "Edit trait: **&lt;raw id&gt;**" (32). The unarmed row shows raw "str" and is 41+ characters, so it gets cut (46).
+    - → **TraitBasicInfoScreen** (G\TraitBasicInfoScreen.java): title shows the raw id (20); the ability cycle shows raw codes (36).
+    - → **TierAddScreen** (G\TierAddScreen.java).
+    - Both feed TraitEditScreen.save, see bug 11.
+- The Classes row → MANAGE_OPTIONS → **OptionsManageScreen** (G\OptionsManageScreen.java). Its empty message is 63 characters, about 330px, on one line. It leads to **OptionsAddScreen** (G\OptionsAddScreen.java).
+
+**ContentFormScreen details**: SmallFormScreen.
+- `titleRows` is computed at line 84. Forms switch to pages only above 10 fields, 8 per page (65-66).
+- Hand-placed "..." TomeButtons (141).
+- The cycle buttons show **raw internal codes**: "str/dex", "one/two/versatile", "attack/save/heal", "yes/no", the rarity names and school keys (ContentTypeForms.java:88-90, 126-132, 242, 31-33).
+- Long field labels such as allowed_classes (46 characters) and ability_bonuses_csv (49) are cut with "…" and shown on hover. That part is handled.
+
+**ChoiceScreen** (G\ChoiceScreen.java), ListPickerScreen, searchable. Opened from every "..." button. The title is always the generic "Pick". Option labels are **raw lowercase literals** for EFFECT (85), CREATURE_TYPE (92), DAMAGE_AFFINITY (98) and CONDITION (111). Labels from the server (LIST_IDS) look like "Name (namespace:id)", which is long and gets cut.
+
+**ItemPickerScreen** (G\ItemPickerScreen.java), a **bare Screen** grid. Opened from ChoiceScreen ITEM.
+- **Vanilla `EditBox` with no brass frame** (85).
+- The Back button (95) and Done button (100) sit at **the screen corners (8,8) and (width-68,8), outside the panel**, which spans `gridLeft-6 … width-left` (180).
+- Hex fills `0xAA4F9B46` / `0x66FFD9A0` / `0x44000000` (190).
+
+**ConfirmScreen** (G\ConfirmScreen.java), ModalDialogScreen 240×96. Used by every Delete. The body text is white **0xFFFFFF** (79). Wrapped lines start at y=26 with 10px spacing and the buttons are at 64, so a 5th line would overlap the buttons.
+
+**GuideBook** (G\GuideBook.java): a vanilla BookViewScreen, or Patchouli if installed. The author "DndSheets" is a literal. Index lines are measured without bold (202) but drawn bold (235), so an index page can overflow.
+
+**Dungeon addon**, reached via `/dnddungeon gui` → DungeonPieceListMessage:
+- **DungeonPieceListScreen** (D\DungeonPieceListScreen.java), ListPickerScreen.
+  - When Structurize is missing it overrides `listTop` to `SUBTITLE_Y+14 = 44` (42-44). That ignores the search box (y=30-46, on automatically at 14+ rows).
+  - It hand-draws the `no_structurize` subtitle at y=30 (69-71). That text is 87 characters, about 450px, against a 220px panel, and it collides with the search box.
+  - The empty message (61 characters) is wider than the panel.
+- **DungeonPieceEditScreen** (D\DungeonPieceEditScreen.java), SmallFormScreen. Labels "Pool"/"Tags" are literals (36, 38). Delete prompt reads "Delete "Edit piece: x"?".
+- **DungeonPieceAddScreen** (D\DungeonPieceAddScreen.java), SmallFormScreen. Labels "Id"/"Pool"/"Tags" are literals (42-46). The trace row is hand-placed (52). About 7 rows, so it is tight below 260px height.
+- **DungeonGenerateScreen** (D\DungeonGenerateScreen.java). Labels "Pool"/"X"/"Y"/"Z" are literals (32-36).
+- **DungeonTraceScreen** (D\DungeonTraceScreen.java), ModalDialogScreen with a **fixed 300×380** box (128). Everything is hand-placed.
+  - **Vanilla `EditBox` with no frame** (198).
+  - Literals **"Pared"/"Piso"** (Spanish, 189-195), "N"/"E"/"S" (346-348), and "Pool:" drawn by hand (514). The existing key `dungeon_trace.door_pool` goes unused.
+  - Hex cell colours (499-504) and `0xFFFFFFFF` (529). The title is never drawn.
+- **BlockPickerScreen** (D\BlockPickerScreen.java): raw block ids (42), which is acceptable here.
+- DungeonJigsawConfigureScreen exists but is opened by a jigsaw-block network message, not from this panel.
+
+---
+
+### Top 15 most likely visual bugs (ranked)
+
+1. **The content form runs off the bottom of the screen.** Spell (25 fields) and magic item (15 fields) forms have 8 fields per page plus page, Confirm and Delete rows, about 374px tall. That overflows at 360px height (1080p, GUI scale 3). Weapon and preset edit forms (10 rows) overflow at 270px height. Confirm and Delete end up unreachable. G\ContentFormScreen.java:65-66, 84, with no bottom clamp in G\FormPanelScreen.java:89.
+2. **DungeonTraceScreen's 380px fixed height**: the tool row (y=8) and Confirm (about +344) go off screen whenever the window is under 380px tall, which is most GUI scales. D\DungeonTraceScreen.java:128, 166, 224-226.
+3. **SheetAdjustScreen is taller than the screen at 270px height**: Conditions and Back fall below it. Its title is also wider than the panel. G\SheetAdjustScreen.java:95, 200-211.
+4. **DungeonPieceListScreen without Structurize**: the 450px subtitle overflows the panel and sits on top of the search box, and the list (y=44) overlaps the search box (30-46). D\DungeonPieceListScreen.java:42-44, 69-71.
+5. **ItemPickerScreen's Back and Done buttons sit outside the panel**, at the screen corners. D does not apply; this is G\ItemPickerScreen.java:95, 100 (panel at 180).
+6. **Unclipped ListPicker titles overlap "&lt; Back"** or run past the right edge. Examples: the PlayerPicker prompts (G\DmPanelScreen.java:60-71), "Edit trait: &lt;id&gt;" (G\TraitEditScreen.java:32), "Conditions of &lt;name&gt;" (G\ConditionListScreen.java:31). Cause: G\ListPickerScreen.java:306-307.
+7. **One-line empty messages wider than the panel**: options_manage (63 characters), dungeon_pieces (61) and preset (52). Drawn at G\ListPickerScreen.java:317; sources are G\OptionsManageScreen.java:58, D\DungeonPieceListScreen.java:62, G\PresetScreen.java:72.
+8. **Hardcoded Spanish labels in the English UI**: "CA"/"PG" at G\SpawnGenericScreen.java:33-34, and "Pared"/"Piso" at D\DungeonTraceScreen.java:189-195.
+9. **Raw ids shown instead of names**:
+   - G\MonsterSpawnListScreen.java:45
+   - G\WeaponGiveListScreen.java:38
+   - G\SpellGiveListScreen.java:38-39
+   - G\TraitEditScreen.java:32 and G\TraitBasicInfoScreen.java:20
+   - the "Compendium · spells" title at G\CompendiumListScreen.java:36-39
+10. **CompendiumEntryScreen cuts off long text**: the body is truncated silently with no scrolling (169), and the heading is not clipped (163). G\CompendiumEntryScreen.java.
+11. **Saving a trait shows stale data.** TraitBasicInfoScreen and TierAddScreen call `TraitEditScreen.save()`, which opens a new TraitEditScreen. Then `SmallFormScreen`'s Confirm calls `onClose()`, which jumps back to the old TraitEditScreen with the old values. G\SmallFormScreen.java:50-53 with G\TraitEditScreen.java:83-86.
+12. **Raw codes on cycle and choice rows**: str/dex, yes/no, one/two/versatile, attack/save/heal, damage and creature types, conditions. G\ContentTypeForms.java:88-90, 126-132; G\ChoiceScreen.java:85, 92, 98, 111; G\ConfigListScreen.java:79; G\TraitBasicInfoScreen.java:36.
+13. **Vanilla black `EditBox` with no Tome frame** at G\ItemPickerScreen.java:85 and D\DungeonTraceScreen.java:198. There are also hex colour literals in G\ConfirmScreen.java:79 (white body text), G\SheetAdjustScreen.java:235 and G\ItemPickerScreen.java:190.
+14. **The Delete prompt names the form title, not the entry**: "Delete "Edit: Longsword"?" or "Delete "Table entry"?". G\SmallFormScreen.java:66.
+15. **Hidden rows are clickable.** Rows scrolled partly under the search box or the bottom padding stay active and take clicks before the search box does. G\components\ButtonListWidget.java:109-111. Close behind: the EncounterDesigner summary is wider than the panel (G\EncounterDesignerScreen.java:173), and the GRAY row styles turn off the hover colour (G\CompendiumListScreen.java:56, G\JournalScreen.java:49, G\ConditionListScreen.java:59-60).
+
+Two navigation issues are not visual, but you'll see them. CompendiumScreen and JournalScreen have no parent, so there's no Back to the DM Panel. Lists the server reopens after a save (ContentEntryList, OptionsManage) stack on top of the old list, so Back lands on a stale copy.</result>
+<usage><subagent_tokens>199048</subagent_tokens><tool_uses>30</tool_uses><duration_ms>400144</duration_ms></usage>
+</task-notification>
+
+---
+
+Permitir interfaz ajustable, mejorar GUI de spells como el del grimorio [Image #10]
+
+---
+
+Mejorar dibujar salas y piezas [Image #11]
+
+---
+
+Mejora de trazar sala, permitir diseñar patrones, o seleccionar muros para pintar individualmente
+
+---
+
+Añadir, permitir previsualizar en el mundo como el mod litematica
+
+---
+
+Permitir pegar directamente al mundo sin necesidad de guardar si se desea sin la generacion de mazmorra, tambien permitir agregar niveles, un segundo piso por ejemplo, no es claro el como se agregan las conexiones para la generacion procedural de la mazmorra
+
+---
+
+Deseo poder "mover" los bloques del dibujo, por ejemplo, originalmente se hizo un salon 4x5, pero se desea poder mover todo un muro para poderlo hacer 5x5
+
+---
+
+Es tedioso tener que dar click a las opciones y dar toda la vuelta para poder encontrar la opcion deseada, quiero poder seleccionar un muro y poder editarlo, por ejemplo, eliminar partes del muro para hacer una ventana o pequeños huecos en el para simular desgaste
+
+---
+
+Durante el proceso de "Solo pegar" puede que deseen guardarlo, no permite modificar Y desde la interfaz en caso de haber iniciado el dibujo arriba de la ubicacion deseada, seria bueno poder deshacer el pegado, al pegar sin definir y dejando las opciones default no pega nada, door solo define la conexion, pero seria bueno poder seleccionar si se desea algun bloque para el muro para habitaciones ocultas
+
+---
+
+No hay proteccion en caso de abrir un segundo editor de habitaciones a pesar de llevar uno en proceso, redirigir al actual en caso de no ser consciente de que hay una tecla para volver al editor
+Aun no es posible editar muros individualmente ya que la pintura solo alterna columnas, pero no funciona para patrones intercalados horizontalmente, no es posible editar muros y agregar ventanas
+
+---
+
+Falta el poder crear conexiones en techo y piso para poder conectar escaleras de una habitacion con acceso de otra habitacion para generacion procedural, falta una manera de elegir la direccion de bloques con orientacion, por ejemplo escaleras
+
+---
+
+Los botones quedan muy juntos y no es posible verlos [Image #12]
+
+---
+
+En @dungeongen\ se han agreagdo 3 archivos de 3 generadores populares en linea de dungeons, quiero que sean analizados y si es posible importarlos para pegar en el mundo como dungeon
+
+---
+
+Quiero poder visualizarlo y editarlo antes de pegar en el mundo, poder cambiar materiales, entre otras funciones, analizar
+
+---
+
+[Image #14] Texto sobrepuesto en botones de menu de dungeons
+
+---
+
+Ya se han detectado correctamente los mapas, pero aun muestra el mensaje de no detectados [Image #15], en cuanto a la importacion del mapa ya mostrada en el traceroom el mapa dd2vtt se han sobrepuesto las habitaciones entre ellas [Image #16] lo mismo sucede con el ds, el json ha funcionado perfectamente
+
+---
+
+[Image #17] mapa ds y mapa dd2vtt despues de los ajustes [Image #18], hace falta una forma de navegación de los mapas dentro del trace room para poder desplazarse y hacer zoom
+
+---
+
+Noto que los menus al regresar o cancelar acciones no me manda al ultimo menu, me regresa mucho más de lo esperado
+
+---
+
+<task-notification>
+<task-id>a0b49d285c8fa45cb</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>C:\Users\DANCAS~1\AppData\Local\Temp\claude\C--Users-DanCastello-Documents-GitHub-dndsheets\cc5a3939-1f04-4ba4-8227-65748f74cabb\tasks\a0b49d285c8fa45cb.output</output-file>
+<status>completed</status>
+<summary>Agent "Audit back/cancel navigation" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I found three causes. Server replies open a new screen on top of whatever is showing. Some screens are opened with no parent, so Esc drops you to the world. And a few buttons call `setScreen(null)` on purpose.
+
+## 1. Base classes
+
+**`ListPickerScreen`** (`C:\Users\DanCastello\Documents\GitHub\dndsheets\src\main\java\net\hawthorn\dndsheets\client\gui\ListPickerScreen.java`)
+- `protected final Screen parent` (line 65), set in the constructor (92-95). The no-arg constructor (86-89) means parent is null.
+- The "&lt; Back" button only appears when `parent != null` (223-226) and calls `onClose()`.
+- `onClose()` (254-256) is `Minecraft.getInstance().setScreen(parent);`, so a null parent closes everything.
+- Picking a row does nothing to navigation in the base class. Each subclass decides (most call `this.onClose()` after sending).
+
+**`FormPanelScreen`** (`...\client\gui\FormPanelScreen.java`): `private final Screen parent` (47), set at 55-58. `onClose()` (281-283) is `setScreen(parent)`.
+
+**`SmallFormScreen`** (`...\client\gui\SmallFormScreen.java`)
+```java
+private void confirmAndClose() {            // ~49-52
+    onConfirm();
+    if (Minecraft.getInstance().screen == this) this.onClose();
+}
+```
+- Confirm calls `confirmAndClose()`. Cancel and Enter both go through `onClose()` to the parent.
+- Delete (~75-78) is `ConfirmScreen.ask(subject, () -&gt; { onDelete(); this.onClose(); })`.
+- A confirm action that opens another screen is **not** overridden: the `screen == this` guard prevents that.
+- Side issue: when `onConfirm()` rejects input with an early `return`, the form still closes and the typed input is lost. This happens in `DungeonPieceAddScreen:157`, `DungeonPieceEditScreen:206`, `DungeonGenerateScreen:268`, `TierAddScreen:37`, `ContentFormScreen:204`, `DungeonTraceSaveScreen:241` and `DungeonMapImportScreen:45-51`.
+
+**`ModalDialogScreen`**: has no parent and does not override `onClose()`, so vanilla closes to the world. Subclasses without their own `onClose()` are roots: `TurnActionScreen`, `RestChoiceScreen`, `DeathSaveScreen`, `AbilityImprovementScreen`, `WelcomeScreen`.
+
+**`ConfirmScreen`** (`...\client\gui\ConfirmScreen.java`)
+```java
+public static void ask(Component what, Runnable action) {   // 37-42
+    if (open) return;
+    open = true;
+    minecraft.setScreen(new ConfirmScreen(what, action, minecraft.screen));
+}
+yes:  if (done) return; done = true; close(); action.run();   // 46-52
+private void close() { open = false; Minecraft.getInstance().setScreen(parent); }  // 57-60
+public void onClose() { close(); }                           // 63-65
+```
+- It does capture the current screen as parent. Cancel and Esc both return there.
+- On Yes it returns to the parent first, then runs the action. An action that opens a screen or calls the asker's `onClose()` behaves correctly.
+- Bug: there is no `removed()` override. If any other `setScreen` replaces the dialog, `open` stays `true` forever and every later `ask()` is silently ignored. A server reply, a RestVote or DeathSave popup could all do this. The replacing screen would also take the dialog as its parent.
+
+**`BlockPickerScreen`** (dungeon): extends `ListPickerScreen` with an explicit parent. A pick runs `onPick` and then `onClose()`, so it returns to the parent. Correct.
+
+## 2. Server echoes put a stale copy behind the new screen
+
+Many `open()` methods use `Minecraft.getInstance().screen` as the parent. When the server re-sends a list after an action, the form has already gone back to the old list. The new list then gets the **old copy of itself** as its parent.
+
+Four screens already guard against this: `ContentEntryListScreen.open` (44-49), `OptionsManageScreen.open` (36-38), `ConfigListScreen.open` (32), `RulesScreen.open` (34). The guard is:
+```java
+Screen parent = current instanceof X stale &amp;&amp; &lt;same key&gt; ? stale.parent : current;
+```
+
+Places where it's missing or broken:
+
+| Where | What happens now | Should go |
+|---|---|---|
+| `dungeon\...\DungeonPieceListScreen.java:38-40` | After an edit, capture, delete or trace save, the echo comes from `DungeonPieceUpdate/Capture/Remove/TraceCaptureMessage` (60, 63, 43, 378). The new list's parent is the old list. Back shows the stale list (deleted piece still there), then Back again reaches the DM Panel. | Use the same stale-parent guard |
+| `...\client\gui\TraitEditScreen.java:85-88` `save()` → `open(updated)` (39-41) | Saving from `TraitBasicInfoScreen` or `TierAddScreen` opens the new trait editor with the **form** as parent. The server echo (`ContentEntrySaveMessage:73`) then sees a `TraitEditScreen` on screen, so the guard misses and a list opens on top with the editor as parent. You get pushed into the list. Back then goes editor → old form → old editor → list. Deleting a tier via ConfirmScreen gives editor → old editor. | Stay on the editor, with Back going to the original editor's parent (the list) |
+| `EncounterDesignerScreen.save()` (133-137) → `ContentFormScreen` | After Confirm the form returns to the designer, then the echo opens the Encounters content list on top of it. | Stay on the designer, or at least don't take over the screen |
+| `DungeonPieceAddScreen.java:146-148` passes `this` to `DungeonTraceScreen` | Trace Confirm `send(false)` (`DungeonTraceScreen:987-988`) returns to the already-filled Add form, then the echo opens a list whose parent is that form. Back → stale form; confirming it again would capture the piece twice. | The pieces list, i.e. the form's parent |
+| `DungeonTraceScreen.open` (373-384) when a preview draft exists | Reuses the old draft screen with **its original parent**, which can be a stale Add form from an earlier flow. | The screen that just asked to open it |
+
+## 3. No parent, or `setScreen(null)`: lands much further back
+
+| Where | What happens now | Should go |
+|---|---|---|
+| `CharacterListScreen.java:35-43`, uses the parent-less `super(title)` constructor; opened by `BrowseListMessage:79` after PlayerPanel's "Characters" row (`PlayerPanelScreen:31-32`) | No Back button; Esc closes to the world. The SWITCH, CREATE and DELETE replies (`BrowseActionMessage:119, 128, 237`) also open it with no parent. | PlayerPanel, carried across echoes |
+| `PlayerPanelScreen.java:62-65` `command()` closes to the world before sending | Journal (`dndjournal`) and Improvement (`dndchar improve`) then open from the server with parent null. Esc goes to the world. DmPanel's Journal row (97-99) doesn't close first, so it does return to the DM Panel. | PlayerPanel |
+| `CharacterSetupScreen.java:160`, `ReturnFromOrigins` calls `CharacterSetupScreen.open(null)` after Origins (129-130 closes to the world) | The original parent is lost; Esc goes to the world. | The original parent (PlayerPanel, CharacterList, sheet or Welcome); remember it in `expect()` |
+| `GuideBook.java:232`, vanilla `BookViewScreen` from the DM Panel (104) or PlayerPanel (49-50) | Done/Esc goes to the world. | The panel |
+| `CommandListScreen.java:194-197`, every row closes to the world | Difficulty, Encounters and Give Magic close everything. Intentional, since the reply goes to chat. | The parent, if you'd rather keep the menu open |
+| `DmPanelScreen.java:91-94` (roll log), `CompendiumEntryScreen.java:129-134` ("to player") | Close to the world. Intentional. | — |
+| `DungeonMapImportScreen.java:53-55` | The editor's parent is set to the pieces list, skipping both the import form and the file list. Cancel jumps back two levels. Intentional per the comment. | The file list, if you want one step back |
+| `DungeonTracePreview.java:44-47` `start()` | Closes to the world (the draft keeps its parent; Edit key restores it). By design. | — |
+
+## 4. Checked and correct
+
+These follow the parent chain properly:
+- **Dungeon:** `DungeonPieceAdd/Edit/Generate` (Cancel goes to the list), `DungeonJigsawConfigure`, `DungeonExtrasScreen` (returns to the editor), `DungeonTraceSaveScreen`, `DungeonMapPickScreen`.
+- **Pickers:** `PlayerPicker`, `ChoiceScreen.finish` and `ItemPickerScreen` (both return to the parent, then call the callback).
+- **Player-side screens:** `CharacterOptionListScreen`, `Feat`, `Subclass`, `Preset`, `Party`, `Journal`, `Compendium*`, `Grimoire`, `SkillProficiency`, `RollFormula`.
+- **DM tools:** `TraitGrant`, `WeaponGive`, `SpellGive`, `GiveItem`, `MonsterSpawn`, `TurnControl`, `AddTurnEffect`, `SheetAdjust`, `ConditionList`, `OptionsAdd`, `ManageCustomAttacks`, `AddMonsterAttack`, `MonsterTemplateSave`, `SpawnGeneric`, `NewCharacter`.
+- **Roots** (keybind, wand or server popups, where closing to the world is right): `DmPanelScreen.open()`, `GrimoireScreen.open(null)`, `MonsterAction`, `MonsterBind`, `WildShape`, `PlayerSheetScreen`.
+- **Refreshes:** the `refreshIfOpen` methods (`PlayerSheet`, `Grimoire`, `CharacterSetup`, `SkillProficiency`) only rebuild widgets and keep the parent.
+
+## Suggested fix
+
+Move the existing stale-parent check into one static helper on `ListPickerScreen`. Use it in `DungeonPieceListScreen.open` and `CharacterListScreen.open`, and add a parent constructor to `CharacterListScreen`. Make `TraitEditScreen.save` take the old editor's parent instead of `Minecraft.screen`, and have the content-list echo skip opening when the current screen isn't a `ContentEntryListScreen` of that type. Then fix the null-parent paths: `PlayerPanelScreen.command`, `ReturnFromOrigins`, and the leaked `ConfirmScreen.open` flag (override `removed()` to reset it).</result>
+<usage><subagent_tokens>146695</subagent_tokens><tool_uses>30</tool_uses><duration_ms>274237</duration_ms></usage>
+</task-notification>
+
+---
+
+Actualizar readme, changelog y documentación

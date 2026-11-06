@@ -1,0 +1,61 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M6SMB95SDB2YVRSYEVVGR174",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 6,
+  "files_touched": [
+    "CHANGELOG.md",
+    "DESIGN.md",
+    "PROJECT_CONTEXT.md",
+    "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/DungeonMapImporter.java",
+    "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonMapImportScreen.java",
+    "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonMapPickScreen.java",
+    "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonPieceListScreen.java",
+    "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonTraceScreen.java",
+    "dungeon/src/test/java/net/hawthorn/dndsheets/dungeon/DungeonSelfTest.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/CharacterListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/CharacterSetupScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ConfirmScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ContentEntryListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ContentTypeListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/EncounterDesignerScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/FormPanelScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/GuideBook.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ListPickerScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/PlayerPanelScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/TraitEditScreen.java",
+    "src/main/resources/assets/dndsheets/lang/en_us.json",
+    "src/main/resources/assets/dndsheets/lang/es_ar.json",
+    "src/main/resources/assets/dndsheets/lang/es_cl.json",
+    "src/main/resources/assets/dndsheets/lang/es_ec.json",
+    "src/main/resources/assets/dndsheets/lang/es_es.json",
+    "src/main/resources/assets/dndsheets/lang/es_mx.json",
+    "src/main/resources/assets/dndsheets/lang/es_uy.json",
+    "src/main/resources/assets/dndsheets/lang/es_ve.json",
+    "src/main/resources/assets/dndsheets/patchouli_books/guide/en_us/entries/dm/dungeons.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 680,
+    "cache_creation_tokens": 1831674,
+    "cache_read_tokens": 65116881,
+    "output_tokens": 525363,
+    "api_call_count": 338,
+    "subagent_tokens": {
+      "input_tokens": 60,
+      "cache_creation_tokens": 141524,
+      "cache_read_tokens": 2585213,
+      "output_tokens": 22432,
+      "api_call_count": 30
+    }
+  }
+}
