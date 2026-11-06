@@ -335,6 +335,31 @@ public final class DungeonMapImporter {
 			for (int z = 0; z < height; z++) {
 				for (int x = 0; x < width; x++) floor[z][x] = !outside[z][x] && !wall[z][x];
 			}
+			//A pocket shut in by a ring of corridors is enclosed too, but no portal leads into it: every real
+			//room is reached through one (or opens onto a room that is). A map with no portals keeps it all.
+			boolean anyDoor = false;
+			for (Direction[] row : doorFacing) for (Direction d : row) anyDoor |= d != null;
+			if (!anyDoor) return;
+			boolean[][] seen = new boolean[height][width];
+			for (int z = 0; z < height; z++) {
+				for (int x = 0; x < width; x++) {
+					if (!floor[z][x] || seen[z][x]) continue;
+					List<int[]> part = new ArrayList<>();
+					boolean reached = false;
+					queue.add(new int[]{x, z});
+					seen[z][x] = true;
+					while (!queue.isEmpty()) {
+						int[] p = queue.poll();
+						part.add(p);
+						for (int[] n : new int[][]{{p[0] + 1, p[1]}, {p[0] - 1, p[1]}, {p[0], p[1] + 1}, {p[0], p[1] - 1}}) {
+							if (n[0] < 0 || n[1] < 0 || n[0] >= width || n[1] >= height) continue;
+							if (doorFacing[n[1]][n[0]] != null) reached = true;
+							else if (floor[n[1]][n[0]] && !seen[n[1]][n[0]]) { seen[n[1]][n[0]] = true; queue.add(n); }
+						}
+					}
+					if (!reached) for (int[] p : part) floor[p[1]][p[0]] = false;
+				}
+			}
 		}
 
 		/** Floor = block centres inside the outline (even-odd over every ring, so holes stay holes). */

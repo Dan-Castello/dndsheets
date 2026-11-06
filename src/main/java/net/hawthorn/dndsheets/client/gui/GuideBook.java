@@ -131,7 +131,9 @@ public class GuideBook {
 				"gui.dndsheets.guide.page.dm_dungeons_2",
 				"gui.dndsheets.guide.page.dm_dungeons_3",
 				"gui.dndsheets.guide.page.dm_dungeons_4",
-				"gui.dndsheets.guide.page.dm_dungeons_5"),
+				"gui.dndsheets.guide.page.dm_dungeons_5",
+				"gui.dndsheets.guide.page.dm_dungeons_6",
+				"gui.dndsheets.guide.page.dm_dungeons_7"),
 			new Entry("gui.dndsheets.guide.entry.content",
 				"gui.dndsheets.guide.page.dm_content_packs",
 				"gui.dndsheets.guide.page.dm_content_packs_2",
@@ -229,7 +231,14 @@ public class GuideBook {
 		ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
 		book.setTag(tag);
 
-		Minecraft.getInstance().setScreen(new BookViewScreen(new BookViewScreen.WrittenBookAccess(book)));
+		//Done/Esc back to the panel that opened it, not out to the world.
+		net.minecraft.client.gui.screens.Screen parent = Minecraft.getInstance().screen;
+		Minecraft.getInstance().setScreen(new BookViewScreen(new BookViewScreen.WrittenBookAccess(book)) {
+			@Override
+			public void onClose() {
+				Minecraft.getInstance().setScreen(parent);
+			}
+		});
 	}
 
 	private static IndexLine rubric(String key) {

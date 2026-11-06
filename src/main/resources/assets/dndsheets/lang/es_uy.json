@@ -1970,6 +1970,8 @@
   "gui.dndsheets.guide.page.dm_dungeons_3": "No hace falta construir cada sala. Copia una estructura .nbt en la carpeta dndsheets/structures/ del juego y usa /dnddungeon import «<archivo>»: la pega donde estés y te dice cuántos jigsaw trae.",
   "gui.dndsheets.guide.page.dm_dungeons_4": "Si no trae ninguno, ponlos con la Vara de DM y captúrala como una sala tuya. Si ya los trae, /dnddungeon import «<archivo>» pool <pool> la registra como pieza directamente.",
   "gui.dndsheets.guide.page.dm_dungeons_5": "Sin DM en la mesa: con el modo solo encendido (/dndsolo), cualquiera puede generar —no hace falta ser operador—. Y ya no hace falta poblarla a mano: cada mazmorra generada trae monstruos propios en varias de sus salas, ajustados a la dificultad del mundo (/difficulty).",
+  "gui.dndsheets.guide.page.dm_dungeons_6": "También puedes dibujar una sala: Panel de DM (P) > Mazmorras > «Dibujar una sala para pegar...». Pinta suelo, muros, puertas y escaleras en la cuadrícula, elige materiales, abre ventanas desde el lado (clic derecho en un muro), mírala con Vista previa y pégala. [Deshacer] en el chat restaura lo que reemplazó.",
+  "gui.dndsheets.guide.page.dm_dungeons_7": "Mazmorras enteras de generadores en línea: pon un .json de donjon, un .dd2vtt de Universal VTT o un .ds de Dungeon Scrawl en la carpeta dndsheets/dungeon_maps del juego y usa «Importar mapa de generador...». Se abre en el mismo editor: rueda para zoom, Ctrl+arrastrar para moverte, «Mazmorra...» para techo, luces y carteles.",
   "gui.dndsheets.guide.page.dm_encounters": "Un encuentro es un grupo de monstruos guardado con nombre. Prepáralo antes de la sesión en el Panel de DM (Crear contenido > Encuentros) escribiendo «dndsheets:goblin x4, dndsheets:wolf x2».",
   "gui.dndsheets.guide.page.dm_encounters_2": "Suéltalo entero con /dndencounters spawn <id>, o en unas coordenadas si quieres montarlo al otro lado de la puerta. Salen repartidos en círculo, y la iniciativa arranca sola con el primer golpe.",
   "gui.dndsheets.guide.page.dm_first_1": "Para dirigir necesitas ser operador del mundo: la tecla P abre el Panel de DM, y sin permiso no hace nada. Lo demás es tuyo — el mod lleva las reglas y los números, pero la historia, el mapa y lo que hay detrás de la puerta los pones tú.",
@@ -2406,5 +2408,10 @@
   "gui.dndsheets.dungeon_map.too_big": "A esa escala el mapa mide %s bloques de lado (máx. %s): usa una escala menor.",
   "gui.dndsheets.dungeon_pieces.import_map": "Importar mapa de generador...",
   "gui.dndsheets.dungeon_trace.extras_button": "Mazmorra...",
-  "gui.dndsheets.dungeon_trace.tip_extras": "Techo, vaciar el interior, luces y carteles con las notas del mapa."
+  "gui.dndsheets.dungeon_trace.tip_extras": "Techo, vaciar el interior, luces y carteles con las notas del mapa.",
+  "gui.dndsheets.dungeon_trace.status_navigate": "Rueda: zoom · Ctrl+arrastrar, botón central o flechas: mover",
+  "gui.dndsheets.dungeon_trace.tip_zoom_fit": "Ver el mapa entero.",
+  "gui.dndsheets.dungeon_trace.tip_zoom_in": "Acercar (o la rueda del ratón sobre el plano).",
+  "gui.dndsheets.dungeon_trace.tip_zoom_out": "Alejar (o la rueda del ratón sobre el plano).",
+  "gui.dndsheets.dungeon_trace.zoom_fit": "Todo"
 }

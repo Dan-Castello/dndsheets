@@ -39,6 +39,7 @@ public class ContentTypeListScreen extends ListPickerScreen {
 	}
 
 	private static void request(ContentType type) {
+		ContentEntryListScreen.requested = true;
 		DndsheetsMod.PACKET_HANDLER.sendToServer(new BrowseActionMessage(BrowseActionMessage.Action.CONTENT_ENTRIES, type.name()));
 	}
 

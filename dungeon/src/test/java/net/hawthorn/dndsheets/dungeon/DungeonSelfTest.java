@@ -271,6 +271,8 @@ public class DungeonSelfTest {
 				System.out.println("  " + file.getFileName() + " (" + map.format() + "): " + map.grid()[0].length + "x" + map.grid().length + " blocks, " + floors + " floor, " + doors + " doors");
 				assertTrue(floors > 100 && doors > 0, file + " should import a dungeon with floor and doors");
 				if (map.format().equals("donjon")) assertTrue(map.notes().size() >= 60, "donjon should give a note per room (60) plus corridor features, got " + map.notes().size());
+				//The L-shaped pocket ringed by three corridors (bottom right) has no portal: it's void, not a room.
+				if (file.getFileName().toString().equals("dungeon-map.dd2vtt")) assertTrue(map.grid()[74][117] != GridToStructure.Cell.FLOOR, "the pocket between corridors should not be floor");
 				if (System.getenv("DUMP_MAPS") != null) {
 					StringBuilder text = new StringBuilder();
 					for (GridToStructure.Cell[] row : map.grid()) {

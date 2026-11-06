@@ -124,8 +124,8 @@ public class CharacterSetupScreen extends ListPickerScreen {
 		}
 	}
 
-	private static void openOriginPicker(String command) {
-		ReturnFromOrigins.expect();
+	private void openOriginPicker(String command) {
+		ReturnFromOrigins.expect(parent);
 		Minecraft.getInstance().player.connection.sendCommand(command);
 		Minecraft.getInstance().setScreen(null);
 	}
@@ -141,9 +141,12 @@ public class CharacterSetupScreen extends ListPickerScreen {
 	@net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = DndsheetsMod.MODID, value = net.minecraftforge.api.distmarker.Dist.CLIENT)
 	public static class ReturnFromOrigins {
 		private static boolean pending = false;
+		//Where the checklist's "< Back" led before the trip: reopening it with null dropped Esc into the world.
+		private static Screen returnTo;
 
-		static void expect() {
+		static void expect(Screen parent) {
 			pending = true;
+			returnTo = parent;
 		}
 
 		@net.minecraftforge.eventbus.api.SubscribeEvent
@@ -157,7 +160,7 @@ public class CharacterSetupScreen extends ListPickerScreen {
 			Minecraft.getInstance().tell(() -> {
 				if (!pending || Minecraft.getInstance().screen != null) return;
 				pending = false; //ponytail: if the player never closes another Origins selector, the flag stays armed until the next one; accepted — clearing it properly would require tracking all navigation.
-				CharacterSetupScreen.open(null);
+				CharacterSetupScreen.open(returnTo);
 			});
 		}
 	}

@@ -325,6 +325,8 @@ public abstract class ListPickerScreen extends Screen {
 			//Wrapped to the list: a one-line hint like "No presets loaded (ask the DM...)" was wider than the panel.
 			List<net.minecraft.util.FormattedCharSequence> lines = this.font.split(empty, buttonWidth());
 			int y = this.height / 2 - lines.size() * 5;
+			//Below the rows a screen keeps next to its empty message (Dungeon pieces' action rows), not on top of them.
+			for (Button b : allButtons) if (b.visible) y = Math.max(y, b.getY() + b.getHeight() + 6);
 			for (net.minecraft.util.FormattedCharSequence line : lines) {
 				guiGraphics.drawCenteredString(this.font, line, listLeft() + buttonWidth() / 2, y, GuiStyle.MUTED_COLOR);
 				y += 10;

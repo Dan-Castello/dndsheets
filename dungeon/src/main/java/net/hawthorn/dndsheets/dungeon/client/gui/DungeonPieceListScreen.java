@@ -36,7 +36,12 @@ public class DungeonPieceListScreen extends ListPickerScreen {
 	}
 
 	public static void open(List<DungeonPieceRegistry.DungeonPiece> pieces, List<Boolean> hasStart) {
-		Minecraft.getInstance().setScreen(new DungeonPieceListScreen(pieces, hasStart, Minecraft.getInstance().screen));
+		//An echo after capturing/editing/deleting lands on the spent Add form or the old copy of this list: skip
+		//both, or "< Back" walks through stale screens before reaching the DM Panel.
+		Screen parent = Minecraft.getInstance().screen;
+		if (parent instanceof DungeonPieceAddScreen form) parent = form.parentScreen();
+		if (parent instanceof DungeonPieceListScreen stale) parent = stale.parent;
+		Minecraft.getInstance().setScreen(new DungeonPieceListScreen(pieces, hasStart, parent));
 	}
 
 	//Room for the "no Structurize" notice above the search box (it used to sit on top of it).

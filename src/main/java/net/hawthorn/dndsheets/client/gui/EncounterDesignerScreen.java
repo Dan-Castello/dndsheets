@@ -107,10 +107,13 @@ public class EncounterDesignerScreen extends ListPickerScreen {
 		//Editing or deleting what's already saved used to only be possible from "Create content", which is
 		//where nobody's going to look for it: whoever just designed an encounter is here, not three menus away.
 		addRow(Component.translatable("gui.dndsheets.encounter_designer.manage"),
-			b -> net.hawthorn.dndsheets.DndsheetsMod.PACKET_HANDLER.sendToServer(
-				new net.hawthorn.dndsheets.network.BrowseActionMessage(
-					net.hawthorn.dndsheets.network.BrowseActionMessage.Action.CONTENT_ENTRIES,
-					ContentType.ENCOUNTER.name())));
+			b -> {
+				ContentEntryListScreen.requested = true;
+				net.hawthorn.dndsheets.DndsheetsMod.PACKET_HANDLER.sendToServer(
+					new net.hawthorn.dndsheets.network.BrowseActionMessage(
+						net.hawthorn.dndsheets.network.BrowseActionMessage.Action.CONTENT_ENTRIES,
+						ContentType.ENCOUNTER.name()));
+			});
 	}
 
 	@Nullable

@@ -37,7 +37,10 @@ public class TraitEditScreen extends ListPickerScreen {
 	}
 
 	public static void open(JsonObject entry) {
-		Minecraft.getInstance().setScreen(new TraitEditScreen(entry, Minecraft.getInstance().screen));
+		//Reopened after a save: replace the old editor of this same trait and keep its parent (the list).
+		Screen parent = Minecraft.getInstance().screen;
+		if (parent instanceof TraitEditScreen stale && stale.id.equals(entry.get("id").getAsString())) parent = stale.parent;
+		Minecraft.getInstance().setScreen(new TraitEditScreen(entry, parent));
 	}
 
 	@Override
@@ -84,6 +87,10 @@ public class TraitEditScreen extends ListPickerScreen {
 
 	static void save(JsonObject updated) {
 		DndsheetsMod.PACKET_HANDLER.sendToServer(new ContentEntrySaveMessage(ContentType.TRAIT, updated.toString()));
+		//Saved from one of its forms: step back to the old editor first, so the new one replaces it instead
+		//of stacking on top of the spent form (Back used to walk editor -> form -> old editor -> list).
+		Screen current = Minecraft.getInstance().screen;
+		if (current != null && !(current instanceof TraitEditScreen)) current.onClose();
 		TraitEditScreen.open(updated);
 	}
 }

@@ -64,6 +64,12 @@ public class ConfirmScreen extends ModalDialogScreen {
 		close();
 	}
 
+	//Replaced by some other screen (a server reply, a popup): without this the flag stayed set and every later ask() was ignored.
+	@Override
+	public void removed() {
+		open = false;
+	}
+
 	@Override
 	public boolean isPauseScreen() {
 		return false;

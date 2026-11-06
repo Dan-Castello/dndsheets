@@ -20,12 +20,10 @@ import java.util.stream.Stream;
 public class DungeonMapPickScreen extends ListPickerScreen {
 	public static final Path MAPS_DIR = DndPaths.ROOT.resolve("dungeon_maps");
 
+	private boolean none;
+
 	private DungeonMapPickScreen(Screen parent) {
 		super(Component.translatable("gui.dndsheets.dungeon_map.pick_title"), parent);
-	}
-
-	Screen parentScreen() {
-		return parent;
 	}
 
 	public static void open(Screen parent) {
@@ -34,7 +32,9 @@ public class DungeonMapPickScreen extends ListPickerScreen {
 
 	@Override
 	protected void buildRows() {
-		for (Path file : files()) {
+		List<Path> files = files();
+		none = files.isEmpty();
+		for (Path file : files) {
 			addRow(Component.literal(file.getFileName().toString()), b -> Minecraft.getInstance().setScreen(new DungeonMapImportScreen(file, this)));
 		}
 	}
@@ -52,6 +52,6 @@ public class DungeonMapPickScreen extends ListPickerScreen {
 
 	@Override
 	protected Component emptyMessage() {
-		return Component.translatable("gui.dndsheets.dungeon_map.empty", MAPS_DIR.toAbsolutePath().normalize().toString());
+		return !none ? null : Component.translatable("gui.dndsheets.dungeon_map.empty",MAPS_DIR.toAbsolutePath().normalize().toString());
 	}
 }

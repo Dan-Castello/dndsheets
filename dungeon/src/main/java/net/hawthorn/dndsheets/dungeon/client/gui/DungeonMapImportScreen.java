@@ -50,9 +50,8 @@ public class DungeonMapImportScreen extends SmallFormScreen {
 			say(Component.translatable("gui.dndsheets.dungeon_map.too_big", side, MAX_SIDE));
 			return;
 		}
-		//Back from the editor = the dungeon pieces list, not this form or the file list.
-		Screen pieces = list instanceof DungeonMapPickScreen ? ((DungeonMapPickScreen) list).parentScreen() : list;
-		DungeonTraceScreen.openImported(map, height, pieces);
+		//Back from the editor = one step, the file list (this form is spent).
+		DungeonTraceScreen.openImported(map, height, list);
 	}
 
 	private static void say(Component message) {

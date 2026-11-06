@@ -41,8 +41,14 @@ public class ContentEntryListScreen extends ListPickerScreen {
 
 	//Same criterion as DungeonPieceListScreen.open: the parent is whatever's on screen at that moment
 	//(the screen that requested the list, or this same screen if it's an echo after saving/deleting).
+	/** Set by whoever asks for a list; an unasked echo (saved from the trait editor or the encounter designer) stays out of the way. */
+	public static boolean requested;
+
 	public static void open(ContentType type, String arrayJson, String packsJson) {
 		Screen current = Minecraft.getInstance().screen;
+		boolean replacing = current instanceof ContentEntryListScreen stale && stale.type == type;
+		if (!requested && !replacing) return;
+		requested = false;
 		//After a save the form has already returned to the OLD list: take its parent, so "< Back" leads to
 		//the menu instead of a stale copy of this same list.
 		Screen parent = current instanceof ContentEntryListScreen stale && stale.type == type ? stale.parent : current;

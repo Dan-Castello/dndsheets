@@ -37,18 +37,18 @@ public class PlayerPanelScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.character_sheet.presets"), b -> PresetActionMenuScreen.open(this));
 		//The Ability Score Improvement is chosen by whoever owns the character (see CharacterCommand "improve"):
 		//the command doesn't require permission, and the server already checks that one is pending.
-		addRow(Component.translatable("gui.dndsheets.player_panel.improvement"), b -> command("dndchar improve"));
+		addRow(Component.translatable("gui.dndsheets.player_panel.improvement"), b -> command("dndchar improve", false));
 
 		addHeader(Component.translatable("gui.dndsheets.player_panel.section_magic"));
 		addRow(Component.translatable("gui.dndsheets.character_sheet.grimoire"), b -> GrimoireScreen.open(this));
 
 		addHeader(Component.translatable("gui.dndsheets.player_panel.section_table"));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.journal"), b -> command("dndjournal"));
+		addRow(Component.translatable("gui.dndsheets.dm_panel.journal"), b -> command("dndjournal", false));
 		addRow(Component.translatable("gui.dndsheets.dm_panel.compendium"), b -> CompendiumScreen.open());
 		//Output goes to chat, not to a screen: /dnditems has no GUI of its own. It's still included,
 		//because attuning items is the player's business and until now there was no way to discover the mechanic existed.
-		addRow(Component.translatable("gui.dndsheets.player_panel.items"), b -> command("dnditems list"));
-		addRow(Component.translatable("gui.dndsheets.dm_panel.roll_log"), b -> command("dndrolls"));
+		addRow(Component.translatable("gui.dndsheets.player_panel.items"), b -> command("dnditems list", true));
+		addRow(Component.translatable("gui.dndsheets.dm_panel.roll_log"), b -> command("dndrolls", true));
 		addRow(Component.translatable("gui.dndsheets.guide.button"),
 			b -> GuideBook.open(this.minecraft.player != null && (this.minecraft.player.hasPermissions(2) || this.minecraft.hasSingleplayerServer())));
 
@@ -59,8 +59,10 @@ public class PlayerPanelScreen extends ListPickerScreen {
 		addRow(Component.translatable("gui.dndsheets.dm_panel.title"), b -> DmPanelScreen.open(this));
 	}
 
-	private static void command(String command) {
+	//close: the reply is chat (close so it can be read). Otherwise it's a screen the server opens, which takes this
+	//panel as its parent only if the panel is still showing — closing first left Esc dropping you into the world.
+	private static void command(String command, boolean close) {
 		Minecraft.getInstance().player.connection.sendCommand(command);
-		Minecraft.getInstance().setScreen(null);
+		if (close) Minecraft.getInstance().setScreen(null);
 	}
 }

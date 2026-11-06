@@ -23,6 +23,14 @@
     {
       "type": "patchouli:text",
       "text": "gui.dndsheets.guide.page.dm_dungeons_5"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_dungeons_6"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "gui.dndsheets.guide.page.dm_dungeons_7"
     }
   ]
 }

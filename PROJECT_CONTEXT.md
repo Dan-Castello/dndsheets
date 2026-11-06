@@ -176,8 +176,9 @@ module is visible without building the other first.
 - **`dungeon`** (`dndsheets_dungeon`) owns the jigsaw/structure toolkit: `DungeonManager`,
   `DungeonPieceRegistry`, `DungeonToolManager`, `EncounterPopulator`, `GridToStructure`, the
   trace/capture subsystem (`DungeonTraceScreen`/`DungeonTraceCaptureMessage`/
-  `DungeonTracePreviewRenderer`/`DungeonPiecePlacer`, ~1.000 LOC: capture a build by marking
-  two corners in the world), plus its own GUI/command/network packages. It reaches into the core for
+  `DungeonTracePreviewRenderer`/`DungeonPiecePlacer`: draw a room on a grid, preview it in the world,
+  paste it or save it as a piece — see "Room editor and generator maps" at the end), the generator-map
+  importer (`DungeonMapImporter`), plus its own GUI/command/network packages. It reaches into the core for
   `DndsheetsMod.LOGGER`/`PRETTY_GSON`/`MODID`, `DndPaths`, the shared GUI bases (`SmallFormScreen`/
   `ListPickerScreen`/`ModalDialogScreen`/`GuiStyle`/`TomeButton`), `network.NetworkUtil` (the DM
   permission guard, once per message), `MonsterRegistry`, `SheetLoader` and `InteractionEvents` — it
@@ -1138,3 +1139,30 @@ Two bugs reported after playtesting, both in `TurnManager`:
    Config (`dndsheets-common.toml`, 0 turns each off): `fleeDistance` 40, `fleeEndSeconds` 5, `fleeWindowSeconds` 10.
    Ceiling: one encounter per server, so the window is global, not per player. `checkCombatLifecycleGuards` pins the guards
    by reading the source (there is no gametest of the combat lifecycle yet).
+
+## Room editor and generator maps (dungeon addon)
+
+- **Pipeline:** `DungeonTraceScreen` (client grid: cells + `CellOptions` per cell, levels) → `DungeonTraceCaptureMessage`
+  → `GridToStructure.renderLayers(...)` (pure, tested) → a list of `PlacedBlock` → `DungeonPiecePlacer.place` (world).
+  `GridToStructure` is the only place that decides blocks; the preview renderer and the server both read its output.
+- **Network size:** a client→server packet holds ~32 KB. The editor never sends `DungeonTraceCaptureMessage` directly:
+  `DungeonTraceChunkMessage.send` serializes it, deflates it and sends 30 000-byte parts (max 64, inflate capped at 8 MB);
+  the server joins them per player and calls `DungeonTraceCaptureMessage.handle`. New fields of the capture message go
+  **at the end** of its wire format (old fields keep their order).
+- **Vertical connections:** a Door facing UP/DOWN is a jigsaw facing up/down (`FrontAndTop`, joint `ROLLABLE`). Up = a
+  scaffolding column plus the jigsaw above the ceiling; down = the jigsaw replaces the floor.
+- **Extras** (`GridToStructure.Extras`): ceiling, carve (AIR first, so cell blocks overwrite it), lights every N blocks
+  (hanging under a ceiling unless the block is a torch/candle) and signs (`Kind.SIGN`, text in `targetPool`,
+  `signLines` wraps to 4×15).
+- **Pasting:** `PasteHistory` records the old blocks before anything is placed (Undo). `PasteQueue` places ≤ 8192 blocks
+  at once, more at 4096 per server tick, one paste per DM at a time; Undo cancels a running one.
+- **`DungeonMapImporter`** (pure, tested against the samples in `dungeongen/`): every format is drawn on a block canvas
+  (`scale` blocks per map square), then any empty block touching floor becomes wall.
+  - donjon: cell bit flags, with room/corridor notes.
+  - Universal VTT: wall segments and portals. The floor is what the walls enclose, minus pockets no portal leads into
+    (a ring of corridors encloses void).
+  - Dungeon Scrawl: zip with a `map` entry; outline polygons (even-odd), internal lines and door assets.
+- **Big maps in the editor:** zoom/pan viewport (`zoom`, `viewX/viewZ`, scissor, visible-range loops), `placedBlocks()`
+  cached 250 ms, and the in-world preview draws ghost blocks only within 32 blocks of the camera.
+- **Known ceilings:** notes don't follow the Move tool; an imported map can't be resized (re-import at another scale);
+  saving a huge imported map as a dungeon piece is not supported (structures that size fail).

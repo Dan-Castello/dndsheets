@@ -32,14 +32,17 @@ public class CharacterListScreen extends ListPickerScreen {
 	 */
 	private boolean deleteMode;
 
-	private CharacterListScreen(List<String> ids, List<Component> labels) {
-		super(Component.translatable("gui.dndsheets.character_list.title"));
+	private CharacterListScreen(List<String> ids, List<Component> labels, net.minecraft.client.gui.screens.Screen parent) {
+		super(Component.translatable("gui.dndsheets.character_list.title"), parent);
 		this.ids = ids;
 		this.labels = labels;
 	}
 
 	public static void open(List<String> ids, List<Component> labels) {
-		Minecraft.getInstance().setScreen(new CharacterListScreen(ids, labels));
+		//Back to whoever asked (Player Panel); a switch/create/delete echo replaces the old copy and keeps ITS parent.
+		net.minecraft.client.gui.screens.Screen parent = Minecraft.getInstance().screen;
+		if (parent instanceof CharacterListScreen stale) parent = stale.parent;
+		Minecraft.getInstance().setScreen(new CharacterListScreen(ids, labels, parent));
 	}
 
 	//Leaves room below the list for the three fixed rows: proficiencies, create, and delete.

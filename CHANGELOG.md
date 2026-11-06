@@ -44,6 +44,42 @@
   330+.
 - Old single-spell staffs and single-monster cards keep working.
 
+### Dungeons: draw rooms, import whole dungeons
+
+- **Room editor** (DM Panel > Dungeon pieces > "Draw a room to paste..."): draw a room on a grid and paste it
+  straight into the world, or save it as a dungeon piece.
+  - Tools: Floor, Wall, Door, Entrance, Object, Stairs, Paint and Erase.
+  - Modes: free brush, rectangle, and Move (select cells and drag them; Shift copies).
+  - Several levels (storeys), each with its own wall height.
+  - Undo (Ctrl+Z).
+  - Preview: leaves the room standing in the world as ghost blocks so you can walk around it.
+- **Materials:** wall and floor blocks, and a Paint tool that gives single cells other blocks. Patterns: solid,
+  checkered, random mix and horizontal stripes.
+- **Walls from the side:** right-click a wall to see it from the side.
+  - Open windows, arrow slits and gaps block by block, or give each block its own material.
+  - "Wear" opens random gaps; "Restore" closes them.
+- **Facing:** objects, doors and stairs can face N/E/S/W, up or down. Stairs with a direction are built as real
+  steps from any stairs block.
+- **Floor and ceiling connections:** a Door facing ↑ is a hatch with a ladder of scaffolding; one facing ↓ opens
+  the floor. The generator joins them, so a dungeon can grow up and down, not only sideways.
+- **Pasting:**
+  - [Undo] in chat (or `/dnddungeon undopaste`) puts back the blocks the paste replaced.
+  - A second editor can't be opened over a room still in preview: it goes back to that one.
+- **Import maps from online generators:** donjon (`.json`), Universal VTT (`.dd2vtt`/`.uvtt`: Dungeondraft,
+  Dungeon Alchemist, DungeonFog...) and Dungeon Scrawl (`.ds`).
+  - Put the files in the `dndsheets/dungeon_maps` folder of your game. DM Panel > Dungeon pieces > "Import a
+    generator map..." lets you pick the file, the blocks per map square and the wall height, and opens the map
+    in the room editor, to change it before pasting.
+  - Wheel zoom, Ctrl+drag (or the middle button, or the arrows) to move around, and −/+/All buttons.
+  - "Dungeon..." options: ceiling, carving out the inside (to bury it in a hill), a light block every N blocks
+    (lanterns hang, torches stand), and signs with donjon's room notes. In the editor the notes are yellow dots
+    with the full text on hover.
+  - Big maps are pasted in batches over several ticks, with progress on the action bar; [Undo] also stops a paste
+    still going in.
+  - `/dnddungeon importmap <file> [scale] [height]` pastes a map from the server's `dndsheets/dungeon_maps`
+    folder without the editor.
+- Client and server need the same version: the editor now sends rooms in compressed chunks (up to 256x256).
+
 ### Combat
 
 - Hitting a creature that isn't a monster (a cow, a villager) no longer starts an encounter. Before, it started one
@@ -67,6 +103,15 @@
 - Forms confirm with Enter.
 - Truncated button labels show the full text in a tooltip.
 - The resource HUD hides behind open menus instead of showing through them.
+- Back, Cancel and Esc return to the previous menu instead of jumping further back or out of the game:
+  - dungeon pieces after adding, editing or deleting one;
+  - the generator-map editor (back to the map list);
+  - the character list (now has "< Back");
+  - the journal and the guide opened from the Player Panel;
+  - the character checklist after choosing in Origins;
+  - the trait editor after saving.
+- Saving from the trait editor or the encounter designer no longer throws you into the content list.
+- A confirmation dialog interrupted by another screen no longer stops every later confirmation from appearing.
 
 ## 2.3.0
 

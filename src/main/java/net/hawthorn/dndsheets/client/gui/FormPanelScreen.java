@@ -58,6 +58,11 @@ public abstract class FormPanelScreen extends Screen {
 		this.parent = parent;
 	}
 
+	/** Where Cancel goes: lets a server echo that lands on a spent form skip past it (see DungeonPieceListScreen.open). */
+	public Screen parentScreen() {
+		return parent;
+	}
+
 	/** Adds the panel's rows, in order, with addField(...)/addFieldRow(...)/addCycleButton(...). */
 	protected abstract void buildForm();
 

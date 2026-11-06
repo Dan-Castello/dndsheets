@@ -1970,6 +1970,8 @@
   "gui.dndsheets.guide.page.dm_dungeons_3": "You do not have to build every room. Drop an .nbt structure into the game's dndsheets/structures/ folder and use /dnddungeon import \"<file>\": it pastes it where you stand and tells you how many jigsaws it carries.",
   "gui.dndsheets.guide.page.dm_dungeons_4": "If it carries none, place them with the DM Wand and capture it as a room of your own. If it already has them, /dnddungeon import \"<file>\" pool <pool> registers it as a piece directly.",
   "gui.dndsheets.guide.page.dm_dungeons_5": "No DM at the table: with solo mode on (/dndsolo), anyone can generate one — you don't need to be an operator. And you no longer have to populate it by hand: every generated dungeon already comes with its own monsters in several rooms, scaled to the world's difficulty (/difficulty).",
+  "gui.dndsheets.guide.page.dm_dungeons_6": "You can also draw a room: DM Panel (P) > Dungeons > \"Draw a room to paste...\". Paint floor, walls, doors and stairs on the grid, pick materials, open windows from the side (right-click a wall), Preview it in the world and Paste it. [Undo] in chat puts back what it replaced.",
+  "gui.dndsheets.guide.page.dm_dungeons_7": "Whole dungeons from online generators: put a donjon .json, a Universal VTT .dd2vtt or a Dungeon Scrawl .ds in the game's dndsheets/dungeon_maps folder, then \"Import a generator map...\". It opens in the same editor: wheel to zoom, Ctrl+drag to move, \"Dungeon...\" for ceiling, lights and signs.",
   "gui.dndsheets.guide.page.dm_encounters": "An encounter is a group of monsters saved under a name. Prepare it before the session in the DM Panel (Create content > Encounters) by writing \"dndsheets:goblin x4, dndsheets:wolf x2\".",
   "gui.dndsheets.guide.page.dm_encounters_2": "Drop the whole thing with /dndencounters spawn <id>, or at coordinates if you want it set up on the other side of the door. They come out spread in a circle, and initiative starts on its own with the first hit.",
   "gui.dndsheets.guide.page.dm_first_1": "To run the game you need to be an operator of the world: the P key opens the DM Panel, and without permission it does nothing. The rest is yours — the mod carries the rules and the numbers, but the story, the map and what waits behind the door are on you.",
@@ -2406,5 +2408,10 @@
   "gui.dndsheets.dungeon_map.too_big": "At that scale the map is %s blocks across (max %s): use a smaller scale.",
   "gui.dndsheets.dungeon_pieces.import_map": "Import a generator map...",
   "gui.dndsheets.dungeon_trace.extras_button": "Dungeon...",
-  "gui.dndsheets.dungeon_trace.tip_extras": "Ceiling, carving the inside, lights and signs with the map's notes."
+  "gui.dndsheets.dungeon_trace.tip_extras": "Ceiling, carving the inside, lights and signs with the map's notes.",
+  "gui.dndsheets.dungeon_trace.status_navigate": "Wheel: zoom · Ctrl+drag, middle button or arrows: move",
+  "gui.dndsheets.dungeon_trace.tip_zoom_fit": "Show the whole map.",
+  "gui.dndsheets.dungeon_trace.tip_zoom_in": "Zoom in (or the mouse wheel over the plan).",
+  "gui.dndsheets.dungeon_trace.tip_zoom_out": "Zoom out (or the mouse wheel over the plan).",
+  "gui.dndsheets.dungeon_trace.zoom_fit": "All"
 }

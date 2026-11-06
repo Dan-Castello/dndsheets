@@ -439,6 +439,16 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 				y += ROW;
 			}
 			y += 4;
+			//Zoom buttons over the plan's top-right corner: the wheel and Ctrl+drag work too, but nobody finds them.
+			int navX = MARGIN + LEFT_COLUMN + GAP + canvasArea() - 52, navY = TOP_BAND - 2;
+			addModalButton(navX, navY, 13, 11, Component.literal("−"), b -> zoomAt(viewLeft() + canvas / 2.0, viewTop() + canvas / 2.0, -1)) //i18n-ok: symbol
+				.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.dungeon_trace.tip_zoom_out")));
+			addModalButton(navX + 13, navY, 13, 11, Component.literal("+"), b -> zoomAt(viewLeft() + canvas / 2.0, viewTop() + canvas / 2.0, 1)) //i18n-ok: symbol
+				.setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.dungeon_trace.tip_zoom_in")));
+			addModalButton(navX + 26, navY, 26, 11, Component.translatable("gui.dndsheets.dungeon_trace.zoom_fit"), b -> {
+				zoom = viewX = viewZ = 0;
+				applyCellSize();
+			}).setTooltip(Tooltip.create(Component.translatable("gui.dndsheets.dungeon_trace.tip_zoom_fit")));
 		}
 
 		doorPoolBox = new EditBox(this.font, dialogLeft() + MARGIN, dialogTop() + y + 2 * ROW + 10, LEFT_COLUMN, BUTTON_HEIGHT,
@@ -1049,6 +1059,11 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
 		if (elevation || !inView(mouseX, mouseY)) return super.mouseScrolled(mouseX, mouseY, delta);
+		zoomAt(mouseX, mouseY, delta);
+		return true;
+	}
+
+	private void zoomAt(double mouseX, double mouseY, double delta) {
 		double gx = (mouseX - canvasLeft()) / cell, gz = (mouseY - canvasTop()) / cell;
 		int fit = Math.max(1, canvasArea() / gridSize);
 		int next = Math.max(Math.min(fit, cell), Math.min(24, cell + (delta > 0 ? Math.max(1, cell / 4) : -Math.max(1, cell / 5))));
@@ -1057,7 +1072,6 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 		viewX = (int) Math.round(gx - (mouseX - viewLeft()) / (double) cell);
 		viewZ = (int) Math.round(gz - (mouseY - viewTop()) / (double) cell);
 		applyCellSize();
-		return true;
 	}
 
 	@Override
@@ -1629,6 +1643,8 @@ public class DungeonTraceScreen extends ModalDialogScreen {
 			status = Component.translatable("gui.dndsheets.dungeon_trace.status_hover_wall");
 		} else if (paintMode == PaintMode.MOVE) {
 			status = Component.translatable(selX1 < 0 ? "gui.dndsheets.dungeon_trace.status_move_select" : "gui.dndsheets.dungeon_trace.status_move_drag");
+		} else if (imported) {
+			status = Component.translatable("gui.dndsheets.dungeon_trace.status_navigate");
 		} else if (id.isEmpty()) {
 			status = Component.translatable("gui.dndsheets.dungeon_trace.status_paste_only");
 		} else {

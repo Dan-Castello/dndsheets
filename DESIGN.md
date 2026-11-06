@@ -65,7 +65,7 @@ States every interactive control must show distinctly: **rest, hover, selected/a
 - Empty list → `emptyMessage()` with a reason and, where possible, the next step (`ListPickerScreen` falls back to a generic "Nothing here yet."). A search with no matches shows "No results for …" automatically.
 
 ## 8. Keyboard
-- Esc always goes back (to `parent`) or closes. Enter confirms a `SmallFormScreen`, and in a `ListPickerScreen` search box it presses the first matching row. Arrow-key navigation of lists is still missing.
+- Esc always goes back (to `parent`) or closes. A screen the server reopens after a save/delete (an "echo") replaces the stale copy of itself and keeps **its** parent, skipping a spent form on the way (`ContentEntryListScreen.open`, `DungeonPieceListScreen.open`, `CharacterListScreen.open`); a screen opened from a server reply takes the screen that asked as parent, so don't close the panel before sending (`PlayerPanelScreen.command(cmd, close)` closes only when the answer is chat). Enter confirms a `SmallFormScreen`, and in a `ListPickerScreen` search box it presses the first matching row. Arrow-key navigation of lists is still missing.
 - Anything done with the mouse needs a keyboard route where reasonable (keybinds H/P/G/R/X/Z exist; Shift+scroll cycles staff/card).
 - Don't steal vanilla keys (E, Q, F, T…).
 
