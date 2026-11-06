@@ -1,0 +1,93 @@
+instalacin global de https://github.com/github/spec-kit
+
+---
+
+arregla el PATH
+
+---
+
+Dejar instalacion limpia para cualquier terminal de claude code futura
+
+---
+
+Continuar, validar que la exensión para bugs esté disponible de igual manera, en caso contrario instalar
+
+---
+
+sí, inicializa dndsheets con la extensión bug
+
+---
+
+/speckit-specify Quiero que los jugadores nuevos puedan empezar a usar todas las funciones, desde la mas sencilla como el tiro de dados, como la importación de dungeons, dibujo de salas, etc, reducir la curva de ingreso a este proyecto para ser un VTT agradable y comodo de usar tanto en lo visual como en gameplay
+
+---
+
+/speckit-clarify El diseño de GUI y la navegación tambien es importante y debe considerarse
+
+---
+
+B
+
+---
+
+B
+
+---
+
+B
+
+---
+
+C
+
+---
+
+C
+
+---
+
+Evaluación de la skill https://github.com/patch-gg/pixelfx para el diseño de interfaz y posible uso para diseño de efectos y objetos
+
+---
+
+/speckit-plan
+
+---
+
+/speckit-tasks
+
+---
+
+/speckit-analyze
+
+---
+
+Correcciones
+
+---
+
+/speckit-analyze
+
+---
+
+Corregir antes de implementar
+
+---
+
+/speckit-analyze
+
+---
+
+Aplicar correcciones y buscar causa raiz para evitar repeticiones
+
+---
+
+/speckit-analyze
+
+---
+
+Asumir y desarrollar la mejor solucion, despues aplicar /speckit-analyze para validar hasta no encontrar mas erroress
+
+---
+
+/speckit-analyze

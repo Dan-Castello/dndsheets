@@ -1,0 +1,1092 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M6SMB95SDB2YVRSYEVVGR174",
+  "session_id": "e8cd3efa-ffee-46f3-b570-757b3ce01ad9",
+  "strategy": "manual-commit",
+  "created_at": "2026-11-06T23:51:06.6812573Z",
+  "branch": "main",
+  "checkpoints_count": 24,
+  "save_step_count": 24,
+  "files_touched": [
+    ".specify/.gitignore",
+    ".specify/extensions.yml",
+    ".specify/extensions/.registry",
+    ".specify/extensions/bug/README.md",
+    ".specify/extensions/bug/commands/speckit.bug.assess.md",
+    ".specify/extensions/bug/commands/speckit.bug.fix.md",
+    ".specify/extensions/bug/commands/speckit.bug.test.md",
+    ".specify/extensions/bug/extension.yml",
+    ".specify/init-options.json",
+    ".specify/integration.json",
+    ".specify/integrations/claude.manifest.json",
+    ".specify/integrations/speckit.manifest.json",
+    ".specify/memory/.constitution-template.json",
+    ".specify/memory/constitution.md",
+    ".specify/scripts/powershell/check-prerequisites.ps1",
+    ".specify/scripts/powershell/common.ps1",
+    ".specify/scripts/powershell/create-new-feature.ps1",
+    ".specify/scripts/powershell/resolve-template.ps1",
+    ".specify/scripts/powershell/setup-plan.ps1",
+    ".specify/scripts/powershell/setup-tasks.ps1",
+    ".specify/templates/checklist-template.md",
+    ".specify/templates/constitution-template.md",
+    ".specify/templates/plan-template.md",
+    ".specify/templates/spec-template.md",
+    ".specify/templates/tasks-template.md",
+    ".specify/workflows/speckit/workflow.yml",
+    ".specify/workflows/workflow-registry.json",
+    "CHANGELOG.md",
+    "DESIGN.md",
+    "PROJECT_CONTEXT.md",
+    "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/DungeonMapImporter.java",
+    "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonMapImportScreen.java",
+    "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonMapPickScreen.java",
+    "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonPieceListScreen.java",
+    "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonTraceScreen.java",
+    "dungeon/src/test/java/net/hawthorn/dndsheets/dungeon/DungeonSelfTest.java",
+    "specs/001-onboarding-vtt/checklists/requirements.md",
+    "specs/001-onboarding-vtt/contracts/onboarding-message.md",
+    "specs/001-onboarding-vtt/contracts/screen-navigation.md",
+    "specs/001-onboarding-vtt/data-model.md",
+    "specs/001-onboarding-vtt/plan.md",
+    "specs/001-onboarding-vtt/quickstart.md",
+    "specs/001-onboarding-vtt/research.md",
+    "specs/001-onboarding-vtt/spec.md",
+    "specs/001-onboarding-vtt/tasks.md",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/CharacterListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/CharacterSetupScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ConfirmScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ContentEntryListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ContentTypeListScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/EncounterDesignerScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/FormPanelScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/GuideBook.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/ListPickerScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/PlayerPanelScreen.java",
+    "src/main/java/net/hawthorn/dndsheets/client/gui/TraitEditScreen.java",
+    "src/main/resources/assets/dndsheets/lang/en_us.json",
+    "src/main/resources/assets/dndsheets/lang/es_ar.json",
+    "src/main/resources/assets/dndsheets/lang/es_cl.json",
+    "src/main/resources/assets/dndsheets/lang/es_ec.json",
+    "src/main/resources/assets/dndsheets/lang/es_es.json",
+    "src/main/resources/assets/dndsheets/lang/es_mx.json",
+    "src/main/resources/assets/dndsheets/lang/es_uy.json",
+    "src/main/resources/assets/dndsheets/lang/es_ve.json",
+    "src/main/resources/assets/dndsheets/patchouli_books/guide/en_us/entries/dm/dungeons.json"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "a5b3e27b2f76",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 436,
+    "cache_creation_tokens": 452627,
+    "cache_read_tokens": 35060636,
+    "output_tokens": 164400,
+    "api_call_count": 193
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "prompt-skill-claude-code-speckit-specify-2026-11-06T22:38:27.1772483Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "speckit-specify"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "6002671d5e5a",
+      "timestamp": "2026-11-06T22:38:27.1772483Z",
+      "native": {
+        "command": "/speckit-specify"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/speckit-specify",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-speckit-clarify-2026-11-06T22:43:13.9297817Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "speckit-clarify"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "448cc13a51dc",
+      "timestamp": "2026-11-06T22:43:13.9297817Z",
+      "native": {
+        "command": "/speckit-clarify"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/speckit-clarify",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-speckit-plan-2026-11-06T22:56:55.1086755Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "speckit-plan"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "1ff397f04280",
+      "timestamp": "2026-11-06T22:56:55.1086755Z",
+      "native": {
+        "command": "/speckit-plan"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/speckit-plan",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-speckit-tasks-2026-11-06T23:05:33.5288512Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "speckit-tasks"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "5ed407d6e9a9",
+      "timestamp": "2026-11-06T23:05:33.5288512Z",
+      "native": {
+        "command": "/speckit-tasks"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/speckit-tasks",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-speckit-analyze-2026-11-06T23:13:27.2990462Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "speckit-analyze"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "3f82fba0b24d",
+      "timestamp": "2026-11-06T23:13:27.2990462Z",
+      "native": {
+        "command": "/speckit-analyze"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/speckit-analyze",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-speckit-analyze-2026-11-06T23:23:08.3711036Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "speckit-analyze"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "03efa4f49dc0",
+      "timestamp": "2026-11-06T23:23:08.3711036Z",
+      "native": {
+        "command": "/speckit-analyze"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/speckit-analyze",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-speckit-analyze-2026-11-06T23:26:05.6269364Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "speckit-analyze"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "0dea4d3ff02d",
+      "timestamp": "2026-11-06T23:26:05.6269364Z",
+      "native": {
+        "command": "/speckit-analyze"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/speckit-analyze",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-speckit-analyze-2026-11-06T23:28:22.1156615Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "speckit-analyze"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "ff528390816a",
+      "timestamp": "2026-11-06T23:28:22.1156615Z",
+      "native": {
+        "command": "/speckit-analyze"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/speckit-analyze",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-speckit-analyze-2026-11-06T23:45:45.3737416Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "speckit-analyze"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "1ec91cfdf94a",
+      "timestamp": "2026-11-06T23:45:45.3737416Z",
+      "native": {
+        "command": "/speckit-analyze"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/speckit-analyze",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "prompt-skill-claude-code-speckit-implement-2026-11-06T23:47:21.7596434Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "speckit-implement"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "9b5dae33fd77",
+      "timestamp": "2026-11-06T23:47:21.7596434Z",
+      "native": {
+        "command": "/speckit-implement"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/speckit-implement",
+        "default_collapsed": true
+      }
+    },
+    {
+      "id": "claude-skill-toolu_018YpCEWjAJpTpqU1iZ11uM8",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "speckit-analyze"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "a5b3e27b2f76",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 1599,
+        "end": 1600,
+        "entry_ids": [
+          "cd8c23f0-3601-422d-9d7c-04102b31eeca"
+        ],
+        "tool_use_id": "toolu_018YpCEWjAJpTpqU1iZ11uM8"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_018YpCEWjAJpTpqU1iZ11uM8"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: speckit-analyze",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 24
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-11-06T23:51:06.4370909Z",
+    "agent_lines": 2866,
+    "agent_removed": 0,
+    "human_added": 13624,
+    "human_modified": 702,
+    "human_removed": 0,
+    "total_committed": 16977,
+    "total_lines_changed": 17192,
+    "agent_percentage": 16.67054443927408,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 37195,
+      "user_lines_removed": 16381,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".settings/org.eclipse.buildship.core.prefs": 13,
+        ".settings/org.eclipse.jdt.core.prefs": 22,
+        ".vscode/settings.json": 3,
+        "CHANGELOG.md": 45,
+        "DESIGN.md": 1,
+        "LICENSE": 21,
+        "PROJECT_CONTEXT.md": 30,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/DungeonMapImporter.java": 25,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonMapImportScreen.java": 2,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonMapPickScreen.java": 6,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonPieceListScreen.java": 6,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonTraceScreen.java": 17,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/package-info.java": 6,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/command/package-info.java": 6,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/network/package-info.java": 6,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/package-info.java": 6,
+        "dungeon/src/main/resources/META-INF/mods.toml": 27,
+        "dungeon/src/main/resources/pack.mcmeta": 6,
+        "dungeon/src/test/java/net/hawthorn/dndsheets/dungeon/DungeonSelfTest.java": 2,
+        "gradle.properties": 13,
+        "gradle/wrapper/gradle-wrapper.properties": 6,
+        "gradlew": 244,
+        "gradlew.bat": 92,
+        "reference/creature-model-survey.json": 11105,
+        "runClient/config/dndsheets-common.toml": 70,
+        "runClient/dndsheets/classes/dm_created.json": 13,
+        "runClient/dndsheets/encounters/dm_created.json": 1,
+        "runClient/dndsheets/weapons/dm_created.json": 11,
+        "runClient/server.properties": 61,
+        "runServer/charactersheets/380df991-f603-344c-a090-369bad2a924a.json": 83,
+        "runServer/config/dndsheets-common.toml": 21,
+        "runServer/dndsheets/monsters/bandit.json": 14,
+        "runServer/server.properties": 61,
+        "settings.gradle": 34,
+        "species/build.gradle": 129,
+        "species/src/main/java/net/hawthorn/dndsheets/species/BackgroundRegistry.java": 128,
+        "species/src/main/java/net/hawthorn/dndsheets/species/CharacterSwitchListener.java": 47,
+        "species/src/main/java/net/hawthorn/dndsheets/species/DndsheetsSpeciesMod.java": 63,
+        "species/src/main/java/net/hawthorn/dndsheets/species/OriginBridge.java": 59,
+        "species/src/main/java/net/hawthorn/dndsheets/species/RaceRegistry.java": 170,
+        "species/src/main/java/net/hawthorn/dndsheets/species/command/SpeciesCommand.java": 243,
+        "species/src/main/java/net/hawthorn/dndsheets/species/command/package-info.java": 6,
+        "species/src/main/java/net/hawthorn/dndsheets/species/package-info.java": 6,
+        "species/src/main/resources/META-INF/mods.toml": 45,
+        "species/src/main/resources/assets/dndsheets_species/lang/en_us.json": 91,
+        "species/src/main/resources/assets/dndsheets_species/lang/es_ar.json": 91,
+        "species/src/main/resources/assets/dndsheets_species/lang/es_cl.json": 91,
+        "species/src/main/resources/assets/dndsheets_species/lang/es_ec.json": 91,
+        "species/src/main/resources/assets/dndsheets_species/lang/es_es.json": 91,
+        "species/src/main/resources/assets/dndsheets_species/lang/es_mx.json": 91,
+        "species/src/main/resources/assets/dndsheets_species/lang/es_uy.json": 91,
+        "species/src/main/resources/assets/dndsheets_species/lang/es_ve.json": 91,
+        "species/src/main/resources/data/dndsheets_species/origin_layers/background.json": 24,
+        "species/src/main/resources/data/dndsheets_species/origin_layers/race.json": 20,
+        "species/src/main/resources/data/dndsheets_species/origins/acolyte.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/barbarian.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/bard.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/charlatan.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/cleric.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/criminal.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/dragonborn.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/druid.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/dwarf.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/elf.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/entertainer.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/fighter.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/folk_hero.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/gnome.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/guild_artisan.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/half_elf.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/half_orc.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/halfling.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/hermit.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/human.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/monk.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/noble.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/outlander.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/paladin.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/ranger.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/rogue.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/sage.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/sailor.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/soldier.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/sorcerer.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/tiefling.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/urchin.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/warlock.json": 7,
+        "species/src/main/resources/data/dndsheets_species/origins/wizard.json": 7,
+        "species/src/main/resources/data/origins-classes/origin_layers/class.json": 23,
+        "species/src/main/resources/data/origins/origin_layers/origin.json": 10,
+        "species/src/main/resources/pack.mcmeta": 6,
+        "species/src/test/java/net/hawthorn/dndsheets/species/SpeciesSelfTest.java": 103,
+        "src/main/java/net/hawthorn/dndsheets/AbilityItem.java": 42,
+        "src/main/java/net/hawthorn/dndsheets/AttackRules.java": 117,
+        "src/main/java/net/hawthorn/dndsheets/CharacterInventory.java": 91,
+        "src/main/java/net/hawthorn/dndsheets/CharacterOptionsRegistry.java": 86,
+        "src/main/java/net/hawthorn/dndsheets/ChatFeedback.java": 289,
+        "src/main/java/net/hawthorn/dndsheets/ClassLevels.java": 154,
+        "src/main/java/net/hawthorn/dndsheets/Combatant.java": 750,
+        "src/main/java/net/hawthorn/dndsheets/CompendiumQuery.java": 291,
+        "src/main/java/net/hawthorn/dndsheets/Condition.java": 170,
+        "src/main/java/net/hawthorn/dndsheets/ConsumableManager.java": 148,
+        "src/main/java/net/hawthorn/dndsheets/ContentDatapackLoader.java": 106,
+        "src/main/java/net/hawthorn/dndsheets/ContentDefaults.java": 78,
+        "src/main/java/net/hawthorn/dndsheets/ContentNames.java": 48,
+        "src/main/java/net/hawthorn/dndsheets/ContentType.java": 82,
+        "src/main/java/net/hawthorn/dndsheets/Cover.java": 127,
+        "src/main/java/net/hawthorn/dndsheets/CreatureType.java": 118,
+        "src/main/java/net/hawthorn/dndsheets/DamageTypes.java": 101,
+        "src/main/java/net/hawthorn/dndsheets/DeathSaveManager.java": 381,
+        "src/main/java/net/hawthorn/dndsheets/DndPaths.java": 178,
+        "src/main/java/net/hawthorn/dndsheets/DndsheetsMod.java": 360,
+        "src/main/java/net/hawthorn/dndsheets/DruidWildShapeManager.java": 300,
+        "src/main/java/net/hawthorn/dndsheets/EncounterRegistry.java": 160,
+        "src/main/java/net/hawthorn/dndsheets/FeatRegistry.java": 143,
+        "src/main/java/net/hawthorn/dndsheets/GiveableItem.java": 53,
+        "src/main/java/net/hawthorn/dndsheets/InteractionEvents.java": 31,
+        "src/main/java/net/hawthorn/dndsheets/ItemLook.java": 81,
+        "src/main/java/net/hawthorn/dndsheets/JournalManager.java": 210,
+        "src/main/java/net/hawthorn/dndsheets/LegendaryActionManager.java": 146,
+        "src/main/java/net/hawthorn/dndsheets/LevelUpManager.java": 237,
+        "src/main/java/net/hawthorn/dndsheets/Light.java": 56,
+        "src/main/java/net/hawthorn/dndsheets/MagicItemRegistry.java": 241,
+        "src/main/java/net/hawthorn/dndsheets/MagicSchool.java": 98,
+        "src/main/java/net/hawthorn/dndsheets/MonsterActionManager.java": 649,
+        "src/main/java/net/hawthorn/dndsheets/MonsterRegistry.java": 935,
+        "src/main/java/net/hawthorn/dndsheets/MonsterSkins.java": 128,
+        "src/main/java/net/hawthorn/dndsheets/MovementAnchorTracker.java": 250,
+        "src/main/java/net/hawthorn/dndsheets/OwnClockManager.java": 142,
+        "src/main/java/net/hawthorn/dndsheets/PresetManager.java": 152,
+        "src/main/java/net/hawthorn/dndsheets/RestResource.java": 107,
+        "src/main/java/net/hawthorn/dndsheets/RoleplayManager.java": 97,
+        "src/main/java/net/hawthorn/dndsheets/RollIndex.java": 411,
+        "src/main/java/net/hawthorn/dndsheets/SaveRules.java": 107,
+        "src/main/java/net/hawthorn/dndsheets/SpellCastManager.java": 732,
+        "src/main/java/net/hawthorn/dndsheets/SpellRegistry.java": 491,
+        "src/main/java/net/hawthorn/dndsheets/SummonManager.java": 171,
+        "src/main/java/net/hawthorn/dndsheets/TurnManager.java": 1440,
+        "src/main/java/net/hawthorn/dndsheets/VisionManager.java": 177,
+        "src/main/java/net/hawthorn/dndsheets/WarlockPactMagicManager.java": 41,
+        "src/main/java/net/hawthorn/dndsheets/WeaponBuffManager.java": 71,
+        "src/main/java/net/hawthorn/dndsheets/WizardArcaneRecoveryManager.java": 54,
+        "src/main/java/net/hawthorn/dndsheets/api/event/CharacterSwitchedEvent.java": 40,
+        "src/main/java/net/hawthorn/dndsheets/api/event/SheetValidateEvent.java": 29,
+        "src/main/java/net/hawthorn/dndsheets/api/event/package-info.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/client/RoleplayClient.java": 31,
+        "src/main/java/net/hawthorn/dndsheets/client/TurnHudState.java": 51,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/AbilityImprovementScreen.java": 138,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/AddTurnEffectScreen.java": 46,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/CharacterListScreen.java": 120,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/CharacterOptionListScreen.java": 97,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/CharacterSetupScreen.java": 167,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ConfigListScreen.java": 113,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ConfirmScreen.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ContentEntryListScreen.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ContentTypeForms.java": 472,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ContentTypeListScreen.java": 49,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/DmPanelScreen.java": 110,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/EncounterDesignerScreen.java": 7,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/FormPanelScreen.java": 5,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/GiveItemListScreen.java": 38,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/GuideBook.java": 11,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ListPickerScreen.java": 2,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/ManageCustomAttacksScreen.java": 57,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/MonsterActionScreen.java": 59,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/NewCharacterScreen.java": 46,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/PlayerPanelScreen.java": 8,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/RulesScreen.java": 84,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/TraitEditScreen.java": 8,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/TraitGrantScreen.java": 55,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/components/DirectionalCycleButton.java": 38,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/components/TomeField.java": 58,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/components/package-info.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/package-info.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/client/package-info.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/client/procedures/package-info.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/command/CharacterCommand.java": 293,
+        "src/main/java/net/hawthorn/dndsheets/command/CharacterOptionsCommand.java": 92,
+        "src/main/java/net/hawthorn/dndsheets/command/CompendiumCommand.java": 29,
+        "src/main/java/net/hawthorn/dndsheets/command/ContentCommands.java": 80,
+        "src/main/java/net/hawthorn/dndsheets/command/DistanceCommand.java": 40,
+        "src/main/java/net/hawthorn/dndsheets/command/EncounterCommand.java": 100,
+        "src/main/java/net/hawthorn/dndsheets/command/JournalCommand.java": 152,
+        "src/main/java/net/hawthorn/dndsheets/command/MagicItemCommand.java": 167,
+        "src/main/java/net/hawthorn/dndsheets/command/MonsterCommand.java": 392,
+        "src/main/java/net/hawthorn/dndsheets/command/NotesCommand.java": 54,
+        "src/main/java/net/hawthorn/dndsheets/command/PresetCommand.java": 73,
+        "src/main/java/net/hawthorn/dndsheets/command/RoleplayCommand.java": 23,
+        "src/main/java/net/hawthorn/dndsheets/command/RollLogCommand.java": 50,
+        "src/main/java/net/hawthorn/dndsheets/command/SheetCommand.java": 578,
+        "src/main/java/net/hawthorn/dndsheets/command/SpellCommand.java": 170,
+        "src/main/java/net/hawthorn/dndsheets/command/TraitCommand.java": 77,
+        "src/main/java/net/hawthorn/dndsheets/command/TurnCommand.java": 100,
+        "src/main/java/net/hawthorn/dndsheets/command/VisionCommand.java": 57,
+        "src/main/java/net/hawthorn/dndsheets/command/WeaponCommand.java": 102,
+        "src/main/java/net/hawthorn/dndsheets/command/package-info.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/compat/CuriosCompat.java": 45,
+        "src/main/java/net/hawthorn/dndsheets/compat/CuriosSlots.java": 39,
+        "src/main/java/net/hawthorn/dndsheets/compat/DndJeiPlugin.java": 68,
+        "src/main/java/net/hawthorn/dndsheets/compat/JadePlugin.java": 118,
+        "src/main/java/net/hawthorn/dndsheets/compat/PatchouliBook.java": 36,
+        "src/main/java/net/hawthorn/dndsheets/compat/PatchouliCompat.java": 54,
+        "src/main/java/net/hawthorn/dndsheets/compat/PehkuiCompat.java": 49,
+        "src/main/java/net/hawthorn/dndsheets/compat/PehkuiScale.java": 26,
+        "src/main/java/net/hawthorn/dndsheets/compat/package-info.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/gametest/CombatantGameTests.java": 169,
+        "src/main/java/net/hawthorn/dndsheets/gametest/package-info.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/init/DndsheetsModCreativeTab.java": 87,
+        "src/main/java/net/hawthorn/dndsheets/init/DndsheetsModItems.java": 27,
+        "src/main/java/net/hawthorn/dndsheets/init/DndsheetsModKeyMappings.java": 146,
+        "src/main/java/net/hawthorn/dndsheets/init/DndsheetsModSounds.java": 16,
+        "src/main/java/net/hawthorn/dndsheets/init/package-info.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/network/AbilityImprovementMessage.java": 41,
+        "src/main/java/net/hawthorn/dndsheets/network/BrowseActionMessage.java": 698,
+        "src/main/java/net/hawthorn/dndsheets/network/MonsterSaveTemplateMessage.java": 93,
+        "src/main/java/net/hawthorn/dndsheets/network/MonsterSpawnMessage.java": 54,
+        "src/main/java/net/hawthorn/dndsheets/network/ScreenActionMessage.java": 46,
+        "src/main/java/net/hawthorn/dndsheets/network/SheetAdjustMessage.java": 128,
+        "src/main/java/net/hawthorn/dndsheets/network/SheetServerMessage.java": 193,
+        "src/main/java/net/hawthorn/dndsheets/network/SheetSummaryMessage.java": 59,
+        "src/main/java/net/hawthorn/dndsheets/network/SheetSummaryRequestMessage.java": 64,
+        "src/main/java/net/hawthorn/dndsheets/network/SpellCastMessage.java": 46,
+        "src/main/java/net/hawthorn/dndsheets/network/SpellGiveMessage.java": 59,
+        "src/main/java/net/hawthorn/dndsheets/network/StaffBindMessage.java": 124,
+        "src/main/java/net/hawthorn/dndsheets/network/TurnActionMessage.java": 34,
+        "src/main/java/net/hawthorn/dndsheets/network/TurnStateMessage.java": 102,
+        "src/main/java/net/hawthorn/dndsheets/network/package-info.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/package-info.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/procedures/RollAnnouncerProcedure.java": 163,
+        "src/main/java/net/hawthorn/dndsheets/procedures/package-info.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/world/inventory/package-info.java": 6,
+        "src/main/resources/assets/dndsheets/lang/en_us.json": 8,
+        "src/main/resources/assets/dndsheets/lang/es_ar.json": 8,
+        "src/main/resources/assets/dndsheets/lang/es_cl.json": 8,
+        "src/main/resources/assets/dndsheets/lang/es_ec.json": 8,
+        "src/main/resources/assets/dndsheets/lang/es_es.json": 8,
+        "src/main/resources/assets/dndsheets/lang/es_mx.json": 8,
+        "src/main/resources/assets/dndsheets/lang/es_uy.json": 8,
+        "src/main/resources/assets/dndsheets/lang/es_ve.json": 8,
+        "src/main/resources/assets/dndsheets/models/item/token.json": 29,
+        "src/main/resources/assets/dndsheets/patchouli_books/guide/en_us/entries/dm/dungeons.json": 8,
+        "src/main/resources/assets/dndsheets/sounds.json": 10,
+        "src/main/resources/data/curios/tags/items/charm.json": 6,
+        "src/main/resources/data/curios/tags/items/ring.json": 6,
+        "src/main/resources/data/dndsheets/patchouli_books/guide/book.json": 8,
+        "src/main/resources/dndsheets/defaults/encounters.json": 22,
+        "src/main/resources/dndsheets/defaults/feats.json": 21,
+        "src/main/resources/dndsheets/defaults/items.json": 364,
+        "src/main/resources/dndsheets/defaults/presets.json": 117,
+        "src/main/resources/dndsheets/defaults/traits.json": 29,
+        "src/main/resources/dndsheets/skins/alexsmobs.json": 45,
+        "src/main/resources/dndsheets/skins/cataclysm.json": 14,
+        "src/main/resources/dndsheets/skins/guardvillagers.json": 14,
+        "src/main/resources/dndsheets/skins/iceandfire.json": 67,
+        "src/main/resources/dndsheets/skins/mowziesmobs.json": 16,
+        "src/main/resources/dndsheets/skins/naturalist.json": 28,
+        "src/main/resources/dndsheets/skins/twilightforest.json": 23,
+        "src/main/resources/pack.mcmeta": 5,
+        "src/test/resources/addon_example/data/myaddon/dndsheets/encounters/example_encounter.json": 5,
+        "src/test/resources/addon_example/data/myaddon/dndsheets/feats/example_feat.json": 5,
+        "src/test/resources/addon_example/data/myaddon/dndsheets/monsters/example_sentinel.json": 14,
+        "src/test/resources/addon_example/data/myaddon/dndsheets/presets/example_preset.json": 7,
+        "src/test/resources/addon_example/data/myaddon/dndsheets/spells/example_ray.json": 10,
+        "src/test/resources/addon_example/data/myaddon/dndsheets/traits/example_trait.json": 8,
+        "src/test/resources/addon_example/data/myaddon/dndsheets/weapons/example_axe.json": 8,
+        "src/test/resources/addon_example/pack.mcmeta": 6,
+        "src/test/resources/vanilla_ids_1_20_1.txt": 1527,
+        "templates/README.md": 37,
+        "templates/monsters.json": 60,
+        "templates/presets.json": 41,
+        "templates/resourcepack/README.md": 51,
+        "templates/resourcepack/assets/dndsheets/models/item/enchanted_rapier.json": 6,
+        "templates/resourcepack/assets/minecraft/models/item/iron_sword.json": 12,
+        "templates/resourcepack/pack.mcmeta": 6,
+        "templates/spells.json": 65,
+        "templates/traits.json": 24,
+        "templates/weapons.json": 73,
+        "test/dndsheets/items/example.json": 8,
+        "test/dndsheets/monsters/example.json": 45,
+        "test/dndsheets/presets/example.json": 46,
+        "test/dndsheets/spells/example.json": 8,
+        "test/dndsheets/traits/example.json": 21,
+        "test/dndsheets/weapons/example.json": 6,
+        "tools/check_skins.py": 80,
+        "tools/content_lang_keys.py": 334,
+        "tools/extract_vanilla_ids.py": 36,
+        "tools/import_srd.py": 432,
+        "tools/preflight_mods.py": 121
+      },
+      "user_removed_per_file": {
+        "DESIGN.md": 1,
+        "LICENSE": 21,
+        "PROJECT_CONTEXT.md": 2,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonMapImportScreen.java": 3,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonMapPickScreen.java": 6,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonPieceListScreen.java": 1,
+        "dungeon/src/main/java/net/hawthorn/dndsheets/dungeon/client/gui/DungeonTraceScreen.java": 1,
+        "gradlew": 244,
+        "gradlew.bat": 92,
+        "reference/creature-model-survey.json": 11105,
+        "src/main/java/net/hawthorn/dndsheets/DndsheetsMod.java": 360,
+        "src/main/java/net/hawthorn/dndsheets/ItemLook.java": 81,
+        "src/main/java/net/hawthorn/dndsheets/MonsterActionManager.java": 649,
+        "src/main/java/net/hawthorn/dndsheets/MonsterRegistry.java": 935,
+        "src/main/java/net/hawthorn/dndsheets/SpellRegistry.java": 491,
+        "src/main/java/net/hawthorn/dndsheets/TurnManager.java": 1440,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/EncounterDesignerScreen.java": 4,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/GuideBook.java": 2,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/PlayerPanelScreen.java": 6,
+        "src/main/java/net/hawthorn/dndsheets/client/gui/TraitEditScreen.java": 1,
+        "src/main/java/net/hawthorn/dndsheets/command/SpellCommand.java": 170,
+        "src/main/java/net/hawthorn/dndsheets/init/DndsheetsModSounds.java": 16,
+        "src/main/java/net/hawthorn/dndsheets/network/BrowseActionMessage.java": 698,
+        "src/main/resources/assets/dndsheets/lang/en_us.json": 1,
+        "src/main/resources/assets/dndsheets/lang/es_ar.json": 1,
+        "src/main/resources/assets/dndsheets/lang/es_cl.json": 1,
+        "src/main/resources/assets/dndsheets/lang/es_ec.json": 1,
+        "src/main/resources/assets/dndsheets/lang/es_es.json": 1,
+        "src/main/resources/assets/dndsheets/lang/es_mx.json": 1,
+        "src/main/resources/assets/dndsheets/lang/es_uy.json": 1,
+        "src/main/resources/assets/dndsheets/lang/es_ve.json": 1,
+        "src/main/resources/assets/dndsheets/models/item/token.json": 29,
+        "src/main/resources/assets/dndsheets/sounds.json": 10,
+        "src/main/resources/pack.mcmeta": 5
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 37195,
+      "agent_lines_removed": 16381
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 37195,
+      "agent_lines_removed": 16381
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 37195,
+      "agent_lines_removed": 16381
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 37195,
+      "agent_lines_removed": 16381
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 40379,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 7,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 40579,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 8,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 40579,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 9,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 40588,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 10,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 40592,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 11,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 40596,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 12,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 40600,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 13,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 40602,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 14,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 40602,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 15,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 41044,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 16,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 41298,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 17,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 41298,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 18,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 41304,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 19,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 41304,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 20,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 41304,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 21,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 41304,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 22,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 41304,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 23,
+      "user_lines_added": 682,
+      "user_lines_removed": 0,
+      "agent_lines_added": 41304,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40
+      }
+    },
+    {
+      "checkpoint_number": 24,
+      "user_lines_added": 872,
+      "user_lines_removed": 190,
+      "agent_lines_added": 41308,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40,
+        "specs/001-onboarding-vtt/quickstart.md": 2,
+        "specs/001-onboarding-vtt/spec.md": 188
+      },
+      "user_removed_per_file": {
+        "specs/001-onboarding-vtt/quickstart.md": 2,
+        "specs/001-onboarding-vtt/spec.md": 188
+      }
+    },
+    {
+      "checkpoint_number": 25,
+      "user_lines_added": 872,
+      "user_lines_removed": 190,
+      "agent_lines_added": 41308,
+      "agent_lines_removed": 16381,
+      "user_added_per_file": {
+        ".specify/extensions.yml": 1,
+        ".specify/extensions/.registry": 18,
+        ".specify/extensions/assess/README.md": 137,
+        ".specify/extensions/assess/commands/speckit.assess.decide.md": 97,
+        ".specify/extensions/assess/commands/speckit.assess.define.md": 85,
+        ".specify/extensions/assess/commands/speckit.assess.intake.md": 120,
+        ".specify/extensions/assess/commands/speckit.assess.research.md": 102,
+        ".specify/extensions/assess/commands/speckit.assess.shape.md": 82,
+        ".specify/extensions/assess/extension.yml": 40,
+        "specs/001-onboarding-vtt/quickstart.md": 2,
+        "specs/001-onboarding-vtt/spec.md": 188
+      },
+      "user_removed_per_file": {
+        "specs/001-onboarding-vtt/quickstart.md": 2,
+        "specs/001-onboarding-vtt/spec.md": 188
+      }
+    }
+  ]
+}
